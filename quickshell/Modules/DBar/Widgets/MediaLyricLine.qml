@@ -2,6 +2,7 @@ import QtQuick
 import qs.Common
 import qs.Services
 import qs.DCommon.Widgets
+import "../../../Common/LyricLayout.js" as LyricLayout
 import "../../DDash/Media/LyricsModel.js" as LyricsModel
 
 Item {
@@ -23,25 +24,24 @@ Item {
     readonly property string fontKey: measure.font.family + "/" + measure.font.pixelSize + "/" + measure.font.weight
     property string pagedKey: ""
     property string pageKey: ""
+    property string measuredFontKey: ""
     property var pages: []
+    property var cueSpans: []
     property bool snapping: false
     property real shift: 0
     property real pageWidth: 0
     property real scrollOffset: 0
-    property real lastStepMs: 0
     property real holdStartMs: 1200
-    // Only lines with no known end use a fixed speed; the others are paced by their own span.
     property real pxPerMs: 1 / 20
     property real overscroll: 5
     property int stepInterval: 60
-    property bool wordTimed: false
-    property real lineStart: 0
-    property real lineEnd: 0
+    property var scrollMotion: null
+    property bool scrollMoving: false
 
+    readonly property bool scrollEnabled: scroll && !SettingsData.reduceMotion
     readonly property real maxScrollOffset: Math.max(0, pageWidth - width + overscroll)
-    readonly property bool scrollable: scroll && width > 0 && maxScrollOffset > 0 && current.text !== ""
-    readonly property bool scrollActive: scrollable && playing && live && visible && (Window.window?.visible ?? false) && !SettingsData.reduceMotion
-    readonly property bool lineTimed: !wordTimed
+    readonly property bool scrollable: scrollEnabled && width > 0 && pageWidth > width && current.text !== ""
+    readonly property bool scrollActive: scrollable && playing && controller.rate > 0 && live && visible && (Window.window?.visible ?? false)
 
     clip: true
 
@@ -51,8 +51,8 @@ Item {
     onFontKeyChanged: place()
     onLiveChanged: place()
     onSweepChanged: place()
-    onScrollChanged: place()
-    onScrollActiveChanged: lastStepMs = Date.now()
+    onScrollEnabledChanged: place()
+    onScrollActiveChanged: syncScroll()
     Component.onCompleted: place()
 
     function flat(value) {
@@ -74,25 +74,24 @@ Item {
             return;
         }
         const key = controller.activeIndex + "/" + next.t + "/" + next.voice;
-        lineStart = next.t;
-        lineEnd = next.e;
-        const paged = key + "/" + width + "/" + fontKey + "/" + scroll;
+        const paged = key + "/" + width + "/" + fontKey + "/" + scrollEnabled + "/" + sweep;
         if (paged !== pagedKey) {
             pagedKey = paged;
             const chunks = next.w.length > 0 ? next.w.map(word => word.x) : (flat(next.x).match(/\S+\s*/g) ?? [flat(next.x)]);
-            pages = scroll ? [{
+            pages = scrollEnabled ? [{
                 first: 0,
                 last: chunks.length - 1,
                 text: flat(next.x)
             }] : paginate(chunks);
+            cueSpans = next.w.length > 0 && (scrollEnabled || sweep) ? LyricsModel.cueSpans(next) : [];
         }
         if (next.w.length > 0) {
-            wordTimed = true;
             placeWords(key, next, at);
-            return;
+        } else {
+            placeLine(key, next, at);
+            scrollMotion = { start: next.t, end: next.e, from: 0, to: maxScrollOffset, hold: holdStartMs / 1000, speed: pxPerMs * 1000 };
         }
-        wordTimed = false;
-        placeLine(key, next, at);
+        syncScroll();
     }
 
     function placeWords(key, line, at) {
@@ -100,18 +99,20 @@ Item {
         const index = lastStarted(line.w, at);
         const page = pages.find(candidate => index <= candidate.last) ?? pages[pages.length - 1];
         const sung = index < page.first ? 0 : widthOf(flat(line.w.slice(page.first, index + 1).map(word => word.x).join("")));
+        const span = index < page.first ? null : cueSpans[index];
+        const before = !span || index <= page.first ? 0 : widthOf(flat(line.w.slice(page.first, index).map(word => word.x).join("")));
+        scrollMotion = span ? {
+            start: span.t, end: span.e, from: before - width * 0.75, to: sung - width * 0.75, hold: 0, speed: pxPerMs * 1000
+        } : null;
         if (!sweep || index < page.first) {
             turnTo(key + "/" + page.first, page.text, sung);
             return;
         }
-        const before = index === page.first ? 0 : widthOf(flat(line.w.slice(page.first, index).map(word => word.x).join("")));
-        const span = LyricsModel.cueSpans(line)[index];
         const duration = span.e - span.t;
         const progress = Number.isFinite(duration) && duration > 0 ? Math.max(0, Math.min(1, (at - span.t) / duration)) : 1;
         turnTo(key + "/" + page.first, page.text, before + (sung - before) * progress);
         if (progress >= 1 || !live || !controller.playing || controller.rate <= 0 || SettingsData.reduceMotion)
             return;
-        // One linear run per word: the controller wakes this at each cue, nothing ticks per frame in between.
         sweepMotion.to = sung;
         sweepMotion.duration = Math.max(1, Math.min(2147483647, (span.e - at) * 1000 / controller.rate));
         sweepMotion.start();
@@ -182,14 +183,17 @@ Item {
     }
 
     function turnTo(key, text, sung) {
-        pageWidth = widthOf(text);
-        if (key === pageKey) {
+        const previousOffset = current.offset;
+        if (current.text !== text || measuredFontKey !== fontKey) {
+            pageWidth = widthOf(text);
+            measuredFontKey = fontKey;
+        }
+        if (key === pageKey && text === current.text) {
             current.fill = sung;
             return;
         }
         pageKey = key;
         slide.stop();
-        const previousOffset = current.offset;
         resetScroll();
         const animate = live && !SettingsData.reduceMotion && current.text !== "";
         outgoing.text = animate ? current.text : "";
@@ -202,27 +206,26 @@ Item {
     }
 
     function resetScroll() {
+        scrollTick.stop();
         scrollOffset = 0;
-        lastStepMs = Date.now();
+        scrollMoving = false;
     }
 
-    // Pacing by the line's own span: a fixed speed leaves the tail of a long line hidden when the
-    // next one starts. Word-timed lines bind their offset to the sung fill instead, so no timer runs.
-    function scrollTarget(delta) {
-        const span = lineEnd - lineStart;
-        if (!(span > 0))
-            return scrollOffset + delta * pxPerMs;
-        const hold = Math.min(holdStartMs / 1000, span * 0.4);
-        return maxScrollOffset * Math.max(0, Math.min(1, (controller.shownTime() - lineStart - hold) / (span - hold)));
-    }
-
-    // One way only: the line is sung once, so it stays at its end instead of scrolling back.
-    function stepScroll() {
-        const now = Date.now();
-        // A timer that was stopped for a pause settles the whole gap at once without this clamp.
-        const delta = Math.max(0, Math.min(now - lastStepMs, stepInterval * 4));
-        lastStepMs = now;
-        scrollOffset = Math.min(maxScrollOffset, Math.max(scrollOffset, scrollTarget(delta)));
+    function syncScroll(cava = false) {
+        scrollTick.stop();
+        if (!scrollable) {
+            scrollOffset = 0;
+            scrollMoving = false;
+            return;
+        }
+        const state = LyricLayout.scrollState(scrollMotion, controller.shownTime(), maxScrollOffset);
+        scrollOffset = state.offset;
+        scrollMoving = state.wait === 0;
+        if (!scrollActive || controller.rate <= 0 || !Number.isFinite(state.wait))
+            return;
+        // Cava defers the fallback; no second clock wakes while those frames keep arriving (#2863).
+        scrollTick.interval = Math.max(cava ? 150 : stepInterval, Math.min(2147483647, state.wait * 1000 / controller.rate));
+        scrollTick.start();
     }
 
     function clearLine() {
@@ -232,6 +235,8 @@ Item {
         pagedKey = "";
         pageKey = "";
         pages = [];
+        cueSpans = [];
+        scrollMotion = null;
         pageWidth = 0;
         resetScroll();
         outgoing.text = "";
@@ -251,33 +256,15 @@ Item {
         onTriggered: root.place()
     }
 
-    // Line-timed lines only: word-timed ones bind their offset and need no tick source.
     Timer {
-        interval: root.stepInterval
-        repeat: true
-        running: root.scrollActive && root.lineTimed && root.scrollOffset < root.maxScrollOffset
-        onTriggered: {
-            if (cavaTickWatch.running) {
-                root.lastStepMs = Date.now();
-                return;
-            }
-            root.stepScroll();
-        }
+        id: scrollTick
+        onTriggered: root.syncScroll()
     }
 
-    Timer {
-        id: cavaTickWatch
-        interval: 150
-    }
-
-    // Cava frames already commit the pill, so riding them avoids a second render source (#2863).
     Connections {
         target: CavaService
-        enabled: root.scrollActive && root.lineTimed && root.scrollOffset < root.maxScrollOffset && SettingsData.audioVisualizerEnabled && CavaService.cavaAvailable
-        function onValuesChanged() {
-            cavaTickWatch.restart();
-            root.stepScroll();
-        }
+        enabled: root.scrollActive && root.scrollMoving && SettingsData.audioVisualizerEnabled && CavaService.cavaAvailable
+        function onValuesChanged() { root.syncScroll(true); }
     }
 
     NumberAnimation {
@@ -366,6 +353,6 @@ Item {
         id: current
         y: root.shift * root.height
         opacity: 1 - root.shift
-        offset: root.scroll && root.wordTimed ? Math.max(0, Math.min(root.maxScrollOffset, fill - root.width * 0.75)) : Math.min(root.scrollOffset, root.maxScrollOffset)
+        offset: root.scrollable ? Math.min(root.scrollOffset, root.maxScrollOffset) : 0
     }
 }

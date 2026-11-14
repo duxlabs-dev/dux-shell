@@ -11,6 +11,7 @@ MediaActivityFace {
     artworkSize: controller.compactIconSize
     clockVisible: controller.mediaClockVisible
     lyricsEnabled: controller.mediaLyrics
+    scrollLyrics: controller.mediaScrollLyrics
     maxLength: controller.mediaCompactMaxLength
     function updateLength() {
         controller.setMediaContentLength(isVertical ? implicitHeight : implicitWidth);

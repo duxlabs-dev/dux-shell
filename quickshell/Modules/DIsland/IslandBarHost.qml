@@ -440,6 +440,7 @@ Item {
         batteryStyle: root.setting("islandBatteryStyle")
         mediaClockVisible: root.setting("islandMediaClockVisible")
         mediaLyrics: root.setting("islandMediaLyrics")
+        mediaScrollLyrics: root.setting("islandMediaScrollLyrics")
         dashTabs: root.setting("islandDashTabs")
         dashDefaultTab: root.setting("islandDashDefaultTab")
         // Home and media share the dot face; see mediaFaceToggleAvailable.

@@ -49,6 +49,7 @@ Item {
     readonly property string minuteText: String(systemClock.date.getMinutes()).padStart(2, "0")
     property bool clockVisible: false
     property bool lyricsEnabled: false
+    property bool scrollLyrics: SettingsData.widgetOption("music", widgetData, "mediaScrollLyrics")
     readonly property bool lyricsWanted: lyricsEnabled && LyricsService.allowed && !isVertical
     readonly property bool lyricsLive: lyricsWanted && enabled && titleShown
     readonly property bool lyricActive: {
@@ -262,7 +263,7 @@ Item {
                     font.weight: titleText.font.weight
                     live: root.enabled
                     playing: root.enabled && root.mediaModel.playing
-                    scroll: SettingsData.widgetOption("music", root.widgetData, "mediaScrollLyrics")
+                    scroll: root.scrollLyrics
                 }
 
                 StyledText {
