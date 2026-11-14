@@ -60,7 +60,8 @@ Singleton {
             "substitutions": null,
             "processes": null,
             "byPid": new Map(),
-            "launchers": new Set()
+            "shells": new Map(),
+            "launchers": new Map()
         })
 
     // A window names its app more reliably than the process name does. Built on demand, so nothing runs while no process view is open.
@@ -91,12 +92,15 @@ Singleton {
             if (!DgopService.allProcesses?.length) {
                 _appMemo.processes = null;
                 _appMemo.byPid = new Map();
-                _appMemo.launchers = new Set();
+                _appMemo.shells = new Map();
+                _appMemo.launchers = new Map();
             }
         }
     }
 
     function appEntry(process, extraKeys) {
+        if (isLauncher(process))
+            return isMergedRow(process) ? appEntry(_appMemo.shells.get(process.pid), extraKeys) : null;
         const windowId = windowAppId(process?.pid);
         const memo = _appMemo;
         if (memo.entries !== execEntries || memo.cache.size > 4000) {
@@ -124,9 +128,9 @@ Singleton {
         return (exe && execEntry(exe, process)) || (process?.command ? DesktopEntries.heuristicLookup(process.command) : null) || execEntry(exe.split("/").pop(), process) || execEntry(process?.command ?? "", process);
     }
 
-    // Apps built on Quickshell run "qs -p <runtime dir>/<app>-shell/..." from their own binary, often without a window.
+    // Apps built on dux-qt-base run "<binary> qs -p <runtime dir>/<app>-shell/..." from their launcher, often without a window.
     function isShellApp(process) {
-        return /^qs -p \S+-shell\//.test(process?.fullCommand ?? "");
+        return /^\S+ qs -p \S+-shell\//.test(process?.fullCommand ?? "");
     }
 
     function indexProcesses() {
@@ -136,16 +140,50 @@ Singleton {
             return;
         memo.processes = processes;
         memo.byPid = new Map(processes.map(p => [p.pid, p]));
-        memo.launchers = new Set(processes.filter(isShellApp).map(p => p.ppid));
+        memo.shells = new Map();
+        memo.launchers = new Map();
+        // A qs counts only under its app's binary, not under whatever adopted it.
+        const add = (shell, launcher) => {
+            if (launcher && programName(launcher) === programName(shell)) {
+                memo.shells.set(launcher.pid, shell);
+                memo.launchers.set(shell.pid, launcher);
+            }
+        };
+        for (const p of processes) {
+            if (isShellApp(p))
+                add(p, memo.byPid.get(p.ppid));
+            // A merged row lists the app's qs among its members.
+            for (const c of p.children) {
+                if (isShellApp(c))
+                    add(c, p.children.find(m => m.pid === c.ppid) ?? memo.byPid.get(c.ppid));
+            }
+        }
     }
 
-    // The app's binary and its qs both belong to the desktop entry that runs the binary, whatever arguments that entry passes.
+    function isLauncher(process) {
+        indexProcesses();
+        return _appMemo.shells.has(process?.pid);
+    }
+
+    function isMergedRow(process) {
+        return process.memberOf === undefined && (process.childCount ?? 0) > 0;
+    }
+
+    // The app's qs runs next to its launcher under the app's name, so it gets marked as the UI.
+    function displayName(process, entry) {
+        indexProcesses();
+        const name = entry?.name || (process?.command ?? "");
+        return entry && _appMemo.launchers.has(process?.pid) ? I18n.tr("%1 (UI)", "process list row of an app's user interface process, %1 is the app name").arg(name) : name;
+    }
+
+    // An app's qs belongs to the desktop entry that runs its binary, whatever arguments that entry passes.
     // A miss isn't cached: it depends on which processes the current list holds.
     function shellAppEntry(process) {
         indexProcesses();
         const memo = _appMemo;
-        const launcher = memo.launchers.has(process?.pid) ? process : isShellApp(process) ? memo.byPid.get(process.ppid) : null;
-        return launcher ? execEntries[programName(launcher)]?.[0]?.entry ?? null : null;
+        const launcher = memo.launchers.get(process?.pid);
+        const program = launcher ? programName(launcher) : "";
+        return launcher ? execEntry(program, launcher) ?? execEntries[program]?.[0]?.entry ?? null : null;
     }
 
     function programName(process) {
@@ -195,11 +233,12 @@ Singleton {
     function appIcon(process, entry) {
         indexProcesses();
         const memo = _appMemo;
-        let icon = ownIcon(process, entry);
+        const app = entry ? null : memo.shells.get(process?.pid);
+        let icon = ownIcon(process, entry ?? (app ? appEntry(app) : null));
         let parent = memo.byPid.get(process?.ppid);
         for (let depth = 0; !icon && parent && depth < 32; depth++) {
             const parentEntry = appEntry(parent);
-            if (parentEntry || programRow(programName(parent))?.passesIcon)
+            if (parentEntry)
                 icon = ownIcon(parent, parentEntry);
             parent = memo.byPid.get(parent.ppid);
         }
