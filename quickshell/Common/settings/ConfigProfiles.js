@@ -123,7 +123,7 @@ var SETTINGS_MAP = {
         "lockScreenShowWeather", "lockScreenFontFamily", "lockScreenVideoEnabled", "lockScreenVideoCycling"
     ],
     launcher: [
-        "browserPickerViewMode", "appPickerViewMode", "sortAppsAlphabetically", "appLauncherGridColumns",
+        "browserPickerViewMode", "appPickerViewMode", "sortAppsAlphabetically", "appLauncherGridColumns", "appLauncherIconColumns",
         "rememberLastQuery", "rememberLastMode", "spotlightSectionViewModes",
         "appDrawerSectionViewModes", "niriOverviewOverlayEnabled", "niriOverviewLauncherStyle", "dankLauncherV2Size",
         "dankLauncherV2ShowSourceBadges", "dankLauncherV2ShowFooter", "dankLauncherV2UnloadOnClose",
@@ -239,7 +239,7 @@ var SESSION_MAP = {
         "showThirdPartyPlugins", "pluginBrowserInstalledFirst", "pluginBrowserSortMode", "lastBrightnessDevice",
         "brightnessExponentialDevices", "brightnessUserSetValues", "brightnessExponentValues",
         "nvidiaGpuTempEnabled", "nonNvidiaGpuTempEnabled", "enabledGpuPciIds", "wifiDeviceOverride", "hiddenApps",
-        "appOverrides", "searchAppActions", "vpnLastConnected", "bluetoothAdapterOverride", "lastPlayerIdentity",
+        "appOverrides", "launcherFolders", "searchAppActions", "vpnLastConnected", "bluetoothAdapterOverride", "lastPlayerIdentity",
         "pinnedPlayerIdentity", "deviceMaxVolumes", "hiddenOutputDeviceNames", "hiddenInputDeviceNames", "locale",
         "timeLocale", "notepadLastMode", "niriOutputSettings", "hyprlandOutputSettings", "activeConfigProfile",
         "activeDisplayProfile", "activeDisplayProfileModes", "builtInPluginState", "greeterSyncPending",

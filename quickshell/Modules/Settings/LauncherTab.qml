@@ -194,6 +194,17 @@ Item {
                 onSliderValueChanged: newValue => SettingsData.set("appLauncherGridColumns", newValue)
             }
 
+            SettingsSliderRow {
+                settingKey: "appLauncherIconColumns"
+                tags: ["launcher", "icons", "columns", "layout"]
+                text: I18n.tr("Icon columns")
+                unit: ""
+                minimum: 2
+                maximum: 8
+                value: SettingsData.appLauncherIconColumns
+                onSliderValueChanged: newValue => SettingsData.set("appLauncherIconColumns", newValue)
+            }
+
             SettingsToggleRow {
                 settingKey: "dankLauncherV2ShowFooter"
                 tags: ["launcher", "footer", "hints", "shortcuts", "modes", "filters"]

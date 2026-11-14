@@ -225,6 +225,9 @@ var LOCAL_SPEC = {
     appOverrides: {
         def: {}
     },
+    launcherFolders: {
+        def: []
+    },
     searchAppActions: {
         def: true
     },

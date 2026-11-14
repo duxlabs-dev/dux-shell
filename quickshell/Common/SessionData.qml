@@ -10,6 +10,7 @@ import qs.Services
 import "settings/SessionSpec.js" as Spec
 import "../DCommon/Common/MaterialWallpaper.js" as MaterialWallpaper
 import "settings/SessionStore.js" as Store
+import "settings/LauncherFolders.js" as LauncherFolders
 import "../DCommon/Common/settings/SpecUtil.js" as SpecUtil
 
 Singleton {
@@ -278,6 +279,8 @@ Singleton {
 
     property var hiddenApps: []
     property var appOverrides: ({})
+    property var launcherFolders: []
+    readonly property bool hasLauncherLayout: launcherFolders.length > 0
     property bool searchAppActions: true
 
     property string vpnLastConnected: ""
@@ -1666,14 +1669,13 @@ Singleton {
     }
 
     function hideApp(appId) {
-        if (!appId)
+        if (!appId || hiddenApps.indexOf(appId) !== -1)
             return;
-        const current = [...hiddenApps];
-        if (current.indexOf(appId) === -1) {
-            current.push(appId);
-            hiddenApps = current;
-            saveSettings();
-        }
+        hiddenApps = [...hiddenApps, appId];
+        const folders = LauncherFolders.removeApp(launcherFolders, appId);
+        if (folders !== launcherFolders)
+            launcherFolders = folders;
+        saveSettings();
     }
 
     function showApp(appId) {
@@ -1713,6 +1715,57 @@ Singleton {
         delete newOverrides[appId];
         appOverrides = newOverrides;
         saveSettings();
+    }
+
+    function _setLauncherFolders(folders) {
+        if (folders === launcherFolders)
+            return;
+        launcherFolders = folders;
+        saveSettings();
+    }
+
+    function createLauncherFolder(name, appIds, slot = 0) {
+        const result = LauncherFolders.createFolder(launcherFolders, name, appIds, slot);
+        if (!result.id)
+            return "";
+        _setLauncherFolders(result.folders);
+        return result.id;
+    }
+
+    function setLauncherFolderSlot(id, slot) {
+        _setLauncherFolders(LauncherFolders.setFolderSlot(launcherFolders, id, slot));
+    }
+
+    function renameLauncherFolder(id, name) {
+        _setLauncherFolders(LauncherFolders.renameFolder(launcherFolders, id, name));
+    }
+
+    function setLauncherFolderIcon(id, icon) {
+        _setLauncherFolders(LauncherFolders.setFolderIcon(launcherFolders, id, icon));
+    }
+
+    function addAppToLauncherFolder(folderId, appId) {
+        _setLauncherFolders(LauncherFolders.addApp(launcherFolders, folderId, appId));
+    }
+
+    function removeAppFromLauncherFolder(appId) {
+        _setLauncherFolders(LauncherFolders.removeApp(launcherFolders, appId));
+    }
+
+    function moveAppInLauncherFolder(folderId, fromIndex, toIndex) {
+        _setLauncherFolders(LauncherFolders.moveApp(launcherFolders, folderId, fromIndex, toIndex));
+    }
+
+    function dissolveLauncherFolder(id) {
+        _setLauncherFolders(LauncherFolders.dissolveFolder(launcherFolders, id));
+    }
+
+    function getLauncherFolder(id) {
+        return LauncherFolders.folderById(launcherFolders, id);
+    }
+
+    function launcherFolderForApp(appId) {
+        return LauncherFolders.folderForApp(launcherFolders, appId);
     }
 
     function setSearchAppActions(enabled) {

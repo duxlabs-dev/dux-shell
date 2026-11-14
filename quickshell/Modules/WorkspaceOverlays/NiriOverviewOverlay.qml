@@ -401,6 +401,18 @@ Scope {
                             function onTextChanged() {
                                 if (overlayWindow.launcherContent.searchField.text.length > 0 || !niriOverviewScope.searchActive)
                                     return;
+                                // Opening a folder clears the query before it sets activeFolderId.
+                                clearSearchTimer.restart();
+                            }
+                        }
+
+                        Timer {
+                            id: clearSearchTimer
+                            interval: 0
+                            onTriggered: {
+                                const content = overlayWindow.launcherContent;
+                                if (!content?.searchField || content.searchField.text.length > 0 || !niriOverviewScope.searchActive || content.controller?.activeFolderId)
+                                    return;
                                 niriOverviewScope.hideSpotlight();
                             }
                         }

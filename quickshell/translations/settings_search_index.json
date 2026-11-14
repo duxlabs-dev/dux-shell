@@ -7384,6 +7384,26 @@
     "description": "Record app usage and past queries. Turning this off clears what is stored."
   },
   {
+    "section": "appLauncherIconColumns",
+    "label": "Icon columns",
+    "tabIndex": 9,
+    "category": "Launcher",
+    "keywords": [
+      "app drawer",
+      "app menu",
+      "applications",
+      "columns",
+      "drawer",
+      "icon",
+      "icons",
+      "launcher",
+      "layout",
+      "menu",
+      "start",
+      "start menu"
+    ]
+  },
+  {
     "section": "dankLauncherV2IncludeFilesInAll",
     "label": "Include files in All tab",
     "tabIndex": 9,
