@@ -144,7 +144,7 @@ var SETTINGS_MAP = {
     osd: [
         "osdAlwaysShowValue", "osdPosition", "osdVolumeEnabled", "osdMediaVolumeEnabled", "osdMediaPlaybackEnabled",
         "osdBrightnessEnabled", "osdIdleInhibitorEnabled", "osdMicMuteEnabled", "osdMicVolumeEnabled",
-        "osdCapsLockEnabled", "osdTouchpadEnabled", "osdPowerProfileEnabled", "osdAudioOutputEnabled",
+        "osdCapsLockEnabled", "osdTouchpadEnabled", "osdAirplaneModeEnabled", "osdPowerProfileEnabled", "osdAudioOutputEnabled",
         "osdWorkspaceEnabled", "osdNumLockEnabled", "osdKeyboardLayoutEnabled", "osdInputMethodEnabled",
         "osdDoNotDisturbEnabled"
     ],

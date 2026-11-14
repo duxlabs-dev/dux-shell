@@ -29,6 +29,7 @@ import (
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/loginctl"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/network"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/notifyactions"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/rfkill"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/sysupdate"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/tailscale"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/thememode"
@@ -73,6 +74,7 @@ var tailscaleManager *tailscale.Manager
 var brightnessManager *brightness.Manager
 var wlrOutputManager *wlroutput.Manager
 var evdevManager *evdev.Manager
+var rfkillManager *rfkill.Manager
 var clipboardManager *clipboard.Manager
 var dbusManager *serverDbus.Manager
 var wlContext *wlcontext.SharedContext
@@ -304,6 +306,19 @@ func InitializeEvdevManager() error {
 	return nil
 }
 
+func InitializeRfkillManager() error {
+	manager, err := rfkill.InitializeManager()
+	if err != nil {
+		log.Warnf("Failed to initialize rfkill manager: %v", err)
+		return err
+	}
+
+	rfkillManager = manager
+
+	log.Info("Rfkill manager initialized")
+	return nil
+}
+
 func InitializeClipboardManager() error {
 	log.Info("Attempting to initialize clipboard manager...")
 
@@ -487,6 +502,10 @@ func getCapabilities() Capabilities {
 
 	if evdevManager != nil {
 		caps = append(caps, "evdev")
+	}
+
+	if rfkillManager != nil {
+		caps = append(caps, "rfkill")
 	}
 
 	if clipboardManager != nil {
@@ -754,6 +773,15 @@ func handleSubscribe(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request)
 		}, mgr.GetState)
 	}
 
+	if shouldSubscribe("rfkill") && rfkillManager != nil {
+		mgr := rfkillManager
+		id := clientID + "-rfkill"
+		source := mgr.Subscribe(id)
+		forwardSubscription(&wg, eventChan, stopChan, "rfkill", source, func() {
+			mgr.Unsubscribe(id)
+		}, mgr.GetState)
+	}
+
 	if shouldSubscribe("clipboard") && clipboardManager != nil {
 		mgr := clipboardManager
 		id := clientID + "-clipboard"
@@ -896,6 +924,9 @@ func cleanupManagers() {
 	}
 	if evdevManager != nil {
 		evdevManager.Close()
+	}
+	if rfkillManager != nil {
+		rfkillManager.Close()
 	}
 	if clipboardManager != nil {
 		clipboardManager.Close()
@@ -1373,6 +1404,14 @@ func (s *Server) Serve(printDocs bool) error {
 	go func() {
 		if err := InitializeEvdevManager(); err != nil {
 			log.Debugf("Evdev manager unavailable: %v", err)
+		} else {
+			notifyCapabilityChange()
+		}
+	}()
+
+	go func() {
+		if err := InitializeRfkillManager(); err != nil {
+			log.Debugf("Rfkill manager unavailable: %v", err)
 		} else {
 			notifyCapabilityChange()
 		}

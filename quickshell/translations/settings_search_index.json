@@ -9631,6 +9631,24 @@
     "description": "Popups, do not disturb, rules"
   },
   {
+    "section": "osdAirplaneModeEnabled",
+    "label": "Airplane mode",
+    "tabIndex": 18,
+    "category": "On-screen displays",
+    "keywords": [
+      "airplane",
+      "bluetooth",
+      "displays",
+      "indicator",
+      "mode",
+      "osd",
+      "popup",
+      "rfkill",
+      "screen",
+      "wifi"
+    ]
+  },
+  {
     "section": "osdAlwaysShowValue",
     "label": "Always show percentage",
     "tabIndex": 18,
@@ -9896,12 +9914,16 @@
     "tabIndex": 18,
     "category": "On-screen displays",
     "keywords": [
+      "airplane",
+      "bluetooth",
       "displays",
       "indicator",
       "osd",
       "popup",
+      "rfkill",
       "screen",
-      "show"
+      "show",
+      "wifi"
     ]
   },
   {

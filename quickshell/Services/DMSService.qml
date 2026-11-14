@@ -64,6 +64,7 @@ Singleton {
     signal brightnessDeviceUpdate(var device)
     signal wlrOutputStateUpdate(var data)
     signal evdevStateUpdate(var data)
+    signal rfkillStateUpdate(var data)
     signal gammaStateUpdate(var data)
     signal themeAutoStateUpdate(var data)
     signal wallpaperCycleUpdate(var data)
@@ -81,10 +82,12 @@ Singleton {
     property bool capsLockState: false
     property bool numLockState: false
     property bool evdevStateInitialized: false
+    property bool airplaneMode: false
+    property bool rfkillStateInitialized: false
     property bool screensaverInhibited: false
     property var screensaverInhibitors: []
 
-    property var activeSubscriptions: ["network", "network.credentials", "loginctl", "freedesktop", "freedesktop.screensaver", "gamma", "wallpaper", "bluetooth", "bluetooth.pairing", "brightness", "wlroutput", "evdev", "browser", "dbus"]
+    property var activeSubscriptions: ["network", "network.credentials", "loginctl", "freedesktop", "freedesktop.screensaver", "gamma", "wallpaper", "bluetooth", "bluetooth.pairing", "brightness", "wlroutput", "evdev", "rfkill", "browser", "dbus"]
     property var connectionCapabilities: null
 
     Component.onCompleted: {
@@ -327,6 +330,12 @@ Singleton {
             }
             evdevStateInitialized = true;
             evdevStateUpdate(data);
+        } else if (service === "rfkill") {
+            if (data.airplaneMode !== undefined) {
+                airplaneMode = data.airplaneMode;
+            }
+            rfkillStateInitialized = true;
+            rfkillStateUpdate(data);
         } else if (service === "gamma") {
             gammaStateUpdate(data);
         } else if (service === "theme.auto") {

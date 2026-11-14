@@ -1559,6 +1559,9 @@ var LOCAL_SPEC = {
     osdTouchpadEnabled: {
         def: true
     },
+    osdAirplaneModeEnabled: {
+        def: true
+    },
     osdPowerProfileEnabled: {
         def: false
     },

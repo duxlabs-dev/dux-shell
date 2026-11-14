@@ -57,6 +57,8 @@ QtObject {
             return I18n.tr("Brightness", "island system face: brightness title");
         case "capslock":
             return I18n.tr("Caps lock", "island system face: caps lock title");
+        case "airplanemode":
+            return I18n.tr("Airplane mode", "island system face: airplane mode title");
         case "powerprofile":
             return I18n.tr("Power profile", "island system face: power profile title");
         case "idleinhibitor":
@@ -73,6 +75,8 @@ QtObject {
         switch (kind) {
         case "capslock":
             return DMSService.capsLockState ? I18n.tr("On") : I18n.tr("Off");
+        case "airplanemode":
+            return DMSService.airplaneMode ? I18n.tr("On") : I18n.tr("Off");
         case "powerprofile":
             return Theme.getPowerProfileLabel(PowerProfileWatcher.currentProfile);
         case "idleinhibitor":
@@ -94,6 +98,8 @@ QtObject {
             return BrightnessService.brightnessIconName(brightnessDevice, value);
         case "capslock":
             return DMSService.capsLockState ? "shift_lock" : "shift_lock_off";
+        case "airplanemode":
+            return DMSService.airplaneMode ? "airplanemode_active" : "airplanemode_inactive";
         case "powerprofile":
             return Theme.getPowerProfileIcon(PowerProfileWatcher.currentProfile);
         case "idleinhibitor":
@@ -219,6 +225,16 @@ QtObject {
         function onCapsLockStateChanged() {
             if (SettingsData.osdCapsLockEnabled)
                 root.show("capslock");
+        }
+    }
+
+    property Connections airplaneModeConnection: Connections {
+        target: DMSService
+        enabled: root.enabled
+
+        function onAirplaneModeChanged() {
+            if (DMSService.rfkillStateInitialized && SettingsData.osdAirplaneModeEnabled)
+                root.show("airplanemode");
         }
     }
 
