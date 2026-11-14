@@ -4840,6 +4840,27 @@
     "description": "Choose what right-clicking empty bar space does"
   },
   {
+    "section": "islandMediaScrollLyrics",
+    "label": "Scroll lyrics",
+    "tabIndex": 3,
+    "category": "General",
+    "keywords": [
+      "bar",
+      "compact",
+      "general",
+      "island",
+      "lyrics",
+      "media",
+      "panel",
+      "scroll",
+      "statusbar",
+      "taskbar",
+      "topbar"
+    ],
+    "parentLabel": "Bar",
+    "conditionKey": "islandEnabled"
+  },
+  {
     "section": "barScrollWheel",
     "label": "Scroll wheel",
     "tabIndex": 3,
@@ -10974,7 +10995,7 @@
     "optionFile": "AppsDockOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:33",
+    "section": "barWidgetOption:IslandOptions.qml:34",
     "label": "Activity colors",
     "tabIndex": 22,
     "keywords": [],
@@ -10982,7 +11003,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:34",
+    "section": "barWidgetOption:IslandOptions.qml:35",
     "label": "Activity icon animation",
     "tabIndex": 22,
     "keywords": [],
@@ -10990,7 +11011,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:44",
+    "section": "barWidgetOption:IslandOptions.qml:45",
     "label": "Activity position",
     "tabIndex": 22,
     "keywords": [],
@@ -10998,7 +11019,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:42",
+    "section": "barWidgetOption:IslandOptions.qml:43",
     "label": "Activity sources",
     "tabIndex": 22,
     "keywords": [],
@@ -11038,7 +11059,7 @@
     "optionFile": "PrivacyOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:28",
+    "section": "barWidgetOption:IslandOptions.qml:29",
     "label": "Appearance",
     "tabIndex": 22,
     "keywords": [],
@@ -11046,7 +11067,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:MusicOptions.qml:7",
+    "section": "barWidgetOption:MusicOptions.qml:8",
     "label": "Artwork",
     "tabIndex": 22,
     "keywords": [],
@@ -11054,7 +11075,7 @@
     "optionFile": "MusicOptions.qml"
   },
   {
-    "section": "barWidgetOption:MusicOptions.qml:8",
+    "section": "barWidgetOption:MusicOptions.qml:9",
     "label": "Audio visualizer",
     "tabIndex": 22,
     "keywords": [],
@@ -11157,7 +11178,7 @@
     "optionFile": "PrivacyOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:51",
+    "section": "barWidgetOption:IslandOptions.qml:52",
     "label": "Charging",
     "tabIndex": 22,
     "keywords": [],
@@ -11165,7 +11186,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:53",
+    "section": "barWidgetOption:IslandOptions.qml:54",
     "label": "Clear badge on open",
     "tabIndex": 22,
     "keywords": [],
@@ -11181,7 +11202,7 @@
     "optionFile": "ClockOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:46",
+    "section": "barWidgetOption:IslandOptions.qml:47",
     "label": "Click action",
     "tabIndex": 22,
     "keywords": [],
@@ -11205,7 +11226,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:30",
+    "section": "barWidgetOption:IslandOptions.qml:31",
     "label": "Collapsed background",
     "tabIndex": 22,
     "keywords": [],
@@ -11213,7 +11234,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:45",
+    "section": "barWidgetOption:IslandOptions.qml:46",
     "label": "Collapsed content",
     "tabIndex": 22,
     "keywords": [],
@@ -11317,7 +11338,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:MusicOptions.qml:6",
+    "section": "barWidgetOption:MusicOptions.qml:7",
     "label": "Cover art",
     "tabIndex": 22,
     "keywords": [],
@@ -11429,7 +11450,7 @@
     "optionFile": "WorkspaceSwitcherOptions.qml"
   },
   {
-    "section": "barWidgetOption:MusicOptions.qml:10",
+    "section": "barWidgetOption:MusicOptions.qml:11",
     "label": "Duration",
     "tabIndex": 22,
     "keywords": [],
@@ -11437,7 +11458,7 @@
     "optionFile": "MusicOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:52",
+    "section": "barWidgetOption:IslandOptions.qml:53",
     "label": "Expand by default",
     "tabIndex": 22,
     "keywords": [],
@@ -11445,7 +11466,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:31",
+    "section": "barWidgetOption:IslandOptions.qml:32",
     "label": "Expanded background",
     "tabIndex": 22,
     "keywords": [],
@@ -11453,7 +11474,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:32",
+    "section": "barWidgetOption:IslandOptions.qml:33",
     "label": "Expanded opacity",
     "tabIndex": 22,
     "keywords": [],
@@ -11533,7 +11554,7 @@
     "optionFile": "WorkspaceSwitcherOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:41",
+    "section": "barWidgetOption:IslandOptions.qml:42",
     "label": "Hidden activity sources",
     "tabIndex": 22,
     "keywords": [],
@@ -11605,7 +11626,7 @@
     "optionFile": "LauncherButtonOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:36",
+    "section": "barWidgetOption:IslandOptions.qml:37",
     "label": "Icon animation intensity",
     "tabIndex": 22,
     "keywords": [],
@@ -11613,7 +11634,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:35",
+    "section": "barWidgetOption:IslandOptions.qml:36",
     "label": "Icon animation speed",
     "tabIndex": 22,
     "keywords": [],
@@ -11701,7 +11722,7 @@
     "optionFile": "AppsDockOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:37",
+    "section": "barWidgetOption:IslandOptions.qml:38",
     "label": "Live activities",
     "tabIndex": 22,
     "keywords": [],
@@ -11765,7 +11786,7 @@
     "optionFile": "SystemTrayOptions.qml"
   },
   {
-    "section": "barWidgetOption:MusicOptions.qml:11",
+    "section": "barWidgetOption:MusicOptions.qml:12",
     "label": "Maximum title width",
     "tabIndex": 22,
     "keywords": [],
@@ -11781,7 +11802,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:MusicOptions.qml:13",
+    "section": "barWidgetOption:MusicOptions.qml:14",
     "label": "Media player",
     "tabIndex": 22,
     "keywords": [],
@@ -11805,7 +11826,7 @@
     "optionFile": "WorkspaceSwitcherOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:54",
+    "section": "barWidgetOption:IslandOptions.qml:55",
     "label": "Motion",
     "tabIndex": 22,
     "keywords": [],
@@ -11861,7 +11882,7 @@
     "optionFile": "ClockOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:47",
+    "section": "barWidgetOption:IslandOptions.qml:48",
     "label": "Notifications",
     "tabIndex": 22,
     "keywords": [],
@@ -11917,7 +11938,7 @@
     "optionFile": "WorkspaceSwitcherOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:43",
+    "section": "barWidgetOption:IslandOptions.qml:44",
     "label": "Overrides",
     "tabIndex": 22,
     "keywords": [],
@@ -11925,7 +11946,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:40",
+    "section": "barWidgetOption:IslandOptions.qml:41",
     "label": "Persistent activity slots",
     "tabIndex": 22,
     "keywords": [],
@@ -11933,7 +11954,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:29",
+    "section": "barWidgetOption:IslandOptions.qml:30",
     "label": "Pill shape",
     "tabIndex": 22,
     "keywords": [],
@@ -11949,7 +11970,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:38",
+    "section": "barWidgetOption:IslandOptions.qml:39",
     "label": "Plugin activities",
     "tabIndex": 22,
     "keywords": [],
@@ -11965,7 +11986,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:39",
+    "section": "barWidgetOption:IslandOptions.qml:40",
     "label": "Preview duration",
     "tabIndex": 22,
     "keywords": [],
@@ -11989,7 +12010,23 @@
     "optionFile": "PrivacyOptions.qml"
   },
   {
-    "section": "barWidgetOption:MusicOptions.qml:12",
+    "section": "barWidgetOption:IslandOptions.qml:27",
+    "label": "Scroll lyrics",
+    "tabIndex": 22,
+    "keywords": [],
+    "runtimeType": "barWidgetOption",
+    "optionFile": "IslandOptions.qml"
+  },
+  {
+    "section": "barWidgetOption:MusicOptions.qml:6",
+    "label": "Scroll lyrics",
+    "tabIndex": 22,
+    "keywords": [],
+    "runtimeType": "barWidgetOption",
+    "optionFile": "MusicOptions.qml"
+  },
+  {
+    "section": "barWidgetOption:MusicOptions.qml:13",
     "label": "Scroll wheel",
     "tabIndex": 22,
     "keywords": [],
@@ -12213,7 +12250,7 @@
     "optionFile": "AppsDockOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:55",
+    "section": "barWidgetOption:IslandOptions.qml:56",
     "label": "Spring",
     "tabIndex": 22,
     "keywords": [],
@@ -12221,7 +12258,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:57",
+    "section": "barWidgetOption:IslandOptions.qml:58",
     "label": "Spring damping",
     "tabIndex": 22,
     "keywords": [],
@@ -12229,7 +12266,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:58",
+    "section": "barWidgetOption:IslandOptions.qml:59",
     "label": "Spring mass",
     "tabIndex": 22,
     "keywords": [],
@@ -12237,7 +12274,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:56",
+    "section": "barWidgetOption:IslandOptions.qml:57",
     "label": "Spring stiffness",
     "tabIndex": 22,
     "keywords": [],
@@ -12269,7 +12306,7 @@
     "optionFile": "WorkspaceSwitcherOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:27",
+    "section": "barWidgetOption:IslandOptions.qml:28",
     "label": "Switch to media when playback starts",
     "tabIndex": 22,
     "keywords": [],
@@ -12301,7 +12338,7 @@
     "optionFile": "SystemTrayOptions.qml"
   },
   {
-    "section": "barWidgetOption:MusicOptions.qml:9",
+    "section": "barWidgetOption:MusicOptions.qml:10",
     "label": "Title",
     "tabIndex": 22,
     "keywords": [],
@@ -12333,7 +12370,7 @@
     "optionFile": "SystemTrayOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:49",
+    "section": "barWidgetOption:IslandOptions.qml:50",
     "label": "Use standard OSDs",
     "tabIndex": 22,
     "keywords": [],
@@ -12341,7 +12378,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:48",
+    "section": "barWidgetOption:IslandOptions.qml:49",
     "label": "Use standard popups",
     "tabIndex": 22,
     "keywords": [],
@@ -12381,7 +12418,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:50",
+    "section": "barWidgetOption:IslandOptions.qml:51",
     "label": "Workspace Switch",
     "tabIndex": 22,
     "keywords": [],

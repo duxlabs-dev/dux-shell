@@ -181,6 +181,7 @@ QtObject {
     property bool mediaClockVisible: true
     property bool mediaControls: true
     property bool mediaLyrics: false
+    property bool mediaScrollLyrics: true
     property bool dashTabs: false
     property string dashDefaultTab: "overview"
     // Carries tab-bar focus across a face switch.

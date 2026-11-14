@@ -21,3 +21,21 @@ function pageWidth(widths, cap, minimum, slack) {
         width = median / 2 + slack;
     return Math.ceil(Math.max(minimum, width));
 }
+
+// Absolute playback time lets seeks rewind a line and keeps pauses out of its travel time.
+function scrollState(motion, at, limit) {
+    if (!motion || !(limit > 0))
+        return { offset: 0, wait: Infinity };
+    if (!(motion.to > motion.from))
+        return { offset: Math.max(0, Math.min(limit, motion.to)), wait: Infinity };
+    const span = motion.end - motion.start;
+    const timed = Number.isFinite(span) && span > 0;
+    const hold = timed ? Math.min(motion.hold, span * 0.4) : motion.hold;
+    const travel = timed ? span - hold : (motion.to - motion.from) / motion.speed;
+    const progress = Math.max(0, Math.min(1, (at - motion.start - hold) / travel));
+    const offset = Math.max(0, Math.min(limit, motion.from + (motion.to - motion.from) * progress));
+    if (progress >= 1 || offset >= limit || motion.to <= 0)
+        return { offset, wait: Infinity };
+    const firstMove = motion.start + hold + travel * Math.max(0, -motion.from) / (motion.to - motion.from);
+    return { offset, wait: Math.max(0, firstMove - at) };
+}

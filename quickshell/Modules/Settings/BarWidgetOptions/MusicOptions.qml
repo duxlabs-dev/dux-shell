@@ -67,6 +67,13 @@ Column {
         }
 
         SettingsToggleRow {
+            visible: root.controls && root.page.value("mediaShowLyrics")
+            text: I18n.tr("Scroll lyrics", "Media player option that moves a lyric line too wide for the pill instead of clipping it")
+            checked: root.page.value("mediaScrollLyrics")
+            onToggled: checked => root.page.set("mediaScrollLyrics", checked)
+        }
+
+        SettingsToggleRow {
             visible: root.controls
             text: I18n.tr("Cover art", "media widget option showing the album cover in the pill")
             checked: root.page.value("mediaShowCoverArt")
