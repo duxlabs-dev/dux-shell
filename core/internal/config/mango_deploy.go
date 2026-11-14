@@ -189,6 +189,7 @@ func (cd *ConfigDeployer) deployMangoDmsConfigs(dmsDir, terminalCommand, oldMain
 	}{
 		{"colors.conf", MangoColorsConfig},
 		{"layout.conf", MangoLayoutConfig},
+		{"animations.conf", MangoAnimationsConfig},
 		{"outputs.conf", extractMangoLines(oldMain, mangoMonitorLine)},
 		{"cursor.conf", ""},
 		{"input.conf", ""},

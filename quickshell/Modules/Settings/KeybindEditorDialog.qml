@@ -433,6 +433,8 @@ DDialog {
             return I18n.tr("Save");
         case "no-clipboard":
             return I18n.tr("Clipboard");
+        case "clipboard-file":
+            return I18n.tr("Copy path");
         case "cursor":
             return I18n.tr("Pointer");
         default:
@@ -446,6 +448,8 @@ DDialog {
             return saveTooltip;
         case "no-clipboard":
             return I18n.tr("Copies the screenshot to the clipboard", "keybind screenshot option tooltip");
+        case "clipboard-file":
+            return I18n.tr("Copies the saved file too, so terminals paste its path", "keybind screenshot option tooltip");
         case "cursor":
             return pointerTooltip;
         default:

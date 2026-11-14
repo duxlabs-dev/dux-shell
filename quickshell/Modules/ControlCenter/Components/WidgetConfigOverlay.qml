@@ -32,6 +32,7 @@ Item {
     readonly property bool isIdleInhibitor: widgetId === "idleInhibitor"
     readonly property bool isUser: widgetId === "user"
     readonly property bool isGroup: widgetId === WidgetUtils.GROUP_ID
+    readonly property bool isBrightness: widgetId === "brightnessSlider"
     // Grouped tiles have no menu of their own, so the group's menu styles its battery.
     readonly property int batteryIndex: {
         if (widgetId === "battery")
@@ -44,7 +45,10 @@ Item {
     visible: widgetIndex >= 0 || contextMenu.renderActive
 
     function open(index, data, anchorItem) {
+        // Attached once widgetIndex settles; built earlier, the rows read stale data and their toggles slide.
+        contextMenu.customContent = null;
         widgetIndex = index;
+        contextMenu.customContent = optionsContent;
         _anchor = anchorItem;
         // Placement needs the final menu height, which settles after widgetIndex propagates.
         Qt.callLater(() => {
@@ -68,6 +72,7 @@ Item {
 
     function close() {
         if (!contextMenu.renderActive) {
+            contextMenu.customContent = null;
             widgetIndex = -1;
             _anchor = null;
             return;
@@ -90,13 +95,21 @@ Item {
         onOpenStateChanged: {
             if (openState)
                 return;
-            root.widgetIndex = -1;
             if (root._anchor?.visible && root._anchor.enabled)
                 root._anchor.forceActiveFocus();
             root._anchor = null;
         }
+        // Cleared after the close fade, so the rows never fall back to defaults on screen.
+        onRenderActiveChanged: {
+            if (renderActive)
+                return;
+            customContent = null;
+            root.widgetIndex = -1;
+        }
 
-        customContent: Component {
+        Component {
+            id: optionsContent
+
             CcGroup {
                 CcListRow {
                     visible: root.isPlugin
@@ -161,6 +174,27 @@ Item {
                         text: modelData.text
                         checked: DashRegistry.optionValue(modelData, root.widgetData?.[modelData.key])
                         onToggled: checked => root.persistOption(modelData.key, checked)
+                    }
+                }
+
+                CcListRow {
+                    visible: root.isBrightness
+                    iconName: "brightness_6"
+                    title: I18n.tr("Device")
+                    body: DDropdown {
+                        readonly property var devices: root.isBrightness ? (BrightnessService.devices || []) : []
+                        readonly property var names: [""].concat(devices.map(device => device.name))
+
+                        compactMode: true
+                        dropdownWidth: parent.width
+                        transientSurfaceTracker: contextMenu.transientSurfaceTracker
+                        currentValue: options[Math.max(0, names.indexOf(root.widgetData?.deviceName ?? ""))]
+                        options: [I18n.tr("Auto")].concat(devices.map(device => BrightnessService.deviceTitle(device)))
+                        onValueChanged: value => {
+                            const index = options.indexOf(value);
+                            if (index >= 0)
+                                root.persistOption("deviceName", names[index]);
+                        }
                     }
                 }
 

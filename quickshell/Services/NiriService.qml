@@ -10,6 +10,7 @@ import qs.Services
 import qs.DCommon.Common as DCommon
 import "../Common/OutputModel.js" as OutputModel
 import "../Common/BlurStrength.js" as BlurStrength
+import "../Common/CompositorAnimations.js" as CompositorAnimations
 
 Singleton {
     id: root
@@ -812,12 +813,17 @@ Singleton {
         }
     }
 
+    // niri reports the shell's own window previews as casts once they request a second frame.
+    function isOwnCast(cast) {
+        return cast.pid === Quickshell.processId;
+    }
+
     function handleCastsChanged(data) {
-        casts = data.casts || [];
+        casts = (data.casts || []).filter(cast => !isOwnCast(cast));
     }
 
     function handleCastStartedOrChanged(data) {
-        if (!data.cast)
+        if (!data.cast || isOwnCast(data.cast))
             return;
         const cast = data.cast;
         const existingIndex = casts.findIndex(c => c.stream_id === cast.stream_id);
@@ -1387,7 +1393,7 @@ window-rule {
         if (_dmsConfigFilesEnsured)
             return;
         _dmsConfigFilesEnsured = true;
-        const script = `mkdir -p "${niriDmsDir}" && for f in outputs binds cursor windowrules colors alttab layout input; do [ -f "${niriDmsDir}/$f.kdl" ] || touch "${niriDmsDir}/$f.kdl"; done`;
+        const script = `mkdir -p "${niriDmsDir}" && for f in outputs binds cursor windowrules colors alttab layout input animations; do [ -f "${niriDmsDir}/$f.kdl" ] || touch "${niriDmsDir}/$f.kdl"; done`;
         Proc.runCommand("niri-ensure-dms-configs", ["sh", "-c", script], (output, exitCode) => {
             if (exitCode !== 0)
                 log.warn("Failed to ensure dms config files, exit code:", exitCode);
@@ -1405,6 +1411,21 @@ window-rule {
         writeBlurruleProcess.blurrulePath = blurrulePath;
         writeBlurruleProcess.command = ["sh", "-c", `${targetFileCommand(blurrulePath)} && cp --no-preserve=mode "${sourceBlurrulePath}" "$target.$$.tmp" && mv -f "$target.$$.tmp" "$target"`];
         writeBlurruleProcess.running = true;
+    }
+
+    function generateNiriAnimationsConfig() {
+        if (!CompositorService.isNiri)
+            return;
+
+        const configDir = Paths.strip(StandardPaths.writableLocation(StandardPaths.ConfigLocation));
+        const animationsPath = configDir + "/niri/dms/animations.kdl";
+        const content = CompositorAnimations.generate("niri", typeof SettingsData !== "undefined" ? SettingsData : {});
+
+        // Same-id calls coalesce in Proc's debounce, so a burst of setting writes is one file write
+        Proc.runCommand("niri-write-animations", ["sh", "-c", replaceFileCommand(animationsPath, content)], (output, exitCode) => {
+            if (exitCode !== 0)
+                log.warn("Failed to write animations config, exit code:", exitCode);
+        });
     }
 
     function generateNiriCursorConfig() {
@@ -1717,7 +1738,7 @@ window-rule {
             return send({
                 "Action": {
                     "UnsetWorkspaceName": {
-                        "workspace": null
+                        "reference": null
                     }
                 }
             });

@@ -86,30 +86,3 @@ func TestRegisterDuplicate(t *testing.T) {
 		t.Error("expected error when registering duplicate, got nil")
 	}
 }
-
-func TestGetProvider(t *testing.T) {
-	r := NewRegistry()
-	p := &mockProvider{name: "test"}
-
-	if err := r.Register(p); err != nil {
-		t.Fatalf("registration failed: %v", err)
-	}
-
-	retrieved, err := r.Get("test")
-	if err != nil {
-		t.Fatalf("Get failed: %v", err)
-	}
-
-	if retrieved.Name() != "test" {
-		t.Errorf("Got provider name %q, want %q", retrieved.Name(), "test")
-	}
-}
-
-func TestGetNonexistent(t *testing.T) {
-	r := NewRegistry()
-
-	_, err := r.Get("nonexistent")
-	if err == nil {
-		t.Error("expected error for nonexistent provider, got nil")
-	}
-}

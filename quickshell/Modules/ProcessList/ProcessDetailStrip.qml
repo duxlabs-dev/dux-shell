@@ -17,15 +17,15 @@ Rectangle {
     required property var process
 
     readonly property int pid: process?.pid ?? 0
-    readonly property var live: (DgopService.allProcesses ?? []).find(p => p.pid === pid) ?? process
+    readonly property var live: DgopService.findProcess(pid, process?.memberOf) ?? process
     readonly property string command: live?.command ?? ""
     readonly property string fullCommand: live?.fullCommand || command
     readonly property var desktopEntry: ProcessListMetrics.appEntry(live, [sandbox?.id])
-    readonly property string appName: desktopEntry?.name || command
+    readonly property string appName: ProcessListMetrics.displayName(live, desktopEntry)
     readonly property var startTime: live?.startTime ?? null
     readonly property var started: startTime !== null ? new Date(startTime * 1000) : null
     readonly property bool startedToday: started !== null && started.toDateString() === new Date().toDateString()
-    readonly property var parentProcess: (live?.ppid ?? 0) > 0 ? (DgopService.allProcesses ?? []).find(p => p.pid === live.ppid) ?? null : null
+    readonly property var parentProcess: lookup(live?.ppid ?? 0)
 
     property var detail: null
     readonly property string unit: Remotes.unescapeUnit(detail?.unit ?? "")
@@ -75,13 +75,18 @@ Rectangle {
         while (p && names.length < 6) {
             names.push(p.command);
             const ppid = p.ppid;
-            p = ppid > 0 ? (DgopService.allProcesses ?? []).find(x => x.pid === ppid) ?? null : null;
+            p = lookup(ppid);
         }
         return names.join(" › ");
     }
     readonly property string currentTab: tabIds.includes(ProcessListMetrics.processTab) ? ProcessListMetrics.processTab : "overview"
 
     signal actionRequested(string action)
+
+    // A member's parent is usually another member of the same merged row.
+    function lookup(ppid) {
+        return ppid > 0 ? DgopService.findProcess(ppid, process?.memberOf) ?? DgopService.findProcess(ppid) ?? null : null;
+    }
 
     function cell(id) {
         return ProcessColumns.formatCell(id, live ?? ({})) ?? "—";

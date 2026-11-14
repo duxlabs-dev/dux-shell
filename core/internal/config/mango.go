@@ -16,3 +16,6 @@ var MangoBindsConfig string
 
 //go:embed embedded/mango.toml
 var MangoTOMLConfig string
+
+//go:embed embedded/mango-animations.conf
+var MangoAnimationsConfig string

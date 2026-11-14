@@ -60,6 +60,8 @@ jobs:
       TAG: ${{ inputs.tag }}
       # linux assets keep their historical arch-only names
       ASSET: ${{ matrix.goos == 'linux' && matrix.arch || format('{0}-{1}', matrix.goos, matrix.arch) }}
+      # purego's fake cgo needs this to compile without cgo on freebsd
+      GOFLAGS: ${{ matrix.goos == 'freebsd' && '-gcflags=github.com/ebitengine/purego/internal/fakecgo=-std' || '' }}
 
     steps:
       - name: Checkout

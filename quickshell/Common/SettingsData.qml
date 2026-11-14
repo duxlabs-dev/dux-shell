@@ -24,7 +24,7 @@ Singleton {
     id: root
     readonly property var log: Log.scoped("SettingsData")
 
-    readonly property int settingsConfigVersion: 42
+    readonly property int settingsConfigVersion: 43
 
     enum Position {
         Top,
@@ -205,6 +205,9 @@ Singleton {
     property int niriLayoutGapsOverride: Spec.SPEC.niriLayoutGapsOverride.def
     property int niriLayoutRadiusOverride: Spec.SPEC.niriLayoutRadiusOverride.def
     property int niriLayoutBorderSize: Spec.SPEC.niriLayoutBorderSize.def
+    property string compositorAnimationPreset: Spec.SPEC.compositorAnimationPreset.def
+    property real compositorAnimationSlowdown: Spec.SPEC.compositorAnimationSlowdown.def
+    property var compositorAnimationOverrides: Spec.SPEC.compositorAnimationOverrides.def
     property int hyprlandLayoutGapsOverride: Spec.SPEC.hyprlandLayoutGapsOverride.def
     property int hyprlandLayoutGapsOutOverride: Spec.SPEC.hyprlandLayoutGapsOutOverride.def
     property int hyprlandLayoutRadiusOverride: Spec.SPEC.hyprlandLayoutRadiusOverride.def
@@ -312,6 +315,8 @@ Singleton {
     property int animationDuration: Spec.SPEC.animationDuration.def
     property bool syncComponentAnimationSpeeds: Spec.SPEC.syncComponentAnimationSpeeds.def
     onSyncComponentAnimationSpeedsChanged: saveSettings()
+    property bool qmlCacheEnabled: Spec.SPEC.qmlCacheEnabled.def
+    property bool renderControlEnabled: Spec.SPEC.renderControlEnabled.def
     property int popoutAnimationDuration: Spec.SPEC.popoutAnimationDuration.def
     property int modalAnimationDuration: Spec.SPEC.modalAnimationDuration.def
     property bool reduceMotion: Spec.SPEC.reduceMotion.def
@@ -455,6 +460,7 @@ Singleton {
 
     property int controlCenterColumns: Spec.SPEC.controlCenterColumns.def
     property real controlCenterIconScale: Spec.SPEC.controlCenterIconScale.def
+    property string controlCenterEditLayout: Spec.SPEC.controlCenterEditLayout.def
     property var controlCenterWidgets: Spec.SPEC.controlCenterWidgets.def
 
     property var workspaceNameIcons: Spec.SPEC.workspaceNameIcons.def
@@ -818,6 +824,7 @@ Singleton {
     property bool notificationPopupShadowEnabled: Spec.SPEC.notificationPopupShadowEnabled.def
     property bool notificationPopupPrivacyMode: Spec.SPEC.notificationPopupPrivacyMode.def
     property bool notificationPopupBodyInvokesAction: Spec.SPEC.notificationPopupBodyInvokesAction.def
+    property bool notificationPopupAvoidPopouts: Spec.SPEC.notificationPopupAvoidPopouts.def
     property bool notificationForegroundLayers: Spec.SPEC.notificationForegroundLayers.def
     property int overviewRows: Spec.SPEC.overviewRows.def
     property int overviewColumns: Spec.SPEC.overviewColumns.def
@@ -1029,6 +1036,20 @@ Singleton {
         return edge === "left" || edge === "right";
     }
 
+    // Popouts hold a snapshot of their bar's config, so this reads the live one.
+    function barCanConnectPopouts(bc) {
+        const config = getBarConfig(bc?.id) ?? bc;
+        if (frameEnabled || !config || config.visible === false || config.enabled === false)
+            return false;
+        if (!isIslandBarConfig(config))
+            return !config.useOverlayLayer && barTransparency(config) > 0;
+        return !isDotBarConfig(config) && !islandSetting(config, "islandUseOverlayLayer") && islandSetting(config, "islandSatellitesEnabled") && islandSetting(config, "islandSatelliteBackground") && islandSatelliteTransparency(config) > 0;
+    }
+
+    function barConnectsPopouts(bc) {
+        return !!(getBarConfig(bc?.id) ?? bc)?.connectedPopouts && barCanConnectPopouts(bc);
+    }
+
     function islandStripThickness(bc) {
         return LayoutResolver.islandThickness(islandSettings(bc), islandDefaultsFor(bc));
     }
@@ -1082,14 +1103,32 @@ Singleton {
             "enabled": false
         }
     ]
-    function getIslandHomeLayout(bc) {
+    function isIslandHomeGroup(id) {
+        return _islandHomeGroupIds.indexOf(id) >= 0;
+    }
+
+    // A removed group stays removed; only the clock anchor comes back.
+    function islandWidgetEntries(bc) {
         const layout = islandSettings(bc).islandHomeLayout;
-        const stored = Array.isArray(layout) ? layout : [];
+        const source = Array.isArray(layout) ? layout : _islandHomeLayoutDefault;
+        const barWidgets = isIslandBarConfig(bc) && !isDotBarConfig(bc);
         const result = [];
         const seen = {};
-        for (const entry of stored) {
-            const id = entry && entry.id;
-            if (_islandHomeGroupIds.indexOf(id) < 0 || seen[id])
+        for (const raw of source) {
+            const entry = typeof raw === "string" ? {
+                "id": raw
+            } : raw;
+            const id = entry?.id;
+            if (!id)
+                continue;
+            if (!isIslandHomeGroup(id)) {
+                if (barWidgets)
+                    result.push(Object.assign({}, entry, {
+                        "enabled": entry.enabled !== false
+                    }));
+                continue;
+            }
+            if (seen[id])
                 continue;
             seen[id] = true;
             result.push({
@@ -1097,11 +1136,32 @@ Singleton {
                 "enabled": id === "clock" || entry.enabled !== false
             });
         }
+        if (!seen.clock)
+            result.push({
+                "id": "clock",
+                "enabled": true
+            });
+        return result;
+    }
+
+    function islandHomeLayoutDefault() {
+        return _islandHomeLayoutDefault.map(entry => Object.assign({}, entry));
+    }
+
+    function setIslandWidgetEntries(barId, entries) {
+        setIslandSettings(barId, {
+            islandHomeLayout: entries
+        });
+    }
+
+    // Groups only, every group present; a missing one reads as hidden.
+    function getIslandHomeLayout(bc) {
+        const result = islandWidgetEntries(bc).filter(entry => isIslandHomeGroup(entry.id));
         for (const fallback of _islandHomeLayoutDefault) {
-            if (!seen[fallback.id])
+            if (!result.some(group => group.id === fallback.id))
                 result.push({
                     "id": fallback.id,
-                    "enabled": fallback.enabled
+                    "enabled": false
                 });
         }
         return result;
@@ -1113,26 +1173,24 @@ Singleton {
     }
 
     function setIslandHomeLayoutOrder(barId, ids) {
-        const current = getIslandHomeLayout(getBarConfig(barId));
+        const config = getBarConfig(barId);
+        const current = getIslandHomeLayout(config);
         const ordered = ids.map(id => current.find(g => g.id === id)).filter(g => g);
-        for (const entry of current) {
-            if (ids.indexOf(entry.id) < 0)
-                ordered.push(entry);
-        }
-        setIslandSettings(barId, {
-            islandHomeLayout: ordered
-        });
+        setIslandWidgetEntries(barId, ordered.concat(islandWidgetEntries(config).filter(entry => ids.indexOf(entry.id) < 0)));
     }
 
     function setIslandHomeGroupEnabled(barId, id, on) {
         if (id === "clock")
             return;
-        setIslandSettings(barId, {
-            islandHomeLayout: getIslandHomeLayout(getBarConfig(barId)).map(g => g.id === id ? {
-                    "id": g.id,
-                    "enabled": on
-                } : g)
-        });
+        const entries = islandWidgetEntries(getBarConfig(barId));
+        if (!entries.some(entry => entry.id === id))
+            entries.push({
+                "id": id,
+                "enabled": on
+            });
+        setIslandWidgetEntries(barId, entries.map(entry => entry.id === id ? Object.assign({}, entry, {
+                "enabled": on
+            }) : entry));
     }
 
     property bool osdAlwaysShowValue: Spec.SPEC.osdAlwaysShowValue.def
@@ -1143,6 +1201,7 @@ Singleton {
     property bool osdMediaPlaybackEnabled: Spec.SPEC.osdMediaPlaybackEnabled.def
     property bool osdBrightnessEnabled: Spec.SPEC.osdBrightnessEnabled.def
     property bool osdIdleInhibitorEnabled: Spec.SPEC.osdIdleInhibitorEnabled.def
+    property bool osdDoNotDisturbEnabled: Spec.SPEC.osdDoNotDisturbEnabled.def
     property bool osdMicMuteEnabled: Spec.SPEC.osdMicMuteEnabled.def
     property bool osdMicVolumeEnabled: Spec.SPEC.osdMicVolumeEnabled.def
     property bool osdCapsLockEnabled: Spec.SPEC.osdCapsLockEnabled.def
@@ -1472,6 +1531,7 @@ Singleton {
     signal blurStrengthRefreshNeeded
     signal compositorInputRefreshNeeded
     signal compositorCursorRefreshNeeded
+    signal compositorAnimationsRefreshNeeded
     signal notificationPopupsInvalidated
     signal settingsSaved
 
@@ -1512,6 +1572,10 @@ Singleton {
 
     function updateCompositorInput() {
         compositorInputRefreshNeeded();
+    }
+
+    function updateCompositorAnimations() {
+        compositorAnimationsRefreshNeeded();
     }
 
     function updateBlurStrength() {
@@ -1832,6 +1896,7 @@ Singleton {
             "applyStoredIconTheme": applyStoredIconTheme,
             "updateBarConfigs": updateBarConfigs,
             "updateCompositorCursor": updateCompositorCursor,
+            "updateCompositorAnimations": updateCompositorAnimations,
             "scheduleAuthApply": scheduleAuthApply,
             "scheduleGreeterAutoLoginSync": scheduleGreeterAutoLoginSync,
             "markGreeterSyncPending": markGreeterSyncPending,
@@ -2698,8 +2763,10 @@ Singleton {
             break;
         }
         const listKey = sectionId + "Widgets";
-        const list = (config[listKey] ?? []).slice();
+        const list = barSectionWidgets(config, sectionId).slice();
         if (widgetId === "island") {
+            if (sectionId === "island")
+                return -1;
             if (isIslandBarConfig(config) || islandWidgetBlocked(config) || _islandWidgetLocation(config))
                 return -1;
             const configs = JSON.parse(JSON.stringify(barConfigs));
@@ -2710,10 +2777,22 @@ Singleton {
             return list.length - 1;
         }
         list.push(entry);
-        const patch = {};
-        patch[listKey] = list;
-        updateBarConfig(barId, patch);
+        _commitBarSection(barId, sectionId, list);
         return list.length - 1;
+    }
+
+    function barSectionWidgets(config, sectionId) {
+        return sectionId === "island" ? islandWidgetEntries(config) : (config?.[sectionId + "Widgets"] ?? []);
+    }
+
+    function _commitBarSection(barId, sectionId, list) {
+        if (sectionId === "island") {
+            setIslandWidgetEntries(barId, list);
+            return;
+        }
+        updateBarConfig(barId, {
+            [sectionId + "Widgets"]: list
+        });
     }
 
     function locateBarWidget(widgetId, preferredBarId) {
@@ -2737,8 +2816,7 @@ Singleton {
 
     function updateBarWidget(barId, sectionId, index, updates) {
         const config = getBarConfig(barId);
-        const listKey = sectionId + "Widgets";
-        const list = (config?.[listKey] ?? []).slice();
+        const list = barSectionWidgets(config, sectionId).slice();
         if (index < 0 || index >= list.length)
             return;
         const entry = typeof list[index] === "string" ? {
@@ -2747,9 +2825,7 @@ Singleton {
         } : Object.assign({}, list[index]);
         Object.assign(entry, updates);
         list[index] = entry;
-        const patch = {};
-        patch[listKey] = list;
-        updateBarConfig(barId, patch);
+        _commitBarSection(barId, sectionId, list);
     }
 
     function setBarIsland(barId, on, dot) {
@@ -3848,6 +3924,18 @@ Singleton {
         updated[pluginId][key] = value;
         pluginSettings = updated;
         savePluginSettings();
+    }
+
+    function removePluginSetting(pluginId, key) {
+        if (!pluginSettings[pluginId] || !(key in pluginSettings[pluginId]))
+            return false;
+        const updated = JSON.parse(JSON.stringify(pluginSettings));
+        delete updated[pluginId][key];
+        if (Object.keys(updated[pluginId]).length === 0)
+            delete updated[pluginId];
+        pluginSettings = updated;
+        savePluginSettings();
+        return true;
     }
 
     function getPluginSettingsForPlugin(pluginId) {

@@ -29,6 +29,8 @@ function service({ enabled = true, type = "widget" } = {}) {
         Component: { Error: 3, PreferSynchronous: 0 },
         I18n: { tr: text => Object.assign(new String(text), { arg: value => text.replace("%1", value) }) },
         ToastService: { showError() {} },
+        IslandActivityService: { clearSource: id => destroyed.push("island:" + id) },
+        NotificationInterceptorService: { clearSource: id => destroyed.push("notification-interceptors:" + id) },
         // Like Qt's type loader, a URL keeps whatever it first compiled to, errors included.
         Qt: { createComponent(url) {
             if (!compiled.has(url)) {
@@ -145,10 +147,10 @@ test("single component dash plugins load onto their dash surface", () => {
     }
 });
 
-test("unloading destroys the plugin's components", () => {
+test("unloading clears island activities and destroys the plugin's components", () => {
     const { context, destroyed } = service();
     assert.equal(context.unloadPlugin("fixture"), true);
-    assert.deepEqual(destroyed, ["file:///plugins/fixture/Widget.qml"]);
+    assert.deepEqual(destroyed, ["island:fixture", "notification-interceptors:fixture", "file:///plugins/fixture/Widget.qml"]);
     assert.equal(context.pluginWidgetComponents.fixture, undefined);
 });
 

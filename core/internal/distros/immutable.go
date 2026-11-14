@@ -38,8 +38,6 @@ var immutableMarkerFiles = []struct {
 	{"/usr/bin/abroot", "ABRoot system"},
 }
 
-const ZirconiumSwitchCommand = "sudo bootc switch ghcr.io/zirconium-dev/zirconium:latest"
-
 // The commands are shown to the user, never run.
 type PackageLayerer interface {
 	LayerCommands(dependencies []deps.Dependency, wm deps.WindowManager, reinstallFlags, disabledFlags map[string]bool) []string

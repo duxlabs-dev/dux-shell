@@ -45,6 +45,22 @@ Singleton {
                     "hint": I18n.tr("Folder, interval, daily time")
                 },
                 {
+                    "id": "wallpaper_folders",
+                    "hidden": true,
+                    "text": I18n.tr("Wallpapers", "wallpaper folders settings tab"),
+                    "icon": "wallpaper",
+                    "tabIndex": 71,
+                    "hint": I18n.tr("Folders", "wallpaper folders settings tab hint")
+                },
+                {
+                    "id": "wallpaper_folder",
+                    "hidden": true,
+                    "text": I18n.tr("Folder", "wallpaper folder settings tab"),
+                    "icon": "folder",
+                    "tabIndex": 72,
+                    "titleFrom": "selectedWallpaperFolderTitle"
+                },
+                {
                     "id": "theme_apps",
                     "advanced": true,
                     "text": I18n.tr("App theming"),
@@ -65,7 +81,7 @@ Singleton {
                     "hidden": true,
                     "text": I18n.tr("Profiles", "settings page for saved setups of DMS settings"),
                     "icon": "style",
-                    "tabIndex": 72
+                    "tabIndex": 75
                 },
                 {
                     "id": "profile_edit",
@@ -74,14 +90,14 @@ Singleton {
                     "titleFrom": "selectedWidgetTitle",
                     "text": I18n.tr("Profile"),
                     "icon": "edit",
-                    "tabIndex": 73
+                    "tabIndex": 76
                 },
                 {
                     "id": "profile_inspect",
                     "hidden": true,
                     "text": I18n.tr("Compare", "config profile: page and link row showing what applying the profile would change"),
                     "icon": "compare_arrows",
-                    "tabIndex": 74
+                    "tabIndex": 77
                 }
             ]
         },
@@ -646,6 +662,23 @@ Singleton {
                     "hint": I18n.tr("Gaps, window borders, corner radius")
                 },
                 {
+                    "id": "compositor_animations",
+                    "text": I18n.tr("Animations"),
+                    "icon": "animation",
+                    "tabIndex": 73,
+                    "animationsCapable": true,
+                    "hint": I18n.tr("Style, speed, bounce", "settings sidebar hint for the compositor animations page")
+                },
+                {
+                    "id": "compositor_includes",
+                    "advanced": true,
+                    "text": I18n.tr("Managed files", "settings page name, compositor config files dms writes"),
+                    "icon": "description",
+                    "tabIndex": 74,
+                    "hyprlandNiriOnly": true,
+                    "hint": I18n.tr("Config files DMS writes, stop managing", "settings sidebar hint for the managed compositor files page")
+                },
+                {
                     "id": "multiplexers",
                     "advanced": true,
                     "text": I18n.tr("Multiplexers", "settings page name for terminal multiplexers like tmux"),
@@ -821,6 +854,8 @@ Singleton {
         if (entry.soundsOnly && MultimediaService.unavailable)
             return false;
         if (entry.hyprlandNiriOnly && !CompositorService.isNiri && !CompositorService.isHyprland && !CompositorService.isMango)
+            return false;
+        if (entry.animationsCapable && !CompositorService.supportsAnimationsConfig)
             return false;
         if (entry.windowRulesCapable && !CompositorService.supportsWindowRules)
             return false;

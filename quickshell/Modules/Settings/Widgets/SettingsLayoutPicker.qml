@@ -194,14 +194,25 @@ GridLayout {
                                 required property int index
                                 readonly property bool active: index === 1
                                 readonly property bool outlined: indicatorPreview.style === "cards" && !active
+                                readonly property bool expressive: indicatorPreview.style === "expressive"
+                                readonly property real dotScale: expressive && !active ? BarMetrics.indicatorDotRatio : 1
                                 anchors.verticalCenter: parent.verticalCenter
-                                width: indicatorPreview.thickness * BarMetrics.indicatorRatio(indicatorPreview.style, active ? "active" : "compact", root.indicatorCompact)
-                                height: indicatorPreview.thickness * BarMetrics.indicatorRatio(indicatorPreview.style, active ? "activeSlim" : "slim", root.indicatorCompact)
+                                width: indicatorPreview.thickness * BarMetrics.indicatorRatio(indicatorPreview.style, active ? "active" : expressive ? "slim" : "compact", root.indicatorCompact) * dotScale
+                                height: indicatorPreview.thickness * BarMetrics.indicatorRatio(indicatorPreview.style, active ? "activeSlim" : "slim", root.indicatorCompact) * dotScale
                                 thickness: Math.min(width, height)
                                 radiusOverride: BarMetrics.indicatorRadius(indicatorPreview.style, thickness, root.indicatorRoundness)
-                                color: outlined ? "transparent" : active ? Theme.primary : Theme.primaryContainer
+                                color: outlined || (expressive && active) ? "transparent" : active ? Theme.primary : Theme.primaryContainer
                                 border.width: outlined ? Theme.outlineWidth : 0
                                 border.color: Theme.primaryContainer
+
+                                Loader {
+                                    anchors.fill: parent
+                                    active: parent.expressive && parent.active
+                                    sourceComponent: DMaterialShape {
+                                        shape: BarMetrics.indicatorShapes[0]
+                                        color: Theme.primary
+                                    }
+                                }
                             }
                         }
                     }

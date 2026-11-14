@@ -104,11 +104,13 @@ LauncherTile {
                     anchors.fill: parent
                     anchors.margins: Theme.spacingXS
                     text: root.item?._hName ?? root.item?.name ?? ""
-                    textFormat: root.item?._hRich ? Text.RichText : Text.PlainText
+                    // RichText ignores elide and maximumLineCount, so only dmenu markup rows get it.
+                    textFormat: !root.item?._hRich ? Text.PlainText : root.item.data?.markup ? Text.RichText : Text.StyledText
                     font.pixelSize: Theme.fontSizeSmall
                     font.family: Theme.fontFamily
                     color: root.contentColor
                     elide: Text.ElideRight
+                    maximumLineCount: 2
                     horizontalAlignment: Text.AlignLeft
                     verticalAlignment: Text.AlignVCenter
                 }

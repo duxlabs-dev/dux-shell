@@ -3,7 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import qs.Common
 import qs.Modules.ControlCenter
-import qs.Services
+import qs.Modules.ControlCenter.Widgets
 import qs.DCommon.Widgets
 import qs.Widgets
 import "../utils/widgets.js" as WidgetUtils
@@ -15,38 +15,8 @@ DBottomSheet {
     readonly property var addable: widgets.filter(widget => widget.enabled !== false)
     readonly property string query: searchField.text.trim()
     readonly property var matches: WidgetUtils.filterWidgets(addable, query)
-    readonly property var categories: [
-        {
-            "id": "user",
-            "title": I18n.tr("User"),
-            "icon": "account_circle"
-        },
-        {
-            "id": "network",
-            "title": I18n.tr("Network"),
-            "icon": "hub"
-        },
-        {
-            "id": "audio",
-            "title": I18n.tr("Audio"),
-            "icon": "tune"
-        },
-        {
-            "id": "display",
-            "title": I18n.tr("Display"),
-            "icon": "display_settings"
-        },
-        {
-            "id": "system",
-            "title": I18n.tr("System"),
-            "icon": "dns"
-        },
-        {
-            "id": "plugins",
-            "title": I18n.tr("Plugins"),
-            "icon": "extension"
-        }
-    ]
+    readonly property CcWidgetCategories categoryDefs: CcWidgetCategories {}
+    readonly property var categories: categoryDefs.defs
     readonly property var shownCategories: categories.filter(category => addable.some(widget => (widget.category ?? "plugins") === category.id))
 
     signal chosen(string widgetId)
@@ -64,84 +34,6 @@ DBottomSheet {
     onOpenedChanged: {
         if (opened)
             searchField.text = "";
-    }
-
-    component PreviewGrid: Grid {
-        id: grid
-
-        property var entries: []
-
-        signal chosen(string widgetId)
-
-        columns: Math.max(1, Math.floor((width + columnSpacing) / (CcMetrics.previewSize + columnSpacing)))
-        columnSpacing: Theme.spacingM
-        rowSpacing: Theme.spacingL
-
-        Repeater {
-            model: grid.entries
-
-            StyledButton {
-                id: item
-
-                required property var modelData
-
-                width: (grid.width - grid.columnSpacing * (grid.columns - 1)) / grid.columns
-                height: preview.height + Theme.spacingS + label.implicitHeight
-                Accessible.name: modelData.text
-                Accessible.description: modelData.description ?? ""
-                onClicked: grid.chosen(modelData.id)
-
-                Rectangle {
-                    id: preview
-
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    width: CcMetrics.previewSize
-                    height: width
-                    radius: item.modelData.id === "user" ? Theme.fullRadius(width, height) : Theme.cornerRadiusLIncreased
-                    // Solid: translucent, it vanishes against the card in light mode.
-                    color: Theme.chipSurfaceNested
-
-                    DIcon {
-                        anchors.centerIn: parent
-                        name: item.modelData.icon
-                        size: Theme.iconSizeLarge
-                        color: Theme.primary
-                        visible: item.modelData.id !== "user" || PortalService.profileImageUrl === ""
-                    }
-
-                    Loader {
-                        anchors.fill: parent
-                        active: item.modelData.id === "user" && PortalService.profileImageUrl !== ""
-                        sourceComponent: DCircularImage {
-                            imageSource: PortalService.profileImageUrl
-                            fallbackIcon: "material:person"
-                        }
-                    }
-
-                    FocusRing {
-                        visible: item.visualFocus
-                    }
-
-                    StateLayer {
-                        control: item
-                        stateColor: Theme.primary
-                    }
-                }
-
-                StyledText {
-                    id: label
-                    anchors.top: preview.bottom
-                    anchors.topMargin: Theme.spacingS
-                    width: parent.width
-                    text: item.modelData.text
-                    font.pixelSize: Theme.fontSizeSmall
-                    color: Theme.surfaceText
-                    horizontalAlignment: Text.AlignHCenter
-                    wrapMode: Text.NoWrap
-                    elide: Text.ElideRight
-                }
-            }
-        }
     }
 
     component CategoryCard: Rectangle {
@@ -248,10 +140,11 @@ DBottomSheet {
             visible: card.height > card.collapsedHeight
             clip: true
 
-            PreviewGrid {
+            CcWidgetBubbleGrid {
                 id: items
                 width: parent.width
                 entries: card.entries
+                roundAll: false
                 enabled: card.expanded
                 onChosen: widgetId => card.chosen(widgetId)
             }
@@ -283,10 +176,11 @@ DBottomSheet {
         }
     }
 
-    PreviewGrid {
+    CcWidgetBubbleGrid {
         width: parent.width
         visible: root.query !== ""
         entries: root.query !== "" ? root.matches : []
+        roundAll: false
         onChosen: widgetId => root.chosen(widgetId)
     }
 

@@ -80,6 +80,7 @@ Item {
     Connections {
         target: clipboardContent.modal
         function onActiveTabChanged() {
+            clipboardListView.showTab(clipboardContent.modal.activeTab);
             resetScroll.schedule();
         }
     }
@@ -236,7 +237,16 @@ Item {
             highlightSelection: clipboardContent.modal.keyboardNavigationActive && clipboardContent.modal.selectedIndex >= 0
             anchors.fill: parent
             // one model per tab; a shared model diffs the whole list on every tab switch
-            model: clipboardContent.modal.activeTab === "saved" ? savedModel : recentsModel
+            model: recentsModel
+            Component.onCompleted: showTab(clipboardContent.modal.activeTab)
+
+            function showTab(tab) {
+                // pooled delegates keep the modelData of the model they came from, so a
+                // swap would show History rows on Saved. Draining the pool first avoids that.
+                reuseItems = false;
+                model = tab === "saved" ? savedModel : recentsModel;
+                reuseItems = true;
+            }
 
             currentIndex: clipboardContent.modal ? clipboardContent.modal.selectedIndex : 0
             spacing: Theme.groupedListGap

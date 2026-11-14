@@ -57,6 +57,33 @@ Item {
         osdSurfaceReloadTimer.restart();
     }
 
+    Variants {
+        model: ShellLayout.realScreens
+
+        DPopoutSurface {
+            required property var modelData
+            screen: modelData
+        }
+    }
+
+    Variants {
+        model: ShellLayout.realScreens
+
+        DTooltipSurface {
+            required property var modelData
+            screen: modelData
+        }
+    }
+
+    Variants {
+        model: ShellLayout.realScreens
+
+        DContextMenuSurface {
+            required property var modelData
+            screen: modelData
+        }
+    }
+
     DesktopWidgetLayer {}
 
     DesktopWidgetEditor {}
@@ -1288,6 +1315,15 @@ Item {
         sourceComponent: Component {
             Item {
                 Variants {
+                    model: SettingsData.getFilteredScreens("osd")
+
+                    DOSDSurface {
+                        required property var modelData
+                        screen: modelData
+                    }
+                }
+
+                Variants {
                     model: SettingsData.osdVolumeEnabled ? root.legacySystemLevelOsdScreens : []
 
                     delegate: VolumeOSD {}
@@ -1321,6 +1357,12 @@ Item {
                     model: SettingsData.osdIdleInhibitorEnabled ? root.legacySystemLevelOsdScreens : []
 
                     delegate: IdleInhibitorOSD {}
+                }
+
+                Variants {
+                    model: SettingsData.osdDoNotDisturbEnabled ? root.legacySystemLevelOsdScreens : []
+
+                    delegate: DoNotDisturbOSD {}
                 }
 
                 Variants {

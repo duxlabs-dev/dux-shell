@@ -304,8 +304,6 @@ Singleton {
             if (tabIndex !== undefined && popout.currentTabIndex !== undefined) {
                 popout.currentTabIndex = tabIndex;
             }
-            if (popout.updateSurfacePosition)
-                popout.updateSurfacePosition();
             currentPopoutTriggers[screenName] = triggerId;
             if (hoverRequest && popout.hoverDismissEnabled !== undefined)
                 popout.hoverDismissEnabled = true;

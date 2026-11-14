@@ -60,16 +60,18 @@ Item {
     }
 
     // The backdrop clips itself to the corners, so the card needs no clip of its own.
+    // Layered so the fill, backdrop and tint cost one blend per frame, not three.
     Rectangle {
-        id: card
-
         anchors.fill: parent
         radius: root.backdropRadius
         color: root.surfaceColor
         border.width: Theme.layerOutlineWidth
         border.color: Theme.outlineMedium
+        layer.enabled: backdrop.active && root.player.live
 
         Loader {
+            id: backdrop
+
             anchors.fill: parent
             anchors.margins: Theme.layerOutlineWidth
             active: root.player.wallpaperEnabled && !!root.presentation
@@ -81,20 +83,20 @@ Item {
                 artUrl: root.artUrl
             }
         }
+    }
 
-        TapHandler {
-            enabled: root.panelOpen
-            onTapped: eventPoint => {
-                if (root.inlinePanel.contains(root.inlinePanel.mapFromItem(card, eventPoint.position)))
-                    return;
-                root.player.panel = "";
-            }
+    TapHandler {
+        enabled: root.panelOpen
+        onTapped: eventPoint => {
+            if (root.inlinePanel.contains(root.inlinePanel.mapFromItem(root, eventPoint.position)))
+                return;
+            root.player.panel = "";
         }
+    }
 
-        Item {
-            id: cardBody
-            anchors.fill: parent
-            anchors.margins: root.padding + Theme.layerOutlineWidth
-        }
+    Item {
+        id: cardBody
+        anchors.fill: parent
+        anchors.margins: root.padding + Theme.layerOutlineWidth
     }
 }

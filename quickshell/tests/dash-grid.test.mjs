@@ -115,3 +115,48 @@ test("a tile dragged down from another column lands where dropped unless gravity
     assert.deepEqual(drop(3, { col: 0, row: 1 }), [[0, 0], [0, 2], [0, 3], [0, 1]]);
     assert.deepEqual(drop(0, { col: 0, row: 1 }), [[0, 1], [0, 0], [0, 2], [1, 0]]);
 });
+
+test("the add spot is an empty full row under the pointer that rests on what is above it", () => {
+    const placed = [{ id: "a", w: 2, h: 1, col: 0, row: 0 }, { id: "b", w: 1, h: 0.5, col: 2, row: 0 }];
+    const layout = grid.packCards(placed, [0, 1], 4, 430, 10, 90, false, null, 0.5);
+    const at = (x, y) => {
+        const cell = grid.freeCellAt(layout, x, y, 400);
+        return cell ? [cell.col, cell.row, cell.y, cell.h] : null;
+    };
+    assert.equal(at(50, 10), null);
+    assert.equal(at(250, 30), null);
+    assert.deepEqual(at(250, 60), [2, 0.5, 50, 90]);
+    assert.deepEqual(at(250, 120), [2, 0.5, 50, 90]);
+    assert.deepEqual(at(350, 70), [3, 0, 0, 90]);
+    assert.deepEqual(at(50, 160), [0, 1, 100, 90]);
+    assert.equal(at(50, 260), null);
+    assert.equal(grid.freeCellAt(layout, 50, 160, 150), null);
+    assert.deepEqual(plain(grid.freeCellAt(grid.packCards(placed, [0, 1], 4, 430, 10, 90, true, null, 0.5), 50, 10, 400)), { col: 3, row: 0, x: 0, y: 0, w: 100, h: 90 });
+});
+
+test("the free run at the add spot stops at tiles overlapping any part of its row", () => {
+    const placed = [{ id: "a", w: 3, h: 1, col: 0, row: 0 }, { id: "b", w: 1, h: 0.5, col: 5, row: 0 }, { id: "c", w: 2, h: 1, col: 6, row: 0.5 }];
+    const layout = grid.packCards(placed, [0, 1, 2], 8, 800, 0, 100, false, null, 0.5);
+    const run = (col, row) => Object.values(plain(grid.freeRun(layout, col, row)));
+    assert.deepEqual(run(3, 0), [3, 5]);
+    assert.deepEqual(run(4, 0), [3, 5]);
+    assert.deepEqual(run(3, 0.5), [3, 6]);
+    assert.deepEqual(run(0, 1), [0, 6]);
+    assert.deepEqual(run(0, 1.5), [0, 8]);
+});
+
+test("a tile added at the hinted spot lands on it, narrowed into the free run", () => {
+    const placed = [{ id: "a", w: 2, h: 1, col: 0, row: 0 }, { id: "b", w: 2, h: 1, col: 0, row: 1 }, { id: "c", w: 1, h: 1, col: 3, row: 0 }];
+    const layout = grid.packCards(placed, [0, 1, 2], 4, 430, 10, 90, false, null, 0.5);
+    const landing = (x, y, w) => {
+        const cell = grid.freeCellAt(layout, x, y, 1000);
+        const fit = grid.fitInRun(grid.freeRun(layout, cell.col, cell.row), cell.col, w);
+        const added = placed.concat([{ id: "new", w: fit.w, h: 1, col: fit.col, row: cell.row }]);
+        const landed = grid.packCells(added, [0, 1, 2, 3], 4, null, 0.5, true).cells[3];
+        return [cell.col, cell.row, landed.col, landed.row, landed.cols];
+    };
+    assert.deepEqual(landing(250, 150, 1), [2, 0, 2, 0, 1]);
+    assert.deepEqual(landing(250, 150, 4), [2, 0, 2, 0, 1]);
+    assert.deepEqual(landing(350, 150, 4), [3, 1, 2, 1, 2]);
+    assert.deepEqual(landing(50, 250, 4), [0, 2, 0, 2, 4]);
+});

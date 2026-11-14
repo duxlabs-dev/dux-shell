@@ -229,8 +229,15 @@ Item {
             anchors.bottomMargin: root.expanded ? root.height - root.headerHeight - root.tilePadding * 2 : 0
             stateColor: root.contentColor
             cornerRadius: root.bodyRadius
+            acceptedButtons: Qt.LeftButton | Qt.RightButton
             tooltipText: root.tooltips && root.compact ? [root.title, root.subtitle].filter(text => text !== "").join(" · ") : ""
-            onClicked: root.activate()
+            onClicked: mouse => {
+                if (mouse.button === Qt.RightButton) {
+                    root.expand();
+                    return;
+                }
+                root.activate();
+            }
             onPressAndHold: root.expand()
             onWheel: wheelEvent => {
                 wheelEvent.accepted = false;

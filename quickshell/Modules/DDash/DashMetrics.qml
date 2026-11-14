@@ -216,6 +216,7 @@ Singleton {
     readonly property int mediaArtDiscRotationDuration: 20000
     readonly property real mediaArtSwayAngle: 10
     readonly property int mediaArtSwayDuration: 8000
+    readonly property int mediaArtSpinInterval: 16
     readonly property real mediaSeekbarHeight: 22
     readonly property real mediaSeekbarHandleSize: 16
     readonly property real mediaSeekbarHandleDragWidth: 5
@@ -311,7 +312,6 @@ Singleton {
     readonly property real carouselSideAlpha: 0.45
     readonly property real carouselAngle: 32
     readonly property real carouselBackdropAlpha: 0.16
-    readonly property real wallpaperThumbRadius: Theme.cornerRadiusM
     readonly property int wallpaperThumbCache: 256
     readonly property real wallpaperControlSize: Theme.buttonHeightXS
     readonly property real wallpaperControlIconSize: Theme.iconSizeMedium

@@ -215,12 +215,15 @@ BasePill {
         height: width
         visible: root.playerAvailable
 
-        DIconButton {
+        MediaTransportButton {
             anchors.centerIn: parent
             width: parent.width
             height: parent.height
             buttonSize: parent.width
             iconSize: 14 * root.contentScale
+            mediaAction: "play"
+            // A browser hover preview autoplays without the user asking, so the pill keeps showing play.
+            playing: root._isPlaying
             radius: {
                 if (!Theme.shapeMorph)
                     return Theme.cornerRadiusS;
@@ -230,14 +233,16 @@ BasePill {
             }
             variant: "filled"
             round: false
-            checkable: true
-            checked: root._isPlaying
-            iconFilled: false
-            iconName: root._isPlaying ? "pause" : "play_arrow"
-            Accessible.name: root._isPlaying ? I18n.tr("Pause") : I18n.tr("Play")
-            enabled: root.activePlayer?.canTogglePlaying ?? false
-            onClicked: root.activePlayer.togglePlaying()
         }
+    }
+
+    component NavButton: MediaTransportButton {
+        width: BarMetrics.mediaControlSize * root.contentScale
+        height: width
+        buttonSize: width
+        iconSize: 12 * root.contentScale
+        visible: root.playerAvailable
+        iconColor: root.contentColor
     }
 
     content: Component {
@@ -423,60 +428,18 @@ BasePill {
                     spacing: Theme.spacingXS
                     anchors.verticalCenter: parent.verticalCenter
 
-                    Rectangle {
-                        width: BarMetrics.mediaControlSize * root.contentScale
-                        height: BarMetrics.mediaControlSize * root.contentScale
-                        radius: Theme.cornerRadiusFull
+                    NavButton {
+                        mediaAction: "previous"
                         anchors.verticalCenter: parent.verticalCenter
-                        color: "transparent"
-                        visible: root.playerAvailable
-                        opacity: (activePlayer && activePlayer.canGoPrevious) ? 1 : 0.3
-
-                        DIcon {
-                            anchors.centerIn: parent
-                            name: "skip_previous"
-                            size: 12 * root.contentScale
-                            color: root.contentColor
-                        }
-
-                        StateLayer {
-                            id: prevArea
-                            enabled: root.playerAvailable
-                            stateColor: root.contentColor
-                            onClicked: MprisController.previousOrRewind()
-                        }
                     }
 
                     PlayButton {
                         anchors.verticalCenter: parent.verticalCenter
                     }
 
-                    Rectangle {
-                        width: BarMetrics.mediaControlSize * root.contentScale
-                        height: BarMetrics.mediaControlSize * root.contentScale
-                        radius: Theme.cornerRadiusFull
+                    NavButton {
+                        mediaAction: "next"
                         anchors.verticalCenter: parent.verticalCenter
-                        color: "transparent"
-                        visible: playerAvailable
-                        opacity: (activePlayer && activePlayer.canGoNext) ? 1 : 0.3
-
-                        DIcon {
-                            anchors.centerIn: parent
-                            name: "skip_next"
-                            size: 12 * root.contentScale
-                            color: root.contentColor
-                        }
-
-                        StateLayer {
-                            id: nextArea
-                            enabled: root.playerAvailable
-                            stateColor: root.contentColor
-                            onClicked: {
-                                if (activePlayer) {
-                                    MprisController.next();
-                                }
-                            }
-                        }
                     }
                 }
             }

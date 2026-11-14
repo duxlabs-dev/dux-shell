@@ -99,7 +99,7 @@ Item {
         smooth: true
         mipmap: true
         asynchronous: true
-        source: "file://" + Theme.shellDir + "/assets/danklogo.svg"
+        source: root.resolvedMode === "dank" ? "file://" + Theme.shellDir + "/assets/danklogo.svg" : ""
         layer.enabled: root.colorize
         layer.smooth: true
         layer.mipmap: true
@@ -117,7 +117,7 @@ Item {
         height: root.size
         smooth: true
         asynchronous: true
-        source: root.compositorSource
+        source: root.resolvedMode === "compositor" ? root.compositorSource : ""
         layer.enabled: root.colorize
         layer.effect: MultiEffect {
             saturation: 0
@@ -135,7 +135,7 @@ Item {
         height: root.size
         smooth: true
         asynchronous: true
-        source: root.customPath ? "file://" + root.customPath.replace("file://", "") : ""
+        source: root.resolvedMode === "custom" ? "file://" + root.customPath.replace("file://", "") : ""
         layer.enabled: root.colorize
         layer.effect: MultiEffect {
             saturation: 0

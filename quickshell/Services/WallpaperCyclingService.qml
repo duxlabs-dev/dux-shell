@@ -8,7 +8,6 @@ import Quickshell.Io
 import Quickshell.Wayland
 import qs.Common
 import qs.Services
-import "../Common/WallpaperFormats.js" as WallpaperFormats
 
 Singleton {
     id: root
@@ -148,27 +147,11 @@ Singleton {
         }, null);
     }
 
-    function listWallpapers(folder, recursive, currentPath, screenName, goToPrevious) {
+    function listWallpapers(folders, currentPath, screenName, goToPrevious, keep) {
         const revision = SessionData.wallpaperRequestRevision(screenName);
-        DMSService.sendRequest("wallpaper.list", {
-            "folders": [
-                {
-                    "path": folder,
-                    "recursive": recursive
-                }
-            ],
-            "extensions": WallpaperFormats.extensions(true)
-        }, response => {
-            if (response.error) {
-                log.warn("Failed to list wallpapers:", response.error);
-                return;
-            }
-            const result = response.result;
-            if (result.missing.length > 0)
-                log.warn("Wallpaper folder not available:", result.missing.join(", "));
-            if (result.truncated)
-                log.warn("Wallpaper list cut short:", folder);
-            applyCycledWallpaper(result.items, currentPath, screenName, goToPrevious, revision);
+        WallpaperLibraryService.list(folders, result => {
+            if (result)
+                applyCycledWallpaper(keep ? keep(result.items) : result.items, currentPath, screenName, goToPrevious, revision);
         });
     }
 
@@ -176,6 +159,25 @@ Singleton {
         const currentWallpaper = wallpaperPath || (screenName ? SessionData.getMonitorWallpaper(screenName) : SessionData.wallpaperPath);
         if (!currentWallpaper || currentWallpaper.startsWith("#"))
             return;
+
+        const explicit = screenName ? SessionData.getMonitorCyclingSettings(screenName).folderPath : SessionData.wallpaperCyclingFolderPath;
+        const explicitHolds = explicit && currentWallpaper.startsWith(explicit + "/");
+        if (explicitHolds || !WallpaperLibraryService.enabled) {
+            cycleDirectory(currentWallpaper, screenName, goToPrevious);
+            return;
+        }
+        const revision = SessionData.wallpaperRequestRevision(screenName || "");
+        WallpaperLibraryService.folderOf(currentWallpaper, owner => {
+            if (revision !== SessionData.wallpaperRequestRevision(screenName || ""))
+                return;
+            if (WallpaperLibraryService.inPool(owner))
+                listWallpapers(WallpaperLibraryService.requestFolders(), currentWallpaper, screenName || "", goToPrevious, items => WallpaperLibraryService.selected(items));
+            else
+                cycleDirectory(currentWallpaper, screenName, goToPrevious);
+        });
+    }
+
+    function cycleDirectory(currentWallpaper, screenName, goToPrevious) {
         let wallpaperDir;
         let recursive = false;
 
@@ -202,7 +204,12 @@ Singleton {
             }
         }
 
-        listWallpapers(wallpaperDir, recursive, currentWallpaper, screenName || "", goToPrevious);
+        listWallpapers([
+            {
+                "path": wallpaperDir,
+                "recursive": recursive
+            }
+        ], currentWallpaper, screenName || "", goToPrevious);
     }
 
     function cycleToNextWallpaper(screenName, wallpaperPath) {
@@ -227,7 +234,12 @@ Singleton {
             recursive = !!SessionData.wallpaperCyclingRecursive;
         }
 
-        listWallpapers(folderPath, recursive, "", screenName || "", false);
+        listWallpapers([
+            {
+                "path": folderPath,
+                "recursive": recursive
+            }
+        ], "", screenName || "", false);
     }
 
     function resetScheduleAfterManual() {
@@ -296,6 +308,19 @@ Singleton {
         if (currentWallpaper) {
             cycleToPrevWallpaper(screenName, currentWallpaper);
         }
+    }
+
+    function updateFolderFromIpc(path, change, doneMessage) {
+        if (!path) {
+            return "ERROR: No path provided";
+        }
+        if (!path.startsWith("/")) {
+            return "ERROR: Path must be absolute";
+        }
+        if (!change(WallpaperLibraryService.normalizeFolder(path))) {
+            return "ERROR: Folder not found: " + path;
+        }
+        return "SUCCESS: " + doneMessage + ": " + path;
     }
 
     function variantFor(item, screenName) {
@@ -499,6 +524,43 @@ Singleton {
             } catch (e) {
                 return "ERROR: Failed to cycle wallpaper for " + screenName + ": " + e.toString();
             }
+        }
+
+        function folders(): string {
+            return WallpaperLibraryService.folders.map(folder => folder.path + (folder.hidden ? " (hidden)" : "")).join("\n");
+        }
+
+        function folderAdd(path: string): string {
+            if (!path) {
+                return "ERROR: No path provided";
+            }
+            if (!WallpaperLibraryService.connected) {
+                return "ERROR: DMS service is not connected";
+            }
+
+            if (!path.startsWith("/")) {
+                return "ERROR: Path must be absolute";
+            }
+
+            const normalized = WallpaperLibraryService.normalizeFolder(path);
+            if (WallpaperLibraryService.isListed(normalized)) {
+                return "ERROR: Folder already added";
+            }
+
+            WallpaperLibraryService.addFolder(normalized);
+            return "SUCCESS: Adding folder " + normalized + "...";
+        }
+
+        function folderRemove(path: string): string {
+            return root.updateFolderFromIpc(path, folder => WallpaperLibraryService.removeFolder(folder), "Folder removed");
+        }
+
+        function folderHide(path: string): string {
+            return root.updateFolderFromIpc(path, folder => WallpaperLibraryService.setFolderHidden(folder, true), "Folder hidden");
+        }
+
+        function folderShow(path: string): string {
+            return root.updateFolderFromIpc(path, folder => WallpaperLibraryService.setFolderHidden(folder, false), "Folder shown");
         }
     }
 }

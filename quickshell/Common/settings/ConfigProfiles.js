@@ -73,7 +73,7 @@ var SETTINGS_MAP = {
         "desktopWidgetInstances", "desktopWidgetGroups", "desktopContextMenu"
     ],
     control_center: [
-        "controlCenterWidgets", "controlCenterColumns"
+        "controlCenterWidgets", "controlCenterColumns", "controlCenterEditLayout"
     ],
     dashboard: [
         "dashTabs", "dashCards", "dashTabPosition", "dashTabsEvenlySpaced", "dashOptions"
@@ -95,7 +95,8 @@ var SETTINGS_MAP = {
         "mangoLayoutRadiusOverride", "mangoLayoutBorderSize", "closeNiriOverviewOnWindowFocus",
         "hyprlandBlurDropsSpeed", "hyprlandBlurHeatShimmerSpeed", "hyprlandBlurProportional", "hyprlandWobbleDamping",
         "hyprlandWobbleMass", "hyprlandWobbleMesh", "hyprlandDragCenterWindow", "hyprlandWorkspaceBackAndForth",
-        "hyprlandExitWindowRetainsFullscreen", "hyprlandBellSound", "hyprlandSwallowFocusClick", "hyprlandTabletEnabled"
+        "hyprlandExitWindowRetainsFullscreen", "hyprlandBellSound", "hyprlandSwallowFocusClick", "hyprlandTabletEnabled",
+        "compositorAnimationPreset", "compositorAnimationSlowdown", "compositorAnimationOverrides"
     ],
     displays: [
         "screenPreferences", "showOnLastDisplay", "frameScreenPreferences"
@@ -138,13 +139,14 @@ var SETTINGS_MAP = {
         "notificationPopupPosition", "notificationHistorySaveLow", "notificationHistorySaveNormal",
         "notificationHistorySaveCritical", "notificationRules", "notificationDndAllowCritical",
         "notificationDndWhileScreenSharing", "notificationFocusedMonitor", "notificationLeadingShortcut",
-        "notificationTrailingShortcut"
+        "notificationTrailingShortcut", "notificationPopupAvoidPopouts"
     ],
     osd: [
         "osdAlwaysShowValue", "osdPosition", "osdVolumeEnabled", "osdMediaVolumeEnabled", "osdMediaPlaybackEnabled",
         "osdBrightnessEnabled", "osdIdleInhibitorEnabled", "osdMicMuteEnabled", "osdMicVolumeEnabled",
         "osdCapsLockEnabled", "osdTouchpadEnabled", "osdPowerProfileEnabled", "osdAudioOutputEnabled",
-        "osdWorkspaceEnabled", "osdNumLockEnabled", "osdKeyboardLayoutEnabled", "osdInputMethodEnabled"
+        "osdWorkspaceEnabled", "osdNumLockEnabled", "osdKeyboardLayoutEnabled", "osdInputMethodEnabled",
+        "osdDoNotDisturbEnabled"
     ],
     sound_media: [
         "audioShowStreamDevices", "audioMono", "scrollTitleEnabled", "audioVisualizerEnabled",
@@ -196,7 +198,8 @@ var SETTINGS_MAP = {
         "customPowerActionHibernate", "customPowerActionReboot", "customPowerActionPowerOff", "customPowerButtons",
         "powerMenuBootEntries", "wellbeingAppLimits", "mediaExcludePlayers", "updaterIgnoredPackages",
         "nightModeExcludedApps", "osdPositionOverrides", "nightModeExcludeFullscreen", "launcherHistoryEnabled",
-        "notificationHistoryEnabled", "notificationHistoryMaxCount", "notificationHistoryMaxAgeDays"
+        "notificationHistoryEnabled", "notificationHistoryMaxCount", "notificationHistoryMaxAgeDays",
+        "qmlCacheEnabled", "renderControlEnabled"
     ]
 };
 
@@ -226,7 +229,7 @@ var SESSION_MAP = {
         "lockScreenAutoPositions", "lockScreenWidgetGridSettings"
     ],
     never: [
-        "repoMoveNoticeVersion", "weatherLocation", "weatherCoordinates", "greeterAutoPositions", "doNotDisturb", "doNotDisturbUntil",
+        "repoMoveNoticeVersion", "wallpaperFolders", "wallpaperFolderSelection", "weatherLocation", "weatherCoordinates", "greeterAutoPositions", "doNotDisturb", "doNotDisturbUntil",
         "doNotDisturbHeldByScreenShare", "screenShareDndDismissed", "screenShareDismissedIds", "idleInhibited",
         "idleInhibitedUntil", "updaterNotifiedUnix", "updaterNotifiedCount",
         "terminalOverride", "nightModeEnabled", "nightModeTemperature", "nightModeHighTemperature",

@@ -268,9 +268,7 @@ DFloatingWindow {
             showHiddenFiles: true
             filters: WallpaperFormats.nameFilters(true)
             onAccepted: paths => {
-                SessionData.setWallpaper(paths[0]);
-                SessionData.wallpaperCyclingFolderPath = "";
-                SessionData.saveSettings();
+                SessionData.applyWallpaperPick("", paths[0]);
             }
             onDialogClosed: () => {
                 allowStacking = true;

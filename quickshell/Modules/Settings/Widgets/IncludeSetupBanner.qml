@@ -7,6 +7,7 @@ StyledRect {
 
     required property ConfigInclude include
     property bool visibleCondition: true
+    property string note: ""
 
     readonly property bool showLegacy: include.readOnly
     readonly property bool showSetup: !showLegacy && !include.included
@@ -47,7 +48,7 @@ StyledRect {
             }
 
             StyledText {
-                text: root.showLegacy ? I18n.tr("Run %1 to create it before changing these settings.", "hyprland.lua missing warning, %1 is a command").arg("dms setup") : I18n.tr("Click 'Setup' to create %1 and add include to your compositor config.").arg(root.include.fragmentLabel)
+                text: root.showLegacy ? I18n.tr("Run %1 to create it before changing these settings.", "hyprland.lua missing warning, %1 is a command").arg("dms setup") : I18n.tr("Click 'Setup' to create %1 and add include to your compositor config.").arg(root.include.fragmentLabel) + (root.note ? " " + root.note : "")
                 font.pixelSize: Theme.fontSizeSmall
                 color: Theme.surfaceVariantText
                 wrapMode: Text.WordWrap

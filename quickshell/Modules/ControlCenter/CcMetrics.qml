@@ -128,6 +128,15 @@ Singleton {
     readonly property real libraryPanelHeight: 400
     readonly property real widgetSheetHeightRatio: 0.85
     readonly property real previewSize: 76
+    readonly property real dockedPanelWidth: columnWidth * 4 + gridGap * 3 + sheetPadding * 2
+    readonly property real dockedPanelGap: PopoutMetrics.contentGap
+    // Clears the concave flares a connected body draws along the bar.
+    readonly property real dockedPanelConnectedGap: Math.max(PopoutMetrics.contentGap, Theme.connectedCornerRadius + Theme.spacingXS)
+    readonly property real dockedBubbleSize: touchTarget + Theme.spacingS
+    readonly property real widgetPopoverMinHeight: sheetPadding * 2 + Theme.spacingL * 3 + Theme.listItemTwoLineHeight + Theme.fieldHeightLarge + Theme.buttonHeightXS * 2 + Theme.spacingS + dockedBubbleSize + Theme.spacingS + Theme.fontSizeSmall + Theme.spacingS
+    readonly property real dockedPanelMinHeight: widgetPopoverMinHeight + Theme.spacingL + Theme.iconButtonSize
+    readonly property int dockedPanelColumns: 4
+    readonly property real removeOverlayOpacity: 0.7
     readonly property real configMenuWidth: 260
     readonly property real vpnPopoutListHeight: 200
     readonly property real headerDropdownWidth: 120
@@ -159,6 +168,20 @@ Singleton {
     readonly property real quickBarePadding: Theme.spacingL
     readonly property real quickBareWidth: iconBoxIconSize + quickBarePadding
     readonly property real quickTileGap: Theme.spacingXS
+
+    readonly property real pageDotSize: Theme.spacingXS + Theme.spacingXXS
+    readonly property real pageDotActiveWidth: pageDotSize * 3
+    readonly property color pageDotColor: Theme.onSurfaceVariant_40
+    readonly property real pageSwipeDistance: 0.2
+    readonly property real pageSwipeVelocity: 500
+    readonly property real pageWheelDistance: 0.15
+    readonly property real pageOverscrollRate: 1 / 3
+    // Long enough that a finger resting mid-swipe does not settle it.
+    readonly property int pageTouchpadLostMs: 600
+    // A free-spinning or high-resolution wheel keeps sending notches; one burst flips one page.
+    readonly property int pageWheelQuietMs: 150
+    readonly property int pageCarryHoldMs: 600
+    readonly property var addHintDashPattern: [3, 2]
 
     readonly property bool animationsEnabled: !SettingsData.reduceMotion && Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
 

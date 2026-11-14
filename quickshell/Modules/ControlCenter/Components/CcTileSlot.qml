@@ -56,6 +56,17 @@ DEditableGridSlot {
 
     passthrough: tileItem?.passthrough ?? null
     restCursor: widgetData.id === WidgetUtils.EDIT_ID ? Qt.PointingHandCursor : Qt.OpenHandCursor
+    // Matches the chrome's hitOverflow, so reaching for a button never hides it.
+    hoverMargin: CcMetrics.gridGap / 2
+    readonly property bool editing: grid.editMode
+    // The origins lead the grid's interacting, so the grip never hides under its own press.
+    readonly property bool chromeShown: resizeOrigin !== null || dragOrigin !== null || dragging || resizing || activeFocus || (hovered && !grid.interacting)
+
+    activeFocusOnTab: editing
+    onEditingChanged: {
+        if (!editing)
+            focus = false;
+    }
     raised: dragging || resizing || (tileItem?.memberDragging ?? false)
 
     function reanchor(small) {
@@ -105,6 +116,13 @@ DEditableGridSlot {
         grid.previewSize(index, changes);
     }
 
+    // Touch never hovers, so a tap focuses the tile to show its chrome.
+    TapHandler {
+        enabled: root.editing
+        acceptedDevices: PointerDevice.TouchScreen
+        onTapped: root.forceActiveFocus()
+    }
+
     CcTileLoader {
         id: tileLoader
         anchors.fill: parent
@@ -134,7 +152,8 @@ DEditableGridSlot {
         active: root.grid.editMode || root.resizing
 
         sourceComponent: CcEditChrome {
-            visible: root.grid.editMode
+            id: chrome
+            visible: root.editing && (root.chromeShown || chrome.keyboardFocused)
             enabled: root.interactionEnabled
             widgetData: root.widgetData
             passthrough: root.passthrough

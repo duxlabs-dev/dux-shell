@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import qs.DCommon.Common as DC
 
 QtObject {
     id: root
@@ -13,8 +14,6 @@ QtObject {
     property real mass: 1
     property real positionEpsilon: 0.035
     property real velocityEpsilon: 0.035
-    property real maximumFrameTime: 1 / 30
-    property real integrationStep: 1 / 240
 
     property rect value: Qt.rect(0, 0, 1, 1)
     property rect target: value
@@ -54,33 +53,21 @@ QtObject {
     function advance(rawFrameTime) {
         if (!enabled || !running || reducedMotion)
             return;
-        const frameTime = Math.min(Math.max(rawFrameTime, 0), maximumFrameTime);
-        if (frameTime <= 0)
+        if (rawFrameTime <= 0)
             return;
-
-        const inverseMass = 1 / Math.max(0.001, mass);
-        const stableStep = 1 / Math.max(1, damping * inverseMass, Math.sqrt(stiffness * inverseMass));
-        const steps = Math.max(1, Math.ceil(frameTime / Math.min(integrationStep, stableStep)));
-        const step = frameTime / steps;
-        let x = value.x;
-        let y = value.y;
-        let w = value.width;
-        let h = value.height;
-        let vx = velocity.x;
-        let vy = velocity.y;
-        let vw = velocity.z;
-        let vh = velocity.w;
-
-        for (let i = 0; i < steps; i++) {
-            vx += (stiffness * (target.x - x) - damping * vx) * inverseMass * step;
-            vy += (stiffness * (target.y - y) - damping * vy) * inverseMass * step;
-            vw += (stiffness * (target.width - w) - damping * vw) * inverseMass * step;
-            vh += (stiffness * (target.height - h) - damping * vh) * inverseMass * step;
-            x += vx * step;
-            y += vy * step;
-            w += vw * step;
-            h += vh * step;
-        }
+        const matrix = DC.SpringSolver.frameCoefficients(stiffness, damping, mass, rawFrameTime);
+        const dx = value.x - target.x;
+        const dy = value.y - target.y;
+        const dw = value.width - target.width;
+        const dh = value.height - target.height;
+        const x = target.x + matrix[0] * dx + matrix[1] * velocity.x;
+        const y = target.y + matrix[0] * dy + matrix[1] * velocity.y;
+        const w = target.width + matrix[0] * dw + matrix[1] * velocity.z;
+        const h = target.height + matrix[0] * dh + matrix[1] * velocity.w;
+        const vx = matrix[2] * dx + matrix[3] * velocity.x;
+        const vy = matrix[2] * dy + matrix[3] * velocity.y;
+        const vw = matrix[2] * dw + matrix[3] * velocity.z;
+        const vh = matrix[2] * dh + matrix[3] * velocity.w;
 
         const next = Qt.rect(x, y, Math.max(1, w), Math.max(1, h));
         const speed = Qt.vector4d(vx, vy, w < 1 ? 0 : vw, h < 1 ? 0 : vh);

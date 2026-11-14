@@ -134,7 +134,8 @@ Rectangle {
                     height: LauncherMetrics.tileLabelBlockHeight
                     verticalAlignment: Text.AlignTop
                     text: root.item?._hName ?? root.item?.name ?? ""
-                    textFormat: root.item?._hRich ? Text.RichText : Text.PlainText
+                    // RichText ignores elide and maximumLineCount, so only dmenu markup rows get it.
+                    textFormat: !root.item?._hRich ? Text.PlainText : root.item.data?.markup ? Text.RichText : Text.StyledText
                     font.pixelSize: Theme.fontSizeSmall
                     font.weight: Theme.fontWeightMedium
                     font.family: Theme.fontFamily

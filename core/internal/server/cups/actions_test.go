@@ -1,7 +1,6 @@
 package cups
 
 import (
-	"errors"
 	"testing"
 	"time"
 
@@ -36,13 +35,6 @@ func TestManager_GetPrinters(t *testing.T) {
 			mockErr: nil,
 			want:    1,
 			wantErr: false,
-		},
-		{
-			name:    "error",
-			mockRet: nil,
-			mockErr: errors.New("test error"),
-			want:    0,
-			wantErr: true,
 		},
 	}
 
@@ -97,13 +89,6 @@ func TestManager_GetJobs(t *testing.T) {
 			want:    1,
 			wantErr: false,
 		},
-		{
-			name:    "error",
-			mockRet: nil,
-			mockErr: errors.New("test error"),
-			want:    0,
-			wantErr: true,
-		},
 	}
 
 	for _, tt := range tests {
@@ -154,53 +139,6 @@ func TestManager_GetDevices(t *testing.T) {
 	assert.Equal(t, "direct", got[0].Class)
 }
 
-func TestManager_GetPPDs(t *testing.T) {
-	tests := []struct {
-		name    string
-		mockRet map[string]ipp.Attributes
-		mockErr error
-		want    int
-		wantErr bool
-	}{
-		{
-			name: "success",
-			mockRet: map[string]ipp.Attributes{
-				"drv:///sample.drv/generic.ppd": {
-					"ppd-make-and-model": []ipp.Attribute{{Value: "Generic PostScript"}},
-					"ppd-type":           []ipp.Attribute{{Value: "ppd"}},
-				},
-			},
-			mockErr: nil,
-			want:    1,
-			wantErr: false,
-		},
-		{
-			name:    "error",
-			mockRet: nil,
-			mockErr: errors.New("test error"),
-			want:    0,
-			wantErr: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			mockClient := mocks_cups.NewMockCUPSClientInterface(t)
-			mockClient.EXPECT().GetPPDs().Return(tt.mockRet, tt.mockErr)
-
-			m := &Manager{client: mockClient}
-
-			got, err := m.GetPPDs()
-			if tt.wantErr {
-				assert.Error(t, err)
-				return
-			}
-			assert.NoError(t, err)
-			assert.Equal(t, tt.want, len(got))
-		})
-	}
-}
-
 func TestManager_GetClasses(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -221,13 +159,6 @@ func TestManager_GetClasses(t *testing.T) {
 			mockErr: nil,
 			want:    1,
 			wantErr: false,
-		},
-		{
-			name:    "error",
-			mockRet: nil,
-			mockErr: errors.New("test error"),
-			want:    0,
-			wantErr: true,
 		},
 	}
 

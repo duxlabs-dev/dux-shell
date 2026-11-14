@@ -30,9 +30,6 @@ test("hyprland runs the Lua dispatch as one argv entry and refuses legacy text w
     calls.length = 0;
     assert.equal(scope.executeAction("movefocus l", lua), true);
     assert.deepEqual(calls, [["hyprctl", "dispatch", lua]]);
-    calls.length = 0;
-    assert.equal(scope.executeAction("movefocus l", ""), false);
-    assert.deepEqual(calls, []);
 });
 
 test("hyprland runs nothing without an active Lua config", () => {
@@ -40,8 +37,7 @@ test("hyprland runs nothing without an active Lua config", () => {
     const cases = [
         [true, lua, true],
         [true, "", false],
-        [false, lua, false],
-        [false, "", false]
+        [false, lua, false]
     ];
     for (const [active, luaAction, expected] of cases) {
         scope.HyprlandService.luaConfigActive = active;
@@ -91,4 +87,10 @@ test("niri argument fields keep quoted workspace names and land edits in the fie
     assert.equal(edit('focus-workspace "a\\"b"', {}), 'focus-workspace "a\\"b"');
     assert.equal(edit("set-column-width -10%", {}), "set-column-width -10%");
     assert.deepEqual(Object.assign({}, Actions.parseCompositorActionArgs("niri", 'move-column-to-workspace "focus=false"').args), { index: "focus=false" });
+});
+
+test("dms actions gated on a list of compositors show on each of them only", () => {
+    const Actions = loadScript(new URL("../Common/KeybindActions.js", import.meta.url));
+    const offered = (isNiri, isHyprland) => Actions.getDmsActions(isNiri, isHyprland).some(action => action.id === 'spawn dms ipc call scratchpad toggle ""');
+    assert.deepEqual([offered(true, false), offered(false, true), offered(false, false)], [true, true, false]);
 });

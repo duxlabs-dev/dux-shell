@@ -503,6 +503,8 @@ FocusScope {
 
     readonly property var pageFiles: ({
             "wallpaper_cycling": "WallpaperCyclingTab.qml",
+            "wallpaper_folders": "WallpaperFoldersTab.qml",
+            "wallpaper_folder": "WallpaperFolderTab.qml",
             "theme_schedule": "ThemeScheduleTab.qml",
             "surface_shadows": "ShadowsTab.qml",
             "time_weather": "TimeWeatherTab.qml",
@@ -515,6 +517,8 @@ FocusScope {
             "dankbar_dot": "DDotTab.qml",
             "bar_widget": "BarWidgetTab.qml",
             "compositor_layout": "CompositorLayoutTab.qml",
+            "compositor_animations": "CompositorAnimationsTab.qml",
+            "compositor_includes": "CompositorIncludesTab.qml",
             "dock_general": "DockGeneralTab.qml",
             "dock_widgets": "DockWidgetsTab.qml",
             "dock_appearance": "DockAppearanceTab.qml",
@@ -569,7 +573,7 @@ FocusScope {
             "profile_inspect": "ProfileInspectTab.qml"
         })
 
-    readonly property var pagesWithParentModal: ["dankbar_widgets", "window_rules", "notification_rules", "display_config", "users", "time_weather", "weather", "lock_screen", "greeter", "dank_dash", "wallpaper_cycling", "theme_schedule", "surface_shadows", "keybinds", "dankbar_settings", "dankbar_appearance", "bar_widget", "dock_general", "dock_widgets", "dock_appearance", "dock_advanced", "fcitx5", "launcher", "theme", "theme_apps", "media_player", "desktop_widgets", "desktop_widget", "autostart", "compositor_layout", "updater", "display_gamma", "about", "profiles", "profile_edit", "profile_inspect"]
+    readonly property var pagesWithParentModal: ["dankbar_widgets", "window_rules", "notification_rules", "display_config", "users", "time_weather", "weather", "lock_screen", "greeter", "dank_dash", "wallpaper_cycling", "wallpaper_folders", "wallpaper_folder", "theme_schedule", "surface_shadows", "keybinds", "dankbar_settings", "dankbar_appearance", "bar_widget", "dock_general", "dock_widgets", "dock_appearance", "dock_advanced", "fcitx5", "launcher", "theme", "theme_apps", "media_player", "desktop_widgets", "desktop_widget", "autostart", "compositor_layout", "compositor_includes", "typography", "updater", "display_gamma", "about", "profiles", "profile_edit", "profile_inspect"]
 
     // The page scroller stops at the Loader edges; wheel over the header and gutters lands here instead
     WheelHandler {

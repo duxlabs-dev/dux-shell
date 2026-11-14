@@ -1,9 +1,10 @@
 package freedesktop
 
 import (
+	"image"
+	"image/png"
 	"os"
 	"path/filepath"
-	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -42,104 +43,22 @@ func TestStageIconFile(t *testing.T) {
 	})
 }
 
-func TestManager_SetRealName(t *testing.T) {
-	t.Run("accounts not available", func(t *testing.T) {
-		manager := &Manager{
-			state: &FreedeskState{
-				Accounts: AccountsState{
-					Available: false,
-				},
-			},
-			stateMutex: sync.RWMutex{},
-		}
+func TestStageIconFileDownscalesLargeImages(t *testing.T) {
+	src := filepath.Join(t.TempDir(), "big.png")
+	f, err := os.Create(src)
+	require.NoError(t, err)
+	require.NoError(t, png.Encode(f, image.NewRGBA(image.Rect(0, 0, 1200, 800))))
+	require.NoError(t, f.Close())
 
-		err := manager.SetRealName("New Name")
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "accounts service not available")
-	})
-}
+	staged, cleanup, err := stageIconFile(src)
+	require.NoError(t, err)
+	defer cleanup()
 
-func TestManager_SetEmail(t *testing.T) {
-	t.Run("accounts not available", func(t *testing.T) {
-		manager := &Manager{
-			state: &FreedeskState{
-				Accounts: AccountsState{
-					Available: false,
-				},
-			},
-			stateMutex: sync.RWMutex{},
-		}
-
-		err := manager.SetEmail("test@example.com")
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "accounts service not available")
-	})
-}
-
-func TestManager_SetLanguage(t *testing.T) {
-	t.Run("accounts not available", func(t *testing.T) {
-		manager := &Manager{
-			state: &FreedeskState{
-				Accounts: AccountsState{
-					Available: false,
-				},
-			},
-			stateMutex: sync.RWMutex{},
-		}
-
-		err := manager.SetLanguage("en_US.UTF-8")
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "accounts service not available")
-	})
-}
-
-func TestManager_SetLocation(t *testing.T) {
-	t.Run("accounts not available", func(t *testing.T) {
-		manager := &Manager{
-			state: &FreedeskState{
-				Accounts: AccountsState{
-					Available: false,
-				},
-			},
-			stateMutex: sync.RWMutex{},
-		}
-
-		err := manager.SetLocation("Test Location")
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "accounts service not available")
-	})
-}
-
-func TestManager_UpdateAccountsState(t *testing.T) {
-	t.Run("accounts not available", func(t *testing.T) {
-		manager := &Manager{
-			state: &FreedeskState{
-				Accounts: AccountsState{
-					Available: false,
-				},
-			},
-			stateMutex: sync.RWMutex{},
-		}
-
-		err := manager.updateAccountsState()
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "accounts service not available")
-	})
-}
-
-func TestManager_UpdateSettingsState(t *testing.T) {
-	t.Run("settings not available", func(t *testing.T) {
-		manager := &Manager{
-			state: &FreedeskState{
-				Settings: SettingsState{
-					Available: false,
-				},
-			},
-			stateMutex: sync.RWMutex{},
-		}
-
-		err := manager.updateSettingsState()
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "settings portal not available")
-	})
+	out, err := os.Open(staged)
+	require.NoError(t, err)
+	defer out.Close()
+	cfg, _, err := image.DecodeConfig(out)
+	require.NoError(t, err)
+	assert.Equal(t, 384, cfg.Width)
+	assert.Equal(t, iconSize, cfg.Height)
 }

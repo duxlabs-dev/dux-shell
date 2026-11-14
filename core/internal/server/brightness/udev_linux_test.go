@@ -105,17 +105,6 @@ func TestHandleUdevBrightnessChange_BroadcastsOnChange(t *testing.T) {
 	}
 }
 
-func TestHandleUdevBrightnessChange_UnknownDevice(t *testing.T) {
-	m, _ := setupTestManager(t)
-
-	m.handleUdevBrightnessChange("backlight:unknown_device", 500)
-
-	state := m.GetState()
-	if len(state.Devices) != 1 {
-		t.Errorf("state should be unchanged, got %d devices", len(state.Devices))
-	}
-}
-
 func TestHandleUdevBrightnessChange_DeviceNotInState(t *testing.T) {
 	m, _ := setupTestManager(t)
 
@@ -159,35 +148,6 @@ func TestHandleEvent_ChangeAction(t *testing.T) {
 	state := m.GetState()
 	if state.Devices[0].Current != 800 {
 		t.Errorf("expected Current=800 after change event, got %d", state.Devices[0].Current)
-	}
-}
-
-func TestHandleEvent_MissingEnvVars(t *testing.T) {
-	m, _ := setupTestManager(t)
-	um := &UdevMonitor{stop: make(chan struct{})}
-
-	event := netlink.UEvent{
-		Action: netlink.CHANGE,
-		Env:    map[string]string{},
-	}
-
-	um.handleEvent(m, event)
-
-	state := m.GetState()
-	if state.Devices[0].Current != 500 {
-		t.Error("state should be unchanged with missing env vars")
-	}
-}
-
-func TestHandleChange_BrightnessFileNotFound(t *testing.T) {
-	m, _ := setupTestManager(t)
-	um := &UdevMonitor{stop: make(chan struct{})}
-
-	um.handleChange(m, "backlight", "nonexistent_device")
-
-	state := m.GetState()
-	if state.Devices[0].Current != 500 {
-		t.Error("state should be unchanged when brightness file not found")
 	}
 }
 

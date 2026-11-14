@@ -2,7 +2,6 @@ import QtQuick
 import QtQuick.Shapes
 import qs.Common
 import qs.Modules.ControlCenter
-import qs.Modules.ControlCenter.Widgets
 import qs.DCommon.Widgets
 import qs.Widgets
 
@@ -127,16 +126,12 @@ Item {
             onClicked: root.addWidgetRequested()
         }
 
-        DActionButton {
-            id: moreButton
-
-            buttonSize: Theme.iconButtonSize
-            iconName: "more_horiz"
-            iconSize: CcMetrics.iconBoxIconSize
-            iconColor: Theme.onSecondaryContainer
-            backgroundColor: Theme.secondaryContainer
-            tooltipText: I18n.tr("More")
-            onClicked: editMenu.openAt(moreButton)
+        CcEditMenuButton {
+            canUndo: root.canUndo
+            transientSurfaceTracker: root.transientSurfaceTracker
+            onUndoRequested: root.undoRequested()
+            onResetRequested: root.resetRequested()
+            onClearRequested: root.clearRequested()
         }
     }
 
@@ -177,30 +172,5 @@ Item {
         visible: root.trashShown
         Accessible.role: Accessible.Graphic
         Accessible.name: I18n.tr("Remove")
-    }
-
-    CcMenu {
-        id: editMenu
-
-        transientSurfaceTracker: root.transientSurfaceTracker
-        items: [
-            {
-                "iconName": "undo",
-                "label": I18n.tr("Undo"),
-                "enabled": root.canUndo,
-                "action": () => root.undoRequested()
-            },
-            {
-                "iconName": "settings_backup_restore",
-                "label": I18n.tr("Reset to default"),
-                "action": () => root.resetRequested()
-            },
-            {
-                "iconName": "clear_all",
-                "label": I18n.tr("Clear All"),
-                "destructive": true,
-                "action": () => root.clearRequested()
-            }
-        ]
     }
 }

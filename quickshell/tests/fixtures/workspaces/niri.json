@@ -15,6 +15,25 @@
             { "id": 12, "app_id": "kitty", "workspace_id": 6, "is_focused": false, "is_urgent": false }
         ]
     },
+    "scratchpad": {
+        "currentOutput": "DP-1",
+        "focusedWorkspaceId": 1,
+        "allWorkspaces": [
+            { "id": 1, "idx": 1, "name": null, "output": "DP-1", "is_active": true, "is_focused": true },
+            { "id": 2, "idx": 2, "name": "Scratchpad", "output": "DP-1", "is_active": false, "is_focused": false },
+            { "id": 3, "idx": 3, "name": "scratchpad:notes", "output": "DP-1", "is_active": false, "is_focused": false },
+            { "id": 4, "idx": 4, "name": null, "output": "DP-1", "is_active": false, "is_focused": false },
+            { "id": 5, "idx": 1, "name": null, "output": "HDMI-A-1", "is_active": false, "is_focused": false },
+            { "id": 6, "idx": 2, "name": "scratchpad:music", "output": "HDMI-A-1", "is_active": true, "is_focused": false },
+            { "id": 7, "idx": 3, "name": null, "output": "HDMI-A-1", "is_active": false, "is_focused": false }
+        ],
+        "windows": [
+            { "id": 20, "workspace_id": 1, "is_focused": true },
+            { "id": 21, "workspace_id": 2, "is_focused": false },
+            { "id": 22, "workspace_id": 3, "is_focused": false },
+            { "id": 23, "workspace_id": 6, "is_focused": false }
+        ]
+    },
     "empty": {
         "currentOutput": "",
         "focusedWorkspaceId": null,

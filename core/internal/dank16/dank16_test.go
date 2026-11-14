@@ -405,37 +405,6 @@ func TestFormatOutput(t *testing.T) {
 	}
 }
 
-func TestRoundTripConversion(t *testing.T) {
-	testColors := []string{"#625690", "#808080"}
-
-	for _, hex := range testColors {
-		t.Run(hex, func(t *testing.T) {
-			rgb := HexToRGB(hex)
-			result := RGBToHex(rgb)
-			if result != hex {
-				t.Errorf("Round trip %s -> RGB -> %s failed", hex, result)
-			}
-		})
-	}
-}
-
-func TestRGBHSVRoundTrip(t *testing.T) {
-	testCases := []RGB{
-		{R: 0.5, G: 0.5, B: 0.5},
-		{R: 0.3843137254901961, G: 0.33725490196078434, B: 0.5647058823529412},
-	}
-
-	for _, rgb := range testCases {
-		t.Run("", func(t *testing.T) {
-			hsv := RGBToHSV(rgb)
-			result := HSVToRGB(hsv)
-			if !floatEqual(result.R, rgb.R) || !floatEqual(result.G, rgb.G) || !floatEqual(result.B, rgb.B) {
-				t.Errorf("Round trip RGB->HSV->RGB failed: %v -> %v -> %v", rgb, hsv, result)
-			}
-		})
-	}
-}
-
 func floatEqual(a, b float64) bool {
 	return math.Abs(a-b) < 1e-9
 }

@@ -514,12 +514,29 @@ QtObject {
         return baseWidgetDefinitions.find(w => w.id === widgetId);
     }
 
-    function addWidget(widgetId) {
-        WidgetUtils.addWidget(widgetId, columns);
+    function addWidget(widgetId, col, row, page, room) {
+        WidgetUtils.addWidget(widgetId, columns, col, row, undefined, page, room);
+    }
+
+    // `placedItems` is the grid's layout with the new tile's slot removed; the caller passes it through withHidden().
+    function addWidgetAt(widgetId, col, row, placedItems, page) {
+        WidgetUtils.addWidget(widgetId, columns, col, row, placedItems, page);
     }
 
     function removeWidget(index) {
         WidgetUtils.removeWidget(index);
+    }
+
+    function moveToPage(index, page, base, cell) {
+        WidgetUtils.moveToPage(index, page, base, cell);
+    }
+
+    function isTileShown(widget) {
+        return WidgetUtils.isShown(widget) && componentForWidget(widget) !== null;
+    }
+
+    function compactPages() {
+        WidgetUtils.compactPages(isTileShown);
     }
 
     function setLayout(widgets) {

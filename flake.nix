@@ -11,6 +11,10 @@
       url = "github:duxlabs-dev/dux-qml-common";
       flake = false;
     };
+    dux-qt-base = {
+      url = "github:duxlabs-dev/dux-qt-base";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
@@ -18,6 +22,7 @@
       self,
       nixpkgs,
       dank-qml-common,
+      dux-qt-base,
       ...
     }:
     let
@@ -51,6 +56,8 @@
           system: fn system nixpkgs.legacyPackages.${system}
         );
 
+      duxQtBaseFor = pkgs: (dux-qt-base.overlays.default pkgs pkgs).dux-qt-base;
+
       mkModuleWithDmsPkgs =
         modulePath:
         args@{ pkgs, ... }:
@@ -70,6 +77,8 @@
 
       qmlPkgs =
         pkgs: with pkgs.kdePackages; [
+          qtdeclarative
+          qtsvg
           kirigami.unwrapped
           sonnet
           qtmultimedia
@@ -101,6 +110,7 @@
         pkgs.lib.makeOverridable (
           {
             extraQtPackages ? [ ],
+            duxQtBase ? duxQtBaseFor pkgs,
           }:
           (pkgs.buildGoModule.override { go = goForPkgs pkgs; }) (
             let
@@ -111,7 +121,7 @@
               inherit version;
               pname = "dms-shell";
               src = ./core;
-              vendorHash = "sha256-ou/vS+7gDjFOsSt3vPgdL1MvyimodWeB79GQGLrR4Ws=";
+              vendorHash = "sha256-rjclt1guZdJTXOuvK8Q3Efl/CjmqlMlflmY8OKIi0Bg=";
 
               subPackages = [ "cmd/dms" ];
 
@@ -125,6 +135,15 @@
                 installShellFiles
                 makeWrapper
               ];
+
+              tags = [ "withqtbase" ];
+
+              # embed the runtime library the same way make qtbase does; buildGoModule copies preBuild
+              # into the vendor derivation, which would make the vendorHash build depend on dux-qt-base
+              preConfigure = ''
+                install -Dm644 ${duxQtBase}/lib/libdux-qt-base.so.0 internal/qtbaseembed/lib/libdux-qt-base.so.0
+                sha256sum internal/qtbaseembed/lib/libdux-qt-base.so.0 | cut -c1-16 > internal/qtbaseembed/lib/.dankrev
+              '';
 
               postInstall = ''
                 mkdir -p $out/share/quickshell/dms
@@ -195,6 +214,7 @@
 
       buildDmsPkgs = pkgs: {
         dms-shell = mkDmsShell pkgs;
+        dux-qt-base = duxQtBaseFor pkgs;
       };
     in
     {
@@ -202,7 +222,6 @@
         system: pkgs: {
           dms-shell = mkDmsShell pkgs;
           default = self.packages.${system}.dms-shell;
-          quickshell = builtins.warn "dank-material-shell: the package Quickshell is not included in the DMS flake anymore. We recommend you to use the one from nixos-unstable branch of Nixpkgs or the upstream flake." pkgs.quickshell;
         }
       );
 
@@ -229,6 +248,7 @@
       devShells = forEachSystem (
         system: pkgs:
         let
+          duxQtBase = duxQtBaseFor pkgs;
           devQmlPkgs = with pkgs;
           [
             quickshell
@@ -269,6 +289,7 @@
 
             QML2_IMPORT_PATH = mkQmlImportPath pkgs devQmlPkgs;
             QT_PLUGIN_PATH = mkQtPluginPath pkgs devQmlPkgs;
+            LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath [ duxQtBase ];
           };
         }
       );

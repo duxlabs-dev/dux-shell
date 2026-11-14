@@ -2,3 +2,7 @@
 	path = dux-qml-common
 	url = https://github.com/duxlabs-dev/dux-qml-common.git
 	branch = master
+[submodule "dux-qt-base"]
+	path = dux-qt-base
+	url = https://github.com/duxlabs-dev/dux-qt-base.git
+	branch = master

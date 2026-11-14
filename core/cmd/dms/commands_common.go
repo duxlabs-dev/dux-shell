@@ -28,6 +28,8 @@ var ipcCmd = &cobra.Command{
 
   dms ipc call <target> <function> [args...]   invoke a command
   dms ipc list                                 list all targets and functions
+  producer | dms ipc call islandActivity publish <source> <id> -
+                                              read JSON payload from stdin (up to 64 KiB)
 
 Full reference: ` + site.Docs + "/dms/keybinds-ipc",
 	ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {

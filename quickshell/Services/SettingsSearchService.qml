@@ -7,6 +7,7 @@ import Quickshell.Io
 import qs.Common
 import qs.Services
 import qs.Modules.DDash
+import "../Common/CompositorAnimations.js" as CompositorAnimations
 
 Singleton {
     id: root
@@ -82,6 +83,8 @@ Singleton {
             "isNiriOrMango": () => CompositorService.isNiri || CompositorService.isMango,
             "windowRulesCapable": () => CompositorService.supportsWindowRules,
             "layoutCapable": () => CompositorService.supportsLayoutConfig,
+            "animationsCapable": () => CompositorService.supportsAnimationsConfig,
+            "animationsPopupsCapable": () => CompositorAnimations.groups(CompositorService.compositor).includes("popups"),
             "keybindsAvailable": () => KeybindsService.available,
             "soundsAvailable": () => !MultimediaService.unavailable,
             "cupsAvailable": () => CupsService.cupsAvailable,
@@ -402,6 +405,10 @@ Singleton {
             var labelLower = _lowerVariants([item.label, t.label]);
             var categoryLower = _lowerVariants([item.category, item.parentLabel, t.category]);
             var descriptionLower = item.runtimeType === "plugin" ? [] : _lowerVariants([sourceDescription, t.description]);
+            var labelSquash = _squashVariants(labelLower);
+            var categorySquash = _squashVariants(categoryLower);
+            var descriptionSquash = _squashVariants(descriptionLower);
+            var keywordsSquash = _squashVariants(t.keywords);
             cache.push({
                 section: t.section,
                 label: t.label,
@@ -419,10 +426,12 @@ Singleton {
                 labelSearch: labelLower,
                 categorySearch: categoryLower,
                 descriptionSearch: descriptionLower,
-                labelSquash: _squashVariants(labelLower),
-                categorySquash: _squashVariants(categoryLower),
-                descriptionSquash: _squashVariants(descriptionLower),
-                keywordsSquash: _squashVariants(t.keywords)
+                labelSquash: labelSquash,
+                categorySquash: categorySquash,
+                descriptionSquash: descriptionSquash,
+                keywordsSquash: keywordsSquash,
+                haystack: labelLower.concat(categoryLower, descriptionLower, t.keywords).join("\n"),
+                haystackSquash: labelSquash.concat(categorySquash, descriptionSquash, keywordsSquash).join("\n")
             });
         }
         _translatedCache = cache;
@@ -594,6 +603,17 @@ Singleton {
         return false;
     }
 
+    // Every score needs the query, its singular or each of its words inside one field.
+    function _mayMatch(entry, query, querySingular, querySquash, squashSingular, queryWords) {
+        if (entry.haystack.includes(query) || entry.haystack.includes(querySingular))
+            return true;
+        if (querySquash && (entry.haystackSquash.includes(querySquash) || entry.haystackSquash.includes(squashSingular)))
+            return true;
+        if (queryWords.length < 2)
+            return false;
+        return queryWords.every(word => entry.haystack.includes(word));
+    }
+
     function _refreshTranslatedCache() {
         if (!indexLoaded)
             return;
@@ -611,12 +631,16 @@ Singleton {
             _rebuildTranslationCache();
         var querySquash = _squash(queryLower);
         var queryWords = queryLower.split(/\s+/).filter(w => w.length > 0);
+        var querySingular = _singular(queryLower);
+        var squashSingular = _singular(querySquash);
         var scored = [];
         var cache = _translatedCache;
         var limit = maxResults > 0 ? maxResults : 15;
 
         for (var i = 0; i < cache.length; i++) {
             var entry = cache[i];
+            if (!_mayMatch(entry, queryLower, querySingular, querySquash, squashSingular, queryWords))
+                continue;
             if (!checkCondition(entry))
                 continue;
 

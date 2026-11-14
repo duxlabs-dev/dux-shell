@@ -1,4 +1,5 @@
 import QtQuick
+import Quickshell
 import qs.Common
 import qs.DCommon.Widgets
 import qs.Services
@@ -6,6 +7,8 @@ import qs.Modules.Settings.Widgets
 
 Item {
     id: root
+
+    property var parentModal: null
 
     SettingsPage {
         id: mainColumn
@@ -120,7 +123,7 @@ Item {
         SettingsCard {
             tab: "typography"
             tags: ["animation", "motion", "speed", "duration", "spring", "physics", "bounce", "accessibility", "ripple", "fluid"]
-            title: I18n.tr("Animations", "settings card title")
+            title: I18n.tr("Shell animations", "settings card title, motion of DMS surfaces")
             settingKey: "animations"
             iconName: "auto_awesome_motion"
 
@@ -259,6 +262,17 @@ Item {
                 checked: SettingsData.reduceMotion
                 onToggled: checked => SettingsData.set("reduceMotion", checked)
             }
+
+            SettingsNavRow {
+                tab: "typography"
+                tags: ["niri", "hyprland", "mango", "window", "animations", "compositor", "spring", "bounce"]
+                settingKey: "compositorAnimationsLink"
+                visible: CompositorService.supportsAnimationsConfig
+                iconName: "animation"
+                title: I18n.tr("Compositor animations", "settings link to the compositor animations page")
+                hint: SettingsTabs.page("compositor_animations")?.hint ?? ""
+                onClicked: keyboard => root.parentModal?.navigateTo("compositor_animations", keyboard)
+            }
         }
 
         SettingsCard {
@@ -316,6 +330,34 @@ Item {
                         return;
                     SettingsData.set("textRenderQuality", index);
                 }
+            }
+
+            SettingsToggleRow {
+                // dms turns this off for the runtime at launch
+                readonly property bool launchedEnabled: Quickshell.env("QS_DISABLE_RENDER_CONTROL") === null
+
+                visible: "renderControl" in Quickshell
+                tab: "typography"
+                tags: ["render", "control", "damage", "gpu", "vram", "memory", "performance"]
+                settingKey: "renderControlEnabled"
+                text: I18n.tr("Render control", "toggle for the shell's own render loop")
+                description: checked !== launchedEnabled ? I18n.tr("Requires restart") : I18n.tr("Redraws only what changed on screen", "render control toggle description")
+                checked: SettingsData.renderControlEnabled
+                onToggled: checked => SettingsData.set("renderControlEnabled", checked)
+            }
+
+            SettingsToggleRow {
+                // dms turns this off for the runtime at launch
+                readonly property bool launchedEnabled: Quickshell.env("QS_DISABLE_DISK_CACHE") === null
+
+                visible: "renderControl" in Quickshell
+                tab: "typography"
+                tags: ["cache", "qml", "startup", "start", "disk", "performance"]
+                settingKey: "qmlCacheEnabled"
+                text: I18n.tr("Startup cache", "toggle for the compiled interface cache")
+                description: checked !== launchedEnabled ? I18n.tr("Requires restart") : I18n.tr("Reuses the compiled interface from the last start", "startup cache toggle description")
+                checked: SettingsData.qmlCacheEnabled
+                onToggled: checked => SettingsData.set("qmlCacheEnabled", checked)
             }
 
             SettingsToggleRow {

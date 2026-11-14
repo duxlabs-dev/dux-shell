@@ -86,7 +86,7 @@ DEditableGridSlot {
             anchors.fill: parent
             focus: true
             asynchronous: root.entry?.card?.async === true
-            sourceComponent: root.slot ? DashRegistry.cardComponentFor(root.cardId) : null
+            source: root.slot ? DashRegistry.cardSourceFor(root.cardId) : ""
             onLoaded: {
                 root.inject(item);
                 root.grid.slotLoaded(root);

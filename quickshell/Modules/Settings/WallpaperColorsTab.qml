@@ -110,14 +110,7 @@ Column {
     }
 
     function applyWallpaper(path) {
-        if (perMonitor) {
-            SessionData.setMonitorWallpaper(selectedScreen, path);
-            SessionData.setMonitorCyclingFolderPath(selectedScreen, "");
-            return;
-        }
-        SessionData.setWallpaper(path);
-        SessionData.wallpaperCyclingFolderPath = "";
-        SessionData.saveSettings();
+        SessionData.applyWallpaperPick(selectedScreen, path);
     }
 
     function pickColor() {
@@ -552,6 +545,16 @@ Column {
             }
         }
 
+        SettingsNavRow {
+            tab: "wallpaper"
+            tags: ["folders", "directories", "library"]
+            settingKey: "wallpaperFolders"
+            iconName: "folder"
+            title: I18n.tr("Wallpapers", "wallpaper folders settings row")
+            hint: SettingsTabs.page("wallpaper_folders")?.hint ?? ""
+            onClicked: keyboard => root.parentModal?.navigateTo("wallpaper_folders", keyboard)
+        }
+
         SettingsSplitRow {
             tab: "wallpaper"
             tags: ["cycling", "automatic", "rotate", "slideshow", "folder", "interval"]
@@ -940,7 +943,6 @@ Column {
             resetByKeys: false
             onResetRequested: SettingsData.setIconThemeForMode(SettingsData.specDefault("iconThemeDark"), false)
             text: I18n.tr("Theme")
-            description: I18n.tr("Requires restart")
             currentValue: SettingsData.iconThemeDark
             enableFuzzySearch: true
             popupWidthOffset: 100
@@ -960,7 +962,6 @@ Column {
             resetByKeys: false
             onResetRequested: SettingsData.setIconThemeForMode(SettingsData.specDefault("iconThemeDark"), false)
             text: I18n.tr("Dark mode theme")
-            description: I18n.tr("Requires restart")
             currentValue: SettingsData.iconThemeDark
             enableFuzzySearch: true
             popupWidthOffset: 100
@@ -980,7 +981,6 @@ Column {
             resetByKeys: false
             onResetRequested: SettingsData.setIconThemeForMode(SettingsData.specDefault("iconThemeLight"), true)
             text: I18n.tr("Light mode theme")
-            description: I18n.tr("Requires restart")
             currentValue: SettingsData.iconThemeLight
             enableFuzzySearch: true
             popupWidthOffset: 100

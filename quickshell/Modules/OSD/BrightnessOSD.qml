@@ -50,7 +50,7 @@ LevelOSD {
 
         function onBrightnessChanged(showOsd) {
             root.displayLevel = BrightnessService.brightnessLevel;
-            if (showOsd && SettingsData.osdBrightnessEnabled)
+            if (showOsd)
                 root.show();
         }
     }

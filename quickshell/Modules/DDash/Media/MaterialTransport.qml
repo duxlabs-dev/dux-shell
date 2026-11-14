@@ -25,7 +25,7 @@ Item {
         anchors.verticalCenter: parent.verticalCenter
         spacing: Theme.spacingS
 
-        MediaTransportButton {
+        DashTransportButton {
             id: playButton
             player: root.player
             mediaAction: "play"
@@ -37,14 +37,14 @@ Item {
             contentColor: MediaAccentService.onAccentContainer
         }
 
-        MediaTransportButton {
+        DashTransportButton {
             id: previousButton
             player: root.player
             mediaAction: "previous"
             size: root.compact ? "s" : "m"
         }
 
-        MediaTransportButton {
+        DashTransportButton {
             id: nextButton
             player: root.player
             mediaAction: "next"
@@ -69,7 +69,7 @@ Item {
         }
     }
 
-    component ModeButton: MediaTransportButton {
+    component ModeButton: DashTransportButton {
         player: root.player
         containerColor: MediaAccentService.accentContainer
         contentColor: MediaAccentService.onAccentContainer

@@ -87,6 +87,10 @@ Singleton {
 
     property var sortedToplevels: []
     property var hyprlandVisibleSpecialWorkspaces: ({})
+    // windows a toggle brought out of a pad; lost on restart
+    property var _niriShownScratchpad: ({})
+    // workspace id -> pad name sent to niri but not yet reported back
+    property var _niriPendingPads: ({})
     property bool _sortScheduled: false
 
     signal toplevelsChanged
@@ -136,6 +140,7 @@ Singleton {
     property bool dmsWindowFloatingActive: false
     readonly property string dmsOpaqueRuleId: "dms-window-opaque"
     readonly property bool supportsLayoutConfig: isNiri || isHyprland || isMango
+    readonly property bool supportsAnimationsConfig: isNiri || isHyprland || isMango
     readonly property bool supportsCursorConfig: isNiri || isHyprland || isMango
     readonly property bool supportsDisplayConfig: isNiri || isHyprland || isMango
     readonly property bool supportsBarAutoHideReveal: isNiri || isHyprland || isMango
@@ -267,6 +272,8 @@ Singleton {
         if (!toplevel)
             return;
         closeNiriOverviewOnWindowFocus();
+        if (isNiri && _niriShowParked(toplevel))
+            return;
         if (canMinimize(toplevel) && toplevel.minimized)
             toplevel.minimized = false;
         toplevel.activate();
@@ -910,7 +917,25 @@ Singleton {
         return true;
     }
 
+    // a string, so focus changes don't rebuild every scratchpad menu
+    readonly property string _niriPadNamesKey: {
+        if (!isNiri)
+            return "";
+        const names = ["special"];
+        const live = new Set(NiriService.windows.map(w => String(w.id)));
+        const shown = Object.keys(_niriShownScratchpad).filter(id => live.has(id)).map(id => _niriShownScratchpad[id]);
+        const pads = NiriService.allWorkspaces.map(ws => ws.name).concat(shown);
+        for (const pad of pads) {
+            const name = WorkspaceModel.niriScratchpadName(pad);
+            if (name && !names.some(n => WorkspaceModel.niriSameName(n, name)))
+                names.push(name);
+        }
+        return names.join("\n");
+    }
+
     readonly property var specialWorkspaceNames: {
+        if (isNiri)
+            return _niriPadNamesKey.split("\n");
         if (!isHyprland)
             return [];
         const names = ["special"];
@@ -935,10 +960,13 @@ Singleton {
     }
 
     function toggleSpecialWorkspace(name) {
+        if (isNiri)
+            return _niriTogglePad(WorkspaceModel.niriScratchpadWorkspaceName(name));
         if (!isHyprland)
-            return;
+            return "";
         const bare = _scratchpadName(name);
         HyprlandService.toggleSpecial(bare === "special" ? "" : bare);
+        return "";
     }
 
     function _hyprlandToplevelFor(window) {
@@ -953,6 +981,12 @@ Singleton {
     }
 
     function windowScratchpadName(window) {
+        if (isNiri) {
+            const win = _niriWindowFor(window);
+            if (!win)
+                return "";
+            return WorkspaceModel.niriScratchpadName(_niriShownScratchpad[win.id] || NiriService.workspaces[win.workspace_id]?.name);
+        }
         if (!isHyprland)
             return "";
         const t = _hyprlandToplevelFor(window);
@@ -962,6 +996,10 @@ Singleton {
 
     // "+0" is Hyprland's own way out but resolves against the focused monitor, so prefer the window's monitor when known
     function moveWindowOutOfSpecial(window) {
+        if (isNiri) {
+            _niriRestore(_niriWindowFor(window));
+            return;
+        }
         const t = _hyprlandToplevelFor(window);
         if (!t?.address)
             return;
@@ -970,11 +1008,205 @@ Singleton {
     }
 
     function moveWindowToSpecial(window, name) {
+        if (isNiri)
+            return _niriMoveToPad(_niriWindowFor(window), WorkspaceModel.niriScratchpadWorkspaceName(name));
         const address = hyprlandAddressFor(window);
         if (!address)
             return;
         const bare = _scratchpadName(name);
         HyprlandService.moveToWorkspace(bare === "special" ? "special" : "special:" + bare, address, false);
+    }
+
+    function scratchpadFocusedWindow() {
+        if (isNiri)
+            return NiriService.windows.find(w => w.is_focused) ?? null;
+        return ToplevelManager.activeToplevel;
+    }
+
+    function _niriWindowFor(window) {
+        if (!window)
+            return null;
+        if (window.workspace_id !== undefined)
+            return window;
+        const id = WindowModel.sortedWindowFor(sortedToplevels || [], window)?.niriWindowId;
+        return id === undefined ? null : (NiriService.windows.find(w => w.id === id) ?? null);
+    }
+
+    function _niriAction(name, args) {
+        NiriService.send({
+            "Action": {
+                [name]: args
+            }
+        });
+    }
+
+    function _niriPad(padName) {
+        return NiriService.allWorkspaces.find(ws => WorkspaceModel.niriSameName(ws.name, padName)) ?? null;
+    }
+
+    function _niriSetShown(ids, padName) {
+        const live = new Set(NiriService.windows.map(w => String(w.id)));
+        const next = {};
+        for (const id in _niriShownScratchpad) {
+            if (live.has(id))
+                next[id] = _niriShownScratchpad[id];
+        }
+        for (const id of ids) {
+            if (padName)
+                next[id] = padName;
+            else
+                delete next[id];
+        }
+        _niriShownScratchpad = next;
+    }
+
+    // the trailing workspace is always empty; naming it makes niri append a new one
+    function _niriEnsurePad(padName) {
+        if (_niriPad(padName))
+            return true;
+        const pending = {};
+        for (const ws of NiriService.allWorkspaces) {
+            if (!ws.name && _niriPendingPads[ws.id])
+                pending[ws.id] = _niriPendingPads[ws.id];
+        }
+        if (Object.values(pending).some(name => WorkspaceModel.niriSameName(name, padName))) {
+            _niriPendingPads = pending;
+            return true;
+        }
+        const trailing = NiriService.allWorkspaces.filter(ws => ws.output === NiriService.currentOutput).pop();
+        if (!trailing || trailing.is_active || pending[trailing.id]) {
+            _niriPendingPads = pending;
+            return false;
+        }
+        _niriAction("SetWorkspaceName", {
+            "name": padName,
+            "workspace": {
+                "Id": trailing.id
+            }
+        });
+        pending[trailing.id] = padName;
+        _niriPendingPads = pending;
+        return true;
+    }
+
+    // an empty pad would stay a navigation stop
+    function _niriDropPadIfEmpty(padName, excludingIds) {
+        const pad = _niriPad(padName);
+        if (!pad || NiriService.windows.some(w => w.workspace_id === pad.id && !excludingIds.includes(w.id)))
+            return;
+        _niriAction("UnsetWorkspaceName", {
+            "reference": {
+                "Id": pad.id
+            }
+        });
+    }
+
+    function _niriPark(ids, padName) {
+        for (const id of ids) {
+            _niriAction("MoveWindowToWorkspace", {
+                "window_id": id,
+                "reference": {
+                    "Name": padName
+                },
+                "focus": false
+            });
+        }
+        _niriSetShown(ids, "");
+    }
+
+    // focusing a still-parked window would switch to the pad, so focus follows the moves
+    function _niriShow(ids, padName) {
+        const focusedId = Number(NiriService.focusedWorkspaceId);
+        if (!NiriService.focusedWorkspaceId || ids.length === 0)
+            return;
+        for (const id of ids) {
+            _niriAction("MoveWindowToWorkspace", {
+                "window_id": id,
+                "reference": {
+                    "Id": focusedId
+                },
+                "focus": false
+            });
+        }
+        _niriAction("FocusWindow", {
+            "id": ids[ids.length - 1]
+        });
+        _niriSetShown(ids, padName);
+        _niriDropPadIfEmpty(padName, ids);
+    }
+
+    function _niriTogglePad(padName) {
+        const plan = WorkspaceModel.niriScratchpadToggle(NiriService.windows, NiriService.allWorkspaces, _niriShownScratchpad, padName, Number(NiriService.focusedWorkspaceId));
+        switch (plan.action) {
+        case "hide":
+            if (!_niriEnsurePad(padName))
+                return "failed";
+            _niriPark(plan.ids, padName);
+            break;
+        case "show":
+            _niriShow(plan.ids, padName);
+            break;
+        case "leave":
+            _niriAction("FocusWorkspacePrevious", {});
+            break;
+        default:
+            _niriDropPadIfEmpty(padName, []);
+        }
+        return plan.action;
+    }
+
+    function _niriMoveToPad(win, padName) {
+        if (!win || !_niriEnsurePad(padName))
+            return false;
+        if (!win.is_floating) {
+            _niriAction("MoveWindowToFloating", {
+                "id": win.id
+            });
+        }
+        _niriPark([win.id], padName);
+        return true;
+    }
+
+    function _niriShowParked(toplevel) {
+        const win = _niriWindowFor(toplevel);
+        const ws = win ? NiriService.workspaces[win.workspace_id] : null;
+        if (!WorkspaceModel.niriScratchpad(ws) || ws.is_focused)
+            return false;
+        _niriShow([win.id], ws.name);
+        return true;
+    }
+
+    function _niriRestore(win) {
+        if (!win)
+            return;
+        const shownFrom = _niriShownScratchpad[win.id];
+        if (shownFrom !== undefined)
+            _niriSetShown([win.id], "");
+        const ws = NiriService.workspaces[win.workspace_id];
+        if (!WorkspaceModel.niriScratchpad(ws)) {
+            if (shownFrom !== undefined)
+                _niriDropPadIfEmpty(shownFrom, []);
+            return;
+        }
+        if (!ws.is_focused) {
+            _niriShow([win.id], ws.name);
+            _niriSetShown([win.id], "");
+            return;
+        }
+        const target = WorkspaceModel.niriScratchpadExit(NiriService.allWorkspaces, ws);
+        if (!target)
+            return;
+        _niriAction("MoveWindowToWorkspace", {
+            "window_id": win.id,
+            "reference": {
+                "Id": target.id
+            },
+            "focus": false
+        });
+        _niriAction("FocusWindow", {
+            "id": win.id
+        });
+        _niriDropPadIfEmpty(ws.name, [win.id]);
     }
 
     function hyprlandVisibleSpecialWorkspaceOnScreen(screenOrName) {
@@ -1039,18 +1271,20 @@ Singleton {
     }
 
     function canShareConnectedFrameChromeForScreen(screenOrName) {
-        if (!usesConnectedFrameChromeForScreen(screenOrName))
-            return false;
+        return usesConnectedFrameChromeForScreen(screenOrName) && !fullscreenCoversTopLayer(screenOrName);
+    }
+
+    function fullscreenCoversTopLayer(screenOrName) {
         if (!isHyprland)
-            return true;
+            return false;
 
         const screenName = _screenName(screenOrName);
         const monitor = Hyprland.monitors.values.find(m => m.name === screenName);
         const specialWorkspace = monitor?.lastIpcObject?.specialWorkspace?.name;
         const workspace = specialWorkspace ? Hyprland.workspaces.values.find(w => w.name === specialWorkspace) : monitor?.activeWorkspace;
         if (!workspace)
-            return true;
-        return !workspace.toplevels.values.some(t => t.lastIpcObject?.fullscreen === 2);
+            return false;
+        return workspace.toplevels.values.some(t => t.lastIpcObject?.fullscreen === 2);
     }
 
     // Connected mode renders the bar inside the frame surface.
@@ -1708,6 +1942,9 @@ Singleton {
             },
             get windows() {
                 return NiriService.windows;
+            },
+            get shownScratchpads() {
+                return root._niriShownScratchpad;
             }
         };
     }
@@ -1781,7 +2018,7 @@ Singleton {
     function workspacesForScreen(screenName, followFocus, options) {
         switch (compositor) {
         case "niri":
-            return WorkspaceModel.niriWorkspacesForScreen(_niriWorkspaceState(), screenName, followFocus, options.occupiedOnly, _workspaceRecords);
+            return WorkspaceModel.niriWorkspacesForScreen(_niriWorkspaceState(), screenName, followFocus, options.occupiedOnly, _workspaceRecords, options.showSpecial);
         case "hyprland":
             return WorkspaceModel.hyprlandWorkspacesForScreen(_hyprlandWorkspaceState(), screenName, followFocus, options.occupiedOnly, options.minCount, options.showSpecial);
         case "mango":
@@ -1825,6 +2062,8 @@ Singleton {
         switch (compositor) {
         case "mango":
             return record.active === true;
+        case "niri":
+            return record.special === true ? record.active === true : record.idx === currentKey;
         case "hyprland":
             return record.special === true ? record.active === true : WorkspaceModel.hyprlandKey(record) === currentKey;
         default:
@@ -1934,7 +2173,10 @@ Singleton {
             return;
         switch (compositor) {
         case "niri":
-            NiriService.switchToWorkspace(record.id);
+            if (record.special === true)
+                toggleSpecialWorkspace(record.name);
+            else
+                NiriService.switchToWorkspace(record.id);
             return;
         case "hyprland":
             if (record.special === true) {
@@ -2104,6 +2346,8 @@ Singleton {
     function moveWorkspace(record, target) {
         switch (compositor) {
         case "niri":
+            if (record.special === true || target.special === true)
+                return;
             NiriService.moveWorkspaceToIndex(record.id, target.idx);
             return;
         }
@@ -2151,6 +2395,21 @@ Singleton {
             }
             if (root.isMango && typeof MangoService !== "undefined") {
                 MangoService.generateCursorConfig();
+                return;
+            }
+        }
+
+        function onCompositorAnimationsRefreshNeeded() {
+            if (root.isNiri && typeof NiriService !== "undefined") {
+                NiriService.generateNiriAnimationsConfig();
+                return;
+            }
+            if (root.isHyprland && typeof HyprlandService !== "undefined") {
+                HyprlandService.generateAnimationsConfig();
+                return;
+            }
+            if (root.isMango && typeof MangoService !== "undefined") {
+                MangoService.generateAnimationsConfig();
                 return;
             }
         }

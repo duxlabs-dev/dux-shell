@@ -20,6 +20,7 @@ function transformDmenuItem(text, index, opts) {
         data: {
             text: text,
             index: index,
+            markup: markup,
             info: (row && row.info) || "",
             meta: (row && row.meta) || "",
             rowActive: !!(row && row.active),

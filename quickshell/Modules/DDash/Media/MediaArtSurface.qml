@@ -39,6 +39,7 @@ ClippingRectangle {
         })[artStyle] ?? null
     readonly property bool shaped: spinShape !== null
     readonly property real sway: spinShape?.sway ?? 0
+    readonly property int spinDuration: spinShape?.duration ?? DashMetrics.mediaArtRotationDuration
     readonly property bool animationsEnabled: !SettingsData.reduceMotion && Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
     readonly property bool spinning: shaped && playing && visible && !suspended && animationsEnabled && live
     readonly property var morphSpring: Theme.springPreset("fast", Theme.expressiveDurations.expressiveFastSpatial)
@@ -91,25 +92,8 @@ ClippingRectangle {
     layer.effect: shaped ? shapeEffect : slantedEffect
 
     onPlayingChanged: morphMotion.retarget(playing ? 1 : 0)
-    onSpinningChanged: {
-        if (!spinning) {
-            if (spinMotion.running)
-                spinMotion.pause();
-            return;
-        }
-        if (spinMotion.paused)
-            spinMotion.resume();
-        else
-            spinMotion.start();
-    }
-    // A running animation keeps the old duration, and a sway angle carried over into a spin would jump.
-    onSpinShapeChanged: {
-        spinMotion.stop();
-        spin = 0;
-        spinMotion.duration = spinShape?.duration ?? DashMetrics.mediaArtRotationDuration;
-        if (spinning)
-            spinMotion.start();
-    }
+    // A sway angle carried over into a spin would jump.
+    onSpinShapeChanged: spin = 0
 
     SpringMotion {
         id: morphMotion
@@ -119,14 +103,11 @@ ClippingRectangle {
         Component.onCompleted: snapTo(root.playing ? 1 : 0)
     }
 
-    NumberAnimation {
-        id: spinMotion
-        target: root
-        property: "spin"
-        from: 0
-        to: 2 * Math.PI
-        duration: DashMetrics.mediaArtRotationDuration
-        loops: Animation.Infinite
+    Timer {
+        interval: DashMetrics.mediaArtSpinInterval
+        repeat: true
+        running: root.spinning
+        onTriggered: root.spin = (root.spin + 2 * Math.PI * interval / root.spinDuration) % (2 * Math.PI)
     }
 
     Component {

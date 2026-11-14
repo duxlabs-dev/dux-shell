@@ -54,6 +54,38 @@ make run     # dev build, then launch against the live quickshell/ tree
 
 The UI config dir resolves in order: `-c <dir>`, `DMS_SHELL_DIR`, the dir a running instance is using, then the embedded UI. Each candidate must contain `shell.qml`. `make run` uses `-c $(pwd)/quickshell`, so QML edits hot-reload from the working tree.
 
+### Quickshell runtime (dux-qt-base)
+
+`dms qs` runs the UI on `libdux-qt-base.so.0`, the quickshell fork in the `dux-qt-base` submodule. By default `make build` does not embed it, and `dms` loads the first one it finds:
+
+1. the copy embedded in `dms`, if it was built with `QTBASE=1`
+2. `libdux-qt-base.so.0` next to `dms`, or in `../lib/dms/` relative to it
+3. the dynamic linker search path: `LD_LIBRARY_PATH`, the dirs in `ld.so.conf`, then `/usr/lib` and `/lib` (or their `lib64` variants)
+
+Without one, `dms run` refuses to start. `dms run --qs-child`, or `DMS_QS_CHILD=1`, runs the UI on upstream `qs` from `PATH` instead. That path is unsupported: fork-only features degrade to warnings.
+
+To build and install the library from the submodule:
+
+```bash
+cd dux-qt-base
+just release        # configures RelWithDebInfo into build/, prefix /usr/local
+sudo just install
+sudo ldconfig
+```
+
+`/usr/local/lib` is only searched if `ld.so.conf` lists it, which not every distro does.
+
+Pass cmake flags through `just configure`, for example `just configure release -DCMAKE_INSTALL_PREFIX=/usr`, then `just build`. Rebuild and reinstall after every Qt update, the library uses private Qt APIs. See `dux-qt-base/BUILD.md` for options and dependencies.
+
+To embed the runtime in `dms` instead (distro packages depend on the dux-qt-base package rather than embedding):
+
+```bash
+cd core
+make QTBASE=1 && sudo make install
+```
+
+An embedded copy always wins over an installed one. `dms doctor` shows which runtime is in use.
+
 The Go core depends on [dankgo](https://github.com/duxlabs-dev/dux-go) for logging, XDG paths, the IPC transport, and the quickshell process lifecycle. To develop against a local dankgo checkout, create a gitignored `go.work` at the repo root:
 
 ```

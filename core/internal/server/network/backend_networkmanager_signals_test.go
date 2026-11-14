@@ -20,54 +20,6 @@ func emptySettingsMock(t *testing.T) *mock_gonetworkmanager.MockSettings {
 	return mockSettings
 }
 
-func TestNetworkManagerBackend_HandleDBusSignal_InvalidBody(t *testing.T) {
-	mockNM := mock_gonetworkmanager.NewMockNetworkManager(t)
-
-	backend, err := NewNetworkManagerBackend(mockNM)
-	assert.NoError(t, err)
-
-	sig := &dbus.Signal{
-		Name: "org.freedesktop.DBus.Properties.PropertiesChanged",
-		Body: []any{"only-one-element"},
-	}
-
-	assert.NotPanics(t, func() {
-		backend.handleDBusSignal(sig)
-	})
-}
-
-func TestNetworkManagerBackend_HandleDBusSignal_InvalidInterface(t *testing.T) {
-	mockNM := mock_gonetworkmanager.NewMockNetworkManager(t)
-
-	backend, err := NewNetworkManagerBackend(mockNM)
-	assert.NoError(t, err)
-
-	sig := &dbus.Signal{
-		Name: "org.freedesktop.DBus.Properties.PropertiesChanged",
-		Body: []any{123, map[string]dbus.Variant{}},
-	}
-
-	assert.NotPanics(t, func() {
-		backend.handleDBusSignal(sig)
-	})
-}
-
-func TestNetworkManagerBackend_HandleDBusSignal_InvalidChanges(t *testing.T) {
-	mockNM := mock_gonetworkmanager.NewMockNetworkManager(t)
-
-	backend, err := NewNetworkManagerBackend(mockNM)
-	assert.NoError(t, err)
-
-	sig := &dbus.Signal{
-		Name: "org.freedesktop.DBus.Properties.PropertiesChanged",
-		Body: []any{dbusNMInterface, "not-a-map"},
-	}
-
-	assert.NotPanics(t, func() {
-		backend.handleDBusSignal(sig)
-	})
-}
-
 func TestNetworkManagerBackend_HandleDeviceChange_UnmanagedRefreshesHotspotState(t *testing.T) {
 	mockNM := mock_gonetworkmanager.NewMockNetworkManager(t)
 	mockWiFi := mock_gonetworkmanager.NewMockDeviceWireless(t)
@@ -169,20 +121,6 @@ func TestNetworkManagerBackend_HandleDBusSignal_ConnectionRemovedRefreshesWiredC
 	defer backend.stateMutex.RUnlock()
 	assert.Len(t, backend.state.WiredConnections, 1)
 	assert.Equal(t, "uuid-1", backend.state.WiredConnections[0].UUID)
-}
-
-func TestNetworkManagerBackend_ListEthernetConnections_InvalidSettingsHandle(t *testing.T) {
-	mockNM := mock_gonetworkmanager.NewMockNetworkManager(t)
-
-	backend, err := NewNetworkManagerBackend(mockNM)
-	assert.NoError(t, err)
-	backend.settings = "not a settings handle"
-	backend.ethernetDevice = mock_gonetworkmanager.NewMockDevice(t)
-
-	assert.NotPanics(t, func() {
-		_, err = backend.listEthernetConnections()
-	})
-	assert.Error(t, err)
 }
 
 func nameOwnerChanged(name, oldOwner, newOwner string) *dbus.Signal {

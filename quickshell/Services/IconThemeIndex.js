@@ -1,10 +1,25 @@
 .pragma library
 
-function create() {
+function createMap() {
+    let values = Object.create(null);
     return {
-        paths: Object.create(null),
-        scores: Object.create(null),
-        directories: Object.create(null)
+        get: key => values[key],
+        has: key => values[key] !== undefined,
+        set: (key, value) => {
+            values[key] = value;
+        },
+        keys: () => Object.keys(values),
+        clear: () => {
+            values = Object.create(null);
+        }
+    };
+}
+
+function create(mapFactory = createMap) {
+    return {
+        paths: mapFactory(),
+        scores: mapFactory(),
+        directories: mapFactory()
     };
 }
 
@@ -15,17 +30,17 @@ function add(index, path, searchDirs, looseDirs) {
     if (!/^[\w.+-]+$/.test(name))
         return;
     const directory = path.substring(0, separator);
-    let directoryScore = index.directories[directory];
+    let directoryScore = index.directories.get(directory);
     if (directoryScore === undefined) {
         directoryScore = score(directory, searchDirs, looseDirs);
-        index.directories[directory] = directoryScore;
+        index.directories.set(directory, directoryScore);
     }
     const candidateScore = directoryScore + (fileName.endsWith(".svg") ? 100000 : 0);
-    const currentScore = index.scores[name];
+    const currentScore = index.scores.get(name);
     if (currentScore !== undefined && candidateScore <= currentScore)
         return;
-    index.paths[name] = path;
-    index.scores[name] = candidateScore;
+    index.paths.set(name, path);
+    index.scores.set(name, candidateScore);
 }
 
 function chainIndex(path, searchDirs, looseDirs) {

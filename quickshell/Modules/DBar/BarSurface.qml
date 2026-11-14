@@ -11,6 +11,10 @@ Item {
     required property var barWindow
     required property var axis
     required property var barConfig
+    property bool paintedElsewhere: false
+    property bool wingsPaintedElsewhere: false
+    // How far a connected popout has emerged; the chrome casts the joined shadow instead.
+    property real shadowFade: 0
 
     readonly property bool frameShapesBar: FrameTransitionState.effectiveFrameEnabled && barWindow.usesFrameBarChrome
     readonly property bool gothEnabled: (barConfig?.gothCornersEnabled ?? false) && !(barWindow.flattenForMaximizedWindow && barWindow.hasMaximizedToplevel)
@@ -47,8 +51,13 @@ Item {
         return Theme.windowRadius;
     }
     readonly property bool motionRunning: motion.running
+    readonly property rect chromeRect: Qt.rect(x + body.x, y + body.y, body.width, body.height)
+    readonly property real nearRadius: isBottom || isRight ? body.bottomRightRadius : body.topLeftRadius
+    readonly property real farRadius: isBottom || isRight ? body.topLeftRadius : body.bottomRightRadius
     readonly property alias leadingWing: leadingWing
     readonly property alias trailingWing: trailingWing
+    readonly property real borderWidth: border.active ? border.thickness : 0
+    readonly property color borderColor: Theme.withAlpha(border.baseColor, barConfig?.borderOpacity ?? 1.0)
 
     readonly property bool hasPerBarOverride: (barConfig?.shadowIntensity ?? 0) > 0
     readonly property var elevLevel: BarMetrics.elevationLevel
@@ -194,6 +203,7 @@ Item {
 
     ElevationShadow {
         visible: root.shadowEnabled && root.width > 0 && root.height > 0
+        opacity: 1 - root.shadowFade
         x: body.x
         y: body.y
         width: body.width
@@ -219,6 +229,7 @@ Item {
         x: Math.max(0, root.axis.isVertical ? motion.currentOffsetCross : (root.alongWings ? motion.currentOffsetAlong : 0))
         y: Math.max(0, root.axis.isVertical ? (root.alongWings ? motion.currentOffsetAlong : 0) : motion.currentOffsetCross)
         color: root.barWindow._bgColor
+        visible: !root.paintedElsewhere
     }
 
     GothCorner {
@@ -227,7 +238,8 @@ Item {
         radiusX: root.axis.isVertical ? root.wingCross : radius
         radiusY: root.axis.isVertical ? radius : root.wingCross
         color: root.barWindow._bgColor
-        visible: root.gothEnabled && radius > 0 && root.startCover <= 0
+        readonly property bool shaped: root.gothEnabled && radius > 0 && root.startCover <= 0
+        visible: shaped && !root.wingsPaintedElsewhere
         x: root.alongWings ? (root.axis.isVertical && root.isRight ? root.width - width : 0) : (root.isLeft ? body.width : 0)
         y: root.alongWings ? (!root.axis.isVertical && root.isBottom ? root.height - height : 0) : (root.isTop ? body.height : 0)
         corner: root.alongWings ? root.alongWingCorner(true) : root.isTop ? "bottomRight" : root.isBottom ? "topRight" : root.isLeft ? "bottomRight" : "bottomLeft"
@@ -239,7 +251,8 @@ Item {
         radiusX: root.axis.isVertical ? root.wingCross : radius
         radiusY: root.axis.isVertical ? radius : root.wingCross
         color: root.barWindow._bgColor
-        visible: root.gothEnabled && radius > 0 && root.endCover <= 0
+        readonly property bool shaped: root.gothEnabled && radius > 0 && root.endCover <= 0
+        visible: shaped && !root.wingsPaintedElsewhere
         x: root.axis.isVertical ? (root.alongWings ? (root.isRight ? root.width - width : 0) : (root.isLeft ? body.width : 0)) : root.width - width
         y: root.axis.isVertical ? root.height - height : (root.alongWings ? (root.isBottom ? root.height - height : 0) : (root.isTop ? body.height : 0))
         corner: root.alongWings ? root.alongWingCorner(false) : root.isTop ? "bottomLeft" : root.isBottom ? "topLeft" : root.isLeft ? "topRight" : "topLeft"
@@ -281,13 +294,14 @@ Item {
         })
         z: 100
         anchors.fill: parent
+        visible: !root.paintedElsewhere
         active: barConfig?.borderEnabled ?? false
         sourceComponent: Shape {
             preferredRendererType: Shape.CurveRenderer
 
             ShapePath {
                 fillColor: "transparent"
-                strokeColor: Theme.withAlpha(border.baseColor, barConfig?.borderOpacity ?? 1.0)
+                strokeColor: root.borderColor
                 strokeWidth: border.thickness
                 joinStyle: ShapePath.RoundJoin
                 capStyle: ShapePath.FlatCap

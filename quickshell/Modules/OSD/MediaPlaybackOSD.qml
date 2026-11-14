@@ -12,6 +12,8 @@ DOSD {
 
     osdKind: "mediaPlayback"
 
+    readonly property int artDecodeSize: Math.max(1, Math.ceil(Math.max(alignedWidth, alignedHeight) * (screen?.devicePixelRatio ?? 1)))
+
     readonly property bool useVertical: isVerticalLayout
     readonly property bool playing: player?.isPlaying ?? false
     readonly property var player: MprisController.activePlayer
@@ -104,7 +106,8 @@ DOSD {
 
     Image {
         id: artPreloader
-        source: SettingsData.osdMediaPlaybackEnabled ? TrackArtService.resolvedArtUrl : ""
+        sourceSize: Qt.size(root.artDecodeSize, root.artDecodeSize)
+        source: TrackArtService.resolvedArtUrl
         visible: false
         asynchronous: true
         cache: true
@@ -149,12 +152,9 @@ DOSD {
 
     Connections {
         target: player
-        enabled: SettingsData.osdMediaPlaybackEnabled
 
         function handleUpdate() {
             if (!root.player?.trackTitle)
-                return;
-            if (!SettingsData.osdMediaPlaybackEnabled)
                 return;
             if (MprisController.isFirefoxYoutubeHoverPreview(player))
                 return;
@@ -231,6 +231,7 @@ DOSD {
 
                 Image {
                     id: bgImage
+                    sourceSize: Qt.size(root.artDecodeSize, root.artDecodeSize)
                     anchors.centerIn: parent
                     width: Math.max(parent.width, parent.height)
                     height: width

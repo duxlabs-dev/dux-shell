@@ -402,9 +402,64 @@ Item {
         id: tooltip
         screen: root.dockScreen
     }
+    // A dock renders the app buttons in its own strip, so the hover comes from there.
+    readonly property var pointerButton: mixedStrip?.hoveredButton ?? hoveredButton
+    property Item previewButton: null
+    readonly property bool previewOpen: previewButton !== null
+    readonly property bool previewAllowed: surfaceContext.live && !surfaceContext.editMode && draggedIndex < 0 && !(contextMenu?.visible ?? false)
+    readonly property Item previewTarget: {
+        if (!previewAllowed)
+            return null;
+        if (pointerButton?.showsWindowPreview)
+            return pointerButton;
+        const lingering = previewButton?.showsWindowPreview && (previewLoader.item?.containsMouse ?? false);
+        return lingering ? previewButton : null;
+    }
+    onPointerButtonChanged: {
+        if (!pointerButton || pointerButton.showsWindowPreview)
+            return;
+        previewSettle.stop();
+        previewButton = null;
+    }
+    onPreviewTargetChanged: {
+        if (previewTarget === previewButton) {
+            previewSettle.stop();
+            return;
+        }
+        const immediate = previewButton && (previewTarget || !previewAllowed || !previewButton.showsWindowPreview);
+        if (!immediate) {
+            previewSettle.restart();
+            return;
+        }
+        previewSettle.stop();
+        previewButton = previewTarget;
+    }
+    Timer {
+        id: previewSettle
+        interval: Theme.tooltipDelay
+        onTriggered: root.previewButton = root.previewTarget
+    }
+    // The window stays loaded once used: creating and destroying one per hover retained ~2MB each.
+    property bool previewLoaded: false
+    onPreviewOpenChanged: {
+        if (previewOpen)
+            previewLoaded = true;
+    }
+    LazyLoader {
+        id: previewLoader
+        active: root.previewLoaded
+
+        DockWindowPreview {
+            screen: root.dockScreen
+            anchorButton: root.previewButton
+            surfaceContext: root.surfaceContext
+            options: root.options
+            onDismissed: Qt.callLater(() => root.previewButton = null)
+        }
+    }
     onHoveredButtonChanged: {
         tooltip.hide();
-        if (!barHosted || !hoveredButton || !surfaceContext.live)
+        if (!barHosted || !hoveredButton || hoveredButton.showsWindowPreview || !surfaceContext.live)
             return;
         const position = surfaceContext.screenPoint(hoveredButton, hoveredButton.width / 2, hoveredButton.height / 2);
         if (!position)
@@ -415,8 +470,13 @@ Item {
         const y = isVertical ? position.y : (edge === SettingsData.Position.Top ? bounds.y + bounds.height + Theme.spacingS : bounds.y - Theme.listItemHeight);
         tooltip.show(hoveredButton.tooltipText, x, y, dockScreen, isVertical && edge === SettingsData.Position.Left, isVertical && edge === SettingsData.Position.Right);
     }
-    onVisibleChanged: if (!visible)
-        tooltip.hide()
+    onVisibleChanged: {
+        if (visible)
+            return;
+        tooltip.hide();
+        previewSettle.stop();
+        previewButton = null;
+    }
 
     readonly property var settingsAppIdSubstitutions: SettingsData.appIdSubstitutions
 

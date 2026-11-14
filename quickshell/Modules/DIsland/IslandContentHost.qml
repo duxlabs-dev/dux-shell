@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import qs.Common
+import qs.Modules.DIsland.Activities
 
 Item {
     id: root
@@ -30,6 +31,9 @@ Item {
     property var resolveTarget: target => target
     // Embedded sheets grow by this on the near edge; the face keeps its content size below the fold.
     property real expandedInset: 0
+    property color foreground: Theme.surfaceText
+    required property Component liveCompactComponent
+    required property Component liveExpandedComponent
     required property Component homeCompactComponent
     required property Component homeExpandedComponent
     required property Component mediaCompactComponent
@@ -61,6 +65,35 @@ Item {
     readonly property real outgoingExpandedFade: root.fadeExpanded(root.outgoingMorph)
     readonly property bool mediaSurfaceActive: root.surfaceActive("media")
     readonly property bool systemSurfaceActive: root.controller.systemActivities.some(id => root.surfaceActive(id))
+    // Pinned to the compact target's slot like the faces, so the slots hold still while the island morphs.
+    readonly property var stableTarget: root.freeMode ? root.controller.compactTarget : root.resolveTarget(root.controller.compactTarget)
+    readonly property real stableSpan: root.controller.isVertical ? stableTarget.height : stableTarget.width
+    readonly property real stableStart: root.freeMode ? ((root.controller.isVertical ? height : width) - stableSpan) / 2 : Math.round(root.slotAlong(stableTarget)) - Math.round(root.controller.isVertical ? root.islandY : root.islandX)
+
+    component StableSlots: IslandActivitySlots {
+        property real start: 0
+        controller: root.controller
+        foreground: root.foreground
+        width: implicitWidth
+        height: implicitHeight
+        x: controller.isVertical ? (parent.width - width) / 2 : root.stableStart + start
+        y: controller.isVertical ? root.stableStart + start : (parent.height - height) / 2
+        opacity: root.compactFade
+        visible: occupied && opacity > 0.001
+        enabled: opacity >= 0.5
+    }
+
+    StableSlots {
+        position: "left"
+    }
+    StableSlots {
+        position: "center"
+        start: root.controller.stableSlotLengths.left
+    }
+    StableSlots {
+        position: "right"
+        start: root.stableSpan - root.controller.stableSlotLengths.right
+    }
 
     function systemOpacity(opacityFor) {
         const incoming = root.controller.isSystemActivity(root.renderedActivity) ? opacityFor(root.renderedActivity) : 0;
@@ -101,6 +134,7 @@ Item {
     }
 
     readonly property var focusableFaces: ({
+            "live": liveExpandedLoader,
             "home": homeExpandedLoader,
             "media": mediaExpandedLoader,
             "launcher": launcherExpandedLoader,
@@ -184,13 +218,15 @@ Item {
         // A free face only centres in the island, so it skips the anchor-resolved slot every drag event would rebuild.
         readonly property var target: root.freeMode ? root.controller.compactTargetFor(activity) : root.resolveTarget(root.controller.compactTargetFor(activity))
         readonly property bool isVertical: root.controller.isVertical
-        readonly property real alongPos: !active || root.freeMode ? 0 : Math.round(root.slotAlong(target)) - Math.round(isVertical ? root.islandY : root.islandX)
+        readonly property real slotsLength: root.controller.usesDotFace(activity) ? 0 : root.controller.stableSlotsLength
+        readonly property real leadingLength: root.controller.usesDotFace(activity) ? 0 : root.controller.stableLeadingLength
+        readonly property real alongPos: !active || root.freeMode ? 0 : Math.round(root.slotAlong(target) + leadingLength) - Math.round(isVertical ? root.islandY : root.islandX)
         readonly property real crossPos: !active || root.freeMode ? 0 : Math.round(root.slotCross(target)) - Math.round(isVertical ? root.islandX : root.islandY)
 
-        x: root.freeMode ? Math.round((parent.width - width) / 2) : (isVertical ? crossPos : alongPos)
-        y: root.freeMode ? Math.round((parent.height - height) / 2) : (isVertical ? alongPos : crossPos)
-        width: target.width
-        height: target.height
+        x: root.freeMode ? Math.round((parent.width - (isVertical ? width : target.width)) / 2 + (isVertical ? 0 : leadingLength)) : (isVertical ? crossPos : alongPos)
+        y: root.freeMode ? Math.round((parent.height - (isVertical ? target.height : height)) / 2 + (isVertical ? leadingLength : 0)) : (isVertical ? alongPos : crossPos)
+        width: isVertical ? target.width : Math.max(root.controller.compactFaceThickness, target.width - slotsLength)
+        height: isVertical ? Math.max(root.controller.compactFaceThickness, target.height - slotsLength) : target.height
         asynchronous: false
         sourceComponent: root.compactFaceOverride && root.controller.usesDotFace(activity) ? root.compactFaceOverride : face
         opacity: !active ? 0 : root.controller.isSystemActivity(activity) ? root.systemOpacity(root.compactOpacity) : root.compactOpacity(activity)
@@ -225,6 +261,20 @@ Item {
             if (item && activity === root.activityId)
                 root.requestActivityFocus();
         }
+    }
+
+    CompactFace {
+        active: root.surfaceActive("live")
+        activity: "live"
+        face: root.liveCompactComponent
+    }
+
+    ExpandedFace {
+        id: liveExpandedLoader
+
+        activity: "live"
+        active: root.surfaceActive("live") && (root.expanded || root.expandedFade > 0)
+        sourceComponent: root.liveExpandedComponent
     }
 
     CompactFace {

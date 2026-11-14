@@ -73,6 +73,84 @@ Column {
             onToggled: checked => root.page.set("mediaShowCoverArt", checked)
         }
 
+        SettingsButtonGroupRow {
+            visible: !root.controls
+            settingKey: "barWidgetMusicArtworkShape"
+            tags: ["media", "music", "artwork", "album", "cover", "shape", "rounded", "circle", "square"]
+            resetStore: root.page
+            resetKeys: ["mediaArtworkShape"]
+            text: I18n.tr("Artwork")
+            description: I18n.tr("Shape of the album cover in the pill", "media widget artwork shape description")
+            model: [I18n.tr("Rounded"), I18n.tr("Circle"), I18n.tr("Square")]
+            values: ["rounded", "circle", "square"]
+            value: root.page.value("mediaArtworkShape")
+            fallbackValue: "rounded"
+            onValueSelected: value => root.page.set("mediaArtworkShape", value)
+        }
+
+        SettingsButtonGroupRow {
+            visible: !root.controls
+            settingKey: "barWidgetMusicVisualizer"
+            tags: ["media", "music", "visualizer", "cava", "bars", "paused", "idle"]
+            resetStore: root.page
+            resetKeys: ["mediaVisualizerMode"]
+            text: I18n.tr("Audio visualizer")
+            description: I18n.tr("While playing hides the meter when paused, so the pill narrows", "media widget visualizer mode description")
+            model: [I18n.tr("Always show"), I18n.tr("While playing", "media widget visualizer option"), I18n.tr("Off")]
+            values: ["always", "playing", "never"]
+            value: root.page.value("mediaVisualizerMode")
+            fallbackValue: "always"
+            onValueSelected: value => root.page.set("mediaVisualizerMode", value)
+        }
+
+        SettingsButtonGroupRow {
+            visible: !root.controls
+            settingKey: "barWidgetMusicTitle"
+            tags: ["media", "music", "song", "title", "track", "hide", "change"]
+            resetStore: root.page
+            resetKeys: ["mediaTitleMode"]
+            text: I18n.tr("Title")
+            description: I18n.tr("On change shows the song title for a moment when the track changes", "media widget title mode description")
+            model: [I18n.tr("Always show"), I18n.tr("On change", "media widget title option"), I18n.tr("Never")]
+            values: ["always", "changes", "never"]
+            value: root.page.value("mediaTitleMode")
+            fallbackValue: "always"
+            onValueSelected: value => root.page.set("mediaTitleMode", value)
+        }
+
+        SettingsSliderRow {
+            visible: !root.controls && root.page.value("mediaTitleMode") === "changes"
+            settingKey: "barWidgetMusicTitleDuration"
+            tags: ["media", "music", "song", "title", "duration", "timeout"]
+            resetStore: root.page
+            resetKeys: ["mediaTitleDuration"]
+            text: I18n.tr("Duration")
+            description: I18n.tr("How long the title stays after a track change", "media widget title duration description")
+            minimum: 500
+            maximum: 15000
+            step: 100
+            unit: "ms"
+            value: root.page.value("mediaTitleDuration")
+            onSliderValueChanged: value => root.page.set("mediaTitleDuration", value)
+        }
+
+        SettingsSliderRow {
+            visible: !root.controls && root.page.value("mediaTitleMode") !== "never"
+            settingKey: "barWidgetMusicTitleWidth"
+            tags: ["media", "music", "song", "title", "width", "maximum", "limit", "truncate"]
+            resetStore: root.page
+            resetKeys: ["mediaTitleMaxWidth"]
+            text: I18n.tr("Maximum title width", "media widget settings")
+            description: I18n.tr("Longer titles scroll inside this width", "media widget title width description")
+            minimumLabel: I18n.tr("Off")
+            minimum: 0
+            maximum: 480
+            step: 20
+            unit: "px"
+            value: root.page.value("mediaTitleMaxWidth")
+            onSliderValueChanged: value => root.page.set("mediaTitleMaxWidth", value)
+        }
+
         SettingsDropdownRow {
             visible: root.controls
             resetStore: root.page

@@ -5,8 +5,10 @@ package main
 import (
 	"os"
 
+	"github.com/duxlabs-dev/dux-go/qtbase"
 	"github.com/duxlabs-dev/dux-shell/core/internal/clipboard"
 	"github.com/duxlabs-dev/dux-shell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/qtbaseembed"
 	"github.com/duxlabs-dev/dux-shell/core/internal/utils"
 )
 
@@ -23,6 +25,7 @@ func init() {
 }
 
 func main() {
+	qtbase.MaybeRunAndExit(qtbaseembed.Extract)
 	disableMemProfilingUnlessRequested()
 	clipboard.MaybeServeAndExit()
 

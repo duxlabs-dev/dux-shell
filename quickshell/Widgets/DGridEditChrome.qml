@@ -32,6 +32,7 @@ Item {
     readonly property real touchTargetSize: Math.max(Theme.minimumTouchTargetSize, buttonSize)
     readonly property real contentInset: touchTargetSize / 2
     readonly property bool showOptionsButton: hasOptions
+    readonly property bool keyboardFocused: removeButton.visualFocus || optionsButton.visualFocus
     // Too narrow to sit beside the remove button: both move onto the top corners instead.
     readonly property bool cornerButtons: hasOptions && width - contentInset * 2 < touchTargetSize * (1 + (removable ? 1 : 0) + (horizontalResize ? 1 : 0))
     readonly property int chromeButtons: (removable ? 1 : 0) + (showOptionsButton && !cornerButtons ? 1 : 0)

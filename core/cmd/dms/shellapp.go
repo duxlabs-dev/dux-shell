@@ -6,12 +6,14 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/duxlabs-dev/dux-go/shellapp"
 	"github.com/duxlabs-dev/dux-shell/core/internal/clipolicy"
 	"github.com/duxlabs-dev/dux-shell/core/internal/gpu"
 	"github.com/duxlabs-dev/dux-shell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/qtbaseembed"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server"
 	"github.com/duxlabs-dev/dux-shell/core/internal/shellembed"
 	"github.com/duxlabs-dev/dux-shell/core/internal/utils"
@@ -25,6 +27,7 @@ var shellApp = shellapp.New(shellapp.Config{
 	QSAppID:                "dev.duxlabs.shell",
 	Version:                Version,
 	Embedded:               embeddedShell{},
+	QtBase:                 qtbaseembed.Extract,
 	Boot:                   bootBackend,
 	PreLaunch:              preLaunch,
 	ExtraEnv:               dmsExtraEnv,
@@ -85,20 +88,20 @@ func preLaunch() {
 	ensureFontCache()
 }
 
-// The elapsed-timer driver keeps the scrolling wallpaper spring in step above 60 Hz,
-// but it makes every other animation jump after a dropped frame (#3837).
-func scrollingWallpaperConfigured() bool {
+func shellSettings() []byte {
 	configDir, err := os.UserConfigDir()
 	if err != nil {
-		return false
+		return nil
 	}
 	data, err := os.ReadFile(filepath.Join(configDir, "dms", "settings.json"))
 	if err != nil {
-		return false
+		return nil
 	}
-	return wantsSimpleAnimationDriver(data)
+	return data
 }
 
+// The elapsed-timer driver keeps the scrolling wallpaper spring in step above 60 Hz,
+// but it makes every other animation jump after a dropped frame (#3837).
 func wantsSimpleAnimationDriver(settings []byte) bool {
 	var parsed struct {
 		WallpaperFillMode string `json:"wallpaperFillMode"`
@@ -109,16 +112,43 @@ func wantsSimpleAnimationDriver(settings []byte) bool {
 	return parsed.WallpaperFillMode == "Scrolling"
 }
 
+// shell.qml turns these on with pragmas, which only the runtime's environment can override.
+func runtimeSwitchEnv(settings []byte) []string {
+	parsed := struct {
+		QmlCacheEnabled      bool `json:"qmlCacheEnabled"`
+		RenderControlEnabled bool `json:"renderControlEnabled"`
+	}{QmlCacheEnabled: true, RenderControlEnabled: true}
+	_ = json.Unmarshal(settings, &parsed)
+
+	var env []string
+	if !parsed.QmlCacheEnabled {
+		env = append(env, "QS_DISABLE_DISK_CACHE=1")
+	}
+	if !parsed.RenderControlEnabled {
+		env = append(env, "QS_DISABLE_RENDER_CONTROL=1")
+	}
+	return env
+}
+
+// Qt < 6.10 reserves a JS stack slot per object of the shell's whole type tree while
+// creating it, which overflows the 4 MiB default and breaks early handlers (#4175).
+const qmlJSStackSize = 16 << 20
+
 func dmsExtraEnv(string) []string {
 	var env []string
 	if selfPath, err := os.Executable(); err == nil {
 		env = append(env, "DMS_EXECUTABLE="+selfPath)
 	}
-	if os.Getenv("QSG_USE_SIMPLE_ANIMATION_DRIVER") == "" && scrollingWallpaperConfigured() {
+	settings := shellSettings()
+	if os.Getenv("QSG_USE_SIMPLE_ANIMATION_DRIVER") == "" && wantsSimpleAnimationDriver(settings) {
 		env = append(env, "QSG_USE_SIMPLE_ANIMATION_DRIVER=1")
 	}
+	env = append(env, runtimeSwitchEnv(settings)...)
 	if _, set := os.LookupEnv("MALLOC_CONF"); !set {
 		env = append(env, "MALLOC_CONF=thp:never,narenas:4,dirty_decay_ms:3000")
+	}
+	if os.Getenv("QV4_JS_MAX_STACK_SIZE") == "" {
+		env = append(env, "QV4_JS_MAX_STACK_SIZE="+strconv.Itoa(qmlJSStackSize))
 	}
 	env = append(env, gpu.ShellEnv()...)
 	policyEnv, err := clipolicy.ShellEnv(afero.NewOsFs())

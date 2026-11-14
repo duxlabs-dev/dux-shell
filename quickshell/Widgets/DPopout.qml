@@ -25,10 +25,14 @@ Item {
     property int resizeDuration: animationDuration
     property bool resizeMotion: false
     property bool resizing: false
-    property real surfacePadding: 0
     // Content hung outside the surface, kept on screen, blurred and clickable.
     property real bottomOverflow: 0
     property real topOverflow: 0
+    property real leftOverflow: 0
+    property real rightOverflow: 0
+    // Body-relative rect of a surface hung in the side overflow, blurred like the body.
+    property Item sideBlurItem: null
+    property real sideBlurRadius: 0
     property real inputMargin: 0
     property bool suspendShadowWhileResizing: false
     property bool shouldBeVisible: false
@@ -39,10 +43,7 @@ Item {
     readonly property bool effectiveHoverDismissSuspended: hoverDismissSuspended || (transientSurfaceTracker?.active ?? false)
     property bool backgroundInteractive: true
     property bool contentHandlesKeys: false
-    property bool fullHeightSurface: false
-    property real minimumSurfaceWidth: 0
     property bool _primeContent: false
-    property bool _warmContent: false
 
     property real storedBarThickness: Theme.barThickness(SettingsData.getPrimaryBarConfig()?.innerPadding ?? SettingsData.barInnerPaddingDefault, 1)
     property real storedBarSpacing: 4
@@ -72,7 +73,6 @@ Item {
 
     readonly property var contentLoader: impl.item ? impl.item.contentLoader : _fallbackContentLoader
     readonly property var overlayLoader: impl.item ? impl.item.overlayLoader : _fallbackOverlayLoader
-    readonly property var backgroundWindow: impl.item ? impl.item.backgroundWindow : null
     readonly property var contentWindow: impl.item ? impl.item.contentWindow : null
 
     TransientSurfaceTracker {
@@ -82,12 +82,10 @@ Item {
     // Hyprland OnDemand grab: whitelist popout surfaces and bars so dismiss clicks still land.
     DFocusGrab {
         windows: {
-            const list = root.contentWindow ? [root.contentWindow] : [];
+            const list = root.contentWindow?.focusWindows ?? (root.contentWindow ? [root.contentWindow] : []);
             const transientWindows = root.transientSurfaceTracker?.focusWindows ?? [];
             if (!(impl.item?.contentActive ?? false) && !root.transientSurfaceTracker?.active)
                 return list.concat(transientWindows);
-            if (root.backgroundWindow && root.backgroundWindow !== root.contentWindow)
-                list.push(root.backgroundWindow);
             return list.concat(transientWindows).concat(KeyboardFocus.barWindows, KeyboardFocus.grabPeerWindows);
         }
         wanted: KeyboardFocus.wantsGrab(root.shouldBeVisible, root.customKeyboardFocus)
@@ -103,7 +101,10 @@ Item {
     }
     readonly property bool isClosing: impl.item ? (impl.item.isClosing ?? false) : false
     readonly property real dpr: impl.item ? impl.item.dpr : 1
-    readonly property color surfaceColor: impl.item?.usesConnectedSurfaceChrome ? Theme.connectedSurfaceColor : Theme.readableSurface
+    readonly property bool usesConnectedSurfaceChrome: impl.item?.usesConnectedSurfaceChrome ?? false
+    // Whether the surface sits on blur while open, steady through open and close.
+    readonly property bool surfaceBlurred: Theme.blurLayersActive && surfaceColor.a < 1 && (!usesConnectedSurfaceChrome || Theme.connectedSurfaceBlurEnabled)
+    readonly property color surfaceColor: usesConnectedSurfaceChrome ? Theme.connectedSurfaceColor : Theme.readableSurface
     readonly property real screenWidth: impl.item ? impl.item.screenWidth : 0
     readonly property real screenHeight: impl.item ? impl.item.screenHeight : 0
     readonly property real alignedX: impl.item ? impl.item.alignedX : 0
@@ -116,6 +117,14 @@ Item {
     readonly property real renderedAlignedHeight: impl.item ? (impl.item.renderedAlignedHeight ?? impl.item.alignedHeight) : 0
     readonly property real maxBodyWidth: impl.item ? impl.item.maxBodyWidth : 0
     readonly property real maxBodyHeight: impl.item ? impl.item.maxBodyHeight : 0
+
+    function roomLeftFor(width) {
+        return impl.item?.roomLeftFor(width) ?? 0;
+    }
+
+    function roomRightFor(width) {
+        return impl.item?.roomRightFor(width) ?? 0;
+    }
 
     function alignedXFor(width) {
         return impl.item?.alignedXFor(width) ?? 0;
@@ -171,7 +180,7 @@ Item {
     }
 
     function _usesConnectedBackendForScreen(targetScreen) {
-        return CompositorService.usesConnectedFrameChromeForScreen(targetScreen);
+        return CompositorService.usesConnectedFrameChromeForScreen(targetScreen) || (!sourceDock && SettingsData.barConnectsPopouts(storedBarConfig) && SettingsData.barConfigCoversScreen(storedBarConfig, targetScreen));
     }
 
     function _maybeResolveBackend() {
@@ -357,11 +366,6 @@ Item {
         _resolveBackendForScreen(targetScreen);
     }
 
-    function updateSurfacePosition() {
-        if (impl.item)
-            impl.item.updateSurfacePosition();
-    }
-
     function containsGlobalPoint(gx, gy) {
         if (!screen)
             return false;
@@ -369,10 +373,10 @@ Item {
         if (!presented)
             return false;
         const padding = 24;
-        const x = renderedAlignedX - padding;
-        const y = renderedAlignedY - padding;
-        const w = renderedAlignedWidth + padding * 2;
-        const h = renderedAlignedHeight + padding * 2;
+        const x = renderedAlignedX - leftOverflow - padding;
+        const y = renderedAlignedY - topOverflow - padding;
+        const w = renderedAlignedWidth + leftOverflow + rightOverflow + padding * 2;
+        const h = renderedAlignedHeight + topOverflow + bottomOverflow + padding * 2;
         return gx >= x && gx <= x + w && gy >= y && gy <= y + h;
     }
 
@@ -410,8 +414,6 @@ Item {
             root.shouldBeVisible = false;
         if (root._primeContent)
             it.primeContent();
-        if (root._warmContent)
-            it.warmContent();
         if (_pendingOpen)
             _pendingOpenTimer.restart();
     }
@@ -426,12 +428,6 @@ Item {
         _primeContent = false;
         if (impl.item)
             impl.item.clearPrimedContent();
-    }
-
-    function warmContent() {
-        _warmContent = true;
-        if (impl.item)
-            impl.item.warmContent();
     }
 
     onShouldBeVisibleChanged: {

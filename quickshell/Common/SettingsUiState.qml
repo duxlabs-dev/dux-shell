@@ -3,12 +3,15 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import qs.Common
+import qs.Services
 
 Singleton {
     id: root
 
     property string selectedBarId: "default"
     property string selectedWallpaperScreen: ""
+    property string selectedWallpaperFolder: ""
+    readonly property string selectedWallpaperFolderTitle: WallpaperLibraryService.folderName(selectedWallpaperFolder)
     // Which dock the Dock hub pages are editing.
     property string dockHubSelection: ""
     // Set only while the widget settings page is showing a dock-hosted widget; empty means bar-hosted.

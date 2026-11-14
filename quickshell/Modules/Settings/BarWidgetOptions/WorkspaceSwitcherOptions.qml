@@ -28,6 +28,10 @@ Column {
         {
             "key": "cards",
             "label": I18n.tr("Cards", "workspace indicator style")
+        },
+        {
+            "key": "expressive",
+            "label": I18n.tr("Expressive")
         }
     ]
     property real draftRoundness: -1
@@ -46,7 +50,7 @@ Column {
         SettingsRow {
             resetStore: root.page
             resetKeys: ["workspaceIndicatorStyle"]
-            tags: ["workspace", "style", "pills", "dots", "circles", "lines", "cards"]
+            tags: ["workspace", "style", "pills", "dots", "circles", "lines", "cards", "expressive", "shapes"]
             title: I18n.tr("Style")
 
             body: SettingsLayoutPicker {
@@ -134,7 +138,7 @@ Column {
         SettingsToggleRow {
             text: I18n.tr("Show scratchpads", "workspace switcher toggle, special workspaces as entries")
             description: I18n.tr("Special workspaces appear last; click to show or hide", "workspace switcher show scratchpads toggle description")
-            visible: CompositorService.isHyprland
+            visible: CompositorService.isHyprland || CompositorService.isNiri
             checked: root.page.value("showSpecialWorkspaces")
             onToggled: checked => root.page.set("showSpecialWorkspaces", checked)
         }

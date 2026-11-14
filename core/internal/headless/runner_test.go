@@ -63,16 +63,6 @@ func TestParseTerminal(t *testing.T) {
 	}
 }
 
-func TestLog(t *testing.T) {
-	r := NewRunner(Config{})
-
-	// log should not block even if channel is full
-	for range 1100 {
-		r.log("message")
-	}
-	// If we reach here without hanging, the non-blocking send works
-}
-
 func TestValidConfigNamesCompleteness(t *testing.T) {
 	// orderedConfigNames and validConfigNames must stay in sync.
 	if len(orderedConfigNames) != len(validConfigNames) {

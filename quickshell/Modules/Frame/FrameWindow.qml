@@ -19,7 +19,6 @@ PanelWindow {
     screen: targetScreen
     readonly property bool _frameVisible: CompositorService.frameWindowVisibleForScreen(win.targetScreen)
     visible: win._frameVisible
-    updatesEnabled: win._frameVisible
 
     WlrLayershell.namespace: "dms:frame"
     readonly property bool _dockEditActive: frameDockHostLoader.item?.editActive ?? false
@@ -571,6 +570,17 @@ PanelWindow {
             width: _active ? _blur.width : 0
             height: _active ? _blur.height : 0
         }
+        // A surface the popout hangs beside its body, such as the Control Center's docked edit panel.
+        Region {
+            readonly property var _side: win._popoutDescriptor.sideRect
+            readonly property bool _active: _popoutBodyBlurAnchor._active && _side.width > 0 && _side.height > 0
+
+            radius: win._surfaceRadius
+            x: _active ? Math.round(win._popoutBodyGeometry.x + _side.x) : 0
+            y: _active ? Math.round(win._popoutBodyGeometry.y + win._popoutDescriptor.overflowTop + _side.y) : 0
+            width: _active ? Math.round(_side.width) : 0
+            height: _active ? Math.round(_side.height) : 0
+        }
         Region {
             id: _popoutBodyBlurCap
 
@@ -1112,6 +1122,7 @@ PanelWindow {
     onWindowConnected: {
         win._scheduleSurfaceRefresh();
         win._scheduleBlurRebuild();
+        IdleSurfaces.surfaceFor("popout", win._screenName)?.remap();
     }
 
     Component.onCompleted: {

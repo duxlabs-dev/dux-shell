@@ -2,10 +2,13 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"debug/elf"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/duxlabs-dev/dux-go/qtbase"
+	"github.com/duxlabs-dev/dux-shell/core/internal/qtbaseembed"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -15,6 +18,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/duxlabs-dev/dux-shell/core/internal/blur"
@@ -761,20 +765,21 @@ func getDMSShellVersion() (version, path string) {
 }
 
 func getQuickshellVersionInfo(missingFeatures bool) (display string, st status, path, details, semver string) {
-	if !utils.CommandExists("qs") {
-		return "Not installed", statusError, "", "", ""
+	qsPath, err := qtbaseembed.Resolve()
+	if err != nil {
+		return "Not installed", statusError, "", "Install the dux-qt-base package", ""
 	}
 
-	qsPath, _ := exec.LookPath("qs")
-
-	output, err := exec.Command("qs", "--version").Output()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	output, err := qtbase.Command(ctx, "--version").Output()
 	if err != nil {
-		details := "Run 'qs --version' to inspect the failure."
+		details := "Run 'dms qs --version' to inspect the failure."
 		var exitErr *exec.ExitError
 		if errors.As(err, &exitErr) {
 			details = quickshellVersionFailureDetails(string(exitErr.Stderr))
 		}
-		return "Installed (version check failed)", statusWarn, qsPath, details, ""
+		return "Unavailable (version check failed)", statusError, qsPath, details, ""
 	}
 
 	fullVersion := strings.TrimSpace(string(output))
@@ -793,10 +798,10 @@ func getQuickshellVersionInfo(missingFeatures bool) (display string, st status, 
 
 func quickshellVersionFailureDetails(stderr string) string {
 	if strings.Contains(stderr, "undefined symbol:") && strings.Contains(stderr, "Qt_6_PRIVATE_API") {
-		return "Quickshell is incompatible with the installed Qt libraries. Rebuild or reinstall Quickshell against the current Qt version."
+		return "dux-qt-base is incompatible with the installed Qt libraries. Update or rebuild dux-qt-base against the current Qt version."
 	}
 
-	return "Run 'qs --version' to inspect the failure."
+	return "Run 'dms qs --version' to inspect the failure."
 }
 
 func checkDMSInstallation() []checkResult {
@@ -1289,7 +1294,9 @@ func detectRunningWM() string {
 }
 
 func checkQuickshellFeatures() ([]checkResult, bool) {
-	if !utils.CommandExists("qs") {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := qtbase.Command(ctx, "--version").Run(); err != nil {
 		return nil, false
 	}
 
@@ -1359,7 +1366,7 @@ ShellRoot {
 		return nil, false
 	}
 
-	cmd := exec.Command("qs", "-p", testScript)
+	cmd := qtbase.Command(context.Background(), "-p", testScript)
 	cmd.Env = append(os.Environ(), "NO_COLOR=1")
 	output, _ := cmd.CombinedOutput()
 	outputStr := string(output)
@@ -2058,7 +2065,7 @@ func printSummary(results []checkResult, qsMissingFeatures bool) {
 
 		if qsMissingFeatures {
 			fmt.Println()
-			fmt.Printf("  %s\n", styles.Subtle.Render("→ Consider using quickshell-git for full feature support"))
+			fmt.Printf("  %s\n", styles.Subtle.Render("→ Update dux-qt-base for full feature support"))
 		}
 	}
 	fmt.Println()

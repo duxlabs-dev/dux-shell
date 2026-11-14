@@ -54,6 +54,7 @@ Singleton {
     readonly property real positionPickerMaxWidth: 360
     readonly property real wallpaperThumbRatio: 10 / 16
     readonly property int wallpaperThumbCache: 1024
+    readonly property int wallpaperGridColumns: 5
     readonly property real wallpaperHeroStackWidth: 520
     readonly property real wallpaperHeroSplit: 0.5
     readonly property real disabledOpacity: 0.38

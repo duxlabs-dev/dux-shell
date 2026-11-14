@@ -14,6 +14,8 @@ PACKAGES=(
     "dms:dms:release"
     "dms-git:dms-git:git"
 )
+# The legacy AvengeMedia PPAs are deprecated: stable dms only, dms-git stays frozen there
+[[ "$PPA_OWNER" == "avengemedia" ]] && PACKAGES=("dms:dms:release")
 
 while [[ $# -gt 0 ]]; do
     case "$1" in

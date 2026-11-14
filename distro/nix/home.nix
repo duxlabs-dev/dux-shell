@@ -81,11 +81,6 @@ in
   };
 
   config = lib.mkIf cfg.enable {
-    programs.quickshell = {
-      enable = true;
-      inherit (cfg.quickshell) package;
-    };
-
     systemd.user.services.dms = lib.mkIf cfg.systemd.enable {
       Unit = {
         Description = "Dux Modular Shell";

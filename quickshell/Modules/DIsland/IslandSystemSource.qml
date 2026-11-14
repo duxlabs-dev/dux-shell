@@ -61,6 +61,8 @@ QtObject {
             return I18n.tr("Power profile", "island system face: power profile title");
         case "idleinhibitor":
             return I18n.tr("Idle inhibitor", "island system face: idle inhibitor title");
+        case "dnd":
+            return I18n.tr("Do not disturb");
         case "charging":
             return BatteryService.isPluggedIn ? I18n.tr("Plugged in", "island system face: power connected title") : I18n.tr("Discharging", "island system face: power disconnected title");
         }
@@ -75,6 +77,8 @@ QtObject {
             return Theme.getPowerProfileLabel(PowerProfileWatcher.currentProfile);
         case "idleinhibitor":
             return SessionService.idleInhibited ? I18n.tr("On") : I18n.tr("Off");
+        case "dnd":
+            return SessionData.doNotDisturb ? I18n.tr("On") : I18n.tr("Off");
         case "charging":
             return root.chargingValue();
         }
@@ -94,6 +98,8 @@ QtObject {
             return Theme.getPowerProfileIcon(PowerProfileWatcher.currentProfile);
         case "idleinhibitor":
             return "local_cafe";
+        case "dnd":
+            return SessionData.doNotDisturb ? "notifications_off" : "notifications";
         case "charging":
             return BatteryService.getBatteryIcon();
         }
@@ -109,6 +115,8 @@ QtObject {
             return "battery";
         case "idleinhibitor":
             return "idleInhibitor";
+        case "dnd":
+            return "doNotDisturb";
         }
         return "";
     }
@@ -231,6 +239,16 @@ QtObject {
         function onInhibitorChanged() {
             if (SettingsData.osdIdleInhibitorEnabled)
                 root.show("idleinhibitor");
+        }
+    }
+
+    property Connections dndConnection: Connections {
+        target: SessionData
+        enabled: root.enabled
+
+        function onDoNotDisturbChanged() {
+            if (SettingsData.osdDoNotDisturbEnabled)
+                root.show("dnd");
         }
     }
 

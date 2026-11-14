@@ -69,7 +69,7 @@ func (u *UbuntuDistribution) DetectDependenciesWithTerminal(ctx context.Context,
 	// Common detections using base methods
 	dependencies = append(dependencies, u.detectGit())
 	dependencies = append(dependencies, u.detectWindowManager(wm))
-	dependencies = append(dependencies, u.detectQuickshell())
+	dependencies = append(dependencies, u.detectDuxQtBase())
 	dependencies = append(dependencies, u.detectGreeterPackage(u.packageInstalled))
 	dependencies = append(dependencies, u.detectXDGPortal())
 	dependencies = append(dependencies, u.detectAccountsService())
@@ -196,7 +196,7 @@ func (u *UbuntuDistribution) GetPackageMappingWithVariants(wm deps.WindowManager
 
 		// DMS packages from PPAs
 		"dms (Dux Shell)": u.getDmsMapping(variants["dms (Dux Shell)"]),
-		"quickshell":      u.getQuickshellMapping(variants["quickshell"]),
+		"dux-qt-base":     {Name: "libdux-qt-base0", Repository: RepoTypePPA, RepoURL: ppaDeps},
 		"dux-greeter":     variantMapping("dux-greeter", variants["dux-greeter"], RepoTypePPA, ppaDeps),
 		"matugen":         {Name: "matugen", Repository: RepoTypePPA, RepoURL: ppaDeps},
 		"ghostty":         {Name: "ghostty", Repository: RepoTypePPA, RepoURL: ppaDeps},
@@ -226,13 +226,6 @@ func (u *UbuntuDistribution) getDmsMapping(variant deps.PackageVariant) PackageM
 		return PackageMapping{Name: "dms-git", Repository: RepoTypePPA, RepoURL: ppaDMSGit}
 	}
 	return PackageMapping{Name: "dms", Repository: RepoTypePPA, RepoURL: ppaDMS}
-}
-
-func (u *UbuntuDistribution) getQuickshellMapping(variant deps.PackageVariant) PackageMapping {
-	if forceQuickshellGit || variant == deps.VariantGit {
-		return PackageMapping{Name: "quickshell-git", Repository: RepoTypePPA, RepoURL: ppaDeps}
-	}
-	return PackageMapping{Name: "quickshell", Repository: RepoTypePPA, RepoURL: ppaDeps}
 }
 
 func (u *UbuntuDistribution) getNiriMapping(variant deps.PackageVariant) PackageMapping {
@@ -659,29 +652,6 @@ func (u *UbuntuDistribution) installBuildDependencies(ctx context.Context, manua
 			buildDeps["alacritty"] = true
 			buildDeps["fuzzel"] = true
 			buildDeps["libxcb-cursor-dev"] = true
-		case "quickshell":
-			buildDeps["qt6-base-dev"] = true
-			buildDeps["qt6-base-private-dev"] = true
-			buildDeps["qt6-declarative-dev"] = true
-			buildDeps["qt6-declarative-private-dev"] = true
-			buildDeps["qt6-wayland-dev"] = true
-			buildDeps["qt6-wayland-private-dev"] = true
-			buildDeps["qt6-tools-dev"] = true
-			buildDeps["libqt6svg6-dev"] = true
-			buildDeps["qt6-shadertools-dev"] = true
-			buildDeps["spirv-tools"] = true
-			buildDeps["libcli11-dev"] = true
-			buildDeps["libjemalloc-dev"] = true
-			buildDeps["libwayland-dev"] = true
-			buildDeps["wayland-protocols"] = true
-			buildDeps["libdrm-dev"] = true
-			buildDeps["libgbm-dev"] = true
-			buildDeps["libegl-dev"] = true
-			buildDeps["libgles2-mesa-dev"] = true
-			buildDeps["libgl1-mesa-dev"] = true
-			buildDeps["libxcb1-dev"] = true
-			buildDeps["libpipewire-0.3-dev"] = true
-			buildDeps["libpam0g-dev"] = true
 		case "matugen":
 			buildDeps["curl"] = true
 		}

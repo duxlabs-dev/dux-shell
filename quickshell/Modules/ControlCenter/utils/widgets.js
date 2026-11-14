@@ -3,6 +3,8 @@
 .import qs.Modules.ControlCenter as ControlCenter
 .import "../../../Common/GridLayout.js" as GridLayout
 .import "../../../Common/settings/SettingsSpec.js" as Spec
+.import "catalog.js" as Catalog
+.import "pages.js" as Pages
 
 var OPTION_IDS = ["diskUsage", "brightnessSlider", "idleInhibitor", "user", "battery", "quickTiles"];
 var GROUP_ID = "quickTiles";
@@ -79,10 +81,7 @@ function hasOptions(id) {
 }
 
 function filterWidgets(widgets, query) {
-    const needle = query.trim().toLowerCase();
-    if (!needle)
-        return widgets;
-    return widgets.filter(widget => [widget.text, widget.description, widget.id].some(value => (value || "").toLowerCase().includes(needle)));
+    return Catalog.filterWidgets(widgets, query);
 }
 
 function nextUserShape(shape) {
@@ -134,8 +133,7 @@ function clampSize(widget, columns, rows = Infinity) {
     };
 }
 
-function addWidget(widgetId, columns) {
-    const widgets = Common.SettingsData.controlCenterWidgets.slice();
+function newWidget(widgetId, columns) {
     const widget = defaultWidget(widgetId, columns);
     if (BUTTON_IDS.includes(widgetId) || isSliderWidget(widgetId))
         widget.small = true;
@@ -153,9 +151,36 @@ function addWidget(widgetId, columns) {
         widget.instanceId = generateUniqueId();
         widget.deviceName = "";
     }
+    return widget;
+}
 
+// `base` replaces the saved list, so a drop can commit the grid's rearranged layout together with the new tile.
+// `room` is the free run of columns at the spot; the tile narrows into it instead of sliding below.
+function addWidget(widgetId, columns, col, row, base, page, room) {
+    const widgets = (base ?? Common.SettingsData.controlCenterWidgets).slice();
+    const widget = Pages.withPage(newWidget(widgetId, columns), Number.isInteger(page) ? page : 0);
+    if (Number.isFinite(col) && Number.isFinite(row))
+        Object.assign(widget, placedInRoom(widget, columns, col, row, room));
     widgets.push(widget);
     Common.SettingsData.set("controlCenterWidgets", widgets);
+}
+
+// The size clamp only ever narrows a fitted width further, so the tile stays inside the room.
+function placedInRoom(widget, columns, col, row, room) {
+    if (!room || !(room.to > room.from))
+        return {
+            "col": col,
+            "row": row
+        };
+    const fit = GridLayout.fitInRun(room, col, widget.w);
+    return Object.assign(clampSize({
+        "id": widget.id,
+        "w": fit.w,
+        "h": widget.h
+    }, columns), {
+        "col": fit.col,
+        "row": row
+    });
 }
 
 function generateUniqueId() {
@@ -167,17 +192,31 @@ function removeWidget(index) {
     if (index < 0 || index >= widgets.length || !isRemovable(widgets[index]))
         return;
     const [removed] = widgets.splice(index, 1);
-    Common.SettingsData.set("controlCenterWidgets", removed.id === GROUP_ID ? ungroup(widgets, removed.instanceId) : widgets);
+    Common.SettingsData.set("controlCenterWidgets", removed.id === GROUP_ID ? ungroup(widgets, removed.instanceId, Pages.pageOf(removed)) : widgets);
 }
 
-function ungroup(widgets, groupId) {
+function ungroup(widgets, groupId, page) {
     return widgets.map(widget => {
         if (widget?.group !== groupId)
             return widget;
-        const freed = Object.assign({}, widget);
+        const freed = Pages.withPage(Object.assign({}, widget), page);
         delete freed.group;
         return freed;
     });
+}
+
+function moveToPage(index, page, base, cell) {
+    const widgets = base ?? Common.SettingsData.controlCenterWidgets;
+    const moved = Pages.movedToPage(widgets, index, page, cell);
+    if (moved !== widgets)
+        Common.SettingsData.set("controlCenterWidgets", moved);
+}
+
+function compactPages(isShown) {
+    const widgets = Common.SettingsData.controlCenterWidgets;
+    const compacted = Pages.compactPages(widgets, isShown);
+    if (compacted !== widgets)
+        Common.SettingsData.set("controlCenterWidgets", compacted);
 }
 
 // Lands just before `beforeIndex`, or after the group's last member.
@@ -190,9 +229,11 @@ function moveToGroup(index, groupId, beforeIndex) {
     widgets.splice(index, 1);
     const lastMember = widgets.reduce((last, other, i) => other?.group === groupId ? i : last, -1);
     const at = before ? widgets.indexOf(before) : lastMember >= 0 ? lastMember + 1 : widgets.length;
-    const moved = Object.assign({}, widget, {
+    const group = widgets.find(other => other?.instanceId === groupId);
+    // Members carry their group's page so they stay on it once ungrouped.
+    const moved = Pages.withPage(Object.assign({}, widget, {
         "group": groupId
-    });
+    }), Pages.pageOf(group));
     delete moved.col;
     delete moved.row;
     widgets.splice(at, 0, moved);
@@ -229,5 +270,5 @@ function resetToDefault() {
 }
 
 function clearAll() {
-    Common.SettingsData.set("controlCenterWidgets", Common.SettingsData.controlCenterWidgets.filter(widget => !isRemovable(widget)));
+    Common.SettingsData.set("controlCenterWidgets", Common.SettingsData.controlCenterWidgets.filter(widget => !isRemovable(widget)).map(widget => Pages.withPage(widget, 0)));
 }

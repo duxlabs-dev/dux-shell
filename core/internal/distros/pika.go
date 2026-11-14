@@ -27,7 +27,7 @@ func (d *DebianDistribution) pikaPackageMapping(wm deps.WindowManager, variants 
 		"xdg-desktop-portal-gtk": system("xdg-desktop-portal-gtk"),
 		"accountsservice":        system("accountsservice"),
 		"dms (Dux Shell)":        variantMapping("dms", variants["dms (Dux Shell)"], RepoTypeSystem, ""),
-		"quickshell":             variantMapping("quickshell", variants["quickshell"], RepoTypeSystem, ""),
+		"dux-qt-base":            system("libdux-qt-base0"),
 		"dux-greeter":            variantMapping("dms-greeter", variants["dux-greeter"], RepoTypeSystem, ""),
 		"matugen":                system("matugen"),
 		"dux-search":             system("danksearch"),

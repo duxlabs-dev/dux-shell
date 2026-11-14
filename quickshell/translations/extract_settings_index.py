@@ -104,6 +104,8 @@ TAB_INDEX_MAP = {
     "DDashTab.qml": 43,
     "DigitalWellbeingTab.qml": 67,
     "CompositorLayoutTab.qml": 37,
+    "CompositorAnimationsTab.qml": 73,
+    "CompositorIncludesTab.qml": 74,
     "WindowRulesTab.qml": 38,
     "DockGeneralTab.qml": 5,
     "DockWidgetsTab.qml": 57,
@@ -122,13 +124,15 @@ TAB_INDEX_MAP = {
     "ThemeAppsTab.qml": 50,
     "ThemeScheduleTab.qml": 51,
     "WallpaperCyclingTab.qml": 52,
+    "WallpaperFoldersTab.qml": 71,
+    "WallpaperFolderTab.qml": 72,
     "ShadowsTab.qml": 53,
     "BarWidgetTab.qml": 54,
     "LockScreenTab.qml": 11,
     "PluginsManageTab.qml": 28,
-    "ProfilesTab.qml": 72,
-    "ProfileEditTab.qml": 73,
-    "ProfileInspectTab.qml": 74,
+    "ProfilesTab.qml": 75,
+    "ProfileEditTab.qml": 76,
+    "ProfileInspectTab.qml": 77,
     "AboutTab.qml": 13,
     "TypographyMotionTab.qml": 14,
     "SoundsTab.qml": 15,
@@ -167,7 +171,7 @@ TAB_INDEX_MAP = {
 TAB_INDEX_ALIASES = {70}
 
 # Pages that only work for a profile picked on the Profiles page, so search never opens them directly.
-UNSEARCHABLE_TABS = {73, 74}
+UNSEARCHABLE_TABS = {76, 77}
 
 SIDEBAR_GATE_CONDITIONS = [
     ("shortcutsOnly", "keybindsAvailable"),
@@ -181,6 +185,7 @@ SIDEBAR_GATE_CONDITIONS = [
     ("pointerCapable", "pointerCapable"),
     ("windowRulesCapable", "windowRulesCapable"),
     ("layoutCapable", "layoutCapable"),
+    ("animationsCapable", "animationsCapable"),
     ("cellularOnly", "cellularAvailable"),
     ("fcitx5Only", "fcitx5Available"),
 ]
@@ -475,8 +480,20 @@ def inline_shared_cards(root_dir, content):
     return content
 
 
+def local_components(content):
+    """File-local `component Name: SettingsRow { ... }` declarations, indexed like wrapper files."""
+    local = {}
+    for match in re.finditer(r"^\s*component\s+(\w+)\s*:\s*(\w+)\s*\{", content, re.MULTILINE):
+        if match.group(2) not in SEARCHABLE_COMPONENTS:
+            continue
+        own = own_scope(parse_component_block(content, match.start(), match.group(1)))
+        local[match.group(1)] = {prop: extract_property(own, prop) for prop in ("settingKey", "title", "text", "description", "iconName", "tags")}
+    return local
+
+
 def find_settings_components(content, filename, wrappers, tab_meta, hub_meta):
     results = []
+    wrappers = {**wrappers, **local_components(content)}
     file_tab_index = TAB_INDEX_MAP.get(filename, -1)
     file_page = FILE_PAGE_MAP.get(filename)
 
@@ -553,6 +570,8 @@ def find_settings_components(content, filename, wrappers, tab_meta, hub_meta):
                     condition_key = "windowRulesCapable"
                 elif "CompositorService.supportsLayoutConfig" in visible_raw:
                     condition_key = "layoutCapable"
+                elif "CompositorService.supportsAnimationsConfig" in visible_raw:
+                    condition_key = "animationsCapable"
                 elif "CompositorService.supportsPointerConfig" in visible_raw:
                     condition_key = "pointerCapable"
                 elif "CompositorService.supportsInputConfig" in visible_raw:
@@ -592,6 +611,9 @@ def find_settings_components(content, filename, wrappers, tab_meta, hub_meta):
                     condition_key = "frameEnabled"
                 elif setting_key.startswith("island"):
                     condition_key = "islandEnabled"
+            # Mango has no Popups row
+            if filename == "CompositorAnimationsTab.qml" and setting_key == "compositorAnimationPopups":
+                condition_key = "animationsPopupsCapable"
             if filename == "DDotTab.qml" and not condition_key and setting_key != "dotEnabled":
                 condition_key = "dotEnabled"
             if component == "SettingsCard":
@@ -850,24 +872,22 @@ def extract_settings_index(root_dir, tab_meta, hub_meta):
             }
         )
 
+    # The island bar's widget list is a section on the Bar widgets page, not a card.
     if "islandHomeLayout" not in seen_keys:
-        category, parent_label, _ = tab_meta.get(3, TAB_META_DEFAULT)
         all_entries.append(
             {
                 "section": "islandHomeLayout",
-                "label": "Home Layout",
-                "tabIndex": 3,
-                "category": category,
-                "parentLabel": parent_label,
+                "label": "Island widgets",
+                "tabIndex": -1,
+                "category": "Bar widgets",
                 "keywords": enrich_keywords(
-                    "Home Layout",
-                    "Order and hide the groups around the island clock",
-                    category,
-                    ["media", "launcher", "weather", "battery", "volume", "brightness", "notifications", "badge", "left", "right", "hidden", "reorder"],
-                    parent_label,
+                    "Island widgets",
+                    "",
+                    "Bar widgets",
+                    ["home", "compact", "layout", "groups", "order", "activities", "media", "launcher", "weather", "battery", "volume", "brightness", "notifications", "clock"],
                 ),
-                "icon": "home",
-                "description": "Order and hide the groups around the island clock",
+                "page": "dankbar_widgets",
+                "icon": "view_in_ar",
                 "conditionKey": "islandEnabled",
             }
         )

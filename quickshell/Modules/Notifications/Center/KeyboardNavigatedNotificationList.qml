@@ -137,6 +137,14 @@ DListView {
         return Math.max(0, total);
     }
 
+    function forceContentLayout() {
+        forceLayout();
+        for (let i = 0; i < count; i++)
+            itemAtIndex(i)?.forceLayout();
+        forceLayout();
+        syncStableContentHeight(true);
+    }
+
     function syncStableContentHeight(useTarget) {
         if (!trackStableContentHeight)
             return;
@@ -227,6 +235,10 @@ DListView {
         readonly property real nonAnimHeight: notificationCard.targetHeight
 
         readonly property bool isCardAnimating: notificationCard.isAnimating
+
+        function forceLayout() {
+            notificationCard.forceLayout();
+        }
 
         Timer {
             interval: 0

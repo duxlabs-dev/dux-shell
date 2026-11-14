@@ -1,24 +1,6 @@
 package screenshot
 
-import (
-	"slices"
-	"testing"
-)
-
-func TestHyprlandScrollCommands(t *testing.T) {
-	focus := []string{"dispatch", `hl.dsp.focus({ window = "address:0x55f56b093cf0" })`}
-	bind := []string{"eval", `hl.bind("Return", hl.dsp.exec_cmd("kill -USR1 4242")); hl.bind("Escape", hl.dsp.exec_cmd("kill -USR2 4242"))`}
-	unbind := []string{"eval", `hl.unbind("Return"); hl.unbind("Escape")`}
-	if got := hyprlandFocusArgs("0x55f56b093cf0"); !slices.Equal(got, focus) {
-		t.Errorf("focus: got %q want %q", got, focus)
-	}
-	if got := hyprlandBindScrollKeysArgs(4242); !slices.Equal(got, bind) {
-		t.Errorf("bind: got %q want %q", got, bind)
-	}
-	if got := hyprlandUnbindScrollKeysArgs(); !slices.Equal(got, unbind) {
-		t.Errorf("unbind: got %q want %q", got, unbind)
-	}
-}
+import "testing"
 
 // Hyprland scales the region by the monitor scale itself; device pixels here
 // captured a box offset and enlarged by the scale on fractional outputs

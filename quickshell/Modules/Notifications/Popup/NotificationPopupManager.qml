@@ -1,16 +1,78 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import Quickshell
+import Quickshell.Wayland
 import qs.Common
 import qs.Modules.Notifications
 import qs.Services
+import qs.Widgets
 
-QtObject {
+DIdleSurface {
     id: manager
 
     property var modelData
     property int topMargin: 0
+    property DPopout _activePopout: null
+    readonly property rect popoutAvoidRect: {
+        const p = _activePopout;
+        if (!p?.shouldBeVisible || !SettingsData.notificationPopupAvoidPopouts || notificationConnectedMode || !_stackAnchorsTop())
+            return Qt.rect(0, 0, 0, 0);
+        return Qt.rect(p.alignedX, p.alignedY, p.alignedWidth, p.alignedHeight);
+    }
+    readonly property bool overlayWanted: popupWindows.some(p => p?.wantsOverlay ?? false)
+    readonly property list<var> blurRegions: popupWindows.map(p => p?.blurRegion ?? null).filter(r => r !== null)
+    // A stack growing from the bottom would move the surface origin under visible cards, so it keeps the band.
+    readonly property bool fitsStack: boundsSupported && _stackAnchorsTop()
+    readonly property bool stackSettled: !popupWindows.some(p => (p?.stackMoving ?? false) || (p?.inlineHeightAnimating ?? false))
+
+    screen: modelData
+    active: popupWindows.length > 0
+    // A mapped idle band is blacked out by compositor capture rules matching this namespace.
+    keepMapped: false
+    requestedBounds: {
+        if (!fitsStack)
+            return Qt.rect(0, 0, 0, 0);
+        let top = Infinity;
+        let bottom = -Infinity;
+        for (const p of popupWindows) {
+            if (!p || p._finalized)
+                continue;
+            top = Math.min(top, p.stackOriginTop);
+            bottom = Math.max(bottom, p.slotBottom);
+        }
+        if (bottom <= top)
+            return Qt.rect(0, 0, 0, 0);
+        const y = Math.floor(top - Theme.spacingL);
+        return Qt.rect(bandOriginX, y, bandExtent, Math.ceil(bottom + Theme.spacingL) - y);
+    }
+    band: stackCentered ? "column" : stackLeft ? "left" : "right"
+    bandSize: stackCentered ? cardWidth + 2 * (shadowPad + NotificationMetrics.swipeAttachDistance) : cardWidth + 2 * shadowPad + stackEdgeMargin + NotificationMetrics.swipeAttachDistance
+    WlrLayershell.namespace: "dms:notification-popup"
+    WlrLayershell.layer: LayerShell.fromEnv("DMS_NOTIFICATION_LAYER", overlayWanted ? WlrLayer.Overlay : WlrLayer.Top)
+    WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+    BackgroundEffect.blurRegion: blurRegions.length > 0 ? blurUnion : null
     readonly property bool notificationConnectedMode: CompositorService.usesConnectedFrameChromeForScreen(manager.modelData)
+    readonly property real dpr: modelData ? CompositorService.getScreenScale(modelData) : 1
+    readonly property int popupPosition: SettingsData.notificationPopupPosition
+    readonly property bool stackCentered: popupPosition === -1 || popupPosition === SettingsData.Position.BottomCenter
+    readonly property bool stackLeft: popupPosition === SettingsData.Position.Left || popupPosition === SettingsData.Position.Bottom
+    readonly property real cardWidth: modelData ? Math.min(NotificationMetrics.popupWidth, Math.max(NotificationMetrics.popupMinWidth, modelData.width * NotificationMetrics.popupScreenRatio)) : NotificationMetrics.popupWidth
+    readonly property real shadowPad: Theme.elevationEnabled && SettingsData.notificationPopupShadowEnabled ? Theme.snap(NotificationMetrics.popupShadowPad, dpr) : 0
+    // Covers every side margin NotificationPopup can pick: frame inset plus corner clearance, frame gap, or the adjacent bar.
+    readonly property real stackEdgeMargin: {
+        if (stackCentered || !modelData)
+            return 0;
+        const side = stackLeft ? "left" : "right";
+        const inset = Math.max(0, Math.round(Theme.px(SettingsData.frameEdgeInsetForSide(modelData, side), dpr)));
+        const cornerClear = Theme.px(SettingsData.frameRounding, dpr) + Theme.px(Theme.connectedCornerRadius, dpr);
+        const bars = SettingsData.getAdjacentBarInfo(modelData, popupPosition, {
+            id: "notification-popup",
+            screenPreferences: [modelData.name],
+            autoHide: false
+        }, true);
+        return Math.max(inset + cornerClear, inset + Theme.popupDistance, stackLeft ? bars.leftBar : bars.rightBar);
+    }
     readonly property bool closeGapNotifications: notificationConnectedMode && SettingsData.frameCloseGaps
     readonly property string notifBarSide: {
         const pos = SettingsData.notificationPopupPosition;
@@ -44,9 +106,7 @@ QtObject {
     property real _lastEnterMs: 0
     property real _lastExitMs: 0
     readonly property real chromeReleaseTailStart: 0.90
-    property Component popupComponent
-
-    popupComponent: Component {
+    property Component popupComponent: Component {
         NotificationPopup {
             onExitFinished: manager._onPopupExitFinished(this)
             onExitRequested: manager._onPopupExitRequested(this)
@@ -56,9 +116,7 @@ QtObject {
         }
     }
 
-    property Connections notificationConnections
-
-    notificationConnections: Connections {
+    Connections {
         function onVisibleNotificationsChanged() {
             manager._sync(NotificationService.visibleNotifications);
         }
@@ -66,16 +124,42 @@ QtObject {
         target: NotificationService
     }
 
-    property Timer sweeper
+    Connections {
+        function onPopoutChanged() {
+            manager._syncActivePopout();
+        }
 
-    property Timer motionTimer: Timer {
+        target: PopoutManager
+    }
+
+    mask: Region {
+        regions: manager.popupWindows.map(p => p?.maskRegion ?? null).filter(r => r !== null)
+    }
+
+    Region {
+        id: blurUnion
+        regions: manager.blurRegions
+    }
+
+    // Screen sized and shifted by the band origin, so popups keep their screen coordinates.
+    Item {
+        id: cardHost
+        x: -manager.bandX
+        y: -manager.bandY
+        width: manager.screenWidth
+        height: manager.screenHeight
+    }
+
+    Timer {
+        id: motionTimer
         running: false
         repeat: false
         onTriggered: manager._pumpMotion()
     }
 
-    property Timer destroyTimer: Timer {
-        interval: destroyDelayMs
+    Timer {
+        id: destroyTimer
+        interval: manager.destroyDelayMs
         running: false
         repeat: false
         onTriggered: manager._processDestroyQueue()
@@ -102,13 +186,14 @@ QtObject {
             destroyTimer.restart();
     }
 
-    sweeper: Timer {
+    Timer {
+        id: sweeper
         interval: 500
         running: false
         repeat: true
         onTriggered: {
             const toRemove = [];
-            for (const p of popupWindows) {
+            for (const p of manager.popupWindows) {
                 if (!p) {
                     toRemove.push(p);
                     continue;
@@ -127,13 +212,18 @@ QtObject {
                 }
             }
             if (toRemove.length) {
-                popupWindows = popupWindows.filter(p => toRemove.indexOf(p) === -1);
-                _forgetQueued(toRemove);
-                _repositionAll();
+                manager.popupWindows = manager.popupWindows.filter(p => toRemove.indexOf(p) === -1);
+                manager._forgetQueued(toRemove);
+                manager._repositionAll();
             }
-            if (popupWindows.length === 0)
+            if (manager.popupWindows.length === 0)
                 sweeper.stop();
         }
+    }
+
+    function _fitSettledStack() {
+        if (stackSettled)
+            fitBounds();
     }
 
     function _hasWindowFor(w) {
@@ -182,10 +272,11 @@ QtObject {
         if (!wrapper)
             return;
         const notificationId = wrapper?.notification ? wrapper.notification.id : "";
-        const win = popupComponent.createObject(null, {
+        const win = popupComponent.createObject(cardHost, {
             "notificationData": wrapper,
             "notificationId": notificationId,
-            "screen": manager.modelData
+            "screen": manager.modelData,
+            "surface": manager
         });
         if (!win)
             return;
@@ -200,6 +291,7 @@ QtObject {
         }
         popupWindows.splice(insertIndex, 0, win);
         win.setStackPosition(_stackPositionFor(win));
+        popupWindows = popupWindows.slice();
         _enterQueue.push(win);
         if (!sweeper.running)
             sweeper.start();
@@ -255,7 +347,7 @@ QtObject {
     }
 
     function _stackPositionFor(target) {
-        let currentY = topMargin;
+        let currentY = _stackTop();
         for (const p of popupWindows) {
             if (p === target)
                 return currentY;
@@ -267,8 +359,31 @@ QtObject {
         return currentY;
     }
 
+    function _stackTop() {
+        return topMargin + _popoutAvoidOffset();
+    }
+
+    function _popoutAvoidOffset() {
+        const r = popoutAvoidRect;
+        if (r.height <= 0)
+            return 0;
+        const p = popupWindows.find(_isValidWindow);
+        if (!p)
+            return 0;
+        const x = p.getContentX();
+        const base = p.getTopMargin() - p.screenY;
+        if (r.x >= x + p.alignedWidth || r.x + r.width <= x || r.y >= base + p.layoutHeight)
+            return 0;
+        const offset = Math.max(0, Math.round(r.y + r.height + Theme.popupDistance - base));
+        return base + offset + p.layoutHeight > modelData.height ? 0 : offset;
+    }
+
+    function _syncActivePopout() {
+        _activePopout = PopoutManager.getActivePopout(modelData);
+    }
+
     function _repositionAll() {
-        let currentY = topMargin;
+        let currentY = _stackTop();
         for (const win of _layoutWindows()) {
             const gap = win.layoutPinned ? Math.max(0, win.stackTarget - currentY) : 0;
             const position = currentY + gap;
@@ -556,7 +671,10 @@ QtObject {
         _syncNotificationChromeState();
     }
 
-    Component.onCompleted: _sync(NotificationService.visibleNotifications)
+    Component.onCompleted: {
+        _syncActivePopout();
+        _sync(NotificationService.visibleNotifications);
+    }
     Component.onDestruction: {
         for (const p of popupWindows)
             p?.destroy();
@@ -564,12 +682,15 @@ QtObject {
         if (screenName)
             ConnectedModeState.releaseSurface(screenName, "notification", "notification:" + screenName);
     }
+    onRequestedBoundsChanged: Qt.callLater(_fitSettledStack)
+    onStackSettledChanged: Qt.callLater(_fitSettledStack)
     onPopupSpacingChanged: _repositionAll()
     onNotificationConnectedModeChanged: _scheduleNotificationChromeSync()
     onCloseGapNotificationsChanged: _scheduleNotificationChromeSync()
     onNotifBarSideChanged: _scheduleNotificationChromeSync()
     onModelDataChanged: _scheduleNotificationChromeSync()
     onTopMarginChanged: _repositionAll()
+    onPopoutAvoidRectChanged: _repositionAll()
 
     onPopupWindowsChanged: {
         if (popupWindows.length > 0 && !sweeper.running) {

@@ -26,6 +26,10 @@ function followFocusMode(v) {
     return Number.isInteger(v) && v >= 0 && v <= 2 ? v : undefined;
 }
 
+function controlCenterEditLayout(v) {
+    return v === "docked" || v === "sheet" ? v : undefined;
+}
+
 var LOCAL_SPEC = {
     dockConfigs: {
         def: [DockConfig.create("dock", "Dock")]
@@ -149,6 +153,18 @@ var LOCAL_SPEC = {
     niriLayoutBorderSize: {
         def: -1,
         onChange: "updateCompositorLayout"
+    },
+    compositorAnimationPreset: {
+        def: "dms",
+        onChange: "updateCompositorAnimations"
+    },
+    compositorAnimationSlowdown: {
+        def: 1.0,
+        onChange: "updateCompositorAnimations"
+    },
+    compositorAnimationOverrides: {
+        def: {},
+        onChange: "updateCompositorAnimations"
     },
     hyprlandLayoutGapsOverride: {
         def: -1,
@@ -515,6 +531,12 @@ var LOCAL_SPEC = {
     syncComponentAnimationSpeeds: {
         def: true
     },
+    qmlCacheEnabled: {
+        def: true
+    },
+    renderControlEnabled: {
+        def: true
+    },
     popoutAnimationDuration: {
         def: 150
     },
@@ -616,6 +638,10 @@ var LOCAL_SPEC = {
     },
     controlCenterIconScale: {
         def: 1.0
+    },
+    controlCenterEditLayout: {
+        def: "docked",
+        coerce: controlCenterEditLayout
     },
     controlCenterWidgets: {
         def: [
@@ -1349,6 +1375,9 @@ var LOCAL_SPEC = {
     notificationPopupBodyInvokesAction: {
         def: false
     },
+    notificationPopupAvoidPopouts: {
+        def: true
+    },
     notificationForegroundLayers: {
         def: true
     },
@@ -1505,6 +1534,9 @@ var LOCAL_SPEC = {
     },
     osdIdleInhibitorEnabled: {
         def: true
+    },
+    osdDoNotDisturbEnabled: {
+        def: false
     },
     osdMicMuteEnabled: {
         def: true
@@ -1663,6 +1695,7 @@ var LOCAL_SPEC = {
                 gothCornersEnabled: false,
                 gothCornerRadiusOverride: false,
                 gothCornerRadiusValue: 12,
+                connectedPopouts: false,
                 borderEnabled: false,
                 borderColor: "surfaceText",
                 borderOpacity: 1.0,

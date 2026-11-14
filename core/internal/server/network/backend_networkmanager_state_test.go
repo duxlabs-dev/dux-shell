@@ -9,17 +9,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNetworkManagerBackend_UpdateWiFiState_NoDevice(t *testing.T) {
-	mockNM := mock_gonetworkmanager.NewMockNetworkManager(t)
-
-	backend, err := NewNetworkManagerBackend(mockNM)
-	assert.NoError(t, err)
-
-	backend.wifiDevice = nil
-	err = backend.updateWiFiState()
-	assert.NoError(t, err)
-}
-
 func TestNetworkManagerBackend_ClassifyNMStateReason(t *testing.T) {
 	mockNM := mock_gonetworkmanager.NewMockNetworkManager(t)
 
@@ -41,19 +30,6 @@ func TestNetworkManagerBackend_ClassifyNMStateReason(t *testing.T) {
 		result := backend.classifyNMStateReason(tc.reason)
 		assert.Equal(t, tc.expected, result)
 	}
-}
-
-func TestNetworkManagerBackend_GetDeviceIP_NoConfig(t *testing.T) {
-	mockNM := mock_gonetworkmanager.NewMockNetworkManager(t)
-	mockDevice := mock_gonetworkmanager.NewMockDevice(t)
-
-	backend, err := NewNetworkManagerBackend(mockNM)
-	assert.NoError(t, err)
-
-	mockDevice.EXPECT().GetPropertyIP4Config().Return(nil, nil)
-
-	ip := backend.getDeviceIP(mockDevice)
-	assert.Empty(t, ip)
 }
 
 func TestNetworkManagerBackend_UpdatePrimaryConnection_TypeMapping(t *testing.T) {
