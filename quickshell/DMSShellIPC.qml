@@ -1393,6 +1393,18 @@ Item {
             return PluginService.isPluginLoaded(pluginId) ? "loaded" : "disabled";
         }
 
+        function disableAll(): string {
+            const disabled = PluginService.disableAllPlugins();
+            return disabled.length > 0 ? `PLUGINS_DISABLED: ${disabled.length}` : "NO_ACTIVE_PLUGINS";
+        }
+
+        function restore(): string {
+            if (!PluginService.hasDisabledPluginsSnapshot)
+                return "NO_PLUGINS_SNAPSHOT";
+            const restored = PluginService.restoreDisabledPlugins();
+            return `PLUGINS_RESTORED: ${restored.length}`;
+        }
+
         target: "plugins"
     }
 

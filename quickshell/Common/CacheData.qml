@@ -22,9 +22,11 @@ Singleton {
 
     readonly property var _pinKeys: ["brightnessDevicePins", "wifiNetworkPins", "bluetoothDevicePins", "audioInputDevicePins", "audioOutputDevicePins"]
     readonly property var _historyKeys: ["browserUsageHistory", "filePickerUsageHistory"]
-    readonly property var _dataKeys: ["fileBrowserSettings", "processFilterTypes", "pluginViewSort", "pluginViewFilter", "dashFocusCardId", "controlCenterCollapsedCategories", "mediaLyricsOpen", "matugenPreviews", "matugenSeedPreviews", "matugenAppliedKey", "lockScreenPlacementSamples"].concat(_pinKeys, _historyKeys)
+    readonly property var _dataKeys: ["fileBrowserSettings", "processFilterTypes", "pluginViewSort", "pluginViewFilter", "disabledPluginsSnapshot", "disabledDesktopWidgetsSnapshot", "dashFocusCardId", "controlCenterCollapsedCategories", "mediaLyricsOpen", "matugenPreviews", "matugenSeedPreviews", "matugenAppliedKey", "lockScreenPlacementSamples"].concat(_pinKeys, _historyKeys)
 
     property string pluginViewFilter: "enabled"
+    property var disabledPluginsSnapshot: []
+    property var disabledDesktopWidgetsSnapshot: []
     property string dashFocusCardId: ""
     property var controlCenterCollapsedCategories: []
     property bool mediaLyricsOpen: false
@@ -128,6 +130,8 @@ Singleton {
                 _loadedCacheVersion = cache.configVersion || 0;
 
                 pluginViewFilter = ["all", "enabled", "disabled", "updates"].includes(cache.pluginViewFilter) ? cache.pluginViewFilter : "enabled";
+                disabledPluginsSnapshot = Array.isArray(cache.disabledPluginsSnapshot) ? cache.disabledPluginsSnapshot.filter(id => typeof id === "string" && id.length > 0) : [];
+                disabledDesktopWidgetsSnapshot = Array.isArray(cache.disabledDesktopWidgetsSnapshot) ? cache.disabledDesktopWidgetsSnapshot.filter(id => typeof id === "string" && id.length > 0) : [];
                 dashFocusCardId = typeof cache.dashFocusCardId === "string" ? cache.dashFocusCardId : "";
                 controlCenterCollapsedCategories = Array.isArray(cache.controlCenterCollapsedCategories) ? cache.controlCenterCollapsedCategories.filter(id => typeof id === "string") : [];
                 mediaLyricsOpen = cache.mediaLyricsOpen === true;
@@ -210,6 +214,8 @@ Singleton {
             "processFilterTypes": processFilterTypes,
             "pluginViewSort": pluginViewSort,
             "pluginViewFilter": pluginViewFilter,
+            "disabledPluginsSnapshot": disabledPluginsSnapshot,
+            "disabledDesktopWidgetsSnapshot": disabledDesktopWidgetsSnapshot,
             "dashFocusCardId": dashFocusCardId,
             "controlCenterCollapsedCategories": controlCenterCollapsedCategories,
             "mediaLyricsOpen": mediaLyricsOpen,
