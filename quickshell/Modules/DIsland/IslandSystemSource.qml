@@ -13,6 +13,13 @@ QtObject {
     // Off: system levels and state changes keep their OSDs and only the face's own controls open this activity.
     property bool enabled: true
     property bool chargingPulseEnabled: true
+    readonly property bool airplaneMode: DMSService.airplaneMode
+    property bool _airplaneModeInitialized: false
+
+    onAirplaneModeChanged: {
+        if (root.enabled && _airplaneModeInitialized && DMSService.rfkillStateInitialized && SettingsData.osdAirplaneModeEnabled)
+            root.show("airplanemode");
+    }
 
     readonly property bool volumeActivity: kind === "volume"
     readonly property bool micActivity: kind === "mic"
@@ -228,16 +235,6 @@ QtObject {
         }
     }
 
-    property Connections airplaneModeConnection: Connections {
-        target: DMSService
-        enabled: root.enabled
-
-        function onAirplaneModeChanged() {
-            if (DMSService.rfkillStateInitialized && SettingsData.osdAirplaneModeEnabled)
-                root.show("airplanemode");
-        }
-    }
-
     property Connections powerProfileConnection: Connections {
         target: PowerProfileWatcher
         enabled: root.enabled
@@ -277,4 +274,6 @@ QtObject {
                 root.show("charging");
         }
     }
+
+    Component.onCompleted: _airplaneModeInitialized = true
 }
