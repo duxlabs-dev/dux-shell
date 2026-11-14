@@ -164,12 +164,19 @@ test("restoreDisabledPlugins shows error toast when called without callback and 
     const desktopWidgetInstances = [
         { id: "dw_broken", widgetType: "broken", enabled: true }
     ];
-    const { context, cache, calls } = createService({ availablePlugins, loadedPlugins, desktopWidgetInstances, failEnable: ["broken"] });
+    const failEnable = ["broken"];
+    const { context, cache, calls } = createService({ availablePlugins, loadedPlugins, desktopWidgetInstances, failEnable });
 
     context.disableAllPlugins();
     context.restoreDisabledPlugins();
     assert.equal(calls.toasts.length, 1);
     assert.deepEqual(Array.from(cache.disabledPluginsSnapshot), []);
-    assert.deepEqual(Array.from(cache.disabledDesktopWidgetsSnapshot), []);
+    assert.deepEqual(Array.from(cache.disabledDesktopWidgetsSnapshot), ["dw_broken"]);
     assert.equal(desktopWidgetInstances[0].enabled, false);
+
+    // Once the failure is resolved, the next successful enable restores its desktop widget.
+    failEnable.length = 0;
+    context.enablePlugin("broken");
+    assert.equal(desktopWidgetInstances[0].enabled, true);
+    assert.deepEqual(Array.from(cache.disabledDesktopWidgetsSnapshot), []);
 });

@@ -1056,7 +1056,6 @@ Singleton {
                     failed.push(id);
                 if (--pending > 0)
                     return;
-                CacheData.set("disabledDesktopWidgetsSnapshot", []);
                 if (onResult) {
                     onResult(failed);
                     return;
