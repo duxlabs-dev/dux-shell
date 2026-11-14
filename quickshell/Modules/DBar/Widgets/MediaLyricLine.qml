@@ -296,6 +296,8 @@ Item {
         property string text: ""
         property real fill: 0
         property real offset: 0
+        readonly property bool rtl: LyricsModel.isRtl(text)
+        readonly property real textX: rtl && dim.implicitWidth > width ? width - dim.implicitWidth + offset : -offset
 
         width: root.width
         height: root.height
@@ -311,7 +313,7 @@ Item {
 
         StyledText {
             id: dim
-            x: -face.offset
+            x: face.textX
             anchors.verticalCenter: parent.verticalCenter
             text: face.text
             font: measure.font
@@ -324,12 +326,13 @@ Item {
         }
 
         Item {
-            width: Math.max(0, face.fill - face.offset)
+            x: face.textX + (face.rtl ? dim.implicitWidth - width : 0)
+            width: Math.max(0, Math.min(face.fill, dim.implicitWidth))
             height: parent.height
             clip: true
 
             StyledText {
-                x: -face.offset
+                x: face.textX - parent.x
                 anchors.verticalCenter: parent.verticalCenter
                 text: face.text
                 font: measure.font
