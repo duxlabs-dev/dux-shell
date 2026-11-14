@@ -944,6 +944,8 @@ Singleton {
 
         if (!plugin.startupCheckPath) {
             const ok = loadPlugin(pluginId);
+            if (ok)
+                _restoreDesktopWidgetsForPlugin(pluginId);
             if (onResult)
                 onResult(ok);
             return ok;
@@ -971,6 +973,8 @@ Singleton {
             }
             _clearLoadError(pluginId);
             const ok = loadPlugin(pluginId);
+            if (ok)
+                _restoreDesktopWidgetsForPlugin(pluginId);
             if (onResult)
                 onResult(ok);
         };
@@ -997,19 +1001,38 @@ Singleton {
         return unloadPlugin(pluginId);
     }
 
+    function _restoreDesktopWidgetsForPlugin(pluginId) {
+        if (typeof CacheData === "undefined" || !Array.isArray(CacheData.disabledDesktopWidgetsSnapshot) || CacheData.disabledDesktopWidgetsSnapshot.length === 0)
+            return;
+        const snapshotSet = new Set(CacheData.disabledDesktopWidgetsSnapshot);
+        const restoredIds = new Set();
+        for (const inst of SettingsData.desktopWidgetInstances || []) {
+            if (inst.widgetType === pluginId && snapshotSet.has(inst.id)) {
+                restoredIds.add(inst.id);
+                SettingsData.updateDesktopWidgetInstance(inst.id, {
+                    enabled: true
+                });
+            }
+        }
+        if (restoredIds.size > 0)
+            CacheData.set("disabledDesktopWidgetsSnapshot", CacheData.disabledDesktopWidgetsSnapshot.filter(id => !restoredIds.has(id)));
+    }
+
     function disableAllPlugins() {
         const ids = Object.keys(loadedPlugins);
         if (ids.length === 0)
             return [];
         const idSet = new Set(ids);
         const instanceIds = (SettingsData.desktopWidgetInstances || []).filter(inst => inst.enabled && idSet.has(inst.widgetType)).map(inst => inst.id);
-        CacheData.set("disabledDesktopWidgetsSnapshot", instanceIds);
+        const existingWidgets = Array.isArray(CacheData.disabledDesktopWidgetsSnapshot) ? CacheData.disabledDesktopWidgetsSnapshot : [];
+        CacheData.set("disabledDesktopWidgetsSnapshot", Array.from(new Set(existingWidgets.concat(instanceIds))));
         for (const instId of instanceIds) {
             SettingsData.updateDesktopWidgetInstance(instId, {
                 enabled: false
             });
         }
-        CacheData.set("disabledPluginsSnapshot", ids);
+        const existingPlugins = Array.isArray(CacheData.disabledPluginsSnapshot) ? CacheData.disabledPluginsSnapshot : [];
+        CacheData.set("disabledPluginsSnapshot", Array.from(new Set(existingPlugins.concat(ids))));
         for (const id of ids)
             disablePlugin(id);
         return ids;
@@ -1017,22 +1040,10 @@ Singleton {
 
     function restoreDisabledPlugins(onResult) {
         const snapshot = Array.isArray(CacheData.disabledPluginsSnapshot) ? CacheData.disabledPluginsSnapshot.slice() : [];
-        const instanceSnapshot = Array.isArray(CacheData.disabledDesktopWidgetsSnapshot) ? CacheData.disabledDesktopWidgetsSnapshot.slice() : [];
         CacheData.set("disabledPluginsSnapshot", []);
-        CacheData.set("disabledDesktopWidgetsSnapshot", []);
-        const instancesByPlugin = {};
-        if (instanceSnapshot.length > 0) {
-            const instanceSet = new Set(instanceSnapshot);
-            for (const inst of SettingsData.desktopWidgetInstances || []) {
-                if (!instanceSet.has(inst.id))
-                    continue;
-                if (!instancesByPlugin[inst.widgetType])
-                    instancesByPlugin[inst.widgetType] = [];
-                instancesByPlugin[inst.widgetType].push(inst.id);
-            }
-        }
         const toEnable = snapshot.filter(id => availablePlugins[id] && !isPluginLoaded(id));
         if (toEnable.length === 0) {
+            CacheData.set("disabledDesktopWidgetsSnapshot", []);
             if (onResult)
                 onResult([]);
             return [];
@@ -1041,17 +1052,22 @@ Singleton {
         const failed = [];
         for (const id of toEnable) {
             enablePlugin(id, ok => {
-                if (ok) {
-                    for (const instId of instancesByPlugin[id] || []) {
-                        SettingsData.updateDesktopWidgetInstance(instId, {
-                            enabled: true
-                        });
-                    }
-                } else {
+                if (!ok)
                     failed.push(id);
-                }
-                if (--pending === 0 && onResult)
+                if (--pending > 0)
+                    return;
+                CacheData.set("disabledDesktopWidgetsSnapshot", []);
+                if (onResult) {
                     onResult(failed);
+                    return;
+                }
+                for (const failedId of failed) {
+                    const plugin = availablePlugins[failedId];
+                    const err = pluginLoadErrors[failedId];
+                    const title = I18n.tr("%1 Startup Failed", "plugin error title, %1 is the plugin name").arg(plugin?.name || failedId);
+                    const body = err ? (err.details ? (err.title + "\n\n" + err.details) : err.title) : I18n.tr("Failed to enable plugin: %1").arg(plugin?.name || failedId);
+                    ToastService.showError(title, body, "", "plugin-startup-" + failedId);
+                }
             });
         }
         return toEnable;

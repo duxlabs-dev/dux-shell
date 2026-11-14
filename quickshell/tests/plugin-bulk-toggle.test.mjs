@@ -7,7 +7,7 @@ const source = readFileSync(new URL("../Services/PluginService.qml", import.meta
 
 function createService({ availablePlugins, loadedPlugins, desktopWidgetInstances = [], failEnable = [] }) {
     const cache = { disabledPluginsSnapshot: [], disabledDesktopWidgetsSnapshot: [] };
-    const calls = { disabled: [], enabled: [] };
+    const calls = { disabled: [], enabled: [], toasts: [] };
 
     const context = vm.createContext({
         Array,
@@ -15,8 +15,24 @@ function createService({ availablePlugins, loadedPlugins, desktopWidgetInstances
         Set,
         availablePlugins,
         loadedPlugins,
+        pluginLoadErrors: {},
+        I18n: {
+            tr(str) {
+                return {
+                    arg(v) {
+                        return str.replace("%1", v);
+                    }
+                };
+            }
+        },
+        ToastService: {
+            showError(title, body) {
+                calls.toasts.push({ title, body });
+            }
+        },
         SettingsData: {
             desktopWidgetInstances,
+            setPluginSetting() {},
             updateDesktopWidgetInstance(id, updates) {
                 const inst = desktopWidgetInstances.find(item => item.id === id);
                 if (inst)
@@ -42,18 +58,20 @@ function createService({ availablePlugins, loadedPlugins, desktopWidgetInstances
             delete context.loadedPlugins[id];
             return true;
         },
-        enablePlugin(id, onResult) {
+        runStartupGate(id, onResult) {
             calls.enabled.push(id);
             const ok = !failEnable.includes(id);
-            if (ok)
+            if (ok) {
                 context.loadedPlugins[id] = context.availablePlugins[id];
+                context._restoreDesktopWidgetsForPlugin(id);
+            }
             if (onResult)
                 onResult(ok);
             return ok;
         }
     });
 
-    for (const name of ["disableAllPlugins", "restoreDisabledPlugins"]) {
+    for (const name of ["enablePlugin", "_restoreDesktopWidgetsForPlugin", "disableAllPlugins", "restoreDisabledPlugins"]) {
         const match = source.match(new RegExp(`^    function ${name}\\([^\\n]*\\)(?:: \\w+)? \\{\\n[\\s\\S]*?^    \\}`, "m"));
         assert.ok(match, `Missing ${name} in PluginService.qml`);
         vm.runInContext(match[0], context);
@@ -89,8 +107,6 @@ test("disableAllPlugins snapshots all loaded plugins and restoreDisabledPlugins 
     assert.equal(desktopWidgetInstances[0].enabled, false);
     assert.equal(desktopWidgetInstances[1].enabled, false);
     assert.equal(desktopWidgetInstances[2].enabled, true);
-    assert.equal(context.isPluginLoaded("desktopOnly"), false);
-    assert.equal(context.isPluginLoaded("gamma"), false);
 
     // Calling disableAllPlugins again with no loaded plugins keeps the existing snapshot.
     assert.deepEqual(Array.from(context.disableAllPlugins()), []);
@@ -107,12 +123,39 @@ test("disableAllPlugins snapshots all loaded plugins and restoreDisabledPlugins 
     assert.deepEqual(Array.from(cache.disabledDesktopWidgetsSnapshot), []);
     assert.equal(desktopWidgetInstances[0].enabled, true);
     assert.equal(desktopWidgetInstances[1].enabled, false);
+    assert.equal(context.isPluginLoaded("gamma"), false);
 });
 
-test("restoreDisabledPlugins reports failed plugins and keeps their desktop widget disabled", () => {
+test("manual enablePlugin restores widgets and repeated disableAllPlugins merges snapshots", () => {
     const availablePlugins = {
         alpha: { id: "alpha", surfaces: ["bar"] },
-        broken: { id: "broken", surfaces: ["desktop"] }
+        desktopOnly: { id: "desktopOnly", surfaces: ["desktop"] }
+    };
+    const loadedPlugins = {
+        alpha: availablePlugins.alpha,
+        desktopOnly: availablePlugins.desktopOnly
+    };
+    const desktopWidgetInstances = [
+        { id: "dw_desktop_1", widgetType: "desktopOnly", enabled: true }
+    ];
+    const { context, cache } = createService({ availablePlugins, loadedPlugins, desktopWidgetInstances });
+
+    context.disableAllPlugins();
+    context.enablePlugin("desktopOnly");
+    assert.equal(desktopWidgetInstances[0].enabled, true);
+    assert.deepEqual(Array.from(cache.disabledPluginsSnapshot), ["alpha"]);
+    assert.deepEqual(Array.from(cache.disabledDesktopWidgetsSnapshot), []);
+
+    // Calling disableAllPlugins again merges with the remaining snapshot rather than overwriting it.
+    context.disableAllPlugins();
+    assert.deepEqual(Array.from(cache.disabledPluginsSnapshot).sort(), ["alpha", "desktopOnly"]);
+    assert.deepEqual(Array.from(cache.disabledDesktopWidgetsSnapshot), ["dw_desktop_1"]);
+});
+
+test("restoreDisabledPlugins shows error toast when called without callback and keeps failed widgets disabled", () => {
+    const availablePlugins = {
+        alpha: { id: "alpha", surfaces: ["bar"] },
+        broken: { id: "broken", name: "Broken", surfaces: ["desktop"] }
     };
     const loadedPlugins = {
         alpha: availablePlugins.alpha,
@@ -121,14 +164,12 @@ test("restoreDisabledPlugins reports failed plugins and keeps their desktop widg
     const desktopWidgetInstances = [
         { id: "dw_broken", widgetType: "broken", enabled: true }
     ];
-    const { context, cache } = createService({ availablePlugins, loadedPlugins, desktopWidgetInstances, failEnable: ["broken"] });
+    const { context, cache, calls } = createService({ availablePlugins, loadedPlugins, desktopWidgetInstances, failEnable: ["broken"] });
 
     context.disableAllPlugins();
-    let failedResult = null;
-    context.restoreDisabledPlugins(failed => {
-        failedResult = Array.from(failed);
-    });
-    assert.deepEqual(failedResult, ["broken"]);
+    context.restoreDisabledPlugins();
+    assert.equal(calls.toasts.length, 1);
     assert.deepEqual(Array.from(cache.disabledPluginsSnapshot), []);
+    assert.deepEqual(Array.from(cache.disabledDesktopWidgetsSnapshot), []);
     assert.equal(desktopWidgetInstances[0].enabled, false);
 });

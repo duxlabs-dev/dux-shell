@@ -1402,7 +1402,7 @@ Item {
             if (!PluginService.hasDisabledPluginsSnapshot)
                 return "NO_PLUGINS_SNAPSHOT";
             const restored = PluginService.restoreDisabledPlugins();
-            return `PLUGINS_RESTORED: ${restored.length}`;
+            return restored.length > 0 ? `PLUGINS_RESTORE_REQUESTED: ${restored.length}` : "NO_PLUGINS_TO_RESTORE";
         }
 
         target: "plugins"
