@@ -14,6 +14,8 @@ CcListRow {
     readonly property bool isTransient: !!profile?.transient
     readonly property bool canExpand: profile?.canExpand !== false
     readonly property bool canDelete: profile?.canDelete !== false
+    // Plugin VPNs keep the credentials panel: the editor only covers their General and IP settings.
+    readonly property bool editorReplacesPanel: showsEditButton && !isTransient && profile?.type === "wireguard"
 
     signal toggleExpand
     signal deleteRequested
@@ -113,7 +115,7 @@ CcListRow {
 
     DActionButton {
         anchors.verticalCenter: parent.verticalCenter
-        visible: root.canExpand && !(root.showsEditButton && !root.isTransient)
+        visible: root.canExpand && !root.editorReplacesPanel
         buttonSize: Theme.buttonHeightXS
         iconSize: Theme.iconSizeMedium
         iconName: root.isExpanded ? "expand_less" : "expand_more"
