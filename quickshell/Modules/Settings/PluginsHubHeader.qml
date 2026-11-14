@@ -287,6 +287,24 @@ Column {
             actionError = I18n.tr("Failed to disable plugin: %1").arg(row.text);
     }
 
+    function disableAllPlugins() {
+        actionError = "";
+        PluginService.disableAllPlugins();
+    }
+
+    function restoreDisabledPlugins() {
+        actionError = "";
+        PluginService.restoreDisabledPlugins(failed => {
+            if (!failed.length)
+                return;
+            actionError = failed.map(id => {
+                const error = PluginService.pluginLoadErrors[id];
+                const name = PluginService.availablePlugins[id]?.name || id;
+                return error ? [error.title, error.details].filter(Boolean).join("\n") : I18n.tr("Failed to enable plugin: %1").arg(name);
+            }).join("\n\n");
+        });
+    }
+
     Connections {
         target: PluginService
 
@@ -408,6 +426,22 @@ Column {
                 visible: root.pluginsWithUpdates.length > 0
                 enabled: DMSService.dmsAvailable && !root.checkingUpdates && !pluginUpdatesDialogItem.isUpdating && !root.updatingPluginId
                 onClicked: root.checkUpdates()
+            }
+            DButton {
+                readonly property bool hasSnapshot: PluginService.hasDisabledPluginsSnapshot
+                text: hasSnapshot ? I18n.tr("Restore", "re-enable plugins disabled by Disable All") + " (" + CacheData.disabledPluginsSnapshot.length + ")" : I18n.tr("Disable All", "disable all active plugins")
+                iconName: hasSnapshot ? "restore" : "block"
+                variant: hasSnapshot ? "primary" : "tonal"
+                maximumWidth: parent.width
+                wrapText: true
+                enabled: (hasSnapshot || PluginService.loadedDisableableCount > 0) && !pluginUpdatesDialogItem.isUpdating && !root.updatingPluginId && Object.keys(root.uninstalling).length === 0
+                onClicked: {
+                    if (hasSnapshot) {
+                        root.restoreDisabledPlugins();
+                        return;
+                    }
+                    root.disableAllPlugins();
+                }
             }
         }
 

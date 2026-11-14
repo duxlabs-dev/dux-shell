@@ -27,6 +27,8 @@ Variants {
                 continue;
             if (!PluginService.availablePlugins[pluginId])
                 continue;
+            if ((CacheData.disabledPluginsSnapshot || []).includes(pluginId))
+                continue;
             PluginService.enablePlugin(pluginId);
         }
     }
