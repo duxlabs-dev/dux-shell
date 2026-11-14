@@ -585,6 +585,11 @@ FocusScope {
     readonly property alias inputMaskItem: maskItem
 
     readonly property var hoveredButton: widgetStrip.hoveredButton
+    readonly property real hoveredButtonOffset: dock.hoveredButton?.hoverAnimOffset ?? 0
+    onHoveredButtonOffsetChanged: {
+        if (dockTooltip.shown && dock.config.magnification)
+            showTooltipForHoveredButton();
+    }
 
     DTooltip {
         id: dockTooltip
@@ -604,23 +609,24 @@ FocusScope {
         if (dock.editMode || !dock.hoveredButton || dock.hoveredButton.showsWindowPreview || !dock.reveal || slideXSpring.running || slideYSpring.running)
             return;
 
-        const buttonLocalPos = dock.hoveredButton.mapToItem(null, 0, 0);
+        const btnW = dock.hoveredButton.width;
+        const btnH = dock.hoveredButton.height;
+        const buttonCenter = dock.hoveredButton.mapToItem(null, btnW / 2, btnH / 2);
         const tooltipText = dock.hoveredButton.tooltipText || "";
         if (!tooltipText)
             return;
 
-        const screenHeight = dock.screen ? dock.screen.height : 0;
-
         const gap = Theme.spacingS;
         const bgMargin = dockGeometry.bodyEdgeMargin;
-        const btnW = dock.hoveredButton.width;
-        const btnH = dock.hoveredButton.height;
+        const magnificationScale = dock.config.magnification ? Math.max(1.05, Math.min(2.0, (dock.config.magnificationScale ?? 130) / 100)) : 1.0;
+        const magnificationOverhang = ((dock.isVertical ? btnW : btnH) + Math.abs(dock.hoveredButtonOffset)) * (magnificationScale - 1.0);
 
         if (!dock.isVertical) {
             const isBottom = dock.config.position === SettingsData.Position.Bottom;
-            const tooltipX = buttonLocalPos.x + btnW / 2 + adjacentLeftBarWidth;
-            const tooltipHeight = 32;
-            const totalFromEdge = bgMargin + dockBackground.height + dock.borderThickness + gap;
+            const screenHeight = dock.screen ? dock.screen.height : 0;
+            const tooltipX = buttonCenter.x + adjacentLeftBarWidth;
+            const tooltipHeight = dockTooltip.tooltipHeight;
+            const totalFromEdge = bgMargin + dockBackground.height + dock.borderThickness + gap + magnificationOverhang;
             const screenRelativeY = isBottom ? (screenHeight - totalFromEdge - tooltipHeight) : totalFromEdge;
             dockTooltip.show(tooltipText, tooltipX, screenRelativeY, dock.screen, false, false);
             return;
@@ -628,9 +634,9 @@ FocusScope {
 
         const isLeft = dock.config.position === SettingsData.Position.Left;
         const screenWidth = dock.screen ? dock.screen.width : 0;
-        const totalFromEdge = bgMargin + dockBackground.width + dock.borderThickness + gap;
+        const totalFromEdge = bgMargin + dockBackground.width + dock.borderThickness + gap + magnificationOverhang;
         const tooltipX = isLeft ? totalFromEdge : (screenWidth - totalFromEdge);
-        const screenRelativeY = buttonLocalPos.y + btnH / 2 + adjacentTopBarHeight;
+        const screenRelativeY = buttonCenter.y + adjacentTopBarHeight;
         dockTooltip.show(tooltipText, tooltipX, screenRelativeY, dock.screen, isLeft, !isLeft);
     }
 

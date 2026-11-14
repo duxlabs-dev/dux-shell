@@ -52,7 +52,8 @@ PanelWindow {
     }
     property bool revealed: false
     readonly property point anchorPoint: (anchorButton ? surfaceContext.screenPoint(anchorButton, anchorButton.width / 2, anchorButton.height / 2) : null) ?? Qt.point(0, 0)
-    readonly property real edgeOffset: surfaceContext.thickness / 2 + Theme.spacingS
+    readonly property real magnificationScale: options.magnification ? Math.max(1.05, Math.min(2.0, (options.magnificationScale ?? 130) / 100)) : 1.0
+    readonly property real edgeOffset: surfaceContext.thickness * magnificationScale / 2 + Math.abs(anchorButton?.hoverAnimOffset ?? 0) * (magnificationScale - 1.0) + Theme.spacingS
     readonly property real cardX: {
         switch (options.position) {
         case SettingsData.Position.Left:
