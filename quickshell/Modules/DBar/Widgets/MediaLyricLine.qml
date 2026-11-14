@@ -219,6 +219,7 @@ Item {
         id: face
         property string text: ""
         property real fill: 0
+        readonly property bool rtl: LyricsModel.isRtl(text)
 
         width: root.width
         height: root.height
@@ -244,11 +245,13 @@ Item {
         }
 
         Item {
-            width: face.fill
+            x: face.rtl ? dim.implicitWidth - width : 0
+            width: Math.min(face.fill, dim.implicitWidth)
             height: parent.height
             clip: true
 
             StyledText {
+                x: -parent.x
                 anchors.verticalCenter: parent.verticalCenter
                 text: face.text
                 font: measure.font
