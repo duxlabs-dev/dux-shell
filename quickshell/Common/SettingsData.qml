@@ -510,6 +510,8 @@ Singleton {
     property bool spotlightBarShowModeChips: Spec.SPEC.spotlightBarShowModeChips.def
     property bool keybindsFloatingWindow: Spec.SPEC.keybindsFloatingWindow.def
     onKeybindsFloatingWindowChanged: saveSettings()
+    property string keybindsModifierStyle: Spec.SPEC.keybindsModifierStyle.def
+    onKeybindsModifierStyleChanged: saveSettings()
 
     property string _legacyWeatherLocation: "New York, NY"
     property string _legacyWeatherCoordinates: "40.7128,-74.0060"
