@@ -309,6 +309,8 @@ Item {
             color: Theme.withAlpha(root.color, Theme.pendingOpacity)
             wrapMode: Text.NoWrap
             elide: Text.ElideNone
+            // Fractional offsets under NativeRendering quantise glyph positions and stutter.
+            renderType: root.scrollable ? Text.QtRendering : resolvedRenderType
             Accessible.name: face.text
         }
 
@@ -325,6 +327,7 @@ Item {
                 color: root.color
                 wrapMode: Text.NoWrap
                 elide: Text.ElideNone
+                renderType: root.scrollable ? Text.QtRendering : resolvedRenderType
                 Accessible.ignored: true
             }
         }
