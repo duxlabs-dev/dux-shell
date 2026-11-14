@@ -24,7 +24,7 @@ Singleton {
     id: root
     readonly property var log: Log.scoped("SettingsData")
 
-    readonly property int settingsConfigVersion: 43
+    readonly property int settingsConfigVersion: 44
 
     enum Position {
         Top,
@@ -2576,7 +2576,7 @@ Singleton {
 
     function dockReservationForEdge(screen, side) {
         const config = dockConfigForScreenEdge(screen, side);
-        if (!config?.enabled || config.autoHide || config.smartAutoHide)
+        if (!config?.enabled || config.autoHide || (config.smartAutoHide && CompositorService.supportsSmartDock))
             return 0;
         return Math.max(0, DockConfig.effectiveThickness(config) + (config.mode === "taskbar" || (!config.useOverlayLayer && CompositorService.usesConnectedFrameChromeForScreen(screen)) ? 0 : config.margin + config.bottomGap));
     }

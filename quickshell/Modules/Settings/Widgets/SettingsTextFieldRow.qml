@@ -15,7 +15,13 @@ SettingsRow {
     property alias placeholderText: field.placeholderText
     property alias validator: field.validator
     property alias maximumLength: field.maximumLength
+    property alias echoMode: field.echoMode
+    property alias showPasswordToggle: field.showPasswordToggle
     property alias actions: actionRow.data
+
+    function focusField() {
+        field.forceActiveFocus();
+    }
 
     signal valueEdited(string value)
     signal editingFinished(string value)

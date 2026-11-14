@@ -229,6 +229,15 @@ SettingsCard {
     }
 
     SettingsToggleRow {
+        settingKey: root.keyPrefix + "MediaScrollLyrics"
+        tags: ["island", "media", "lyrics", "scroll", "compact"]
+        visible: !root.isDot && root.store.setting("islandMediaLyrics")
+        text: I18n.tr("Scroll lyrics", "Media player option that moves a lyric line too wide for the pill instead of clipping it")
+        checked: root.store.setting("islandMediaScrollLyrics")
+        onToggled: checked => root.store.apply("islandMediaScrollLyrics", checked)
+    }
+
+    SettingsToggleRow {
         settingKey: root.keyPrefix + "MediaAutoSwitch"
         tags: ["island", "media", "playback", "auto", "switch", "compact"]
         visible: !root.isDot

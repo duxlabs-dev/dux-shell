@@ -49,6 +49,11 @@ func TestHandleActions(t *testing.T) {
 		{"disconnect", "tailscale.disconnect", nil},
 		{"setExitNode", "tailscale.setExitNode", map[string]any{"id": "nABC123"}},
 		{"setAllowLanAccess", "tailscale.setAllowLanAccess", map[string]any{"enabled": true}},
+		{"setPrefs", "tailscale.setPrefs", map[string]any{"acceptRoutes": true}},
+		{"login", "tailscale.login", nil},
+		{"logout", "tailscale.logout", nil},
+		{"switchProfile", "tailscale.switchProfile", map[string]any{"id": "p2"}},
+		{"removeProfile", "tailscale.removeProfile", map[string]any{"id": "p2"}},
 	}
 
 	for _, tc := range cases {

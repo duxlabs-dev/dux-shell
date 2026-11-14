@@ -39,7 +39,7 @@ BuildRequires:  systemd-rpm-macros
 
 # Core requirements
 Requires:       accountsservice
-Requires:       dux-qt-base
+Requires:       dux-qt-base-git
 Requires:       dms-cli = %{epoch}:%{version}-%{release}
 
 # Core utilities (Recommended for DMS functionality)

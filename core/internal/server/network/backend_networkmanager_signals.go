@@ -305,15 +305,14 @@ func (b *NetworkManagerBackend) handleDBusSignal(sig *dbus.Signal) {
 	if sig.Name == dbusNMSettingsInterface+".NewConnection" ||
 		sig.Name == dbusNMSettingsInterface+".ConnectionRemoved" ||
 		sig.Name == dbusNMSettingsConnectionInterface+".Updated" {
+		b.bumpProfilesRevision()
 		b.ListVPNProfiles()
 		if err := b.updateSavedWiFiNetworks(); err != nil {
 			b.updateWiFiNetworks()
 		}
 		b.updateHotspotState()
-		b.listCellularConnections()
-		// Device state does not change when an inactive wired profile is
-		// added or deleted, so the profile list must be refreshed here too.
 		b.listEthernetConnections()
+		b.listCellularConnections()
 		if b.onStateChange != nil {
 			b.onStateChange()
 		}
@@ -409,9 +408,13 @@ func (b *NetworkManagerBackend) handleDBusSignal(sig *dbus.Signal) {
 }
 
 func (b *NetworkManagerBackend) handleNetworkManagerChange(changes map[string]dbus.Variant) {
-	var needsUpdate bool
+	var needsUpdate, notify bool
 
-	for key := range changes {
+	for key, val := range changes {
+		if b.applyConnectivityProperty(key, val) {
+			notify = true
+			continue
+		}
 		switch key {
 		case "PrimaryConnection", "State", "ActiveConnections":
 			needsUpdate = true
@@ -441,17 +444,25 @@ func (b *NetworkManagerBackend) handleNetworkManagerChange(changes map[string]db
 			b.updateCellularState()
 		}
 		if _, exists := changes["ActiveConnections"]; exists {
+			b.bumpProfilesRevision()
 			b.updateVPNConnectionState()
 			b.ListActiveVPN()
 			b.updateHotspotState()
 		}
-		if b.onStateChange != nil {
-			b.onStateChange()
-		}
+	}
+	if (needsUpdate || notify) && b.onStateChange != nil {
+		b.onStateChange()
 	}
 }
 
+func (b *NetworkManagerBackend) bumpProfilesRevision() {
+	b.stateMutex.Lock()
+	b.state.ConnectionProfilesRevision++
+	b.stateMutex.Unlock()
+}
+
 func (b *NetworkManagerBackend) handleActiveConnectionStateChange() {
+	b.bumpProfilesRevision()
 	b.updateVPNConnectionState()
 	b.ListActiveVPN()
 	b.updateHotspotState()
@@ -732,12 +743,14 @@ func (b *NetworkManagerBackend) handleDeviceAdded(devicePath dbus.ObjectPath) {
 			return
 		}
 		hwAddr, _ := w.GetPropertyHwAddress()
+		permHwAddr, _ := w.GetPropertyPermHwAddress()
 
 		b.setEthernetDeviceInfo(iface, &ethernetDeviceInfo{
-			device:    dev,
-			wired:     w,
-			name:      iface,
-			hwAddress: hwAddr,
+			device:        dev,
+			wired:         w,
+			name:          iface,
+			hwAddress:     hwAddr,
+			permHwAddress: permHwAddr,
 		})
 
 		if b.ethernetDevice == nil {

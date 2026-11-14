@@ -1233,6 +1233,7 @@ Singleton {
 
     property string monoFontFamily: typeof SettingsData !== "undefined" ? resolvedMonoFontFamily(SettingsData.monoFontFamily) : DCommon.Fonts.mono
     property string displayFontFamily: typeof SettingsData !== "undefined" ? resolvedDisplayFontFamily(SettingsData.displayFontFamily) : DCommon.Fonts.display
+    readonly property string passwordMaskCharacter: DCommon.Style.passwordMaskCharacter
 
     readonly property var fontChoices: [
         {

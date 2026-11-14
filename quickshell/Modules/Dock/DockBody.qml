@@ -187,7 +187,8 @@ FocusScope {
     }
     readonly property bool isVertical: dock.config.position === SettingsData.Position.Left || dock.config.position === SettingsData.Position.Right
 
-    property bool autoHide: dock.config.autoHide || dock.config.smartAutoHide
+    readonly property bool smartAutoHideActive: dock.config.smartAutoHide && CompositorService.supportsSmartDock
+    property bool autoHide: dock.config.autoHide || smartAutoHideActive
     property real backgroundTransparency: SettingsData.barTransparency(dock.config)
     property bool groupByApp: dock.config.groupByApp
     readonly property int borderThickness: dock.config.borderEnabled ? dock.config.borderThickness : 0
@@ -374,7 +375,7 @@ FocusScope {
     property bool revealSticky: false
 
     readonly property bool shouldHideForWindows: {
-        if (!dock.config.smartAutoHide)
+        if (!smartAutoHideActive)
             return false;
         CompositorService.windowStateRevision;
         return CompositorService.windowsOverlapDock(dock.modelData?.name ?? "", dock.config.position, dockGeometry.motionThickness, dock.screen?.width ?? 0, dock.screen?.height ?? 0);
@@ -428,7 +429,7 @@ FocusScope {
         if (hiddenForFullscreen || !dock.config.enabled)
             return false;
 
-        if (dock.config.smartAutoHide)
+        if (smartAutoHideActive)
             return !shouldHideForWindows || hoverOrActive;
 
         return !autoHide || hoverOrActive;

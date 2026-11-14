@@ -17,7 +17,7 @@ Singleton {
     id: root
     readonly property var log: Log.scoped("SessionData")
 
-    readonly property int sessionConfigVersion: 7
+    readonly property int sessionConfigVersion: 8
 
     signal loaded
     signal saved
@@ -254,7 +254,7 @@ Singleton {
     property bool themeModeShareGammaSettings: true
     property string themeModeNextTransition: ""
 
-    property var dockPins: ({})
+    property var dockPins: SpecUtil.cloneDef(Spec.SPEC.dockPins.def)
     property var barPinnedApps: []
     property var hiddenTrayIds: []
     property var trayItemOrder: []

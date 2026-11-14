@@ -41,6 +41,19 @@ function screenPointOf(window, item, x, y) {
     };
 }
 
+function firstInvalid(item) {
+    for (const child of item.children) {
+        if (!child.visible)
+            continue;
+        if (child.isError === true)
+            return child;
+        const found = firstInvalid(child);
+        if (found)
+            return found;
+    }
+    return null;
+}
+
 function normalizePinList(value) {
     if (Array.isArray(value))
         return value.filter(v => v);

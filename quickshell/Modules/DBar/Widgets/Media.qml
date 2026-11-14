@@ -409,6 +409,8 @@ BasePill {
                             color: root.contentColor
                             font.pixelSize: mediaText.font.pixelSize
                             live: root.surfaceLive
+                            playing: root.surfaceLive && root._isPlaying
+                            scroll: SettingsData.widgetOption("music", root.widgetData, "mediaScrollLyrics")
                             sweep: SettingsData.widgetOption("music", root.widgetData, "mediaSmoothLyrics")
                         }
 
