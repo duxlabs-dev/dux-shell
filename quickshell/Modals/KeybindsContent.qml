@@ -744,6 +744,7 @@ FocusScope {
                         text: I18n.tr("Key style", "modifier icon style toggle label")
                         font.pixelSize: Theme.fontSizeSmall
                         color: Theme.surfaceVariantText
+                        elide: Text.ElideRight
                         Layout.fillWidth: true
                         Layout.alignment: Qt.AlignVCenter
                         Layout.leftMargin: Theme.spacingS
