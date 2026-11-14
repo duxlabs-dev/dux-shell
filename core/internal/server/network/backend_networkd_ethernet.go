@@ -90,11 +90,15 @@ func (b *SystemdNetworkdBackend) ConnectEthernet() error {
 	return linkObj.Call(networkdLinkIface+".Reconfigure", 0).Err
 }
 
+func (b *SystemdNetworkdBackend) ConnectEthernetDevice(device string) error {
+	return b.ActivateWiredConnection(device, "")
+}
+
 func (b *SystemdNetworkdBackend) DisconnectEthernet() error {
 	return fmt.Errorf("not supported by networkd backend")
 }
 
-func (b *SystemdNetworkdBackend) ActivateWiredConnection(id string) error {
+func (b *SystemdNetworkdBackend) ActivateWiredConnection(id, _ string) error {
 	ifname := strings.TrimPrefix(id, "wired:")
 
 	b.linksMutex.RLock()

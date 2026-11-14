@@ -103,7 +103,9 @@ func TestNetworkManagerBackend_HandleDBusSignal_ConnectionRemovedRefreshesWiredC
 	backend, err := NewNetworkManagerBackend(mockNM)
 	assert.NoError(t, err)
 	backend.settings = mockSettings
-	backend.ethernetDevice = mock_gonetworkmanager.NewMockDevice(t)
+	dev := mock_gonetworkmanager.NewMockDevice(t)
+	dev.EXPECT().GetPropertyActiveConnection().Return(nil, nil).Maybe()
+	backend.ethernetDevices["enp5s0"] = &ethernetDeviceInfo{device: dev, name: "enp5s0"}
 
 	backend.stateMutex.Lock()
 	backend.state.WiredConnections = []WiredConnection{
@@ -149,9 +151,11 @@ func TestNetworkManagerBackend_EthernetDeviceSurvivesNetworkManagerRestart(t *te
 	dev.EXPECT().GetPropertyState().Return(gonetworkmanager.NmDeviceStateActivated, nil).Maybe()
 	dev.EXPECT().GetPropertyDriver().Return("r8169", nil).Maybe()
 	dev.EXPECT().GetPropertyIP4Config().Return(nil, nil).Maybe()
+	dev.EXPECT().GetPropertyActiveConnection().Return(nil, nil).Maybe()
 
 	wired := mock_gonetworkmanager.NewMockDeviceWired(t)
 	wired.EXPECT().GetPropertyHwAddress().Return("94:e2:3c:c1:8d:ba", nil)
+	wired.EXPECT().GetPropertyPermHwAddress().Return("94:e2:3c:c1:8d:ba", nil)
 	wired.EXPECT().GetPropertySpeed().Return(uint32(1000), nil).Maybe()
 
 	backend, err := NewNetworkManagerBackend(mockNM)
@@ -215,9 +219,11 @@ func TestNetworkManagerBackend_RestartDropsDevicesOfDeadInstance(t *testing.T) {
 	newDev.EXPECT().GetPropertyState().Return(gonetworkmanager.NmDeviceStateActivated, nil).Maybe()
 	newDev.EXPECT().GetPropertyDriver().Return("r8169", nil).Maybe()
 	newDev.EXPECT().GetPropertyIP4Config().Return(nil, nil).Maybe()
+	newDev.EXPECT().GetPropertyActiveConnection().Return(nil, nil).Maybe()
 
 	wired := mock_gonetworkmanager.NewMockDeviceWired(t)
 	wired.EXPECT().GetPropertyHwAddress().Return("94:e2:3c:c1:8d:ba", nil)
+	wired.EXPECT().GetPropertyPermHwAddress().Return("94:e2:3c:c1:8d:ba", nil)
 	wired.EXPECT().GetPropertySpeed().Return(uint32(1000), nil).Maybe()
 
 	backend, err := NewNetworkManagerBackend(mockNM)
