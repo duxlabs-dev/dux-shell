@@ -83,6 +83,9 @@ QtObject {
     readonly property Component bluetoothTile: Component {
         BluetoothTile {}
     }
+    readonly property Component airplaneModeTile: Component {
+        AirplaneModeTile {}
+    }
     readonly property Component audioOutputTile: Component {
         AudioDeviceTile {}
     }
@@ -153,6 +156,8 @@ QtObject {
             return networkTile;
         case "bluetooth":
             return bluetoothTile;
+        case "airplaneMode":
+            return airplaneModeTile;
         case "audioOutput":
             return audioOutputTile;
         case "audioInput":
@@ -326,6 +331,16 @@ QtObject {
             "category": "network",
             "enabled": BluetoothService.available,
             "warning": !BluetoothService.available ? I18n.tr("Bluetooth not available") : undefined
+        },
+        {
+            "id": "airplaneMode",
+            "text": I18n.tr("Airplane mode"),
+            "description": I18n.tr("Disable wireless radios"),
+            "icon": "airplanemode_active",
+            "type": "toggle",
+            "category": "network",
+            "enabled": DMSService.rfkillAvailable,
+            "warning": !DMSService.rfkillAvailable ? I18n.tr("No wireless devices available") : undefined
         },
         {
             "id": "audioOutput",

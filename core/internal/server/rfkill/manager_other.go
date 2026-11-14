@@ -14,6 +14,10 @@ func (m *Manager) GetState() State {
 	return State{}
 }
 
+func (m *Manager) SetAirplaneMode(enabled bool) error {
+	return fmt.Errorf("rfkill control is only supported on Linux")
+}
+
 func (m *Manager) Subscribe(id string) chan State {
 	return make(chan State)
 }

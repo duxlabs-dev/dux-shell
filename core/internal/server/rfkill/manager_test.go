@@ -30,3 +30,8 @@ func TestComputeState(t *testing.T) {
 	applyEvent(devices, 0, rfkillTypeWLAN, rfkillOpChange, 0, 1)
 	assert.Equal(t, State{Available: true, AirplaneMode: true}, computeState(devices))
 }
+
+func TestBuildChangeAllEvent(t *testing.T) {
+	assert.Equal(t, [rfkillEventSize]byte{0, 0, 0, 0, rfkillTypeAll, rfkillOpChangeAll, 1, 0}, buildChangeAllEvent(true))
+	assert.Equal(t, [rfkillEventSize]byte{0, 0, 0, 0, rfkillTypeAll, rfkillOpChangeAll, 0, 0}, buildChangeAllEvent(false))
+}
