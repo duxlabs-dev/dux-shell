@@ -26,6 +26,7 @@ import (
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/notifyactions"
 	serverPlugins "github.com/duxlabs-dev/dux-shell/core/internal/server/plugins"
 	serverRegistries "github.com/duxlabs-dev/dux-shell/core/internal/server/registries"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/rfkill"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/sysupdate"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/tailscale"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/thememode"
@@ -212,6 +213,14 @@ func newRequestMux(readiness *systemd.Readiness) *ipc.Mux {
 			return
 		}
 		evdev.HandleRequest(conn, req, evdevManager)
+	}))
+
+	mux.HandlePrefix("rfkill.", requestHandler(func(conn *ipc.ConnWriter, req ipc.Request) {
+		if rfkillManager == nil {
+			conn.RespondError(req.ID, "rfkill manager not initialized")
+			return
+		}
+		rfkill.HandleRequest(conn, req, rfkillManager)
 	}))
 
 	mux.HandlePrefix("dbus.", func(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request, _ *ipc.Subscriber) {

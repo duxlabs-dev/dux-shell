@@ -83,6 +83,7 @@ Singleton {
     property bool numLockState: false
     property bool evdevStateInitialized: false
     property bool airplaneMode: false
+    property bool rfkillAvailable: false
     property bool rfkillStateInitialized: false
     property bool screensaverInhibited: false
     property var screensaverInhibitors: []
@@ -331,6 +332,9 @@ Singleton {
             evdevStateInitialized = true;
             evdevStateUpdate(data);
         } else if (service === "rfkill") {
+            if (data.available !== undefined) {
+                rfkillAvailable = data.available;
+            }
             if (data.airplaneMode !== undefined) {
                 airplaneMode = data.airplaneMode;
             }
@@ -843,5 +847,15 @@ Singleton {
 
     function sysupdateRepoStatus(callback) {
         sendRequest("sysupdate.repoStatus", null, callback);
+    }
+
+    function setAirplaneMode(enabled, callback) {
+        sendRequest("rfkill.setAirplaneMode", {
+            "enabled": enabled
+        }, callback);
+    }
+
+    function toggleAirplaneMode(callback) {
+        setAirplaneMode(!airplaneMode, callback);
     }
 }

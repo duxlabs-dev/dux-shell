@@ -87,6 +87,30 @@ func (m *Manager) GetState() State {
 	return m.state
 }
 
+func (m *Manager) SetAirplaneMode(enabled bool) error {
+	f, err := os.OpenFile(rfkillDevicePath, os.O_WRONLY, 0)
+	if err != nil {
+		return fmt.Errorf("failed to open %s: %w", rfkillDevicePath, err)
+	}
+	defer f.Close()
+
+	event := buildChangeAllEvent(enabled)
+	if _, err := f.Write(event[:]); err != nil {
+		return fmt.Errorf("failed to write rfkill event: %w", err)
+	}
+	return nil
+}
+
+func buildChangeAllEvent(blocked bool) [rfkillEventSize]byte {
+	var event [rfkillEventSize]byte
+	event[4] = rfkillTypeAll
+	event[5] = rfkillOpChangeAll
+	if blocked {
+		event[6] = 1
+	}
+	return event
+}
+
 func (m *Manager) Subscribe(id string) chan State {
 	ch := make(chan State, 16)
 	m.subscribers.Store(id, ch)
