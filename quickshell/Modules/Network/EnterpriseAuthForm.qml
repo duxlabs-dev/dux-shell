@@ -5,7 +5,7 @@ import qs.Common
 import qs.DCommon.Widgets
 import qs.Modules.Settings.NetworkConnection
 import qs.Modules.Settings.Widgets
-import "../../Common/ConnectionEditor.js" as CE
+import "../../Common/EnterpriseConfig.js" as EnterpriseConfig
 
 Column {
     id: root
@@ -21,7 +21,7 @@ Column {
     // Files NM already holds as blobs (keys ca, clientCert, privateKey): they count as present while their path is empty.
     property var storedFiles: ({})
     property var original: ({})
-    readonly property bool valid: CE.enterpriseConfigValid(toConfig(), {
+    readonly property bool valid: EnterpriseConfig.enterpriseConfigValid(toConfig(), {
         usernameSuffix: usernameSuffix,
         usernameSuffixRequired: usernameSuffixRequired,
         storedFiles: storedFiles
@@ -29,14 +29,100 @@ Column {
 
     signal submitRequested
 
-    readonly property var methodChoices: [{"label": "PEAP", "value": "peap"}, {"label": "TTLS", "value": "ttls"}, {"label": "TLS", "value": "tls"}, {"label": "PWD", "value": "pwd"}]
+    readonly property var methodChoices: [
+        {
+            "label": "PEAP",
+            "value": "peap"
+        },
+        {
+            "label": "TTLS",
+            "value": "ttls"
+        },
+        {
+            "label": "TLS",
+            "value": "tls"
+        },
+        {
+            "label": "PWD",
+            "value": "pwd"
+        }
+    ]
     readonly property var innerChoices: ({
-            "peap": [{"label": "MSCHAPv2", "value": "mschapv2"}, {"label": "GTC", "value": "gtc"}, {"label": "MD5", "value": "md5"}],
-            "ttls": [{"label": "PAP", "value": "pap"}, {"label": "MSCHAP", "value": "mschap"}, {"label": "MSCHAPv2", "value": "mschapv2"}, {"label": "CHAP", "value": "chap"}, {"label": "EAP-MSCHAPv2", "value": "eap-mschapv2"}]
+            "peap": [
+                {
+                    "label": "MSCHAPv2",
+                    "value": "mschapv2"
+                },
+                {
+                    "label": "GTC",
+                    "value": "gtc"
+                },
+                {
+                    "label": "MD5",
+                    "value": "md5"
+                }
+            ],
+            "ttls": [
+                {
+                    "label": "PAP",
+                    "value": "pap"
+                },
+                {
+                    "label": "MSCHAP",
+                    "value": "mschap"
+                },
+                {
+                    "label": "MSCHAPv2",
+                    "value": "mschapv2"
+                },
+                {
+                    "label": "CHAP",
+                    "value": "chap"
+                },
+                {
+                    "label": "EAP-MSCHAPv2",
+                    "value": "eap-mschapv2"
+                }
+            ]
         })
-    readonly property var caChoices: [{"label": I18n.tr("File"), "value": "file"}, {"label": I18n.tr("Use system certificates", "802.1X CA certificate source option"), "value": "system"}, {"label": I18n.tr("None"), "value": "none"}]
-    readonly property var matchChoices: [{"label": I18n.tr("Exact"), "value": false}, {"label": I18n.tr("Suffix", "server name match type"), "value": true}]
-    readonly property var peapVersionChoices: [{"label": I18n.tr("Auto"), "value": ""}, {"label": "0", "value": "0"}, {"label": "1", "value": "1"}]
+    readonly property var caChoices: [
+        {
+            "label": I18n.tr("File"),
+            "value": "file"
+        },
+        {
+            "label": I18n.tr("Use system certificates", "802.1X CA certificate source option"),
+            "value": "system"
+        },
+        {
+            "label": I18n.tr("None"),
+            "value": "none"
+        }
+    ]
+    readonly property var matchChoices: [
+        {
+            "label": I18n.tr("Exact"),
+            "value": false
+        },
+        {
+            "label": I18n.tr("Suffix", "server name match type"),
+            "value": true
+        }
+    ]
+    readonly property var peapVersionChoices: [
+        {
+            "label": I18n.tr("Auto"),
+            "value": ""
+        },
+        {
+            "label": "0",
+            "value": "0"
+        },
+        {
+            "label": "1",
+            "value": "1"
+        }
+    ]
 
     readonly property bool usesInner: draft.eap === "peap" || draft.eap === "ttls"
     readonly property bool usesCa: draft.eap !== "pwd"
@@ -70,9 +156,21 @@ Column {
         draft.authFlags = c.authFlags || 0;
         draft.opensslCiphers = c.opensslCiphers || "";
         original = {
-            "ca": {"path": draft.caCertPath, "pem": draft.caCertPem, "stored": !!storedFiles.ca},
-            "clientCert": {"path": draft.clientCertPath, "pem": "", "stored": !!storedFiles.clientCert},
-            "privateKey": {"path": draft.privateKeyPath, "pem": "", "stored": !!storedFiles.privateKey}
+            "ca": {
+                "path": draft.caCertPath,
+                "pem": draft.caCertPem,
+                "stored": !!storedFiles.ca
+            },
+            "clientCert": {
+                "path": draft.clientCertPath,
+                "pem": "",
+                "stored": !!storedFiles.clientCert
+            },
+            "privateKey": {
+                "path": draft.privateKeyPath,
+                "pem": "",
+                "stored": !!storedFiles.privateKey
+            }
         };
     }
 
@@ -111,7 +209,7 @@ Column {
     }
 
     function toConfig() {
-        return CE.enterpriseConfig({
+        return EnterpriseConfig.enterpriseConfig({
             "eap": draft.eap,
             "phase2": draft.phase2,
             "identity": draft.identity,
@@ -136,7 +234,8 @@ Column {
     width: parent?.width ?? 0
     spacing: SettingsMetrics.groupGap
     // Don't overwrite a reset the host already made while being created.
-    Component.onCompleted: if (draft.eap === "") reset()
+    Component.onCompleted: if (draft.eap === "")
+        reset()
 
     QtObject {
         id: draft
@@ -204,7 +303,7 @@ Column {
             leftIconName: root.showIcons ? "person" : ""
             labelText: I18n.tr("Username", "text field label for network, vpn and account forms")
             supportingText: root.usernameSuffix ? "@" + root.usernameSuffix : ""
-            isError: (root.markInvalid && !text.trim()) || (root.usernameSuffixRequired && !CE.identityMatchesSuffix(text.trim(), root.usernameSuffix))
+            isError: (root.markInvalid && !text.trim()) || (root.usernameSuffixRequired && !EnterpriseConfig.identityMatchesSuffix(text.trim(), root.usernameSuffix))
             text: draft.identity
             onTextEdited: draft.identity = text
             onAccepted: passwordField.visible ? passwordField.forceActiveFocus() : root.submitRequested()
@@ -332,14 +431,14 @@ Column {
         visible: root.advancedOpen && root.usesTlsOptions
         text: I18n.tr("Allow TLS 1.0 and 1.1", "802.1X advanced option")
         checked: (draft.authFlags & 0x60) === 0x60
-        onToggled: checked => draft.authFlags = CE.withFlags(draft.authFlags, 0x60, checked)
+        onToggled: checked => draft.authFlags = EnterpriseConfig.withFlags(draft.authFlags, 0x60, checked)
     }
 
     SettingsToggleRow {
         visible: root.advancedOpen && root.usesTlsOptions
         text: I18n.tr("Disable TLS 1.3", "802.1X advanced option")
         checked: (draft.authFlags & 0x10) !== 0
-        onToggled: checked => draft.authFlags = CE.withFlags(draft.authFlags, 0x10, checked)
+        onToggled: checked => draft.authFlags = EnterpriseConfig.withFlags(draft.authFlags, 0x10, checked)
     }
 
     SettingsRow {

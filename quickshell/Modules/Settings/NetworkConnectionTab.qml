@@ -4,7 +4,6 @@ import QtQuick
 import "../../Common/ConnectionEditor.js" as CE
 import "../../Common/QmlUtils.js" as QmlUtils
 import qs.Common
-import qs.Modules.Settings.NetworkConnection
 import qs.Modules.Settings.Widgets
 import qs.Services
 import qs.DCommon.Widgets
@@ -38,6 +37,21 @@ Item {
     property bool swapping: false
     // Set by the first Save press, so a form being filled in isn't red yet.
     property bool showErrors: false
+
+    // Sections load by URL so a profile only pulls in the ones it shows.
+    readonly property var sectionFiles: ({
+            "general": "ConnectionGeneralSection.qml",
+            "ipv4": "ConnectionIpSection.qml",
+            "ipv6": "ConnectionIpSection.qml",
+            "ethernet": "ConnectionEthernetSection.qml",
+            "wifi": "ConnectionWifiSection.qml",
+            "security": "ConnectionSecuritySection.qml",
+            "wireguard": "ConnectionWireGuardSection.qml"
+        })
+    readonly property bool partial: {
+        revision;
+        return loaded && !unsupported && CE.typeInfo(draft?.connection?.type ?? "")?.partial === true;
+    }
 
     readonly property bool dirty: {
         revision;
@@ -76,15 +90,31 @@ Item {
     Component.onDestruction: NetworkService.removeRef()
 
     function typeLabel(type) {
-        if (type === "802-11-wireless")
+        switch (type) {
+        case "802-11-wireless":
             return I18n.tr("Wi-Fi");
-        if (type === "wireguard")
+        case "wireguard":
             return "WireGuard";
-        if (type === "gsm")
-            return I18n.tr("Cellular");
-        if (type === "vpn" || type.startsWith("vpn:"))
-            return VPNService.getPluginName(type.slice(4)) || I18n.tr("VPN");
+        }
         return I18n.tr("Ethernet");
+    }
+
+    function sectionProperties(id) {
+        switch (id) {
+        case "ipv4":
+            return {
+                "editor": root,
+                "family": 4
+            };
+        case "ipv6":
+            return {
+                "editor": root,
+                "family": 6
+            };
+        }
+        return {
+            "editor": root
+        };
     }
 
     function value(section, key, fallback) {
@@ -141,19 +171,16 @@ Item {
     function rebuild() {
         securitySection = null;
         revision++;
-        // Mobile settings need a gsm section (Bluetooth DUN profiles may lack one).
-        const hasMobile = hasSection("gsm");
         sectionIds = [];
         swapping = false;
-        sectionIds = loaded && !unsupported ? CE.sectionsFor(draft?.connection?.type ?? "", draft).filter(id => id !== "mobile" || hasMobile) : [];
+        sectionIds = loaded && !unsupported ? CE.sectionsFor(draft?.connection?.type ?? "", draft) : [];
     }
 
     // carryOver: a type change on a new draft keeps a typed name and the General settings every type shares.
     function resetNew(type, carryOver) {
         const prev = carryOver && isNew ? draft?.connection ?? {} : {};
-        const prevType = prev.type === "vpn" ? "vpn:" + (draft?.vpn?.["service-type"] ?? "") : prev.type;
         const prevName = String(prev.id ?? "");
-        const name = prevName !== "" && prevName !== typeLabel(prevType ?? "") ? prevName : typeLabel(type);
+        const name = prevName !== "" && prevName !== typeLabel(prev.type ?? "") ? prevName : typeLabel(type);
         showErrors = false;
         const settings = CE.newConnectionSettings(type, {
             "name": name,
@@ -345,46 +372,27 @@ Item {
             model: root.sectionIds
 
             delegate: Loader {
-                id: sectionLoader
-
                 required property string modelData
 
                 width: parent?.width ?? 0
-                sourceComponent: {
-                    switch (modelData) {
-                    case "general":
-                        return generalSection;
-                    case "ipv4":
-                        return ipv4Section;
-                    case "ipv6":
-                        return ipv6Section;
-                    case "ethernet":
-                        return ethernetSection;
-                    case "wifi":
-                        return wifiSection;
-                    case "security":
-                        return securitySectionComponent;
-                    case "wireguard":
-                        return wireguardSection;
-                    case "openvpn":
-                        return openVpnSection;
-                    case "openconnect":
-                        return openConnectSection;
-                    case "vpnData":
-                        return vpnDataSection;
-                    case "mobile":
-                        return mobileSection;
-                    case "bluetooth":
-                        return bluetoothSection;
-                    case "ppp":
-                        return pppSection;
-                    }
-                    return null;
-                }
+                Component.onCompleted: setSource(Qt.resolvedUrl("NetworkConnection/" + root.sectionFiles[modelData]), root.sectionProperties(modelData))
                 onLoaded: {
                     if (modelData === "security")
                         root.securitySection = item;
                 }
+            }
+        }
+
+        SettingsRow {
+            visible: root.partial && !root.isNew && NetworkService.externalConnectionEditor !== ""
+            iconName: "tune"
+            title: I18n.tr("Advanced")
+
+            DButton {
+                text: I18n.tr("Open in %1", "%1 is an application name").arg(NetworkService.externalConnectionEditor)
+                iconName: "open_in_new"
+                variant: "tonal"
+                onClicked: NetworkService.openExternalConnectionEditor(root.selectedUuid)
             }
         }
 
@@ -407,112 +415,6 @@ Item {
                 enabled: !root.saving
                 onClicked: root.saveOrReveal(false)
             }
-        }
-    }
-
-    Component {
-        id: generalSection
-
-        ConnectionGeneralSection {
-            editor: root
-        }
-    }
-
-    Component {
-        id: ipv4Section
-
-        ConnectionIpSection {
-            editor: root
-            family: 4
-        }
-    }
-
-    Component {
-        id: ipv6Section
-
-        ConnectionIpSection {
-            editor: root
-            family: 6
-        }
-    }
-
-    Component {
-        id: ethernetSection
-
-        ConnectionEthernetSection {
-            editor: root
-        }
-    }
-
-    Component {
-        id: wifiSection
-
-        ConnectionWifiSection {
-            editor: root
-        }
-    }
-
-    Component {
-        id: securitySectionComponent
-
-        ConnectionSecuritySection {
-            editor: root
-        }
-    }
-
-    Component {
-        id: wireguardSection
-
-        ConnectionWireGuardSection {
-            editor: root
-        }
-    }
-
-    Component {
-        id: openVpnSection
-
-        ConnectionOpenVpnSection {
-            editor: root
-        }
-    }
-
-    Component {
-        id: openConnectSection
-
-        ConnectionOpenConnectSection {
-            editor: root
-        }
-    }
-
-    Component {
-        id: vpnDataSection
-
-        ConnectionVpnDataSection {
-            editor: root
-        }
-    }
-
-    Component {
-        id: mobileSection
-
-        ConnectionMobileSection {
-            editor: root
-        }
-    }
-
-    Component {
-        id: bluetoothSection
-
-        ConnectionBluetoothSection {
-            editor: root
-        }
-    }
-
-    Component {
-        id: pppSection
-
-        ConnectionPppSection {
-            editor: root
         }
     }
 }

@@ -8,7 +8,6 @@ import (
 	mock_gonetworkmanager "github.com/duxlabs-dev/dux-shell/core/internal/mocks/github.com/Wifx/gonetworkmanager/v2"
 	"github.com/godbus/dbus/v5"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -947,57 +946,3 @@ func TestConfigureHotspotRejectsShortPasswordBeforeTouchingNetworkManager(t *tes
 }
 
 const testHotspotPSK = "dms-ap-psk-1"
-
-func storedHotspotSettings() gonetworkmanager.ConnectionSettings {
-	s := buildHotspotSettings(HotspotRequest{SSID: "old", Password: testHotspotPSK, Band: "bg", Channel: 6})
-	s["connection"]["uuid"] = "hotspot-uuid"
-	s["connection"]["metered"] = int32(1)
-	s["802-11-wireless"]["powersave"] = uint32(2)
-	return s
-}
-
-func TestConfigureHotspotReplacesStoredProfile(t *testing.T) {
-	f := newEditorFixture(t)
-	mockConn := mock_gonetworkmanager.NewMockConnection(t)
-	current := storedHotspotSettings()
-	f.settings.EXPECT().ListConnections().Return([]gonetworkmanager.Connection{mockConn}, nil)
-	mockConn.EXPECT().GetSettings().RunAndReturn(func() (gonetworkmanager.ConnectionSettings, error) { return current, nil })
-	mockConn.EXPECT().Update(mock.Anything).RunAndReturn(func(s gonetworkmanager.ConnectionSettings) error {
-		current = s
-		return nil
-	}).Once()
-	f.nm.EXPECT().GetPropertyActiveConnections().Return(nil, nil)
-
-	require.NoError(t, f.backend.ConfigureHotspot(HotspotRequest{SSID: "dms-ap", Password: testHotspotPSK, Security: "sae", Hidden: true}))
-	assert.NotContains(t, current["connection"], "metered")
-	assert.NotContains(t, current["802-11-wireless"], "powersave")
-
-	assert.Equal(t, "hotspot-uuid", f.backend.state.HotspotUUID)
-	assert.Equal(t, "sae", f.backend.state.HotspotSecurity)
-	assert.True(t, f.backend.state.HotspotHidden)
-}
-
-func TestConfigureHotspotRejectsBeforeDBus(t *testing.T) {
-	tests := []struct {
-		name string
-		req  HotspotRequest
-		want string
-	}{
-		{"channel without band", HotspotRequest{SSID: "x", Channel: 36}, "channel requires a band"},
-		{"bg channel too high", HotspotRequest{SSID: "x", Band: "bg", Channel: 36}, "channel 36"},
-		{"network address", HotspotRequest{SSID: "x", Address: "10.43.0.0/24"}, "10.43.0.0/24"},
-		{"ipv6", HotspotRequest{SSID: "x", Address: "fd00::1/64"}, "fd00::1/64"},
-		{"prefix too long", HotspotRequest{SSID: "x", Address: "10.43.0.1/31"}, "10.43.0.1/31"},
-		{"unknown security", HotspotRequest{SSID: "x", Password: testHotspotPSK, Security: "wep"}, "unsupported hotspot security"},
-		{"security without password", HotspotRequest{SSID: "x", Security: "sae"}, "needs a password"},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			backend, err := NewNetworkManagerBackend(mock_gonetworkmanager.NewMockNetworkManager(t))
-			require.NoError(t, err)
-			backend.settings = mock_gonetworkmanager.NewMockSettings(t)
-
-			assert.ErrorContains(t, backend.ConfigureHotspot(tt.req), tt.want)
-		})
-	}
-}

@@ -1155,15 +1155,10 @@ func parseVPNPluginFile(path string) (*VPNPlugin, error) {
 
 	plugin := &VPNPlugin{}
 	scanner := bufio.NewScanner(file)
-	section := ""
 
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
-		if strings.HasPrefix(line, "[") {
-			section = line
-			continue
-		}
-		if line == "" || strings.HasPrefix(line, "#") {
+		if line == "" || strings.HasPrefix(line, "#") || strings.HasPrefix(line, "[") {
 			continue
 		}
 
@@ -1174,10 +1169,6 @@ func parseVPNPluginFile(path string) (*VPNPlugin, error) {
 
 		key := strings.TrimSpace(parts[0])
 		value := strings.TrimSpace(parts[1])
-
-		if value != "" && (section == "[libnm]" && key == "plugin" || section == "[GNOME]" && key == "properties") {
-			plugin.CanCreate = true
-		}
 
 		switch key {
 		case "name":

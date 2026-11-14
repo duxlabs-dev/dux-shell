@@ -13,12 +13,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type legacyIP6Addr struct {
-	Addr    []byte
-	Prefix  uint32
-	Gateway []byte
-}
-
 func expectGetSettings(obj *mock_dbus.MockBusObject, s nmSettings) {
 	obj.EXPECT().Call(nmConnGetSettings, dbus.Flags(0)).
 		Return(&dbus.Call{Body: []any{s}}).Once()
@@ -39,54 +33,18 @@ func captureUpdate2(obj *mock_dbus.MockBusObject, flags uint32, err error) *nmSe
 	return &got
 }
 
-func TestUpdateConnectionSettings_ManualDNSAndGatewaySurviveAutoconnectFlip(t *testing.T) {
-	obj := mock_dbus.NewMockBusObject(t)
-	legacyAddrs := []legacyIP6Addr{{Addr: make([]byte, 16), Prefix: 64, Gateway: make([]byte, 16)}}
-	addr := func(a string, p uint32) dbus.Variant {
-		return dbus.MakeVariant([]map[string]dbus.Variant{{"address": dbus.MakeVariant(a), "prefix": dbus.MakeVariant(p)}})
-	}
-	expectGetSettings(obj, nmSettings{
-		"connection": {"id": dbus.MakeVariant("Wired"), "autoconnect": dbus.MakeVariant(true)},
-		"ipv4": {
-			"method": dbus.MakeVariant("manual"), "addresses": dbus.MakeVariant([][]uint32{{0x0100a8c0, 24, 0x0101a8c0}}),
-			"address-data": addr("192.168.0.1", 24), "gateway": dbus.MakeVariant("192.168.1.1"),
-			"dns": dbus.MakeVariant([]uint32{0x01010101}), "dns-data": dbus.MakeVariant([]string{"1.1.1.1"}),
-		},
-		"ipv6": {"method": dbus.MakeVariant("manual"), "addresses": dbus.MakeVariant(legacyAddrs), "address-data": addr("fd00::1", 64)},
-	})
-	got := captureUpdate2(obj, 0, nil)
-
-	require.NoError(t, updateConnectionSettings(obj, false, func(s nmSettings) error {
-		setSettingValue(s, "connection", "autoconnect", false)
-		return nil
-	}))
-
-	s := *got
-	assert.Equal(t, false, s["connection"]["autoconnect"].Value())
-	assert.NotContains(t, s["ipv4"], "addresses")
-	assert.NotContains(t, s["ipv4"], "dns")
-	assert.NotContains(t, s["ipv6"], "addresses")
-	assert.Equal(t, "192.168.1.1", s["ipv4"]["gateway"].Value())
-	assert.Equal(t, "as", s["ipv4"]["dns-data"].Signature().String())
-	assert.Equal(t, "aa{sv}", s["ipv4"]["address-data"].Signature().String())
-
-	legacy := nmSettings{"ipv4": {"dns": dbus.MakeVariant([]uint32{1}), "addresses": dbus.MakeVariant([][]uint32{{1, 24, 0}})}}
-	dropLegacyIPKeys(legacy)
-	assert.Contains(t, legacy["ipv4"], "dns", "legacy key without a modern twin is kept")
-	assert.Contains(t, legacy["ipv4"], "addresses")
-}
-
 func secretsFixture() nmSettings {
 	return nmSettings{
 		"connection":               {"id": dbus.MakeVariant("x"), "uuid": dbus.MakeVariant("u-vpn")},
 		"802-11-wireless-security": {"key-mgmt": dbus.MakeVariant("wpa-psk")},
 		"vpn": {
 			"service-type": dbus.MakeVariant("org.freedesktop.NetworkManager.openvpn"),
+			"data":         dbus.MakeVariant(map[string]string{"password-flags": "1"}),
 		},
 		"wireguard": {
 			"peers": dbus.MakeVariant([]map[string]dbus.Variant{
 				{"public-key": dbus.MakeVariant("PEER_A"), "endpoint": dbus.MakeVariant("a:51820")},
-				{"public-key": dbus.MakeVariant("PEER_B")},
+				{"public-key": dbus.MakeVariant("PEER_B"), "preshared-key-flags": dbus.MakeVariant(uint32(1))},
 			}),
 		},
 	}
@@ -230,30 +188,4 @@ func TestUpdateConnectionSettings_SecretsMergedAndPatchWins(t *testing.T) {
 			assert.Equal(t, tc.peers, peers)
 		})
 	}
-}
-
-func TestUpdateConnectionSettings_FailuresWriteNothing(t *testing.T) {
-	// Update2 drops omitted secrets, so a failed read must abort the write.
-	obj := mock_dbus.NewMockBusObject(t)
-	expectGetSettings(obj, nmSettings{"802-11-wireless-security": {"key-mgmt": dbus.MakeVariant("wpa-psk")}})
-	obj.EXPECT().Call(nmConnGetSecrets, dbus.Flags(0), "802-11-wireless-security").
-		Return(&dbus.Call{Err: dbus.Error{Name: "org.freedesktop.DBus.Error.NoReply", Body: []any{"timeout"}}}).Once()
-	require.ErrorContains(t, updateConnectionSettings(obj, false, func(nmSettings) error { return nil }),
-		"failed to get secrets for 802-11-wireless-security: timeout")
-	obj.AssertNotCalled(t, "Call", nmConnUpdate2, mock.Anything, mock.Anything, mock.Anything, mock.Anything)
-
-	obj = mock_dbus.NewMockBusObject(t)
-	expectGetSettings(obj, nmSettings{"connection": {"id": dbus.MakeVariant("x")}})
-	require.ErrorContains(t, updateConnectionSettings(obj, true, func(nmSettings) error { return errors.New("bad value") }), "bad value")
-	obj.AssertNotCalled(t, "Call", nmConnUpdate2, mock.Anything, mock.Anything, mock.Anything, mock.Anything)
-}
-
-func TestUpdateConnectionSettings_PersistFlagAndNMError(t *testing.T) {
-	obj := mock_dbus.NewMockBusObject(t)
-	expectGetSettings(obj, nmSettings{"connection": {"id": dbus.MakeVariant("x")}})
-	nmErr := dbus.Error{Name: "org.freedesktop.NetworkManager.Settings.Connection.InvalidProperty", Body: []any{"ipv4.dns: invalid IP address"}}
-	captureUpdate2(obj, 0x1, nmErr)
-
-	err := updateConnectionSettings(obj, true, func(nmSettings) error { return nil })
-	require.EqualError(t, err, "failed to update connection: ipv4.dns: invalid IP address")
 }

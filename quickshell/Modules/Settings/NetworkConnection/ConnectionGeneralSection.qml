@@ -33,30 +33,11 @@ SettingsCard {
         rev;
         return String(editor.profile?.uuid ?? editor.value("connection", "uuid", ""));
     }
-    readonly property bool vpnTypes: NetworkService.connectionEditorSupported
     readonly property bool vpnKind: ConnectionEditor.groupOf(connType) === "vpn"
-    readonly property var typeOptions: {
-        const out = ConnectionEditor.CONNECTION_TYPES.filter(t => t.addable && t.group !== "vpn").map(t => ({
-                    "value": t.type,
-                    "label": editor.typeLabel(t.type)
-                }));
-        if (vpnTypes)
-            out.push({
-                "value": "vpn",
-                "label": I18n.tr("VPN", "connection editor: VPN kind dropdown label")
-            });
-        return out;
-    }
-    readonly property var vpnKindOptions: [
-        {
-            "value": "wireguard",
-            "label": editor.typeLabel("wireguard")
-        }
-    ].concat((VPNService.plugins ?? []).filter(p => p.canCreate).map(p => ({
-                "value": "vpn:" + p.serviceType,
-                "label": VPNService.getPluginName(p.serviceType)
-            })))
-    readonly property string typeValue: connType === "vpn" ? "vpn:" + serviceType : connType
+    readonly property var typeOptions: ConnectionEditor.CONNECTION_TYPES.filter(t => t.addable).map(t => ({
+                "value": t.type,
+                "label": editor.typeLabel(t.type)
+            }))
     readonly property var meteredLabels: [I18n.tr("Auto"), I18n.tr("Yes"), I18n.tr("No")]
     readonly property var vpnProfiles: {
         rev;
@@ -160,39 +141,21 @@ SettingsCard {
         }
     }
 
-    Component.onCompleted: {
-        if (vpnTypes && (VPNService.plugins ?? []).length === 0)
-            VPNService.fetchPlugins();
-        NetworkService.listFirewallZones(response => {
-            const list = response?.result;
-            if (Array.isArray(list))
-                root.zones = list;
-        });
-    }
+    Component.onCompleted: NetworkService.listFirewallZones(response => {
+        const list = response?.result;
+        if (Array.isArray(list))
+            root.zones = list;
+    })
 
     SettingsDropdownRow {
         visible: root.editor.isNew && ConnectionEditor.groupOf(SettingsUiState.newConnectionType) !== "vpn"
         enabled: root.editable
         text: I18n.tr("Type")
         options: root.typeOptions.map(t => t.label)
-        currentValue: root.typeOptions.find(t => t.value === (root.vpnKind ? "vpn" : root.connType))?.label ?? ""
+        currentValue: root.typeOptions.find(t => t.value === root.connType)?.label ?? ""
         onValueChanged: value => {
             const t = root.typeOptions.find(x => x.label === value);
-            if (!t || (t.value === "vpn" ? root.vpnKind : t.value === root.connType))
-                return;
-            root.editor.resetNew(t.value === "vpn" ? "wireguard" : t.value, true);
-        }
-    }
-
-    SettingsDropdownRow {
-        visible: root.editor.isNew && root.vpnKind
-        enabled: root.editable
-        text: I18n.tr("VPN", "connection editor: VPN kind dropdown label")
-        options: root.vpnKindOptions.map(t => t.label)
-        currentValue: root.vpnKindOptions.find(t => t.value === root.typeValue)?.label ?? ""
-        onValueChanged: value => {
-            const t = root.vpnKindOptions.find(x => x.label === value);
-            if (t && t.value !== root.typeValue)
+            if (t && t.value !== root.connType)
                 root.editor.resetNew(t.value, true);
         }
     }

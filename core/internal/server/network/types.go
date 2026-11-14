@@ -305,7 +305,6 @@ type VPNPlugin struct {
 	Program        string   `json:"program,omitempty"`
 	Supports       []string `json:"supports,omitempty"`
 	FileExtensions []string `json:"fileExtensions"`
-	CanCreate      bool     `json:"canCreate"`
 }
 
 type VPNConfig struct {

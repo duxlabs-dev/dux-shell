@@ -322,7 +322,6 @@ func (b *NetworkManagerBackend) Initialize() error {
 		b.stateMutex.Unlock()
 	}
 	b.updateCellularRadioState()
-	b.updateConnectivityState()
 
 	if err := b.updateWiFiState(); err != nil {
 		log.Warnf("Failed to update WiFi state: %v", err)
@@ -551,6 +550,10 @@ func (b *NetworkManagerBackend) StartMonitoring(onStateChange func()) error {
 	if err := b.startSignalPump(); err != nil {
 		return err
 	}
+
+	// Connectivity is read over the bus connection the signal pump opens.
+	b.updateConnectivityState()
+	onStateChange()
 
 	return nil
 }

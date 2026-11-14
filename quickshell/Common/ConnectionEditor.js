@@ -531,192 +531,12 @@ function wgPeersFromRows(rows, originalPeers) {
     return out;
 }
 
-function kvRows(dict, ownedKeys) {
-    const out = [];
-    for (const key in dict || {}) {
-        if ((ownedKeys || []).indexOf(key) < 0 && dict[key] !== null)
-            out.push({
-                "key": key,
-                "value": String(dict[key] ?? "")
-            });
-    }
-    return out;
-}
-
-// Owned entries of base plus the rows; null on an empty, duplicate or owned key.
-// Keys of original (stored secrets) no longer present get a null entry, since
-// the backend keeps omitted secrets.
-function kvFromRows(rows, base, ownedKeys, original) {
-    const owned = ownedKeys || [];
-    const out = {};
-    for (const key of owned) {
-        if (base && base[key] !== undefined)
-            out[key] = base[key];
-    }
-    const seen = Object.create(null);
-    for (const row of rows || []) {
-        const key = String(row.key ?? "").trim();
-        if (key === "" || seen[key] || owned.indexOf(key) >= 0)
-            return null;
-        seen[key] = true;
-        out[key] = String(row.value ?? "");
-    }
-    for (const key in original || {}) {
-        if (!_absent(original[key]) && !seen[key] && owned.indexOf(key) < 0)
-            out[key] = null;
-    }
-    return out;
-}
-
-// Sets one vpn.secrets entry; clearing a stored one leaves a null entry so the
-// backend deletes it. undefined when nothing is left.
-function secretsWith(secrets, key, text, original) {
-    const out = Object.assign({}, secrets || {});
-    if (text !== "")
-        out[key] = text;
-    else if (original && !_absent(original[key]))
-        out[key] = null;
-    else
-        delete out[key];
-    return Object.keys(out).length > 0 ? out : undefined;
-}
-
-// NM secret flags: bit 2 (value "2") means not saved, asked on connect.
-function secretSaved(data, key) {
-    const flags = data ? data[key + "-flags"] : undefined;
-    return _absent(flags) || (Number(flags) & 2) === 0;
-}
-
-function withSecretSaved(data, key, saved) {
-    const out = Object.assign({}, data || {});
-    out[key + "-flags"] = saved ? "0" : "2";
-    return out;
-}
-
-// Sets one vpn.data entry (blank removes it); other keys, the *-flags ones included, are kept. An empty result is undefined.
-function withDataEntry(data, key, value) {
-    const out = Object.assign({}, data || {});
-    const t = String(value ?? "").trim();
-    if (t === "")
-        delete out[key];
-    else
-        out[key] = t;
-    return Object.keys(out).length === 0 ? undefined : out;
-}
-
-// Enterprise (802.1X) form state -> EnterpriseConfig sent to the backend.
-function enterpriseConfig(s) {
-    let identity = s.identity.trim();
-    if (identity && s.usernameSuffix && identity.indexOf("@") < 0)
-        identity += "@" + s.usernameSuffix;
-    const cfg = {
-        "eap": s.eap,
-        "identity": identity,
-        "ca": s.eap === "pwd" ? "none" : s.ca
-    };
-    const inner = s.eap === "peap" || s.eap === "ttls";
-    if (inner) {
-        cfg.phase2 = s.phase2;
-        if (s.anonymousIdentity.trim())
-            cfg.anonymousIdentity = s.anonymousIdentity.trim();
-    }
-    if (!s.savePassword)
-        cfg.askPassword = true;
-    else if (s.eap === "tls" && s.privateKeyPassword)
-        cfg.privateKeyPassword = s.privateKeyPassword;
-    else if (s.eap !== "tls" && s.password)
-        cfg.password = s.password;
-    if (s.eap === "tls") {
-        if (s.clientCertPath)
-            cfg.clientCertPath = s.clientCertPath;
-        if (s.privateKeyPath)
-            cfg.privateKeyPath = s.privateKeyPath;
-    }
-    if (s.eap !== "pwd") {
-        if (cfg.ca === "file" && s.caCertPem)
-            cfg.caCertPem = s.caCertPem;
-        else if (cfg.ca === "file" && s.caCertPath)
-            cfg.caCertPath = s.caCertPath;
-        const server = s.serverDomain.trim();
-        if (server) {
-            cfg.serverDomain = server;
-            if (s.serverDomainSuffix)
-                cfg.serverDomainSuffix = true;
-        }
-    }
-    if (s.eap === "peap" && s.peapVersion)
-        cfg.peapVersion = s.peapVersion;
-    if (s.eap !== "pwd") {
-        if (s.authFlags)
-            cfg.authFlags = s.authFlags;
-        if (s.opensslCiphers.trim())
-            cfg.opensslCiphers = s.opensslCiphers.trim();
-    }
-    return cfg;
-}
-
-// opts: {usernameSuffix, usernameSuffixRequired, storedFiles}; storedFiles keys ca/clientCert mark blobs NM already holds.
-function enterpriseConfigValid(cfg, opts) {
-    const o = opts || {};
-    const stored = o.storedFiles || {};
-    if (!cfg.identity)
-        return false;
-    if (o.usernameSuffixRequired && !identityMatchesSuffix(cfg.identity, o.usernameSuffix))
-        return false;
-    if (!cfg.askPassword && cfg.eap !== "tls" && !cfg.password)
-        return false;
-    if (cfg.eap === "tls" && !cfg.clientCertPath && !stored.clientCert)
-        return false;
-    if (cfg.ca === "file" && !cfg.caCertPath && !cfg.caCertPem && !stored.ca)
-        return false;
-    if (cfg.ca === "system" && !cfg.serverDomain)
-        return false;
-    return true;
-}
-
-function identityMatchesSuffix(identity, suffix) {
-    if (!suffix || identity.indexOf("@") < 0)
-        return true;
-    return identity.slice(identity.lastIndexOf("@") + 1).toLowerCase() === suffix.toLowerCase();
-}
-
-function withFlags(flags, mask, on) {
-    return (on ? (flags | mask) : (flags & ~mask)) >>> 0;
-}
-
-var VPN_FORM_KEYS = {
-    "openvpn": {
-        "data": ["remote", "connection-type", "ca", "cert", "key", "cert-pass-flags", "username", "password-flags", "static-key", "static-key-direction", "local-ip", "remote-ip", "port", "proto-tcp", "dev-type", "cipher", "auth", "tunnel-mtu", "ta", "ta-dir"],
-        "secrets": ["password", "cert-pass"]
-    },
-    "openconnect": {
-        "data": ["gateway", "protocol", "cacert", "usercert", "userkey", "proxy"],
-        "secrets": []
-    }
-};
-
-const _VPN_DATA_DEFAULTS = {
-    "openvpn": {
-        "connection-type": "tls"
-    },
-    "openconnect": {
-        "protocol": "anyconnect",
-        "cookie-flags": "2",
-        "gateway-flags": "2",
-        "gwcert-flags": "2"
-    }
-};
-
-function vpnForm(serviceType) {
-    const t = String(serviceType ?? "");
-    for (const form in VPN_FORM_KEYS) {
-        if (t.endsWith("." + form))
-            return form;
-    }
-    return "";
+function _sharedSections(settings) {
+    return ["general"].concat(["ipv4", "ipv6"].filter(ip => !_absent(settings[ip])));
 }
 
 // sections: an array, or a function(settings) for types whose sections depend on the profile.
+// partial: only the settings every type shares are edited here; the type's own belong to NetworkManager's editor.
 var CONNECTION_TYPES = [
     {
         "type": "802-3-ethernet",
@@ -744,44 +564,22 @@ var CONNECTION_TYPES = [
         "type": "vpn",
         "group": "vpn",
         "icon": "vpn_lock",
-        "addable": true,
-        "autoconnect": false,
-        "sections": s => {
-            const out = ["general"];
-            const form = vpnForm(s.vpn ? s.vpn["service-type"] : "");
-            if (form !== "")
-                out.push(form);
-            out.push("vpnData");
-            for (const ip of ["ipv4", "ipv6"]) {
-                if (!_absent(s[ip]))
-                    out.push(ip);
-            }
-            return out;
-        }
+        "partial": true,
+        "sections": _sharedSections
     },
     {
         "type": "gsm",
         "group": "cellular",
         "icon": "signal_cellular_alt",
-        "addable": true,
-        "autoconnect": false,
-        "sections": ["general", "mobile", "ppp", "ipv4", "ipv6"]
+        "partial": true,
+        "sections": _sharedSections
     },
     {
         "type": "bluetooth",
         "group": "other",
         "icon": "bluetooth",
-        "addable": false,
-        "sections": s => {
-            const out = ["general", "bluetooth"];
-            if (s.bluetooth && s.bluetooth.type === "dun")
-                out.push("mobile", "ppp");
-            for (const ip of ["ipv4", "ipv6"]) {
-                if (!_absent(s[ip]))
-                    out.push(ip);
-            }
-            return out;
-        }
+        "partial": true,
+        "sections": _sharedSections
     }
 ];
 
@@ -795,14 +593,7 @@ function groupOf(type) {
     const info = typeInfo(type);
     if (info)
         return info.group;
-    switch (String(type ?? "").split(":")[0]) {
-    case "vpn":
-        return "vpn";
-    case "cdma":
-        return "cellular";
-    default:
-        return "other";
-    }
+    return type === "cdma" ? "cellular" : "other";
 }
 
 // portType is the controller's type for a port profile, "" otherwise.
@@ -826,47 +617,6 @@ function portOf(settings) {
     return {
         "type": c["port-type"] || c["slave-type"] || ""
     };
-}
-
-// NM ignores apn while auto-config is on, so the two move together.
-// A stored profile without auto-config already has it off (NM's default), so an APN edit leaves the key out.
-function applyApn(gsm, apn, original) {
-    const out = Object.assign({}, gsm || {});
-    const t = String(apn ?? "").trim();
-    if (t === "") {
-        delete out.apn;
-        if (original && _absent(original.apn)) {
-            if (_absent(original["auto-config"]))
-                delete out["auto-config"];
-            else
-                out["auto-config"] = original["auto-config"];
-        } else {
-            out["auto-config"] = true;
-        }
-    } else {
-        out.apn = t;
-        if (original && original["auto-config"] === undefined)
-            delete out["auto-config"];
-        else
-            out["auto-config"] = false;
-    }
-    return out;
-}
-
-function pppEcho(ppp) {
-    return Number(ppp ? ppp["lcp-echo-interval"] : 0) > 0;
-}
-
-function applyPppEcho(ppp, on) {
-    const out = Object.assign({}, ppp || {});
-    if (on) {
-        out["lcp-echo-interval"] = 30;
-        out["lcp-echo-failure"] = 5;
-    } else {
-        delete out["lcp-echo-interval"];
-        delete out["lcp-echo-failure"];
-    }
-    return out;
 }
 
 const _CHANNELS_A = [36, 40, 44, 48, 52, 56, 60, 64, 100, 104, 108, 112, 116, 120, 124, 128, 132, 136, 140, 144, 149, 153, 157, 161, 165];
@@ -896,12 +646,7 @@ function nextWgIfname(profiles) {
     return "wg" + n;
 }
 
-// type is a connection type, or "vpn:<service-type>" for a VPN plugin profile.
 function newConnectionSettings(type, opts) {
-    const colon = String(type ?? "").indexOf(":");
-    const service = colon >= 0 ? type.slice(colon + 1) : "";
-    if (colon >= 0)
-        type = type.slice(0, colon);
     const s = {
         "connection": {
             "id": (opts && opts.name) || "",
@@ -932,18 +677,6 @@ function newConnectionSettings(type, opts) {
         } : {};
         s.ipv4.method = "manual";
         s.ipv6.method = "ignore";
-        break;
-    case "vpn":
-        s.vpn = {
-            "data": copy(_VPN_DATA_DEFAULTS[vpnForm(service)]) || {}
-        };
-        if (service !== "")
-            s.vpn["service-type"] = service;
-        break;
-    case "gsm":
-        s.gsm = {
-            "auto-config": true
-        };
         break;
     }
     return s;

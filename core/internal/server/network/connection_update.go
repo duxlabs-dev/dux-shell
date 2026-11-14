@@ -6,6 +6,7 @@ import (
 	"maps"
 	"reflect"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/godbus/dbus/v5"
@@ -248,6 +249,45 @@ func collectSecrets(s nmSettings, strip bool) map[string]map[string]any {
 	return out
 }
 
+const nmSecretFlagAgentOwned = 0x1
+
+// agentOwnsSecret reports whether a secret flag in the section marks a secret
+// as agent-owned. NM also answers NoSecrets for a section that has none.
+func agentOwnsSecret(name string, section map[string]dbus.Variant) bool {
+	owned := func(v any) bool {
+		switch flags := v.(type) {
+		case uint32:
+			return flags&nmSecretFlagAgentOwned != 0
+		case string:
+			n, err := strconv.ParseUint(flags, 10, 32)
+			return err == nil && n&nmSecretFlagAgentOwned != 0
+		}
+		return false
+	}
+	for key, v := range section {
+		if strings.HasSuffix(key, "-flags") && owned(v.Value()) {
+			return true
+		}
+	}
+	switch name {
+	case "vpn":
+		data, _ := section["data"].Value().(map[string]string)
+		for key, v := range data {
+			if strings.HasSuffix(key, "-flags") && owned(v) {
+				return true
+			}
+		}
+	case "wireguard":
+		peers, _ := section["peers"].Value().([]map[string]dbus.Variant)
+		for _, peer := range peers {
+			if owned(peer["preshared-key-flags"].Value()) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // mergeConnectionSecrets returns the sections whose secrets only an agent
 // holds, with NM's error, instead of merging them.
 func mergeConnectionSecrets(obj dbus.BusObject, settings nmSettings, sections []string) (map[string]error, error) {
@@ -262,7 +302,9 @@ func mergeConnectionSecrets(obj dbus.BusObject, settings nmSettings, sections []
 		if err := obj.Call(nmConnGetSecrets, 0, name).Store(&stored); err != nil {
 			var dbusErr dbus.Error
 			if errors.As(err, &dbusErr) && slices.Contains(nmNoSecretsErrors, dbusErr.Name) {
-				unreadable[name] = err
+				if agentOwnsSecret(name, section) {
+					unreadable[name] = err
+				}
 				continue
 			}
 			return nil, fmt.Errorf("failed to get secrets for %s: %w", name, err)

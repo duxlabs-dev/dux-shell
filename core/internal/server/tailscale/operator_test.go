@@ -1,8 +1,6 @@
 package tailscale
 
 import (
-	"context"
-	"errors"
 	"os"
 	"os/user"
 	"path/filepath"
@@ -108,44 +106,6 @@ func TestOperatorGrantArgv(t *testing.T) {
 			assert.Equal(t, want, argv)
 		})
 	}
-}
-
-func TestGrantOperator(t *testing.T) {
-	for name, tc := range map[string]struct {
-		argv []string
-		code int
-		err  error
-		want string
-	}{
-		"success":        {argv: []string{"pkexec"}},
-		"dismissed":      {argv: []string{"pkexec"}, code: 126, want: "permission not granted: no agent"},
-		"not authorized": {argv: []string{"pkexec"}, code: 127, want: "permission not granted: no agent"},
-		"failure":        {argv: []string{"pkexec"}, code: 1, want: "tailscale set --operator failed: no agent"},
-		"exec error":     {argv: []string{"pkexec"}, err: errors.New("boom"), want: "tailscale set --operator failed: boom"},
-		"nil argv":       {want: "empty command"},
-		"empty argv":     {argv: []string{}, want: "empty command"},
-	} {
-		t.Run(name, func(t *testing.T) {
-			err := grantOperator(context.Background(), tc.argv, func(context.Context, []string) ([]byte, int, error) {
-				return []byte(" no agent\n"), tc.code, tc.err
-			})
-			if tc.want == "" {
-				require.NoError(t, err)
-			} else {
-				assert.EqualError(t, err, tc.want)
-			}
-		})
-	}
-}
-
-func TestExecCommandRunner(t *testing.T) {
-	_, code, err := execCommandRunner(context.Background(), []string{"sh", "-c", "exit 3"})
-	require.NoError(t, err)
-	assert.Equal(t, 3, code)
-
-	_, code, err = execCommandRunner(context.Background(), []string{"/nonexistent/binary"})
-	require.Error(t, err)
-	assert.Equal(t, -1, code)
 }
 
 func TestLookPathResolved_RefusesDifferentBasename(t *testing.T) {

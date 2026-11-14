@@ -121,7 +121,7 @@ Singleton {
     property var savedWifiNetworks: []
     readonly property int savedWifiStateApiVersion: 26
     readonly property int hotspotApiVersion: 28
-    readonly property int connectionEditorApiVersion: 41
+    readonly property int connectionEditorApiVersion: 42
     property bool backendConnectionEditorSupported: false
     readonly property bool connectionEditorSupported: DMSService.isConnected && networkAvailable && DMSService.apiVersion >= connectionEditorApiVersion && backendConnectionEditorSupported
     readonly property bool connectivitySupported: connectionEditorSupported

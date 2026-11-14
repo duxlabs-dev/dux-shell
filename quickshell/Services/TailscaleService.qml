@@ -60,7 +60,7 @@ Singleton {
     property bool addAbandoned: false
     property string addReturnProfile: ""
     signal addCompleted
-    readonly property bool prefsSupported: DMSService.apiVersion >= 41
+    readonly property bool prefsSupported: DMSService.apiVersion >= 42
     readonly property bool canWritePrefs: available && prefsSupported
 
     property bool available: false
