@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import test from "node:test";
 import vm from "node:vm";
 import { loadScript } from "./qml-script.mjs";
@@ -16,15 +19,17 @@ const extract = name => {
 };
 
 const live = {};
+const customTilingLayouts = JSON.parse(`[${source.match(/^    readonly property var customTilingLayouts: \[(.*)\]/m)?.[1] ?? ""}]`);
 // Every option is reported as supported unless a test shrinks the set
 const scope = vm.createContext({
     OutputModel,
     BlurStrength,
-    SettingsData: { displayNameMode: "system" },
+    customTilingLayouts,
+    SettingsData: { displayNameMode: "system", hyprlandMasterSize: 55 },
     liveMonitor: name => live[name] ?? null,
     hyprOptionNames: new Proxy({}, { get: (names, key) => key in names ? names[key] : true })
 });
-for (const fn of ["getOutputIdentifier", "luaQuoted", "forceFlagValue", "buildOutputsLua", "luaString", "luaTable", "hyprSupports", "hyprIntModes", "hyprMode", "blurLines", "decorationLines", "groupbarLines", "bindsLines", "miscLines", "tilingLayoutLines", "hyprScrollMethod", "touchpadNames", "inputLines", "touchpadDeviceLines", "refreshFollowMouse"])
+for (const fn of ["getOutputIdentifier", "luaQuoted", "forceFlagValue", "buildOutputsLua", "luaString", "luaTable", "hyprSupports", "hyprIntModes", "hyprMode", "blurLines", "decorationLines", "groupbarLines", "bindsLines", "miscLines", "tilingLayoutLines", "customLayoutLua", "hyprTilingLayoutTarget", "hyprScrollMethod", "touchpadNames", "inputLines", "touchpadDeviceLines", "refreshFollowMouse"])
     vm.runInContext(extract(fn), scope);
 const withOptions = (names, run) => {
     const previous = scope.hyprOptionNames;
@@ -279,4 +284,106 @@ test("input: touchpad speed goes per device and pins its own values against the 
         'hl.device({ name = "a-touchpad", sensitivity = 0.00, accel_profile = "", left_handed = false })'
     ]);
     assert.deepEqual([...scope.touchpadNames({ mice: [{ name: "logitech-mx-master-3" }, { name: "elan0670:00-04f3:3150-touchpad" }, { name: "apple-inc.-magic-trackpad" }] })], ["elan0670:00-04f3:3150-touchpad", "apple-inc.-magic-trackpad"]);
+});
+
+const luajit = (() => {
+    try {
+        execFileSync("luajit", ["-v"]);
+        return "luajit";
+    } catch {
+        return null;
+    }
+})();
+
+const luaHarness = `
+local registered = {}
+local hl = {}
+hl.config = function() end
+hl.layer_rule = function() end
+hl.layout = {
+    register = function(name, def) table.insert(registered, { name = name, def = def }) end,
+    _G = _G,
+}
+_G.hl = hl
+dofile(arg[1])
+local def = registered[1] and registered[1].def or nil
+local n = tonumber(arg[2])
+if not def or not n then
+    print(registered[1] and registered[1].name or "none")
+    return
+end
+local placed = {}
+local targets = {}
+for i = 1, n do
+    targets[i] = { index = i, place = function(self, box) placed[i] = { x = box.x, y = box.y, w = box.w, h = box.h } end }
+end
+local ctx = { targets = targets, area = { x = 0, y = 0, w = 1000, h = 1000 } }
+function ctx:split(area, side, ratio)
+    ratio = math.max(0, math.min(1, ratio))
+    if side == "left" then
+        return { x = area.x, y = area.y, w = area.w * ratio, h = area.h }
+    elseif side == "right" then
+        return { x = area.x + area.w * (1 - ratio), y = area.y, w = area.w * ratio, h = area.h }
+    elseif side == "top" then
+        return { x = area.x, y = area.y, w = area.w, h = area.h * ratio }
+    end
+    return { x = area.x, y = area.y + area.h * (1 - ratio), w = area.w, h = area.h * ratio }
+end
+def.recalculate(ctx)
+for i = 1, n do
+    print(string.format("%g %g %g %g", placed[i].x, placed[i].y, placed[i].w, placed[i].h))
+end
+`;
+
+test("layout: custom tile-family layouts register under lua:dms: names, built-ins never do", function() {
+    assert.equal(scope.customLayoutLua("tile").includes('hl.layout.register("dms:tile"'), true);
+    assert.equal(scope.customLayoutLua("dwindle"), "");
+    assert.equal(scope.customLayoutLua("master"), "");
+    assert.deepEqual(["", "dwindle", "master", "scrolling", "monocle"].map(scope.hyprTilingLayoutTarget), ["", "dwindle", "master", "scrolling", "monocle"]);
+    assert.deepEqual(["tile", "right_tile", "vertical_tile", "center_tile", "deck"].map(scope.hyprTilingLayoutTarget), [
+        "lua:dms:tile",
+        "lua:dms:right_tile",
+        "lua:dms:vertical_tile",
+        "lua:dms:center_tile",
+        "lua:dms:deck"
+    ]);
+});
+
+test("layout: tile-family placements match mango semantics over the master size slider", { skip: !luajit }, () => {
+    const run = (layoutName, n, masterSize) => {
+        const previous = scope.SettingsData.hyprlandMasterSize;
+        const dir = mkdtempSync(join(tmpdir(), "dms-lua-layout-"));
+        scope.SettingsData.hyprlandMasterSize = masterSize ?? 55;
+        try {
+            writeFileSync(join(dir, "harness.lua"), luaHarness);
+            const file = join(dir, "layout.lua");
+            writeFileSync(file, scope.customLayoutLua(layoutName));
+            return execFileSync(luajit, [join(dir, "harness.lua"), file, String(n)], { encoding: "utf8" }).trim().split("\n").filter(line => line).map(line => {
+                const [x, y, w, h] = line.split(" ").map(Number);
+                return { x, y, w, h };
+            });
+        } finally {
+            scope.SettingsData.hyprlandMasterSize = previous;
+            rmSync(dir, { recursive: true, force: true });
+        }
+    };
+    const assertPlace = (actual, expect) => {
+        assert.equal(actual.length, expect.length, JSON.stringify(actual));
+        actual.forEach((box, index) => {
+            const want = expect[index];
+            for (const key of ["x", "y", "w", "h"])
+                assert.ok(Math.abs(box[key] - want[key]) < 1e-6, `target ${index + 1} ${key}: got ${box[key]}, want ${want[key]}`);
+        });
+    };
+    const box = (x, y, w, h) => ({ x, y, w, h });
+    assertPlace(run("tile", 1), [box(0, 0, 1000, 1000)]);
+    assertPlace(run("tile", 3), [box(0, 0, 550, 1000), box(550, 0, 450, 500), box(550, 500, 450, 500)]);
+    assertPlace(run("right_tile", 3), [box(450, 0, 550, 1000), box(0, 0, 450, 500), box(0, 500, 450, 500)]);
+    assertPlace(run("vertical_tile", 3), [box(0, 0, 1000, 550), box(0, 550, 500, 450), box(500, 550, 500, 450)]);
+    assertPlace(run("center_tile", 2), [box(225, 0, 550, 1000), box(775, 0, 225, 1000)]);
+    assertPlace(run("center_tile", 4), [box(225, 0, 550, 1000), box(775, 0, 225, 500), box(0, 0, 225, 1000), box(775, 500, 225, 500)]);
+    assertPlace(run("center_tile", 5), [box(225, 0, 550, 1000), box(0, 0, 225, 500), box(775, 0, 225, 500), box(0, 500, 225, 500), box(775, 500, 225, 500)]);
+    assertPlace(run("deck", 3), [box(0, 0, 550, 1000), box(550, 0, 450, 1000), box(550, 0, 450, 1000)]);
+    assertPlace(run("deck", 2, 70), [box(0, 0, 700, 1000), box(700, 0, 300, 1000)]);
+    assertPlace(run("vertical_tile", 2, 70), [box(0, 0, 1000, 700), box(0, 700, 1000, 300)]);
 });

@@ -211,24 +211,65 @@ awk '$1 == "xray" { print FILENAME ":" FNR; exit }' $files 2>/dev/null`;
         SettingsCard {
             id: hyprTilingCard
             width: parent.width
-            tags: ["hyprland", "layout", "tiling", "dwindle", "master", "scrolling", "general:layout"]
+            tags: ["hyprland", "layout", "tiling", "dwindle", "master", "scrolling", "monocle", "tile", "right tile", "vertical tile", "center tile", "deck", "general:layout"]
             title: I18n.tr("Tiling layout", "Hyprland settings card title")
             settingKey: "hyprlandTilingLayout"
             iconName: "view_quilt"
             visible: CompositorService.isHyprland
 
-            readonly property var layoutIds: ["", "dwindle", "master", "scrolling"]
+            readonly property var layoutIds: ["", "dwindle", "master", "scrolling", "monocle", "tile", "right_tile", "vertical_tile", "center_tile", "deck"]
+            readonly property var layoutRows: [
+                {
+                    offset: 0,
+                    labels: [I18n.tr("Off"), I18n.tr("Dwindle", "Hyprland tiling layout name"), I18n.tr("Master", "Hyprland tiling layout name"), I18n.tr("Scrolling", "Hyprland tiling layout name")]
+                },
+                {
+                    offset: 4,
+                    labels: [I18n.tr("Monocle", "window tiling layout name in layout picker"), I18n.tr("Tile", "Hyprland tiling layout name"), I18n.tr("Right Tile", "Hyprland tiling layout name")]
+                },
+                {
+                    offset: 7,
+                    labels: [I18n.tr("Vertical Tile", "Hyprland tiling layout name"), I18n.tr("Center Tile", "Hyprland tiling layout name"), I18n.tr("Deck", "window tiling layout name in layout picker")]
+                }
+            ]
+            readonly property var masterSizeLayouts: ["master", "tile", "right_tile", "vertical_tile", "center_tile", "deck"]
 
-            SettingsButtonGroupRow {
-                tags: ["hyprland", "layout", "tiling", "dwindle", "master", "scrolling"]
+            SettingsRow {
+                tags: ["hyprland", "layout", "tiling", "dwindle", "master", "scrolling", "monocle", "tile", "right tile", "vertical tile", "center tile", "deck"]
                 settingKey: "hyprlandTilingLayout"
-                text: I18n.tr("Layout")
-                model: [I18n.tr("Off"), I18n.tr("Dwindle", "Hyprland tiling layout name"), I18n.tr("Master", "Hyprland tiling layout name"), I18n.tr("Scrolling", "Hyprland tiling layout name")]
-                currentIndex: Math.max(0, hyprTilingCard.layoutIds.indexOf(SettingsData.hyprlandTilingLayout))
-                onSelectionChanged: (index, selected) => {
-                    if (!selected)
-                        return;
-                    SettingsData.set("hyprlandTilingLayout", hyprTilingCard.layoutIds[index]);
+                title: I18n.tr("Layout")
+
+                body: Item {
+                    width: parent.width
+                    height: layoutGroups.implicitHeight
+
+                    Column {
+                        id: layoutGroups
+                        width: parent.width
+                        spacing: Theme.spacingS
+
+                        Repeater {
+                            model: hyprTilingCard.layoutRows
+
+                            delegate: DButtonGroup {
+                                required property var modelData
+
+                                readonly property int selectedIndex: hyprTilingCard.layoutIds.indexOf(SettingsData.hyprlandTilingLayout)
+
+                                anchors.horizontalCenter: parent.horizontalCenter
+                                model: modelData.labels
+                                arrowKeysSelect: false
+                                selectionMode: "single"
+                                currentIndex: selectedIndex >= modelData.offset && selectedIndex < modelData.offset + model.length ? selectedIndex - modelData.offset : -1
+                                maximumWidth: parent.width
+                                onSelectionChanged: (index, selected) => {
+                                    if (!selected)
+                                        return;
+                                    SettingsData.set("hyprlandTilingLayout", hyprTilingCard.layoutIds[modelData.offset + index]);
+                                }
+                            }
+                        }
+                    }
                 }
             }
 
@@ -302,9 +343,9 @@ awk '$1 == "xray" { print FILENAME ":" FNR; exit }' $files 2>/dev/null`;
             }
 
             SettingsSliderRow {
-                tags: ["hyprland", "master", "size", "mfact", "ratio"]
+                tags: ["hyprland", "master", "tile", "size", "mfact", "ratio"]
                 settingKey: "hyprlandMasterSize"
-                visible: SettingsData.hyprlandTilingLayout === "master"
+                visible: hyprTilingCard.masterSizeLayouts.includes(SettingsData.hyprlandTilingLayout)
                 text: I18n.tr("Master size", "Hyprland master layout slider, share of the screen the master window takes")
                 value: SettingsData.hyprlandMasterSize
                 minimum: 10
