@@ -3451,8 +3451,9 @@ Singleton {
 
             [ "$current_theme" = "$theme_name" ] && [ "$current_size" = "$cursor_size" ] && exit 0
 
-            if [ -f "$xresources_file" ]; then
-                cp "$xresources_file" "\${xresources_file}.backup$(date +%s)"
+            backup_file="\${xresources_file}.bak"
+            if [ -f "$xresources_file" ] && [ ! -e "$backup_file" ]; then
+                cp "$xresources_file" "$backup_file"
             fi
 
             temp_file="\${xresources_file}.tmp.$$"
