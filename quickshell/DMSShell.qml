@@ -1299,10 +1299,7 @@ Item {
         function onScreenshotEnded(id) {
             if (PopoutService.settingsModal?.shouldBeVisible ?? false)
                 return;
-            const profile = ConfigProfileService.find(id);
-            SettingsUiState.selectedConfigProfileId = profile ? id : "";
-            SettingsUiState.selectedConfigProfileImported = false;
-            SettingsUiState.selectedWidgetTitle = profile?.name ?? I18n.tr("New profile");
+            ConfigProfileService.selectForSettings(id, false);
             PopoutService.openSettingsWithTab("profile_edit");
         }
     }

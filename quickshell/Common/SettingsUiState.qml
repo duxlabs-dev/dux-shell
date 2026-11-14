@@ -22,13 +22,13 @@ Singleton {
     property string selectedConfigProfileId: ""
     // Kept editor form per profile id ("" = new profile)
     property var configProfileEdits: ({})
+    property bool selectedConfigProfileImported: false
 
     function dropConfigProfileEdits(id) {
         const rest = Object.assign({}, configProfileEdits);
         delete rest[id];
         configProfileEdits = rest;
     }
-    property bool selectedConfigProfileImported: false
     property string selectedWidgetSection: ""
     property int selectedWidgetIndex: -1
     property string selectedWidgetTitle: ""

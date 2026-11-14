@@ -71,7 +71,7 @@ DCard {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.topMargin: Theme.spacingXS
-        anchors.leftMargin: card.compact ? Theme.spacingS : Theme.spacingM
+        anchors.leftMargin: Theme.spacingS
         anchors.rightMargin: Theme.spacingS
         spacing: Theme.spacingS
 

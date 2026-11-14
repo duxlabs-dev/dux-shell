@@ -44,7 +44,7 @@ PanelWindow {
         y: root.shadowBuffer
         width: content.width + Theme.spacingM * 2
         height: content.height + Theme.spacingS * 2
-        radius: height / 2
+        radius: Theme.fullRadius(width, height)
         color: Theme.readableSurface
 
         ElevationShadow {

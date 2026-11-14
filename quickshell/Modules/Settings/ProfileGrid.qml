@@ -24,9 +24,7 @@ Column {
             ConfigProfileService.discardDraft();
             SettingsUiState.dropConfigProfileEdits("");
         }
-        SettingsUiState.selectedConfigProfileId = id;
-        SettingsUiState.selectedConfigProfileImported = !!imported;
-        SettingsUiState.selectedWidgetTitle = ConfigProfileService.find(id)?.name ?? I18n.tr("New profile");
+        ConfigProfileService.selectForSettings(id, imported);
         parentModal?.navigateTo(page);
     }
 

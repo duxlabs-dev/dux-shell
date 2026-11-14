@@ -44,7 +44,7 @@ function service({ profiles = [], files = {}, active = "a", applyOk = true, dir 
         I18n: { tr: s => s },
         profileImported: id => imported.push(id),
         profilesDir: dir, profiles: [], _entries: {}, _views: {}, _folderIds: [], _creating: {}, _deleting: {},
-        _folderReady: false, _scanned: false, _applying: false, ready: true, draft: null, _pendingImport: "", capturingId: "", screenshotTargetId: "",
+        _folderReady: false, _scanned: false, _applying: false, _settingsDirty: true, ready: true, draft: null, _pendingImport: "", capturingId: "", screenshotTargetId: "",
         SettingsData: {
             settingsConfigVersion: SV,
             pluginSettings: {},
@@ -191,6 +191,20 @@ test("the draft sweep removes only id-named folders without a profile.json", t =
     const draft = ctx.startDraft();
     assert.deepEqual(readdirSync(dir).sort(), ["a", "bad", "dangling", "linked", draft, "x y"].sort());
     assert.ok(readdirSync(outside).length === 0 && readdirSync(join(dir, "a")).includes("profile.json"));
+});
+
+test("a session save outside the synced profile's groups takes no settings snapshot; one inside is written", () => {
+    const { ctx, events, live } = service({ profiles: [profile("a", { sync: true, settings: { frameEnabled: true }, session: { dockPins: { main: "app.desktop" } } })] });
+    let snapshots = 0;
+    const snapshot = ctx.SettingsData.profileSettingsSnapshot;
+    ctx.SettingsData.profileSettingsSnapshot = () => (snapshots++, snapshot());
+    ctx._settingsDirty = false;
+    live.session.launcherLastQuery = "firefox";
+    ctx._sync();
+    assert.equal(snapshots, 0);
+    live.session.dockPins = { main: "other.desktop" };
+    ctx._sync();
+    assert.deepEqual(events, ["write:a"]);
 });
 
 test("applying groups changes only those groups and keeps the active profile", () => {

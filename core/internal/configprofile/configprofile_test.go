@@ -283,3 +283,26 @@ func TestHandledKeysAreInProfileGroups(t *testing.T) {
 		}
 	}
 }
+
+// The shell checks preview names and profile ids with its own copies of these, so a drift drops previews on export or import.
+func TestImageExtsAndIDMatchShell(t *testing.T) {
+	b, err := os.ReadFile("../../../quickshell/Services/ConfigProfileService.qml")
+	if err != nil {
+		t.Skip("quickshell tree not available")
+	}
+	qml := string(b)
+	list := regexp.MustCompile(`imageExtensions: \[(.*)\]`).FindStringSubmatch(qml)
+	if list == nil {
+		t.Fatal("imageExtensions not found in ConfigProfileService.qml")
+	}
+	var exts []string
+	for _, m := range regexp.MustCompile(`"(\w+)"`).FindAllStringSubmatch(list[1], -1) {
+		exts = append(exts, "."+m[1])
+	}
+	if !slices.Equal(exts, imageExts) {
+		t.Errorf("shell image extensions %v differ from imageExts %v", exts, imageExts)
+	}
+	if !strings.Contains(qml, "/"+idRe.String()+"/") {
+		t.Errorf("shell profile id pattern differs from %s", idRe)
+	}
+}

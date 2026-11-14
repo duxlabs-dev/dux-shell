@@ -10,7 +10,7 @@ Item {
     id: root
 
     property var parentModal: null
-    property bool pageActive: true
+    property bool pageActive: false
 
     readonly property string profileId: SettingsUiState.selectedConfigProfileId
     readonly property var profile: ConfigProfileService.find(profileId)

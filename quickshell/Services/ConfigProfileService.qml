@@ -28,6 +28,8 @@ Singleton {
     property var _creating: ({})
     property var _deleting: ({})
     property bool _applying: false
+    // Starts true so the first sync also compares settings changed while the shell was down.
+    property bool _settingsDirty: true
     property bool _wantsDefault: false
     property string capturingId: ""
     property string screenshotTargetId: ""
@@ -140,6 +142,7 @@ Singleton {
     Connections {
         target: SettingsData
         function onSettingsSaved() {
+            root._settingsDirty = true;
             root.liveChanged();
             root._scheduleSync();
         }
@@ -330,6 +333,14 @@ Singleton {
         return profiles.find(p => p.id === id) ?? null;
     }
 
+    // An unknown or empty id selects a new profile.
+    function selectForSettings(id, imported) {
+        const profile = find(id);
+        SettingsUiState.selectedConfigProfileId = profile ? id : "";
+        SettingsUiState.selectedConfigProfileImported = !!imported;
+        SettingsUiState.selectedWidgetTitle = profile?.name ?? I18n.tr("New profile");
+    }
+
     function _isNewer(profile) {
         return Profiles.isNewer(profile, SettingsData.settingsConfigVersion, SessionData.sessionConfigVersion);
     }
@@ -375,9 +386,16 @@ Singleton {
         syncTimer.restart();
     }
 
+    // Session saves are frequent and mostly outside any profile, so alone they only compare its session keys.
     function _sync() {
-        if (!_applying && ready)
-            _syncProfile(activeProfile);
+        if (_applying || !ready)
+            return;
+        const profile = activeProfile;
+        const settingsDirty = _settingsDirty;
+        _settingsDirty = false;
+        if (!settingsDirty && profile && SpecUtil.stableStringify(SessionData.profileValues(Profiles.sessionKeys(profile.groups))) === SpecUtil.stableStringify(profile.session ?? {}))
+            return;
+        _syncProfile(profile);
     }
 
     function _syncProfile(profile) {
@@ -493,7 +511,8 @@ Singleton {
     }
 
     function _isImageName(name) {
-        return new RegExp("^preview\\.(" + imageExtensions.join("|") + ")$", "i").test(name || "");
+        const ext = /^preview\.(\w+)$/.exec(name || "")?.[1];
+        return !!ext && imageExtensions.includes(ext.toLowerCase());
     }
 
     function _removeImage(id, name) {

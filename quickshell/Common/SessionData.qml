@@ -496,7 +496,7 @@ Singleton {
         const out = {};
         for (const key of keys) {
             if (key in Spec.SPEC)
-                out[key] = JSON.parse(JSON.stringify(root[key]));
+                out[key] = SpecUtil.cloneDef(root[key]);
         }
         return out;
     }
@@ -511,7 +511,7 @@ Singleton {
             if (key === "isLightMode" || key === "wallpaperPath" || !(key in Spec.SPEC))
                 continue;
             const coerce = Spec.SPEC[key].coerce;
-            const value = JSON.parse(JSON.stringify(values[key]));
+            const value = SpecUtil.cloneDef(values[key]);
             const coerced = coerce ? coerce(value) : value;
             // An equal object still fires change handlers, which would drop a loading wallpaper transition.
             if (coerced === undefined || SpecUtil.stableStringify(coerced) === SpecUtil.stableStringify(root[key]))

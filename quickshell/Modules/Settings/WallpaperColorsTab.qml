@@ -66,7 +66,6 @@ Column {
     spacing: Theme.spacingL
 
     Component.onCompleted: {
-        ConfigProfileService.ensureDefault();
         WallpaperCyclingService.cyclingActive;
         SettingsData.detectAvailableIconThemes();
         SettingsData.detectAvailableCursorThemes();
@@ -364,9 +363,11 @@ Column {
         iconName: "style"
         settingKey: "configProfiles"
 
+        // The first profile is only made on the Profiles page, so browsing here never starts the profile service.
         ProfileGrid {
             width: parent?.width ?? 0
-            columns: width >= Theme.mediumBreakpoint ? 4 : width >= Theme.smallBreakpoint ? 3 : 2
+            visible: SessionData.activeConfigProfile !== ""
+            columns: Math.max(2, Math.floor(width / SettingsMetrics.previewTileMinWidth))
             cellSpacing: Theme.spacingS
             compact: true
             targetScreen: root.selectedDisplay
@@ -376,7 +377,6 @@ Column {
         SettingsNavRow {
             tab: "wallpaper"
             title: I18n.tr("Manage profiles", "link row opening the page that creates, edits and deletes config profiles")
-            visible: ConfigProfileService.ready
             onClicked: keyboard => root.parentModal?.navigateTo("profiles", keyboard)
         }
     }
@@ -545,16 +545,6 @@ Column {
             }
         }
 
-        SettingsNavRow {
-            tab: "wallpaper"
-            tags: ["folders", "directories", "library"]
-            settingKey: "wallpaperFolders"
-            iconName: "folder"
-            title: I18n.tr("Wallpapers", "wallpaper folders settings row")
-            hint: SettingsTabs.page("wallpaper_folders")?.hint ?? ""
-            onClicked: keyboard => root.parentModal?.navigateTo("wallpaper_folders", keyboard)
-        }
-
         SettingsSplitRow {
             tab: "wallpaper"
             tags: ["cycling", "automatic", "rotate", "slideshow", "folder", "interval"]
@@ -652,6 +642,16 @@ Column {
             }
         }
 
+        SettingsToggleRow {
+            tab: "wallpaper"
+            tags: ["blur", "overview", "niri"]
+            settingKey: "blurWallpaperOnOverview"
+            visible: CompositorService.isNiri
+            text: I18n.tr("Blur on overview")
+            checked: SettingsData.blurWallpaperOnOverview
+            onToggled: checked => SettingsData.set("blurWallpaperOnOverview", checked)
+        }
+
         SettingsNavRow {
             tab: "wallpaper"
             tags: ["lock", "screen", "background"]
@@ -664,14 +664,14 @@ Column {
             }
         }
 
-        SettingsToggleRow {
+        SettingsNavRow {
             tab: "wallpaper"
-            tags: ["blur", "overview", "niri"]
-            settingKey: "blurWallpaperOnOverview"
-            visible: CompositorService.isNiri
-            text: I18n.tr("Blur on overview")
-            checked: SettingsData.blurWallpaperOnOverview
-            onToggled: checked => SettingsData.set("blurWallpaperOnOverview", checked)
+            tags: ["folders", "directories", "library"]
+            settingKey: "wallpaperFolders"
+            iconName: "folder"
+            title: I18n.tr("Wallpapers", "wallpaper folders settings row")
+            hint: SettingsTabs.page("wallpaper_folders")?.hint ?? ""
+            onClicked: keyboard => root.parentModal?.navigateTo("wallpaper_folders", keyboard)
         }
     }
 
