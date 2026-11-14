@@ -9,16 +9,33 @@ import qs.DCommon.Widgets
 DIconButton {
     id: root
 
-    focusRingColor: MediaAccentService.focusRing
-
-    required property var player
     required property string mediaAction
+    // The dash's settled snapshot stops a track change flickering the controls; without one the caller owns visibility.
+    property bool usePresentation: false
+    property var presentation: null
     property bool keepNavigation: false
 
-    readonly property var presentation: root.player.presentation
-    readonly property var activePlayer: root.player.activePlayer
-    readonly property bool playing: !!root.presentation?.playing
-    readonly property bool repeatingTrack: root.presentation?.loopState === MprisLoopState.Track
+    readonly property var activePlayer: MprisController.activePlayer
+    property bool playing: root.usePresentation ? !!root.presentation?.playing : root.activePlayer?.playbackState === MprisPlaybackState.Playing
+    readonly property var loopState: root.usePresentation ? root.presentation?.loopState : root.activePlayer?.loopState
+    readonly property bool repeatingTrack: root.loopState === MprisLoopState.Track
+
+    function cycleLoopState(): void {
+        const player = root.activePlayer;
+        if (!player?.canControl || !player.loopSupported)
+            return;
+        switch (player.loopState) {
+        case MprisLoopState.None:
+            player.loopState = MprisLoopState.Playlist;
+            return;
+        case MprisLoopState.Playlist:
+            player.loopState = MprisLoopState.Track;
+            return;
+        case MprisLoopState.Track:
+            player.loopState = MprisLoopState.None;
+            return;
+        }
+    }
 
     checkable: root.mediaAction === "shuffle" || root.mediaAction === "play" || root.mediaAction === "repeat"
     iconFilled: false
@@ -56,6 +73,8 @@ DIconButton {
     }
 
     visible: {
+        if (!root.usePresentation)
+            return true;
         switch (root.mediaAction) {
         case "shuffle":
             return !!root.presentation?.shuffle;
@@ -76,6 +95,7 @@ DIconButton {
         case "shuffle":
             return !!root.activePlayer?.shuffleSupported && !!root.activePlayer?.canControl;
         case "previous":
+            // previousOrRewind() only rewinds past 8 s, but gating on position would need it polled.
             return !!root.activePlayer?.canGoPrevious || (!root.keepNavigation && !!root.activePlayer?.canSeek);
         case "play":
             return !!root.activePlayer?.canTogglePlaying;
@@ -90,11 +110,11 @@ DIconButton {
     checked: {
         switch (root.mediaAction) {
         case "shuffle":
-            return !!root.presentation?.shuffleEnabled;
+            return root.usePresentation ? !!root.presentation?.shuffleEnabled : !!root.activePlayer?.shuffle;
         case "play":
             return root.playing;
         case "repeat":
-            return !!root.presentation && root.presentation.loopState !== MprisLoopState.None;
+            return root.loopState !== undefined && root.loopState !== MprisLoopState.None;
         }
         return false;
     }
@@ -117,7 +137,7 @@ DIconButton {
             MprisController.next();
             return;
         case "repeat":
-            root.player.cycleLoopState();
+            root.cycleLoopState();
             return;
         }
     }

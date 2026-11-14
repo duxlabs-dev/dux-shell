@@ -48,6 +48,11 @@ Item {
     }
     readonly property string minuteText: String(systemClock.date.getMinutes()).padStart(2, "0")
     property bool clockVisible: false
+    property bool controlsVisible: false
+    readonly property var controlPlayer: root.mediaModel.player ?? null
+    readonly property bool controlsShown: root.controlsVisible && !!root.controlPlayer
+    readonly property real controlSize: Math.max(Theme.iconSizeMedium, Math.min(root.artworkSize, Theme.iconSize * root.contentScale))
+    readonly property real controlsLength: root.controlSize * 3 + Theme.spacingXS * 2
     property bool lyricsEnabled: false
     readonly property bool lyricsWanted: lyricsEnabled && LyricsService.allowed && !isVertical
     readonly property bool lyricsLive: lyricsWanted && enabled && titleShown
@@ -72,6 +77,8 @@ Item {
             width += root.cavaWidth + (titleSlot.retained ? Theme.spacingXS : 0);
         if (titleSlot.retained)
             width += root.textGutter * 2;
+        if (root.controlsShown)
+            width += root.controlsLength + Theme.spacingXS;
         if (root.clockVisible)
             width += clockText.width + Theme.spacingXS * 2 + Theme.spacingS;
         return width;
@@ -120,7 +127,23 @@ Item {
     implicitWidth: isVertical ? artworkSize + verticalPad * 2 : measuredWidth
     implicitHeight: isVertical ? verticalFace.implicitHeight + verticalPad * 2 : artworkSize
     readonly property bool clockHovered: enabled && visible && ((clockArea.visible && clockArea.containsMouse) || (verticalClockArea.visible && verticalClockArea.containsMouse))
+    readonly property bool controlsHovered: enabled && visible && (controlsHover.hovered || verticalControlsHover.hovered)
     signal clockClicked
+
+    component MediaControlButton: MediaTransportButton {
+        id: control
+
+        readonly property bool isPlay: control.mediaAction === "play"
+
+        width: root.controlSize
+        height: root.controlSize
+        buttonSize: root.controlSize
+        iconSize: Math.min(Theme.iconSizeSmall * root.contentScale, root.controlSize - Theme.spacingS)
+        round: !control.isPlay
+        variant: control.isPlay ? "filled" : "standard"
+        iconColor: control.filled ? control.contentColor : Theme.surfaceText
+        playing: root.mediaModel.playing
+    }
 
     StyledTextMetrics {
         id: titleMetrics
@@ -225,7 +248,7 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             ready: true
             shown: root.titleShown
-            width: parent.width - (wave.retained ? root.cavaWidth + parent.spacing : 0)
+            width: parent.width - (wave.retained ? root.cavaWidth + parent.spacing : 0) - (controlsLoader.active ? controlsLoader.width + parent.spacing : 0)
             height: trackText.implicitHeight
 
             Column {
@@ -272,6 +295,37 @@ Item {
                     font.pixelSize: Theme.fontSizeXSmall * root.contentScale
                     wrapMode: Text.NoWrap
                     elide: Text.ElideRight
+                }
+            }
+        }
+
+        Loader {
+            id: controlsLoader
+
+            anchors.verticalCenter: parent.verticalCenter
+            active: root.controlsShown && !root.isVertical
+            visible: active
+
+            HoverHandler {
+                id: controlsHover
+            }
+
+            sourceComponent: Row {
+                spacing: Theme.spacingXS
+
+                MediaControlButton {
+                    anchors.verticalCenter: parent.verticalCenter
+                    mediaAction: "previous"
+                }
+
+                MediaControlButton {
+                    anchors.verticalCenter: parent.verticalCenter
+                    mediaAction: "play"
+                }
+
+                MediaControlButton {
+                    anchors.verticalCenter: parent.verticalCenter
+                    mediaAction: "next"
                 }
             }
         }
@@ -348,6 +402,37 @@ Item {
             height: root.cavaWidth
             maxBarHeight: Math.max(3, height - 2)
             idleIconName: "graphic_eq"
+        }
+
+        Loader {
+            id: verticalControlsLoader
+
+            anchors.horizontalCenter: parent.horizontalCenter
+            active: root.controlsShown && root.isVertical
+            visible: active
+
+            HoverHandler {
+                id: verticalControlsHover
+            }
+
+            sourceComponent: Column {
+                spacing: Theme.spacingXS
+
+                MediaControlButton {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    mediaAction: "previous"
+                }
+
+                MediaControlButton {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    mediaAction: "play"
+                }
+
+                MediaControlButton {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    mediaAction: "next"
+                }
+            }
         }
 
         Item {

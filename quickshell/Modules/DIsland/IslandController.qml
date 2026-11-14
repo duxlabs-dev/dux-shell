@@ -179,6 +179,7 @@ QtObject {
     property real compactThickness: 38
     property string batteryStyle: "duo"
     property bool mediaClockVisible: true
+    property bool mediaControls: true
     property bool mediaLyrics: false
     property bool dashTabs: false
     property string dashDefaultTab: "overview"

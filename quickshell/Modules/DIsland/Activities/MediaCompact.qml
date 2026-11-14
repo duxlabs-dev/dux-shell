@@ -10,6 +10,7 @@ MediaActivityFace {
     isVertical: controller.isVertical
     artworkSize: controller.compactIconSize
     clockVisible: controller.mediaClockVisible
+    controlsVisible: controller.mediaControls
     lyricsEnabled: controller.mediaLyrics
     maxLength: controller.mediaCompactMaxLength
     function updateLength() {
@@ -20,12 +21,14 @@ MediaActivityFace {
     onIsVerticalChanged: updateLength()
     Component.onCompleted: updateLength()
     onClockClicked: controller.requestActivity("home", false, false)
+    // Hovering a control must not let the island expand out from under the pointer.
+    readonly property bool hoverSuppressed: clockHovered || controlsHovered
     property bool hoverCounted: false
-    onClockHoveredChanged: {
-        if (hoverCounted === clockHovered)
+    onHoverSuppressedChanged: {
+        if (hoverCounted === hoverSuppressed)
             return;
-        hoverCounted = clockHovered;
-        if (clockHovered)
+        hoverCounted = hoverSuppressed;
+        if (hoverSuppressed)
             controller.slotHoverEntered();
         else
             controller.slotHoverExited();

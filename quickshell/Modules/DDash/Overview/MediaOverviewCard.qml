@@ -234,8 +234,10 @@ Card {
             height: stacked ? buttonHeight * 2 + spacing : buttonHeight
             y: root.tiny ? (parent.height - height) / 2 : parent.height - height
 
-            DIconButton {
+            MediaTransportButton {
                 id: playButton
+                mediaAction: "play"
+                playing: root.playing
                 x: transport.centered ? previousButton.width + transport.spacing : 0
                 anchors.top: parent.top
                 size: transport.medium ? "m" : "s"
@@ -247,23 +249,15 @@ Card {
                     return (parent.width - transport.spacing * 2) / 2;
                 }
                 variant: "filled"
-                checkable: true
-                checked: root.playing
                 iconFilled: root.bento
                 radius: Theme.buttonRadius(width, height, buttonSize, pressed, true)
-                iconName: root.playing ? "pause" : "play_arrow"
-                Accessible.name: root.playing ? I18n.tr("Pause") : I18n.tr("Play")
-                enabled: !!root.activePlayer?.canTogglePlaying
                 contentColor: root.bento ? MediaAccentService.onAccentSecondaryContainer : MediaAccentService.onAccentContainer
                 containerColor: root.bento ? MediaAccentService.accentSecondaryContainer : MediaAccentService.accentContainer
-                onClicked: {
-                    SessionData.suppressOSDTemporarily();
-                    root.activePlayer.togglePlaying();
-                }
             }
 
-            DIconButton {
+            MediaTransportButton {
                 id: previousButton
+                mediaAction: "previous"
                 x: transport.stacked || transport.centered ? 0 : playButton.width + transport.spacing
                 anchors.bottom: parent.bottom
                 size: transport.medium ? "m" : "s"
@@ -273,15 +267,14 @@ Card {
                 containerColor: root.bento ? MediaAccentService.accentContainer : MediaAccentService.accentSecondaryContainer
                 contentColor: root.bento ? MediaAccentService.onAccentContainer : Theme.onSecondaryContainer
                 iconFilled: root.bento
-                iconName: "skip_previous"
-                Accessible.name: I18n.tr("Previous")
+                // previousOrRewind() only rewinds past 8 s; the live position is polled here, unlike the bar.
                 enabled: !!root.activePlayer?.canGoPrevious || (!!root.activePlayer?.canSeek && root.activePlayer.position > 8)
                 visible: !root.tiny
-                onClicked: MprisController.previousOrRewind()
             }
 
-            DIconButton {
+            MediaTransportButton {
                 id: nextButton
+                mediaAction: "next"
                 anchors.right: parent.right
                 anchors.bottom: parent.bottom
                 size: transport.medium ? "m" : "s"
@@ -292,11 +285,7 @@ Card {
                 containerColor: previousButton.containerColor
                 contentColor: previousButton.contentColor
                 iconFilled: previousButton.iconFilled
-                iconName: "skip_next"
-                Accessible.name: I18n.tr("Next")
-                enabled: !!root.activePlayer?.canGoNext
                 visible: !root.tiny
-                onClicked: MprisController.next()
             }
         }
     }
