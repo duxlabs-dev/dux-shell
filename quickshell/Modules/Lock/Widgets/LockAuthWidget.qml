@@ -992,10 +992,10 @@ Item {
                         wrapMode: TextEdit.NoWrap
                         text: {
                             if (root.demoMode)
-                                return "••••••••";
+                                return Theme.passwordMaskCharacter.repeat(8);
                             if (passwordBox.showPassword)
                                 return root.passwordBuffer;
-                            return "•".repeat(root.passwordBuffer.length);
+                            return Theme.passwordMaskCharacter.repeat(root.passwordBuffer.length);
                         }
                         color: root.contained ? Theme.surfaceText : root.plainColor
                         selectionColor: root.accentColor
