@@ -14,6 +14,7 @@ FocusScope {
 
     readonly property var rows: SettingsTabs.hubMainRows(hubId)
     readonly property var moreRows: SettingsTabs.hubMoreRows(hubId)
+    readonly property var footerRows: SettingsTabs.hubFooterRows(hubId)
     readonly property real contentHeight: flickable.contentHeight
     readonly property bool settling: headerLoader.status === Loader.Loading
 
@@ -62,6 +63,24 @@ FocusScope {
 
                     iconName: modelData.icon
                     title: modelData.text
+                    hint: modelData.hint ?? ""
+                    onClicked: keyboard => root.parentModal?.navigateTo(modelData.id, keyboard)
+                }
+            }
+        }
+
+        SettingsGroup {
+            width: parent.width
+            visible: root.footerRows.length > 0
+
+            Repeater {
+                model: root.footerRows
+
+                SettingsNavRow {
+                    required property var modelData
+
+                    iconName: modelData.icon
+                    title: modelData.hubFooter
                     hint: modelData.hint ?? ""
                     onClicked: keyboard => root.parentModal?.navigateTo(modelData.id, keyboard)
                 }

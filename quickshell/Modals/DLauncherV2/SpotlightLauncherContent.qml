@@ -31,7 +31,7 @@ FocusScope {
     property var editingApp: null
     property string editAppId: ""
 
-    readonly property bool _hasQuery: root.showResultsWithoutQuery || searchInput.text.length > 0 || root.controller.searchMode === "dmenu"
+    readonly property bool _hasQuery: root.showResultsWithoutQuery || searchInput.text.length > 0 || root.controller.searchMode === "dmenu" || !!root.controller.activeFolderId
     readonly property real _searchBarH: LauncherMetrics.pillHeight
     readonly property real _searchAreaH: _searchBarH
     readonly property alias searchAreaHeight: root._searchAreaH
@@ -42,7 +42,8 @@ FocusScope {
     readonly property real _rowsHeightBudget: _resultsTopGap + ((root.controller.searchMode === "dmenu" && root.controller.dmenuLines > 0) ? (root.controller.dmenuLines * (LauncherMetrics.rowHeight + LauncherMetrics.rowGap) + (_firstSectionShowsHeader ? LauncherMetrics.sectionBand : 0) + LauncherMetrics.fadeLength) : LauncherMetrics.maxResultsHeight)
     readonly property real _maxResultsH: root.maxResultsHeight > 0 ? root.maxResultsHeight : Math.max(0, Math.min(_rowsHeightBudget + resultsList.bottomInset, (parentModal?.screenHeight ?? Theme.mediumBreakpoint) - (parentModal?.modalY ?? 0) - LauncherMetrics.pillHeight - actionPanel.height - Theme.spacingL))
     readonly property real _resultsContentH: resultsList.contentHeight > 0 ? _resultsTopGap + resultsList.contentHeight + resultsList.bottomInset : _statusH
-    readonly property real _resultsH: _hasQuery ? Math.min(_resultsContentH, _resultsTopGap + resultsList.fittedHeight + resultsList.bottomInset) : 0
+    // The popup needs space beyond the underlying result rows.
+    readonly property real _resultsH: !_hasQuery ? 0 : root.controller.activeFolderId ? _maxResultsH : Math.min(_resultsContentH, _resultsTopGap + resultsList.fittedHeight + resultsList.bottomInset)
     readonly property int _resizeDuration: Theme.expressiveDurations.expressiveFastSpatial
     readonly property real _frameClipRadius: Math.max(0, (parentModal?.frameBottomRadius ?? 0) - resultsInset)
     readonly property real _editAvailableH: maxResultsHeight > 0 ? maxResultsHeight + _searchAreaH : Math.max(LauncherMetrics.maxResultsHeight, (parentModal?.screenHeight ?? Theme.mediumBreakpoint) - (parentModal?.modalY ?? 0) - Theme.spacingL)
@@ -143,10 +144,20 @@ FocusScope {
             return;
         }
 
+        if (root.controller.activeFolderId && root.controller.handleFolderKey(event)) {
+            event.accepted = true;
+            return;
+        }
+
         switch (event.key) {
         case Qt.Key_Escape:
             if (actionPanel.expanded) {
                 actionPanel.hide();
+                event.accepted = true;
+                return;
+            }
+            if (root.controller.activeFolderId) {
+                root.controller.closeLauncherFolder();
                 event.accepted = true;
                 return;
             }
@@ -162,6 +173,11 @@ FocusScope {
             return;
         case Qt.Key_Backspace:
             if (searchInput.text.length === 0) {
+                if (root.controller.activeFolderId) {
+                    root.controller.closeLauncherFolder();
+                    event.accepted = true;
+                    return;
+                }
                 if (root.controller.clearPluginFilter()) {
                     event.accepted = true;
                     return;
@@ -334,6 +350,10 @@ FocusScope {
             searchInput.text = query;
             root._focusSearch();
         }
+        function onFolderContextMenuRequested() {
+            const scenePos = resultsList.getSelectedItemPosition();
+            root._showContextMenu(root.controller.folderMemberAt(root.controller.folderSelectedIndex), scenePos.x, scenePos.y, true);
+        }
     }
 
     Item {
@@ -480,6 +500,7 @@ FocusScope {
             focus: true
             editingApp: root.editingApp
             editAppId: root.editAppId
+            transientSurfaceTracker: root.transientSurfaceTracker
             onCloseRequested: root.closeEditMode()
         }
 

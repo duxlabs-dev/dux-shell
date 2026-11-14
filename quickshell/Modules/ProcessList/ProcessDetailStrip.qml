@@ -21,7 +21,7 @@ Rectangle {
     readonly property string command: live?.command ?? ""
     readonly property string fullCommand: live?.fullCommand || command
     readonly property var desktopEntry: ProcessListMetrics.appEntry(live, [sandbox?.id])
-    readonly property string appName: desktopEntry?.name || command
+    readonly property string appName: ProcessListMetrics.displayName(live, desktopEntry)
     readonly property var startTime: live?.startTime ?? null
     readonly property var started: startTime !== null ? new Date(startTime * 1000) : null
     readonly property bool startedToday: started !== null && started.toDateString() === new Date().toDateString()

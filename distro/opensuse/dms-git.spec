@@ -17,7 +17,7 @@ BuildRequires:  git-core
 BuildRequires:  systemd-rpm-macros
 
 Requires:       accountsservice
-Requires:       libdux-qt-base0
+Requires:       libdux-qt-base0-git
 
 Recommends:     cava
 Recommends:     (dux-search or danksearch)

@@ -90,11 +90,25 @@ test("drop target follows the leading edge so a wide unit can pass a narrow one 
 
 test("a dock shown only in the overview resolves onto an edge no enabled dock holds", () => {
     const screen = { name: "eDP-1" };
-    const overviewOnly = { ...config.create("dock", "Dock"), openOnOverview: true };
+    const overviewOnly = { ...config.create("dock", "Dock"), enabled: false, openOnOverview: true };
     assert.equal(config.resolveEdge([overviewOnly], screen, [screen], "bottom"), overviewOnly);
-    assert.equal(config.resolveEdge([config.create("dock", "Dock")], screen, [screen], "bottom"), null);
+    assert.equal(config.resolveEdge([{ ...config.create("dock", "Dock"), enabled: false }], screen, [screen], "bottom"), null);
     const enabled = { ...config.create("second", "Second"), enabled: true };
     assert.equal(config.resolveEdge([overviewOnly, enabled], screen, [screen], "bottom"), enabled);
+});
+
+test("default dock places launcher before pins and respects explicit auto-hide", () => {
+    const dock = config.create("dock", "Dock");
+    const [normalizedAutoHide] = plain(config.normalize([{ id: "d", autoHide: true }]));
+    assert.equal(normalizedAutoHide.autoHide, true);
+    assert.equal(normalizedAutoHide.smartAutoHide, false);
+    const defaultApps = [
+        { uniqueKey: "launcher_button", type: "launcher", appId: "__LAUNCHER__", isPinned: true },
+        { uniqueKey: "pinned_dms_notepad", type: "pinned", appId: "dms_notepad", isPinned: true },
+        { uniqueKey: "pinned_dms_settings", type: "pinned", appId: "dms_settings", isPinned: true }
+    ];
+    const items = config.surfaceItems(dock.widgets, defaultApps, dock.order);
+    assert.deepEqual(plain(config.units(items)), ["dock_launcher", "pin:dms_notepad", "pin:dms_settings"]);
 });
 
 test("settings reorder follows the saved dock order and pins travel with the widget after them", () => {

@@ -878,6 +878,9 @@ var LOCAL_SPEC = {
     appLauncherGridColumns: {
         def: 4
     },
+    appLauncherIconColumns: {
+        def: 5
+    },
     closeNiriOverviewOnWindowFocus: {
         def: true
     },
@@ -1557,6 +1560,9 @@ var LOCAL_SPEC = {
         def: true
     },
     osdTouchpadEnabled: {
+        def: true
+    },
+    osdAirplaneModeEnabled: {
         def: true
     },
     osdPowerProfileEnabled: {

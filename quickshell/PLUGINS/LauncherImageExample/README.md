@@ -23,7 +23,7 @@ Example launcher plugin demonstrating tile mode with URL-based images.
 }
 ```
 
-- `viewMode`: Sets the default view mode ("list", "grid", or "tile")
+- `viewMode`: Sets the default view mode ("list", "grid", "icons", or "tile")
 - `viewModeEnforced`: When true, users cannot switch view modes for this plugin
 
 ## Item Data Structure

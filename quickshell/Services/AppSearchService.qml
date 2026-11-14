@@ -59,8 +59,9 @@ Singleton {
         invalidateLauncherCache();
     }
 
-    function invalidateLauncherCache() {
-        _transformCache = {};
+    function invalidateLauncherCache(clearTransforms = true) {
+        if (clearTransforms)
+            _transformCache = {};
         _defaultCacheValid = false;
         _cachedDefaultSections = [];
         _cachedDefaultFlatModel = [];
@@ -162,6 +163,9 @@ Singleton {
             root._cachedVisibleApps = null;
             root._searchIndex = null;
             root.invalidateLauncherCache();
+        }
+        function onLauncherFoldersChanged() {
+            root.invalidateLauncherCache(false);
         }
     }
 

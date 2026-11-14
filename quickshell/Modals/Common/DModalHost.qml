@@ -780,13 +780,25 @@ Item {
 
                             Loader {
                                 id: contentLoader
+
+                                readonly property bool wanted: root.directContent === null && (root.keepContentLoaded || root.shouldBeVisible || contentWindow.visible)
+
                                 sourceComponent: root.modalHandle.content
                                 anchors.fill: parent
-                                active: root.directContent === null && (root.keepContentLoaded || root.shouldBeVisible || contentWindow.visible)
+                                active: false
                                 asynchronous: false
                                 focus: true
                                 clip: false
                                 visible: root.directContent === null
+
+                                // A close can run under one of the content's own handlers, so unload a turn later.
+                                onWantedChanged: {
+                                    if (wanted) {
+                                        active = true;
+                                        return;
+                                    }
+                                    Qt.callLater(() => contentLoader.active = contentLoader.wanted);
+                                }
 
                                 onLoaded: {
                                     if (item) {

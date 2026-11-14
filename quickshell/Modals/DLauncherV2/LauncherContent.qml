@@ -126,6 +126,11 @@ FocusScope {
             }
         }
 
+        if (controller.activeFolderId && controller.handleFolderKey(event)) {
+            event.accepted = true;
+            return;
+        }
+
         var hasCtrl = event.modifiers & Qt.ControlModifier;
         event.accepted = true;
 
@@ -145,6 +150,10 @@ FocusScope {
                 actionPanel.hide();
                 return;
             }
+            if (controller.activeFolderId) {
+                controller.closeLauncherFolder();
+                return;
+            }
             if (controller.clearPluginFilter())
                 return;
             if (root.parentModal?.attemptUserCancel)
@@ -154,6 +163,10 @@ FocusScope {
             return;
         case Qt.Key_Backspace:
             if (searchField.text.length === 0) {
+                if (controller.activeFolderId) {
+                    controller.closeLauncherFolder();
+                    return;
+                }
                 if (controller.clearPluginFilter())
                     return;
                 if (controller.autoSwitchedToFiles) {
@@ -415,7 +428,9 @@ FocusScope {
                         }
                     }
                     if (event.key === Qt.Key_Escape) {
-                        if (root.parentModal?.attemptUserCancel)
+                        if (controller.activeFolderId)
+                            controller.closeLauncherFolder();
+                        else if (root.parentModal?.attemptUserCancel)
                             root.parentModal.attemptUserCancel();
                         else
                             root.parentModal?.hide();
@@ -423,6 +438,8 @@ FocusScope {
                     } else if ((event.key === Qt.Key_Return || event.key === Qt.Key_Enter)) {
                         if (controller.searchMode === "dmenu" && controller.dmenuMultiSelect && (event.modifiers & Qt.ShiftModifier)) {
                             controller.toggleDmenuMultiSelectHighlighted();
+                        } else if (controller.activeFolderId) {
+                            controller.executeFolderSelected();
                         } else if (actionPanel.expanded && actionPanel.selectedActionIndex > 0) {
                             actionPanel.executeSelectedAction();
                         } else {
@@ -712,6 +729,11 @@ FocusScope {
         function onModeChanged() {
             extFilterField.text = "";
         }
+        function onFolderContextMenuRequested() {
+            const scenePos = resultsList.getSelectedItemPosition();
+            const localPos = root.mapFromItem(null, scenePos.x, scenePos.y);
+            showContextMenu(controller.folderMemberAt(controller.folderSelectedIndex), localPos.x, localPos.y, true);
+        }
     }
 
     Loader {
@@ -726,6 +748,7 @@ FocusScope {
             focus: true
             editingApp: root.editingApp
             editAppId: root.editAppId
+            transientSurfaceTracker: root.transientSurfaceTracker
             onCloseRequested: root.closeEditMode()
         }
 

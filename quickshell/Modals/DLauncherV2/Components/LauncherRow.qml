@@ -62,6 +62,15 @@ DListItem {
         return "file://" + raw;
     }
     readonly property bool hasClipboardPreview: item?.type === "clipboard" && !!item?.data?.isImage && String(item?.data?.mimeType ?? "").startsWith("image/")
+    readonly property bool isFolder: item?.type === "folder"
+    readonly property int folderMemberCount: item?.data?.members?.length ?? 0
+    readonly property string subtitleText: {
+        if (!isFolder)
+            return item?.subtitle ?? "";
+        if (folderMemberCount === 1)
+            return I18n.tr("%1 app", "launcher folder member count, singular, %1 is 1").arg(folderMemberCount);
+        return I18n.tr("%1 apps", "launcher folder member count, plural, %1 is a number").arg(folderMemberCount);
+    }
 
     width: parent?.width ?? Theme.fieldDefaultWidth
     height: LauncherMetrics.rowHeight
@@ -74,8 +83,8 @@ DListItem {
         anchors.left: parent.left
         anchors.leftMargin: LauncherMetrics.rowPadding
         anchors.verticalCenter: parent.verticalCenter
-        visible: !(root.item?.type === "dmenu" && root.item?.data?.nonSelectable && !root.item?.icon)
-        iconValue: root.iconValue
+        visible: !root.isFolder && !(root.item?.type === "dmenu" && root.item?.data?.nonSelectable && !root.item?.icon)
+        iconValue: root.isFolder ? "" : root.iconValue
         iconMargins: root.iconMargins
         fallbackLeftMargin: root.iconFallbackLeftMargin
         fallbackRightMargin: root.iconFallbackRightMargin
@@ -88,6 +97,15 @@ DListItem {
         fallbackText: (root.item?.name?.length > 0) ? root.item.name.charAt(0).toUpperCase() : "?"
         materialIconSizeAdjustment: root.iconMaterialSizeAdjustment
         iconColor: root.contentColor
+    }
+
+    Loader {
+        anchors.fill: iconRenderer
+        active: root.isFolder
+        visible: active
+        sourceComponent: LauncherFolderIcon {
+            item: root.item
+        }
     }
 
     Item {
@@ -138,7 +156,7 @@ DListItem {
             anchors.right: parent.right
             anchors.top: nameText.bottom
             anchors.topMargin: Theme.spacingXXS
-            text: root.item?._hRich ? HtmlElide.elideRichText(root.item._hSub ?? "", textColumn._richBudget) : (root.item?.subtitle ?? "")
+            text: root.item?._hRich ? HtmlElide.elideRichText(root.item._hSub ?? "", textColumn._richBudget) : root.subtitleText
             textFormat: !root.item?._hRich ? Text.PlainText : root.item.data?.markup ? Text.RichText : Text.StyledText
             font.pixelSize: Theme.fontSizeSmall
             font.family: Theme.fontFamily
@@ -146,7 +164,7 @@ DListItem {
             wrapMode: Text.WordWrap
             maximumLineCount: 1
             elide: Text.ElideRight
-            visible: root.showDescription && (root.item?.subtitle ?? "").length > 0
+            visible: root.showDescription && root.subtitleText.length > 0
             horizontalAlignment: Text.AlignLeft
         }
     }
@@ -166,7 +184,7 @@ DListItem {
             anchors.verticalCenter: parent.verticalCenter
         }
 
-        DIcon {  // dmenu --multi-select checkbox
+        DIcon {
             name: root.item?.data?.checked ? "check_box" : "check_box_outline_blank"
             size: Theme.iconSizeSmall
             color: root.item?.data?.checked ? Theme.primary : root.contentColor
@@ -239,7 +257,7 @@ DListItem {
         }
 
         Rectangle {
-            visible: !!root.item?.type && root.item.type !== "app" && root.item.type !== "plugin_browse" && root.item.type !== "dmenu" && (!root.controller?.activePluginName || (root.item.badgeLabel ?? "").length > 0)
+            visible: !!root.item?.type && root.item.type !== "app" && root.item.type !== "folder" && root.item.type !== "plugin_browse" && root.item.type !== "dmenu" && (!root.controller?.activePluginName || (root.item.badgeLabel ?? "").length > 0)
             width: typeBadge.implicitWidth + Theme.spacingS * 2
             height: Theme.iconSizeMedium
             radius: Theme.fullRadius(width, height)
@@ -271,6 +289,14 @@ DListItem {
                 font.pixelSize: Theme.fontSizeSmall
                 color: root.supportingContentColor
             }
+        }
+
+        DIcon {
+            visible: root.isFolder
+            anchors.verticalCenter: parent.verticalCenter
+            name: I18n.isRtl ? "chevron_left" : "chevron_right"
+            size: Theme.iconSizeSmall
+            color: root.supportingContentColor
         }
 
         SourceBadge {

@@ -18,11 +18,53 @@ Singleton {
     property string selectedDockId: ""
     property string selectedDockWidgetId: ""
     property string selectedDesktopWidgetId: ""
+    // "" = new profile
+    property string selectedConfigProfileId: ""
+    // Kept editor form per profile id ("" = new profile)
+    property var configProfileEdits: ({})
+    property bool selectedConfigProfileImported: false
+
+    function dropConfigProfileEdits(id) {
+        const rest = Object.assign({}, configProfileEdits);
+        delete rest[id];
+        configProfileEdits = rest;
+    }
     property string selectedWidgetSection: ""
     property int selectedWidgetIndex: -1
     property string selectedWidgetTitle: ""
     property string selectedWidgetDescription: ""
     property string selectedWidgetIcon: ""
+    // Empty selectedConnectionUuid means a new connection of newConnectionType.
+    property string selectedConnectionUuid: ""
+    property string selectedConnectionTitle: ""
+    property string newConnectionType: ""
+
+    function selectConnection(uuid, title, newType) {
+        selectedConnectionUuid = uuid ?? "";
+        selectedConnectionTitle = title ?? "";
+        newConnectionType = newType ?? "";
+    }
+
+    // mode: "password", "hidden" or "import"; empty means no pending connect.
+    property string wifiConnectMode: ""
+    property string wifiConnectSsid: ""
+    property var wifiConnectProfile: null
+    property string wifiConnectFileName: ""
+    property string wifiConnectTitle: ""
+
+    function selectWifiConnect(mode, ssid, profile, fileName) {
+        wifiConnectMode = mode ?? "";
+        wifiConnectSsid = ssid ?? "";
+        wifiConnectProfile = profile ?? null;
+        wifiConnectFileName = fileName ?? "";
+        if (mode === "hidden")
+            wifiConnectTitle = I18n.tr("Connect to Hidden Network");
+        else if (mode === "import")
+            wifiConnectTitle = profile?.providerName || I18n.tr("Connect to Wi-Fi");
+        else
+            wifiConnectTitle = I18n.tr("Connect to Wi-Fi");
+    }
+
     property string selectedFcitx5Addon: ""
     property string selectedFcitx5AddonTitle: ""
     property string selectedFcitx5SubAddon: ""

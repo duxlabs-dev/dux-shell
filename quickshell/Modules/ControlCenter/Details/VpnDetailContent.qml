@@ -4,9 +4,9 @@ import QtQuick
 import Quickshell
 import qs.Common
 import qs.Modals.Common
-import qs.Modals.FileBrowser
 import qs.Modules.ControlCenter
 import qs.Modules.ControlCenter.Widgets
+import qs.Modules.Network
 import qs.Services
 import qs.DCommon.Widgets
 
@@ -35,23 +35,23 @@ Item {
             text: I18n.tr("Import", "verb, button that imports a vpn profile file")
             variant: "tonal"
             enabled: !VPNService.importing
-            onClicked: root.openFileBrowser()
+            onClicked: importBrowser.open()
         }
 
         CcSettingsButton {
             anchors.verticalCenter: parent.verticalCenter
             settingsTab: "network_vpn"
+            parentPopout: root.parentPopout
         }
     }
 
     implicitHeight: fillsParent ? 0 : statusGroup.height + column.spacing + listHeight
 
-    function openFileBrowser() {
-        fileBrowserLoader.active = true;
-        const browser = fileBrowserLoader.item;
-        if (!browser)
-            return;
-        browser.open();
+    function closeHost() {
+        if (parentPopout)
+            parentPopout.close();
+        else
+            PopoutService.closeControlCenter();
     }
 
     function confirmDelete(profile) {
@@ -68,16 +68,10 @@ Item {
         });
     }
 
-    Loader {
-        id: fileBrowserLoader
-        active: false
-        sourceComponent: FileBrowserSurfaceModal {
-            browserTitle: I18n.tr("Import VPN")
-            bucket: "vpn"
-            filters: VPNService.getFileFilter()
-            parentPopout: root.parentPopout
-            onAccepted: paths => VPNService.importVpn(paths[0])
-        }
+    VpnImportBrowser {
+        id: importBrowser
+        surface: true
+        parentPopout: root.parentPopout
     }
 
     Loader {
@@ -132,7 +126,21 @@ Item {
                 visible: !root.hasProfiles
                 iconName: "vpn_key_off"
                 title: I18n.tr("No VPN profiles")
-                subtitle: I18n.tr("Click Import to add a %1 or %2 file", "VPN import hint, %1 and %2 are file extensions").arg(".ovpn").arg(".conf")
+                subtitle: DMSNetworkService.vpnAvailable ? I18n.tr("Add a profile in Settings", "VPN empty state hint, the button below opens Settings") : ""
+
+                DButton {
+                    visible: DMSNetworkService.vpnAvailable
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    buttonHeight: Theme.buttonHeightXS
+                    iconName: "settings"
+                    iconSize: Theme.iconSizeSmall
+                    text: I18n.tr("Settings")
+                    variant: "tonal"
+                    onClicked: {
+                        root.closeHost();
+                        PopoutService.openSettingsWithTab("network_vpn");
+                    }
+                }
             }
 
             DListView {
@@ -153,6 +161,11 @@ Item {
 
                     width: vpnListView.width
                     profile: modelData
+                    showsEditButton: NetworkService.connectionEditorSupported
+                    onEditRequested: {
+                        root.closeHost();
+                        PopoutService.openConnectionEditor(modelData.uuid, modelData.name);
+                    }
                     isExpanded: root.expandedUuid === modelData.uuid
                     topRadius: index === 0 ? Theme.groupedListOuterRadius : Theme.groupedListInnerRadius
                     bottomRadius: index === vpnListView.count - 1 ? Theme.groupedListOuterRadius : Theme.groupedListInnerRadius

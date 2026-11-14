@@ -1,6 +1,8 @@
 package network
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"os/exec"
 	"time"
@@ -10,14 +12,14 @@ import (
 )
 
 const (
-	priorityHigh    = int32(100)
-	priorityLow     = int32(10)
-	priorityDefault = int32(0)
-
 	metricPreferred    = int64(100)
 	metricNonPreferred = int64(300)
 	// -1 lets NetworkManager pick the metric by device type (nm-settings ipv4.route-metric)
 	metricDefault = int64(-1)
+
+	priorityHigh    = int32(100)
+	priorityLow     = int32(10)
+	priorityDefault = int32(0)
 )
 
 func (m *Manager) SetConnectionPreference(pref ConnectionPreference) error {
@@ -34,229 +36,183 @@ func (m *Manager) SetConnectionPreference(pref ConnectionPreference) error {
 	m.state.Preference = pref
 	m.stateMutex.Unlock()
 
-	if _, ok := m.backend.(*NetworkManagerBackend); !ok {
+	nm, ok := m.backend.(*NetworkManagerBackend)
+	if !ok {
 		m.notifySubscribers()
 		return nil
 	}
 
+	changed, err := applyConnectionPreference(nm, pref)
+	if changed {
+		m.reapplyActiveConnections()
+	}
+	m.notifySubscribers()
+	return err
+}
+
+func preferredConnType(pref ConnectionPreference, connType string) bool {
 	switch pref {
 	case PreferenceWiFi:
-		return m.prioritizeWiFi()
+		return connType == "802-11-wireless"
 	case PreferenceEthernet:
-		return m.prioritizeEthernet()
+		return connType == "802-3-ethernet"
 	case PreferenceCellular:
-		return m.prioritizeCellular()
-	case PreferenceAuto:
-		return m.restoreDefaultPriorities()
+		return connType == "gsm" || connType == "cdma"
 	}
-
-	return nil
+	return false
 }
 
-func (m *Manager) prioritizeWiFi() error {
-	if err := m.setConnectionPriority("802-11-wireless", priorityHigh, metricPreferred); err != nil {
-		log.Warnf("Failed to set WiFi priority: %v", err)
-	}
-
-	if err := m.setConnectionPriority("802-3-ethernet", priorityLow, metricNonPreferred); err != nil {
-		log.Warnf("Failed to set Ethernet priority: %v", err)
-	}
-
-	for _, connType := range []string{"gsm", "cdma"} {
-		if err := m.setConnectionPriority(connType, priorityLow, metricNonPreferred); err != nil {
-			log.Warnf("Failed to set cellular priority for %s: %v", connType, err)
+// preferenceUpdate decides the new route metric and autoconnect priority for
+// one profile and IP family. Absent keys count as NM defaults (metric -1,
+// priority 0). Only values DMS writes (metric -1/100/300, priority 100/10)
+// are ever replaced; anything else belongs to the user.
+func preferenceUpdate(connType string, pref ConnectionPreference, metric int64, priority int32) (newMetric int64, metricChange bool, newPriority int32, priorityChange bool) {
+	if pref == PreferenceAuto {
+		if metric == metricPreferred || metric == metricNonPreferred {
+			newMetric, metricChange = metricDefault, true
 		}
-	}
-
-	m.reapplyActiveConnections()
-	m.notifySubscribers()
-	return nil
-}
-
-func (m *Manager) prioritizeEthernet() error {
-	if err := m.setConnectionPriority("802-3-ethernet", priorityHigh, metricPreferred); err != nil {
-		log.Warnf("Failed to set Ethernet priority: %v", err)
-	}
-
-	if err := m.setConnectionPriority("802-11-wireless", priorityLow, metricNonPreferred); err != nil {
-		log.Warnf("Failed to set WiFi priority: %v", err)
-	}
-
-	for _, connType := range []string{"gsm", "cdma"} {
-		if err := m.setConnectionPriority(connType, priorityLow, metricNonPreferred); err != nil {
-			log.Warnf("Failed to set cellular priority for %s: %v", connType, err)
+		if priority == priorityHigh || priority == priorityLow {
+			newPriority, priorityChange = priorityDefault, true
 		}
+		return
 	}
 
-	m.reapplyActiveConnections()
-	m.notifySubscribers()
-	return nil
-}
-
-func (m *Manager) prioritizeCellular() error {
-	for _, connType := range []string{"gsm", "cdma"} {
-		if err := m.setConnectionPriority(connType, priorityHigh, metricPreferred); err != nil {
-			log.Warnf("Failed to set cellular priority for %s: %v", connType, err)
-		}
+	if metric != metricDefault && metric != metricPreferred && metric != metricNonPreferred {
+		return
 	}
-
-	if err := m.setConnectionPriority("802-3-ethernet", priorityLow, metricNonPreferred); err != nil {
-		log.Warnf("Failed to set Ethernet priority: %v", err)
+	newMetric = metricNonPreferred
+	if preferredConnType(pref, connType) {
+		newMetric = metricPreferred
 	}
-
-	if err := m.setConnectionPriority("802-11-wireless", priorityLow, metricNonPreferred); err != nil {
-		log.Warnf("Failed to set WiFi priority: %v", err)
-	}
-
-	m.reapplyActiveConnections()
-	m.notifySubscribers()
-	return nil
-}
-
-func (m *Manager) restoreDefaultPriorities() error {
-	if err := m.setConnectionPriority("802-3-ethernet", priorityDefault, metricDefault); err != nil {
-		log.Warnf("Failed to reset Ethernet priority: %v", err)
-	}
-
-	if err := m.setConnectionPriority("802-11-wireless", priorityDefault, metricDefault); err != nil {
-		log.Warnf("Failed to reset WiFi priority: %v", err)
-	}
-
-	for _, connType := range []string{"gsm", "cdma"} {
-		if err := m.setConnectionPriority(connType, priorityDefault, metricDefault); err != nil {
-			log.Warnf("Failed to reset cellular priority for %s: %v", connType, err)
-		}
-	}
-
-	m.reapplyActiveConnections()
-	m.notifySubscribers()
-	return nil
+	metricChange = newMetric != metric
+	return
 }
 
 func (m *Manager) reapplyActiveConnections() {
 	m.stateMutex.RLock()
-	ethDev := m.state.EthernetDevice
-	wifiDev := m.state.WiFiDevice
-	cellularDev := m.state.CellularDevice
+	var devs []string
+	for _, d := range m.state.EthernetDevices {
+		if d.Connected {
+			devs = append(devs, d.Name)
+		}
+	}
+	for _, d := range m.state.WiFiDevices {
+		if d.Connected {
+			devs = append(devs, d.Name)
+		}
+	}
+	for _, d := range m.state.CellularDevices {
+		if d.Connected {
+			devs = append(devs, d.Name)
+		}
+	}
 	m.stateMutex.RUnlock()
 
-	if ethDev != "" {
-		exec.Command("nmcli", "dev", "reapply", ethDev).Run()
-	}
-	if wifiDev != "" {
-		exec.Command("nmcli", "dev", "reapply", wifiDev).Run()
-	}
-	if cellularDev != "" {
-		exec.Command("nmcli", "dev", "reapply", cellularDev).Run()
+	for _, dev := range devs {
+		if err := reapplyDevice(dev); err != nil {
+			log.Warnf("Failed to reapply %s: %v", dev, err)
+		}
 	}
 }
 
-func (m *Manager) setConnectionPriority(connType string, autoconnectPriority int32, routeMetric int64) error {
-	conn, err := dbus.ConnectSystemBus()
-	if err != nil {
-		return fmt.Errorf("failed to connect to system bus: %w", err)
-	}
-	defer conn.Close()
+var reapplyDevice = func(dev string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "nmcli", "dev", "reapply", dev)
+	cmd.WaitDelay = time.Second
+	return cmd.Run()
+}
 
-	settingsObj := conn.Object("org.freedesktop.NetworkManager", "/org/freedesktop/NetworkManager/Settings")
+// applyConnectionPreference reports whether any profile was rewritten.
+func applyConnectionPreference(b *NetworkManagerBackend, pref ConnectionPreference) (bool, error) {
+	settingsObj := b.nmObject(nmSettingsPath)
+	if settingsObj == nil {
+		return false, fmt.Errorf("D-Bus connection unavailable")
+	}
 
 	var connPaths []dbus.ObjectPath
 	if err := settingsObj.Call("org.freedesktop.NetworkManager.Settings.ListConnections", 0).Store(&connPaths); err != nil {
-		return fmt.Errorf("failed to list connections: %w", err)
+		return false, fmt.Errorf("failed to list connections: %w", err)
 	}
 
+	var errs []error
+	anyChanged := false
 	for _, connPath := range connPaths {
-		connObj := conn.Object("org.freedesktop.NetworkManager", connPath)
-
-		var settings map[string]map[string]dbus.Variant
-		if err := connObj.Call("org.freedesktop.NetworkManager.Settings.Connection.GetSettings", 0).Store(&settings); err != nil {
-			continue
+		changed, err := applyPreferenceToProfile(b.nmObject(connPath), pref)
+		if err != nil {
+			errs = append(errs, err)
 		}
+		anyChanged = anyChanged || changed
+	}
+	return anyChanged, errors.Join(errs...)
+}
 
-		connSection, ok := settings["connection"]
+func applyPreferenceToProfile(connObj dbus.BusObject, pref ConnectionPreference) (bool, error) {
+	var settings nmSettings
+	if err := connObj.Call(nmConnGetSettings, 0).Store(&settings); err != nil {
+		return false, nil
+	}
+
+	connSection := settings["connection"]
+	cType, _ := connSection["type"].Value().(string)
+	switch cType {
+	case "802-3-ethernet", "802-11-wireless", "gsm", "cdma":
+	default:
+		return false, nil
+	}
+
+	// AP-mode profiles (hotspots) are not routing candidates.
+	if mode, _ := settings["802-11-wireless"]["mode"].Value().(string); cType == "802-11-wireless" && mode == "ap" {
+		return false, nil
+	}
+
+	name, _ := connSection["id"].Value().(string)
+	if name == "" {
+		return false, nil
+	}
+
+	prio := int32(0)
+	if v, ok := variantInt64(connSection["autoconnect-priority"]); ok {
+		prio = int32(v)
+	}
+
+	metrics := map[string]int64{}
+	prioChange, newPrio := false, int32(0)
+	for _, fam := range []string{"ipv4", "ipv6"} {
+		section, ok := settings[fam]
 		if !ok {
 			continue
 		}
-
-		typeVariant, ok := connSection["type"]
-		if !ok {
-			continue
+		cur := metricDefault
+		if v, ok := variantInt64(section["route-metric"]); ok {
+			cur = v
 		}
-
-		cType, ok := typeVariant.Value().(string)
-		if !ok || cType != connType {
-			continue
+		nm, mc, np, pc := preferenceUpdate(cType, pref, cur, prio)
+		if mc {
+			metrics[fam] = nm
 		}
-
-		// AP-mode profiles (hotspots) are not routing candidates; leave their
-		// autoconnect priority and metrics alone.
-		if cType == "802-11-wireless" {
-			if wifiSection, ok := settings["802-11-wireless"]; ok {
-				if modeVariant, ok := wifiSection["mode"]; ok {
-					if mode, _ := modeVariant.Value().(string); mode == "ap" {
-						continue
-					}
-				}
-			}
+		if pc {
+			prioChange, newPrio = true, np
 		}
-
-		connName := ""
-		if idVariant, ok := connSection["id"]; ok {
-			connName, _ = idVariant.Value().(string)
-		}
-
-		if connName == "" {
-			continue
-		}
-
-		connUUID := ""
-		if uuidVariant, ok := connSection["uuid"]; ok {
-			connUUID, _ = uuidVariant.Value().(string)
-		}
-
-		if priorityMatches(connSection["autoconnect-priority"], int64(autoconnectPriority)) &&
-			routeMetricMatches(settings["ipv4"], routeMetric) &&
-			routeMetricMatches(settings["ipv6"], routeMetric) {
-			continue
-		}
-
-		args := []string{"con", "mod"}
-		if connUUID != "" {
-			args = append(args, "uuid", connUUID)
-		} else {
-			args = append(args, connName)
-		}
-		args = append(args,
-			"connection.autoconnect-priority", fmt.Sprintf("%d", autoconnectPriority),
-			"ipv4.route-metric", fmt.Sprintf("%d", routeMetric),
-			"ipv6.route-metric", fmt.Sprintf("%d", routeMetric))
-
-		if err := exec.Command("nmcli", args...).Run(); err != nil {
-			log.Warnf("Failed to set priority for %s: %v", connName, err)
-			continue
-		}
-
-		log.Infof("Updated %v: autoconnect-priority=%d, route-metric=%d", connName, autoconnectPriority, routeMetric)
+	}
+	if len(metrics) == 0 && !prioChange {
+		return false, nil
 	}
 
-	return nil
-}
-
-func priorityMatches(variant dbus.Variant, expected int64) bool {
-	return settingInt64(variant, int64(priorityDefault)) == expected
-}
-
-func routeMetricMatches(section map[string]dbus.Variant, expected int64) bool {
-	return settingInt64(section["route-metric"], metricDefault) == expected
-}
-
-// GetSettings omits properties at their default, so a missing key is the default value
-func settingInt64(variant dbus.Variant, def int64) int64 {
-	value, ok := variantInt64(variant)
-	if !ok {
-		return def
+	err := updateConnectionSettings(connObj, true, func(s nmSettings) error {
+		for fam, nm := range metrics {
+			setSettingValue(s, fam, "route-metric", nm)
+		}
+		if prioChange {
+			setSettingValue(s, "connection", "autoconnect-priority", newPrio)
+		}
+		return nil
+	})
+	if err != nil {
+		return false, fmt.Errorf("%s: %w", name, err)
 	}
-	return value
+	log.Infof("Updated %v: route-metric=%v", name, metrics)
+	return true, nil
 }
 
 func variantInt64(variant dbus.Variant) (int64, bool) {

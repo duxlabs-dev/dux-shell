@@ -39,6 +39,7 @@ var ISLAND_DEFAULTS = {
     islandDashTabs: false,
     islandDashDefaultTab: "overview",
     islandMediaClockVisible: true,
+    islandMediaControls: true,
     islandMediaLyrics: false,
     islandMediaScrollLyrics: true,
     islandMediaAutoSwitch: false,

@@ -282,3 +282,14 @@ func TestNormalizeDmenuArgv(t *testing.T) {
 		}
 	}
 }
+
+func TestValidateDmenuView(t *testing.T) {
+	for _, view := range []string{"", "list", "grid", "icons", "tile"} {
+		if err := validateDmenuView(view); err != nil {
+			t.Errorf("validateDmenuView(%q): unexpected error: %v", view, err)
+		}
+	}
+	if err := validateDmenuView("unknown"); err == nil {
+		t.Error("validateDmenuView(unknown): expected an error")
+	}
+}

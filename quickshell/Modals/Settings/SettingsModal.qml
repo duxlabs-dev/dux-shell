@@ -84,7 +84,8 @@ DFloatingWindow {
         const resolved = SettingsTabs.resolvePage(pageId);
         if (!resolved)
             return false;
-        pageHistory = [];
+        const backPage = SettingsTabs.page(resolved)?.backPage;
+        pageHistory = backPage ? [backPage] : [];
         currentPage = resolved;
         return true;
     }
@@ -103,6 +104,10 @@ DFloatingWindow {
 
     function setPageName(name: string): bool {
         return setPage(name);
+    }
+
+    function revealItem(item) {
+        content.reveal(item);
     }
 
     function goBack(keyboard = contentFocusScope.keyboardDriven()) {

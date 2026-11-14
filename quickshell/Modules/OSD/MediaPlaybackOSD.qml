@@ -107,7 +107,7 @@ DOSD {
     Image {
         id: artPreloader
         sourceSize: Qt.size(root.artDecodeSize, root.artDecodeSize)
-        source: SettingsData.osdMediaPlaybackEnabled ? TrackArtService.resolvedArtUrl : ""
+        source: TrackArtService.resolvedArtUrl
         visible: false
         asynchronous: true
         cache: true
@@ -152,12 +152,9 @@ DOSD {
 
     Connections {
         target: player
-        enabled: SettingsData.osdMediaPlaybackEnabled
 
         function handleUpdate() {
             if (!root.player?.trackTitle)
-                return;
-            if (!SettingsData.osdMediaPlaybackEnabled)
                 return;
             if (MprisController.isFirefoxYoutubeHoverPreview(player))
                 return;

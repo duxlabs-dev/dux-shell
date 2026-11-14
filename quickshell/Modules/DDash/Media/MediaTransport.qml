@@ -50,7 +50,7 @@ RowLayout {
         contentColor: MediaAccentService.onAccentContainer
     }
 
-    component TransportButton: MediaTransportButton {
+    component TransportButton: DashTransportButton {
         id: button
 
         property real weight: 1

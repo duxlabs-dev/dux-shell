@@ -1,7 +1,10 @@
 package network
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"math"
 	"os"
 
 	"github.com/duxlabs-dev/dux-go/ipc"
@@ -20,6 +23,8 @@ func HandleRequest(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
 		handleGetWiFiNetworks(conn, req, manager)
 	case "network.wifi.connect":
 		handleConnectWiFi(conn, req, manager)
+	case "network.eapconfig.parse":
+		handleParseEAPConfig(conn, req, manager)
 	case "network.wifi.disconnect":
 		handleDisconnectWiFi(conn, req, manager)
 	case "network.wifi.forget":
@@ -94,6 +99,34 @@ func HandleRequest(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
 		handleSetVPNCredentials(conn, req, manager)
 	case "network.wifi.setAutoconnect":
 		handleSetWiFiAutoconnect(conn, req, manager)
+	case "network.connection.list":
+		handleListConnections(conn, req, manager)
+	case "network.connection.get":
+		handleGetConnection(conn, req, manager)
+	case "network.connection.update":
+		handleUpdateConnection(conn, req, manager)
+	case "network.connection.add":
+		handleAddConnection(conn, req, manager)
+	case "network.connection.activate":
+		handleActivateConnectionProfile(conn, req, manager)
+	case "network.connection.deactivate":
+		handleDeactivateConnectionProfile(conn, req, manager)
+	case "network.connection.getEnterprise":
+		handleGetConnectionEnterprise(conn, req, manager)
+	case "network.connection.firewallZones":
+		handleFirewallZones(conn, req, manager)
+	case "network.connection.delete":
+		handleDeleteConnection(conn, req, manager)
+	case "network.connection.duplicate":
+		handleDuplicateConnection(conn, req, manager)
+	case "network.connection.export":
+		handleExportConnection(conn, req, manager)
+	case "network.wireguard.keys":
+		handleWireGuardKeys(conn, req)
+	case "network.connectivity.check":
+		handleCheckConnectivity(conn, req, manager)
+	case "network.connectivity.setCheckEnabled":
+		handleSetConnectivityCheckEnabled(conn, req, manager)
 	case "network.hotspot.configure":
 		handleConfigureHotspot(conn, req, manager)
 	case "network.hotspot.start":
@@ -182,12 +215,21 @@ func handleConnectWiFi(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) 
 	var connReq ConnectionRequest
 	connReq.SSID = ssid
 	connReq.Password = params.StringOpt(req.Params, "password", "")
-	connReq.Username = params.StringOpt(req.Params, "username", "")
 	connReq.Device = params.StringOpt(req.Params, "device", "")
+	connReq.Security = params.StringOpt(req.Params, "security", "")
+	connReq.SaveOnly = req.GetOr("saveOnly", false)
+	connReq.Hidden = req.GetOr("hidden", false)
+
+	enterprise, err := optionalEnterprise(req)
+	if err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
+	connReq.Enterprise = enterprise
 
 	if interactive, ok := req.Get[bool]("interactive"); ok {
 		connReq.Interactive = interactive
-	} else {
+	} else if !connReq.SaveOnly {
 		state := manager.GetState()
 		alreadyConnected := state.WiFiConnected && state.WiFiSSID == ssid
 
@@ -199,22 +241,10 @@ func handleConnectWiFi(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) 
 
 			if isSaved {
 				connReq.Interactive = false
-			} else if err == nil && networkInfo.Secured && connReq.Password == "" && connReq.Username == "" {
+			} else if err == nil && networkInfo.Secured && connReq.Password == "" && connReq.Enterprise == nil {
 				connReq.Interactive = true
 			}
 		}
-	}
-
-	connReq.AnonymousIdentity = params.StringOpt(req.Params, "anonymousIdentity", "")
-	connReq.DomainSuffixMatch = params.StringOpt(req.Params, "domainSuffixMatch", "")
-	connReq.EAPMethod = params.StringOpt(req.Params, "eapMethod", "")
-	connReq.Phase2Auth = params.StringOpt(req.Params, "phase2Auth", "")
-	connReq.CACertPath = params.StringOpt(req.Params, "caCertPath", "")
-	connReq.ClientCertPath = params.StringOpt(req.Params, "clientCertPath", "")
-	connReq.PrivateKeyPath = params.StringOpt(req.Params, "privateKeyPath", "")
-
-	if useSystemCACerts, ok := req.Get[bool]("useSystemCACerts"); ok {
-		connReq.UseSystemCACerts = &useSystemCACerts
 	}
 
 	if err := manager.ConnectWiFi(connReq); err != nil {
@@ -222,7 +252,64 @@ func handleConnectWiFi(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) 
 		return
 	}
 
+	if connReq.SaveOnly {
+		conn.Respond(req.ID, models.SuccessResult{Success: true, Message: "saved"})
+		return
+	}
 	conn.Respond(req.ID, models.SuccessResult{Success: true, Message: "connecting"})
+}
+
+func optionalEnterprise(req ipc.Request) (*EnterpriseConfig, error) {
+	raw, ok := req.Get[map[string]any]("enterprise")
+	if !ok {
+		return nil, nil
+	}
+	return decodeEnterpriseConfig(raw)
+}
+
+func decodeEnterpriseConfig(raw map[string]any) (*EnterpriseConfig, error) {
+	data, err := json.Marshal(raw)
+	if err != nil {
+		return nil, fmt.Errorf("invalid 'enterprise' parameter: %w", err)
+	}
+	dec := json.NewDecoder(bytes.NewReader(data))
+	dec.DisallowUnknownFields()
+	var cfg EnterpriseConfig
+	if err := dec.Decode(&cfg); err != nil {
+		return nil, fmt.Errorf("invalid 'enterprise' parameter: %w", err)
+	}
+	return &cfg, nil
+}
+
+const maxEAPConfigSize = 4 << 20
+
+func handleParseEAPConfig(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
+	path, err := params.String(req.Params, "file")
+	if err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
+	if _, ok := manager.editorBackend(); !ok {
+		conn.RespondError(req.ID, ErrConnectionEditorNotSupported.Error())
+		return
+	}
+
+	data, err := readRegularFile(path, maxEAPConfigSize)
+	if err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
+	if len(data) > maxEAPConfigSize {
+		conn.RespondError(req.ID, "file too large (limit 4 MiB)")
+		return
+	}
+
+	profile, err := parseEAPConfig(data)
+	if err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
+	conn.Respond(req.ID, profile)
 }
 
 func handleDisconnectWiFi(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
@@ -287,7 +374,7 @@ func handleConnectEthernetSpecificConfig(conn *ipc.ConnWriter, req ipc.Request, 
 		conn.RespondError(req.ID, err.Error())
 		return
 	}
-	if err := manager.activateConnection(uuid); err != nil {
+	if err := manager.activateConnection(uuid, params.StringOpt(req.Params, "device", "")); err != nil {
 		conn.RespondError(req.ID, err.Error())
 		return
 	}
@@ -295,7 +382,14 @@ func handleConnectEthernetSpecificConfig(conn *ipc.ConnWriter, req ipc.Request, 
 }
 
 func handleConnectEthernet(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
-	if err := manager.ConnectEthernet(); err != nil {
+	device := params.StringOpt(req.Params, "device", "")
+	var err error
+	if device != "" {
+		err = manager.ConnectEthernetDevice(device)
+	} else {
+		err = manager.ConnectEthernet()
+	}
+	if err != nil {
 		conn.RespondError(req.ID, err.Error())
 		return
 	}
@@ -637,11 +731,35 @@ func handleConfigureHotspot(conn *ipc.ConnWriter, req ipc.Request, manager *Mana
 		return
 	}
 
+	var channel uint32
+	if _, present := req.Params["channel"]; present {
+		ch, ok := req.Get[float64]("channel")
+		if !ok || ch != math.Trunc(ch) || ch < 0 || ch > 196 {
+			conn.RespondError(req.ID, "invalid 'channel' parameter: expected an integer from 0 to 196")
+			return
+		}
+		channel = uint32(ch)
+	}
+
+	var hidden bool
+	if _, present := req.Params["hidden"]; present {
+		v, ok := req.Get[bool]("hidden")
+		if !ok {
+			conn.RespondError(req.ID, "invalid 'hidden' parameter")
+			return
+		}
+		hidden = v
+	}
+
 	hotspotReq := HotspotRequest{
 		SSID:     ssid,
 		Password: params.StringOpt(req.Params, "password", ""),
 		Device:   params.StringOpt(req.Params, "device", ""),
 		Band:     params.StringOpt(req.Params, "band", ""),
+		Channel:  channel,
+		Address:  params.StringOpt(req.Params, "address", ""),
+		Security: params.StringOpt(req.Params, "security", ""),
+		Hidden:   hidden,
 	}
 
 	if err := manager.ConfigureHotspot(hotspotReq); err != nil {
@@ -650,6 +768,28 @@ func handleConfigureHotspot(conn *ipc.ConnWriter, req ipc.Request, manager *Mana
 	}
 
 	conn.Respond(req.ID, models.SuccessResult{Success: true, Message: "hotspot configured"})
+}
+
+func handleCheckConnectivity(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
+	state, err := manager.CheckConnectivity()
+	if err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
+	conn.Respond(req.ID, map[string]string{"connectivity": state})
+}
+
+func handleSetConnectivityCheckEnabled(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
+	enabled, ok := req.Get[bool]("enabled")
+	if !ok {
+		conn.RespondError(req.ID, "missing or invalid 'enabled' parameter")
+		return
+	}
+	if err := manager.SetConnectivityCheckEnabled(enabled); err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
+	conn.Respond(req.ID, models.SuccessResult{Success: true, Message: "connectivity checking updated"})
 }
 
 func handleStartHotspot(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
@@ -794,4 +934,205 @@ func handleSetVPNCredentials(conn *ipc.ConnWriter, req ipc.Request, manager *Man
 	}
 
 	conn.Respond(req.ID, models.SuccessResult{Success: true, Message: "VPN credentials set"})
+}
+
+func parseSettingsPatch(p map[string]any) (SettingsPatch, error) {
+	raw, ok := params.AnyMap(p, "settings")
+	if !ok {
+		return nil, fmt.Errorf("missing or invalid 'settings' parameter")
+	}
+	patch := make(SettingsPatch, len(raw))
+	for section, v := range raw {
+		switch keys := v.(type) {
+		case nil:
+			patch[section] = nil
+		case map[string]any:
+			patch[section] = keys
+		default:
+			return nil, fmt.Errorf("invalid settings for section %q", section)
+		}
+	}
+	return patch, nil
+}
+
+func handleListConnections(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
+	profiles, err := manager.ListConnectionProfiles()
+	if err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
+	conn.Respond(req.ID, profiles)
+}
+
+func handleGetConnection(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
+	uuid, err := params.String(req.Params, "uuid")
+	if err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
+	settings, err := manager.GetConnectionSettings(uuid, params.BoolOpt(req.Params, "secrets", false))
+	if err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
+	conn.Respond(req.ID, settings)
+}
+
+func handleUpdateConnection(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
+	uuid, err := params.String(req.Params, "uuid")
+	if err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
+	patch, err := parseSettingsPatch(req.Params)
+	if err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
+	enterprise, err := optionalEnterprise(req)
+	if err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
+	if err := manager.UpdateConnectionSettings(uuid, patch, params.BoolOpt(req.Params, "persist", false), enterprise); err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
+	conn.Respond(req.ID, models.SuccessResult{Success: true, Message: "connection updated"})
+}
+
+func handleAddConnection(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
+	settings, err := parseSettingsPatch(req.Params)
+	if err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
+	enterprise, err := optionalEnterprise(req)
+	if err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
+	uuid, err := manager.AddConnectionProfile(settings, params.BoolOpt(req.Params, "persist", true), enterprise)
+	if err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
+	conn.Respond(req.ID, map[string]string{"uuid": uuid})
+}
+
+func handleDeleteConnection(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
+	uuid, err := params.String(req.Params, "uuid")
+	if err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
+	if err := manager.DeleteConnectionProfile(uuid); err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
+	conn.Respond(req.ID, models.SuccessResult{Success: true, Message: "connection deleted"})
+}
+
+func handleDuplicateConnection(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
+	uuid, err := params.String(req.Params, "uuid")
+	if err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
+	name, err := params.String(req.Params, "name")
+	if err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
+	newUUID, err := manager.DuplicateConnectionProfile(uuid, name)
+	if err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
+	conn.Respond(req.ID, map[string]string{"uuid": newUUID})
+}
+
+func handleExportConnection(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
+	uuid, err := params.String(req.Params, "uuid")
+	if err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
+	file, err := params.String(req.Params, "file")
+	if err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
+	if err := manager.ExportConnectionProfile(uuid, file); err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
+	conn.Respond(req.ID, models.SuccessResult{Success: true, Message: "connection exported"})
+}
+
+func handleWireGuardKeys(conn *ipc.ConnWriter, req ipc.Request) {
+	priv, pub := params.StringOpt(req.Params, "privateKey", ""), ""
+	var err error
+	if priv == "" {
+		priv, pub, err = generateWireGuardKeyPair()
+	} else {
+		pub, err = wireGuardPublicKey(priv)
+	}
+	if err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
+	conn.Respond(req.ID, map[string]string{"privateKey": priv, "publicKey": pub})
+}
+
+func handleActivateConnectionProfile(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
+	uuid, err := params.String(req.Params, "uuid")
+	if err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
+	if err := manager.ActivateConnectionProfile(uuid, params.StringOpt(req.Params, "device", "")); err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
+	conn.Respond(req.ID, models.SuccessResult{Success: true, Message: "connection activating"})
+}
+
+func handleDeactivateConnectionProfile(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
+	uuid, err := params.String(req.Params, "uuid")
+	if err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
+	if err := manager.DeactivateConnectionProfile(uuid); err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
+	conn.Respond(req.ID, models.SuccessResult{Success: true, Message: "connection deactivated"})
+}
+
+func handleGetConnectionEnterprise(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
+	uuid, err := params.String(req.Params, "uuid")
+	if err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
+	cfg, err := manager.GetConnectionEnterprise(uuid)
+	if err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
+	conn.Respond(req.ID, cfg)
+}
+
+func handleFirewallZones(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
+	zones, err := manager.FirewallZones()
+	if err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
+	if zones == nil {
+		zones = []string{}
+	}
+	conn.Respond(req.ID, zones)
 }

@@ -304,7 +304,7 @@ MediaChromeBase {
                                 onClicked: root.player.toggleLyrics(lyricsButton)
                             }
 
-                            MediaTransportButton {
+                            DashTransportButton {
                                 id: shuffleButton
                                 player: root.player
                                 mediaAction: "shuffle"
@@ -319,7 +319,7 @@ MediaChromeBase {
                                 }
                             }
 
-                            MediaTransportButton {
+                            DashTransportButton {
                                 id: repeatButton
                                 player: root.player
                                 mediaAction: "repeat"

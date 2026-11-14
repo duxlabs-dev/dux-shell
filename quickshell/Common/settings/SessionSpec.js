@@ -172,7 +172,9 @@ var LOCAL_SPEC = {
         def: true
     },
     dockPins: {
-        def: {}
+        def: {
+            dock: ["dms_notepad", "dms_sysmon", "dms_colorpicker", "dms_qr_generator", "dms_settings"]
+        }
     },
     barPinnedApps: {
         def: []
@@ -225,6 +227,9 @@ var LOCAL_SPEC = {
     appOverrides: {
         def: {}
     },
+    launcherFolders: {
+        def: []
+    },
     searchAppActions: {
         def: true
     },
@@ -264,6 +269,9 @@ var LOCAL_SPEC = {
     },
     hyprlandOutputSettings: {
         def: {}
+    },
+    activeConfigProfile: {
+        def: ""
     },
     activeDisplayProfile: {
         def: {}

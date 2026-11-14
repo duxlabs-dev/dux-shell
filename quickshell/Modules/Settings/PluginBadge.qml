@@ -45,6 +45,7 @@ Rectangle {
 
         StyledText {
             text: root.label
+            visible: root.label.length > 0
             font.pixelSize: Theme.fontSizeSmall
             font.weight: Theme.fontWeightMedium
             color: root.tone

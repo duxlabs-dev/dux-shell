@@ -210,6 +210,15 @@ SettingsCard {
     }
 
     SettingsToggleRow {
+        settingKey: root.keyPrefix + "MediaControls"
+        tags: ["island", "media", "controls", "playback", "play", "pause", "skip", "compact"]
+        visible: !root.isDot
+        text: I18n.tr("Playback controls", "island settings: transport buttons in the media face toggle")
+        checked: root.store.setting("islandMediaControls")
+        onToggled: checked => root.store.apply("islandMediaControls", checked)
+    }
+
+    SettingsToggleRow {
         settingKey: root.keyPrefix + "MediaLyrics"
         tags: ["island", "media", "lyrics", "compact"]
         visible: !root.isDot

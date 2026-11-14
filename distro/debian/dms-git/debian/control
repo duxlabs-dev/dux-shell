@@ -13,7 +13,7 @@ Architecture: amd64 arm64
 Depends: ${misc:Depends},
          accountsservice,
          cava,
-         libdux-qt-base0,
+         libdux-qt-base0-git,
          dux-search | danksearch,
          matugen,
          qml6-module-qtcore,

@@ -22,9 +22,30 @@ DIdleSurface {
     }
     readonly property bool overlayWanted: popupWindows.some(p => p?.wantsOverlay ?? false)
     readonly property list<var> blurRegions: popupWindows.map(p => p?.blurRegion ?? null).filter(r => r !== null)
+    // A stack growing from the bottom would move the surface origin under visible cards, so it keeps the band.
+    readonly property bool fitsStack: boundsSupported && _stackAnchorsTop()
+    readonly property bool stackSettled: !popupWindows.some(p => (p?.stackMoving ?? false) || (p?.inlineHeightAnimating ?? false))
 
     screen: modelData
     active: popupWindows.length > 0
+    // A mapped idle band is blacked out by compositor capture rules matching this namespace.
+    keepMapped: false
+    requestedBounds: {
+        if (!fitsStack)
+            return Qt.rect(0, 0, 0, 0);
+        let top = Infinity;
+        let bottom = -Infinity;
+        for (const p of popupWindows) {
+            if (!p || p._finalized)
+                continue;
+            top = Math.min(top, p.stackOriginTop);
+            bottom = Math.max(bottom, p.slotBottom);
+        }
+        if (bottom <= top)
+            return Qt.rect(0, 0, 0, 0);
+        const y = Math.floor(top - Theme.spacingL);
+        return Qt.rect(bandOriginX, y, bandExtent, Math.ceil(bottom + Theme.spacingL) - y);
+    }
     band: stackCentered ? "column" : stackLeft ? "left" : "right"
     bandSize: stackCentered ? cardWidth + 2 * (shadowPad + NotificationMetrics.swipeAttachDistance) : cardWidth + 2 * shadowPad + stackEdgeMargin + NotificationMetrics.swipeAttachDistance
     WlrLayershell.namespace: "dms:notification-popup"
@@ -200,6 +221,11 @@ DIdleSurface {
         }
     }
 
+    function _fitSettledStack() {
+        if (stackSettled)
+            fitBounds();
+    }
+
     function _hasWindowFor(w) {
         return popupWindows.some(p => p && p.notificationData === w && !p._isDestroying && p.status !== Component.Null);
     }
@@ -264,8 +290,8 @@ DIdleSurface {
                 insertIndex = i + 1;
         }
         popupWindows.splice(insertIndex, 0, win);
-        popupWindows = popupWindows.slice();
         win.setStackPosition(_stackPositionFor(win));
+        popupWindows = popupWindows.slice();
         _enterQueue.push(win);
         if (!sweeper.running)
             sweeper.start();
@@ -656,6 +682,8 @@ DIdleSurface {
         if (screenName)
             ConnectedModeState.releaseSurface(screenName, "notification", "notification:" + screenName);
     }
+    onRequestedBoundsChanged: Qt.callLater(_fitSettledStack)
+    onStackSettledChanged: Qt.callLater(_fitSettledStack)
     onPopupSpacingChanged: _repositionAll()
     onNotificationConnectedModeChanged: _scheduleNotificationChromeSync()
     onCloseGapNotificationsChanged: _scheduleNotificationChromeSync()

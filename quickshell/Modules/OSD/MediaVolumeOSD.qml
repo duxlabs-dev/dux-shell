@@ -41,7 +41,7 @@ LevelOSD {
         target: root.player
 
         function onVolumeChanged() {
-            if (SettingsData.osdMediaVolumeEnabled && root.volumeSupported && !root._suppressNewPlayer)
+            if (root.volumeSupported && !root._suppressNewPlayer)
                 root.show();
         }
     }

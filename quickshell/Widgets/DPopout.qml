@@ -86,7 +86,7 @@ Item {
             const transientWindows = root.transientSurfaceTracker?.focusWindows ?? [];
             if (!(impl.item?.contentActive ?? false) && !root.transientSurfaceTracker?.active)
                 return list.concat(transientWindows);
-            return list.concat(transientWindows).concat(KeyboardFocus.barWindows);
+            return list.concat(transientWindows).concat(KeyboardFocus.barWindows, KeyboardFocus.grabPeerWindows);
         }
         wanted: KeyboardFocus.wantsGrab(root.shouldBeVisible, root.customKeyboardFocus)
     }

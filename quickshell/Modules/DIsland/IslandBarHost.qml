@@ -439,6 +439,7 @@ Item {
         homeBrightnessDisplay: SettingsData.islandLevelDisplay(root.barConfig, "islandHomeBrightnessDisplay")
         batteryStyle: root.setting("islandBatteryStyle")
         mediaClockVisible: root.setting("islandMediaClockVisible")
+        mediaControls: root.setting("islandMediaControls")
         mediaLyrics: root.setting("islandMediaLyrics")
         mediaScrollLyrics: root.setting("islandMediaScrollLyrics")
         dashTabs: root.setting("islandDashTabs")

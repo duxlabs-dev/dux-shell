@@ -179,6 +179,7 @@ QtObject {
     property real compactThickness: 38
     property string batteryStyle: "duo"
     property bool mediaClockVisible: true
+    property bool mediaControls: true
     property bool mediaLyrics: false
     property bool mediaScrollLyrics: true
     property bool dashTabs: false
@@ -653,7 +654,7 @@ QtObject {
             "bottomRightRadius": root.dotSize / 2
         })
     readonly property var systemLevelActivities: ["volume", "brightness", "mic"]
-    readonly property var systemStateActivities: ["capslock", "powerprofile", "idleinhibitor", "dnd", "charging"]
+    readonly property var systemStateActivities: ["capslock", "powerprofile", "idleinhibitor", "dnd", "charging", "airplanemode"]
     readonly property var systemActivities: systemLevelActivities.concat(systemStateActivities)
     readonly property var dotTransientActivities: ["notification", "live"].concat(systemActivities)
     function isSystemActivity(activityId) {

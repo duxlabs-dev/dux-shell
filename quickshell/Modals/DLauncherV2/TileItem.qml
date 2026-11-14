@@ -83,12 +83,23 @@ LauncherTile {
 
             AppIconRenderer {
                 anchors.fill: parent
-                iconValue: root.imageIconValue
+                iconValue: root.isFolder ? "" : root.imageIconValue
                 iconSize: Math.min(parent.width, parent.height)
                 animate: root.visible && root.item?.data?.animated === true
                 fallbackText: (root.item?.name?.length > 0) ? root.item.name.charAt(0).toUpperCase() : "?"
                 materialIconSizeAdjustment: iconSize * 0.3
-                visible: !root.hasScreencopy
+                visible: !root.hasScreencopy && !root.isFolder
+            }
+
+            Loader {
+                anchors.centerIn: parent
+                width: Math.min(parent.width, parent.height) - Theme.spacingL * 2
+                height: width
+                active: root.isFolder
+                visible: active
+                sourceComponent: LauncherFolderIcon {
+                    item: root.item
+                }
             }
 
             Rectangle {

@@ -238,22 +238,6 @@ Item {
         setVolume((Math.round(currentVolume * 100) + step) / 100);
     }
 
-    function cycleLoopState() {
-        if (!activePlayer?.canControl || !activePlayer.loopSupported)
-            return;
-        switch (activePlayer.loopState) {
-        case MprisLoopState.None:
-            activePlayer.loopState = MprisLoopState.Playlist;
-            break;
-        case MprisLoopState.Playlist:
-            activePlayer.loopState = MprisLoopState.Track;
-            break;
-        case MprisLoopState.Track:
-            activePlayer.loopState = MprisLoopState.None;
-            break;
-        }
-    }
-
     function toggleMute() {
         if (!volumeAvailable)
             return;

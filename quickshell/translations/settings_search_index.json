@@ -1847,10 +1847,12 @@
       "connection",
       "connectivity",
       "ethernet",
+      "hotspot",
       "internet",
       "network",
       "online",
       "status",
+      "tailscale",
       "vpn",
       "wi-fi",
       "wifi",
@@ -2217,6 +2219,34 @@
     ],
     "page": "notifications",
     "description": "Popups hide the message until expanded"
+  },
+  {
+    "section": "configProfiles",
+    "label": "Profiles",
+    "tabIndex": -1,
+    "category": "Wallpaper & colors",
+    "keywords": [
+      "background",
+      "bg",
+      "colors",
+      "colour",
+      "colours",
+      "desktop",
+      "hue",
+      "image",
+      "palette",
+      "picture",
+      "preset",
+      "profile",
+      "profiles",
+      "setup",
+      "snapshot",
+      "switch",
+      "tint",
+      "wallpaper"
+    ],
+    "page": "personalization",
+    "icon": "style"
   },
   {
     "section": "radiusStrength",
@@ -3036,6 +3066,7 @@
       "colors",
       "colour",
       "colours",
+      "compare",
       "cycling",
       "dark",
       "dark mode",
@@ -3050,6 +3081,8 @@
       "palette",
       "palettes",
       "picture",
+      "profile",
+      "profiles",
       "style",
       "theme",
       "theming",
@@ -4611,6 +4644,30 @@
       "panel",
       "placement",
       "reserve",
+      "statusbar",
+      "taskbar",
+      "topbar"
+    ],
+    "parentLabel": "Bar",
+    "conditionKey": "islandEnabled"
+  },
+  {
+    "section": "islandMediaControls",
+    "label": "Playback controls",
+    "tabIndex": 3,
+    "category": "General",
+    "keywords": [
+      "bar",
+      "compact",
+      "controls",
+      "general",
+      "island",
+      "media",
+      "panel",
+      "pause",
+      "play",
+      "playback",
+      "skip",
       "statusbar",
       "taskbar",
       "topbar"
@@ -6991,6 +7048,30 @@
     "conditionKey": "islandDocked"
   },
   {
+    "section": "networkConnectivityCheck",
+    "label": "Connectivity checking",
+    "tabIndex": 7,
+    "category": "Status",
+    "keywords": [
+      "captive portal",
+      "checking",
+      "connection",
+      "connectivity",
+      "ethernet",
+      "internet",
+      "login",
+      "network",
+      "online",
+      "portal",
+      "status",
+      "wi-fi",
+      "wifi",
+      "wireless"
+    ],
+    "parentLabel": "Network",
+    "conditionKey": "networkAvailable"
+  },
+  {
     "section": "networkStatus",
     "label": "Status",
     "tabIndex": 7,
@@ -7008,6 +7089,7 @@
       "wireless"
     ],
     "parentLabel": "Network",
+    "icon": "login",
     "conditionKey": "networkAvailable"
   },
   {
@@ -7348,6 +7430,26 @@
       "what"
     ],
     "description": "Record app usage and past queries. Turning this off clears what is stored."
+  },
+  {
+    "section": "appLauncherIconColumns",
+    "label": "Icon columns",
+    "tabIndex": 9,
+    "category": "Launcher",
+    "keywords": [
+      "app drawer",
+      "app menu",
+      "applications",
+      "columns",
+      "drawer",
+      "icon",
+      "icons",
+      "launcher",
+      "layout",
+      "menu",
+      "start",
+      "start menu"
+    ]
   },
   {
     "section": "dankLauncherV2IncludeFilesInAll",
@@ -9597,6 +9699,24 @@
     "description": "Popups, do not disturb, rules"
   },
   {
+    "section": "osdAirplaneModeEnabled",
+    "label": "Airplane mode",
+    "tabIndex": 18,
+    "category": "On-screen displays",
+    "keywords": [
+      "airplane",
+      "bluetooth",
+      "displays",
+      "indicator",
+      "mode",
+      "osd",
+      "popup",
+      "rfkill",
+      "screen",
+      "wifi"
+    ]
+  },
+  {
     "section": "osdAlwaysShowValue",
     "label": "Always show percentage",
     "tabIndex": 18,
@@ -9862,12 +9982,16 @@
     "tabIndex": 18,
     "category": "On-screen displays",
     "keywords": [
+      "airplane",
+      "bluetooth",
       "displays",
       "indicator",
       "osd",
       "popup",
+      "rfkill",
       "screen",
-      "show"
+      "show",
+      "wifi"
     ]
   },
   {
@@ -10871,7 +10995,7 @@
     "optionFile": "AppsDockOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:33",
+    "section": "barWidgetOption:IslandOptions.qml:34",
     "label": "Activity colors",
     "tabIndex": 22,
     "keywords": [],
@@ -10879,7 +11003,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:34",
+    "section": "barWidgetOption:IslandOptions.qml:35",
     "label": "Activity icon animation",
     "tabIndex": 22,
     "keywords": [],
@@ -10887,7 +11011,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:44",
+    "section": "barWidgetOption:IslandOptions.qml:45",
     "label": "Activity position",
     "tabIndex": 22,
     "keywords": [],
@@ -10895,7 +11019,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:42",
+    "section": "barWidgetOption:IslandOptions.qml:43",
     "label": "Activity sources",
     "tabIndex": 22,
     "keywords": [],
@@ -10935,7 +11059,7 @@
     "optionFile": "PrivacyOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:28",
+    "section": "barWidgetOption:IslandOptions.qml:29",
     "label": "Appearance",
     "tabIndex": 22,
     "keywords": [],
@@ -11054,7 +11178,7 @@
     "optionFile": "PrivacyOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:51",
+    "section": "barWidgetOption:IslandOptions.qml:52",
     "label": "Charging",
     "tabIndex": 22,
     "keywords": [],
@@ -11062,7 +11186,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:53",
+    "section": "barWidgetOption:IslandOptions.qml:54",
     "label": "Clear badge on open",
     "tabIndex": 22,
     "keywords": [],
@@ -11078,7 +11202,7 @@
     "optionFile": "ClockOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:46",
+    "section": "barWidgetOption:IslandOptions.qml:47",
     "label": "Click action",
     "tabIndex": 22,
     "keywords": [],
@@ -11102,7 +11226,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:30",
+    "section": "barWidgetOption:IslandOptions.qml:31",
     "label": "Collapsed background",
     "tabIndex": 22,
     "keywords": [],
@@ -11110,7 +11234,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:45",
+    "section": "barWidgetOption:IslandOptions.qml:46",
     "label": "Collapsed content",
     "tabIndex": 22,
     "keywords": [],
@@ -11334,7 +11458,7 @@
     "optionFile": "MusicOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:52",
+    "section": "barWidgetOption:IslandOptions.qml:53",
     "label": "Expand by default",
     "tabIndex": 22,
     "keywords": [],
@@ -11342,7 +11466,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:31",
+    "section": "barWidgetOption:IslandOptions.qml:32",
     "label": "Expanded background",
     "tabIndex": 22,
     "keywords": [],
@@ -11350,7 +11474,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:32",
+    "section": "barWidgetOption:IslandOptions.qml:33",
     "label": "Expanded opacity",
     "tabIndex": 22,
     "keywords": [],
@@ -11430,7 +11554,7 @@
     "optionFile": "WorkspaceSwitcherOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:41",
+    "section": "barWidgetOption:IslandOptions.qml:42",
     "label": "Hidden activity sources",
     "tabIndex": 22,
     "keywords": [],
@@ -11502,7 +11626,7 @@
     "optionFile": "LauncherButtonOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:36",
+    "section": "barWidgetOption:IslandOptions.qml:37",
     "label": "Icon animation intensity",
     "tabIndex": 22,
     "keywords": [],
@@ -11510,7 +11634,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:35",
+    "section": "barWidgetOption:IslandOptions.qml:36",
     "label": "Icon animation speed",
     "tabIndex": 22,
     "keywords": [],
@@ -11598,7 +11722,7 @@
     "optionFile": "AppsDockOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:37",
+    "section": "barWidgetOption:IslandOptions.qml:38",
     "label": "Live activities",
     "tabIndex": 22,
     "keywords": [],
@@ -11606,7 +11730,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:25",
+    "section": "barWidgetOption:IslandOptions.qml:26",
     "label": "Lyrics",
     "tabIndex": 22,
     "keywords": [],
@@ -11702,7 +11826,7 @@
     "optionFile": "WorkspaceSwitcherOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:54",
+    "section": "barWidgetOption:IslandOptions.qml:55",
     "label": "Motion",
     "tabIndex": 22,
     "keywords": [],
@@ -11758,7 +11882,7 @@
     "optionFile": "ClockOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:47",
+    "section": "barWidgetOption:IslandOptions.qml:48",
     "label": "Notifications",
     "tabIndex": 22,
     "keywords": [],
@@ -11814,7 +11938,7 @@
     "optionFile": "WorkspaceSwitcherOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:43",
+    "section": "barWidgetOption:IslandOptions.qml:44",
     "label": "Overrides",
     "tabIndex": 22,
     "keywords": [],
@@ -11822,7 +11946,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:40",
+    "section": "barWidgetOption:IslandOptions.qml:41",
     "label": "Persistent activity slots",
     "tabIndex": 22,
     "keywords": [],
@@ -11830,7 +11954,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:29",
+    "section": "barWidgetOption:IslandOptions.qml:30",
     "label": "Pill shape",
     "tabIndex": 22,
     "keywords": [],
@@ -11838,7 +11962,15 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:38",
+    "section": "barWidgetOption:IslandOptions.qml:25",
+    "label": "Playback controls",
+    "tabIndex": 22,
+    "keywords": [],
+    "runtimeType": "barWidgetOption",
+    "optionFile": "IslandOptions.qml"
+  },
+  {
+    "section": "barWidgetOption:IslandOptions.qml:39",
     "label": "Plugin activities",
     "tabIndex": 22,
     "keywords": [],
@@ -11854,7 +11986,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:39",
+    "section": "barWidgetOption:IslandOptions.qml:40",
     "label": "Preview duration",
     "tabIndex": 22,
     "keywords": [],
@@ -11878,7 +12010,7 @@
     "optionFile": "PrivacyOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:26",
+    "section": "barWidgetOption:IslandOptions.qml:27",
     "label": "Scroll lyrics",
     "tabIndex": 22,
     "keywords": [],
@@ -12118,7 +12250,7 @@
     "optionFile": "AppsDockOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:55",
+    "section": "barWidgetOption:IslandOptions.qml:56",
     "label": "Spring",
     "tabIndex": 22,
     "keywords": [],
@@ -12126,7 +12258,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:57",
+    "section": "barWidgetOption:IslandOptions.qml:58",
     "label": "Spring damping",
     "tabIndex": 22,
     "keywords": [],
@@ -12134,7 +12266,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:58",
+    "section": "barWidgetOption:IslandOptions.qml:59",
     "label": "Spring mass",
     "tabIndex": 22,
     "keywords": [],
@@ -12142,7 +12274,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:56",
+    "section": "barWidgetOption:IslandOptions.qml:57",
     "label": "Spring stiffness",
     "tabIndex": 22,
     "keywords": [],
@@ -12174,7 +12306,7 @@
     "optionFile": "WorkspaceSwitcherOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:27",
+    "section": "barWidgetOption:IslandOptions.qml:28",
     "label": "Switch to media when playback starts",
     "tabIndex": 22,
     "keywords": [],
@@ -12238,7 +12370,7 @@
     "optionFile": "SystemTrayOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:49",
+    "section": "barWidgetOption:IslandOptions.qml:50",
     "label": "Use standard OSDs",
     "tabIndex": 22,
     "keywords": [],
@@ -12246,7 +12378,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:48",
+    "section": "barWidgetOption:IslandOptions.qml:49",
     "label": "Use standard popups",
     "tabIndex": 22,
     "keywords": [],
@@ -12286,7 +12418,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:IslandOptions.qml:50",
+    "section": "barWidgetOption:IslandOptions.qml:51",
     "label": "Workspace Switch",
     "tabIndex": 22,
     "keywords": [],
@@ -15223,31 +15355,7 @@
     ],
     "parentLabel": "Network",
     "icon": "wifi",
-    "conditionKey": "networkAvailable"
-  },
-  {
-    "section": "networkHotspot",
-    "label": "Hotspot",
-    "tabIndex": 40,
-    "category": "Wi-Fi",
-    "keywords": [
-      "access point",
-      "connection",
-      "connectivity",
-      "ethernet",
-      "hotspot",
-      "internet",
-      "network",
-      "online",
-      "sharing",
-      "ssid",
-      "wi-fi",
-      "wifi",
-      "wireless"
-    ],
-    "parentLabel": "Network",
-    "icon": "wifi_tethering",
-    "conditionKey": "networkAvailable"
+    "conditionKey": "wifiDeviceAvailable"
   },
   {
     "section": "networkSavedWifi",
@@ -15273,7 +15381,7 @@
     ],
     "parentLabel": "Network",
     "icon": "bookmark",
-    "conditionKey": "networkAvailable"
+    "conditionKey": "wifiDeviceAvailable"
   },
   {
     "section": "networkWifi",
@@ -15295,7 +15403,7 @@
       "wireless"
     ],
     "parentLabel": "Network",
-    "conditionKey": "networkAvailable"
+    "conditionKey": "wifiDeviceAvailable"
   },
   {
     "section": "networkVpn",
@@ -20974,29 +21082,70 @@
     "conditionKey": "fcitx5Available"
   },
   {
+    "section": "networkConnections",
+    "label": "Connections",
+    "tabIndex": 71,
+    "category": "Connections",
+    "keywords": [
+      "802.1x",
+      "apn",
+      "bluetooth",
+      "bond",
+      "bridge",
+      "connection",
+      "connections",
+      "connectivity",
+      "dns",
+      "dsl",
+      "ethernet",
+      "firewall",
+      "gateway",
+      "internet",
+      "ipv4",
+      "ipv6",
+      "mac",
+      "metered",
+      "mobile broadband",
+      "mtu",
+      "network",
+      "online",
+      "ports",
+      "pppoe",
+      "profiles",
+      "routes",
+      "static ip",
+      "vlan",
+      "wi-fi",
+      "wifi",
+      "wired",
+      "wireless",
+      "zone"
+    ],
+    "parentLabel": "Network",
+    "conditionKey": "connectionEditorAvailable"
+  },
+  {
     "section": "wallpaperFolderList",
     "label": "Folders",
     "tabIndex": 71,
-    "category": "Wallpapers",
+    "category": "Connections",
     "keywords": [
-      "background",
-      "bg",
-      "colors",
-      "colour",
-      "colours",
-      "desktop",
+      "connection",
+      "connections",
+      "connectivity",
       "directories",
+      "ethernet",
       "folders",
-      "hue",
-      "image",
+      "internet",
       "library",
-      "palette",
-      "picture",
-      "tint",
-      "wallpaper",
-      "wallpapers"
+      "network",
+      "online",
+      "wi-fi",
+      "wifi",
+      "wireless"
     ],
-    "parentLabel": "Wallpaper & colors"
+    "parentLabel": "Network",
+    "conditionKey": "connectionEditorAvailable"
   },
   {
     "section": "_tab_71",
@@ -21193,6 +21342,32 @@
     "conditionKey": "animationsCapable"
   },
   {
+    "section": "networkTailscale",
+    "label": "Tailscale",
+    "tabIndex": 73,
+    "category": "Animations",
+    "keywords": [
+      "account",
+      "animate",
+      "animations",
+      "exit node",
+      "integrations",
+      "login",
+      "magicdns",
+      "motion",
+      "ssh",
+      "subnet",
+      "system",
+      "tailnet",
+      "tailscale",
+      "transition",
+      "vpn"
+    ],
+    "parentLabel": "System & integrations",
+    "icon": "hub",
+    "conditionKey": "animationsCapable"
+  },
+  {
     "section": "compositorAnimationWorkspace",
     "label": "Workspace",
     "tabIndex": 73,
@@ -21242,5 +21417,60 @@
     "parentLabel": "System & integrations",
     "icon": "description",
     "conditionKey": "isHyprlandOrNiri"
+  },
+  {
+    "section": "networkHotspot",
+    "label": "Hotspot",
+    "tabIndex": 75,
+    "category": "Hotspot",
+    "keywords": [
+      "access point",
+      "channel",
+      "connection",
+      "connectivity",
+      "ethernet",
+      "hidden",
+      "hotspot",
+      "internet",
+      "network",
+      "online",
+      "qr code",
+      "security",
+      "sharing",
+      "ssid",
+      "wi-fi",
+      "wifi",
+      "wireless",
+      "wpa3"
+    ],
+    "parentLabel": "Network",
+    "icon": "wifi_tethering",
+    "conditionKey": "hotspotAvailable"
+  },
+  {
+    "section": "_tab_75",
+    "label": "Profiles",
+    "tabIndex": 75,
+    "category": "Profiles",
+    "keywords": [
+      "background",
+      "bg",
+      "colors",
+      "colour",
+      "colours",
+      "desktop",
+      "hue",
+      "image",
+      "palette",
+      "picture",
+      "preset",
+      "profiles",
+      "setup",
+      "snapshot",
+      "tint",
+      "wallpaper"
+    ],
+    "icon": "style",
+    "parentLabel": "Wallpaper & colors"
   }
 ]

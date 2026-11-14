@@ -96,7 +96,7 @@ func init() {
 	dmenuCmd.Flags().BoolVar(&dmenuPrintInfo, "print-info", false, "Also print an accepted row's info metadata (the per-row \\0info\\x1f... field, see the per-row metadata protocol) on a second line")
 	dmenuCmd.Flags().BoolVar(&dmenuDisableHist, "disable-history", false, "Don't add this session's search query to the launcher's persistent history (default: recorded, like other launcher modes)")
 
-	dmenuCmd.Flags().StringVar(&dmenuView, "view", "", "Override the result view mode for this invocation: list, grid, or tile (default: list)")
+	dmenuCmd.Flags().StringVar(&dmenuView, "view", "", "Override the result view mode for this invocation: list, grid, icons, or tile (default: list)")
 	dmenuCmd.Flags().StringVar(&dmenuSize, "size", "", "Override the popup size preset for this invocation: 1-4, matching the Appearance settings size buttons (default: the shell's own launcher size setting)")
 	dmenuCmd.Flags().StringVar(&dmenuIcon, "icon", "", "Show a Material Symbols icon next to the prompt badge (default: no icon)")
 }
@@ -282,10 +282,10 @@ func validateDmenuFormat(format string) error {
 
 func validateDmenuView(view string) error {
 	switch view {
-	case "", "list", "grid", "tile":
+	case "", "list", "grid", "icons", "tile":
 		return nil
 	default:
-		return fmt.Errorf("invalid --view %q (expected one of list,grid,tile)", view)
+		return fmt.Errorf("invalid --view %q (expected one of list,grid,icons,tile)", view)
 	}
 }
 

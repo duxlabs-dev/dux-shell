@@ -24,7 +24,7 @@ Singleton {
     id: root
     readonly property var log: Log.scoped("SettingsData")
 
-    readonly property int settingsConfigVersion: 43
+    readonly property int settingsConfigVersion: 44
 
     enum Position {
         Top,
@@ -484,6 +484,7 @@ Singleton {
     property string appPickerViewMode: Spec.SPEC.appPickerViewMode.def
     property bool sortAppsAlphabetically: Spec.SPEC.sortAppsAlphabetically.def
     property int appLauncherGridColumns: Spec.SPEC.appLauncherGridColumns.def
+    property int appLauncherIconColumns: Spec.SPEC.appLauncherIconColumns.def
     property bool closeNiriOverviewOnWindowFocus: Spec.SPEC.closeNiriOverviewOnWindowFocus.def
     property bool rememberLastQuery: Spec.SPEC.rememberLastQuery.def
     property bool launcherHistoryEnabled: Spec.SPEC.launcherHistoryEnabled.def
@@ -1209,6 +1210,7 @@ Singleton {
     property bool osdKeyboardLayoutEnabled: Spec.SPEC.osdKeyboardLayoutEnabled.def
     property bool osdInputMethodEnabled: Spec.SPEC.osdInputMethodEnabled.def
     property bool osdTouchpadEnabled: Spec.SPEC.osdTouchpadEnabled.def
+    property bool osdAirplaneModeEnabled: Spec.SPEC.osdAirplaneModeEnabled.def
     property bool osdPowerProfileEnabled: Spec.SPEC.osdPowerProfileEnabled.def
     property bool osdAudioOutputEnabled: Spec.SPEC.osdAudioOutputEnabled.def
     property bool osdWorkspaceEnabled: Spec.SPEC.osdWorkspaceEnabled.def
@@ -1533,6 +1535,7 @@ Singleton {
     signal compositorCursorRefreshNeeded
     signal compositorAnimationsRefreshNeeded
     signal notificationPopupsInvalidated
+    signal settingsSaved
 
     function refreshAuthAvailability() {
         Processes.detectAuthCapabilities();
@@ -2005,7 +2008,7 @@ Singleton {
         _commitBarConfigs(configs);
     }
 
-    function _loadSettings() {
+    function _loadSettings(skipTheme) {
         const isInitial = !_hasLoaded || _settingsStage === SettingsData.Stage.Partial;
         let unsavedChanges;
         let obj = _getSettingsObjectFromFiles();
@@ -2090,8 +2093,10 @@ Singleton {
             _mergeSessionState();
             Qt.callLater(checkIconThemeDrift);
         }
-        applyStoredTheme();
-        updateCompositorCursor();
+        if (!skipTheme) {
+            applyStoredTheme();
+            updateCompositorCursor();
+        }
         if (!isInitial) {
             // External edits reload under _loading, which skips the per-property transition triggers
             const frameChanged = (frameEnabled !== prevFrameEnabled || (frameEnabled && frameMode !== prevFrameMode));
@@ -2261,12 +2266,86 @@ Singleton {
             file.setSettings(fileSettings, userChanges);
         }
         unsavedUserChanges = _anySettingsFile(file => file.fileUnsavedUserChanges);
+        settingsSaved();
     }
 
     function savePluginSettings() {
         if (_pluginSettingsLoading || _pluginParseError)
             return;
         pluginSettingsFile.setText(JSON.stringify(pluginSettings, null, 2));
+        settingsSaved();
+    }
+
+    function profileSettingsSnapshot() {
+        return Store.toJson(root, new Set());
+    }
+
+    // A key in scope but missing from values goes back to its default. Like a save, a default stays
+    // out of the files unless a file already holds that key.
+    function applyProfileSettings(values, scope) {
+        if (_parseError || !_hasLoaded || _loading)
+            return false;
+        values = values || {};
+        const keys = scope.filter(key => key in Spec.SPEC);
+        if (!keys.length)
+            return true;
+        const held = new Set();
+        for (const file of _settingsFiles.values()) {
+            for (const key in file.settings)
+                held.add(key);
+        }
+        const next = _getCurrentSettings();
+        const before = {};
+        const incoming = key => keys.includes(key) ? values[key] ?? Spec.SPEC[key].def : root[key];
+        for (const key of keys) {
+            before[key] = root[key];
+            const def = Store.densityDefault(key, incoming("density"), incoming("interfaceStyle"));
+            const value = key in values ? values[key] : SpecUtil.cloneDef(def);
+            if (!held.has(key) && SpecUtil.isDefault(value, def))
+                delete next[key];
+            else
+                next[key] = value;
+        }
+        next.configVersion = settingsConfigVersion;
+
+        const splitSettings = _splitSettingsByFile(next);
+        for (const path in splitSettings)
+            _settingsFiles.get(path).setSettings(splitSettings[path], true);
+
+        _loading = true;
+        try {
+            _loadSettings(true);
+            _mergeSessionState();
+        } finally {
+            _loading = false;
+        }
+
+        const skipped = ["applyStoredTheme", "regenSystemThemes"];
+        // These feed Theme.switchTheme but have no onChange hook, since Settings switches the theme itself.
+        const themeKeys = ["currentThemeCategory", "customThemeFile", "registryThemeVariants"];
+        let theme = "";
+        const replayed = new Set();
+        for (const key of keys) {
+            if (SpecUtil.stableStringify(before[key]) === SpecUtil.stableStringify(root[key]))
+                continue;
+            if (key === "frameEnabled" || key === "frameMode" || key === "frameScreenPreferences")
+                Qt.callLater(_reconcileConnectedFrameBarStyles);
+            const hookName = Spec.SPEC[key].onChange;
+            if (hookName === "applyStoredTheme" || themeKeys.includes(key))
+                theme = "applyStoredTheme";
+            else if (hookName === "regenSystemThemes" && !theme)
+                theme = "regenSystemThemes";
+            if (!_hooks[hookName] || skipped.includes(hookName) || replayed.has(hookName))
+                continue;
+            replayed.add(hookName);
+            _hooks[hookName](root, key, before[key]);
+        }
+        if (theme)
+            _hooks[theme](root);
+        // The density and style hooks write sizes, which a normal set() saves afterward.
+        if (replayed.size)
+            saveSettings();
+        return true;
     }
 
     function _connectedFrameBarStyleSnapshot(config) {
@@ -2497,7 +2576,7 @@ Singleton {
 
     function dockReservationForEdge(screen, side) {
         const config = dockConfigForScreenEdge(screen, side);
-        if (!config?.enabled || config.autoHide || config.smartAutoHide)
+        if (!config?.enabled || config.autoHide || (config.smartAutoHide && CompositorService.supportsSmartDock))
             return 0;
         return Math.max(0, DockConfig.effectiveThickness(config) + (config.mode === "taskbar" || (!config.useOverlayLayer && CompositorService.usesConnectedFrameChromeForScreen(screen)) ? 0 : config.margin + config.bottomGap));
     }
@@ -3372,8 +3451,9 @@ Singleton {
 
             [ "$current_theme" = "$theme_name" ] && [ "$current_size" = "$cursor_size" ] && exit 0
 
-            if [ -f "$xresources_file" ]; then
-                cp "$xresources_file" "\${xresources_file}.backup$(date +%s)"
+            backup_file="\${xresources_file}.bak"
+            if [ -f "$xresources_file" ] && [ ! -e "$backup_file" ]; then
+                cp "$xresources_file" "$backup_file"
             fi
 
             temp_file="\${xresources_file}.tmp.$$"

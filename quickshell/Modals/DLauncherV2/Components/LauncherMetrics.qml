@@ -8,7 +8,6 @@ Singleton {
     // Dense floor: the 36px row preview needs the room
     readonly property real rowHeight: Math.max(Theme.listItemHeight + Theme.densityStepM, Theme.buttonHeightS + Theme.spacingXS)
     readonly property real rowPadding: Theme.spacingL + Theme.densityStepS
-    // Never below the hairline gap, so rows never touch
     readonly property real rowGap: Theme.groupedListGap + Math.max(0, Theme.densityStepXS)
     readonly property real tileSize: Theme.launcherTileSize
     readonly property real tileGap: Theme.spacingXS
@@ -26,6 +25,8 @@ Singleton {
     readonly property real headerInset: (headerButtonSize - Theme.iconSizeSmall) / 2
     readonly property real iconSize: Theme.avatarSize + Theme.densityStepS
     readonly property real gridIconSize: Theme.iconSizeLarge + Theme.spacingL
+    readonly property real iconsIconSize: Theme.iconSizeLarge + Theme.spacingXL + Theme.densityStepS
+    readonly property real iconsCellHeight: iconsIconSize + Theme.spacingS + tileLabelBlockHeight + Theme.spacingM
     readonly property real previewWidth: Theme.listItemHeight
     readonly property real previewHeight: Theme.avatarSize
     readonly property real footerHeight: Math.max(Theme.buttonHeightXXS, Theme.buttonHeightXS + Theme.densityStepS)
@@ -43,6 +44,19 @@ Singleton {
     readonly property real spotlightInset: Theme.spacingM
     // The footerless island sheet adds ResultsList's spacingS below its spacingM margin.
     readonly property real islandEdgeInset: Theme.spacingS
+
+    readonly property real folderIconGap: Theme.spacingXS
+    readonly property real folderAnchorGap: Theme.spacingS
+    readonly property int folderMaxColumns: 4
+    readonly property int folderMaxVisibleRows: 3
+    readonly property real popupEnterScale: Theme.popupEnterScale
+    readonly property int liftDelay: 500
+    // Drag scrolling must work when animation durations are zero.
+    readonly property int dragScrollInterval: 50
+    readonly property real dragLiftScale: 1.08
+    readonly property real dropTargetScale: 1.04
+    readonly property real dragSourceOpacity: 0.38
+    readonly property real dropTargetOutlineWidth: Theme.outlineWidth * 2
 
     FontMetrics {
         id: tileLabelMetrics
@@ -82,7 +96,6 @@ Singleton {
     }
 
     // edgeInset: the painted border lifts the footer, which would otherwise eat into the rows.
-    // Footerless results keep a spacingM bottom margin.
     function sizeHeight(size, edgeInset = 0, footer = true) {
         return chromeHeight + (footer ? footerHeight : Theme.spacingM) + edgeInset + sectionBand + sizeRows(size) * (rowHeight + rowGap) + fadeLength;
     }

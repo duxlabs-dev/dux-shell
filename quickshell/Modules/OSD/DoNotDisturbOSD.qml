@@ -1,16 +1,12 @@
 import QtQuick
 import qs.Common
-import qs.Widgets
 
-DOSD {
+IconOSD {
     id: root
 
     osdKind: "doNotDisturb"
-
-    osdWidth: Theme.osdHeight
-    osdHeight: Theme.osdHeight
-    autoHideInterval: 2000
-    enableMouseInteraction: false
+    iconName: dndActive ? "notifications_off" : "notifications"
+    iconColor: dndActive ? Theme.primary : Theme.outline
 
     readonly property bool dndActive: SessionData.doNotDisturb
     property bool stateInitialized: false
@@ -21,13 +17,4 @@ DOSD {
     }
 
     Component.onCompleted: stateInitialized = true
-
-    content: Item {
-        OsdIcon {
-            tonal: false
-            anchors.centerIn: parent
-            iconName: root.dndActive ? "notifications_off" : "notifications"
-            iconColor: root.dndActive ? Theme.primary : Theme.outline
-        }
-    }
 }

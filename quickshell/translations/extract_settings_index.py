@@ -93,6 +93,7 @@ CATEGORY_KEYWORDS = {
     "Default apps": ["browser", "terminal", "handlers", "mime"],
     "Users": ["accounts", "user", "profile"],
     "Autostart": ["startup", "launch", "boot"],
+    "Profiles": ["setup", "preset", "snapshot"],
 }
 
 TAB_INDEX_MAP = {
@@ -115,7 +116,9 @@ TAB_INDEX_MAP = {
     "NetworkStatusTab.qml": 7,
     "NetworkEthernetTab.qml": 39,
     "NetworkWifiTab.qml": 40,
+    "NetworkHotspotTab.qml": 75,
     "NetworkVpnTab.qml": 41,
+    "NetworkTailscaleTab.qml": 73,
     "NetworkCellularTab.qml": 47,
     "PrinterTab.qml": 8,
     "LauncherTab.qml": 9,
@@ -129,6 +132,9 @@ TAB_INDEX_MAP = {
     "BarWidgetTab.qml": 54,
     "LockScreenTab.qml": 11,
     "PluginsManageTab.qml": 28,
+    "ProfilesTab.qml": 75,
+    "ProfileEditTab.qml": 76,
+    "ProfileInspectTab.qml": 77,
     "AboutTab.qml": 13,
     "TypographyMotionTab.qml": 14,
     "SoundsTab.qml": 15,
@@ -138,6 +144,10 @@ TAB_INDEX_MAP = {
     "RunningAppsTab.qml": 19,
     "SoftwareUpdatesTab.qml": 20,
     "ChangelogTab.qml": 66,
+    "NetworkConnectionsTab.qml": 71,
+    "NetworkConnectionTab.qml": 72,
+    "NetworkWifiConnectTab.qml": 74,
+    "NetworkTailscaleAddTab.qml": 76,
     "PowerSleepTab.qml": 21,
     "ClipboardTab.qml": 23,
     "DisplayConfigTab.qml": 24,
@@ -166,6 +176,9 @@ TAB_INDEX_MAP = {
 # Extra sidebar tabIndexes that reuse a file already in TAB_INDEX_MAP.
 TAB_INDEX_ALIASES = {70}
 
+# Pages that only work for a profile picked on the Profiles page, so search never opens them directly.
+UNSEARCHABLE_TABS = {76, 77}
+
 SIDEBAR_GATE_CONDITIONS = [
     ("shortcutsOnly", "keybindsAvailable"),
     ("soundsOnly", "soundsAvailable"),
@@ -180,6 +193,10 @@ SIDEBAR_GATE_CONDITIONS = [
     ("layoutCapable", "layoutCapable"),
     ("animationsCapable", "animationsCapable"),
     ("cellularOnly", "cellularAvailable"),
+    ("connectionEditorOnly", "connectionEditorAvailable"),
+    ("wifiOnly", "wifiDeviceAvailable"),
+    ("hotspotOnly", "hotspotAvailable"),
+    ("tailscaleOnly", "tailscaleAvailable"),
     ("fcitx5Only", "fcitx5Available"),
 ]
 
@@ -759,7 +776,12 @@ def build_hub_meta(hubs):
 def generate_hub_entries(hubs):
     entries = []
     for hub in hubs:
-        child_labels = [child["label"] for child in hub["children"] if child["label"]]
+        # Connection-editor pages may not exist at runtime, so they don't feed the hub's keywords.
+        child_labels = [
+            child["label"]
+            for child in hub["children"]
+            if child["label"] and child["conditionKey"] != "connectionEditorAvailable" and '"searchable": false' not in child["own"]
+        ]
         keywords = set(enrich_keywords(hub["label"], " ".join(child_labels + [hub["hint"] or ""]), hub["label"], []))
         for child_label in child_labels:
             keywords.update(w for w in re.split(r"[\s\-_&/]+", child_label.lower()) if len(w) > 2)
@@ -786,12 +808,14 @@ def generate_tab_entries(leaves, settings_entries):
         for entry in settings_entries
         if not str(entry["section"]).startswith("_tab_")
     }
-    label_counts = Counter(leaf["label"] for leaf in leaves if leaf["label"])
+    label_counts = Counter(leaf["label"] for leaf in leaves if leaf["label"] and '"searchable": false' not in leaf["own"])
 
     entries = []
     for leaf in leaves:
         base_label = leaf["label"] or ""
-        if leaf["children"] or leaf["dynamicTitle"] or not (base_label or leaf["runtimeLabel"]):
+        if leaf["children"] or leaf["dynamicTitle"] or not (base_label or leaf["runtimeLabel"]) or leaf["tabIndex"] in UNSEARCHABLE_TABS:
+            continue
+        if '"searchable": false' in leaf["own"]:
             continue
         label = (
             f"{leaf['parentLabel']}: {base_label}"
