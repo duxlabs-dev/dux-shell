@@ -1701,11 +1701,13 @@ Item {
             if (!instance)
                 return `DESKTOP_WIDGET_NOT_FOUND: ${instanceId}`;
 
-            const currentValue = instance.config?.showOnOverlay ?? false;
+            const currentLayer = instance.config?.layer || (instance.config?.showOnOverlay ? "overlay" : "bottom");
+            const newLayer = currentLayer === "overlay" ? "bottom" : "overlay";
             SettingsData.updateDesktopWidgetInstanceConfig(instanceId, {
-                showOnOverlay: !currentValue
+                layer: newLayer,
+                showOnOverlay: newLayer === "overlay"
             });
-            return !currentValue ? `DESKTOP_WIDGET_OVERLAY_ENABLED: ${instanceId}` : `DESKTOP_WIDGET_OVERLAY_DISABLED: ${instanceId}`;
+            return newLayer === "overlay" ? `DESKTOP_WIDGET_OVERLAY_ENABLED: ${instanceId}` : `DESKTOP_WIDGET_OVERLAY_DISABLED: ${instanceId}`;
         }
 
         function setOverlay(instanceId: string, enabled: string): string {
@@ -1717,10 +1719,32 @@ Item {
                 return `DESKTOP_WIDGET_NOT_FOUND: ${instanceId}`;
 
             const enabledBool = enabled === "true" || enabled === "1";
+            const newLayer = enabledBool ? "overlay" : "bottom";
             SettingsData.updateDesktopWidgetInstanceConfig(instanceId, {
+                layer: newLayer,
                 showOnOverlay: enabledBool
             });
             return enabledBool ? `DESKTOP_WIDGET_OVERLAY_ENABLED: ${instanceId}` : `DESKTOP_WIDGET_OVERLAY_DISABLED: ${instanceId}`;
+        }
+
+        function setLayer(instanceId: string, layer: string): string {
+            if (!instanceId)
+                return "ERROR: No instance ID specified";
+
+            const instance = SettingsData.getDesktopWidgetInstance(instanceId);
+            if (!instance)
+                return `DESKTOP_WIDGET_NOT_FOUND: ${instanceId}`;
+
+            const validLayers = ["background", "bottom", "overlay", "wallpaper"];
+            if (!validLayers.includes(layer))
+                return `ERROR: Invalid layer '${layer}'. Must be one of: background, bottom, overlay`;
+
+            const normalizedLayer = layer === "wallpaper" ? "background" : layer;
+            SettingsData.updateDesktopWidgetInstanceConfig(instanceId, {
+                layer: normalizedLayer,
+                showOnOverlay: normalizedLayer === "overlay"
+            });
+            return `DESKTOP_WIDGET_LAYER_SET: ${instanceId} -> ${normalizedLayer}`;
         }
 
         function list(): string {
@@ -1739,11 +1763,14 @@ Item {
                 return `DESKTOP_WIDGET_NOT_FOUND: ${instanceId}`;
 
             const enabled = instance.enabled ?? true;
-            const overlay = instance.config?.showOnOverlay ?? false;
+            let layer = instance.config?.layer || (instance.config?.showOnOverlay ? "overlay" : "bottom");
+            if (layer === "wallpaper")
+                layer = "background";
+            const overlay = instance.config?.showOnOverlay ?? (layer === "overlay");
             const overview = instance.config?.showOnOverview ?? false;
             const clickThrough = instance.config?.clickThrough ?? false;
             const syncPosition = instance.config?.syncPositionAcrossScreens ?? false;
-            return `enabled: ${enabled}, overlay: ${overlay}, overview: ${overview}, clickThrough: ${clickThrough}, syncPosition: ${syncPosition}`;
+            return `enabled: ${enabled}, layer: ${layer}, overlay: ${overlay}, overview: ${overview}, clickThrough: ${clickThrough}, syncPosition: ${syncPosition}`;
         }
 
         function enable(instanceId: string): string {
