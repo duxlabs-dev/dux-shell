@@ -9,6 +9,7 @@ import qs.Services
 import qs.DCommon.Widgets
 import qs.Modules.Settings.Widgets
 import "../../Common/ThemePalette.js" as ThemePalette
+import "../../Common/ContrastFloors.js" as ContrastFloors
 
 Item {
     id: themeColorsTab
@@ -774,6 +775,161 @@ Item {
                                 Theme.screenTransition();
                                 SettingsData.setRegistryThemeVariant(variantSelector.activeThemeId, variantId);
                             }
+                        }
+                    }
+                }
+            }
+        }
+
+        SettingsCard {
+            id: textContrastCard
+            tab: "theme"
+            tags: ["contrast", "ratio", "accessibility", "readability", "terminal", "ansi", "dim", "text", "wcag"]
+            title: I18n.tr("Text Contrast Ratios", "theme settings card title, contrast of each generated text color against its background")
+            settingKey: "textContrastCard"
+            iconName: "contrast"
+            collapsible: true
+            expanded: false
+            visible: Theme.matugenAvailable
+
+            // Rows are rebuilt whenever dms-colors.json reloads, so which one is open lives here, by color.
+            property string openKey: ""
+            readonly property var rows: expanded ? ContrastFloors.rows(Theme.matugenColors, SettingsData.terminalsAlwaysDark) : []
+            readonly property int failures: rows.filter(r => !r.pass).length
+
+            function colorName(key) {
+                const info = ContrastFloors.describe(key);
+                return info.ansi === undefined ? info.name : I18n.tr("ANSI %1", "text contrast, a terminal palette color by number").arg(info.ansi);
+            }
+
+            StyledText {
+                width: parent.width
+                text: textContrastCard.rows.length === 0 ? I18n.tr("Unavailable") : I18n.tr("%1 of %2 colors below the recommended ratio. Click a color to change it.", "text contrast audit summary").arg(textContrastCard.failures).arg(textContrastCard.rows.length)
+                font.pixelSize: Theme.fontSizeSmall
+                color: textContrastCard.failures > 0 ? Theme.error : Theme.surfaceVariantText
+                wrapMode: Text.WordWrap
+            }
+
+            Column {
+                width: parent.width
+                spacing: Theme.spacingXS
+
+                Repeater {
+                    model: textContrastCard.rows
+
+                    Column {
+                        id: auditRow
+                        required property var modelData
+                        readonly property var info: ContrastFloors.describe(modelData.key)
+                        readonly property bool open: textContrastCard.openKey === modelData.key
+                        readonly property string status: {
+                            const parts = [];
+                            const change = ContrastFloors.change(modelData);
+                            if (change === "own")
+                                parts.push(I18n.tr("changed from %1", "text contrast, the theme's own ratio before the user changed it").arg(ContrastFloors.formatRatio(modelData.original)));
+                            else if (change === "cause")
+                                parts.push(I18n.tr("changed from %1 due to %2 color change", "text contrast, %1 the theme's own ratio, %2 the color it is drawn on that the user changed, e.g. primary").arg(ContrastFloors.formatRatio(modelData.original)).arg(textContrastCard.colorName(modelData.cause)));
+                            if (!modelData.pass)
+                                parts.push(I18n.tr("below recommended ratio of %1", "text contrast, the ratio this kind of color should reach").arg(ContrastFloors.formatRatio(modelData.recommended)));
+                            return parts.join("  ·  ");
+                        }
+
+                        width: parent.width
+                        spacing: Theme.spacingXS
+
+                        Item {
+                            width: parent.width
+                            height: Math.max(Theme.buttonHeightS, labels.implicitHeight)
+
+                            Rectangle {
+                                id: swatch
+                                width: Theme.buttonHeightM
+                                height: Theme.buttonHeightS
+                                radius: Theme.cornerRadius
+                                color: auditRow.modelData.bg
+                                anchors.verticalCenter: parent.verticalCenter
+
+                                StyledText {
+                                    anchors.centerIn: parent
+                                    text: "Aa"
+                                    color: auditRow.modelData.fg
+                                    font.pixelSize: Theme.fontSizeMedium
+                                    font.weight: Font.Medium
+                                }
+                            }
+
+                            Column {
+                                id: labels
+                                anchors.left: swatch.right
+                                anchors.leftMargin: Theme.spacingM
+                                anchors.right: ratioText.left
+                                anchors.rightMargin: Theme.spacingS
+                                anchors.verticalCenter: parent.verticalCenter
+
+                                StyledText {
+                                    width: parent.width
+                                    elide: Text.ElideRight
+                                    font.pixelSize: Theme.fontSizeSmall
+                                    color: Theme.surfaceText
+                                    text: (auditRow.info.group === "terminal" ? I18n.tr("Terminal") : (auditRow.info.group === "editors" ? I18n.tr("Editors", "text contrast audit group, editor themes") : I18n.tr("Applications"))) + "  ·  " + textContrastCard.colorName(auditRow.modelData.key)
+                                }
+
+                                StyledText {
+                                    width: parent.width
+                                    visible: auditRow.status !== ""
+                                    wrapMode: Text.WordWrap
+                                    font.pixelSize: Theme.fontSizeSmall
+                                    color: auditRow.modelData.pass ? Theme.surfaceVariantText : Theme.error
+                                    text: auditRow.status
+                                }
+                            }
+
+                            StyledText {
+                                id: ratioText
+                                anchors.right: statusIcon.left
+                                anchors.rightMargin: Theme.spacingS
+                                anchors.verticalCenter: parent.verticalCenter
+                                font.pixelSize: Theme.fontSizeSmall
+                                color: auditRow.modelData.pass ? Theme.surfaceVariantText : Theme.error
+                                text: ContrastFloors.formatRatio(auditRow.modelData.ratio)
+                            }
+
+                            DIcon {
+                                id: statusIcon
+                                anchors.right: parent.right
+                                anchors.verticalCenter: parent.verticalCenter
+                                name: auditRow.modelData.pass ? "check" : "warning"
+                                size: Theme.iconSizeSmall
+                                color: auditRow.modelData.pass ? Theme.surfaceVariantText : Theme.error
+                            }
+
+                            MouseArea {
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: textContrastCard.openKey = auditRow.open ? "" : auditRow.modelData.key
+                            }
+                        }
+
+                        SettingsSliderRow {
+                            id: ratioSlider
+                            visible: auditRow.open
+                            text: I18n.tr("Ratio for this color", "slider setting one generated text color's contrast ratio")
+                            minimum: 10
+                            maximum: 210
+                            decimals: 1
+                            unit: ":1"
+                            value: Math.round(auditRow.modelData.ratio * 10)
+                            onSliderDragFinished: finalValue => {
+                                SettingsData.set("contrastOverrides", ContrastFloors.withOverride(SettingsData.contrastOverrides, auditRow.modelData.key, finalValue / 10));
+                                // Show the ratio the color has until regeneration reports the new one; an unreachable value then never sticks.
+                                ratioSlider.resync();
+                            }
+                        }
+
+                        DButton {
+                            visible: auditRow.open && auditRow.modelData.target > 0
+                            text: I18n.tr("Reset")
+                            onClicked: SettingsData.set("contrastOverrides", ContrastFloors.withOverride(SettingsData.contrastOverrides, auditRow.modelData.key, 0))
                         }
                     }
                 }

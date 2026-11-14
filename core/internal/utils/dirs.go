@@ -16,6 +16,10 @@ const (
 	maxCompareFileLen = 1 << 20
 )
 
+func ColorsFilePath() string {
+	return filepath.Join(XDGCacheHome(), AppDirName, "dms-colors.json")
+}
+
 // MigrateLegacyDirs moves the pre-2.0 DankMaterialShell config, state, cache and
 // data dirs to dms and leaves a symlink at the old path for older binaries and plugins.
 func MigrateLegacyDirs() []error {

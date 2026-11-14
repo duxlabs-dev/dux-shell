@@ -11,6 +11,7 @@ import (
 	"github.com/duxlabs-dev/dux-go/ipc"
 	"github.com/duxlabs-dev/dux-shell/core/internal/log"
 	"github.com/duxlabs-dev/dux-shell/core/internal/matugen"
+	"github.com/duxlabs-dev/dux-shell/core/internal/utils"
 	"github.com/spf13/cobra"
 )
 
@@ -44,6 +45,13 @@ var matugenPreviewCmd = &cobra.Command{
 	Run:   runMatugenPreview,
 }
 
+var matugenAuditCmd = &cobra.Command{
+	Use:   "audit",
+	Short: "Check text contrast of the current theme's generated colors",
+	Long:  "Check every text color DMS generates against the backgrounds it is drawn on (WCAG ratios). Exits 1 when any color is below its recommended ratio (4.5:1 text, 2:1 dim).",
+	Run:   runMatugenAudit,
+}
+
 var matugenQtengineCmd = &cobra.Command{
 	Use:   "qtengine",
 	Short: "Sync qtengine's config with the current DMS theme",
@@ -56,6 +64,7 @@ func init() {
 	matugenCmd.AddCommand(matugenCheckCmd)
 	matugenCmd.AddCommand(matugenPreviewCmd)
 	matugenCmd.AddCommand(matugenQtengineCmd)
+	matugenCmd.AddCommand(matugenAuditCmd)
 
 	for _, cmd := range []*cobra.Command{matugenGenerateCmd, matugenQueueCmd} {
 		cmd.Flags().String("state-dir", "", "State directory for cache files")
@@ -72,6 +81,7 @@ func init() {
 		cmd.Flags().Bool("terminals-always-dark", false, "Force terminal themes to dark variant")
 		cmd.Flags().Int("terminal-opacity", 0, "Terminal background opacity percent, 1-99 (0 or 100 leaves the terminal's own setting)")
 		cmd.Flags().String("terminal-palette", "", "Terminal palette: default, low, medium or high")
+		cmd.Flags().String("contrast-overrides", "", `Exact WCAG contrast ratio per color as JSON, e.g. {"dank16term.color5": 5}`)
 		cmd.Flags().String("skip-templates", "", "Comma-separated list of templates to skip")
 		cmd.Flags().Float64("contrast", 0, "Contrast value from -1 to 1 (0 = standard)")
 		cmd.Flags().String("source-mode", "", "Source color selection: dominant, colorful, darkness, lightness, saturation, less-saturation, value")
@@ -85,6 +95,10 @@ func init() {
 	matugenPreviewCmd.Flags().String("image", "", "Wallpaper image used to resolve the scheme-smart preview")
 	matugenPreviewCmd.Flags().Float64("contrast", 0, "Contrast value from -1 to 1 (0 = standard)")
 	matugenPreviewCmd.Flags().String("spec", "", "Material color spec: 2021 (matugen native, default), 2025 (Material 3 Expressive) or dms (2025 accents on neutral surfaces)")
+	matugenAuditCmd.Flags().String("colors", "", "dms-colors.json to check (default: the DMS cache)")
+	matugenAuditCmd.Flags().String("variant", "", "dark, light or default (default: what the shell shows now)")
+	matugenAuditCmd.Flags().Bool("terminals-always-dark", false, "Report terminal colors from the dark variant, as terminals forced dark render them")
+	matugenAuditCmd.Flags().Bool("json", false, "Print the report as JSON")
 	matugenQtengineCmd.Flags().String("config-dir", "", "User config directory")
 	matugenQtengineCmd.Flags().String("icon-theme", "", "Icon theme name")
 }
@@ -104,6 +118,7 @@ func buildMatugenOptions(cmd *cobra.Command) matugen.Options {
 	terminalsAlwaysDark, _ := cmd.Flags().GetBool("terminals-always-dark")
 	terminalOpacity, _ := cmd.Flags().GetInt("terminal-opacity")
 	terminalPalette, _ := cmd.Flags().GetString("terminal-palette")
+	contrastOverrides, _ := cmd.Flags().GetString("contrast-overrides")
 	skipTemplates, _ := cmd.Flags().GetString("skip-templates")
 	contrast, _ := cmd.Flags().GetFloat64("contrast")
 	sourceMode, _ := cmd.Flags().GetString("source-mode")
@@ -126,6 +141,7 @@ func buildMatugenOptions(cmd *cobra.Command) matugen.Options {
 		TerminalsAlwaysDark: terminalsAlwaysDark,
 		TerminalOpacity:     terminalOpacity,
 		TerminalPalette:     terminalPalette,
+		ContrastOverrides:   matugen.NewContrastOverrides(contrastOverrides),
 		SkipTemplates:       skipTemplates,
 		SourceMode:          sourceMode,
 		SeedColor:           seedColor,
@@ -167,6 +183,7 @@ func runMatugenQueue(cmd *cobra.Command, args []string) {
 			"terminalsAlwaysDark": opts.TerminalsAlwaysDark,
 			"terminalOpacity":     opts.TerminalOpacity,
 			"terminalPalette":     opts.TerminalPalette,
+			"contrastOverrides":   opts.ContrastOverrides.JSON(),
 			"skipTemplates":       opts.SkipTemplates,
 			"contrast":            opts.Contrast,
 			"sourceMode":          opts.SourceMode,
@@ -255,6 +272,56 @@ func runMatugenPreview(cmd *cobra.Command, args []string) {
 		log.Fatalf("Failed to marshal Matugen previews: %v", err)
 	}
 	fmt.Println(string(data))
+}
+
+func runMatugenAudit(cmd *cobra.Command, args []string) {
+	path, _ := cmd.Flags().GetString("colors")
+	variant, _ := cmd.Flags().GetString("variant")
+	asJSON, _ := cmd.Flags().GetBool("json")
+	terminalsDark, _ := cmd.Flags().GetBool("terminals-always-dark")
+	if path == "" {
+		path = utils.ColorsFilePath()
+	}
+
+	report, err := matugen.AuditColorsFile(path, variant, terminalsDark)
+	if err != nil {
+		log.Fatalf("Contrast audit failed: %v", err)
+	}
+
+	if asJSON {
+		data, err := json.Marshal(report)
+		if err != nil {
+			log.Fatalf("Failed to marshal contrast audit: %v", err)
+		}
+		fmt.Println(string(data))
+	} else {
+		printAuditReport(report)
+	}
+	if report.Failures() > 0 {
+		os.Exit(1)
+	}
+}
+
+func printAuditReport(r matugen.AuditReport) {
+	fmt.Printf("Text contrast, %s colors (recommended %.1f:1 text, %.1f:1 dim)\n\n", r.Variant, matugen.RecommendedTextRatio, matugen.RecommendedDimRatio)
+	for _, res := range r.Results {
+		mark := "ok  "
+		if !res.Pass {
+			mark = "LOW "
+		}
+		changed := ""
+		if res.Original != res.Ratio {
+			changed = fmt.Sprintf("  changed from %.2f:1", res.Original)
+		}
+		fmt.Printf("%s  %-30s %s on %s  %5.2f:1  (recommended %.1f)%s\n", mark, res.Key, res.Fg, res.Bg, res.Ratio, res.Recommended, changed)
+	}
+	if len(r.Adjustments) > 0 {
+		fmt.Printf("\nChanged from the theme's own colors:\n")
+		for _, a := range r.Adjustments {
+			fmt.Printf("      %s\n", a)
+		}
+	}
+	fmt.Printf("\n%d of %d colors below their recommended ratio\n", r.Failures(), len(r.Results))
 }
 
 func runMatugenQtengine(cmd *cobra.Command, args []string) {
