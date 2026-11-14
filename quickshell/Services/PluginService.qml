@@ -35,6 +35,8 @@ Singleton {
     property var _daemonSpawnQueue: []
     property var globalVars: ({})
     property var pluginLoadErrors: ({})
+    readonly property bool hasDisabledPluginsSnapshot: (CacheData.disabledPluginsSnapshot?.length ?? 0) > 0
+    readonly property int loadedDisableableCount: Object.keys(loadedPlugins).length
     property var _componentRevisions: ({})
     property var directoryModifiedTimes: ({})
     property string pendingSettingsRevealPluginId: ""
@@ -436,7 +438,8 @@ Singleton {
             _updateAvailablePluginsList();
             _loadPluginTranslations(manifest.id, dir);
             const isPureDesktop = surfaces.length === 1 && surfaces[0] === "desktop";
-            const enabled = isPureDesktop || SettingsData.getPluginSetting(manifest.id, "enabled", false);
+            const inSnapshot = (typeof CacheData !== "undefined" ? CacheData.disabledPluginsSnapshot || [] : []).includes(manifest.id);
+            const enabled = !inSnapshot && (isPureDesktop || SettingsData.getPluginSetting(manifest.id, "enabled", false));
             if (enabled && !info.loaded && !installingPlugins[manifest.id])
                 runStartupGate(manifest.id);
             pluginListUpdated();
@@ -888,6 +891,8 @@ Singleton {
     }
 
     function enablePlugin(pluginId, onResult) {
+        if (typeof CacheData !== "undefined" && Array.isArray(CacheData.disabledPluginsSnapshot) && CacheData.disabledPluginsSnapshot.includes(pluginId))
+            CacheData.set("disabledPluginsSnapshot", CacheData.disabledPluginsSnapshot.filter(id => id !== pluginId));
         SettingsData.setPluginSetting(pluginId, "enabled", true);
         return runStartupGate(pluginId, onResult);
     }
@@ -939,6 +944,8 @@ Singleton {
 
         if (!plugin.startupCheckPath) {
             const ok = loadPlugin(pluginId);
+            if (ok)
+                _restoreDesktopWidgetsForPlugin(pluginId);
             if (onResult)
                 onResult(ok);
             return ok;
@@ -966,6 +973,8 @@ Singleton {
             }
             _clearLoadError(pluginId);
             const ok = loadPlugin(pluginId);
+            if (ok)
+                _restoreDesktopWidgetsForPlugin(pluginId);
             if (onResult)
                 onResult(ok);
         };
@@ -990,6 +999,78 @@ Singleton {
     function disablePlugin(pluginId) {
         SettingsData.setPluginSetting(pluginId, "enabled", false);
         return unloadPlugin(pluginId);
+    }
+
+    function _restoreDesktopWidgetsForPlugin(pluginId) {
+        if (typeof CacheData === "undefined" || !Array.isArray(CacheData.disabledDesktopWidgetsSnapshot) || CacheData.disabledDesktopWidgetsSnapshot.length === 0)
+            return;
+        const snapshotSet = new Set(CacheData.disabledDesktopWidgetsSnapshot);
+        const restoredIds = new Set();
+        for (const inst of SettingsData.desktopWidgetInstances || []) {
+            if (inst.widgetType === pluginId && snapshotSet.has(inst.id)) {
+                restoredIds.add(inst.id);
+                SettingsData.updateDesktopWidgetInstance(inst.id, {
+                    enabled: true
+                });
+            }
+        }
+        if (restoredIds.size > 0)
+            CacheData.set("disabledDesktopWidgetsSnapshot", CacheData.disabledDesktopWidgetsSnapshot.filter(id => !restoredIds.has(id)));
+    }
+
+    function disableAllPlugins() {
+        const ids = Object.keys(loadedPlugins);
+        if (ids.length === 0)
+            return [];
+        const idSet = new Set(ids);
+        const instanceIds = (SettingsData.desktopWidgetInstances || []).filter(inst => inst.enabled && idSet.has(inst.widgetType)).map(inst => inst.id);
+        const existingWidgets = Array.isArray(CacheData.disabledDesktopWidgetsSnapshot) ? CacheData.disabledDesktopWidgetsSnapshot : [];
+        CacheData.set("disabledDesktopWidgetsSnapshot", Array.from(new Set(existingWidgets.concat(instanceIds))));
+        for (const instId of instanceIds) {
+            SettingsData.updateDesktopWidgetInstance(instId, {
+                enabled: false
+            });
+        }
+        const existingPlugins = Array.isArray(CacheData.disabledPluginsSnapshot) ? CacheData.disabledPluginsSnapshot : [];
+        CacheData.set("disabledPluginsSnapshot", Array.from(new Set(existingPlugins.concat(ids))));
+        for (const id of ids)
+            disablePlugin(id);
+        return ids;
+    }
+
+    function restoreDisabledPlugins(onResult) {
+        const snapshot = Array.isArray(CacheData.disabledPluginsSnapshot) ? CacheData.disabledPluginsSnapshot.slice() : [];
+        CacheData.set("disabledPluginsSnapshot", []);
+        const toEnable = snapshot.filter(id => availablePlugins[id] && !isPluginLoaded(id));
+        if (toEnable.length === 0) {
+            CacheData.set("disabledDesktopWidgetsSnapshot", []);
+            if (onResult)
+                onResult([]);
+            return [];
+        }
+        let pending = toEnable.length;
+        const failed = [];
+        for (const id of toEnable) {
+            enablePlugin(id, ok => {
+                if (!ok)
+                    failed.push(id);
+                if (--pending > 0)
+                    return;
+                CacheData.set("disabledDesktopWidgetsSnapshot", []);
+                if (onResult) {
+                    onResult(failed);
+                    return;
+                }
+                for (const failedId of failed) {
+                    const plugin = availablePlugins[failedId];
+                    const err = pluginLoadErrors[failedId];
+                    const title = I18n.tr("%1 Startup Failed", "plugin error title, %1 is the plugin name").arg(plugin?.name || failedId);
+                    const body = err ? (err.details ? (err.title + "\n\n" + err.details) : err.title) : I18n.tr("Failed to enable plugin: %1").arg(plugin?.name || failedId);
+                    ToastService.showError(title, body, "", "plugin-startup-" + failedId);
+                }
+            });
+        }
+        return toEnable;
     }
 
     function reloadPlugin(pluginId) {
