@@ -11,7 +11,7 @@ CcTileActions {
     readonly property var selectedNode: isInput ? AudioService.source : AudioService.sink
     readonly property var devices: {
         const hidden = (isInput ? SessionData.hiddenInputDeviceNames : SessionData.hiddenOutputDeviceNames) || [];
-        return AudioService.allNodes.filter(node => node.audio && node.isSink !== isInput && !node.isStream && !hidden.includes(node.name)).sort((a, b) => {
+        return AudioService.allNodes.filter(node => node.audio && node.isSink !== isInput && !node.isStream && !hidden.includes(node.name) && (isInput || AudioService.isSinkAvailable(node))).sort((a, b) => {
             const aPin = pins.indexOf(a.name);
             const bPin = pins.indexOf(b.name);
             if (aPin !== bPin)

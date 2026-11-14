@@ -62,7 +62,7 @@ Item {
                     model: ScriptModel {
                         values: {
                             const hidden = SessionData.hiddenOutputDeviceNames ?? [];
-                            const nodes = AudioService.allNodes.filter(node => node.audio && node.isSink && !node.isStream && !hidden.includes(node.name));
+                            const nodes = AudioService.allNodes.filter(node => node.audio && node.isSink && !node.isStream && !hidden.includes(node.name) && AudioService.isSinkAvailable(node));
                             const pinnedList = root.pinnedOutputs;
                             return nodes.sort((a, b) => {
                                 const aPinned = pinnedList.indexOf(a.name);
