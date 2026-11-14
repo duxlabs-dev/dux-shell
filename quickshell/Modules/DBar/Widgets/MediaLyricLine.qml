@@ -27,12 +27,15 @@ Item {
     property real shift: 0
     property real pageWidth: 0
     property real scrollOffset: 0
-    property real scrollHoldMs: 0
     property real lastStepMs: 0
     property real holdStartMs: 1200
+    // Only lines with no known end use a fixed speed; the others are paced by their own span.
     property real pxPerMs: 1 / 20
     property real overscroll: 5
     property int stepInterval: 60
+    property bool wordTimed: false
+    property real lineStart: 0
+    property real lineEnd: 0
 
     readonly property real maxScrollOffset: Math.max(0, pageWidth - width + overscroll)
     readonly property bool scrollable: scroll && width > 0 && maxScrollOffset > 0 && current.text !== ""
@@ -47,11 +50,7 @@ Item {
     onLiveChanged: place()
     onSweepChanged: place()
     onScrollChanged: place()
-    onScrollActiveChanged: {
-        lastStepMs = Date.now();
-        if (scrollActive)
-            scrollHoldMs = holdStartMs;
-    }
+    onScrollActiveChanged: lastStepMs = Date.now()
     Component.onCompleted: place()
 
     function flat(value) {
@@ -73,6 +72,8 @@ Item {
             return;
         }
         const key = controller.activeIndex + "/" + next.t + "/" + next.voice;
+        lineStart = next.t;
+        lineEnd = next.e;
         const paged = key + "/" + width + "/" + fontKey + "/" + scroll;
         if (paged !== pagedKey) {
             pagedKey = paged;
@@ -84,9 +85,11 @@ Item {
             }] : paginate(chunks);
         }
         if (next.w.length > 0) {
+            wordTimed = true;
             placeWords(key, next, at);
             return;
         }
+        wordTimed = false;
         placeLine(key, next, at);
     }
 
@@ -186,7 +189,6 @@ Item {
         slide.stop();
         const previousOffset = current.offset;
         resetScroll();
-        scrollHoldMs = holdStartMs;
         const animate = live && !SettingsData.reduceMotion && current.text !== "";
         outgoing.text = animate ? current.text : "";
         outgoing.fill = current.fill;
@@ -199,19 +201,28 @@ Item {
 
     function resetScroll() {
         scrollOffset = 0;
-        scrollHoldMs = 0;
         lastStepMs = Date.now();
     }
 
+    // Pacing by the line's own span: a fixed speed leaves the tail of a long line hidden when the
+    // next one starts. Word cues put the highlight at a fixed spot instead, so it stays readable.
+    function scrollTarget(delta) {
+        if (wordTimed)
+            return current.fill - width * 0.75;
+        const span = lineEnd - lineStart;
+        if (!(span > 0))
+            return scrollOffset + delta * pxPerMs;
+        const hold = Math.min(holdStartMs / 1000, span * 0.4);
+        return maxScrollOffset * Math.max(0, Math.min(1, (controller.shownTime() - lineStart - hold) / (span - hold)));
+    }
+
+    // One way only: the line is sung once, so it stays at its end instead of scrolling back.
     function stepScroll() {
         const now = Date.now();
+        // A timer that was stopped for a pause settles the whole gap at once without this clamp.
         const delta = Math.max(0, Math.min(now - lastStepMs, stepInterval * 4));
         lastStepMs = now;
-        if (scrollHoldMs > 0) {
-            scrollHoldMs = Math.max(0, scrollHoldMs - delta);
-            return;
-        }
-        scrollOffset = Math.min(maxScrollOffset, scrollOffset + delta * pxPerMs);
+        scrollOffset = Math.min(maxScrollOffset, Math.max(scrollOffset, scrollTarget(delta)));
     }
 
     function clearLine() {
