@@ -37,9 +37,11 @@ BasePill {
     readonly property string coverArtUrl: coverArtEnabled && activePlayer && TrackArtService.artReadyFor(activePlayer) ? TrackArtService.resolvedArtUrl : ""
     readonly property bool hasCoverArt: coverArtUrl !== ""
     readonly property bool visualizerEnabled: CavaService.cavaAvailable && SettingsData.audioVisualizerEnabled
+    // With the visualizer the cover slot stays reserved while art loads, so skipping tracks never resizes the pill.
+    readonly property bool showCoverSlot: hasCoverArt || (coverArtEnabled && visualizerEnabled && playerAvailable)
     readonly property bool showIconSlot: visualizerEnabled || !hasCoverArt
     readonly property real badgeSize: BarMetrics.mediaControlSize * contentScale
-    readonly property real badgeExtent: (hasCoverArt ? badgeSize + Theme.spacingXS : 0) + (showIconSlot ? badgeSize + Theme.spacingXS : 0)
+    readonly property real badgeExtent: (showCoverSlot ? badgeSize + Theme.spacingXS : 0) + (showIconSlot ? badgeSize + Theme.spacingXS : 0)
     readonly property string trackSummary: [MprisController.stableTitle, MprisController.stableArtist, MprisController.stableAlbum].filter(part => part).join(" • ")
     readonly property bool lyricActive: {
         if (!lyricsEnabled)
@@ -178,11 +180,12 @@ BasePill {
         width: root.badgeSize
         height: root.badgeSize
         radius: Theme.cornerRadiusXS
-        color: "transparent"
-        visible: root.hasCoverArt
+        color: root.hasCoverArt ? "transparent" : Theme.chipSurfaceNested
+        visible: root.showCoverSlot
 
         Image {
             anchors.fill: parent
+            visible: root.hasCoverArt
             source: root.coverArtUrl
             sourceSize: Qt.size(Math.round(width * root.dpr), Math.round(height * root.dpr))
             fillMode: Image.PreserveAspectCrop
@@ -248,10 +251,9 @@ BasePill {
     content: Component {
         Item {
             id: contentRoot
-            readonly property real naturalTextWidth: {
+            readonly property real measuredNaturalTextWidth: {
                 if (!root.playerAvailable || root.maxTextWidth <= 0)
                     return 0;
-                // Preserve the fixed-width text slot even if metadata is briefly empty.
                 if (!root.adaptiveWidthEnabled || root.lyricActive)
                     return root.maxTextWidth;
                 if (textContainer.displayText.length === 0)
@@ -260,6 +262,17 @@ BasePill {
                 if (!isFinite(rawWidth) || rawWidth <= 0)
                     return 0;
                 return Math.min(root.maxTextWidth, Math.ceil(rawWidth));
+            }
+            // Metadata is briefly empty between tracks; keep the last width so the pill does not collapse and regrow.
+            property real heldTextWidth: 0
+            onMeasuredNaturalTextWidthChanged: {
+                if (measuredNaturalTextWidth > 0)
+                    heldTextWidth = measuredNaturalTextWidth;
+            }
+            readonly property real naturalTextWidth: {
+                if (!root.playerAvailable || root.maxTextWidth <= 0)
+                    return 0;
+                return measuredNaturalTextWidth > 0 ? measuredNaturalTextWidth : Math.min(root.maxTextWidth, heldTextWidth);
             }
             readonly property real fixedContentWidth: root.badgeExtent + 64 * root.contentScale + Theme.spacingXS * 2
             readonly property real textBudget: root.allottedPrimarySize > 0 ? Math.max(0, root.allottedPrimarySize - root.horizontalPadding * 2 - fixedContentWidth - Theme.spacingXS) : Infinity
