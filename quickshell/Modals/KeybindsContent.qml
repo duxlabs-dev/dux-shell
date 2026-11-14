@@ -625,6 +625,7 @@ FocusScope {
                         width: sidebarCol.width
                         implicitHeight: Theme.menuItemHeight
                         isSelected: content.selectedCategory === "All"
+                        isHovered: hovered || allBadgeHover.containsMouse
                         surfaceColor: "transparent"
                         border.width: 0
                         radius: Theme.cornerRadiusFull
@@ -660,6 +661,14 @@ FocusScope {
                                 color: allTab.isSelected ? Theme.primary : Theme.surfaceVariant
                                 textColor: allTab.isSelected ? Theme.onPrimary : Theme.surfaceVariantText
                                 Layout.alignment: Qt.AlignVCenter
+
+                                MouseArea {
+                                    id: allBadgeHover
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    acceptedButtons: Qt.NoButton
+                                    cursorShape: Qt.PointingHandCursor
+                                }
                             }
                         }
                     }
@@ -678,6 +687,7 @@ FocusScope {
                             width: sidebarCol.width
                             implicitHeight: Theme.menuItemHeight
                             isSelected: content.selectedCategory === catTab.catName
+                            isHovered: hovered || catBadgeHover.containsMouse
                             surfaceColor: "transparent"
                             border.width: 0
                             radius: Theme.cornerRadiusFull
@@ -713,6 +723,14 @@ FocusScope {
                                     color: catTab.isSelected ? Theme.primary : Theme.surfaceVariant
                                     textColor: catTab.isSelected ? Theme.onPrimary : Theme.surfaceVariantText
                                     Layout.alignment: Qt.AlignVCenter
+
+                                    MouseArea {
+                                        id: catBadgeHover
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        acceptedButtons: Qt.NoButton
+                                        cursorShape: Qt.PointingHandCursor
+                                    }
                                 }
                             }
                         }
