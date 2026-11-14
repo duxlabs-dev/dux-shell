@@ -33,22 +33,9 @@ Column {
     }
 
     readonly property var opacityTargets: {
-        SettingsData.barConfigs;
         SettingsData.dockConfigs;
-        const frameBarId = SettingsData.frameEnabled ? SettingsData.frameBarConfig?.id : undefined;
-        const bars = SettingsData.barConfigs.filter(config => !SettingsData.isDotBarConfig(config)).map(config => ({
-                    key: "bar:" + config.id,
-                    kind: "bar",
-                    id: config.id,
-                    name: config.name || config.id,
-                    enabled: config.enabled !== false,
-                    override: config.followInterfaceStyle === false,
-                    transparency: config.transparency ?? 1,
-                    frame: config.id === frameBarId
-                }));
-        const docks = SettingsData.dockConfigs.map(config => ({
+        return SettingsData.dockConfigs.map(config => ({
                     key: "dock:" + config.id,
-                    kind: "dock",
                     id: config.id,
                     name: config.name,
                     enabled: config.enabled !== false,
@@ -56,14 +43,9 @@ Column {
                     transparency: config.transparency ?? 1,
                     overlay: config.useOverlayLayer ?? false
                 }));
-        return bars.concat(docks);
     }
 
     function setOpacityOverride(target, patch) {
-        if (target.kind === "bar") {
-            SettingsData.updateBarConfig(target.id, patch);
-            return;
-        }
         SettingsData.updateDockConfig(target.id, patch);
     }
 
@@ -439,72 +421,56 @@ Column {
         }
     }
 
-    Repeater {
-        model: [
-            {
-                kind: "bar",
-                title: I18n.tr("Bars"),
-                settingKey: "barOpacityOverrides"
-            },
-            {
-                kind: "dock",
-                title: I18n.tr("Docks"),
-                settingKey: "dockOpacityOverrides"
-            }
-        ]
+    SettingsCard {
+        id: targetCard
 
-        SettingsCard {
-            id: targetCard
+        readonly property var targets: root.opacityTargets
+        readonly property var activeTargets: targets.filter(target => target.enabled)
+        readonly property var hiddenTargets: targets.filter(target => !target.enabled)
+        // String keys: a config edit must not rebuild the row holding the focused control
+        readonly property string activeKeys: activeTargets.map(target => target.key).join("\n")
+        readonly property string hiddenKeys: hiddenTargets.map(target => target.key).join("\n")
+        property bool showHidden: false
 
-            required property var modelData
-            readonly property var targets: root.opacityTargets.filter(target => target.kind === modelData.kind)
-            readonly property var activeTargets: targets.filter(target => target.enabled)
-            readonly property var hiddenTargets: targets.filter(target => !target.enabled)
-            // String keys: a config edit must not rebuild the row holding the focused control
-            readonly property string activeKeys: activeTargets.map(target => target.key).join("\n")
-            readonly property string hiddenKeys: hiddenTargets.map(target => target.key).join("\n")
-            property bool showHidden: false
+        tab: "theme"
+        tags: ["surface", "opacity", "transparency", "dock", "override"]
+        title: I18n.tr("Docks")
+        settingKey: "dockOpacityOverrides"
+        visible: targets.length > 0
 
+        SettingsControlledBy {
+            visible: SettingsData.connectedFrameModeActive && targetCard.activeTargets.some(target => !target.overlay)
+            parentModal: root.parentModal
+            section: "frameSurfaceOpacity"
+            settingLabel: I18n.tr("Opacity")
+            reason: I18n.tr("Managed by Frame in Connected Mode")
+        }
+
+        Repeater {
+            model: targetCard.activeKeys ? targetCard.activeKeys.split("\n") : []
+            delegate: opacityTargetRow
+        }
+
+        SettingsRow {
             tab: "theme"
-            tags: ["surface", "opacity", "transparency", modelData.kind, "override"]
-            title: modelData.title
-            settingKey: modelData.settingKey
-            visible: targets.length > 0
+            tags: ["surface", "opacity", "transparency", "dock", "hidden", "disabled"]
+            title: I18n.tr("Hidden (%1)", "island settings: hidden groups divider, %1 is count").arg(targetCard.hiddenTargets.length)
+            iconName: "visibility_off"
+            visible: targetCard.hiddenTargets.length > 0
+            clickable: true
+            onClicked: targetCard.showHidden = !targetCard.showHidden
 
-            SettingsControlledBy {
-                visible: targetCard.modelData.kind === "dock" && SettingsData.connectedFrameModeActive && targetCard.activeTargets.some(target => !target.overlay)
-                parentModal: root.parentModal
-                section: "frameSurfaceOpacity"
-                settingLabel: I18n.tr("Opacity")
-                reason: I18n.tr("Managed by Frame in Connected Mode")
+            DIcon {
+                anchors.verticalCenter: parent.verticalCenter
+                name: targetCard.showHidden ? "expand_less" : "expand_more"
+                size: Theme.iconSize
+                color: Theme.onSurfaceVariant
             }
+        }
 
-            Repeater {
-                model: targetCard.activeKeys ? targetCard.activeKeys.split("\n") : []
-                delegate: opacityTargetRow
-            }
-
-            SettingsRow {
-                tab: "theme"
-                tags: ["surface", "opacity", "transparency", targetCard.modelData.kind, "hidden", "disabled"]
-                title: I18n.tr("Hidden (%1)", "island settings: hidden groups divider, %1 is count").arg(targetCard.hiddenTargets.length)
-                iconName: "visibility_off"
-                visible: targetCard.hiddenTargets.length > 0
-                clickable: true
-                onClicked: targetCard.showHidden = !targetCard.showHidden
-
-                DIcon {
-                    anchors.verticalCenter: parent.verticalCenter
-                    name: targetCard.showHidden ? "expand_less" : "expand_more"
-                    size: Theme.iconSize
-                    color: Theme.onSurfaceVariant
-                }
-            }
-
-            Repeater {
-                model: targetCard.showHidden && targetCard.hiddenKeys ? targetCard.hiddenKeys.split("\n") : []
-                delegate: opacityTargetRow
-            }
+        Repeater {
+            model: targetCard.showHidden && targetCard.hiddenKeys ? targetCard.hiddenKeys.split("\n") : []
+            delegate: opacityTargetRow
         }
     }
 
@@ -590,10 +556,10 @@ Column {
             readonly property var target: root.opacityTargets.find(entry => entry.key === modelData) ?? null
 
             tab: "theme"
-            tags: ["surface", "opacity", "transparency", "bar", "dock", "override"]
+            tags: ["surface", "opacity", "transparency", "dock", "override"]
             settingKey: "surfaceOpacity_" + modelData.replace(":", "_")
             text: target?.name ?? ""
-            description: target?.frame ? I18n.tr("Frame") + " · " + I18n.tr("Override") : I18n.tr("Override")
+            description: I18n.tr("Override")
             checked: target?.override ?? false
             value: Math.round((target?.transparency ?? 1) * 100)
             minimum: 0
