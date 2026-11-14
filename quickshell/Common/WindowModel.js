@@ -130,6 +130,21 @@ function niriDockOverlap(windows, allWorkspaces, screenName, position, thickness
     return false;
 }
 
+function niriMaximizedOnScreen(windows, allWorkspaces, workspaceToplevels, screenName) {
+    if (!workspaceToplevels.some(t => t.maximized))
+        return false;
+    const workspace = allWorkspaces.find(ws => ws.output === screenName && ws.is_active);
+    if (!workspace)
+        return false;
+    if (windows.find(w => w.id === workspace.active_window_id)?.is_floating)
+        return true;
+    const viewed = workspaceToplevels.find(t => t.niriWindowId === workspace.active_window_id);
+    if (!viewed)
+        return false;
+    // sortToplevels pairs windows sharing an app id and title arbitrarily
+    return workspaceToplevels.some(t => t.maximized && t.appId === viewed.appId && t.title === viewed.title);
+}
+
 function hyprlandToplevelFor(hyprToplevels, toplevel) {
     for (const hyprToplevel of hyprToplevels) {
         if (hyprToplevel.wayland === toplevel)
