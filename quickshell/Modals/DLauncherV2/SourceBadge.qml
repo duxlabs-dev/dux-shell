@@ -1,4 +1,5 @@
 import QtQuick
+import Quickshell
 import Quickshell.Widgets
 import qs.Common
 
@@ -16,15 +17,26 @@ Item {
             "nix": "../../assets/package-sources/nix.svg"
         })
 
-    readonly property string assetPath: sourceAsset[source] || ""
+    readonly property var themeIcon: ({
+            "steam": "steam",
+            "waydroid": "waydroid"
+        })
 
-    visible: badgeVisible && SettingsData.dankLauncherV2ShowSourceBadges && assetPath.length > 0
+    readonly property string iconSource: {
+        if (sourceAsset[source])
+            return Qt.resolvedUrl(sourceAsset[source]);
+        if (themeIcon[source])
+            return Quickshell.iconPath(themeIcon[source], true);
+        return "";
+    }
+
+    visible: badgeVisible && SettingsData.dankLauncherV2ShowSourceBadges && iconSource.length > 0
     implicitWidth: glyphSize
     implicitHeight: glyphSize
 
     IconImage {
         anchors.fill: parent
-        source: root.assetPath ? Qt.resolvedUrl(root.assetPath) : ""
+        source: root.iconSource
         implicitSize: root.glyphSize * 2
         backer.sourceSize: Qt.size(root.glyphSize * 2, root.glyphSize * 2)
         smooth: true

@@ -113,6 +113,12 @@ function classifyAppSource(app) {
     var cmd0 = (app.command && app.command.length > 0) ? String(app.command[0]).toLowerCase() : "";
     var id = (app.id || "").toLowerCase();
 
+    if (exec.indexOf("steam://rungameid/") !== -1)
+        return "steam";
+
+    if (cmd0 === "waydroid" || /(^|[\s/])waydroid\s+app\s/.test(exec))
+        return "waydroid";
+
     if (cmd0 === "flatpak" || exec.indexOf("flatpak run ") !== -1)
         return "flatpak";
 
