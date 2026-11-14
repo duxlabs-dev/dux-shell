@@ -49,14 +49,15 @@ func HandleRequest(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request, m
 
 func handleUpgrade(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
 	opts := UpgradeOptions{
-		IncludeFlatpak: params.BoolOpt(req.Params, "includeFlatpak", true),
-		IncludeAUR:     params.BoolOpt(req.Params, "includeAUR", true),
-		DryRun:         params.BoolOpt(req.Params, "dry", false),
-		Interactive:    params.BoolOpt(req.Params, "interactive", false),
-		CustomCommand:  params.StringOpt(req.Params, "customCommand", ""),
-		Terminal:       params.StringOpt(req.Params, "terminal", ""),
-		TerminalArgs:   stringSliceOpt(req.Params, "terminalArgs"),
-		Ignored:        stringSliceOpt(req.Params, "ignored"),
+		IncludeFlatpak:  params.BoolOpt(req.Params, "includeFlatpak", true),
+		IncludeHomebrew: params.BoolOpt(req.Params, "includeHomebrew", true),
+		IncludeAUR:      params.BoolOpt(req.Params, "includeAUR", true),
+		DryRun:          params.BoolOpt(req.Params, "dry", false),
+		Interactive:     params.BoolOpt(req.Params, "interactive", false),
+		CustomCommand:   params.StringOpt(req.Params, "customCommand", ""),
+		Terminal:        params.StringOpt(req.Params, "terminal", ""),
+		TerminalArgs:    stringSliceOpt(req.Params, "terminalArgs"),
+		Ignored:         stringSliceOpt(req.Params, "ignored"),
 	}
 	if err := m.Upgrade(opts); err != nil {
 		conn.RespondError(req.ID, err.Error())
