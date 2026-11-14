@@ -1399,6 +1399,12 @@ Item {
                 }
 
                 Variants {
+                    model: SettingsData.osdAirplaneModeEnabled ? root.legacySystemLevelOsdScreens : []
+
+                    delegate: AirplaneModeOSD {}
+                }
+
+                Variants {
                     model: SettingsData.osdAudioOutputEnabled ? SettingsData.getFilteredScreens("osd") : []
 
                     delegate: AudioOutputOSD {}

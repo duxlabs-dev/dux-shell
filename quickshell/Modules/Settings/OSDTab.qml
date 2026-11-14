@@ -75,6 +75,11 @@ Item {
             "shown": SettingsData.osdTouchpadEnabled && CompositorService.isNiri
         },
         {
+            "value": "airplaneMode",
+            "label": I18n.tr("Airplane mode", "OSD toggle for airplane mode / rfkill indicator"),
+            "shown": SettingsData.osdAirplaneModeEnabled
+        },
+        {
             "value": "powerProfile",
             "label": I18n.tr("Power profile"),
             "shown": SettingsData.osdPowerProfileEnabled
@@ -246,6 +251,14 @@ Item {
                 text: I18n.tr("Touchpad")
                 checked: SettingsData.osdTouchpadEnabled
                 onToggled: checked => SettingsData.set("osdTouchpadEnabled", checked)
+            }
+
+            SettingsToggleRow {
+                settingKey: "osdAirplaneModeEnabled"
+                tags: ["airplane", "rfkill", "wifi", "bluetooth", "osd"]
+                text: I18n.tr("Airplane mode", "OSD toggle for airplane mode / rfkill indicator")
+                checked: SettingsData.osdAirplaneModeEnabled
+                onToggled: checked => SettingsData.set("osdAirplaneModeEnabled", checked)
             }
 
             SettingsToggleRow {

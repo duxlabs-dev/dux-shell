@@ -13,6 +13,13 @@ QtObject {
     // Off: system levels and state changes keep their OSDs and only the face's own controls open this activity.
     property bool enabled: true
     property bool chargingPulseEnabled: true
+    readonly property bool airplaneMode: DMSService.airplaneMode
+    property bool _airplaneModeInitialized: false
+
+    onAirplaneModeChanged: {
+        if (root.enabled && _airplaneModeInitialized && DMSService.rfkillStateInitialized && SettingsData.osdAirplaneModeEnabled)
+            root.show("airplanemode");
+    }
 
     readonly property bool volumeActivity: kind === "volume"
     readonly property bool micActivity: kind === "mic"
@@ -57,6 +64,8 @@ QtObject {
             return I18n.tr("Brightness", "island system face: brightness title");
         case "capslock":
             return I18n.tr("Caps lock", "island system face: caps lock title");
+        case "airplanemode":
+            return I18n.tr("Airplane mode", "island system face: airplane mode title");
         case "powerprofile":
             return I18n.tr("Power profile", "island system face: power profile title");
         case "idleinhibitor":
@@ -73,6 +82,8 @@ QtObject {
         switch (kind) {
         case "capslock":
             return DMSService.capsLockState ? I18n.tr("On") : I18n.tr("Off");
+        case "airplanemode":
+            return DMSService.airplaneMode ? I18n.tr("On") : I18n.tr("Off");
         case "powerprofile":
             return Theme.getPowerProfileLabel(PowerProfileWatcher.currentProfile);
         case "idleinhibitor":
@@ -94,6 +105,8 @@ QtObject {
             return BrightnessService.brightnessIconName(brightnessDevice, value);
         case "capslock":
             return DMSService.capsLockState ? "shift_lock" : "shift_lock_off";
+        case "airplanemode":
+            return DMSService.airplaneMode ? "airplanemode_active" : "airplanemode_inactive";
         case "powerprofile":
             return Theme.getPowerProfileIcon(PowerProfileWatcher.currentProfile);
         case "idleinhibitor":
@@ -261,4 +274,6 @@ QtObject {
                 root.show("charging");
         }
     }
+
+    Component.onCompleted: _airplaneModeInitialized = true
 }
