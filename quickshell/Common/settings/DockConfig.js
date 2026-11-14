@@ -12,7 +12,7 @@ function create(id, name) {
     return {
         id: id,
         name: name,
-        enabled: false,
+        enabled: true,
         screenPreferences: ["all"],
         showOnLastDisplay: true,
         position: 1,
@@ -28,7 +28,7 @@ function create(id, name) {
         transparency: 1,
         followInterfaceStyle: true,
         autoHide: false,
-        smartAutoHide: false,
+        smartAutoHide: true,
         useOverlayLayer: false,
         editOnRightClick: false,
         showOnFullscreen: false,
@@ -118,6 +118,8 @@ function normalize(configs, presets) {
             if (typeof defaults[key] === "boolean")
                 result[key] = result[key] === true;
         }
+        if (config.autoHide === true && config.smartAutoHide === undefined)
+            result.smartAutoHide = false;
         result.screenPreferences = Array.isArray(config.screenPreferences) ? config.screenPreferences.filter(pref => (typeof pref === "string" && pref) || (pref && typeof pref === "object" && (typeof pref.name === "string" || typeof pref.model === "string"))).map(pref => typeof pref === "string" ? pref : clone(pref)) : ["all"];
         const widgetIds = new Set();
         result.widgets = (Array.isArray(config.widgets) ? config.widgets : result.widgets).filter(widget => widget && (typeof widget === "string" || typeof widget.widgetId === "string" || typeof widget.id === "string")).map((widget, index) => {
@@ -185,6 +187,7 @@ var LEGACY_DEFAULTS = {
     spacing: 4,
     margin: 0,
     bottomGap: 0,
+    smartAutoHide: false,
     launcherEnabled: false,
     launcherLogoMode: "apps"
 };

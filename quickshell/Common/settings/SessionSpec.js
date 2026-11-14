@@ -172,7 +172,9 @@ var LOCAL_SPEC = {
         def: true
     },
     dockPins: {
-        def: {}
+        def: {
+            dock: ["dms_notepad", "dms_sysmon", "dms_colorpicker", "dms_qr_generator", "dms_settings"]
+        }
     },
     barPinnedApps: {
         def: []

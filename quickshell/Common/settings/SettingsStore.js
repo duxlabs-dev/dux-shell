@@ -789,7 +789,31 @@ function migrateToVersion(obj, targetVersion) {
         settings.configVersion = 43;
     }
 
+    if (currentVersion < 44 && targetVersion >= 44) {
+        migrateDefaultDockSettings(settings);
+        settings.configVersion = 44;
+    }
+
     return settings;
+}
+
+// v44: new installs enable the dock with smart auto-hide; existing configs that omitted them keep both off
+function migrateDefaultDockSettings(settings) {
+    if (!DockConfig.normalize(settings.dockConfigs).length) {
+        const dock = Object.assign(DockConfig.create("dock", "Dock"), DensityPresets.values("dock", settings.density));
+        dock.enabled = false;
+        dock.smartAutoHide = false;
+        settings.dockConfigs = [dock];
+        return;
+    }
+    for (const dock of settings.dockConfigs) {
+        if (!dock || typeof dock !== "object")
+            continue;
+        if (dock.enabled === undefined)
+            dock.enabled = false;
+        if (dock.smartAutoHide === undefined)
+            dock.smartAutoHide = false;
+    }
 }
 
 // v43: focused window compact mode split into separate app name and title toggles
