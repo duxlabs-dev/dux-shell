@@ -1,5 +1,6 @@
 import QtQuick
 import qs.Common
+import qs.Services
 import qs.DCommon.Widgets
 import "../../DDash/Media/LyricsModel.js" as LyricsModel
 
@@ -255,7 +256,28 @@ Item {
         interval: root.stepInterval
         repeat: true
         running: root.scrollActive && root.scrollOffset < root.maxScrollOffset
-        onTriggered: root.stepScroll()
+        onTriggered: {
+            if (cavaTickWatch.running) {
+                root.lastStepMs = Date.now();
+                return;
+            }
+            root.stepScroll();
+        }
+    }
+
+    Timer {
+        id: cavaTickWatch
+        interval: 150
+    }
+
+    // Cava frames already commit the pill, so riding them avoids a second render source (#2863).
+    Connections {
+        target: CavaService
+        enabled: root.scrollActive && root.scrollOffset < root.maxScrollOffset && SettingsData.audioVisualizerEnabled && CavaService.cavaAvailable
+        function onValuesChanged() {
+            cavaTickWatch.restart();
+            root.stepScroll();
+        }
     }
 
     NumberAnimation {
