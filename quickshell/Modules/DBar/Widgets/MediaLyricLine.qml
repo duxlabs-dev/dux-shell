@@ -41,6 +41,7 @@ Item {
     readonly property real maxScrollOffset: Math.max(0, pageWidth - width + overscroll)
     readonly property bool scrollable: scroll && width > 0 && maxScrollOffset > 0 && current.text !== ""
     readonly property bool scrollActive: scrollable && playing && live && visible && (Window.window?.visible ?? false) && !SettingsData.reduceMotion
+    readonly property bool lineTimed: !wordTimed
 
     clip: true
 
@@ -206,10 +207,8 @@ Item {
     }
 
     // Pacing by the line's own span: a fixed speed leaves the tail of a long line hidden when the
-    // next one starts. Word cues put the highlight at a fixed spot instead, so it stays readable.
+    // next one starts. Word-timed lines bind their offset to the sung fill instead, so no timer runs.
     function scrollTarget(delta) {
-        if (wordTimed)
-            return current.fill - width * 0.75;
         const span = lineEnd - lineStart;
         if (!(span > 0))
             return scrollOffset + delta * pxPerMs;
@@ -252,10 +251,11 @@ Item {
         onTriggered: root.place()
     }
 
+    // Line-timed lines only: word-timed ones bind their offset and need no tick source.
     Timer {
         interval: root.stepInterval
         repeat: true
-        running: root.scrollActive && root.scrollOffset < root.maxScrollOffset
+        running: root.scrollActive && root.lineTimed && root.scrollOffset < root.maxScrollOffset
         onTriggered: {
             if (cavaTickWatch.running) {
                 root.lastStepMs = Date.now();
@@ -273,7 +273,7 @@ Item {
     // Cava frames already commit the pill, so riding them avoids a second render source (#2863).
     Connections {
         target: CavaService
-        enabled: root.scrollActive && root.scrollOffset < root.maxScrollOffset && SettingsData.audioVisualizerEnabled && CavaService.cavaAvailable
+        enabled: root.scrollActive && root.lineTimed && root.scrollOffset < root.maxScrollOffset && SettingsData.audioVisualizerEnabled && CavaService.cavaAvailable
         function onValuesChanged() {
             cavaTickWatch.restart();
             root.stepScroll();
@@ -366,6 +366,6 @@ Item {
         id: current
         y: root.shift * root.height
         opacity: 1 - root.shift
-        offset: Math.min(root.scrollOffset, root.maxScrollOffset)
+        offset: root.scroll && root.wordTimed ? Math.max(0, Math.min(root.maxScrollOffset, fill - root.width * 0.75)) : Math.min(root.scrollOffset, root.maxScrollOffset)
     }
 }
