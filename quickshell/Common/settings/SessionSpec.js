@@ -212,6 +212,9 @@ var LOCAL_SPEC = {
     brightnessExponentValues: {
         def: {}
     },
+    brightnessControlledDevices: {
+        def: ["all"]
+    },
     nvidiaGpuTempEnabled: {
         def: false
     },

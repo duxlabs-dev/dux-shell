@@ -397,6 +397,47 @@ Item {
             }
         }
 
+        SettingsCard {
+            id: brightnessDevicesCard
+            width: parent.width
+            iconName: "brightness_medium"
+            title: I18n.tr("Brightness")
+            settingKey: "brightnessControlledDevices"
+            tags: ["brightness", "backlight", "ddc", "devices", "osd", "control"]
+            visible: BrightnessService.allDevices.length > 1 || !controlAll
+
+            readonly property var controlled: SessionData.brightnessControlledDevices
+            readonly property bool controlAll: BrightnessService.controlsAllDevices()
+
+            SettingsToggleRow {
+                text: I18n.tr("Control all devices", "brightness settings toggle")
+                description: I18n.tr("When off, only the checked devices get brightness controls and OSD, and new devices stay unchecked", "brightness settings toggle description")
+                checked: brightnessDevicesCard.controlAll
+                onToggled: checked => SessionData.setBrightnessControlledDevices(checked ? ["all"] : BrightnessService.allDevices.map(d => d.id))
+            }
+
+            Repeater {
+                model: BrightnessService.allDevices
+
+                SettingsToggleRow {
+                    required property var modelData
+
+                    text: BrightnessService.deviceTitle(modelData)
+                    description: modelData.id
+                    enabled: !brightnessDevicesCard.controlAll
+                    checked: brightnessDevicesCard.controlAll || brightnessDevicesCard.controlled.includes(modelData.id)
+                    onToggled: checked => {
+                        const ids = brightnessDevicesCard.controlled.filter(id => id !== "all" && id !== modelData.id);
+                        if (checked)
+                            ids.push(modelData.id);
+                        if (!BrightnessService.allDevices.some(d => ids.includes(d.id)))
+                            return;
+                        SessionData.setBrightnessControlledDevices(ids);
+                    }
+                }
+            }
+        }
+
         NoBackendMessage {
             width: parent.width
             visible: !DisplayConfigState.hasOutputBackend
