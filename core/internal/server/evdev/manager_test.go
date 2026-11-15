@@ -75,12 +75,7 @@ func TestManager_Close(t *testing.T) {
 		t.Error("channel 2 should be closed")
 	}
 
-	count := 0
-	m.subscribers.Range(func(key string, ch chan State) bool {
-		count++
-		return true
-	})
-	assert.Equal(t, 0, count)
+	assert.Equal(t, 0, m.subscribers.Len())
 
 	m.Close()
 }

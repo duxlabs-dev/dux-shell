@@ -12,6 +12,7 @@ import (
 	bolt "go.etcd.io/bbolt"
 
 	wlclient "github.com/duxlabs-dev/dux-go/wayland/client"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/pubsub"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/wlcontext"
 )
 
@@ -172,8 +173,7 @@ type Manager struct {
 	state      *State
 	stateMutex sync.RWMutex
 
-	subscribers map[string]chan State
-	subMutex    sync.RWMutex
+	subscribers pubsub.Broker[State]
 	dirty       chan struct{}
 	notifierWg  sync.WaitGroup
 	lastState   *State
@@ -193,20 +193,11 @@ func (m *Manager) GetState() State {
 }
 
 func (m *Manager) Subscribe(id string) chan State {
-	ch := make(chan State, 64)
-	m.subMutex.Lock()
-	m.subscribers[id] = ch
-	m.subMutex.Unlock()
-	return ch
+	return m.subscribers.Subscribe(id)
 }
 
-func (m *Manager) Unsubscribe(id string) {
-	m.subMutex.Lock()
-	if ch, ok := m.subscribers[id]; ok {
-		close(ch)
-		delete(m.subscribers, id)
-	}
-	m.subMutex.Unlock()
+func (m *Manager) Unsubscribe(id string, ch chan State) {
+	m.subscribers.Unsubscribe(id, ch)
 }
 
 func (m *Manager) notifySubscribers() {

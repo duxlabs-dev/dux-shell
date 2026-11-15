@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/duxlabs-dev/dux-shell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/pubsub"
 	"github.com/yeqown/go-qrcode/v2"
 	"github.com/yeqown/go-qrcode/writer/standard"
 )
@@ -90,8 +91,9 @@ func NewManager() (*Manager, error) {
 		},
 		stateMutex: sync.RWMutex{},
 
-		stopChan: make(chan struct{}),
-		dirty:    make(chan struct{}, 1),
+		stopChan:              make(chan struct{}),
+		dirty:                 make(chan struct{}, 1),
+		credentialSubscribers: pubsub.Broker[CredentialPrompt]{BufSize: 16},
 	}
 
 	broker := NewSubscriptionBroker(m.broadcastCredentialPrompt)
@@ -706,37 +708,23 @@ func (m *Manager) GetState() NetworkState {
 }
 
 func (m *Manager) Subscribe(id string) chan NetworkState {
-	ch := make(chan NetworkState, 64)
-	m.subscribers.Store(id, ch)
-	return ch
+	return m.subscribers.Subscribe(id)
 }
 
-func (m *Manager) Unsubscribe(id string) {
-	if val, ok := m.subscribers.LoadAndDelete(id); ok {
-		close(val)
-	}
+func (m *Manager) Unsubscribe(id string, ch chan NetworkState) {
+	m.subscribers.Unsubscribe(id, ch)
 }
 
 func (m *Manager) SubscribeCredentials(id string) chan CredentialPrompt {
-	ch := make(chan CredentialPrompt, 16)
-	m.credentialSubscribers.Store(id, ch)
-	return ch
+	return m.credentialSubscribers.Subscribe(id)
 }
 
-func (m *Manager) UnsubscribeCredentials(id string) {
-	if ch, ok := m.credentialSubscribers.LoadAndDelete(id); ok {
-		close(ch)
-	}
+func (m *Manager) UnsubscribeCredentials(id string, ch chan CredentialPrompt) {
+	m.credentialSubscribers.Unsubscribe(id, ch)
 }
 
 func (m *Manager) broadcastCredentialPrompt(prompt CredentialPrompt) {
-	m.credentialSubscribers.Range(func(key string, ch chan CredentialPrompt) bool {
-		select {
-		case ch <- prompt:
-		default:
-		}
-		return true
-	})
+	m.credentialSubscribers.Publish(prompt)
 }
 
 func (m *Manager) notifier() {
@@ -768,13 +756,7 @@ func (m *Manager) notifier() {
 				continue
 			}
 
-			m.subscribers.Range(func(key string, ch chan NetworkState) bool {
-				select {
-				case ch <- currentState:
-				default:
-				}
-				return true
-			})
+			m.subscribers.Publish(currentState)
 
 			stateCopy := currentState
 			m.lastNotifiedState = &stateCopy
@@ -814,11 +796,8 @@ func (m *Manager) Close() {
 		m.backend.Close()
 	}
 
-	m.subscribers.Range(func(key string, ch chan NetworkState) bool {
-		close(ch)
-		m.subscribers.Delete(key)
-		return true
-	})
+	m.subscribers.Close()
+	m.credentialSubscribers.Close()
 }
 
 func (m *Manager) ScanWiFi() error {

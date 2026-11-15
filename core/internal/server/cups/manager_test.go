@@ -63,8 +63,8 @@ func TestManager_SubscribeUnsubscribeRace(t *testing.T) {
 		wg.Go(func() {
 			id := fmt.Sprintf("client-%d", i)
 			for range 50 {
-				m.Subscribe(id)
-				m.Unsubscribe(id)
+				ch := m.Subscribe(id)
+				m.Unsubscribe(id, ch)
 			}
 		})
 	}

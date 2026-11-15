@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/duxlabs-dev/dux-go/syncmap"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/pubsub"
 	"github.com/godbus/dbus/v5"
 )
 
@@ -64,8 +64,8 @@ type Manager struct {
 	accountsObj                   dbus.BusObject
 	settingsObj                   dbus.BusObject
 	currentUID                    uint64
-	subscribers                   syncmap.Map[string, chan FreedeskState]
-	screensaverSubscribers        syncmap.Map[string, chan ScreensaverState]
+	subscribers                   pubsub.Broker[FreedeskState]
+	screensaverSubscribers        pubsub.Broker[ScreensaverState]
 	screensaverCookieCounter      uint32
 	screensaverFreedesktopClaimed bool
 	screensaverGnomeClaimed       bool

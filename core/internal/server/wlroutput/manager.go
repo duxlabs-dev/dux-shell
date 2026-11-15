@@ -440,14 +440,7 @@ func (m *Manager) notifier() {
 				continue
 			}
 
-			m.subscribers.Range(func(key string, ch chan State) bool {
-				select {
-				case ch <- currentState:
-				default:
-					log.Warn("WlrOutput: subscriber channel full, dropping update")
-				}
-				return true
-			})
+			m.subscribers.Publish(currentState)
 
 			stateCopy := currentState
 			m.lastNotified = &stateCopy
@@ -461,11 +454,7 @@ func (m *Manager) Close() {
 	m.wg.Wait()
 	m.notifierWg.Wait()
 
-	m.subscribers.Range(func(key string, ch chan State) bool {
-		close(ch)
-		m.subscribers.Delete(key)
-		return true
-	})
+	m.subscribers.Close()
 
 	m.modes.Range(func(key uint32, mode *modeState) bool {
 		if mode.handle != nil {

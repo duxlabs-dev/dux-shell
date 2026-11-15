@@ -273,40 +273,20 @@ func (m *Manager) GetState() FreedeskState {
 }
 
 func (m *Manager) Subscribe(id string) chan FreedeskState {
-	ch := make(chan FreedeskState, 64)
-	m.subscribers.Store(id, ch)
-	return ch
+	return m.subscribers.Subscribe(id)
 }
 
-func (m *Manager) Unsubscribe(id string) {
-	if val, ok := m.subscribers.LoadAndDelete(id); ok {
-		close(val)
-	}
+func (m *Manager) Unsubscribe(id string, ch chan FreedeskState) {
+	m.subscribers.Unsubscribe(id, ch)
 }
 
 func (m *Manager) NotifySubscribers() {
-	state := m.GetState()
-	m.subscribers.Range(func(key string, ch chan FreedeskState) bool {
-		select {
-		case ch <- state:
-		default:
-		}
-		return true
-	})
+	m.subscribers.Publish(m.GetState())
 }
 
 func (m *Manager) Close() {
-	m.subscribers.Range(func(key string, ch chan FreedeskState) bool {
-		close(ch)
-		m.subscribers.Delete(key)
-		return true
-	})
-
-	m.screensaverSubscribers.Range(func(key string, ch chan ScreensaverState) bool {
-		close(ch)
-		m.screensaverSubscribers.Delete(key)
-		return true
-	})
+	m.subscribers.Close()
+	m.screensaverSubscribers.Close()
 
 	if m.sessionConn != nil {
 		m.sessionConn.RemoveMatchSignal(

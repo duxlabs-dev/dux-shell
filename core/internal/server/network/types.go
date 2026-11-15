@@ -3,7 +3,7 @@ package network
 import (
 	"sync"
 
-	"github.com/duxlabs-dev/dux-go/syncmap"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/pubsub"
 	"github.com/godbus/dbus/v5"
 )
 
@@ -211,13 +211,13 @@ type Manager struct {
 	backend               Backend
 	state                 *NetworkState
 	stateMutex            sync.RWMutex
-	subscribers           syncmap.Map[string, chan NetworkState]
+	subscribers           pubsub.Broker[NetworkState]
 	stopChan              chan struct{}
 	dirty                 chan struct{}
 	priorityMutex         sync.Mutex
 	notifierWg            sync.WaitGroup
 	lastNotifiedState     *NetworkState
-	credentialSubscribers syncmap.Map[string, chan CredentialPrompt]
+	credentialSubscribers pubsub.Broker[CredentialPrompt]
 }
 
 type EventType string

@@ -111,7 +111,7 @@ func TestTimeScheduleCatchUpAfterRestart(t *testing.T) {
 	defer m.Close()
 
 	sub := m.Subscribe("test")
-	defer m.Unsubscribe("test")
+	defer m.Unsubscribe("test", sub)
 
 	m.SetConfig(Config{Global: ScheduleConfig{Enabled: true, Mode: "time", Time: hhmm}})
 
@@ -136,7 +136,7 @@ func TestTimeScheduleNoFireOnFirstEnable(t *testing.T) {
 	defer m.Close()
 
 	sub := m.Subscribe("test")
-	defer m.Unsubscribe("test")
+	defer m.Unsubscribe("test", sub)
 
 	m.SetConfig(Config{Global: ScheduleConfig{Enabled: true, Mode: "time", Time: hhmm}})
 
@@ -158,7 +158,7 @@ func TestSchedulerEmitsCycle(t *testing.T) {
 	defer m.Close()
 
 	sub := m.Subscribe("test")
-	defer m.Unsubscribe("test")
+	defer m.Unsubscribe("test", sub)
 
 	m.SetConfig(Config{Global: ScheduleConfig{Enabled: true, Mode: "interval", IntervalSec: 1}})
 

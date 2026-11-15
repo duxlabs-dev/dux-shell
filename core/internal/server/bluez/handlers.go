@@ -322,7 +322,7 @@ func handlePairingCancel(conn *ipc.ConnWriter, req ipc.Request, manager *Manager
 func handleSubscribe(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
 	clientID := fmt.Sprintf("client-%p", conn)
 	stateChan := manager.Subscribe(clientID)
-	defer manager.Unsubscribe(clientID)
+	defer manager.Unsubscribe(clientID, stateChan)
 
 	initialState := manager.GetState()
 	event := BluetoothEvent{

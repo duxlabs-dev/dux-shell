@@ -10,9 +10,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/duxlabs-dev/dux-go/syncmap"
 	"github.com/duxlabs-dev/dux-shell/core/internal/log"
 	"github.com/duxlabs-dev/dux-shell/core/internal/lowprio"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/pubsub"
 )
 
 const (
@@ -31,7 +31,7 @@ var postUpgradeCompleteDelay = 3 * time.Second
 type Manager struct {
 	mu          sync.RWMutex
 	state       State
-	subscribers syncmap.Map[string, chan State]
+	subscribers pubsub.Broker[State]
 
 	selection Selection
 
@@ -55,6 +55,7 @@ type Manager struct {
 
 func NewManager(runningVersion string) (*Manager, error) {
 	m := &Manager{
+		subscribers: pubsub.Broker[State]{BufSize: 16},
 		notifyDirty: make(chan struct{}, 1),
 		stopChan:    make(chan struct{}),
 		wakeSched:   make(chan struct{}, 1),
@@ -147,15 +148,11 @@ func (m *Manager) GetState() State {
 }
 
 func (m *Manager) Subscribe(id string) chan State {
-	ch := make(chan State, 16)
-	m.subscribers.Store(id, ch)
-	return ch
+	return m.subscribers.Subscribe(id)
 }
 
-func (m *Manager) Unsubscribe(id string) {
-	if val, ok := m.subscribers.LoadAndDelete(id); ok {
-		close(val)
-	}
+func (m *Manager) Unsubscribe(id string, ch chan State) {
+	m.subscribers.Unsubscribe(id, ch)
 }
 
 func (m *Manager) Close() {
@@ -176,11 +173,7 @@ func (m *Manager) Close() {
 	}
 	m.schedulerWG.Wait()
 	m.notifierWG.Wait()
-	m.subscribers.Range(func(key string, ch chan State) bool {
-		close(ch)
-		m.subscribers.Delete(key)
-		return true
-	})
+	m.subscribers.Close()
 }
 
 // Zero turns scheduled checks off; manual and startup checks still run.
@@ -705,14 +698,7 @@ func (m *Manager) notifier() {
 		case <-m.stopChan:
 			return
 		case <-m.notifyDirty:
-			snap := m.GetState()
-			m.subscribers.Range(func(key string, ch chan State) bool {
-				select {
-				case ch <- snap:
-				default:
-				}
-				return true
-			})
+			m.subscribers.Publish(m.GetState())
 		}
 	}
 }

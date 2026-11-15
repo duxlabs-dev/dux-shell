@@ -4,17 +4,17 @@ import (
 	"strings"
 
 	"github.com/duxlabs-dev/dux-go/files"
-	"github.com/duxlabs-dev/dux-go/syncmap"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/pubsub"
 	"github.com/duxlabs-dev/dux-shell/core/internal/utils"
 )
 
 const filesEventBuffer = 256
 
 var filesService *files.Service
-var filesEvents filesBus
+var filesEvents = filesBus{broker: pubsub.NewBroker[any](filesEventBuffer)}
 
 type filesBus struct {
-	subscribers syncmap.Map[string, chan any]
+	broker *pubsub.Broker[any]
 }
 
 // A full subscriber drops the batch; the client re-pages on the seq gap.
@@ -22,24 +22,15 @@ func (b *filesBus) Publish(topic string, data any) {
 	if !strings.HasPrefix(topic, "files:") {
 		return
 	}
-	b.subscribers.Range(func(_ string, ch chan any) bool {
-		select {
-		case ch <- data:
-		default:
-		}
-		return true
-	})
+	b.broker.Publish(data)
 }
 
 func (b *filesBus) Subscribe(id string) <-chan any {
-	ch := make(chan any, filesEventBuffer)
-	b.subscribers.Store(id, ch)
-	return ch
+	return b.broker.Subscribe(id)
 }
 
-// The channel is never closed: a concurrent Publish may still send on it.
-func (b *filesBus) Unsubscribe(id string) {
-	b.subscribers.Delete(id)
+func (b *filesBus) Unsubscribe(id string, ch <-chan any) {
+	b.broker.Unsubscribe(id, ch)
 }
 
 func InitializeFilesService() {

@@ -15,10 +15,8 @@ func TestManager_Close(t *testing.T) {
 		stopChan:   make(chan struct{}),
 	}
 
-	ch1 := make(chan SessionState, 1)
-	ch2 := make(chan SessionState, 1)
-	manager.subscribers.Store("client1", ch1)
-	manager.subscribers.Store("client2", ch2)
+	ch1 := manager.Subscribe("client1")
+	ch2 := manager.Subscribe("client2")
 
 	manager.Close()
 
@@ -33,12 +31,7 @@ func TestManager_Close(t *testing.T) {
 	assert.False(t, ok1, "ch1 should be closed")
 	assert.False(t, ok2, "ch2 should be closed")
 
-	count := 0
-	manager.subscribers.Range(func(key string, ch chan SessionState) bool {
-		count++
-		return true
-	})
-	assert.Equal(t, 0, count)
+	assert.Equal(t, 0, manager.subscribers.Len())
 }
 
 func TestStateChangedMeaningfully(t *testing.T) {

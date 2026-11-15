@@ -137,10 +137,10 @@ func TestLimitsAlertOncePerDayAndAgainAfterRaise(t *testing.T) {
 
 func TestLastUnsubscribeEndsTheOpenSegment(t *testing.T) {
 	m, c := newTestManager(t, time.Date(2026, 10, 1, 12, 0, 0, 0, time.UTC))
-	m.Subscribe("shell")
+	ch := m.Subscribe("shell")
 	m.SetState("firefox", true, 1)
 	c.advance(10 * time.Second)
-	m.Unsubscribe("shell")
+	m.Unsubscribe("shell", ch)
 	c.advance(50 * time.Second)
 
 	assert.Equal(t, int64(10), m.Summary(1)[0].Active)

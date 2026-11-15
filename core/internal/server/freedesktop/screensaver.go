@@ -278,26 +278,15 @@ func (m *Manager) GetScreensaverState() ScreensaverState {
 }
 
 func (m *Manager) SubscribeScreensaver(id string) chan ScreensaverState {
-	ch := make(chan ScreensaverState, 64)
-	m.screensaverSubscribers.Store(id, ch)
-	return ch
+	return m.screensaverSubscribers.Subscribe(id)
 }
 
-func (m *Manager) UnsubscribeScreensaver(id string) {
-	if val, ok := m.screensaverSubscribers.LoadAndDelete(id); ok {
-		close(val)
-	}
+func (m *Manager) UnsubscribeScreensaver(id string, ch chan ScreensaverState) {
+	m.screensaverSubscribers.Unsubscribe(id, ch)
 }
 
 func (m *Manager) NotifyScreensaverSubscribers() {
-	state := m.GetScreensaverState()
-	m.screensaverSubscribers.Range(func(key string, ch chan ScreensaverState) bool {
-		select {
-		case ch <- state:
-		default:
-		}
-		return true
-	})
+	m.screensaverSubscribers.Publish(m.GetScreensaverState())
 }
 
 func (h *screensaverHandler) GetActive() (bool, *dbus.Error) {

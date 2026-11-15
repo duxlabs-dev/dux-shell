@@ -3,8 +3,8 @@ package location
 import (
 	"sync"
 
-	"github.com/duxlabs-dev/dux-go/syncmap"
 	"github.com/duxlabs-dev/dux-shell/core/internal/geolocation"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/pubsub"
 )
 
 type State struct {
@@ -22,7 +22,7 @@ type Manager struct {
 	stopChan chan struct{}
 	sigWG    sync.WaitGroup
 
-	subscribers  syncmap.Map[string, chan State]
+	subscribers  pubsub.Broker[State]
 	dirty        chan struct{}
 	notifierWg   sync.WaitGroup
 	lastNotified *State

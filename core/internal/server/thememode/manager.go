@@ -5,9 +5,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/duxlabs-dev/dux-go/syncmap"
 	"github.com/duxlabs-dev/dux-shell/core/internal/geolocation"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/loginctl"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/pubsub"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/wayland"
 )
 
@@ -27,7 +27,7 @@ type Manager struct {
 	state      *State
 	stateMutex sync.RWMutex
 
-	subscribers syncmap.Map[string, chan State]
+	subscribers pubsub.Broker[State]
 
 	locationMutex sync.RWMutex
 	cachedIPLat   *float64
@@ -75,15 +75,11 @@ func (m *Manager) GetState() State {
 }
 
 func (m *Manager) Subscribe(id string) chan State {
-	ch := make(chan State, 64)
-	m.subscribers.Store(id, ch)
-	return ch
+	return m.subscribers.Subscribe(id)
 }
 
-func (m *Manager) Unsubscribe(id string) {
-	if val, ok := m.subscribers.LoadAndDelete(id); ok {
-		close(val)
-	}
+func (m *Manager) Unsubscribe(id string, ch chan State) {
+	m.subscribers.Unsubscribe(id, ch)
 }
 
 func (m *Manager) SetEnabled(enabled bool) {
@@ -184,17 +180,13 @@ func (m *Manager) Close() {
 		close(m.stopChan)
 	}
 	m.wg.Wait()
-	m.subscribers.Range(func(key string, ch chan State) bool {
-		close(ch)
-		m.subscribers.Delete(key)
-		return true
-	})
+	m.subscribers.Close()
 }
 
 func (m *Manager) WatchLoginctl(lm *loginctl.Manager) {
 	ch := lm.Subscribe("thememode")
 	m.wg.Go(func() {
-		defer lm.Unsubscribe("thememode")
+		defer lm.Unsubscribe("thememode", ch)
 		for {
 			select {
 			case <-m.stopChan:
@@ -296,14 +288,7 @@ func (m *Manager) updateStateWithValues(config Config, isLight bool, next time.T
 }
 
 func (m *Manager) notifySubscribers() {
-	state := m.GetState()
-	m.subscribers.Range(func(key string, ch chan State) bool {
-		select {
-		case ch <- state:
-		default:
-		}
-		return true
-	})
+	m.subscribers.Publish(m.GetState())
 }
 
 func (m *Manager) getConfig() Config {
