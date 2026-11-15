@@ -18,6 +18,6 @@ func (m *Manager) Subscribe(id string) chan State {
 	return make(chan State)
 }
 
-func (m *Manager) Unsubscribe(id string) {}
+func (m *Manager) Unsubscribe(id string, ch chan State) {}
 
 func (m *Manager) Close() {}

@@ -100,7 +100,7 @@ func (m *Manager) AttachGamma(gamma *wayland.Manager) {
 	const subscriberID = "brightness-software"
 	ch := gamma.Subscribe(subscriberID)
 	go func() {
-		defer gamma.Unsubscribe(subscriberID)
+		defer gamma.Unsubscribe(subscriberID, ch)
 		var outputs, refused []string
 		var levels map[string]int
 		for {

@@ -281,8 +281,8 @@ func (m *Manager) SubscribeScreensaver(id string) chan ScreensaverState {
 	return m.screensaverSubscribers.Subscribe(id)
 }
 
-func (m *Manager) UnsubscribeScreensaver(id string) {
-	m.screensaverSubscribers.Unsubscribe(id)
+func (m *Manager) UnsubscribeScreensaver(id string, ch chan ScreensaverState) {
+	m.screensaverSubscribers.Unsubscribe(id, ch)
 }
 
 func (m *Manager) NotifyScreensaverSubscribers() {

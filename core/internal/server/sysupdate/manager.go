@@ -55,6 +55,7 @@ type Manager struct {
 
 func NewManager(runningVersion string) (*Manager, error) {
 	m := &Manager{
+		subscribers: pubsub.Broker[State]{BufSize: 16},
 		notifyDirty: make(chan struct{}, 1),
 		stopChan:    make(chan struct{}),
 		wakeSched:   make(chan struct{}, 1),
@@ -150,8 +151,8 @@ func (m *Manager) Subscribe(id string) chan State {
 	return m.subscribers.Subscribe(id)
 }
 
-func (m *Manager) Unsubscribe(id string) {
-	m.subscribers.Unsubscribe(id)
+func (m *Manager) Unsubscribe(id string, ch chan State) {
+	m.subscribers.Unsubscribe(id, ch)
 }
 
 func (m *Manager) Close() {

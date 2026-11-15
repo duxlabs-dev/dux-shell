@@ -14,8 +14,8 @@ func (m *Manager) Subscribe(id string) chan OpenEvent {
 	return m.broker.Subscribe(id)
 }
 
-func (m *Manager) Unsubscribe(id string) {
-	m.broker.Unsubscribe(id)
+func (m *Manager) Unsubscribe(id string, ch chan OpenEvent) {
+	m.broker.Unsubscribe(id, ch)
 }
 
 func (m *Manager) RequestOpen(url string) {

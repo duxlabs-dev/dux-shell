@@ -276,8 +276,8 @@ func (m *Manager) Subscribe(id string) chan FreedeskState {
 	return m.subscribers.Subscribe(id)
 }
 
-func (m *Manager) Unsubscribe(id string) {
-	m.subscribers.Unsubscribe(id)
+func (m *Manager) Unsubscribe(id string, ch chan FreedeskState) {
+	m.subscribers.Unsubscribe(id, ch)
 }
 
 func (m *Manager) NotifySubscribers() {

@@ -15,7 +15,7 @@ func TestSetScreenLockActive_NoChangeNoDuplicate(t *testing.T) {
 		stateMutex: sync.RWMutex{},
 	}
 	ch := manager.SubscribeScreensaver("test")
-	defer manager.UnsubscribeScreensaver("test")
+	defer manager.UnsubscribeScreensaver("test", ch)
 
 	// Setting to same value should not notify
 	manager.SetScreenLockActive(false)
@@ -35,7 +35,7 @@ func TestSetScreenLockActive_NotifiesSubscribers(t *testing.T) {
 		stateMutex: sync.RWMutex{},
 	}
 	ch := manager.SubscribeScreensaver("test")
-	defer manager.UnsubscribeScreensaver("test")
+	defer manager.UnsubscribeScreensaver("test", ch)
 
 	manager.SetScreenLockActive(true)
 

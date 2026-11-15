@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/duxlabs-dev/dux-shell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/pubsub"
 	"github.com/yeqown/go-qrcode/v2"
 	"github.com/yeqown/go-qrcode/writer/standard"
 )
@@ -90,8 +91,9 @@ func NewManager() (*Manager, error) {
 		},
 		stateMutex: sync.RWMutex{},
 
-		stopChan: make(chan struct{}),
-		dirty:    make(chan struct{}, 1),
+		stopChan:              make(chan struct{}),
+		dirty:                 make(chan struct{}, 1),
+		credentialSubscribers: pubsub.Broker[CredentialPrompt]{BufSize: 16},
 	}
 
 	broker := NewSubscriptionBroker(m.broadcastCredentialPrompt)
@@ -709,16 +711,16 @@ func (m *Manager) Subscribe(id string) chan NetworkState {
 	return m.subscribers.Subscribe(id)
 }
 
-func (m *Manager) Unsubscribe(id string) {
-	m.subscribers.Unsubscribe(id)
+func (m *Manager) Unsubscribe(id string, ch chan NetworkState) {
+	m.subscribers.Unsubscribe(id, ch)
 }
 
 func (m *Manager) SubscribeCredentials(id string) chan CredentialPrompt {
 	return m.credentialSubscribers.Subscribe(id)
 }
 
-func (m *Manager) UnsubscribeCredentials(id string) {
-	m.credentialSubscribers.Unsubscribe(id)
+func (m *Manager) UnsubscribeCredentials(id string, ch chan CredentialPrompt) {
+	m.credentialSubscribers.Unsubscribe(id, ch)
 }
 
 func (m *Manager) broadcastCredentialPrompt(prompt CredentialPrompt) {

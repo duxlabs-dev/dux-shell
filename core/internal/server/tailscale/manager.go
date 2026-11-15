@@ -338,8 +338,8 @@ func (m *Manager) Subscribe(clientID string) chan TailscaleState {
 }
 
 // Unsubscribe removes and closes the subscriber channel.
-func (m *Manager) Unsubscribe(clientID string) {
-	m.subscribers.Unsubscribe(clientID)
+func (m *Manager) Unsubscribe(clientID string, ch chan TailscaleState) {
+	m.subscribers.Unsubscribe(clientID, ch)
 }
 
 // Close stops the watch loop and closes all subscriber channels.

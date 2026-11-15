@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/duxlabs-dev/dux-shell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/pubsub"
 )
 
 func NewManager() (*Manager, error) {
@@ -16,8 +17,10 @@ func NewManager() (*Manager, error) {
 
 func NewManagerWithOptions(exponential bool) (*Manager, error) {
 	m := &Manager{
-		stopChan:    make(chan struct{}),
-		exponential: exponential,
+		stopChan:          make(chan struct{}),
+		exponential:       exponential,
+		subscribers:       pubsub.Broker[State]{BufSize: 16},
+		updateSubscribers: pubsub.Broker[DeviceUpdate]{BufSize: 16},
 	}
 
 	go m.initLogind()

@@ -9,8 +9,8 @@ import (
 	"os"
 	"sync"
 
-	"github.com/duxlabs-dev/dux-go/syncmap"
 	"github.com/duxlabs-dev/dux-shell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/pubsub"
 	"golang.org/x/sys/unix"
 )
 
@@ -45,7 +45,7 @@ type Manager struct {
 	devices     map[uint32]rfkillDevice
 	state       State
 	stateMutex  sync.RWMutex
-	subscribers syncmap.Map[string, chan State]
+	subscribers pubsub.Broker[State]
 	closeOnce   sync.Once
 }
 
@@ -70,11 +70,12 @@ func InitializeManager() (*Manager, error) {
 	}
 
 	m := &Manager{
-		fd:         fd,
-		closePipeR: pipeR,
-		closePipeW: pipeW,
-		devices:    devices,
-		state:      computeState(devices),
+		fd:          fd,
+		closePipeR:  pipeR,
+		closePipeW:  pipeW,
+		devices:     devices,
+		state:       computeState(devices),
+		subscribers: pubsub.Broker[State]{BufSize: 16},
 	}
 
 	go m.monitor()
@@ -88,15 +89,11 @@ func (m *Manager) GetState() State {
 }
 
 func (m *Manager) Subscribe(id string) chan State {
-	ch := make(chan State, 16)
-	m.subscribers.Store(id, ch)
-	return ch
+	return m.subscribers.Subscribe(id)
 }
 
-func (m *Manager) Unsubscribe(id string) {
-	if ch, ok := m.subscribers.LoadAndDelete(id); ok {
-		close(ch)
-	}
+func (m *Manager) Unsubscribe(id string, ch chan State) {
+	m.subscribers.Unsubscribe(id, ch)
 }
 
 func (m *Manager) Close() {
@@ -105,11 +102,7 @@ func (m *Manager) Close() {
 		m.closePipeW.Close()
 		m.closePipeR.Close()
 		unix.Close(m.fd)
-		m.subscribers.Range(func(id string, ch chan State) bool {
-			close(ch)
-			m.subscribers.Delete(id)
-			return true
-		})
+		m.subscribers.Close()
 	})
 }
 
@@ -159,21 +152,7 @@ func (m *Manager) monitor() {
 }
 
 func (m *Manager) notifySubscribers(state State) {
-	m.subscribers.Range(func(id string, ch chan State) bool {
-		select {
-		case ch <- state:
-		default:
-			select {
-			case <-ch:
-			default:
-			}
-			select {
-			case ch <- state:
-			default:
-			}
-		}
-		return true
-	})
+	m.subscribers.PublishLatest(state)
 }
 
 func drainEvents(fd int, devices map[uint32]rfkillDevice) error {

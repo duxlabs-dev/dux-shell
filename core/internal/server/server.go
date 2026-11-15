@@ -602,7 +602,7 @@ func handleSubscribe(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request)
 	capChan := capabilitySubscribers.Subscribe(capID)
 
 	forwardSubscription(&wg, eventChan, stopChan, "server", capChan, func() {
-		capabilitySubscribers.Unsubscribe(capID)
+		capabilitySubscribers.Unsubscribe(capID, capChan)
 	}, nil)
 
 	shouldSubscribe := func(service string) bool {
@@ -614,7 +614,7 @@ func handleSubscribe(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request)
 		id := clientID + "-network"
 		states := mgr.Subscribe(id)
 		forwardSubscription(&wg, eventChan, stopChan, "network", states, func() {
-			mgr.Unsubscribe(id)
+			mgr.Unsubscribe(id, states)
 		}, mgr.GetState)
 	}
 
@@ -623,7 +623,7 @@ func handleSubscribe(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request)
 		id := clientID + "-credentials"
 		prompts := mgr.SubscribeCredentials(id)
 		forwardSubscription(&wg, eventChan, stopChan, "network.credentials", prompts, func() {
-			mgr.UnsubscribeCredentials(id)
+			mgr.UnsubscribeCredentials(id, prompts)
 		}, nil)
 	}
 
@@ -632,7 +632,7 @@ func handleSubscribe(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request)
 		id := clientID + "-loginctl"
 		source := mgr.Subscribe(id)
 		forwardSubscription(&wg, eventChan, stopChan, "loginctl", source, func() {
-			mgr.Unsubscribe(id)
+			mgr.Unsubscribe(id, source)
 		}, mgr.GetState)
 	}
 
@@ -641,7 +641,7 @@ func handleSubscribe(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request)
 		id := clientID + "-freedesktop"
 		source := mgr.Subscribe(id)
 		forwardSubscription(&wg, eventChan, stopChan, "freedesktop", source, func() {
-			mgr.Unsubscribe(id)
+			mgr.Unsubscribe(id, source)
 		}, mgr.GetState)
 	}
 
@@ -650,7 +650,7 @@ func handleSubscribe(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request)
 		id := clientID + "-screensaver"
 		source := mgr.SubscribeScreensaver(id)
 		forwardSubscription(&wg, eventChan, stopChan, "freedesktop.screensaver", source, func() {
-			mgr.UnsubscribeScreensaver(id)
+			mgr.UnsubscribeScreensaver(id, source)
 		}, mgr.GetScreensaverState)
 	}
 
@@ -659,7 +659,7 @@ func handleSubscribe(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request)
 		id := clientID + "-gamma"
 		source := mgr.Subscribe(id)
 		forwardSubscription(&wg, eventChan, stopChan, "gamma", source, func() {
-			mgr.Unsubscribe(id)
+			mgr.Unsubscribe(id, source)
 		}, mgr.GetState)
 	}
 
@@ -668,7 +668,7 @@ func handleSubscribe(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request)
 		id := clientID + "-theme-auto"
 		source := mgr.Subscribe(id)
 		forwardSubscription(&wg, eventChan, stopChan, "theme.auto", source, func() {
-			mgr.Unsubscribe(id)
+			mgr.Unsubscribe(id, source)
 		}, mgr.GetState)
 	}
 
@@ -677,7 +677,7 @@ func handleSubscribe(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request)
 		id := clientID + "-wallpaper"
 		source := mgr.Subscribe(id)
 		forwardSubscription(&wg, eventChan, stopChan, "wallpaper", source, func() {
-			mgr.Unsubscribe(id)
+			mgr.Unsubscribe(id, source)
 		}, mgr.GetState)
 	}
 
@@ -686,7 +686,7 @@ func handleSubscribe(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request)
 		id := clientID + "-bluetooth"
 		source := mgr.Subscribe(id)
 		forwardSubscription(&wg, eventChan, stopChan, "bluetooth", source, func() {
-			mgr.Unsubscribe(id)
+			mgr.Unsubscribe(id, source)
 		}, mgr.GetState)
 	}
 
@@ -708,7 +708,7 @@ func handleSubscribe(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request)
 		id := clientID + "-pairing"
 		source := mgr.SubscribePairing(id)
 		forwardSubscription(&wg, eventChan, stopChan, "bluetooth.pairing", source, func() {
-			mgr.UnsubscribePairing(id)
+			mgr.UnsubscribePairing(id, source)
 		}, nil)
 	}
 
@@ -717,7 +717,7 @@ func handleSubscribe(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request)
 		id := clientID + "-browser"
 		source := mgr.Subscribe(id)
 		forwardSubscription(&wg, eventChan, stopChan, "browser.open_requested", source, func() {
-			mgr.Unsubscribe(id)
+			mgr.Unsubscribe(id, source)
 		}, nil)
 	}
 
@@ -730,7 +730,7 @@ func handleSubscribe(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request)
 		id := clientID + "-tailscale"
 		source := mgr.Subscribe(id)
 		forwardSubscription(&wg, eventChan, stopChan, "tailscale", source, func() {
-			mgr.Unsubscribe(id)
+			mgr.Unsubscribe(id, source)
 		}, mgr.GetState)
 	}
 
@@ -741,10 +741,10 @@ func handleSubscribe(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request)
 		states := mgr.Subscribe(stateID)
 		updates := mgr.SubscribeUpdates(updateID)
 		forwardSubscription(&wg, eventChan, stopChan, "brightness", states, func() {
-			mgr.Unsubscribe(stateID)
+			mgr.Unsubscribe(stateID, states)
 		}, mgr.GetState)
 		forwardSubscription(&wg, eventChan, stopChan, "brightness.update", updates, func() {
-			mgr.UnsubscribeUpdates(updateID)
+			mgr.UnsubscribeUpdates(updateID, updates)
 		}, nil)
 	}
 
@@ -753,7 +753,7 @@ func handleSubscribe(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request)
 		id := clientID + "-wlroutput"
 		source := mgr.Subscribe(id)
 		forwardSubscription(&wg, eventChan, stopChan, "wlroutput", source, func() {
-			mgr.Unsubscribe(id)
+			mgr.Unsubscribe(id, source)
 		}, mgr.GetState)
 	}
 
@@ -762,7 +762,7 @@ func handleSubscribe(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request)
 		id := clientID + "-evdev"
 		source := mgr.Subscribe(id)
 		forwardSubscription(&wg, eventChan, stopChan, "evdev", source, func() {
-			mgr.Unsubscribe(id)
+			mgr.Unsubscribe(id, source)
 		}, mgr.GetState)
 	}
 
@@ -771,7 +771,7 @@ func handleSubscribe(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request)
 		id := clientID + "-rfkill"
 		source := mgr.Subscribe(id)
 		forwardSubscription(&wg, eventChan, stopChan, "rfkill", source, func() {
-			mgr.Unsubscribe(id)
+			mgr.Unsubscribe(id, source)
 		}, mgr.GetState)
 	}
 
@@ -780,7 +780,7 @@ func handleSubscribe(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request)
 		id := clientID + "-clipboard"
 		source := mgr.Subscribe(id)
 		forwardSubscription(&wg, eventChan, stopChan, "clipboard", source, func() {
-			mgr.Unsubscribe(id)
+			mgr.Unsubscribe(id, source)
 		}, mgr.GetState)
 	}
 
@@ -789,7 +789,7 @@ func handleSubscribe(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request)
 		id := clientID + "-location"
 		source := mgr.Subscribe(id)
 		forwardSubscription(&wg, eventChan, stopChan, "location", source, func() {
-			mgr.Unsubscribe(id)
+			mgr.Unsubscribe(id, source)
 		}, mgr.GetState)
 	}
 
@@ -798,7 +798,7 @@ func handleSubscribe(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request)
 		id := clientID + "-wellbeing"
 		source := mgr.Subscribe(id)
 		forwardSubscription(&wg, eventChan, stopChan, "wellbeing", source, func() {
-			mgr.Unsubscribe(id)
+			mgr.Unsubscribe(id, source)
 		}, mgr.Snapshot)
 	}
 
@@ -807,7 +807,7 @@ func handleSubscribe(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request)
 		id := clientID + "-sysupdate"
 		source := mgr.Subscribe(id)
 		forwardSubscription(&wg, eventChan, stopChan, "sysupdate", source, func() {
-			mgr.Unsubscribe(id)
+			mgr.Unsubscribe(id, source)
 		}, mgr.GetState)
 	}
 
@@ -815,7 +815,7 @@ func handleSubscribe(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request)
 		id := clientID + "-files"
 		source := filesEvents.Subscribe(id)
 		forwardSubscription(&wg, eventChan, stopChan, "files", source, func() {
-			filesEvents.Unsubscribe(id)
+			filesEvents.Unsubscribe(id, source)
 		}, nil)
 	}
 
@@ -879,7 +879,7 @@ func subscribeCups(wg *sync.WaitGroup, events chan<- ServiceEvent, stop <-chan s
 	id := clientID + "-cups"
 	states := mgr.Subscribe(id)
 	forwardSubscription(wg, events, stop, "cups", states, func() {
-		mgr.Unsubscribe(id)
+		mgr.Unsubscribe(id, states)
 		releaseCupsSubscriber()
 	}, mgr.GetState)
 }
@@ -1281,7 +1281,7 @@ func (s *Server) Serve(printDocs bool) error {
 		}
 
 		ch := loginctlManager.Subscribe("dms-lock-bridge")
-		defer loginctlManager.Unsubscribe("dms-lock-bridge")
+		defer loginctlManager.Unsubscribe("dms-lock-bridge", ch)
 
 		initial := loginctlManager.GetState()
 		lastLocked := initial.Locked

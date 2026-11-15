@@ -241,11 +241,11 @@ func (m *Manager) Subscribe(id string) chan CUPSState {
 	return ch
 }
 
-func (m *Manager) Unsubscribe(id string) {
+func (m *Manager) Unsubscribe(id string, ch chan CUPSState) {
 	m.subLifecycleMu.Lock()
 	defer m.subLifecycleMu.Unlock()
 
-	m.subscribers.Unsubscribe(id)
+	m.subscribers.Unsubscribe(id, ch)
 
 	if m.subscribers.Len() > 0 || m.subscription == nil {
 		return

@@ -78,8 +78,8 @@ func (m *Manager) Subscribe(id string) chan State {
 	return m.subscribers.Subscribe(id)
 }
 
-func (m *Manager) Unsubscribe(id string) {
-	m.subscribers.Unsubscribe(id)
+func (m *Manager) Unsubscribe(id string, ch chan State) {
+	m.subscribers.Unsubscribe(id, ch)
 }
 
 func (m *Manager) SetEnabled(enabled bool) {
@@ -186,7 +186,7 @@ func (m *Manager) Close() {
 func (m *Manager) WatchLoginctl(lm *loginctl.Manager) {
 	ch := lm.Subscribe("thememode")
 	m.wg.Go(func() {
-		defer lm.Unsubscribe("thememode")
+		defer lm.Unsubscribe("thememode", ch)
 		for {
 			select {
 			case <-m.stopChan:

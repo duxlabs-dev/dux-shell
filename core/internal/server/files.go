@@ -29,8 +29,8 @@ func (b *filesBus) Subscribe(id string) <-chan any {
 	return b.broker.Subscribe(id)
 }
 
-func (b *filesBus) Unsubscribe(id string) {
-	b.broker.Unsubscribe(id)
+func (b *filesBus) Unsubscribe(id string, ch <-chan any) {
+	b.broker.Unsubscribe(id, ch)
 }
 
 func InitializeFilesService() {

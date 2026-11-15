@@ -9,12 +9,12 @@ const defaultBufferSize = 64
 type Broker[T any] struct {
 	mu      sync.RWMutex
 	subs    map[string]chan T
-	bufSize int
+	BufSize int
 	closed  bool
 }
 
 func NewBroker[T any](bufSize int) *Broker[T] {
-	return &Broker[T]{bufSize: bufSize}
+	return &Broker[T]{BufSize: bufSize}
 }
 
 func (b *Broker[T]) Subscribe(id string) chan T {
@@ -34,7 +34,7 @@ func (b *Broker[T]) Subscribe(id string) chan T {
 		close(old)
 	}
 
-	buf := b.bufSize
+	buf := b.BufSize
 	if buf <= 0 {
 		buf = defaultBufferSize
 	}
@@ -43,16 +43,18 @@ func (b *Broker[T]) Subscribe(id string) chan T {
 	return ch
 }
 
-func (b *Broker[T]) Unsubscribe(id string) bool {
+// Unsubscribe removes and closes ch only if id still points to ch, so a
+// stale reader's deferred Unsubscribe cannot clobber a newer Subscribe on id.
+func (b *Broker[T]) Unsubscribe(id string, ch <-chan T) bool {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 
-	ch, ok := b.subs[id]
-	if !ok {
+	cur, ok := b.subs[id]
+	if !ok || cur != ch {
 		return false
 	}
 	delete(b.subs, id)
-	close(ch)
+	close(cur)
 	return true
 }
 
@@ -67,6 +69,31 @@ func (b *Broker[T]) Publish(v T) {
 		select {
 		case ch <- v:
 		default:
+		}
+	}
+}
+
+// PublishLatest delivers v to every subscriber, evicting the oldest queued
+// item if a subscriber's buffer is full.
+func (b *Broker[T]) PublishLatest(v T) {
+	b.mu.RLock()
+	defer b.mu.RUnlock()
+
+	if b.closed {
+		return
+	}
+	for _, ch := range b.subs {
+		select {
+		case ch <- v:
+		default:
+			select {
+			case <-ch:
+			default:
+			}
+			select {
+			case ch <- v:
+			default:
+			}
 		}
 	}
 }

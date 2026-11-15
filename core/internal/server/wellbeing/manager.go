@@ -51,8 +51,8 @@ func (m *Manager) Subscribe(id string) chan State {
 
 // The shell is the only source of focus and idle state, so when its last
 // subscription drops the open segment ends instead of counting forever.
-func (m *Manager) Unsubscribe(id string) {
-	if !m.subscribers.Unsubscribe(id) {
+func (m *Manager) Unsubscribe(id string, ch chan State) {
+	if !m.subscribers.Unsubscribe(id, ch) {
 		return
 	}
 	if m.subscribers.Len() > 0 {

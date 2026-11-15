@@ -72,6 +72,7 @@ func NewManager() (*Manager, error) {
 		devices:        devices,
 		monitoredPaths: monitoredPaths,
 		state:          State{Available: true, CapsLock: initialCapsLock, NumLock: initialNumLock},
+		subscribers:    pubsub.Broker[State]{BufSize: 16},
 
 		closeChan: make(chan struct{}),
 		watcher:   watcher,
@@ -392,8 +393,8 @@ func (m *Manager) Subscribe(id string) chan State {
 	return m.subscribers.Subscribe(id)
 }
 
-func (m *Manager) Unsubscribe(id string) {
-	m.subscribers.Unsubscribe(id)
+func (m *Manager) Unsubscribe(id string, ch chan State) {
+	m.subscribers.Unsubscribe(id, ch)
 }
 
 func (m *Manager) notifySubscribers(state State) {

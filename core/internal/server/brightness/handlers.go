@@ -101,7 +101,7 @@ func handleSubscribe(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
 	clientID := fmt.Sprintf("brightness-%d", req.ID)
 
 	ch := m.Subscribe(clientID)
-	defer m.Unsubscribe(clientID)
+	defer m.Unsubscribe(clientID, ch)
 
 	initialState := m.GetState()
 	if err := conn.WriteResponse(ipc.Response[State]{

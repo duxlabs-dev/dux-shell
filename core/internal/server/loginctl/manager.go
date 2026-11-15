@@ -494,8 +494,8 @@ func (m *Manager) Subscribe(id string) chan SessionState {
 	return m.subscribers.Subscribe(id)
 }
 
-func (m *Manager) Unsubscribe(id string) {
-	m.subscribers.Unsubscribe(id)
+func (m *Manager) Unsubscribe(id string, ch chan SessionState) {
+	m.subscribers.Unsubscribe(id, ch)
 }
 
 func (m *Manager) notifier() {

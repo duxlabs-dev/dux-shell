@@ -11,6 +11,7 @@ import (
 
 	"github.com/duxlabs-dev/dux-go/dbusutil"
 	"github.com/duxlabs-dev/dux-shell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/pubsub"
 	"github.com/godbus/dbus/v5"
 )
 
@@ -47,12 +48,13 @@ func NewManager() (*Manager, error) {
 		},
 		stateMutex: sync.RWMutex{},
 
-		stopChan:       make(chan struct{}),
-		dbusConn:       conn,
-		signals:        make(chan *dbus.Signal, 256),
-		dirty:          make(chan struct{}, 1),
-		eventQueue:     make(chan func(), 32),
-		adapterRefresh: make(chan struct{}, 1),
+		stopChan:           make(chan struct{}),
+		dbusConn:           conn,
+		signals:            make(chan *dbus.Signal, 256),
+		dirty:              make(chan struct{}, 1),
+		eventQueue:         make(chan func(), 32),
+		adapterRefresh:     make(chan struct{}, 1),
+		pairingSubscribers: pubsub.Broker[PairingPrompt]{BufSize: 16},
 	}
 
 	broker := NewSubscriptionBroker(m.broadcastPairingPrompt)
@@ -567,16 +569,16 @@ func (m *Manager) Subscribe(id string) chan BluetoothState {
 	return m.subscribers.Subscribe(id)
 }
 
-func (m *Manager) Unsubscribe(id string) {
-	m.subscribers.Unsubscribe(id)
+func (m *Manager) Unsubscribe(id string, ch chan BluetoothState) {
+	m.subscribers.Unsubscribe(id, ch)
 }
 
 func (m *Manager) SubscribePairing(id string) chan PairingPrompt {
 	return m.pairingSubscribers.Subscribe(id)
 }
 
-func (m *Manager) UnsubscribePairing(id string) {
-	m.pairingSubscribers.Unsubscribe(id)
+func (m *Manager) UnsubscribePairing(id string, ch chan PairingPrompt) {
+	m.pairingSubscribers.Unsubscribe(id, ch)
 }
 
 func newPlayerCommandLease() (string, error) {

@@ -76,7 +76,7 @@ func TestHandleUdevBrightnessChange_NoChangeWhenSameValue(t *testing.T) {
 	m, _ := setupTestManager(t)
 
 	updateCh := m.SubscribeUpdates("test")
-	defer m.UnsubscribeUpdates("test")
+	defer m.UnsubscribeUpdates("test", updateCh)
 
 	m.handleUdevBrightnessChange("backlight:intel_backlight", 500)
 
@@ -91,7 +91,7 @@ func TestHandleUdevBrightnessChange_BroadcastsOnChange(t *testing.T) {
 	m, _ := setupTestManager(t)
 
 	updateCh := m.SubscribeUpdates("test")
-	defer m.UnsubscribeUpdates("test")
+	defer m.UnsubscribeUpdates("test", updateCh)
 
 	m.handleUdevBrightnessChange("backlight:intel_backlight", 750)
 
