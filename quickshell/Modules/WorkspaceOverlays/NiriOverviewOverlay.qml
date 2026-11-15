@@ -106,12 +106,14 @@ Scope {
                 readonly property var launcherContent: useSpotlightStyle ? spotlightLauncherLoader.item : fullLauncherLoader.item
                 readonly property bool spotlightShown: shouldShowSpotlight || (niriOverviewScope.isClosing && isSpotlightScreen)
                 readonly property string searchText: launcherContent?.searchField?.text ?? ""
+                readonly property bool hasFocusOnMap: "focusOnMap" in WlrLayershell
+                readonly property bool typeInOverview: hasFocusOnMap && NiriService.configNextSupported && CompositorService.niriWindowRulesIncluded
 
                 function releaseIdleKeyboardFocus() {
-                    if (!NiriService.configNextSupported || spotlightShown || searchText)
+                    if (!typeInOverview || spotlightShown || searchText)
                         return;
                     if (launcherContent?.searchField?.Window.active)
-                        WlrLayershell.releaseKeyboardFocus();
+                        WlrLayershell.releaseKeyboardFocus?.();
                 }
 
                 function handleOverviewKey(event) {
@@ -195,13 +197,19 @@ Scope {
                         return WlrKeyboardFocus.None;
                     if (hasActivePopout || hasActiveModal)
                         return WlrKeyboardFocus.None;
-                    if (!NiriService.configNextSupported)
+                    if (!typeInOverview)
                         return WlrKeyboardFocus.Exclusive;
 
                     return WlrKeyboardFocus.OnDemand;
                 }
 
-                WlrLayershell.focusOnMap: false
+                function updateFocusOnMap() {
+                    if (typeInOverview)
+                        WlrLayershell.focusOnMap = false;
+                }
+
+                Component.onCompleted: updateFocusOnMap()
+                onTypeInOverviewChanged: updateFocusOnMap()
 
                 mask: Region {
                     item: overlayVisible && spotlightShown ? spotlightContainer : null
@@ -231,7 +239,7 @@ Scope {
                     if (!isActiveScreen)
                         return;
                     if (launcherContent?.searchField?.Window.active)
-                        WlrLayershell.releaseKeyboardFocus();
+                        WlrLayershell.releaseKeyboardFocus?.();
                     Qt.callLater(() => launcherContent?.searchField?.forceActiveFocus());
                 }
 
@@ -250,11 +258,18 @@ Scope {
                         launcherContent.searchField.text = "";
                 }
 
+                // Opening a folder clears the query before it sets activeFolderId.
+                function hideIfSearchCleared() {
+                    if (searchText || !niriOverviewScope.searchActive || launcherContent?.controller?.activeFolderId)
+                        return;
+                    niriOverviewScope.hideSpotlight();
+                }
+
                 onSearchTextChanged: {
                     if (searchText && isActiveScreen && !niriOverviewScope.searchActive)
                         niriOverviewScope.showSpotlight(screen.name);
                     else if (!searchText && niriOverviewScope.searchActive)
-                        niriOverviewScope.hideSpotlight();
+                        Qt.callLater(hideIfSearchCleared);
                 }
 
                 onLauncherContentChanged: Qt.callLater(() => launcherContent?.searchField?.forceActiveFocus())
@@ -383,11 +398,12 @@ Scope {
                         Keys.onPressed: event => {
                             if (overlayWindow.spotlightShown)
                                 overlayWindow.launcherContent?.activeContextMenu?.handleKey(event);
-                            else if (!NiriService.configNextSupported)
+                            else if (!overlayWindow.typeInOverview)
                                 overlayWindow.handleOverviewKey(event);
                         }
 
                         Keys.onEscapePressed: event => {
+                            event.accepted = false;
                             overlayWindow.launcherContent?.activeContextMenu?.handleKey(event);
                             if (!event.accepted)
                                 overlayWindow.launcherContent?.parentModal?.hide();

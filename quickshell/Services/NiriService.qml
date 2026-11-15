@@ -1398,12 +1398,17 @@ window-rule {
         if (_dmsConfigFilesEnsured)
             return;
         _dmsConfigFilesEnsured = true;
-        const rewriteRules = configNextSupported ? ` && { grep -qs focus-on-type-in-overview "${niriDmsDir}/windowrules.kdl" || "${Proc.dmsBin}" config windowrules reorder niri "[]"; }` : "";
-        const script = `mkdir -p "${niriDmsDir}" && for f in outputs binds cursor windowrules colors alttab layout input animations; do [ -f "${niriDmsDir}/$f.kdl" ] || touch "${niriDmsDir}/$f.kdl"; done` + rewriteRules;
+        const script = `mkdir -p "${niriDmsDir}" && for f in outputs binds cursor windowrules colors alttab layout input animations; do [ -f "${niriDmsDir}/$f.kdl" ] || touch "${niriDmsDir}/$f.kdl"; done`;
         Proc.runCommand("niri-ensure-dms-configs", ["sh", "-c", script], (output, exitCode) => {
             if (exitCode !== 0)
                 log.warn("Failed to ensure dms config files, exit code:", exitCode);
         });
+    }
+
+    function ensureOverviewRule() {
+        if (!configNextSupported)
+            return;
+        Proc.runCommand("niri-ensure-overview-rule", ["sh", "-c", `grep -qs focus-on-type-in-overview "\${XDG_CONFIG_HOME:-\$HOME/.config}/niri/dms/windowrules.kdl" || "${Proc.dmsBin}" config windowrules reorder niri "[]"`]);
     }
 
     function generateNiriBlurrule() {
