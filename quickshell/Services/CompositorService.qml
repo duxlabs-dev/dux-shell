@@ -136,6 +136,7 @@ Singleton {
 
     readonly property bool isKnownCompositor: configKey !== ""
     readonly property bool supportsWindowRules: isNiri || isHyprland || isMango
+    property bool niriWindowRulesIncluded: false
     readonly property string dmsFloatingRuleId: "dms-floating-windows"
     property bool dmsWindowFloatingActive: false
     readonly property string dmsOpaqueRuleId: "dms-window-opaque"
@@ -1684,7 +1685,9 @@ Singleton {
             }
             let rules;
             try {
-                rules = JSON.parse(output.trim()).rules || [];
+                const parsed = JSON.parse(output.trim());
+                rules = parsed.rules || [];
+                niriWindowRulesIncluded = isNiri && !!parsed.dmsStatus?.included;
             } catch (e) {
                 log.warn("failed to parse window rules", e);
                 return;
@@ -1692,7 +1695,10 @@ Singleton {
             // Each rule write rewrites the whole rules file, so writes must not overlap.
             syncDmsWindowFloatingRule(rules, () => {
                 if (ensureOpaque)
-                    ensureDmsOpaqueRule(rules);
+                    ensureDmsOpaqueRule(rules, () => {
+                        if (isNiri)
+                            NiriService.ensureOverviewRule();
+                    });
             });
         });
     }
@@ -1752,9 +1758,11 @@ Singleton {
         });
     }
 
-    function ensureDmsOpaqueRule(rules) {
-        if (rules.some(rule => rule.id === dmsOpaqueRuleId && dmsRuleMatchesCurrentAppId(rule)))
+    function ensureDmsOpaqueRule(rules, onDone) {
+        if (rules.some(rule => rule.id === dmsOpaqueRuleId && dmsRuleMatchesCurrentAppId(rule))) {
+            onDone?.();
             return;
+        }
         // DMS windows are translucent via client alpha; Hyprland's opaque keeps that alpha, force_rgbx would drop it.
         let actions;
         if (isHyprland)
@@ -1765,15 +1773,17 @@ Singleton {
             actions = {
                 "opacity": 1.0
             };
-        else
+        else {
+            onDone?.();
             return;
+        }
         setDmsRule(dmsOpaqueRuleId, {
             "name": "DMS Window Opaque",
             "matchCriteria": {
                 "appId": "^(dev\\.duxlabs\\.shell|com\\.danklinux\\.dms)$"
             },
             "actions": actions
-        });
+        }, onDone);
     }
 
     // Fallback when the socket owner can't be resolved (no ss, unrecognized

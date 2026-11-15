@@ -402,3 +402,32 @@ window-rule {
 		})
 	}
 }
+
+func TestNiriWriteKeepsOverviewLayerRuleOnlyOnConfigNext(t *testing.T) {
+	origNext, origValidate := niriConfigNext, niriValidateRules
+	t.Cleanup(func() { niriConfigNext, niriValidateRules = origNext, origValidate })
+	niriValidateRules = func(string) error { return nil }
+
+	for name, capable := range map[string]bool{"config-next": true, "older niri": false} {
+		t.Run(name, func(t *testing.T) {
+			niriConfigNext = func() bool { return capable }
+
+			tmpDir := t.TempDir()
+			provider := NewNiriWritableProvider(tmpDir)
+			if err := provider.SetRule(newTestWindowRule("pip", "PiP", "^mpv$")); err != nil {
+				t.Fatal(err)
+			}
+			if err := provider.SetRule(newTestWindowRule("pip", "PiP", "^vlc$")); err != nil {
+				t.Fatal(err)
+			}
+
+			data, err := os.ReadFile(filepath.Join(tmpDir, "dms", "windowrules.kdl"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got := strings.Contains(string(data), "focus-on-type-in-overview true"); got != capable {
+				t.Errorf("layer-rule present=%v, want %v\n%s", got, capable, data)
+			}
+		})
+	}
+}

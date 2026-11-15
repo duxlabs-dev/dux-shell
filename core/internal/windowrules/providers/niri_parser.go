@@ -845,6 +845,10 @@ func (p *NiriWritableProvider) WriteDMSRules(rules []windowrules.WindowRule) err
 		lines = append(lines, "")
 	}
 
+	if niriConfigNext() {
+		lines = append(lines, niriOverviewLayerRule, "")
+	}
+
 	content := strings.Join(lines, "\n")
 	// An invalid fragment breaks every later niri reload, so the old file stays until niri accepts the new one.
 	if err := niriValidateRules(content); err != nil {
@@ -874,6 +878,11 @@ func checkNiriRuleRanges(rule windowrules.WindowRule) error {
 }
 
 const niriVrrFullscreenOnly = "fullscreen-only"
+
+const niriOverviewLayerRule = `layer-rule {
+    match namespace="^dms:niri-overview-spotlight$"
+    focus-on-type-in-overview true
+}`
 
 var niriXdgActivateValues = []string{"ignore", "set-urgent", "focus"}
 

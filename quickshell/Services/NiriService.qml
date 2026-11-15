@@ -154,9 +154,16 @@ Singleton {
         target: DMSService
         function onCapabilitiesReceived() {
             const supported = DMSService.capabilities.includes("niri.config-next");
-            if (supported === root.configNextSupported)
-                return;
+            const changed = supported !== root.configNextSupported;
             root.configNextSupported = supported;
+            if (changed || root.configGenerationPending)
+                root.generateNiriLayoutConfig();
+            if (root._overviewRulePending) {
+                root._overviewRulePending = false;
+                root.ensureOverviewRule();
+            }
+            if (!changed)
+                return;
             // input.kdl is first written before the DMS socket reports capabilities
             if (SettingsData.touchpadPinchSensitivity !== 1.0)
                 root.generateNiriInputConfig();
@@ -1292,6 +1299,8 @@ blur {
             loadLayoutXrayState();
             return;
         }
+        if (DMSService.capabilities.length === 0)
+            return;
         configGenerationPending = false;
         log.debug("Generating layout config...");
 
@@ -1398,6 +1407,18 @@ window-rule {
             if (exitCode !== 0)
                 log.warn("Failed to ensure dms config files, exit code:", exitCode);
         });
+    }
+
+    property bool _overviewRulePending: false
+
+    function ensureOverviewRule() {
+        if (DMSService.capabilities.length === 0) {
+            _overviewRulePending = true;
+            return;
+        }
+        if (!configNextSupported)
+            return;
+        Proc.runCommand("niri-ensure-overview-rule", ["sh", "-c", `grep -qs focus-on-type-in-overview "\${XDG_CONFIG_HOME:-\$HOME/.config}/niri/dms/windowrules.kdl" || "${Proc.dmsBin}" config windowrules reorder niri "[]"`]);
     }
 
     function generateNiriBlurrule() {
