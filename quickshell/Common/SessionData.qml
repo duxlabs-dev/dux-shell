@@ -267,6 +267,7 @@ Singleton {
     property var brightnessExponentialDevices: ({})
     property var brightnessUserSetValues: ({})
     property var brightnessExponentValues: ({})
+    property var brightnessControlledDevices: ["all"]
 
     property bool nvidiaGpuTempEnabled: false
     property bool nonNvidiaGpuTempEnabled: false
@@ -1603,6 +1604,13 @@ Singleton {
 
     function setLastBrightnessDevice(device) {
         lastBrightnessDevice = device;
+        saveSettings();
+    }
+
+    function setBrightnessControlledDevices(deviceIds) {
+        if (!Array.isArray(deviceIds))
+            return;
+        brightnessControlledDevices = deviceIds;
         saveSettings();
     }
 
