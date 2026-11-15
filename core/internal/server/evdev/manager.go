@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/duxlabs-dev/dux-go/syncmap"
 	"github.com/duxlabs-dev/dux-shell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/pubsub"
 	"github.com/fsnotify/fsnotify"
 	evdev "github.com/holoplot/go-evdev"
 )
@@ -38,7 +38,7 @@ type Manager struct {
 	monitoredPaths map[string]bool
 	state          State
 	stateMutex     sync.RWMutex
-	subscribers    syncmap.Map[string, chan State]
+	subscribers    pubsub.Broker[State]
 	closeChan      chan struct{}
 	closeOnce      sync.Once
 	watcher        *fsnotify.Watcher
@@ -389,25 +389,15 @@ func (m *Manager) GetState() State {
 }
 
 func (m *Manager) Subscribe(id string) chan State {
-	ch := make(chan State, 16)
-	m.subscribers.Store(id, ch)
-	return ch
+	return m.subscribers.Subscribe(id)
 }
 
 func (m *Manager) Unsubscribe(id string) {
-	if val, ok := m.subscribers.LoadAndDelete(id); ok {
-		close(val)
-	}
+	m.subscribers.Unsubscribe(id)
 }
 
 func (m *Manager) notifySubscribers(state State) {
-	m.subscribers.Range(func(key string, ch chan State) bool {
-		select {
-		case ch <- state:
-		default:
-		}
-		return true
-	})
+	m.subscribers.Publish(state)
 }
 
 func (m *Manager) Close() {
@@ -429,11 +419,7 @@ func (m *Manager) Close() {
 		}
 		m.devicesMutex.Unlock()
 
-		m.subscribers.Range(func(key string, ch chan State) bool {
-			close(ch)
-			m.subscribers.Delete(key)
-			return true
-		})
+		m.subscribers.Close()
 	})
 }
 

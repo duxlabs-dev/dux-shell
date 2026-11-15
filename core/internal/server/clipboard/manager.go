@@ -72,7 +72,6 @@ func NewManager(wlCtx wlcontext.WaylandContext, config Config) (*Manager, error)
 		display:        display,
 		wlCtx:          wlCtx,
 		stopChan:       make(chan struct{}),
-		subscribers:    make(map[string]chan State),
 		dirty:          make(chan struct{}, 1),
 		offerMimeTypes: make(map[any][]string),
 		dbPath:         dbPath,
@@ -999,19 +998,7 @@ func (m *Manager) notifier() {
 
 		m.lastState = &state
 
-		m.subMutex.RLock()
-		subs := make([]chan State, 0, len(m.subscribers))
-		for _, ch := range m.subscribers {
-			subs = append(subs, ch)
-		}
-		m.subMutex.RUnlock()
-
-		for _, ch := range subs {
-			select {
-			case ch <- state:
-			default:
-			}
-		}
+		m.subscribers.Publish(state)
 	}
 }
 
@@ -1556,12 +1543,7 @@ func (m *Manager) Close() {
 	close(m.dirty)
 	m.notifierWg.Wait()
 
-	m.subMutex.Lock()
-	for _, ch := range m.subscribers {
-		close(ch)
-	}
-	m.subscribers = make(map[string]chan State)
-	m.subMutex.Unlock()
+	m.subscribers.Close()
 
 	m.releaseCurrentSource()
 	m.releaseDataDevice()

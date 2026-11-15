@@ -360,11 +360,5 @@ func (m *Manager) broadcastDeviceUpdate(deviceID string) {
 
 	log.Debugf("Broadcasting device update: %s at %d%%", deviceID, targetDevice.CurrentPercent)
 
-	m.updateSubscribers.Range(func(key string, ch chan DeviceUpdate) bool {
-		select {
-		case ch <- update:
-		default:
-		}
-		return true
-	})
+	m.updateSubscribers.Publish(update)
 }

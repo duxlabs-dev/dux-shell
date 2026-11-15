@@ -177,13 +177,7 @@ func (m *Manager) notifier() {
 				continue
 			}
 
-			m.subscribers.Range(func(key string, ch chan CUPSState) bool {
-				select {
-				case ch <- currentState:
-				default:
-				}
-				return true
-			})
+			m.subscribers.Publish(currentState)
 
 			stateCopy := currentState
 			m.lastNotifiedState = &stateCopy
@@ -226,18 +220,11 @@ func (m *Manager) snapshotState() CUPSState {
 }
 
 func (m *Manager) Subscribe(id string) chan CUPSState {
-	ch := make(chan CUPSState, 64)
-
 	m.subLifecycleMu.Lock()
 	defer m.subLifecycleMu.Unlock()
 
-	wasEmpty := true
-	m.subscribers.Range(func(key string, ch chan CUPSState) bool {
-		wasEmpty = false
-		return false
-	})
-
-	m.subscribers.Store(id, ch)
+	wasEmpty := m.subscribers.Len() == 0
+	ch := m.subscribers.Subscribe(id)
 
 	if !wasEmpty || m.subscription == nil {
 		return ch
@@ -258,17 +245,9 @@ func (m *Manager) Unsubscribe(id string) {
 	m.subLifecycleMu.Lock()
 	defer m.subLifecycleMu.Unlock()
 
-	if val, ok := m.subscribers.LoadAndDelete(id); ok {
-		close(val)
-	}
+	m.subscribers.Unsubscribe(id)
 
-	isEmpty := true
-	m.subscribers.Range(func(key string, ch chan CUPSState) bool {
-		isEmpty = false
-		return false
-	})
-
-	if !isEmpty || m.subscription == nil {
+	if m.subscribers.Len() > 0 || m.subscription == nil {
 		return
 	}
 
@@ -288,11 +267,7 @@ func (m *Manager) Close() {
 	m.eventWG.Wait()
 	m.notifierWg.Wait()
 
-	m.subscribers.Range(func(key string, ch chan CUPSState) bool {
-		close(ch)
-		m.subscribers.Delete(key)
-		return true
-	})
+	m.subscribers.Close()
 }
 
 func stateChanged(old, new *CUPSState) bool {

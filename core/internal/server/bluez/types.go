@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	"github.com/duxlabs-dev/dux-go/syncmap"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/pubsub"
 	"github.com/godbus/dbus/v5"
 )
 
@@ -69,14 +70,14 @@ type PairingPrompt struct {
 type Manager struct {
 	state               *BluetoothState
 	stateMutex          sync.RWMutex
-	subscribers         syncmap.Map[string, chan BluetoothState]
+	subscribers         pubsub.Broker[BluetoothState]
 	stopChan            chan struct{}
 	dbusConn            *dbus.Conn
 	signals             chan *dbus.Signal
 	sigWG               sync.WaitGroup
 	agent               *BluezAgent
 	promptBroker        PromptBroker
-	pairingSubscribers  syncmap.Map[string, chan PairingPrompt]
+	pairingSubscribers  pubsub.Broker[PairingPrompt]
 	commandSubscribers  syncmap.Map[string, chan PlayerCommand]
 	commandMutex        sync.RWMutex
 	commandLease        string

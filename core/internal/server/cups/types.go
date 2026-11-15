@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/duxlabs-dev/dux-go/syncmap"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/pubsub"
 	"github.com/duxlabs-dev/dux-shell/core/pkg/ipp"
 )
 
@@ -82,7 +82,7 @@ type Manager struct {
 	subscription      SubscriptionManagerInterface
 	subLifecycleMu    sync.Mutex
 	stateMutex        sync.RWMutex
-	subscribers       syncmap.Map[string, chan CUPSState]
+	subscribers       pubsub.Broker[CUPSState]
 	stopChan          chan struct{}
 	eventWG           sync.WaitGroup
 	dirty             chan struct{}

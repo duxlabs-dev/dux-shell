@@ -491,15 +491,11 @@ func (m *Manager) GetState() SessionState {
 }
 
 func (m *Manager) Subscribe(id string) chan SessionState {
-	ch := make(chan SessionState, 64)
-	m.subscribers.Store(id, ch)
-	return ch
+	return m.subscribers.Subscribe(id)
 }
 
 func (m *Manager) Unsubscribe(id string) {
-	if val, ok := m.subscribers.LoadAndDelete(id); ok {
-		close(val)
-	}
+	m.subscribers.Unsubscribe(id)
 }
 
 func (m *Manager) notifier() {
@@ -531,13 +527,7 @@ func (m *Manager) notifier() {
 				continue
 			}
 
-			m.subscribers.Range(func(key string, ch chan SessionState) bool {
-				select {
-				case ch <- currentState:
-				default:
-				}
-				return true
-			})
+			m.subscribers.Publish(currentState)
 
 			stateCopy := currentState
 			m.lastNotifiedState = &stateCopy
@@ -712,9 +702,5 @@ func (m *Manager) Close() {
 	m.releaseSleepInhibitor()
 	m.releaseKeepAwake()
 
-	m.subscribers.Range(func(key string, ch chan SessionState) bool {
-		close(ch)
-		m.subscribers.Delete(key)
-		return true
-	})
+	m.subscribers.Close()
 }

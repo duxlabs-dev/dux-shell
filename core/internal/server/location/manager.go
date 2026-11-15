@@ -43,24 +43,16 @@ func (m *Manager) Close() {
 
 	m.sigWG.Wait()
 
-	m.subscribers.Range(func(key string, ch chan State) bool {
-		close(ch)
-		m.subscribers.Delete(key)
-		return true
-	})
+	m.subscribers.Close()
 }
 
 func (m *Manager) Subscribe(id string) chan State {
 	m.ensureStarted()
-	ch := make(chan State, 64)
-	m.subscribers.Store(id, ch)
-	return ch
+	return m.subscribers.Subscribe(id)
 }
 
 func (m *Manager) Unsubscribe(id string) {
-	if ch, ok := m.subscribers.LoadAndDelete(id); ok {
-		close(ch)
-	}
+	m.subscribers.Unsubscribe(id)
 }
 
 func (m *Manager) startSignalPump() {
@@ -145,14 +137,7 @@ func (m *Manager) notifier() {
 				continue
 			}
 
-			m.subscribers.Range(func(key string, ch chan State) bool {
-				select {
-				case ch <- currentState:
-				default:
-					log.Warn("Location: subscriber channel full, dropping update")
-				}
-				return true
-			})
+			m.subscribers.Publish(currentState)
 
 			stateCopy := currentState
 			m.lastNotified = &stateCopy

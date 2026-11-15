@@ -6,7 +6,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/duxlabs-dev/dux-go/syncmap"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/pubsub"
 	"github.com/godbus/dbus/v5"
 )
 
@@ -46,7 +46,7 @@ type SessionEvent struct {
 type Manager struct {
 	state                 *SessionState
 	stateMutex            sync.RWMutex
-	subscribers           syncmap.Map[string, chan SessionState]
+	subscribers           pubsub.Broker[SessionState]
 	stopChan              chan struct{}
 	conn                  *dbus.Conn
 	sessionPath           dbus.ObjectPath

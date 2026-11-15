@@ -41,43 +41,26 @@ func newManager(path string, now func() time.Time) (*Manager, error) {
 func (m *Manager) Close() {
 	close(m.stopChan)
 	m.wg.Wait()
-	m.subscribers.Range(func(key string, ch chan State) bool {
-		close(ch)
-		m.subscribers.Delete(key)
-		return true
-	})
+	m.subscribers.Close()
 	m.db.Close()
 }
 
 func (m *Manager) Subscribe(id string) chan State {
-	ch := make(chan State, 64)
-	m.subscribers.Store(id, ch)
-	return ch
+	return m.subscribers.Subscribe(id)
 }
 
 // The shell is the only source of focus and idle state, so when its last
 // subscription drops the open segment ends instead of counting forever.
 func (m *Manager) Unsubscribe(id string) {
-	ch, ok := m.subscribers.LoadAndDelete(id)
-	if !ok {
+	if !m.subscribers.Unsubscribe(id) {
 		return
 	}
-	close(ch)
-	if m.subscriberCount() > 0 {
+	if m.subscribers.Len() > 0 {
 		return
 	}
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.setSegmentLocked("", false)
-}
-
-func (m *Manager) subscriberCount() int {
-	count := 0
-	m.subscribers.Range(func(string, chan State) bool {
-		count++
-		return true
-	})
-	return count
 }
 
 // Snapshot opens every subscription; Resync asks the shell to push its state again.
@@ -340,12 +323,5 @@ func (m *Manager) summaryLocked(days int) []DayUsage {
 }
 
 func (m *Manager) publish(state State) {
-	m.subscribers.Range(func(key string, ch chan State) bool {
-		select {
-		case ch <- state:
-		default:
-			log.Warn("Wellbeing: subscriber channel full, dropping update")
-		}
-		return true
-	})
+	m.subscribers.Publish(state)
 }

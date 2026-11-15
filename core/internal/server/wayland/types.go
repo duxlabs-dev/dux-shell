@@ -13,6 +13,7 @@ import (
 	"github.com/duxlabs-dev/dux-shell/core/internal/errdefs"
 	"github.com/duxlabs-dev/dux-shell/core/internal/geolocation"
 	"github.com/duxlabs-dev/dux-shell/core/internal/icc"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/pubsub"
 	"github.com/godbus/dbus/v5"
 )
 
@@ -147,7 +148,7 @@ type Manager struct {
 	cachedIPLon   *float64
 	locationMutex sync.RWMutex
 
-	subscribers  syncmap.Map[string, chan State]
+	subscribers  pubsub.Broker[State]
 	dirty        chan struct{}
 	notifierWg   sync.WaitGroup
 	lastNotified *State
@@ -246,15 +247,11 @@ func (m *Manager) GetState() State {
 }
 
 func (m *Manager) Subscribe(id string) chan State {
-	ch := make(chan State, 64)
-	m.subscribers.Store(id, ch)
-	return ch
+	return m.subscribers.Subscribe(id)
 }
 
 func (m *Manager) Unsubscribe(id string) {
-	if val, ok := m.subscribers.LoadAndDelete(id); ok {
-		close(val)
-	}
+	m.subscribers.Unsubscribe(id)
 }
 
 func (m *Manager) notifySubscribers() {

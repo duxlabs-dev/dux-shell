@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/duxlabs-dev/dux-go/ipc"
-	"github.com/duxlabs-dev/dux-go/syncmap"
 	"github.com/duxlabs-dev/dux-shell/core/internal/clipolicy"
 	"github.com/duxlabs-dev/dux-shell/core/internal/config"
 	"github.com/duxlabs-dev/dux-shell/core/internal/geolocation"
@@ -29,6 +28,7 @@ import (
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/loginctl"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/network"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/notifyactions"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/pubsub"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/rfkill"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/sysupdate"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/tailscale"
@@ -89,7 +89,7 @@ var geoClientInstance geolocation.Client
 
 const dbusClientID = "dms-dbus-client"
 
-var capabilitySubscribers syncmap.Map[string, chan ServerInfo]
+var capabilitySubscribers pubsub.Broker[ServerInfo]
 var cupsMu sync.Mutex
 var cupsSubscriberCount int
 var cupsEverAvailable bool
@@ -557,14 +557,7 @@ func getServerInfo() ServerInfo {
 }
 
 func notifyCapabilityChange() {
-	info := getServerInfo()
-	capabilitySubscribers.Range(func(key string, ch chan ServerInfo) bool {
-		select {
-		case ch <- info:
-		default:
-		}
-		return true
-	})
+	capabilitySubscribers.Publish(getServerInfo())
 }
 
 func serviceSubscribed(services []string, service string, includeAll bool) bool {
@@ -605,11 +598,11 @@ func handleSubscribe(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request)
 		wg.Wait()
 	}()
 
-	capChan := make(chan ServerInfo, 64)
-	capabilitySubscribers.Store(clientID+"-capabilities", capChan)
+	capID := clientID + "-capabilities"
+	capChan := capabilitySubscribers.Subscribe(capID)
 
 	forwardSubscription(&wg, eventChan, stopChan, "server", capChan, func() {
-		capabilitySubscribers.Delete(clientID + "-capabilities")
+		capabilitySubscribers.Unsubscribe(capID)
 	}, nil)
 
 	shouldSubscribe := func(service string) bool {

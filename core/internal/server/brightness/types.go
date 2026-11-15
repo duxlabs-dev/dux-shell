@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/duxlabs-dev/dux-go/syncmap"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/pubsub"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/wayland"
 )
 
@@ -65,8 +66,8 @@ type Manager struct {
 	stateMutex sync.RWMutex
 	state      State
 
-	subscribers       syncmap.Map[string, chan State]
-	updateSubscribers syncmap.Map[string, chan DeviceUpdate]
+	subscribers       pubsub.Broker[State]
+	updateSubscribers pubsub.Broker[DeviceUpdate]
 
 	broadcastMutex   sync.Mutex
 	broadcastTimer   *time.Timer
@@ -132,32 +133,19 @@ type ddcCapability struct {
 }
 
 func (m *Manager) Subscribe(id string) chan State {
-	ch := make(chan State, 16)
-
-	m.subscribers.Store(id, ch)
-
-	return ch
+	return m.subscribers.Subscribe(id)
 }
 
 func (m *Manager) Unsubscribe(id string) {
-
-	if val, ok := m.subscribers.LoadAndDelete(id); ok {
-		close(val)
-
-	}
-
+	m.subscribers.Unsubscribe(id)
 }
 
 func (m *Manager) SubscribeUpdates(id string) chan DeviceUpdate {
-	ch := make(chan DeviceUpdate, 16)
-	m.updateSubscribers.Store(id, ch)
-	return ch
+	return m.updateSubscribers.Subscribe(id)
 }
 
 func (m *Manager) UnsubscribeUpdates(id string) {
-	if val, ok := m.updateSubscribers.LoadAndDelete(id); ok {
-		close(val)
-	}
+	m.updateSubscribers.Unsubscribe(id)
 }
 
 func (m *Manager) NotifySubscribers() {
@@ -165,13 +153,7 @@ func (m *Manager) NotifySubscribers() {
 	state := m.state
 	m.stateMutex.RUnlock()
 
-	m.subscribers.Range(func(key string, ch chan State) bool {
-		select {
-		case ch <- state:
-		default:
-		}
-		return true
-	})
+	m.subscribers.Publish(state)
 }
 
 func (m *Manager) GetState() State {
@@ -183,16 +165,8 @@ func (m *Manager) GetState() State {
 func (m *Manager) Close() {
 	close(m.stopChan)
 
-	m.subscribers.Range(func(key string, ch chan State) bool {
-		close(ch)
-		m.subscribers.Delete(key)
-		return true
-	})
-	m.updateSubscribers.Range(func(key string, ch chan DeviceUpdate) bool {
-		close(ch)
-		m.updateSubscribers.Delete(key)
-		return true
-	})
+	m.subscribers.Close()
+	m.updateSubscribers.Close()
 
 	if m.monitor != nil {
 		m.monitor.Close()

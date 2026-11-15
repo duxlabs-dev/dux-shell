@@ -243,8 +243,7 @@ func TestManager_NotifySubscribers_Debounce(t *testing.T) {
 	manager.notifierWg.Add(1)
 	go manager.notifier()
 
-	ch := make(chan NetworkState, 10)
-	manager.subscribers.Store("test-client", ch)
+	ch := manager.Subscribe("test-client")
 
 	manager.notifySubscribers()
 	manager.notifySubscribers()
@@ -272,10 +271,8 @@ func TestManager_Close(t *testing.T) {
 		stopChan:   make(chan struct{}),
 	}
 
-	ch1 := make(chan NetworkState, 1)
-	ch2 := make(chan NetworkState, 1)
-	manager.subscribers.Store("client1", ch1)
-	manager.subscribers.Store("client2", ch2)
+	ch1 := manager.Subscribe("client1")
+	ch2 := manager.Subscribe("client2")
 
 	manager.Close()
 
@@ -290,9 +287,7 @@ func TestManager_Close(t *testing.T) {
 	assert.False(t, ok1, "ch1 should be closed")
 	assert.False(t, ok2, "ch2 should be closed")
 
-	count := 0
-	manager.subscribers.Range(func(key string, ch chan NetworkState) bool { count++; return true })
-	assert.Equal(t, 0, count)
+	assert.Equal(t, 0, manager.subscribers.Len())
 }
 
 func TestStateChangedMeaningfully_CellularDeviceFields(t *testing.T) {

@@ -14,8 +14,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/duxlabs-dev/dux-go/syncmap"
 	"github.com/duxlabs-dev/dux-shell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/pubsub"
 	"tailscale.com/ipn/ipnstate"
 )
 
@@ -49,7 +49,7 @@ type ipnBusWatcher interface {
 type Manager struct {
 	state                *TailscaleState
 	stateMutex           sync.RWMutex
-	subscribers          syncmap.Map[string, chan TailscaleState]
+	subscribers          pubsub.Broker[TailscaleState]
 	client               tailscaleClient
 	ctx                  context.Context
 	cancel               context.CancelFunc
@@ -295,13 +295,7 @@ func (m *Manager) broadcastState(state TailscaleState) {
 	if m.closed.Load() {
 		return
 	}
-	m.subscribers.Range(func(key string, ch chan TailscaleState) bool {
-		select {
-		case ch <- state:
-		default:
-		}
-		return true
-	})
+	m.subscribers.Publish(state)
 }
 
 // IsAvailable reports whether tailscaled has been reachable via the IPN bus
@@ -340,16 +334,12 @@ func (m *Manager) GetState() TailscaleState {
 
 // Subscribe creates a buffered channel for the given client ID.
 func (m *Manager) Subscribe(clientID string) chan TailscaleState {
-	ch := make(chan TailscaleState, 64)
-	m.subscribers.Store(clientID, ch)
-	return ch
+	return m.subscribers.Subscribe(clientID)
 }
 
 // Unsubscribe removes and closes the subscriber channel.
 func (m *Manager) Unsubscribe(clientID string) {
-	if val, ok := m.subscribers.LoadAndDelete(clientID); ok {
-		close(val)
-	}
+	m.subscribers.Unsubscribe(clientID)
 }
 
 // Close stops the watch loop and closes all subscriber channels.
@@ -358,11 +348,7 @@ func (m *Manager) Close() {
 	m.cancel()
 	m.watchWG.Wait()
 
-	m.subscribers.Range(func(key string, ch chan TailscaleState) bool {
-		close(ch)
-		m.subscribers.Delete(key)
-		return true
-	})
+	m.subscribers.Close()
 }
 
 // RefreshState triggers an immediate status fetch and broadcasts.

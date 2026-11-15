@@ -1187,13 +1187,7 @@ func (m *Manager) notifier() {
 				pending = false
 				continue
 			}
-			m.subscribers.Range(func(_ string, ch chan State) bool {
-				select {
-				case ch <- currentState:
-				default:
-				}
-				return true
-			})
+			m.subscribers.Publish(currentState)
 			stateCopy := currentState
 			m.lastNotified = &stateCopy
 			pending = false
@@ -2004,11 +1998,7 @@ func (m *Manager) Close() {
 	m.wg.Wait()
 	m.notifierWg.Wait()
 
-	m.subscribers.Range(func(key string, ch chan State) bool {
-		close(ch)
-		m.subscribers.Delete(key)
-		return true
-	})
+	m.subscribers.Close()
 
 	m.outputs.Range(func(_ uint32, out *outputState) bool {
 		if ctrl, ok := out.gammaControl.(*wlr_gamma_control.ZwlrGammaControlV1); ok {
