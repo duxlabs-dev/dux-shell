@@ -867,18 +867,17 @@ Item {
             }
 
             // The pager springs back from a wheel notch unless it scrolled past half a page.
-            MouseArea {
+            WheelHandler {
                 property int wheelDistance: 0
 
-                anchors.fill: parent
-                acceptedButtons: Qt.NoButton
                 enabled: root.active && root.paged
-                onWheel: wheel => {
-                    if (WheelInput.isTouchpad(wheel) || wheel.angleDelta.y === 0) {
-                        wheel.accepted = false;
+                acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+                onWheel: event => {
+                    if (WheelInput.isTouchpad(event) || event.angleDelta.y === 0) {
+                        event.accepted = false;
                         return;
                     }
-                    wheelDistance += wheel.angleDelta.y;
+                    wheelDistance += event.angleDelta.y;
                     if (Math.abs(wheelDistance) < DashMetrics.wheelNotch)
                         return;
                     const next = root.currentPage + (wheelDistance > 0 ? -1 : 1);
@@ -887,6 +886,7 @@ Item {
                         return;
                     root.gridIndex = Math.min(root.gridIndex, root.pageItemCount(next) - 1);
                     root.currentPage = next;
+                    event.accepted = true;
                 }
             }
 
