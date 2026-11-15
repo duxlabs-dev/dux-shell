@@ -573,6 +573,14 @@ Item {
                                     label: I18n.tr("Preview", "verb, clipboard entry action button tooltip", true)
                                 },
                                 {
+                                    keys: ["Ctrl++"],
+                                    label: I18n.tr("Increase font size")
+                                },
+                                {
+                                    keys: ["Ctrl+-"],
+                                    label: I18n.tr("Decrease font size")
+                                },
+                                {
                                     keys: ["Escape"],
                                     label: I18n.tr("Close")
                                 }
