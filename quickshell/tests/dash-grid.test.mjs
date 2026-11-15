@@ -89,6 +89,20 @@ const dropped = (cells, index, target, columns = 2, step = 1) => {
     return plain(pack(grid.dropInto(moved, cells, index, target, pack, step)).map(cell => [cell.col, cell.row]));
 };
 
+test("dragging preserves untouched pills' visual order when saved order differs", () => {
+    const cells = [4, 0, 1, 2, 3].map(row => ({ col: 0, row, cols: 4, rows: 1 }));
+    const items = cells.map((cell, i) => ({ id: String(i), w: cell.cols, h: cell.rows, col: cell.col, row: cell.row }));
+    const order = Array.from(grid.interactionOrder(items, cells, 1, false));
+    const pack = trial => grid.packCells(trial, order, 4, null, 0.5, true).cells;
+    for (let row = 0; row <= 5; row += 0.5) {
+        const target = { col: 0, row };
+        const moved = items.map((item, i) => i === 1 ? { ...item, ...target } : item);
+        const placed = pack(grid.dropInto(moved, cells, 1, target, pack, 0.5));
+        const untouched = [2, 3, 4, 0].map(i => placed[i].row);
+        assert.deepEqual(untouched, untouched.toSorted((a, b) => a - b), `target row ${row}`);
+    }
+});
+
 test("a tile dragged down its own stack lands where dropped instead of back above the tile it covers", () => {
     const cells = [{ col: 0, row: 0, cols: 1, rows: 1 }, { col: 0, row: 1, cols: 1, rows: 1 }, { col: 0, row: 2, cols: 1, rows: 2 }];
     assert.deepEqual(dropped(cells, 0, { col: 0, row: 1 }), [[0, 1], [0, 0], [0, 2]]);

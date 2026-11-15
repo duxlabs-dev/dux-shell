@@ -46,16 +46,7 @@ Item {
     readonly property bool interacting: draggingSourceIndex >= 0 || sizePreview !== null || externalItem !== null
     readonly property real layoutHeight: interacting ? Math.max(heldHeight, slotLayout.totalHeight) : slotLayout.totalHeight
     readonly property int interactingIndex: draggingSourceIndex >= 0 ? draggingSourceIndex : (sizePreview?.index ?? -1)
-    readonly property var placementOrder: {
-        const order = sourceItems.map((item, i) => i);
-        if (externalItem)
-            return [sourceItems.length].concat(order);
-        if (interactingIndex < 0)
-            return order;
-        order.splice(interactingIndex, 1);
-        order.unshift(interactingIndex);
-        return order;
-    }
+    readonly property var placementOrder: GridUtils.interactionOrder(sourceItems, pinnedCells, interactingIndex, externalItem !== null)
     readonly property var pinnedItems: pinnedCells ? GridUtils.placedItems(sourceItems, pinnedCells) : sourceItems
     readonly property var layoutItems: {
         const items = externalItem ? pinnedItems.concat([externalItem]) : pinnedItems;

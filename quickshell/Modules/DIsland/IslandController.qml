@@ -212,12 +212,15 @@ QtObject {
     // The bar host grants the room once its surface has presented a frame at the grown size.
     property bool editRoomGranted: false
     readonly property real controlCenterSheetInset: CcMetrics.islandInset * 2
-    readonly property int controlCenterColumnCap: CcMetrics.columnCapFor(dashboardAvailableWidth - controlCenterSheetInset - PopoutMetrics.editOverflow * 2)
+    property string controlCenterDockSide: ""
+    property bool controlCenterResizing: false
+    readonly property real controlCenterDockReserve: controlCenterDockSide === "" ? 0 : CcMetrics.dockedPanelWidth + CcMetrics.dockedPanelGap
+    readonly property int controlCenterColumnCap: CcMetrics.columnCapFor(dashboardAvailableWidth - controlCenterSheetInset - PopoutMetrics.editOverflow * 2 - controlCenterDockReserve)
     readonly property int controlCenterColumns: Math.min(CcMetrics.gridColumns, controlCenterColumnCap)
     // Here, not in the activity, because the expanded visuals unload soon after the island collapses.
     property int controlCenterPage: 0
     readonly property real controlCenterSheetWidth: CcMetrics.sheetWidthFor(controlCenterColumns)
-    readonly property real controlCenterMaxWidth: CcMetrics.sheetWidthFor(editingActivity === "controlcenter" ? controlCenterColumnCap : controlCenterColumns) + controlCenterSheetInset
+    readonly property real controlCenterMaxWidth: CcMetrics.sheetWidthFor(editingActivity === "controlcenter" ? controlCenterColumnCap : controlCenterColumns) + controlCenterSheetInset + controlCenterDockReserve
     readonly property real controlCenterHeight: controlCenterHeightFor(editRoomGranted && editingActivity === "controlcenter")
 
     property bool homeCompactTight: false
@@ -341,7 +344,10 @@ QtObject {
     }
 
     function controlCenterHeightFor(withEditRoom) {
-        return Math.max(CcMetrics.minHeight + controlCenterSheetInset, Math.min(controlCenterMaxHeight, destinationContentHeight("controlcenter") + (withEditRoom ? root.editRoom : 0)));
+        const docked = controlCenterDockSide !== "";
+        const floor = withEditRoom && docked ? CcMetrics.dockedPanelMinHeight : CcMetrics.minHeight;
+        const room = withEditRoom && !docked ? root.editRoom : 0;
+        return Math.min(controlCenterMaxHeight, Math.max(floor + controlCenterSheetInset, destinationContentHeight("controlcenter") + room));
     }
 
     function dashboardTargetFor(activityId) {
@@ -671,7 +677,16 @@ QtObject {
     readonly property real launcherMaxHeight: Math.min(dashboardAvailableHeight, LauncherMetrics.sizeHeight(SettingsData.dankLauncherV2Size, LauncherMetrics.islandEdgeInset, false))
     readonly property real launcherContentHeight: destinationContentHeight("launcher")
     readonly property var launcherExpandedTarget: sheetTarget(Math.min(dashboardAvailableWidth, LauncherMetrics.sizeWidth(SettingsData.dankLauncherV2Size)), launcherContentHeight > 0 ? Math.min(launcherMaxHeight, launcherContentHeight) : launcherMaxHeight)
-    readonly property var controlCenterExpandedTarget: sheetTarget(controlCenterSheetWidth + controlCenterSheetInset, controlCenterHeight)
+    function controlCenterTargetFor(bodyWidth) {
+        const target = sheetTarget(bodyWidth + controlCenterDockReserve, controlCenterHeight);
+        const offset = controlCenterDockReserve / 2 * (controlCenterDockSide === "left" ? -1 : 1);
+        if (!isVertical)
+            target.offsetAlong += offset;
+        target.centerOffsetX = offset;
+        return target;
+    }
+
+    readonly property var controlCenterExpandedTarget: controlCenterTargetFor(controlCenterSheetWidth + controlCenterSheetInset)
     readonly property var systemCompactTarget: pillTarget(root.isVertical ? 240 : (SettingsData.osdAlwaysShowValue ? 330 : 282), compactFaceThickness)
     property real systemStateContentLength: 0
     readonly property var systemStateCompactTarget: pillTarget(Math.ceil(Math.max(compactFaceThickness, systemStateContentLength + destinationCompactEndPad * 2)), compactFaceThickness)

@@ -6,6 +6,8 @@ QtObject {
     id: root
 
     required property var popout
+    property Item pointerItem: null
+    property real pointerInset: 0
     property real gutter: 0
     property real stepWidth: 0
     property var widthFor: step => 0
@@ -22,6 +24,12 @@ QtObject {
     signal preview(int step, int rows)
     signal committed(int step, int rows, bool stepChanged, bool rowsChanged)
     signal canceled
+
+    function pointerAt(px, py) {
+        if (pointerItem)
+            return pointerItem.mapToGlobal(px + pointerInset, py + pointerInset);
+        return Qt.point(px + popout.renderedAlignedX, py + popout.renderedAlignedY);
+    }
 
     function edgeFor(step, side) {
         const width = widthFor(step) + gutter * 2;
@@ -41,14 +49,22 @@ QtObject {
             return;
         const step = currentStep();
         const rows = currentRows();
+        const side = (signX < 0 ? -1 : 1) * (I18n.isRtl ? -1 : 1);
+        const point = pointerAt(px, py);
+        // Freeze screen-space snap points because previews can move the host.
+        const edges = {};
+        for (let candidate = minStep; candidate <= maxStep; candidate++)
+            edges[candidate] = edgeFor(candidate, side);
         _drag = {
             "step": step,
             "rows": rows,
             "previewStep": step,
             "previewRows": rows,
-            "side": (signX < 0 ? -1 : 1) * (I18n.isRtl ? -1 : 1),
-            "x": px + popout.renderedAlignedX,
-            "y": py + popout.renderedAlignedY
+            "edges": edges,
+            "minStep": minStep,
+            "maxStep": maxStep,
+            "x": point.x,
+            "y": point.y
         };
     }
 
@@ -56,9 +72,10 @@ QtObject {
         const drag = _drag;
         if (!drag)
             return;
-        const wanted = edgeFor(drag.step, drag.side) + px + popout.renderedAlignedX - drag.x;
-        const step = GridUtils.nearestStep(step => edgeFor(step, drag.side), drag.step, minStep, maxStep, wanted);
-        const rows = rowUnit > 0 ? Math.max(minRows, Math.min(maxRows, drag.rows + Math.round((py + popout.renderedAlignedY - drag.y) / rowUnit))) : drag.rows;
+        const point = pointerAt(px, py);
+        const wanted = drag.edges[drag.step] + point.x - drag.x;
+        const step = GridUtils.nearestStep(step => drag.edges[step], drag.step, Math.max(minStep, drag.minStep), Math.min(maxStep, drag.maxStep), wanted);
+        const rows = rowUnit > 0 ? Math.max(minRows, Math.min(maxRows, drag.rows + Math.round((point.y - drag.y) / rowUnit))) : drag.rows;
         if (step === drag.previewStep && rows === drag.previewRows)
             return;
         drag.previewStep = step;

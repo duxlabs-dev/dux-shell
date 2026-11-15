@@ -147,7 +147,8 @@ DEditableGrid {
 
     function hoverNew(widgetId, scenePoint) {
         const point = mapFromItem(null, scenePoint.x, scenePoint.y);
-        if (!editMode || !contains(point)) {
+        const margin = CcMetrics.sheetPadding;
+        if (!editMode || point.x < -margin || point.x > width + margin || point.y < -margin || point.y > height + margin) {
             clearExternal();
             return false;
         }

@@ -102,6 +102,7 @@ Item {
         width: root.touchTargetSize
         height: root.touchTargetSize
         buttonSize: root.buttonSize
+        stateLayerInset: (root.touchTargetSize - root.buttonSize) / 2
         iconSize: root.iconSize
         iconName: root.removeIcon
         iconColor: Theme.error
@@ -140,6 +141,7 @@ Item {
         width: root.touchTargetSize
         height: root.touchTargetSize
         buttonSize: root.buttonSize
+        stateLayerInset: (root.touchTargetSize - root.buttonSize) / 2
         iconSize: root.iconSize
         iconName: "tune"
         iconColor: Theme.primary

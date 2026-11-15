@@ -45,7 +45,8 @@ FocusScope {
     property bool carryDropped: false
     readonly property int carriedIndex: carrySource?.draggingSourceIndex ?? -1
     readonly property CcTileGrid dragGrid: carrySource ?? widgetGrid
-    readonly property bool gridDragging: carrySource !== null || (widgetGrid?.dragging ?? false)
+    readonly property bool libraryDragging: (dockedPanel?.dragWidgetId ?? "") !== ""
+    readonly property bool gridDragging: libraryDragging || carrySource !== null || (widgetGrid?.dragging ?? false)
     // Every page is as tall as the tallest, so switching page never resizes the surface.
     readonly property real gridHeight: pageGrids.reduce((height, grid) => Math.max(height, (grid as CcTileGrid).gridHeight), 0)
     readonly property real gridTargetHeight: pageGrids.reduce((height, grid) => Math.max(height, (grid as CcTileGrid).targetHeight), 0)
@@ -60,7 +61,7 @@ FocusScope {
     readonly property bool stripAbove: host.stripAbove ?? false
     readonly property bool docked: host.dockFits ?? false
     readonly property string dockSide: host.dockSide ?? ""
-    readonly property Item dockedPanel: dockedPanelLoader.item
+    readonly property CcDockedEditPanel dockedPanel: dockedPanelLoader.item as CcDockedEditPanel
     readonly property real surfaceRadius: Math.max(surfaceCornerRadii.x, surfaceCornerRadii.y, surfaceCornerRadii.z, surfaceCornerRadii.w)
     readonly property Item dockedBlurItem: docked && dockedPanel ? dockedPanelLoader : null
     readonly property bool widgetSheetOpen: widgetSheetLoader.item?.active ?? false
@@ -108,7 +109,7 @@ FocusScope {
     property var undoStack: []
     readonly property int undoLimit: 50
     property bool undoBatching: false
-    readonly property bool editIdle: carrySource === null && !(widgetGrid?.interacting ?? false) && !(widgetGrid?.memberDragging ?? false) && !panelResizing
+    readonly property bool editIdle: !libraryDragging && carrySource === null && !(widgetGrid?.interacting ?? false) && !(widgetGrid?.memberDragging ?? false) && !panelResizing
     readonly property bool canUndo: host.editMode && undoStack.length > 0 && editIdle && !widgetSheetOpen && !pageOpen
     readonly property bool panelResizing: panelResizer.resizing
     readonly property bool swipeAllowed: editIdle && !widgetSheetOpen && !widgetPopoverOpen && detailBand.shownSection === ""
@@ -121,6 +122,8 @@ FocusScope {
     readonly property real availableGridHeight: (host.availableHeight ?? (host.triggerScreen?.height ?? CcMetrics.fallbackScreenHeight) - CcMetrics.maxHeightInset) - CcMetrics.sheetPadding * 2 - editRoom
     readonly property DPanelResizer panelResizer: DPanelResizer {
         popout: root.host
+        pointerItem: panelChrome
+        pointerInset: panelChrome.contentInset
         stepWidth: CcMetrics.columnWidth + CcMetrics.gridGap
         widthFor: columns => CcMetrics.sheetWidthFor(columns) + root.sheetContentWidth - CcMetrics.sheetWidthFor(root.gridColumns)
         currentStep: () => root.gridColumns
@@ -279,6 +282,17 @@ FocusScope {
     onCarriedIndexChanged: {
         if (carriedIndex >= 0 || !carrySource)
             return;
+        finishCarry.schedule();
+    }
+
+    DeferredAction {
+        id: finishCarry
+        onTriggered: root.releaseCarry()
+    }
+
+    function releaseCarry() {
+        if (carriedIndex >= 0 || !carrySource)
+            return;
         const source = carrySource;
         carrySource = null;
         carryHover = "";
@@ -361,6 +375,13 @@ FocusScope {
     }
 
     function carryTo(direction) {
+        if (libraryDragging) {
+            widgetGrid?.clearExternal();
+            pager.goTo(pager.currentIndex + direction);
+            if (!pager.moving)
+                dockedPanel?.updateDrag(dockedPanel.dragPoint);
+            return;
+        }
         const source = carrySource ?? widgetGrid;
         const slot = source?.draggingSlot;
         if (!slot)
@@ -663,9 +684,9 @@ FocusScope {
         property int resizeSide: 0
 
         anchors.fill: parent
-        anchors.margins: -contentInset
-        anchors.topMargin: -contentInset - (editActions.visible && editActions.joined && root.stripAbove ? editActions.height : 0)
-        anchors.bottomMargin: -contentInset - (editActions.visible && editActions.joined && !root.stripAbove ? editActions.height : 0)
+        anchors.margins: (root.host.panelChromeInset ?? 0) - contentInset
+        anchors.topMargin: (root.host.panelChromeInset ?? 0) - contentInset - (editActions.visible && editActions.joined && root.stripAbove ? editActions.height : 0)
+        anchors.bottomMargin: (root.host.panelChromeInset ?? 0) - contentInset - (editActions.visible && editActions.joined && !root.stripAbove ? editActions.height : 0)
         z: 1
         visible: root.host.editMode
         enabled: detailBand.shownSection === "" && !root.widgetSheetOpen
@@ -853,8 +874,11 @@ FocusScope {
                             root.host.collapseAll();
                     }
                     onMovingChanged: {
-                        if (!moving)
-                            root.carrySettled();
+                        if (moving)
+                            return;
+                        root.carrySettled();
+                        if (root.libraryDragging)
+                            root.dockedPanel?.updateDrag(root.dockedPanel.dragPoint);
                     }
                     delegate: CcTileGrid {
                         id: pageGrid
@@ -865,8 +889,8 @@ FocusScope {
                         page: index
                         columns: root.gridColumns
                         availableHeight: root.availableGridHeight
-                        // Covers the whole page, so an empty spot on a short or empty page still takes a drop.
-                        minimumHeight: pager.height
+                        // Short and empty pages must accept drops across the available panel height.
+                        minimumHeight: Math.max(pager.height, contentFlickable.height - CcMetrics.sheetPadding * 2)
                         editMode: root.host.editMode
                         model: widgetModel
                         live: root.host.shouldBeVisible && pager.pageShown(index)
@@ -878,10 +902,9 @@ FocusScope {
                         tapToClose: root.host.headerTogglesClose ?? false
                         runningToplevels: root.runningToplevels
                         swallowPoint: {
-                            if (!root.overTrash || root.widgetGrid !== pageGrid)
+                            if (root.docked || !root.overTrash || root.widgetGrid !== pageGrid)
                                 return null;
-                            const target = root.docked ? root.dockedPanel : editActions;
-                            return target ? pageGrid.mapFromItem(target, target.width / 2, target.height / 2) : null;
+                            return pageGrid.mapFromItem(editActions, editActions.width / 2, editActions.height / 2);
                         }
                         carried: root.carrySource === pageGrid
                         carryGroup: root.carrySource !== null && root.widgetGrid === pageGrid ? root.carryGroupId : ""
@@ -946,13 +969,18 @@ FocusScope {
                 Loader {
                     id: pageEdge
 
-                    anchors.fill: pager
+                    parent: root
+                    x: mainColumn.x + body.x + pager.x
+                    y: CcMetrics.sheetPadding
+                    width: pager.width
+                    height: Math.max(0, contentFlickable.height - CcMetrics.sheetPadding * 2)
+                    z: 2
                     active: root.host.editMode
                     sourceComponent: CcPageEdge {
                         count: pager.count
                         currentIndex: pager.currentIndex
                         gutter: CcMetrics.sheetPadding
-                        dragActive: root.gridDragWidget !== null
+                        dragActive: root.gridDragWidget !== null || root.libraryDragging
                         onCarryRequested: direction => root.carryTo(direction)
                     }
                 }
@@ -1027,6 +1055,9 @@ FocusScope {
         sourceComponent: CcDockedEditPanel {
             widgets: root.addableWidgets()
             grid: root.widgetGrid
+            pageMoving: pager.moving
+            prepareDrop: () => pager.goTo(pager.currentIndex, false)
+            onDragUpdated: scenePoint => (pageEdge.item as CcPageEdge)?.updateDrag(root.dockedPanel.overPanel(scenePoint) || pager.moving ? null : scenePoint)
             floating: !root.docked
             fadeOut: root.gridDragWidget !== null
             canUndo: root.canUndo
@@ -1112,19 +1143,30 @@ FocusScope {
         }
     }
 
-    // Drawn from the carried tile itself, which stays in its own grid to keep the pointer grab.
+    // The slot keeps the pointer grab; its preview escapes scrolling clips and paints above the dock.
     Loader {
-        active: root.carrySource !== null
-        z: CcMetrics.overlayZ
+        active: root.carrySource !== null || (root.docked && root.gridDragWidget !== null)
+        z: CcMetrics.overlayZ + 1
         sourceComponent: ShaderEffectSource {
+            readonly property real overflow: CcMetrics.editChromeInset
             readonly property point scenePoint: root.carrySource?.dragScenePoint ?? Qt.point(0, 0)
             readonly property point local: root.mapFromItem(null, scenePoint.x, scenePoint.y)
 
-            x: local.x - root.carryOffset.x
-            y: local.y - root.carryOffset.y
-            width: sourceItem?.width ?? 0
-            height: sourceItem?.height ?? 0
-            sourceItem: root.carrySource?.draggingSlot ?? null
+            readonly property point slotPoint: {
+                if (!sourceItem)
+                    return Qt.point(0, 0);
+                contentFlickable.contentY;
+                sourceItem.x;
+                sourceItem.y;
+                return root.mapFromItem(sourceItem, 0, 0);
+            }
+
+            x: (root.carrySource ? local.x - root.carryOffset.x : slotPoint.x) - overflow
+            y: (root.carrySource ? local.y - root.carryOffset.y : slotPoint.y) - overflow
+            width: (sourceItem?.width ?? 0) + overflow * 2
+            height: (sourceItem?.height ?? 0) + overflow * 2
+            sourceRect: Qt.rect(-overflow, -overflow, width, height)
+            sourceItem: root.dragGrid?.draggingSlot ?? null
             hideSource: true
         }
     }

@@ -17,6 +17,8 @@ Item {
 
     property var widgets: []
     property var grid: null
+    property bool pageMoving: false
+    property var prepareDrop: null
     property bool floating: false
     property bool fadeOut: false
     property bool canUndo: false
@@ -46,6 +48,7 @@ Item {
     // A floating popover covers the grid, so it hides while a widget is dragged out of it.
     readonly property bool faded: floating && (fadeOut || dragWidgetId !== "")
 
+    signal dragUpdated(point scenePoint)
     signal addRequested(string widgetId)
     signal undoRequested
     signal resetRequested
@@ -65,7 +68,8 @@ Item {
 
     function updateDrag(point) {
         dragPoint = point;
-        if (overPanel(point)) {
+        dragUpdated(point);
+        if (pageMoving || overPanel(point)) {
             grid?.clearExternal();
             return;
         }
@@ -73,7 +77,11 @@ Item {
     }
 
     function endDrag(widgetId, canceled) {
-        const dropped = !canceled && !overPanel(dragPoint) && (grid?.dropNew(widgetId) ?? false);
+        if (!canceled) {
+            prepareDrop?.();
+            updateDrag(dragPoint);
+        }
+        const dropped = !canceled && !pageMoving && !overPanel(dragPoint) && (grid?.dropNew(widgetId) ?? false);
         if (!dropped)
             grid?.clearExternal();
         dragWidgetId = "";
@@ -81,6 +89,14 @@ Item {
 
     function focusSearch() {
         searchField.forceActiveFocus();
+    }
+
+    function focusCategory(index, direction) {
+        const card = categoryGroups.itemAt(index + direction);
+        if (!card)
+            return false;
+        card.focusBoundary(direction < 0);
+        return true;
     }
 
     implicitWidth: CcMetrics.dockedPanelWidth
@@ -215,29 +231,98 @@ Item {
                     anchors.fill: parent
                     visible: root.matches.length > 0
                     contentWidth: width
-                    contentHeight: bubbles.height
+                    contentHeight: groups.height
                     clip: contentHeight > height
                     interactive: contentHeight > height
 
-                    CcWidgetBubbleGrid {
-                        id: bubbles
+                    Column {
+                        id: groups
 
                         width: flickable.width
-                        entries: root.matches
-                        bubbleSize: CcMetrics.dockedBubbleSize
-                        columns: Math.max(1, Math.min(CcMetrics.dockedPanelColumns, Math.floor((width + columnSpacing) / (bubbleSize + columnSpacing))))
-                        columnSpacing: CcMetrics.gridGap
-                        rowSpacing: Theme.spacingM
-                        draggable: true
-                        fallbackFocus: searchField
-                        onChosen: widgetId => root.addRequested(widgetId)
-                        onItemFocused: item => flickable.revealRange(item.y, item.y + item.height)
-                        onDragStarted: (widgetId, scenePoint) => {
-                            root.dragWidgetId = widgetId;
-                            root.updateDrag(scenePoint);
+                        spacing: Theme.spacingS
+
+                        Repeater {
+                            id: categoryGroups
+
+                            model: Catalog.shownCategories(root.categoryDefs.defs, root.matches)
+
+                            Rectangle {
+                                id: groupCard
+
+                                required property var modelData
+                                required property int index
+                                readonly property var entries: root.matches.filter(widget => Catalog.categoryOf(widget) === modelData.id)
+
+                                function focusBoundary(last) {
+                                    bubbles.focusEntry(last ? entries.length - 1 : 0);
+                                }
+
+                                Keys.onLeftPressed: event => event.accepted = root.focusCategory(index, I18n.isRtl ? 1 : -1)
+                                Keys.onRightPressed: event => event.accepted = root.focusCategory(index, I18n.isRtl ? -1 : 1)
+                                Keys.onUpPressed: event => event.accepted = root.focusCategory(index, -1)
+                                Keys.onDownPressed: event => event.accepted = root.focusCategory(index, 1)
+
+                                width: groups.width
+                                height: groupContent.implicitHeight + Theme.spacingM * 2
+                                radius: Theme.cornerRadiusL
+                                color: Theme.foregroundColor(Theme.cardSurface)
+
+                                Column {
+                                    id: groupContent
+
+                                    anchors.top: parent.top
+                                    anchors.left: parent.left
+                                    anchors.right: parent.right
+                                    anchors.margins: Theme.spacingM
+                                    spacing: Theme.spacingM
+
+                                    Row {
+                                        width: parent.width
+                                        spacing: Theme.spacingS
+
+                                        DIcon {
+                                            name: groupCard.modelData.icon
+                                            size: Theme.iconSizeMedium
+                                            color: Theme.onSurfaceVariant
+                                        }
+
+                                        StyledText {
+                                            width: parent.width - Theme.iconSizeMedium - Theme.spacingS
+                                            text: groupCard.modelData.title
+                                            font.pixelSize: Theme.fontSizeMedium
+                                            font.weight: Theme.fontWeightBold
+                                            color: Theme.surfaceText
+                                            elide: Text.ElideRight
+                                        }
+                                    }
+
+                                    CcWidgetBubbleGrid {
+                                        id: bubbles
+
+                                        width: parent.width
+                                        entries: groupCard.entries
+                                        bubbleSize: CcMetrics.dockedBubbleSize
+                                        columns: Math.max(1, Math.min(CcMetrics.dockedPanelColumns, Math.floor((width + columnSpacing) / (bubbleSize + columnSpacing))))
+                                        columnSpacing: CcMetrics.gridGap
+                                        rowSpacing: Theme.spacingM
+                                        wrapLabels: true
+                                        draggable: true
+                                        fallbackFocus: searchField
+                                        onChosen: widgetId => root.addRequested(widgetId)
+                                        onItemFocused: item => {
+                                            const point = item.mapToItem(groups, 0, 0);
+                                            flickable.revealRange(point.y, point.y + item.height);
+                                        }
+                                        onDragStarted: (widgetId, scenePoint) => {
+                                            root.dragWidgetId = widgetId;
+                                            root.updateDrag(scenePoint);
+                                        }
+                                        onDragMoved: (widgetId, scenePoint) => root.updateDrag(scenePoint)
+                                        onDragEnded: (widgetId, canceled) => root.endDrag(widgetId, canceled)
+                                    }
+                                }
+                            }
                         }
-                        onDragMoved: (widgetId, scenePoint) => root.updateDrag(scenePoint)
-                        onDragEnded: (widgetId, canceled) => root.endDrag(widgetId, canceled)
                     }
                 }
 

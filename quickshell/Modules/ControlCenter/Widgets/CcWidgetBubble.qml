@@ -12,6 +12,7 @@ StyledButton {
     property real bubbleSize: CcMetrics.previewSize
     property bool draggable: false
     property bool roundAll: true
+    property bool wrapLabel: false
     property var canStep: (dx, dy) => true
 
     signal dragStarted(point scenePoint)
@@ -19,7 +20,7 @@ StyledButton {
     signal dragEnded(bool canceled)
     signal step(int dx, int dy)
 
-    height: preview.height + Theme.spacingS + label.implicitHeight
+    height: preview.height + Theme.spacingS + label.height
     Accessible.name: entry.text
     Accessible.description: entry.description ?? ""
 
@@ -84,8 +85,15 @@ StyledButton {
         font.pixelSize: Theme.fontSizeSmall
         color: Theme.surfaceText
         horizontalAlignment: Text.AlignHCenter
-        wrapMode: Text.NoWrap
+        height: item.wrapLabel ? metrics.height * 2 : metrics.height
+        maximumLineCount: item.wrapLabel ? 2 : 1
+        wrapMode: item.wrapLabel ? Text.Wrap : Text.NoWrap
         elide: Text.ElideRight
+    }
+
+    FontMetrics {
+        id: metrics
+        font: label.font
     }
 
     DragHandler {

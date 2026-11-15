@@ -1,3 +1,16 @@
+function interactionOrder(items, cells, index, external) {
+    const order = items.map((item, i) => i);
+    // Saved order can differ from visual order; settling by it lets untouched tiles leapfrog.
+    if (cells)
+        order.sort((a, b) => (cells[a]?.row ?? 0) - (cells[b]?.row ?? 0) || (cells[a]?.col ?? 0) - (cells[b]?.col ?? 0) || a - b);
+    if (external)
+        return [items.length].concat(order);
+    if (index < 0)
+        return order;
+    order.splice(order.indexOf(index), 1);
+    return [index].concat(order);
+}
+
 function packCells(cards, order, columns, isAvailable, step = 1, gravity = false) {
     const steps = Math.round(columns / step);
     const cells = [];

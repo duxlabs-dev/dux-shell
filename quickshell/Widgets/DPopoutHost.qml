@@ -976,7 +976,11 @@ Item {
     onTravelTargetChanged: _bodyChanged()
 
     function _retargetMorphTravel() {
-        travelSpring.retarget(_fluidMotionActive && !shouldBeVisible ? fluidCollapsedRect : travelTarget);
+        const target = _fluidMotionActive && !shouldBeVisible ? fluidCollapsedRect : travelTarget;
+        if (resizing && shouldBeVisible)
+            travelSpring.snapTo(target);
+        else
+            travelSpring.retarget(target);
         _finishMorphTravel();
     }
 

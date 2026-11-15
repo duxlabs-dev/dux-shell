@@ -136,7 +136,9 @@ Singleton {
     // Clears the concave flares a connected body draws along the bar.
     readonly property real dockedPanelConnectedGap: Math.max(PopoutMetrics.contentGap, Theme.connectedCornerRadius + Theme.spacingXS)
     readonly property real dockedBubbleSize: touchTarget + Theme.spacingS
-    readonly property real widgetPopoverMinHeight: sheetPadding * 2 + Theme.spacingL * 3 + Theme.listItemTwoLineHeight + Theme.fieldHeightLarge + Theme.buttonHeightXS * 2 + Theme.spacingS + dockedBubbleSize + Theme.spacingS + Theme.fontSizeSmall + Theme.spacingS
+    readonly property real dockedLibraryRowHeight: dockedBubbleSize + Theme.spacingS + Theme.fontSizeSmall * 3
+    readonly property real dockedLibraryMinHeight: dockedLibraryRowHeight * 2 + Theme.spacingM * 6 + Theme.iconSizeMedium * 2 + Theme.spacingS
+    readonly property real widgetPopoverMinHeight: sheetPadding * 2 + Theme.spacingL * 3 + Theme.listItemTwoLineHeight + Theme.fieldHeightLarge + Theme.buttonHeightXS * 2 + Theme.spacingS + dockedLibraryMinHeight
     readonly property real dockedPanelMinHeight: widgetPopoverMinHeight + Theme.spacingL + Theme.iconButtonSize
     readonly property int dockedPanelColumns: 4
     readonly property real removeOverlayOpacity: 0.7
