@@ -12,6 +12,7 @@ import qs.Modules.ControlCenter.Widgets
 import qs.Modules.DDash
 import "../../DCommon/Common/FocusNavigation.js" as FocusNavigation
 import "../../DCommon/Common/WheelInput.js" as WheelInput
+import "../../DCommon/Widgets/ScrollConstants.js" as Scroll
 import "../../Common/WallpaperFormats.js" as WallpaperFormats
 
 Item {
@@ -828,7 +829,7 @@ Item {
                             pagerSnapAnim.stop();
                             const maxY = Math.max(minY, pager.contentHeight - pager.height + minY);
                             if (event.pixelDelta.y !== 0)
-                                pager.contentY = Math.max(minY, Math.min(maxY, pager.contentY - event.pixelDelta.y * 3.5));
+                                pager.contentY = Math.max(minY, Math.min(maxY, pager.contentY - event.pixelDelta.y * Scroll.touchpadSpeed));
                             return;
                         }
                         if (event.angleDelta.y === 0)
