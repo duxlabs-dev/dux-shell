@@ -2,7 +2,6 @@ package pubsub
 
 import "time"
 
-// DebouncedConfig configures RunDebouncedNotifier.
 type DebouncedConfig[T any] struct {
 	MinGap   time.Duration
 	Stop     <-chan struct{}
