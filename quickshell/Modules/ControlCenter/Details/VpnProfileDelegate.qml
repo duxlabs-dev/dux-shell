@@ -180,7 +180,7 @@ CcListRow {
         Column {
             width: parent.width
             spacing: Theme.spacingXS
-            visible: !root.isTransient && !VPNService.configLoading && root.profile?.type !== "wireguard"
+            visible: !root.isTransient && !VPNService.configLoading && root.profile?.type !== "wireguard" && (root.hasError || !root.profile?.pluginLogin)
 
             StyledText {
                 text: root.hasError ? DMSNetworkService.vpnError : I18n.tr("Credentials", "noun, label above vpn username and password fields")
@@ -190,6 +190,7 @@ CcListRow {
 
             DTextField {
                 id: usernameField
+                visible: !root.profile?.pluginLogin
                 width: parent.width
                 placeholderText: I18n.tr("Username")
                 text: (root.configData && (root.configData.username || (root.configData.data && root.configData.data.username))) || ""
@@ -197,6 +198,7 @@ CcListRow {
 
             DTextField {
                 id: passwordField
+                visible: !root.profile?.pluginLogin
                 width: parent.width
                 placeholderText: I18n.tr("Password")
                 echoMode: TextInput.Password
@@ -206,6 +208,7 @@ CcListRow {
 
             DButton {
                 text: I18n.tr("Save credentials")
+                visible: !root.profile?.pluginLogin
                 buttonHeight: Theme.buttonHeightXS
                 enabled: passwordField.text.length > 0
                 onClicked: {

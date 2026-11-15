@@ -12,25 +12,33 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestDetectVPNAuthAction_Fortinet(t *testing.T) {
-	service := "org.freedesktop.NetworkManager.openconnect"
-
-	assert.Equal(t, "openconnect_password", detectVPNAuthAction(service, map[string]string{
-		"protocol": "fortinet",
-		"authtype": "password",
-	}))
-	assert.Empty(t, detectVPNAuthAction(service, map[string]string{
-		"protocol": "anyconnect",
-		"authtype": "password",
-	}))
-	assert.Equal(t, "fortinet_saml", detectVPNAuthAction(service, map[string]string{
-		"protocol": "fortinet",
-		"authtype": "saml",
-	}))
-	assert.Equal(t, "fortinet_saml", detectVPNAuthAction(service, map[string]string{
-		"protocol":         "fortinet",
-		"saml-auth-method": "REDIRECT",
-	}))
+func TestVPNAuthRouting(t *testing.T) {
+	const nm = "org.freedesktop.NetworkManager."
+	tests := []struct {
+		name, service string
+		data          map[string]string
+		action        string
+		pluginLogin   bool
+	}{
+		{"openvpn", nm + "openvpn", map[string]string{"connection-type": "password", "username": "u"}, "", false},
+		{"anyconnect password", nm + "openconnect", map[string]string{"protocol": "anyconnect", "authtype": "password"}, "openconnect_password", false},
+		{"openconnect no authtype", nm + "openconnect", map[string]string{}, "openconnect_password", false},
+		{"fortinet password", nm + "openconnect", map[string]string{"protocol": "fortinet", "authtype": "password"}, "openconnect_password", false},
+		{"openconnect cert", nm + "openconnect", map[string]string{"authtype": "cert", "usercert": "/home/u/cert.pem"}, "", true},
+		{"pkcs11", nm + "openconnect", map[string]string{"authtype": "cert", "usercert": "pkcs11:id=1"}, "", false},
+		{"gp saml", nm + "openconnect", map[string]string{"protocol": "gp"}, "gp_saml", false},
+		{"fortinet saml", nm + "openconnect", map[string]string{"protocol": "fortinet", "saml-auth-method": "REDIRECT"}, "fortinet_saml", false},
+		{"anyconnect saml", nm + "openconnect", map[string]string{"protocol": "anyconnect", "saml-auth-method": "REDIRECT"}, "", true},
+		{"vpnc", nm + "vpnc", map[string]string{"IPSec gateway": "vpn.example.com"}, "", true},
+		{"gpclient", nm + "gpclient", map[string]string{"protocol": "gp"}, "", true},
+		{"no data", nm + "vpnc", nil, "", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.action, detectVPNAuthAction(tt.service, tt.data))
+			assert.Equal(t, tt.pluginLogin, vpnPluginLogin(tt.service, tt.data))
+		})
+	}
 }
 
 func TestEnsureOpenConnectAgentFlags(t *testing.T) {
@@ -213,4 +221,95 @@ func TestAppendServerCertPin(t *testing.T) {
 			assert.Equal(t, tt.want, appendServerCertPin(tt.trusted, tt.pin))
 		})
 	}
+}
+
+func TestAuthDialogPlugin(t *testing.T) {
+	dir := t.TempDir()
+	writeDialog := func(name string, mode os.FileMode) string {
+		p := filepath.Join(dir, name)
+		assert.NoError(t, os.WriteFile(p, []byte("#!/bin/sh\n"), mode))
+		return p
+	}
+	exe := writeDialog("dialog", 0o755)
+	noexec := writeDialog("noexec", 0o644)
+
+	nameFile := func(service, body string) {
+		content := "[VPN Connection]\nname=x\nservice=" + service + "\n" + body
+		assert.NoError(t, os.WriteFile(filepath.Join(dir, service+".name"), []byte(content), 0o644))
+	}
+	nameFile("org.freedesktop.NetworkManager.good", "[GNOME]\nauth-dialog = "+exe+"\nsupports-external-ui-mode=true\n")
+	nameFile("org.freedesktop.NetworkManager.legacy", "supports-external-ui-mode=true\n[GNOME]\nauth-dialog="+exe+"\n")
+	nameFile("org.freedesktop.NetworkManager.noexec", "[GNOME]\nauth-dialog="+noexec+"\n")
+	nameFile("org.freedesktop.NetworkManager.relative", "[GNOME]\nauth-dialog=dialog\n")
+
+	t.Chdir(dir)
+	orig := vpnPluginDirs
+	vpnPluginDirs = []string{dir}
+	t.Cleanup(func() { vpnPluginDirs = orig })
+
+	tests := []struct {
+		service string
+		wantNil bool
+		wantExt bool
+	}{
+		{"org.freedesktop.NetworkManager.good", false, true},
+		{"legacy", false, false},
+		{"noexec", true, false},
+		{"relative", true, false},
+		{"unknown", true, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.service, func(t *testing.T) {
+			p := authDialogPlugin(scanVPNPlugins(), tt.service)
+			if tt.wantNil {
+				assert.Nil(t, p)
+				return
+			}
+			assert.Equal(t, exe, p.AuthDialog)
+			assert.Equal(t, tt.wantExt, p.ExternalUIMode)
+		})
+	}
+}
+
+func TestListVPNProfilesPluginLogin(t *testing.T) {
+	dir := t.TempDir()
+	dialog := filepath.Join(dir, "dialog")
+	assert.NoError(t, os.WriteFile(dialog, []byte("#!/bin/sh\n"), 0o755))
+	for _, svc := range []string{"vpnc", "l2tp"} {
+		content := "[VPN Connection]\nservice=org.freedesktop.NetworkManager." + svc + "\n[GNOME]\nauth-dialog=" + dialog + "\n"
+		assert.NoError(t, os.WriteFile(filepath.Join(dir, svc+".name"), []byte(content), 0o644))
+	}
+	orig := vpnPluginDirs
+	vpnPluginDirs = []string{dir}
+	t.Cleanup(func() { vpnPluginDirs = orig })
+
+	profile := func(name string, data map[string]string) gonetworkmanager.Connection {
+		conn := mock_gonetworkmanager.NewMockConnection(t)
+		conn.EXPECT().GetSettings().Return(gonetworkmanager.ConnectionSettings{
+			"connection": {"id": name, "uuid": name, "type": "vpn"},
+			"vpn":        {"service-type": "org.freedesktop.NetworkManager." + name, "data": data},
+		}, nil)
+		return conn
+	}
+	settings := mock_gonetworkmanager.NewMockSettings(t)
+	settings.EXPECT().ListConnections().Return([]gonetworkmanager.Connection{
+		profile("vpnc", map[string]string{"Xauth password-flags": "1"}),
+		profile("l2tp", map[string]string{"password-flags": "1"}),
+	}, nil)
+
+	profiles, err := (&NetworkManagerBackend{settings: settings, state: &BackendState{}}).ListVPNProfiles()
+	assert.NoError(t, err)
+	got := map[string]bool{}
+	for _, p := range profiles {
+		got[p.Name] = p.PluginLogin
+	}
+	assert.Equal(t, map[string]bool{"vpnc": true, "l2tp": false}, got)
+}
+
+func TestMarkSecretsNotSaved(t *testing.T) {
+	data := map[string]string{"IPSec secret-flags": "1"}
+	changed := markSecretsNotSaved(data, map[string]string{"Xauth password": "x", "IPSec secret": "y"})
+	assert.True(t, changed)
+	assert.Equal(t, map[string]string{"IPSec secret-flags": "1", "Xauth password-flags": "2"}, data)
+	assert.False(t, markSecretsNotSaved(data, map[string]string{"Xauth password": "x"}))
 }

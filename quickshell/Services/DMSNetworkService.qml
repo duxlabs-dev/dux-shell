@@ -178,6 +178,7 @@ Singleton {
     property var vpnBusyStartTime: 0
     property string vpnError: ""
     property string vpnErrorUuid: ""
+    property string vpnConnectRequest: ""
 
     property var profiles: {
         const mergedProfiles = vpnProfiles ? vpnProfiles.slice() : [];
@@ -578,12 +579,17 @@ Singleton {
         }
 
         const incomingVpnError = state.vpnError || "";
-        if (incomingVpnError && incomingVpnError !== vpnError) {
+        if (incomingVpnError && (incomingVpnError !== vpnError || (state.vpnErrorUuid || "") !== vpnErrorUuid)) {
             vpnIsBusy = false;
             pendingVpnUuid = "";
             vpnBusyStartTime = 0;
-            const failedName = (vpnProfiles.find(p => p.uuid === state.vpnErrorUuid)?.name) || I18n.tr("VPN", "virtual private network, widget and page title");
-            ToastService.showError(I18n.tr("%1: %2", "vpn error toast, %1 is the vpn name, %2 is the error").arg(failedName).arg(incomingVpnError));
+            const failedProfile = vpnProfiles.find(p => p.uuid === state.vpnErrorUuid);
+            const failedName = failedProfile?.name || I18n.tr("VPN", "virtual private network, widget and page title");
+            // A failed connect request already showed its own toast with the details.
+            if (vpnConnectRequest && (vpnConnectRequest === state.vpnErrorUuid || vpnConnectRequest === failedProfile?.name))
+                vpnConnectRequest = "";
+            else
+                ToastService.showError(I18n.tr("%1: %2", "vpn error toast, %1 is the vpn name, %2 is the error").arg(failedName).arg(incomingVpnError));
         }
         vpnError = incomingVpnError;
         vpnErrorUuid = state.vpnErrorUuid || "";
@@ -1177,6 +1183,7 @@ Singleton {
         vpnIsBusy = true;
         pendingVpnUuid = uuidOrName;
         vpnBusyStartTime = Date.now();
+        vpnConnectRequest = uuidOrName;
 
         const params = {
             uuidOrName: uuidOrName,
@@ -1189,6 +1196,8 @@ Singleton {
                 pendingVpnUuid = "";
                 vpnBusyStartTime = 0;
                 ToastService.showError(I18n.tr("Failed to connect VPN"), response.error);
+            } else {
+                vpnConnectRequest = "";
             }
         });
     }
