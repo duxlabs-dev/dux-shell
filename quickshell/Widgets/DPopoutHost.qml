@@ -48,6 +48,8 @@ Item {
     property Item sideBlurItem: popoutHandle.sideBlurItem
     property real sideBlurRadius: popoutHandle.sideBlurRadius
     property real inputMargin: popoutHandle.inputMargin
+    property real minimumSurfaceWidth: popoutHandle.minimumSurfaceWidth
+    property bool _surfaceFitOwed: false
     property real triggerX: popoutHandle.triggerX
     property real triggerY: popoutHandle.triggerY
     property real triggerWidth: popoutHandle.triggerWidth
@@ -69,10 +71,12 @@ Item {
         if (_travelFromHandoff)
             return Qt.rect(0, 0, screenWidth, screenHeight);
         const padding = Theme.elevationRenderPadding(shadowLevel, effectiveShadowDirection, shadowFallbackOffset, Theme.connectedCornerRadius + inputMargin, Theme.spacingL) + Theme.fluidOvershootLimit;
+        const reservedWidth = Theme.px(Math.min(minimumSurfaceWidth, screenWidth), dpr);
+        const reserved = reservedWidth > alignedWidth;
         const body = {
-            x: alignedX - leftOverflow,
+            x: (reserved ? alignedXFor(reservedWidth) : alignedX) - leftOverflow,
             y: alignedY - topOverflow,
-            width: alignedWidth + leftOverflow + rightOverflow,
+            width: (reserved ? reservedWidth : alignedWidth) + leftOverflow + rightOverflow,
             height: alignedHeight + topOverflow + bottomOverflow
         };
         const area = PopoutBounds.motion(screenWidth, screenHeight, body, _surfaceMotionOrigin, _fluidMotionActive ? 0 : contentContainer.offsetX, _fluidMotionActive ? 0 : contentContainer.offsetY, _fluidMotionActive ? 1 : animationScaleCollapsed, padding, _geometrySpringParams);
@@ -868,10 +872,25 @@ Item {
         damping: root._resizeSpringParams.damping
         positionEpsilon: 0.25 / root.dpr
         velocityEpsilon: positionEpsilon * damping / (2 * mass)
+        onRunningChanged: root._fitSurface()
         onValueChanged: {
             if (root._geometryMotion)
                 root._setBody(value.y, root.resizeMotion ? value.width : root.alignedWidth, value.height);
         }
+    }
+
+    onMinimumSurfaceWidthChanged: {
+        if (minimumSurfaceWidth > 0)
+            return;
+        _surfaceFitOwed = true;
+        Qt.callLater(_fitSurface);
+    }
+
+    function _fitSurface() {
+        if (!_surfaceFitOwed || minimumSurfaceWidth > 0 || bodySpring.running)
+            return;
+        _surfaceFitOwed = false;
+        surface?.fitBounds();
     }
 
     // One notification per body change: travelTarget would otherwise fire once per component write.
@@ -1233,7 +1252,6 @@ Item {
     }
 
     readonly property real maxBodyWidth: Math.max(0, _maxBodyWidthFor(_startGapX, _endGapX, connected && usesConnectedSurfaceChrome ? connectedAnchorX : triggerX))
-
 
     function roomLeftFor(width) {
         return Math.max(0, alignedXFor(width) - _startGapX);

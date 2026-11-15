@@ -34,6 +34,8 @@ Item {
     property Item sideBlurItem: null
     property real sideBlurRadius: 0
     property real inputMargin: 0
+    // Reserved up front: a surface that moves under a pressed pointer reports the drag from its old origin.
+    property real minimumSurfaceWidth: 0
     property bool suspendShadowWhileResizing: false
     property bool shouldBeVisible: false
     property bool hoverDismissEnabled: false

@@ -22,6 +22,7 @@ DPopout {
     sideBlurItem: contentLoader.item?.dockedBlurItem ?? null
     sideBlurRadius: contentLoader.item?.surfaceRadius ?? 0
     inputMargin: editMode ? CcMetrics.editOverflow : 0
+    minimumSurfaceWidth: editMode ? CcMetrics.sheetWidthFor(gridColumnCap) : 0
 
     property string expandedSection: ""
     property string pendingSection: ""

@@ -43,7 +43,7 @@ FocusScope {
         return preferred > 0 ? preferred : CcMetrics.detailHeightDefault;
     }
     // The band's extent includes the gap above and below its card, so they grow and shrink with it.
-    readonly property real chromeHeight: CcMetrics.gridGap * 2 + CcMetrics.detailHeaderHeight + CcMetrics.detailDialogPadding * 2
+    readonly property real chromeHeight: CcMetrics.gridGap * 2 + CcMetrics.detailHeaderHeight + CcMetrics.detailBandPadding * 2
     readonly property real contentCap: Math.max(CcMetrics.detailHeightFloor(shownSection, pageItem?.preferredHeight ?? 0), maximumHeight - chromeHeight)
     readonly property real targetHeight: section === "" || pageHeight <= 0 ? 0 : chromeHeight + Math.min(pageHeight, contentCap)
     readonly property bool transitioning: heightAnimation.running
@@ -144,7 +144,7 @@ FocusScope {
         y: CcMetrics.gridGap
         width: parent.width
         height: Math.max(0, parent.height - CcMetrics.gridGap * 2)
-        radius: CcMetrics.tallTileRadius
+        radius: CcMetrics.detailBandRadius
         color: CcMetrics.dialogColor
         border.width: Theme.layerOutlineWidth
         border.color: Theme.outlineMedium
@@ -153,7 +153,7 @@ FocusScope {
             id: panel
 
             anchors.fill: parent
-            anchors.margins: CcMetrics.detailDialogPadding
+            anchors.margins: CcMetrics.detailBandPadding
             opacity: root.section !== "" ? (CcMetrics.hideCoveredContent ? 1 - root.coverage : 1) : 0
 
             Behavior on opacity {

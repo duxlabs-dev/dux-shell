@@ -95,6 +95,9 @@ Singleton {
     readonly property real editChromeInset: Math.max(Theme.minimumTouchTargetSize, editChromeButtonSize) / 2
 
     readonly property real detailDialogPadding: Theme.spacingS
+    // A square-clipped list stays inside the band's corner only while the inset is at least (sqrt(2) - 1) of the row radius.
+    readonly property real detailBandPadding: Math.max(detailDialogPadding, Math.ceil(Theme.groupedListOuterRadius * (Math.SQRT2 - 1)))
+    readonly property real detailBandRadius: Theme.groupedListOuterRadius + detailBandPadding
     readonly property real detailHeaderHeight: Theme.iconButtonSize
     readonly property real detailTitleSize: Theme.fontSizeLarge
     readonly property real detailMinContentHeight: Theme.listItemTwoLineHeight * 3

@@ -82,6 +82,7 @@ DPopout {
     readonly property real editGutter: editMode ? PopoutMetrics.editOverflow : 0
 
     popupWidth: panelWidthFor(DashMetrics.panelColumnsFor(activeTabId))
+    minimumSurfaceWidth: editMode ? panelWidthFor(columnCap) : 0
     popupHeight: contentLoader.item?.implicitHeight ?? (DashMetrics.tabDefaultHeight + Theme.navigationHeight + DashMetrics.contentGap + DashMetrics.contentPadding * 2)
     triggerWidth: DashMetrics.triggerWidth
     screen: triggerScreen
