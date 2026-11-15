@@ -99,6 +99,9 @@ var LOCAL_SPEC = {
         def: [],
         coerce: coerceWallpaperFolderSelection
     },
+    wallpaperHideMismatched: {
+        def: false
+    },
     monitorCyclingSettings: {
         def: {}
     },

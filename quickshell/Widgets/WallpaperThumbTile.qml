@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell.Widgets
 import qs.Common
+import qs.DCommon.Widgets
 import qs.Services
 import qs.Widgets
 
@@ -9,6 +10,9 @@ Item {
 
     property string path: ""
     property bool selected: false
+    property bool mismatched: false
+    property real mismatchedOpacity: 1
+    property string sizeText: ""
     readonly property bool animationsEnabled: !SettingsData.reduceMotion && Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
 
     signal clicked
@@ -20,6 +24,7 @@ Item {
     Accessible.name: path.substring(path.lastIndexOf("/") + 1)
     Accessible.checkable: true
     Accessible.checked: selected
+    Accessible.description: mismatched ? I18n.tr("Hidden", "wallpaper hidden because it doesn't fit the display") + (sizeText ? ", " + sizeText : "") : ""
     Accessible.onPressAction: root.clicked()
 
     Rectangle {
@@ -42,7 +47,7 @@ Item {
                 imagePath: VideoWallpaperService.imageFor(root.path)
                 maxCacheSize: 256
                 animate: false
-                opacity: status === Image.Ready ? 1 : 0
+                opacity: status !== Image.Ready ? 0 : root.mismatched ? root.mismatchedOpacity : 1
 
                 Behavior on opacity {
                     enabled: root.animationsEnabled
@@ -69,6 +74,44 @@ Item {
                     easing.type: Easing.BezierSpline
                     easing.bezierCurve: Theme.expressiveCurves.expressiveEffects
                 }
+            }
+        }
+
+        Rectangle {
+            visible: root.mismatched
+            anchors.top: parent.top
+            anchors.right: parent.right
+            anchors.margins: Theme.spacingS
+            width: hiddenIcon.width + Theme.spacingXS * 2
+            height: width
+            radius: Theme.cornerRadiusS
+            color: Theme.surfaceContainer
+
+            DIcon {
+                id: hiddenIcon
+                anchors.centerIn: parent
+                name: "visibility_off"
+                size: Theme.iconSizeSmall
+                color: Theme.surfaceText
+            }
+        }
+
+        Rectangle {
+            visible: root.mismatched && root.sizeText !== ""
+            anchors.bottom: parent.bottom
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.bottomMargin: Theme.spacingS
+            width: sizeLabel.implicitWidth + Theme.spacingS * 2
+            height: sizeLabel.implicitHeight + Theme.spacingXS * 2
+            radius: Theme.cornerRadiusS
+            color: Theme.surfaceContainer
+
+            StyledText {
+                id: sizeLabel
+                anchors.centerIn: parent
+                text: root.sizeText
+                font.pixelSize: Theme.fontSizeSmall
+                color: Theme.surfaceText
             }
         }
 

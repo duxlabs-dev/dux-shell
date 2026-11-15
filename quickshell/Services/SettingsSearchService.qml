@@ -89,6 +89,7 @@ Singleton {
             "soundsAvailable": () => !MultimediaService.unavailable,
             "cupsAvailable": () => CupsService.cupsAvailable,
             "networkAvailable": () => NetworkService.networkAvailable,
+            "wallpaperFoldersAdded": () => SessionData.wallpaperFolders.length > 0,
             "dmsConnected": () => DMSService.isConnected && DMSService.apiVersion >= 23,
             "matugenAvailable": () => Theme.matugenAvailable,
             "greeterAvailable": () => GreeterService.available,

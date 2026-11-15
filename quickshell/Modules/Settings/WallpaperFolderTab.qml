@@ -15,7 +15,8 @@ Item {
     property var parentModal: null
 
     readonly property var folder: WallpaperLibraryService.folders.find(entry => entry.path === SettingsUiState.selectedWallpaperFolder) ?? null
-    readonly property var paths: folder ? WallpaperLibraryService.folderItems(folder.path).map(item => item.path) : []
+    readonly property var entries: folder ? WallpaperLibraryService.folderItems(folder.path) : []
+    readonly property var paths: entries.map(item => item.path)
     readonly property bool missing: folder !== null && WallpaperLibraryService.missing.includes(folder.path)
     readonly property string selectedScreen: SettingsUiState.selectedWallpaperScreen || (Quickshell.screens.length > 0 ? Quickshell.screens[0].name : "")
     readonly property string currentWallpaper: SessionData.getMonitorWallpaper(selectedScreen)
@@ -107,8 +108,14 @@ Item {
             required property string modelData
             required property int index
 
+            readonly property var entry: root.entries[index] ?? null
+            readonly property var sizeSource: entry && entry.variants ? entry.variants[0] : entry
+
             path: modelData
             selected: root.listedCurrent === modelData
+            mismatched: entry !== null && !WallpaperLibraryService.fits(entry, root.selectedScreen)
+            mismatchedOpacity: SettingsMetrics.disabledOpacity
+            sizeText: sizeSource?.width ? sizeSource.width + "×" + sizeSource.height : ""
             opacity: root.folder?.hidden ? SettingsMetrics.disabledOpacity : 1
             onClicked: {
                 grid.currentIndex = index;

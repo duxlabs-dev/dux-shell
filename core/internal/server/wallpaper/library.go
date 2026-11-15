@@ -32,12 +32,15 @@ type Variant struct {
 
 // Item is one wallpaper. A KDE package lists its sizes in Variants, largest first, and Path is the largest.
 // Folder is the listed folder that owns it, as the caller spelled it. Size and Mtime come from the largest variant.
+// Width and Height are the pixel size when requested, 0 when unknown.
 type Item struct {
 	Path     string    `json:"path"`
 	Variants []Variant `json:"variants,omitempty"`
 	Folder   string    `json:"folder"`
 	Size     int64     `json:"size"`
 	Mtime    int64     `json:"mtime"`
+	Width    int       `json:"width,omitempty"`
+	Height   int       `json:"height,omitempty"`
 }
 
 type Library struct {

@@ -1,11 +1,18 @@
 package wallpaper
 
 import (
+	"bytes"
 	"context"
+	"fmt"
+	"image"
+	"image/jpeg"
+	"image/png"
 	"os"
 	"path/filepath"
 	"slices"
 	"testing"
+
+	"golang.org/x/image/bmp"
 )
 
 func writeFiles(t *testing.T, root string, names ...string) {
@@ -313,5 +320,120 @@ func TestSuggestFolders(t *testing.T) {
 	want := []string{home + "/wallpapers", share + "/backgrounds", pictures + "/Wallpapers"}
 	if !slices.Equal(got, want) {
 		t.Errorf("got %q, want %q", got, want)
+	}
+}
+
+func writeImage(t *testing.T, path string, w, h int) {
+	t.Helper()
+	var buf bytes.Buffer
+	img := image.NewRGBA(image.Rect(0, 0, w, h))
+	var err error
+	switch filepath.Ext(path) {
+	case ".jpg":
+		err = jpeg.Encode(&buf, img, nil)
+	case ".bmp":
+		err = bmp.Encode(&buf, img)
+	default:
+		err = png.Encode(&buf, img)
+	}
+	if err == nil {
+		err = os.WriteFile(path, buf.Bytes(), 0o644)
+	}
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+// fakeFFprobe puts an ffprobe on an otherwise empty PATH that prints out, exits with code and leaves a marker file.
+func fakeFFprobe(t *testing.T, out string, code int) (ran string) {
+	t.Helper()
+	dir := t.TempDir()
+	script := fmt.Sprintf("#!/bin/sh\n: > \"$0.ran\"\nprintf '%%s' '%s'\nexit %d\n", out, code)
+	if err := os.WriteFile(filepath.Join(dir, "ffprobe"), []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", dir)
+	return filepath.Join(dir, "ffprobe.ran")
+}
+
+func TestReadSizes(t *testing.T) {
+	const tiled = `{"stream_groups":[{"components":[{"width":4000,"height":3000,"side_data_list":[{"rotation":-90}]}]}],"streams":[{"width":512,"height":512}]}`
+	cases := []struct {
+		name, file string
+		w, h       int
+		raw        string
+		probe      string
+		code       int
+		variants   bool
+		wantW      int
+		wantH      int
+		wantProbe  bool
+	}{
+		{name: "png", file: "a.png", w: 300, h: 200, wantW: 300, wantH: 200},
+		{name: "jpeg", file: "a.jpg", w: 64, h: 48, wantW: 64, wantH: 48},
+		{name: "bmp", file: "a.bmp", w: 10, h: 20, wantW: 10, wantH: 20},
+		{name: "corrupt png", file: "a.png", raw: "\x89PNG\r\n\x1a\ngarbage"},
+		{name: "svg", file: "a.svg", raw: "<svg/>", probe: `{"streams":[{"width":5,"height":5}]}`},
+		{name: "rotated video", file: "a.mp4", raw: "x", probe: `{"streams":[{"width":1920,"height":1080,"side_data_list":[{"rotation":90}]}]}`, wantW: 1080, wantH: 1920, wantProbe: true},
+		{name: "tile grid", file: "a.heic", raw: "x", probe: tiled, wantW: 3000, wantH: 4000, wantProbe: true},
+		{name: "ffprobe fails", file: "a.mp4", raw: "x", probe: `{"streams":[{"width":5,"height":5}]}`, code: 1, wantProbe: true},
+		{name: "package", file: "a.png", w: 30, h: 20, variants: true},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			ran := fakeFFprobe(t, c.probe, c.code)
+			path := filepath.Join(t.TempDir(), c.file)
+			if c.raw != "" {
+				if err := os.WriteFile(path, []byte(c.raw), 0o644); err != nil {
+					t.Fatal(err)
+				}
+			} else {
+				writeImage(t, path, c.w, c.h)
+			}
+			items := []Item{{Path: path}}
+			if c.variants {
+				items[0].Variants = []Variant{{Path: path, Width: 30, Height: 20}}
+			}
+
+			readSizes(context.Background(), items)
+			if items[0].Width != c.wantW || items[0].Height != c.wantH {
+				t.Errorf("got %dx%d, want %dx%d", items[0].Width, items[0].Height, c.wantW, c.wantH)
+			}
+			if _, err := os.Stat(ran); (err == nil) != c.wantProbe {
+				t.Errorf("ffprobe ran: %v, want %v", err == nil, c.wantProbe)
+			}
+		})
+	}
+}
+
+func TestReadSizesCache(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("PATH", "")
+	read := func(item Item) Item {
+		items := []Item{item}
+		readSizes(context.Background(), items)
+		return items[0]
+	}
+
+	still := filepath.Join(dir, "a.png")
+	writeImage(t, still, 30, 20)
+	read(Item{Path: still, Size: 1, Mtime: 1})
+	writeImage(t, still, 40, 10)
+	if got := read(Item{Path: still, Size: 1, Mtime: 1}); got.Width != 30 {
+		t.Errorf("same size and mtime: got width %d, want the cached 30", got.Width)
+	}
+	if got := read(Item{Path: still, Size: 1, Mtime: 2}); got.Width != 40 {
+		t.Errorf("new mtime: got width %d, want 40", got.Width)
+	}
+
+	video := Item{Path: filepath.Join(dir, "a.mp4")}
+	writeFiles(t, dir, "a.mp4")
+	if got := read(video); got.Width != 0 {
+		t.Errorf("without ffprobe: got width %d", got.Width)
+	}
+	fakeFFprobe(t, `{"streams":[{"width":1920,"height":1080}]}`, 0)
+	if got := read(video); got.Width != 1920 {
+		t.Errorf("ffprobe installed later: got width %d, want 1920", got.Width)
 	}
 }

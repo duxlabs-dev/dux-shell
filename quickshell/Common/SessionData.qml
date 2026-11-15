@@ -226,6 +226,7 @@ Singleton {
     property bool wallpaperCyclingVideoEnd: false
     property var wallpaperFolders: []
     property var wallpaperFolderSelection: []
+    property bool wallpaperHideMismatched: false
     property var monitorCyclingSettings: ({})
 
     property bool nightModeEnabled: false

@@ -210,7 +210,7 @@ var SESSION_MAP = {
         "wallpaperPathDark", "monitorWallpapersLight", "monitorWallpapersDark", "wallpaperTransition",
         "includedTransitions", "wallpaperCyclingEnabled", "wallpaperCyclingRandom", "wallpaperCyclingRecursive",
         "wallpaperCyclingMode", "wallpaperCyclingInterval", "wallpaperCyclingTime", "wallpaperCyclingFolderPath",
-        "monitorCyclingSettings", "wallpaperCyclingVideoEnd"
+        "monitorCyclingSettings", "wallpaperCyclingVideoEnd", "wallpaperHideMismatched"
     ],
     dark_mode: [
         "isLightMode", "themeModeAutoEnabled", "themeModeAutoMode", "themeModeStartHour", "themeModeStartMinute",

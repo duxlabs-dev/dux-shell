@@ -608,6 +608,8 @@ def find_settings_components(content, filename, wrappers, tab_meta, hub_meta):
                     condition_key = "networkAvailable"
                 elif "DMSService.isConnected" in visible_raw:
                     condition_key = "dmsConnected"
+                elif "SessionData.wallpaperFolders" in visible_raw:
+                    condition_key = "wallpaperFoldersAdded"
                 elif "Theme.matugenAvailable" in visible_raw:
                     condition_key = "matugenAvailable"
                 elif "dock.config.enabled" in visible_raw:

@@ -673,6 +673,16 @@ Column {
             hint: SettingsTabs.page("wallpaper_folders")?.hint ?? ""
             onClicked: keyboard => root.parentModal?.navigateTo("wallpaper_folders", keyboard)
         }
+
+        SettingsToggleRow {
+            tab: "wallpaper"
+            tags: ["fit", "resolution", "aspect", "ratio", "mismatch"]
+            settingKey: "wallpaperHideMismatched"
+            visible: SessionData.wallpaperFolders.length > 0
+            text: I18n.tr("Hide wallpapers that don't fit the display", "wallpaper settings toggle: hide wallpapers whose shape or resolution doesn't suit the display")
+            checked: SessionData.wallpaperHideMismatched
+            onToggled: toggled => SessionData.set("wallpaperHideMismatched", toggled)
+        }
     }
 
     SettingsCard {

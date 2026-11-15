@@ -151,7 +151,7 @@ Singleton {
         const revision = SessionData.wallpaperRequestRevision(screenName);
         WallpaperLibraryService.list(folders, result => {
             if (result)
-                applyCycledWallpaper(keep ? keep(result.items) : result.items, currentPath, screenName, goToPrevious, revision);
+                applyCycledWallpaper(WallpaperLibraryService.fitting(keep ? keep(result.items) : result.items, screenName), currentPath, screenName, goToPrevious, revision);
         });
     }
 
@@ -323,14 +323,6 @@ Singleton {
         return "SUCCESS: " + doneMessage + ": " + path;
     }
 
-    function variantFor(item, screenName) {
-        const screen = SessionData._screenByName(screenName) || Quickshell.screens[0];
-        if (!item.variants || !screen)
-            return item.path;
-        const distance = variant => Math.abs(Math.log(variant.width / variant.height * screen.height / screen.width));
-        return item.variants.reduce((best, variant) => distance(variant) < distance(best) ? variant : best).path;
-    }
-
     function applyCycledWallpaper(wallpaperList, currentPath, targetScreenName, goToPrevious, revision) {
         if (revision !== SessionData.wallpaperRequestRevision(targetScreenName))
             return;
@@ -367,7 +359,7 @@ Singleton {
                 targetIndex = (currentIndex + 1) % wallpaperList.length;
             }
         }
-        const targetWallpaper = variantFor(wallpaperList[targetIndex], targetScreenName);
+        const targetWallpaper = WallpaperLibraryService.variantFor(wallpaperList[targetIndex], targetScreenName);
         if (targetWallpaper === currentPath)
             return;
 
