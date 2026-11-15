@@ -239,6 +239,16 @@ func (a *SecretAgent) GetSecrets(
 					return nil, dbus.NewError("org.freedesktop.NetworkManager.SecretAgent.Error.NoSecrets", nil)
 				}
 
+				// ConnectVPN already ran the plugin's dialog; anything it didn't return is saved for NM.
+				if pluginAuthDialog(vpnSvc, vpnDataFromSettings(conn)) != nil {
+					if cached := a.backend.takeCachedVPNSecrets(connUuid); cached != nil {
+						log.Infof("[SecretAgent] Using cached VPN authentication for %s", connUuid)
+						return vpnSecretsResponse(settingName, cached.Secrets), nil
+					}
+					log.Infof("[SecretAgent] VPN with empty hints and no cached login - deferring to system secrets for %s", vpnSvc)
+					return nil, dbus.NewError("org.freedesktop.NetworkManager.SecretAgent.Error.NoSecrets", nil)
+				}
+
 				fields = inferVPNFields(conn, vpnSvc)
 				log.Infof("[SecretAgent] VPN with empty hints but we're connecting - inferred fields: %v", fields)
 			} else {
@@ -352,17 +362,11 @@ func (a *SecretAgent) GetSecrets(
 		}
 		a.backend.cachedVPNCredsMu.Unlock()
 
-		a.backend.cachedVPNSecretsMu.Lock()
-		cachedSecrets := a.backend.cachedVPNSecrets
-		if cachedSecrets != nil && cachedSecrets.ConnectionUUID == connUuid {
-			a.backend.cachedVPNSecrets = nil
-			a.backend.cachedVPNSecretsMu.Unlock()
-
+		if cachedSecrets := a.backend.takeCachedVPNSecrets(connUuid); cachedSecrets != nil {
 			log.Infof("[SecretAgent] Using cached VPN authentication for %s", connUuid)
 
 			return vpnSecretsResponse(settingName, cachedSecrets.Secrets), nil
 		}
-		a.backend.cachedVPNSecretsMu.Unlock()
 
 		if len(fields) == 1 && fields[0] == "fortinet-saml" {
 			data := vpnDataFromSettings(conn)
@@ -952,6 +956,17 @@ func buildFieldsInfo(setting string, fields []string, hints []string, vpnService
 	return result
 }
 
+func (b *NetworkManagerBackend) takeCachedVPNSecrets(uuid string) *cachedVPNSecrets {
+	b.cachedVPNSecretsMu.Lock()
+	defer b.cachedVPNSecretsMu.Unlock()
+	cached := b.cachedVPNSecrets
+	if cached == nil || cached.ConnectionUUID != uuid {
+		return nil
+	}
+	b.cachedVPNSecrets = nil
+	return cached
+}
+
 func vpnDataFromSettings(conn map[string]nmVariantMap) map[string]string {
 	vpnSettings, ok := conn["vpn"]
 	if !ok {
@@ -1057,6 +1072,13 @@ func secretFlagsNotRequired(flags string) bool {
 		return false
 	}
 	return n&0x4 != 0
+}
+
+// Secrets with neither agent-owned (1) nor not-saved (2) set are saved for the system,
+// and NetworkManager supplies those itself during activation. Not-required (4) is skipped.
+func secretFlagsAgentAsks(flags string) bool {
+	n, err := strconv.Atoi(flags)
+	return err == nil && n&0x3 != 0 && n&0x4 == 0
 }
 
 func needsExternalBrowserAuth(protocol, authType, username string, data map[string]string) bool {

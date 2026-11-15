@@ -363,7 +363,7 @@ func (b *NetworkManagerBackend) ConnectVPN(uuidOrName string, singleActive bool)
 
 	authAction := detectVPNAuthAction(vpnServiceType, vpnData)
 	var openConnectAuth *openConnectAuthResult
-	var vpnSecrets map[string]string
+	var vpnSecrets, storedSecrets map[string]string
 
 	switch authAction {
 	case "openvpn_username":
@@ -378,16 +378,17 @@ func (b *NetworkManagerBackend) ConnectVPN(uuidOrName string, singleActive bool)
 			return fmt.Errorf("failed to prepare OpenConnect connection: %w", err)
 		}
 
+		storedSecrets = storedVPNSecrets(targetConn)
 		authCtx, authCancel := context.WithTimeout(context.Background(), 5*time.Minute)
 		openConnectAuth, err = b.handleOpenConnectPasswordAuth(
-			authCtx, targetConn, connName, targetUUID, vpnServiceType, vpnData,
+			authCtx, targetConn, connName, targetUUID, vpnServiceType, vpnData, storedSecrets,
 		)
 		authCancel()
 		if openConnectDialogFallback(err, vpnData) {
 			if plugin := authDialogPlugin(scanVPNPlugins(), vpnServiceType); plugin != nil {
 				log.Infof("[ConnectVPN] %s asked again or for more input, falling back to the plugin's auth dialog", connName)
 				plugin.ExternalUIMode = false
-				vpnSecrets, err = b.handleVPNAuthDialog(targetConn, *plugin, connName, targetUUID, vpnServiceType, vpnData)
+				vpnSecrets, err = b.handleVPNAuthDialog(targetConn, *plugin, connName, targetUUID, vpnServiceType, vpnData, storedSecrets)
 			} else {
 				err = fmt.Errorf("the server asked again or for more input: %w", err)
 			}
@@ -450,10 +451,7 @@ func (b *NetworkManagerBackend) ConnectVPN(uuidOrName string, singleActive bool)
 
 		log.Infof("[ConnectVPN] GlobalProtect SAML cookie cached for %s, proceeding with activation", connName)
 	case "":
-		if !vpnPluginLogin(vpnServiceType, vpnData) {
-			break
-		}
-		plugin := authDialogPlugin(scanVPNPlugins(), vpnServiceType)
+		plugin := pluginAuthDialog(vpnServiceType, vpnData)
 		if plugin == nil {
 			break
 		}
@@ -462,7 +460,8 @@ func (b *NetworkManagerBackend) ConnectVPN(uuidOrName string, singleActive bool)
 				return fmt.Errorf("failed to prepare OpenConnect connection: %w", err)
 			}
 		}
-		vpnSecrets, err = b.handleVPNAuthDialog(targetConn, *plugin, connName, targetUUID, vpnServiceType, vpnData)
+		storedSecrets = storedVPNSecrets(targetConn)
+		vpnSecrets, err = b.handleVPNAuthDialog(targetConn, *plugin, connName, targetUUID, vpnServiceType, vpnData, storedSecrets)
 		if err != nil {
 			return fmt.Errorf("VPN authentication failed: %w", err)
 		}
@@ -474,7 +473,7 @@ func (b *NetworkManagerBackend) ConnectVPN(uuidOrName string, singleActive bool)
 			vpnSecrets["resolve"] = openConnectAuth.Resolve
 		}
 	}
-	if (authAction == "" || authAction == "openconnect_password") && markSecretsNotSaved(vpnData, vpnSecrets) {
+	if (authAction == "" || authAction == "openconnect_password") && markSecretsNotSaved(vpnData, vpnSecrets, storedSecrets) {
 		if err := b.writeVPNData(targetConn, vpnData); err != nil {
 			return fmt.Errorf("failed to prepare VPN connection: %w", err)
 		}
@@ -557,6 +556,13 @@ func vpnPluginLogin(serviceType string, data map[string]string) bool {
 	return true
 }
 
+func pluginAuthDialog(serviceType string, data map[string]string) *VPNPlugin {
+	if !vpnPluginLogin(serviceType, data) {
+		return nil
+	}
+	return authDialogPlugin(scanVPNPlugins(), serviceType)
+}
+
 func setOpenConnectAgentFlags(data map[string]string) bool {
 	changed := false
 	for _, field := range []string{"cookie", "gateway", "gwcert"} {
@@ -570,9 +576,13 @@ func setOpenConnectAgentFlags(data map[string]string) bool {
 }
 
 // NM drops secrets an agent returns for keys without flags, which count as system-owned.
-func markSecretsNotSaved(data map[string]string, secrets map[string]string) bool {
+// Keys already stored with the same value stay system-owned, or the update would drop them.
+func markSecretsNotSaved(data, secrets, stored map[string]string) bool {
 	changed := false
-	for k := range secrets {
+	for k, v := range secrets {
+		if saved, ok := stored[k]; ok && saved == v {
+			continue
+		}
 		if _, ok := data[k+"-flags"]; !ok {
 			data[k+"-flags"] = "2"
 			changed = true
@@ -617,10 +627,9 @@ func (b *NetworkManagerBackend) handleOpenConnectPasswordAuth(
 	ctx context.Context,
 	targetConn gonetworkmanager.Connection,
 	connName, targetUUID, vpnServiceType string,
-	data map[string]string,
+	data, secrets map[string]string,
 ) (*openConnectAuthResult, error) {
 	username := data["username"]
-	secrets := storedVPNSecrets(targetConn)
 
 	password := secrets["password"]
 	// A list of pins: an HA gateway answers from several nodes, each with its own certificate.
@@ -740,7 +749,7 @@ func (b *NetworkManagerBackend) handleVPNAuthDialog(
 	targetConn gonetworkmanager.Connection,
 	plugin VPNPlugin,
 	connName, targetUUID, vpnServiceType string,
-	data map[string]string,
+	data, stored map[string]string,
 ) (map[string]string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
@@ -752,7 +761,7 @@ func (b *NetworkManagerBackend) handleVPNAuthDialog(
 		ServiceType: vpnServiceType,
 		ExternalUI:  plugin.ExternalUIMode,
 		Data:        data,
-		Secrets:     storedVPNSecrets(targetConn),
+		Secrets:     stored,
 	})
 	if err != nil || !plugin.ExternalUIMode {
 		// The openconnect dialog closed without logging in still exits 0, just without a cookie.
@@ -766,6 +775,7 @@ func (b *NetworkManagerBackend) handleVPNAuthDialog(
 	var ask []FieldInfo
 	for _, f := range fields {
 		switch {
+		case !secretFlagsAgentAsks(data[f.Name+"-flags"]):
 		case f.ShouldAsk:
 			ask = append(ask, FieldInfo{Name: f.Name, Label: cmp.Or(f.Label, f.Name), IsSecret: f.IsSecret})
 		case f.Value != "":
@@ -773,6 +783,9 @@ func (b *NetworkManagerBackend) handleVPNAuthDialog(
 		}
 	}
 	if len(ask) == 0 {
+		if len(secrets) == 0 {
+			return nil, nil
+		}
 		return secrets, nil
 	}
 	if b.promptBroker == nil {

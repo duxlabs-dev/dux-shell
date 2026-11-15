@@ -68,9 +68,7 @@ exit 1
 
 	conn := mock_gonetworkmanager.NewMockConnection(t)
 	connPath := dbus.ObjectPath("/org/freedesktop/NetworkManager/Settings/999")
-	conn.EXPECT().GetSecrets("vpn").Return(gonetworkmanager.ConnectionSettings{
-		"vpn": {"secrets": map[string]string{"password": "test-password"}},
-	}, nil)
+	stored := map[string]string{"password": "test-password"}
 	conn.EXPECT().GetPath().Return(connPath).Twice()
 
 	broker := &fakePromptBroker{
@@ -87,7 +85,7 @@ exit 1
 
 	result, err := backend.handleOpenConnectPasswordAuth(
 		context.Background(), conn, "Test VPN", "test-uuid",
-		"org.freedesktop.NetworkManager.openconnect", data,
+		"org.freedesktop.NetworkManager.openconnect", data, stored,
 	)
 	assert.NoError(t, err)
 	assert.Equal(t, "SVPNCOOKIE=test", result.Cookie)
@@ -120,12 +118,10 @@ exit 1
 
 	conn := mock_gonetworkmanager.NewMockConnection(t)
 	connPath := dbus.ObjectPath("/org/freedesktop/NetworkManager/Settings/999")
-	conn.EXPECT().GetSecrets("vpn").Return(gonetworkmanager.ConnectionSettings{
-		"vpn": {"secrets": map[string]string{
-			"password":                         "test-password",
-			"certificate:vpn.example.test:443": "pin-sha256:OLD-FINGERPRINT",
-		}},
-	}, nil)
+	stored := map[string]string{
+		"password":                         "test-password",
+		"certificate:vpn.example.test:443": "pin-sha256:OLD-FINGERPRINT",
+	}
 	conn.EXPECT().GetPath().Return(connPath).Twice()
 
 	broker := &fakePromptBroker{
@@ -142,7 +138,7 @@ exit 1
 
 	result, err := backend.handleOpenConnectPasswordAuth(
 		context.Background(), conn, "Test VPN", "test-uuid",
-		"org.freedesktop.NetworkManager.openconnect", data,
+		"org.freedesktop.NetworkManager.openconnect", data, stored,
 	)
 	assert.NoError(t, err)
 	assert.Equal(t, "SVPNCOOKIE=test", result.Cookie)
@@ -176,12 +172,10 @@ exit 1
 	t.Setenv("PATH", binDir)
 
 	conn := mock_gonetworkmanager.NewMockConnection(t)
-	conn.EXPECT().GetSecrets("vpn").Return(gonetworkmanager.ConnectionSettings{
-		"vpn": {"secrets": map[string]string{
-			"password":                         "test-password",
-			"certificate:vpn.example.test:443": "pin-sha256:NODE-A,pin-sha256:NODE-B",
-		}},
-	}, nil)
+	stored := map[string]string{
+		"password":                         "test-password",
+		"certificate:vpn.example.test:443": "pin-sha256:NODE-A,pin-sha256:NODE-B",
+	}
 
 	broker := &fakePromptBroker{asked: make(chan PromptRequest, 1)}
 	backend := &NetworkManagerBackend{promptBroker: broker}
@@ -194,7 +188,7 @@ exit 1
 
 	result, err := backend.handleOpenConnectPasswordAuth(
 		context.Background(), conn, "Test VPN", "test-uuid",
-		"org.freedesktop.NetworkManager.openconnect", data,
+		"org.freedesktop.NetworkManager.openconnect", data, stored,
 	)
 	assert.NoError(t, err)
 	assert.Equal(t, "SVPNCOOKIE=test", result.Cookie)
@@ -223,15 +217,26 @@ func TestAppendServerCertPin(t *testing.T) {
 	}
 }
 
+// useFakeVPNPlugins writes an executable auth dialog and a .name file per
+// service into dir, points vpnPluginDirs at it, and returns the dialog path.
+func useFakeVPNPlugins(t *testing.T, dir string, services ...string) string {
+	dialog := filepath.Join(dir, "dialog")
+	assert.NoError(t, os.WriteFile(dialog, []byte("#!/bin/sh\n"), 0o755))
+	for _, svc := range services {
+		content := "[VPN Connection]\nservice=org.freedesktop.NetworkManager." + svc + "\n[GNOME]\nauth-dialog=" + dialog + "\n"
+		assert.NoError(t, os.WriteFile(filepath.Join(dir, svc+".name"), []byte(content), 0o644))
+	}
+	orig := vpnPluginDirs
+	vpnPluginDirs = []string{dir}
+	t.Cleanup(func() { vpnPluginDirs = orig })
+	return dialog
+}
+
 func TestAuthDialogPlugin(t *testing.T) {
 	dir := t.TempDir()
-	writeDialog := func(name string, mode os.FileMode) string {
-		p := filepath.Join(dir, name)
-		assert.NoError(t, os.WriteFile(p, []byte("#!/bin/sh\n"), mode))
-		return p
-	}
-	exe := writeDialog("dialog", 0o755)
-	noexec := writeDialog("noexec", 0o644)
+	exe := useFakeVPNPlugins(t, dir)
+	noexec := filepath.Join(dir, "noexec")
+	assert.NoError(t, os.WriteFile(noexec, []byte("#!/bin/sh\n"), 0o644))
 
 	nameFile := func(service, body string) {
 		content := "[VPN Connection]\nname=x\nservice=" + service + "\n" + body
@@ -243,9 +248,6 @@ func TestAuthDialogPlugin(t *testing.T) {
 	nameFile("org.freedesktop.NetworkManager.relative", "[GNOME]\nauth-dialog=dialog\n")
 
 	t.Chdir(dir)
-	orig := vpnPluginDirs
-	vpnPluginDirs = []string{dir}
-	t.Cleanup(func() { vpnPluginDirs = orig })
 
 	tests := []struct {
 		service string
@@ -272,16 +274,7 @@ func TestAuthDialogPlugin(t *testing.T) {
 }
 
 func TestListVPNProfilesPluginLogin(t *testing.T) {
-	dir := t.TempDir()
-	dialog := filepath.Join(dir, "dialog")
-	assert.NoError(t, os.WriteFile(dialog, []byte("#!/bin/sh\n"), 0o755))
-	for _, svc := range []string{"vpnc", "l2tp"} {
-		content := "[VPN Connection]\nservice=org.freedesktop.NetworkManager." + svc + "\n[GNOME]\nauth-dialog=" + dialog + "\n"
-		assert.NoError(t, os.WriteFile(filepath.Join(dir, svc+".name"), []byte(content), 0o644))
-	}
-	orig := vpnPluginDirs
-	vpnPluginDirs = []string{dir}
-	t.Cleanup(func() { vpnPluginDirs = orig })
+	useFakeVPNPlugins(t, t.TempDir(), "vpnc", "l2tp")
 
 	profile := func(name string, data map[string]string) gonetworkmanager.Connection {
 		conn := mock_gonetworkmanager.NewMockConnection(t)
@@ -308,8 +301,9 @@ func TestListVPNProfilesPluginLogin(t *testing.T) {
 
 func TestMarkSecretsNotSaved(t *testing.T) {
 	data := map[string]string{"IPSec secret-flags": "1"}
-	changed := markSecretsNotSaved(data, map[string]string{"Xauth password": "x", "IPSec secret": "y"})
-	assert.True(t, changed)
-	assert.Equal(t, map[string]string{"IPSec secret-flags": "1", "Xauth password-flags": "2"}, data)
-	assert.False(t, markSecretsNotSaved(data, map[string]string{"Xauth password": "x"}))
+	secrets := map[string]string{"Xauth password": "x", "IPSec secret": "y", "password": "saved", "group": "new"}
+	stored := map[string]string{"password": "saved", "group": "old"}
+	assert.True(t, markSecretsNotSaved(data, secrets, stored))
+	assert.Equal(t, map[string]string{"IPSec secret-flags": "1", "Xauth password-flags": "2", "group-flags": "2"}, data)
+	assert.False(t, markSecretsNotSaved(data, map[string]string{"Xauth password": "x"}, nil))
 }

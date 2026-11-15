@@ -10,7 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Wifx/gonetworkmanager/v2"
 	mock_gonetworkmanager "github.com/duxlabs-dev/dux-shell/core/internal/mocks/github.com/Wifx/gonetworkmanager/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -131,9 +130,42 @@ func TestOpenConnectDialogClosedWithoutCookie(t *testing.T) {
 	dialog := filepath.Join(t.TempDir(), "dialog")
 	require.NoError(t, os.WriteFile(dialog, []byte("#!/bin/sh\ncat >/dev/null &\nprintf 'gwcert\\nstored\\n\\n\\n'\n"), 0o755))
 	conn := mock_gonetworkmanager.NewMockConnection(t)
-	conn.EXPECT().GetSecrets("vpn").Return(gonetworkmanager.ConnectionSettings{}, nil)
 
 	_, err := (&NetworkManagerBackend{}).handleVPNAuthDialog(conn, VPNPlugin{AuthDialog: dialog}, "Work", "u-1",
-		"org.freedesktop.NetworkManager.openconnect", map[string]string{"gateway": "vpn.example.com"})
+		"org.freedesktop.NetworkManager.openconnect", map[string]string{"gateway": "vpn.example.com"}, nil)
 	assert.ErrorIs(t, err, errVPNAuthDialogCancelled)
+}
+
+func TestVPNAuthDialogSkipsSystemSecrets(t *testing.T) {
+	dialog := filepath.Join(t.TempDir(), "dialog")
+	tests := []struct {
+		name, flags, field string
+		want               map[string]string
+		wantAsk            bool
+	}{
+		{name: "no flags asked", field: "ShouldAsk=true"},
+		{name: "no flags value", field: "Value=v"},
+		{name: "saved for system", flags: "0", field: "ShouldAsk=true"},
+		{name: "not required", flags: "6", field: "ShouldAsk=true"},
+		{name: "agent-owned value", flags: "1", field: "Value=v", want: map[string]string{"pw": "v"}},
+		{name: "not saved asked", flags: "2", field: "ShouldAsk=true", wantAsk: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			script := "#!/bin/sh\nprintf '[VPN Plugin UI]\\nVersion=2\\n[pw]\\n" + tt.field + "\\n'\n"
+			require.NoError(t, os.WriteFile(dialog, []byte(script), 0o755))
+			data := map[string]string{}
+			if tt.flags != "" {
+				data["pw-flags"] = tt.flags
+			}
+			got, err := (&NetworkManagerBackend{}).handleVPNAuthDialog(mock_gonetworkmanager.NewMockConnection(t),
+				VPNPlugin{AuthDialog: dialog, ExternalUIMode: true}, "Work", "u-1", "org.freedesktop.NetworkManager.vpnc", data, nil)
+			if tt.wantAsk {
+				assert.ErrorContains(t, err, "interactive prompt")
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, got)
+		})
+	}
 }
