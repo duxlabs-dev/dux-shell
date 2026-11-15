@@ -5,6 +5,7 @@ import (
 
 	"github.com/duxlabs-dev/dux-go/ipc"
 	"github.com/duxlabs-dev/dux-go/ipc/params"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/models"
 )
 
 func HandleRequest(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
@@ -98,25 +99,5 @@ func handleRescan(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
 }
 
 func handleSubscribe(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
-	clientID := fmt.Sprintf("brightness-%d", req.ID)
-
-	ch := m.Subscribe(clientID)
-	defer m.Unsubscribe(clientID, ch)
-
-	initialState := m.GetState()
-	if err := conn.WriteResponse(ipc.Response[State]{
-		ID:     req.ID,
-		Result: &initialState,
-	}); err != nil {
-		return
-	}
-
-	for state := range ch {
-		if err := conn.WriteResponse(ipc.Response[State]{
-			ID:     req.ID,
-			Result: &state,
-		}); err != nil {
-			return
-		}
-	}
+	models.StreamSubscription(conn, req, m, fmt.Sprintf("brightness-%d", req.ID), true)
 }

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/duxlabs-dev/dux-go/ipc"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/models"
 )
 
 type LocationEvent struct {
@@ -28,32 +29,7 @@ func handleGetState(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
 }
 
 func handleSubscribe(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
-	clientID := fmt.Sprintf("client-%p", conn)
-	stateChan := manager.Subscribe(clientID)
-	defer manager.Unsubscribe(clientID, stateChan)
-
-	initialState := manager.GetState()
-	event := LocationEvent{
-		Type: "state_changed",
-		Data: initialState,
-	}
-
-	if err := conn.WriteResponse(ipc.Response[LocationEvent]{
-		ID:     req.ID,
-		Result: &event,
-	}); err != nil {
-		return
-	}
-
-	for state := range stateChan {
-		event := LocationEvent{
-			Type: "state_changed",
-			Data: state,
-		}
-		if err := conn.WriteResponse(ipc.Response[LocationEvent]{
-			Result: &event,
-		}); err != nil {
-			return
-		}
-	}
+	models.StreamMappedSubscription(conn, req, manager, fmt.Sprintf("client-%p", conn), false, func(s State) LocationEvent {
+		return LocationEvent{Type: "state_changed", Data: s}
+	})
 }

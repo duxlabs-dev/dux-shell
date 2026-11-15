@@ -216,7 +216,6 @@ type Manager struct {
 	dirty                 chan struct{}
 	priorityMutex         sync.Mutex
 	notifierWg            sync.WaitGroup
-	lastNotifiedState     *NetworkState
 	credentialSubscribers pubsub.Broker[CredentialPrompt]
 }
 

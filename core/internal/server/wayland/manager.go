@@ -23,6 +23,7 @@ import (
 	"github.com/duxlabs-dev/dux-shell/core/internal/icc"
 	"github.com/duxlabs-dev/dux-shell/core/internal/log"
 	"github.com/duxlabs-dev/dux-shell/core/internal/proto/wlr_gamma_control"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/pubsub"
 	"github.com/duxlabs-dev/dux-shell/core/internal/wayland/shm"
 )
 
@@ -1162,37 +1163,14 @@ func (m *Manager) updateStateFromSchedule() {
 
 func (m *Manager) notifier() {
 	defer m.notifierWg.Done()
-	const minGap = 100 * time.Millisecond
-	timer := time.NewTimer(minGap)
-	timer.Stop()
-	var pending bool
-
-	for {
-		select {
-		case <-m.stopChan:
-			timer.Stop()
-			return
-		case <-m.dirty:
-			if pending {
-				continue
-			}
-			pending = true
-			timer.Reset(minGap)
-		case <-timer.C:
-			if !pending {
-				continue
-			}
-			currentState := m.GetState()
-			if m.lastNotified != nil && !stateChanged(m.lastNotified, &currentState) {
-				pending = false
-				continue
-			}
-			m.subscribers.Publish(currentState)
-			stateCopy := currentState
-			m.lastNotified = &stateCopy
-			pending = false
-		}
-	}
+	pubsub.RunDebouncedNotifier(pubsub.DebouncedConfig[State]{
+		MinGap:   100 * time.Millisecond,
+		Stop:     m.stopChan,
+		Dirty:    m.dirty,
+		Snapshot: m.GetState,
+		Changed:  stateChanged,
+		Broker:   &m.subscribers,
+	})
 }
 
 func (m *Manager) dbusMonitor() {

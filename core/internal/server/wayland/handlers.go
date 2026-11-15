@@ -182,25 +182,7 @@ func handleSetEnabled(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
 }
 
 func handleSubscribe(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
-	clientID := fmt.Sprintf("client-%p", conn)
-	stateChan := manager.Subscribe(clientID)
-	defer manager.Unsubscribe(clientID, stateChan)
-
-	initialState := manager.GetState()
-	if err := conn.WriteResponse(ipc.Response[State]{
-		ID:     req.ID,
-		Result: &initialState,
-	}); err != nil {
-		return
-	}
-
-	for state := range stateChan {
-		if err := conn.WriteResponse(ipc.Response[State]{
-			Result: &state,
-		}); err != nil {
-			return
-		}
-	}
+	models.StreamSubscription(conn, req, manager, fmt.Sprintf("client-%p", conn), false)
 }
 
 func handleICCGetStatus(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {

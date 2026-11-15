@@ -86,7 +86,6 @@ type Manager struct {
 	mprisPlayer         *mprisPlayer
 	dirty               chan struct{}
 	notifierWg          sync.WaitGroup
-	lastNotifiedState   *BluetoothState
 	adapterPaths        []dbus.ObjectPath
 	pendingPairings     syncmap.Map[string, bool]
 	eventQueue          chan func()

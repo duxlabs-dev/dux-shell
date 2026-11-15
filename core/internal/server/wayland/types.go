@@ -148,10 +148,9 @@ type Manager struct {
 	cachedIPLon   *float64
 	locationMutex sync.RWMutex
 
-	subscribers  pubsub.Broker[State]
-	dirty        chan struct{}
-	notifierWg   sync.WaitGroup
-	lastNotified *State
+	subscribers pubsub.Broker[State]
+	dirty       chan struct{}
+	notifierWg  sync.WaitGroup
 
 	dbusConn   *dbus.Conn
 	dbusSignal chan *dbus.Signal
