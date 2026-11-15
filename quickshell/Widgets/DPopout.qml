@@ -83,12 +83,12 @@ Item {
 
     // Hyprland OnDemand grab: whitelist popout surfaces and bars so dismiss clicks still land.
     DFocusGrab {
-        windows: {
-            const list = root.contentWindow?.focusWindows ?? (root.contentWindow ? [root.contentWindow] : []);
-            const transientWindows = root.transientSurfaceTracker?.focusWindows ?? [];
+        keyboardWindow: root.contentWindow
+        peerWindows: {
+            const surfaces = (root.contentWindow?.dismissWindows ?? []).concat(root.transientSurfaceTracker?.focusWindows ?? []);
             if (!(impl.item?.contentActive ?? false) && !root.transientSurfaceTracker?.active)
-                return list.concat(transientWindows);
-            return list.concat(transientWindows).concat(KeyboardFocus.barWindows, KeyboardFocus.grabPeerWindows);
+                return surfaces;
+            return surfaces.concat(KeyboardFocus.barWindows, KeyboardFocus.grabPeerWindows);
         }
         wanted: KeyboardFocus.wantsGrab(root.shouldBeVisible, root.customKeyboardFocus)
     }

@@ -143,7 +143,8 @@ Item {
     }
 
     DFocusGrab {
-        windows: [root.host.surface].concat(KeyboardFocus.barWindows, KeyboardFocus.grabPeerWindows)
+        keyboardWindow: root.host.surface
+        peerWindows: [].concat(KeyboardFocus.barWindows, KeyboardFocus.grabPeerWindows)
         wanted: KeyboardFocus.wantsGrab(root.opened && !root.closing)
         onCleared: root.close()
     }

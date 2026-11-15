@@ -12,7 +12,7 @@ DIdleSurface {
     readonly property int hostCount: hostItem.children.length
     readonly property var activeHost: hostCount > 0 ? (hostItem.children[hostCount - 1].host ?? null) : null
     readonly property alias hostItem: hostItem
-    readonly property var focusWindows: dismissalLoader.item ? [root, dismissalLoader.item] : [root]
+    readonly property var dismissWindows: dismissalLoader.item ? [dismissalLoader.item] : []
 
     requestedBounds: {
         if (!idleSupported || !active)

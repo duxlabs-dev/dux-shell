@@ -10,6 +10,9 @@ HyprlandFocusGrab {
     id: root
 
     property bool wanted: false
+    property var keyboardWindow: null
+    property list<var> peerWindows: []
+    readonly property list<var> _keyboardWindows: keyboardWindow ? [keyboardWindow] : []
     property bool _held: false
     property bool _compositorCleared: false
     property var _restoreToplevel: null
@@ -27,6 +30,9 @@ HyprlandFocusGrab {
             root._restoreToplevel = (root._compositorCleared || workspaceChanged) ? null : KeyboardFocus.restoreToplevel(root._restoreToplevel);
         }
     }
+
+    // Hyprland may hand the keyboard to any surface in a grab's first commit, so that commit holds only the keyboard window.
+    windows: active ? _keyboardWindows.concat(peerWindows) : _keyboardWindows
 
     onWantedChanged: _sync()
     // Don't restore a window the user already left while the grab was held
