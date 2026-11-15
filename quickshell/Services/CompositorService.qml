@@ -1687,7 +1687,7 @@ Singleton {
             try {
                 const parsed = JSON.parse(output.trim());
                 rules = parsed.rules || [];
-                niriWindowRulesIncluded = !!parsed.dmsStatus?.included;
+                niriWindowRulesIncluded = isNiri && !!parsed.dmsStatus?.included;
             } catch (e) {
                 log.warn("failed to parse window rules", e);
                 return;
