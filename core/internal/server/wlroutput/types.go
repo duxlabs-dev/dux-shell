@@ -62,10 +62,9 @@ type Manager struct {
 	stopChan chan struct{}
 	wg       sync.WaitGroup
 
-	subscribers  pubsub.Broker[State]
-	dirty        chan struct{}
-	notifierWg   sync.WaitGroup
-	lastNotified *State
+	subscribers pubsub.Broker[State]
+	dirty       chan struct{}
+	notifierWg  sync.WaitGroup
 
 	stateMutex sync.RWMutex
 	state      *State

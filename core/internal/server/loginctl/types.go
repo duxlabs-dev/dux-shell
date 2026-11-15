@@ -54,7 +54,6 @@ type Manager struct {
 	sessionObj            dbus.BusObject
 	dirty                 chan struct{}
 	notifierWg            sync.WaitGroup
-	lastNotifiedState     *SessionState
 	signals               chan *dbus.Signal
 	sigWG                 sync.WaitGroup
 	inhibitMu             sync.Mutex

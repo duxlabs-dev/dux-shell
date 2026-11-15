@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/duxlabs-dev/dux-shell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/pubsub"
 	"github.com/duxlabs-dev/dux-shell/core/pkg/ipp"
 )
 
@@ -150,40 +151,14 @@ func isNoPrintersError(err error) bool {
 
 func (m *Manager) notifier() {
 	defer m.notifierWg.Done()
-	const minGap = 100 * time.Millisecond
-	timer := time.NewTimer(minGap)
-	timer.Stop()
-	var pending bool
-	for {
-		select {
-		case <-m.stopChan:
-			timer.Stop()
-			return
-		case <-m.dirty:
-			if pending {
-				continue
-			}
-			pending = true
-			timer.Reset(minGap)
-		case <-timer.C:
-			if !pending {
-				continue
-			}
-
-			currentState := m.snapshotState()
-
-			if m.lastNotifiedState != nil && !stateChanged(m.lastNotifiedState, &currentState) {
-				pending = false
-				continue
-			}
-
-			m.subscribers.Publish(currentState)
-
-			stateCopy := currentState
-			m.lastNotifiedState = &stateCopy
-			pending = false
-		}
-	}
+	pubsub.RunDebouncedNotifier(pubsub.DebouncedConfig[CUPSState]{
+		MinGap:   100 * time.Millisecond,
+		Stop:     m.stopChan,
+		Dirty:    m.dirty,
+		Snapshot: m.snapshotState,
+		Changed:  stateChanged,
+		Broker:   &m.subscribers,
+	})
 }
 
 func (m *Manager) notifySubscribers() {

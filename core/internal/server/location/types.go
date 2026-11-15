@@ -22,8 +22,7 @@ type Manager struct {
 	stopChan chan struct{}
 	sigWG    sync.WaitGroup
 
-	subscribers  pubsub.Broker[State]
-	dirty        chan struct{}
-	notifierWg   sync.WaitGroup
-	lastNotified *State
+	subscribers pubsub.Broker[State]
+	dirty       chan struct{}
+	notifierWg  sync.WaitGroup
 }
