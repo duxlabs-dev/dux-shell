@@ -63,6 +63,7 @@ DListItem {
     }
     readonly property bool hasClipboardPreview: item?.type === "clipboard" && !!item?.data?.isImage && String(item?.data?.mimeType ?? "").startsWith("image/")
     readonly property bool isFolder: item?.type === "folder"
+    readonly property bool showLeadingIcon: isFolder || ((SettingsData.dankLauncherV2ShowAppIcons || item?.type !== "app") && !(item?.type === "dmenu" && item?.data?.nonSelectable && !item?.icon))
     readonly property int folderMemberCount: item?.data?.members?.length ?? 0
     readonly property string subtitleText: {
         if (!isFolder)
@@ -83,7 +84,7 @@ DListItem {
         anchors.left: parent.left
         anchors.leftMargin: LauncherMetrics.rowPadding
         anchors.verticalCenter: parent.verticalCenter
-        visible: !root.isFolder && !(root.item?.type === "dmenu" && root.item?.data?.nonSelectable && !root.item?.icon)
+        visible: !root.isFolder && root.showLeadingIcon
         iconValue: root.isFolder ? "" : root.iconValue
         iconMargins: root.iconMargins
         fallbackLeftMargin: root.iconFallbackLeftMargin
@@ -110,7 +111,7 @@ DListItem {
 
     Item {
         id: textColumn
-        anchors.left: iconRenderer.right
+        anchors.left: root.showLeadingIcon ? iconRenderer.right : parent.left
         anchors.leftMargin: LauncherMetrics.rowPadding
         anchors.right: rightContent.left
         anchors.rightMargin: rightContent.width > 0 ? Theme.spacingM : 0

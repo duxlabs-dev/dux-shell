@@ -61,6 +61,7 @@ Rectangle {
     readonly property real contentInset: bare ? Theme.spacingS : Theme.spacingL
     readonly property int computedIconSize: bare ? Math.min(LauncherMetrics.iconsIconSize, width - contentInset * 2) : Math.min(root.maxIconSize, Math.max(root.minIconSize, width * root.iconSizeRatio))
     readonly property bool isFolder: item?.type === "folder"
+    readonly property bool showIcon: isFolder || ((SettingsData.dankLauncherV2ShowAppIcons || item?.type !== "app") && !(item?.type === "dmenu" && item?.data?.nonSelectable && !item?.icon))
     readonly property real dragThreshold: itemArea.drag.threshold
 
     radius: Theme.cornerRadiusL
@@ -149,7 +150,7 @@ Rectangle {
                     width: root.computedIconSize
                     height: root.computedIconSize
                     anchors.horizontalCenter: parent.horizontalCenter
-                    visible: !(root.item?.type === "dmenu" && root.item?.data?.nonSelectable && !root.item?.icon)
+                    visible: root.showIcon
                     sourceComponent: root.isFolder ? folderIconComponent : appIconComponent
 
                     Rectangle {

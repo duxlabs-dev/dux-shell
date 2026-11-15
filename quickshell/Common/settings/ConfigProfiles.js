@@ -126,7 +126,7 @@ var SETTINGS_MAP = {
         "browserPickerViewMode", "appPickerViewMode", "sortAppsAlphabetically", "appLauncherGridColumns", "appLauncherIconColumns",
         "rememberLastQuery", "rememberLastMode", "spotlightSectionViewModes",
         "appDrawerSectionViewModes", "niriOverviewOverlayEnabled", "niriOverviewLauncherStyle", "dankLauncherV2Size",
-        "dankLauncherV2ShowSourceBadges", "dankLauncherV2ShowFooter", "dankLauncherV2UnloadOnClose",
+        "dankLauncherV2ShowSourceBadges", "dankLauncherV2ShowAppIcons", "dankLauncherV2ShowFooter", "dankLauncherV2UnloadOnClose",
         "dankLauncherV2IncludeFilesInAll", "dankLauncherV2IncludeFoldersInAll", "launcherUseOverlayLayer",
         "launcherStyle", "spotlightBarShowModeChips", "launcherPluginVisibility", "launcherPluginOrder",
         "launcherKeybinds", "launcherEnterAction"
