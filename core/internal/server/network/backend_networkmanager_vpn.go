@@ -25,9 +25,13 @@ import (
 const nmVPNStateFailed = 6
 
 // vpnFailureMessage maps NMVpnConnectionStateReason to a user-facing message.
-func vpnFailureMessage(reason uint32) string {
+// unasked are login fields DMS left to NetworkManager because their flags say it stores them.
+func vpnFailureMessage(reason uint32, unasked []string) string {
 	switch reason {
 	case 9: // NO_SECRETS
+		if len(unasked) > 0 {
+			return fmt.Sprintf("Not saved: %s. Save it in nm-connection-editor or set it to ask every time", strings.Join(unasked, ", "))
+		}
 		return "Authentication required"
 	case 10: // LOGIN_FAILED
 		return "Authentication failed"
@@ -259,6 +263,7 @@ func (b *NetworkManagerBackend) ConnectVPN(uuidOrName string, singleActive bool)
 	b.state.ConnectingVPNUUID = ""
 	b.state.VPNError = ""
 	b.state.VPNErrorUuid = ""
+	b.vpnUnaskedFields = nil
 	b.stateMutex.Unlock()
 
 	if singleActive {
@@ -773,15 +778,22 @@ func (b *NetworkManagerBackend) handleVPNAuthDialog(
 
 	secrets = map[string]string{}
 	var ask []FieldInfo
+	var unasked []string
 	for _, f := range fields {
 		switch {
 		case !secretFlagsAgentAsks(data[f.Name+"-flags"]):
+			if f.ShouldAsk {
+				unasked = append(unasked, cmp.Or(f.Label, f.Name))
+			}
 		case f.ShouldAsk:
 			ask = append(ask, FieldInfo{Name: f.Name, Label: cmp.Or(f.Label, f.Name), IsSecret: f.IsSecret})
 		case f.Value != "":
 			secrets[f.Name] = f.Value
 		}
 	}
+	b.stateMutex.Lock()
+	b.vpnUnaskedFields = unasked
+	b.stateMutex.Unlock()
 	if len(ask) == 0 {
 		if len(secrets) == 0 {
 			return nil, nil

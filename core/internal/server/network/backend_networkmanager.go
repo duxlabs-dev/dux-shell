@@ -132,6 +132,8 @@ type NetworkManagerBackend struct {
 	cachedVPNSecretsMu sync.Mutex
 	cachedWiFiSecret   *cachedWiFiSecret
 	cachedWiFiSecretMu sync.Mutex
+	// Guarded by stateMutex.
+	vpnUnaskedFields []string
 
 	onStateChange func()
 }

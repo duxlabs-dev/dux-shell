@@ -475,7 +475,7 @@ func (b *NetworkManagerBackend) handleVPNStateChange(state, reason uint32) {
 	if state == nmVPNStateFailed {
 		b.stateMutex.Lock()
 		if uuid := b.state.ConnectingVPNUUID; uuid != "" {
-			b.state.VPNError = vpnFailureMessage(reason)
+			b.state.VPNError = vpnFailureMessage(reason, b.vpnUnaskedFields)
 			b.state.VPNErrorUuid = uuid
 		}
 		b.stateMutex.Unlock()
