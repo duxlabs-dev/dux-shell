@@ -126,15 +126,15 @@ function niriScratchpadWorkspaces(raw) {
             names.push(name);
     }
     return names.sort((a, b) => a.localeCompare(b)).map(name => ({
-        id: null,
-        idx: null,
-        name,
-        output: "",
-        active: shown.some(n => niriSameName(n, name)),
-        placeholder: false,
-        urgent: false,
-        special: true
-    }));
+                id: null,
+                idx: null,
+                name,
+                output: "",
+                active: shown.some(n => niriSameName(n, name)),
+                placeholder: false,
+                urgent: false,
+                special: true
+            }));
 }
 
 function niriWorkspacesForScreen(raw, screenName, followFocus, occupiedOnly, cache, showSpecial) {
@@ -170,6 +170,15 @@ function niriWorkspaceUrgent(windows, workspace) {
     if (!workspace?.id)
         return false;
     return windows.some(win => win.workspace_id === workspace.id && win.is_urgent);
+}
+
+// A negative id is not an identity: Hyprland 0.57 reports -1 for every named workspace
+function slotKey(ws) {
+    if (ws.special)
+        return "special:" + (ws.name ?? "");
+    if (ws.id === null || ws.id === undefined || ws.id < 0)
+        return "name:" + (ws.address || ws.name || "");
+    return ws.id;
 }
 
 function hyprlandSpecialName(name) {

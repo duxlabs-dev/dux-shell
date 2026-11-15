@@ -286,6 +286,7 @@ test("hyprland main: named workspaces all report id -1, so identity and targets 
     const raw = { workspaces, monitors: [monitor], focusedWorkspace: chat, toplevels, visibleSpecials: {} };
     assert.equal(model.hyprlandCurrentId(raw, "DP-1", false), "chat");
     assert.deepEqual(pick(model.hyprlandWorkspacesForScreen(raw, "DP-1", false, true), "name"), ["1", "chat", "Tunes"]);
+    assert.deepEqual(Array.from(model.hyprlandWorkspacesForScreen(raw, "DP-1", false, false), model.slotKey), [1, "name:chat", "name:notes", "name:music"]);
     const chatRecord = model.hyprlandWorkspacesForScreen(raw, "DP-1", false, false).find(record => record.name === "chat");
     assert.equal(model.hyprlandWorkspaceOccupied(toplevels, chatRecord), false);
     assert.deepEqual(model.hyprlandWindowsOnWorkspace([win], chatRecord, toplevels), []);

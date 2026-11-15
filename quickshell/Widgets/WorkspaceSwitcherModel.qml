@@ -74,7 +74,7 @@ QtObject {
         _slotPool = {};
     }
 
-    // Hyprland creates/destroys workspaces on empty enter/leave; slots keyed by id keep delegate identity so pills animate instead of popping
+    // Hyprland creates/destroys workspaces on empty enter/leave; keyed slots keep delegate identity so pills animate instead of popping
     property var _slotPool: ({})
     readonly property Component _slotComponent: Component {
         QtObject {
@@ -91,7 +91,7 @@ QtObject {
     function slotList(raw) {
         const live = {};
         const slots = raw.map(ws => {
-            const key = ws.id !== null && ws.id !== undefined && !ws.special ? ws.id : (ws.special ? "special:" : "name:") + (ws.name ?? "");
+            const key = WorkspaceModel.slotKey(ws);
             let entry = _slotPool[key];
             if (!entry) {
                 entry = {
