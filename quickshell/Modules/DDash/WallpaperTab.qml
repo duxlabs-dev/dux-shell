@@ -805,26 +805,30 @@ Item {
                 // The pager springs back from a wheel notch unless it scrolled past half a page.
                 WheelHandler {
                     property int wheelDistance: 0
+                    property bool touchpadActive: false
 
                     enabled: root.active && root.paged
                     acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
                     onWheel: event => {
+                        const minY = pager.originY;
+                        if (event.phase === Qt.ScrollEnd && touchpadActive) {
+                            touchpadActive = false;
+                            const page = Math.max(0, Math.min(root.totalPages - 1, Math.round((pager.contentY - minY) / Math.max(1, pager.height))));
+                            if (page !== root.currentPage) {
+                                root.gridIndex = Math.min(root.gridIndex, root.pageItemCount(page) - 1);
+                                root.currentPage = page;
+                            } else {
+                                pagerSnapAnim.to = minY + page * pager.height;
+                                pagerSnapAnim.restart();
+                            }
+                            return;
+                        }
                         if (WheelInput.isTouchpad(event)) {
+                            touchpadActive = true;
                             pagerSnapAnim.stop();
-                            const minY = pager.originY;
                             const maxY = Math.max(minY, pager.contentHeight - pager.height + minY);
                             if (event.pixelDelta.y !== 0)
                                 pager.contentY = Math.max(minY, Math.min(maxY, pager.contentY - event.pixelDelta.y * 3.5));
-                            if (event.phase === Qt.ScrollEnd) {
-                                const page = Math.max(0, Math.min(root.totalPages - 1, Math.round((pager.contentY - minY) / Math.max(1, pager.height))));
-                                if (page !== root.currentPage) {
-                                    root.gridIndex = Math.min(root.gridIndex, root.pageItemCount(page) - 1);
-                                    root.currentPage = page;
-                                } else {
-                                    pagerSnapAnim.to = minY + page * pager.height;
-                                    pagerSnapAnim.restart();
-                                }
-                            }
                             return;
                         }
                         if (event.angleDelta.y === 0)
