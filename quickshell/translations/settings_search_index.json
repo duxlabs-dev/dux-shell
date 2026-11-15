@@ -11060,7 +11060,7 @@
     "parentLabel": "Power & battery"
   },
   {
-    "section": "barWidgetOption:AppsDockOptions.qml:23",
+    "section": "barWidgetOption:AppsDockOptions.qml:24",
     "label": "Active color",
     "tabIndex": 22,
     "keywords": [],
@@ -11219,7 +11219,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:AppsDockOptions.qml:15",
+    "section": "barWidgetOption:AppsDockOptions.qml:16",
     "label": "Brightness",
     "tabIndex": 22,
     "keywords": [],
@@ -11315,7 +11315,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:AppsDockOptions.qml:13",
+    "section": "barWidgetOption:AppsDockOptions.qml:14",
     "label": "Color override",
     "tabIndex": 22,
     "keywords": [],
@@ -11331,7 +11331,7 @@
     "optionFile": "LauncherButtonOptions.qml"
   },
   {
-    "section": "barWidgetOption:AppsDockOptions.qml:22",
+    "section": "barWidgetOption:AppsDockOptions.qml:23",
     "label": "Colorize active",
     "tabIndex": 22,
     "keywords": [],
@@ -11387,7 +11387,7 @@
     "optionFile": "RunningAppsOptions.qml"
   },
   {
-    "section": "barWidgetOption:AppsDockOptions.qml:16",
+    "section": "barWidgetOption:AppsDockOptions.qml:17",
     "label": "Contrast",
     "tabIndex": 22,
     "keywords": [],
@@ -11443,7 +11443,7 @@
     "optionFile": "RunningAppsOptions.qml"
   },
   {
-    "section": "barWidgetOption:AppsDockOptions.qml:12",
+    "section": "barWidgetOption:AppsDockOptions.qml:13",
     "label": "Custom",
     "tabIndex": 22,
     "keywords": [],
@@ -11459,7 +11459,7 @@
     "optionFile": "LauncherButtonOptions.qml"
   },
   {
-    "section": "barWidgetOption:AppsDockOptions.qml:19",
+    "section": "barWidgetOption:AppsDockOptions.qml:20",
     "label": "Custom command",
     "tabIndex": 22,
     "keywords": [],
@@ -11603,7 +11603,7 @@
     "optionFile": "WorkspaceSwitcherOptions.qml"
   },
   {
-    "section": "barWidgetOption:AppsDockOptions.qml:3",
+    "section": "barWidgetOption:AppsDockOptions.qml:4",
     "label": "Group by app",
     "tabIndex": 22,
     "keywords": [],
@@ -11683,7 +11683,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:AppsDockOptions.qml:11",
+    "section": "barWidgetOption:AppsDockOptions.qml:12",
     "label": "Icon",
     "tabIndex": 22,
     "keywords": [],
@@ -11715,7 +11715,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:AppsDockOptions.qml:25",
+    "section": "barWidgetOption:AppsDockOptions.qml:26",
     "label": "Icon size",
     "tabIndex": 22,
     "keywords": [],
@@ -11747,7 +11747,7 @@
     "optionFile": "WorkspaceSwitcherOptions.qml"
   },
   {
-    "section": "barWidgetOption:AppsDockOptions.qml:21",
+    "section": "barWidgetOption:AppsDockOptions.qml:22",
     "label": "Indicators",
     "tabIndex": 22,
     "keywords": [],
@@ -11787,7 +11787,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:AppsDockOptions.qml:9",
+    "section": "barWidgetOption:AppsDockOptions.qml:10",
     "label": "Launcher button",
     "tabIndex": 22,
     "keywords": [],
@@ -11819,7 +11819,7 @@
     "optionFile": "MusicOptions.qml"
   },
   {
-    "section": "barWidgetOption:AppsDockOptions.qml:24",
+    "section": "barWidgetOption:AppsDockOptions.qml:25",
     "label": "Magnification",
     "tabIndex": 22,
     "keywords": [],
@@ -11835,7 +11835,7 @@
     "optionFile": "WorkspaceSwitcherOptions.qml"
   },
   {
-    "section": "barWidgetOption:AppsDockOptions.qml:6",
+    "section": "barWidgetOption:AppsDockOptions.qml:7",
     "label": "Max pinned apps",
     "tabIndex": 22,
     "keywords": [],
@@ -11843,7 +11843,7 @@
     "optionFile": "AppsDockOptions.qml"
   },
   {
-    "section": "barWidgetOption:AppsDockOptions.qml:7",
+    "section": "barWidgetOption:AppsDockOptions.qml:8",
     "label": "Max running apps",
     "tabIndex": 22,
     "keywords": [],
@@ -11979,7 +11979,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:AppsDockOptions.qml:18",
+    "section": "barWidgetOption:AppsDockOptions.qml:19",
     "label": "Open with",
     "tabIndex": 22,
     "keywords": [],
@@ -11995,7 +11995,7 @@
     "optionFile": "ClockOptions.qml"
   },
   {
-    "section": "barWidgetOption:AppsDockOptions.qml:5",
+    "section": "barWidgetOption:AppsDockOptions.qml:6",
     "label": "Overflow",
     "tabIndex": 22,
     "keywords": [],
@@ -12107,7 +12107,7 @@
     "optionFile": "MusicOptions.qml"
   },
   {
-    "section": "barWidgetOption:AppsDockOptions.qml:4",
+    "section": "barWidgetOption:AppsDockOptions.qml:5",
     "label": "Separate pinned and running apps",
     "tabIndex": 22,
     "keywords": [],
@@ -12115,7 +12115,7 @@
     "optionFile": "AppsDockOptions.qml"
   },
   {
-    "section": "barWidgetOption:AppsDockOptions.qml:10",
+    "section": "barWidgetOption:AppsDockOptions.qml:11",
     "label": "Show",
     "tabIndex": 22,
     "keywords": [],
@@ -12147,7 +12147,7 @@
     "optionFile": "WorkspaceSwitcherOptions.qml"
   },
   {
-    "section": "barWidgetOption:AppsDockOptions.qml:8",
+    "section": "barWidgetOption:AppsDockOptions.qml:9",
     "label": "Show badge",
     "tabIndex": 22,
     "keywords": [],
@@ -12227,6 +12227,14 @@
     "optionFile": "BatteryOptions.qml"
   },
   {
+    "section": "barWidgetOption:AppsDockOptions.qml:3",
+    "label": "Show running apps",
+    "tabIndex": 22,
+    "keywords": [],
+    "runtimeType": "barWidgetOption",
+    "optionFile": "AppsDockOptions.qml"
+  },
+  {
     "section": "barWidgetOption:WorkspaceSwitcherOptions.qml:11",
     "label": "Show scratchpads",
     "tabIndex": 22,
@@ -12283,7 +12291,7 @@
     "optionFile": "MusicOptions.qml"
   },
   {
-    "section": "barWidgetOption:AppsDockOptions.qml:14",
+    "section": "barWidgetOption:AppsDockOptions.qml:15",
     "label": "Size offset",
     "tabIndex": 22,
     "keywords": [],
@@ -12315,7 +12323,7 @@
     "optionFile": "SystemUpdateOptions.qml"
   },
   {
-    "section": "barWidgetOption:AppsDockOptions.qml:26",
+    "section": "barWidgetOption:AppsDockOptions.qml:27",
     "label": "Spacing",
     "tabIndex": 22,
     "keywords": [],
@@ -12419,7 +12427,7 @@
     "optionFile": "MusicOptions.qml"
   },
   {
-    "section": "barWidgetOption:AppsDockOptions.qml:17",
+    "section": "barWidgetOption:AppsDockOptions.qml:18",
     "label": "Trash",
     "tabIndex": 22,
     "keywords": [],
@@ -12459,7 +12467,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:AppsDockOptions.qml:20",
+    "section": "barWidgetOption:AppsDockOptions.qml:21",
     "label": "Visual effects",
     "tabIndex": 22,
     "keywords": [],
