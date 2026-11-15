@@ -194,6 +194,17 @@ DOSD {
         function onMetadataChanged() {
             handleUpdate();
         }
+        // metadataChanged fires before the track* properties update; when the art url
+        // stays the same (same album) nothing else follows, so listen to them directly.
+        function onTrackTitleChanged() {
+            handleUpdate();
+        }
+        function onTrackArtistChanged() {
+            handleUpdate();
+        }
+        function onTrackAlbumChanged() {
+            handleUpdate();
+        }
         function onIsPlayingChanged() {
             handleUpdate();
         }
