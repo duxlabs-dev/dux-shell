@@ -589,33 +589,9 @@ func handleGetWiredNetworkInfo(conn *ipc.ConnWriter, req ipc.Request, manager *M
 }
 
 func handleSubscribe(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
-	clientID := fmt.Sprintf("client-%p", conn)
-	stateChan := manager.Subscribe(clientID)
-	defer manager.Unsubscribe(clientID, stateChan)
-
-	initialState := manager.GetState()
-	event := NetworkEvent{
-		Type: EventStateChanged,
-		Data: initialState,
-	}
-	if err := conn.WriteResponse(ipc.Response[NetworkEvent]{
-		ID:     req.ID,
-		Result: &event,
-	}); err != nil {
-		return
-	}
-
-	for state := range stateChan {
-		event := NetworkEvent{
-			Type: EventStateChanged,
-			Data: state,
-		}
-		if err := conn.WriteResponse(ipc.Response[NetworkEvent]{
-			Result: &event,
-		}); err != nil {
-			return
-		}
-	}
+	models.StreamMappedSubscription(conn, req, manager, fmt.Sprintf("client-%p", conn), false, func(s NetworkState) NetworkEvent {
+		return NetworkEvent{Type: EventStateChanged, Data: s}
+	})
 }
 
 func handleListVPNProfiles(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {

@@ -151,31 +151,7 @@ func handleTerminate(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
 }
 
 func handleSubscribe(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
-	clientID := fmt.Sprintf("client-%p", conn)
-	stateChan := manager.Subscribe(clientID)
-	defer manager.Unsubscribe(clientID, stateChan)
-
-	initialState := manager.GetState()
-	event := SessionEvent{
-		Type: EventStateChanged,
-		Data: initialState,
-	}
-	if err := conn.WriteResponse(ipc.Response[SessionEvent]{
-		ID:     req.ID,
-		Result: &event,
-	}); err != nil {
-		return
-	}
-
-	for state := range stateChan {
-		event := SessionEvent{
-			Type: EventStateChanged,
-			Data: state,
-		}
-		if err := conn.WriteResponse(ipc.Response[SessionEvent]{
-			Result: &event,
-		}); err != nil {
-			return
-		}
-	}
+	models.StreamMappedSubscription(conn, req, manager, fmt.Sprintf("client-%p", conn), false, func(s SessionState) SessionEvent {
+		return SessionEvent{Type: EventStateChanged, Data: s}
+	})
 }
