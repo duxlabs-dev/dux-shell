@@ -574,11 +574,11 @@ Item {
                                 },
                                 {
                                     keys: ["Ctrl++"],
-                                    label: I18n.tr("Increase font size")
+                                    label: I18n.tr("Increase font size", "notepad keyboard shortcut hint")
                                 },
                                 {
                                     keys: ["Ctrl+-"],
-                                    label: I18n.tr("Decrease font size")
+                                    label: I18n.tr("Decrease font size", "notepad keyboard shortcut hint")
                                 },
                                 {
                                     keys: ["Escape"],
