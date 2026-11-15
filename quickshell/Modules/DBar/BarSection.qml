@@ -21,6 +21,7 @@ Item {
     property real barThickness: barContent?.barWindow?.effectiveBarThickness ?? 48
     property real barSpacing: barConfig?.spacing ?? 4
     property var barConfig: barContent?.barConfig ?? null
+    readonly property bool editing: barContent?.barWindow?.editingWidgets ?? false
     property var blurBarWindow: barContent?.blurBarWindow ?? null
     property real sectionAvailablePrimarySize: 0
     property bool overrideAxisLayout: false

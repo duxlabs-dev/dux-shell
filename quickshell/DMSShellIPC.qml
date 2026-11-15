@@ -860,6 +860,19 @@ Item {
             return withBarConfig(selector, value, true, bar => bar.visible ? "visible" : "hidden");
         }
 
+        function edit(selector: string, value: string): string {
+            return withBarConfig(selector, value, false, bar => {
+                if (bar.visible === false)
+                    return "BAR_HIDDEN";
+                const screenName = BarWidgetService.barEditScreen(bar.id);
+                if (!screenName)
+                    return "BAR_NOT_FOUND";
+                PopoutManager.dismissAllForScreen(screenName);
+                BarWidgetService.startBarEdit(bar.id, screenName);
+                return "BAR_EDIT_SUCCESS";
+            });
+        }
+
         function autoHide(selector: string, value: string): string {
             return withBarConfig(selector, value, false, bar => {
                 SettingsData.updateBarConfig(bar.id, {

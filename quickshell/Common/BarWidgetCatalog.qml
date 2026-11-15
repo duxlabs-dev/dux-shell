@@ -3,6 +3,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 import qs.Common
+import qs.Services
 
 Singleton {
     id: root
@@ -269,6 +270,67 @@ Singleton {
 
     function hasOptions(id) {
         return optionFiles[id] !== undefined;
+    }
+
+    function availability() {
+        const dgop = {
+            "enabled": DgopService.dgopAvailable,
+            "warning": DgopService.dgopAvailable ? undefined : I18n.tr("Requires %1", "missing program").arg("dgop")
+        };
+        return {
+            "layout": {
+                "enabled": CompositorService.isMango && MangoService.available,
+                "warning": !CompositorService.isMango ? I18n.tr("Requires MangoWC compositor") : (!MangoService.available ? I18n.tr("Mango service not available") : undefined)
+            },
+            "cpuUsage": dgop,
+            "memUsage": dgop,
+            "diskUsage": dgop,
+            "cpuTemp": dgop,
+            "gpuTemp": {
+                "enabled": dgop.enabled,
+                "warning": dgop.warning ?? I18n.tr("This widget prevents GPU power off states, which can significantly impact battery life on laptops. It is not recommended to use this on laptops with hybrid graphics.")
+            },
+            "network_speed_monitor": dgop,
+            "systemUpdate": {
+                "enabled": SystemUpdateService.sysupdateAvailable,
+                "warning": SystemUpdateService.sysupdateAvailable ? undefined : I18n.tr("Requires DMS server with sysupdate capability")
+            }
+        };
+    }
+
+    function definitions() {
+        const available = availability();
+        const core = widgets.map(widget => Object.assign({
+                "enabled": true
+            }, widget, available[widget.id] ?? {}));
+        const plugins = PluginService.getAllPluginVariants().map(variant => ({
+                    "id": variant.fullId,
+                    "pluginId": variant.pluginId,
+                    "text": variant.name,
+                    "description": variant.description,
+                    "icon": variant.icon,
+                    "enabled": variant.loaded,
+                    "warning": !variant.loaded ? I18n.tr("Plugin is disabled - enable in Plugins settings to use") : undefined
+                }));
+        return core.concat(plugins);
+    }
+
+    function addable(config, all) {
+        return (all ?? definitions()).filter(widget => widget.enabled !== false && !(widget.single && SettingsData.barWidgetEntry(config, widget.id))).map(widget => {
+            if (widget.id !== "island")
+                return widget;
+            if (SettingsData.isIslandBarConfig(config))
+                return Object.assign({}, widget, {
+                    "disabled": true,
+                    "description": I18n.tr("This bar is the Island", "bar widget picker: island widget unavailable on an island-layout bar")
+                });
+            if (!SettingsData.islandWidgetBlocked(config))
+                return widget;
+            return Object.assign({}, widget, {
+                "disabled": true,
+                "description": I18n.tr("An Island bar already covers a display this bar is on", "bar widget picker: island widget blocked by an island-layout bar sharing a display")
+            });
+        });
     }
 
     // Every widget reaches the general options page (placement); spacers and separators configure inline on their row.

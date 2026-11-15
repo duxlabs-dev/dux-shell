@@ -112,10 +112,11 @@ PanelWindow {
         enabled: SessionService.idleInhibited || IdleService.externalInhibitActive
     }
 
-    readonly property bool sectionMasked: body.clickThroughEnabled || (isIsland && !(islandHost?.inputSuspended ?? false))
+    readonly property bool clickThrough: body.clickThroughEnabled && !body.editingWidgets
+    readonly property bool sectionMasked: clickThrough || (isIsland && !(islandHost?.inputSuspended ?? false))
 
     mask: Region {
-        item: body.clickThroughEnabled || (isIsland && !body.islandBandInteractive) ? null : body.inputMaskItem
+        item: barWindow.clickThrough || (isIsland && !body.islandBandInteractive) ? null : body.inputMaskItem
 
         // Item-bound: a mapToItem snapshot froze mid-churn on output reconnect, leaving the trailing
         // section unclickable (#3594). barRevealed: same ancestor-transform caveat as the island regions.

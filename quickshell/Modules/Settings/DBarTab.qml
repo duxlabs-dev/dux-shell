@@ -549,7 +549,7 @@ Item {
                 tags: ["bar", "middle", "click", "mouse", "control center", "launcher", "settings", "close"]
                 resetStore: bar
                 resetKeys: ["middleClickAction"]
-                options: [I18n.tr("None", "bar click action"), I18n.tr("Toggle Control Center", "bar click action"), I18n.tr("Toggle Launcher", "bar click action"), I18n.tr("Close Active Window", "bar click action"), I18n.tr("Toggle Settings", "bar click action")]
+                options: [I18n.tr("None", "bar click action"), I18n.tr("Toggle Control Center", "bar click action"), I18n.tr("Toggle Launcher", "bar click action"), I18n.tr("Close Active Window", "bar click action"), I18n.tr("Toggle Settings", "bar click action"), I18n.tr("Edit widgets")]
                 dropdownWidth: Theme.smallBreakpoint / 2
                 currentValue: {
                     switch (bar.selectedBarConfig?.middleClickAction ?? "none") {
@@ -561,12 +561,14 @@ Item {
                         return options[3];
                     case "settings":
                         return options[4];
+                    case "edit-widgets":
+                        return options[5];
                     default:
                         return options[0];
                     }
                 }
                 onValueChanged: value => {
-                    const actions = ["none", "control-center", "spotlight", "close-window", "settings"];
+                    const actions = ["none", "control-center", "spotlight", "close-window", "settings", "edit-widgets"];
                     SettingsData.updateBarConfig(bar.selectedBarId, {
                         middleClickAction: actions[options.indexOf(value)] ?? "none"
                     });
@@ -580,10 +582,10 @@ Item {
                 tags: ["bar", "right", "click", "mouse", "control center", "launcher", "settings", "close"]
                 resetStore: bar
                 resetKeys: ["rightClickAction"]
-                options: [I18n.tr("None", "bar click action"), I18n.tr("Toggle Control Center", "bar click action"), I18n.tr("Toggle Launcher", "bar click action"), I18n.tr("Close Active Window", "bar click action"), I18n.tr("Toggle Settings", "bar click action")]
+                options: [I18n.tr("None", "bar click action"), I18n.tr("Toggle Control Center", "bar click action"), I18n.tr("Toggle Launcher", "bar click action"), I18n.tr("Close Active Window", "bar click action"), I18n.tr("Toggle Settings", "bar click action"), I18n.tr("Edit widgets")]
                 dropdownWidth: Theme.smallBreakpoint / 2
                 currentValue: {
-                    switch (bar.selectedBarConfig?.rightClickAction ?? "none") {
+                    switch (bar.selectedBarConfig?.rightClickAction ?? "edit-widgets") {
                     case "control-center":
                         return options[1];
                     case "spotlight":
@@ -592,12 +594,14 @@ Item {
                         return options[3];
                     case "settings":
                         return options[4];
+                    case "edit-widgets":
+                        return options[5];
                     default:
                         return options[0];
                     }
                 }
                 onValueChanged: value => {
-                    const actions = ["none", "control-center", "spotlight", "close-window", "settings"];
+                    const actions = ["none", "control-center", "spotlight", "close-window", "settings", "edit-widgets"];
                     SettingsData.updateBarConfig(bar.selectedBarId, {
                         rightClickAction: actions[options.indexOf(value)] ?? "none"
                     });

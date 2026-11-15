@@ -59,7 +59,8 @@ Loader {
 
     readonly property bool orientationMatches: (axis?.isVertical ?? false) === isInColumn
 
-    readonly property bool widgetEnabled: widgetData?.enabled !== false
+    property bool revealDisabled: false
+    readonly property bool widgetEnabled: revealDisabled || widgetData?.enabled !== false
     readonly property bool loadedOnDemand: BarWidgetService.onDemandWidgetIds.includes(widgetId)
     readonly property string componentKey: widgetId === "music" && SettingsData.widgetOption("music", widgetData, "mediaStyle") === "activity" ? "music:activity" : widgetId
 

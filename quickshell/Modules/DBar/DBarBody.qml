@@ -22,6 +22,8 @@ Item {
     property var rightWidgetsModel
 
     readonly property bool barRevealed: inputMask.showing
+    // Not editMode: SurfaceContext forwards that name to the dock strip's own edit chrome.
+    readonly property bool editingWidgets: !isIsland && BarWidgetService.editingBarId === _barId && BarWidgetService.editingScreenName === screenName
     readonly property bool autoHideActive: topBarCore.autoHide
     readonly property bool fullscreenAutoHide: !barWindow.isIsland && !usesFrameBarChrome && (barConfig?.hideOnFullscreen ?? false) && hostWindow?.dBarLayer === WlrLayer.Overlay && CompositorService.isNiri && !CompositorService.overviewActiveOnScreen(screenName) && CompositorService.visibleNiriFullscreenToplevelOnScreen(screen)
 
@@ -189,6 +191,12 @@ Item {
         case "settings":
             PopoutService.toggleSettings();
             return true;
+        case "edit-widgets":
+            if (isIsland)
+                return false;
+            PopoutManager.dismissAllForScreen(screenName);
+            BarWidgetService.startBarEdit(_barId, screenName);
+            return true;
         }
         return false;
     }
@@ -197,7 +205,7 @@ Item {
         if (button === Qt.MiddleButton)
             return runBarClickAction(barConfig?.middleClickAction ?? "none", clickItem, clickX, clickY);
         if (button === Qt.RightButton)
-            return runBarClickAction(barConfig?.rightClickAction ?? "none", clickItem, clickX, clickY);
+            return runBarClickAction(barConfig?.rightClickAction ?? "edit-widgets", clickItem, clickX, clickY);
         return false;
     }
 
@@ -305,7 +313,11 @@ Item {
     onUsesConnectedFrameChromeChanged: _blurRebuildTimer.restart()
     // Rebuild immediately so the bar region never overlaps FrameWindow's during chrome handoff
     onUsesFrameBarChromeChanged: barBlur.rebuild()
-    onBarRevealedChanged: barBlur.rebuild()
+    onBarRevealedChanged: {
+        barBlur.rebuild();
+        if (!barRevealed && editingWidgets)
+            BarWidgetService.stopBarEdit();
+    }
 
     Component {
         id: blurRegionComp
@@ -1166,7 +1178,7 @@ Item {
 
         property bool hasActivePopout: false
 
-        readonly property bool popoutPinsReveal: !!(hasActivePopout && !(barConfig?.autoHideStrict ?? false))
+        readonly property bool popoutPinsReveal: barWindow.editingWidgets || !!(hasActivePopout && !(barConfig?.autoHideStrict ?? false))
         readonly property bool islandPinsReveal: !!barWindow.islandHost && (barWindow.islandHost.sheetOut || barWindow.islandHost.transientActive)
 
         onHasActivePopoutChanged: evaluateReveal()
@@ -1469,7 +1481,7 @@ Item {
                     // Passive: tracks cursor without intercepting clicks or scroll
                     HoverHandler {
                         id: hoverPopoutHandler
-                        enabled: (barConfig?.hoverPopouts ?? false) && !barWindow.clickThroughEnabled
+                        enabled: (barConfig?.hoverPopouts ?? false) && !barWindow.clickThroughEnabled && !barWindow.editingWidgets
 
                         property real lastGlobalX: 0
                         property real lastGlobalY: 0
@@ -1564,6 +1576,15 @@ Item {
                         centerSectionRect: barWindow.centerSectionRect
                         trailingSectionRect: barWindow.trailingSectionRect
                         onScrollWheel: wheel => scrollArea.processWheel(wheel)
+                    }
+                }
+
+                Loader {
+                    anchors.fill: parent
+                    active: barWindow.editingWidgets
+                    sourceComponent: BarEditor {
+                        body: barWindow
+                        content: topBarContent
                     }
                 }
             }

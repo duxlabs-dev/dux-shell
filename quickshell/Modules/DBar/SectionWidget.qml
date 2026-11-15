@@ -5,6 +5,7 @@ SurfaceWidgetHost {
 
     surfaceContext: sectionContext.surfaceContext
     widgetId: widgetData.widgetId
+    revealDisabled: sectionContext.editing
     spacerSize: widgetData.size || 20
     components: sectionContext.components
     isInColumn: sectionContext.isVertical

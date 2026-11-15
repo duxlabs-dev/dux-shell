@@ -32,6 +32,7 @@ Item {
     property real popupY: 0
 
     visible: active && widgetLoader.widgetEnabled && !inOverflow
+    opacity: sectionContext.editing && itemData.enabled === false ? BarMetrics.hiddenWidgetOpacity : 1
     width: participates ? (sectionContext.isVertical ? sectionContext.width : itemWidth) : 0
     height: participates ? itemHeight : 0
 

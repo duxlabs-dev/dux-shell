@@ -17,6 +17,27 @@ Singleton {
 
     signal dockEditRequested(string dockId)
 
+    property string editingBarId: ""
+    property string editingScreenName: ""
+
+    function startBarEdit(barId, screenName) {
+        editingBarId = barId;
+        editingScreenName = screenName;
+    }
+
+    function stopBarEdit() {
+        editingBarId = "";
+        editingScreenName = "";
+    }
+
+    function barEditScreen(barId) {
+        const windowed = (dankBarItems[barId]?.barVariants.instances ?? []).map(instance => instance.modelData?.name);
+        const hosted = Object.keys(frameHostedBars).filter(screenName => frameHostedBars[screenName][barId]);
+        const screenNames = windowed.concat(hosted);
+        const focused = getFocusedScreenName();
+        return screenNames.includes(focused) ? focused : (screenNames[0] ?? "");
+    }
+
     property var dockContextMenu: null
     property var dockTrashContextMenu: null
 

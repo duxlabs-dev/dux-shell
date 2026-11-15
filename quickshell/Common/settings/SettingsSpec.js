@@ -1730,7 +1730,7 @@ var LOCAL_SPEC = {
                 scrollXBehavior: "focusWindow",
                 scrollYBehavior: "workspace",
                 middleClickAction: "none",
-                rightClickAction: "none",
+                rightClickAction: "edit-widgets",
                 clickActionFollowMouse: false,
                 shadowIntensity: 0,
                 shadowOpacity: 60,

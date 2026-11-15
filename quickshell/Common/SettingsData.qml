@@ -2745,7 +2745,7 @@ Singleton {
         return null;
     }
 
-    function addBarWidget(barId, sectionId, widgetId) {
+    function addBarWidget(barId, sectionId, widgetId, index = -1) {
         const config = getBarConfig(barId);
         if (!config)
             return -1;
@@ -2767,6 +2767,7 @@ Singleton {
         }
         const listKey = sectionId + "Widgets";
         const list = barSectionWidgets(config, sectionId).slice();
+        const position = index < 0 ? list.length : Math.min(index, list.length);
         if (widgetId === "island") {
             if (sectionId === "island")
                 return -1;
@@ -2774,14 +2775,40 @@ Singleton {
                 return -1;
             const configs = JSON.parse(JSON.stringify(barConfigs));
             const target = configs.find(cfg => cfg.id === barId);
-            list.push(entry);
+            list.splice(position, 0, entry);
             target[listKey] = list;
             _commitIslandOwner(configs, target);
-            return list.length - 1;
+            return position;
         }
-        list.push(entry);
+        list.splice(position, 0, entry);
         _commitBarSection(barId, sectionId, list);
-        return list.length - 1;
+        return position;
+    }
+
+    function removeBarWidget(barId, sectionId, index) {
+        const list = barSectionWidgets(getBarConfig(barId), sectionId).slice();
+        if (index < 0 || index >= list.length)
+            return;
+        list.splice(index, 1);
+        _commitBarSection(barId, sectionId, list);
+    }
+
+    // toIndex counts slots in the target section before the widget is lifted out.
+    function moveBarWidget(barId, fromSection, fromIndex, toSection, toIndex) {
+        const config = getBarConfig(barId);
+        const source = barSectionWidgets(config, fromSection).slice();
+        if (fromIndex < 0 || fromIndex >= source.length)
+            return;
+        const sameSection = fromSection === toSection;
+        const target = sameSection ? source : barSectionWidgets(config, toSection).slice();
+        const entry = source.splice(fromIndex, 1)[0];
+        const slot = sameSection && toIndex > fromIndex ? toIndex - 1 : toIndex;
+        target.splice(Math.max(0, Math.min(slot, target.length)), 0, entry);
+        const updates = {
+            [fromSection + "Widgets"]: source
+        };
+        updates[toSection + "Widgets"] = target;
+        updateBarConfig(barId, updates);
     }
 
     function barSectionWidgets(config, sectionId) {

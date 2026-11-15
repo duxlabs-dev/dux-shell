@@ -73,65 +73,9 @@ Item {
         onTransferred: (source, sourceIndex, target, targetIndex) => widgetsTab.moveWidget(source.groupKey, target.groupKey, source.model[sourceIndex].id, targetIndex, sourceIndex)
     }
 
-    readonly property var widgetAvailability: {
-        const dgopWarning = DgopService.dgopAvailable ? undefined : I18n.tr("Requires %1", "missing program").arg("dgop");
-        return {
-            "layout": {
-                "enabled": CompositorService.isMango && MangoService.available,
-                "warning": !CompositorService.isMango ? I18n.tr("Requires MangoWC compositor") : (!MangoService.available ? I18n.tr("Mango service not available") : undefined)
-            },
-            "cpuUsage": {
-                "enabled": DgopService.dgopAvailable,
-                "warning": dgopWarning
-            },
-            "memUsage": {
-                "enabled": DgopService.dgopAvailable,
-                "warning": dgopWarning
-            },
-            "diskUsage": {
-                "enabled": DgopService.dgopAvailable,
-                "warning": dgopWarning
-            },
-            "cpuTemp": {
-                "enabled": DgopService.dgopAvailable,
-                "warning": dgopWarning
-            },
-            "gpuTemp": {
-                "enabled": DgopService.dgopAvailable,
-                "warning": dgopWarning ?? I18n.tr("This widget prevents GPU power off states, which can significantly impact battery life on laptops. It is not recommended to use this on laptops with hybrid graphics.")
-            },
-            "network_speed_monitor": {
-                "enabled": DgopService.dgopAvailable,
-                "warning": dgopWarning
-            },
-            "systemUpdate": {
-                "enabled": SystemUpdateService.sysupdateAvailable,
-                "warning": SystemUpdateService.sysupdateAvailable ? undefined : I18n.tr("Requires DMS server with sysupdate capability")
-            }
-        };
-    }
-
     property var baseWidgetDefinitions: {
         pluginCatalogRevision;
-        var coreWidgets = BarWidgetCatalog.widgets.map(widget => Object.assign({
-                "enabled": true
-            }, widget, widgetsTab.widgetAvailability[widget.id] ?? {}));
-
-        var allPluginVariants = PluginService.getAllPluginVariants();
-        for (var i = 0; i < allPluginVariants.length; i++) {
-            var variant = allPluginVariants[i];
-            coreWidgets.push({
-                "id": variant.fullId,
-                "pluginId": variant.pluginId,
-                "text": variant.name,
-                "description": variant.description,
-                "icon": variant.icon,
-                "enabled": variant.loaded,
-                "warning": !variant.loaded ? I18n.tr("Plugin is disabled - enable in Plugins settings to use") : undefined
-            });
-        }
-
-        return coreWidgets;
+        return BarWidgetCatalog.definitions();
     }
 
     focus: true
@@ -322,28 +266,7 @@ Item {
     function getWidgetsForPopup(sectionId) {
         if (sectionId === "island")
             return getIslandWidgetsForPopup();
-        const config = SettingsData.getBarConfig(selectedBarId);
-        return baseWidgetDefinitions.filter(widget => {
-            if (widget.warning && widget.warning.includes("Plugin is disabled"))
-                return false;
-            if (widget.enabled === false)
-                return false;
-            return !(widget.single && SettingsData.barWidgetEntry(config, widget.id));
-        }).map(widget => {
-            if (widget.id !== "island")
-                return widget;
-            if (SettingsData.isIslandBarConfig(config))
-                return Object.assign({}, widget, {
-                    "disabled": true,
-                    "description": I18n.tr("This bar is the Island", "bar widget picker: island widget unavailable on an island-layout bar")
-                });
-            if (!SettingsData.islandWidgetBlocked(config))
-                return widget;
-            return Object.assign({}, widget, {
-                "disabled": true,
-                "description": I18n.tr("An Island bar already covers a display this bar is on", "bar widget picker: island widget blocked by an island-layout bar sharing a display")
-            });
-        });
+        return BarWidgetCatalog.addable(SettingsData.getBarConfig(selectedBarId), baseWidgetDefinitions);
     }
 
     function addWidgetToSection(widgetId, targetSection) {

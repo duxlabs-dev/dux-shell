@@ -24,6 +24,7 @@ Singleton {
     readonly property real popoutRowHeight: Math.max(Theme.listItemHeight + Theme.densityStepM, Theme.buttonHeightS + Theme.spacingXS)
     readonly property real popoutRowTwoLineHeight: Theme.listItemTwoLineHeight + Theme.densityStepM
     readonly property var elevationLevel: Theme.elevationLevel2
+    readonly property real hiddenWidgetOpacity: Theme.onSurface_38.a
 
     function pillRadius(thickness, style) {
         if (style === "flat")
