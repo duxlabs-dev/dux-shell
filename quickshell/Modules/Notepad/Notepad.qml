@@ -55,7 +55,7 @@ Item {
     Binding {
         target: root.slideout
         property: "hoverDismissSuspended"
-        value: root.anyModalOpen
+        value: root.anyModalOpen || textEditor.contextMenuOpen
         when: root.slideout !== null
         restoreMode: Binding.RestoreBindingOrValue
     }

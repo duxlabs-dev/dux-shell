@@ -1,55 +1,64 @@
 import QtQuick
-import QtQuick.Controls
 import Quickshell
 import qs.Common
 import qs.Services
 import qs.DCommon.Widgets
+import qs.Widgets
 import qs.Modals.Common
 
-Popup {
+DContextMenu {
     id: processContextMenu
 
     property var processData: null
-    property int selectedIndex: -1
-    property bool keyboardNavigation: false
     property var parentFocusItem: null
-    property var transientSurfaceTracker: null
+    property string submenu: ""
 
+    readonly property bool menuOpen: renderActive
     readonly property bool confirmationOpen: confirmation.opened
+    readonly property string endTitle: ProcessActions.restartKind(processData) === "reload" ? I18n.tr("Quit or reload", "process menu: opens the quit, force quit, end tree and reload actions") : I18n.tr("Quit or restart", "process menu: opens the quit, force quit, end tree and restart actions")
 
     signal menuClosed
     signal processKilled
 
-    onVisibleChanged: transientSurfaceTracker?.setActive(processContextMenu, visible || confirmationOpen, null)
-    onConfirmationOpenChanged: transientSurfaceTracker?.setActive(processContextMenu, visible || confirmationOpen, null)
-    Component.onDestruction: transientSurfaceTracker?.unregister(processContextMenu)
+    minMenuWidth: ProcessListMetrics.menuWidth
+    keyboardNavigable: true
+
+    onRenderActiveChanged: {
+        transientSurfaceTracker?.setActive(processContextMenu, renderActive || confirmationOpen, contextWindow);
+        if (!renderActive) {
+            submenu = "";
+            menuClosed();
+            focusRestore.restart();
+        }
+    }
+    onConfirmationOpenChanged: transientSurfaceTracker?.setActive(processContextMenu, renderActive || confirmationOpen, contextWindow)
 
     Connections {
         target: processContextMenu.transientSurfaceTracker
         ignoreUnknownSignals: true
 
         function onCloseRequested() {
-            processContextMenu.dismiss();
+            confirmation.close();
         }
     }
 
-    property string submenu: ""
-    readonly property string endTitle: ProcessActions.restartKind(processData) === "reload" ? I18n.tr("Quit or reload", "process menu: opens the quit, force quit, end tree and reload actions") : I18n.tr("Quit or restart", "process menu: opens the quit, force quit, end tree and restart actions")
-
     readonly property var mainItems: [
         {
+            type: "item",
             text: I18n.tr("Copy PID"),
             icon: "tag",
             action: copyPid,
             enabled: true
         },
         {
+            type: "item",
             text: I18n.tr("Copy Name"),
             icon: "content_copy",
             action: copyName,
             enabled: true
         },
         {
+            type: "item",
             text: I18n.tr("Copy Full Command"),
             icon: "code",
             action: copyFullCommand,
@@ -60,6 +69,7 @@ Popup {
         }
     ].concat(ProcessActions.canPause(processData) ? [
             {
+                type: "item",
                 text: ProcessActions.isPaused(processData) ? I18n.tr("Resume", "process action: continue a paused process (SIGCONT)") : I18n.tr("Pause", "process action: freeze the process and everything it started (SIGSTOP)"),
                 icon: ProcessActions.isPaused(processData) ? "play_arrow" : "pause",
                 action: () => closeAndRun(process => ProcessActions.setPaused(process, !ProcessActions.isPaused(process))),
@@ -67,16 +77,22 @@ Popup {
             }
         ] : []).concat(ProcessActions.canSetPriority(processData) ? [
             {
+                type: "item",
                 text: I18n.tr("Priority", "process action: opens the priority presets"),
                 icon: "speed",
+                trailingIcon: "chevron_right",
+                keepOpen: true,
                 action: () => Qt.callLater(setSubmenu, "priority"),
                 enabled: true,
                 submenu: "priority"
             }
         ] : []).concat([
         {
+            type: "item",
             text: endTitle,
             icon: "power_settings_new",
+            trailingIcon: "chevron_right",
+            keepOpen: true,
             action: () => Qt.callLater(setSubmenu, "end"),
             enabled: ProcessActions.canEnd(processData) || ProcessActions.canRestart(processData),
             submenu: "end"
@@ -85,8 +101,10 @@ Popup {
 
     readonly property var backItems: [
         {
+            type: "item",
             text: I18n.tr("Back"),
             icon: "arrow_back",
+            keepOpen: true,
             action: () => Qt.callLater(setSubmenu, ""),
             enabled: true
         },
@@ -97,27 +115,31 @@ Popup {
 
     readonly property var endItems: backItems.concat([
         {
+            type: "item",
             text: I18n.tr("Quit", "process action: ask the process to exit (SIGTERM)"),
             icon: "close",
             action: () => requestAction("quit"),
             enabled: ProcessActions.canEnd(processData),
-            dangerous: true
+            isDestructive: true
         },
         {
+            type: "item",
             text: I18n.tr("Force quit", "process action: kill the process immediately (SIGKILL)"),
             icon: "dangerous",
             action: () => requestAction("force"),
             enabled: ProcessActions.canEnd(processData),
-            dangerous: true
+            isDestructive: true
         },
         {
+            type: "item",
             text: I18n.tr("End process tree", "process action: quit the process and every process it started"),
             icon: "account_tree",
             action: () => requestAction("tree"),
             enabled: ProcessActions.canEnd(processData),
-            dangerous: true
+            isDestructive: true
         },
         {
+            type: "item",
             text: ProcessActions.title("restart", processData),
             icon: "restart_alt",
             action: () => requestAction("restart"),
@@ -126,94 +148,79 @@ Popup {
     ])
 
     readonly property var priorityItems: backItems.concat(ProcessActions.priorities.map(preset => ({
+                type: "item",
                 text: preset.label,
                 icon: preset === ProcessActions.priorityPreset(processData?.nice) ? "check" : "",
                 action: () => closeAndRun(process => ProcessActions.setPriority(process, preset.nice)),
                 enabled: true
             })))
 
-    readonly property var menuItems: submenu === "end" ? endItems : submenu === "priority" ? priorityItems : mainItems
+    menuItems: submenu === "end" ? endItems : submenu === "priority" ? priorityItems : mainItems
 
     function setSubmenu(name) {
         const from = submenu;
         submenu = name;
-        selectedIndex = !keyboardNavigation ? -1 : name ? 2 : Math.max(0, mainItems.findIndex(item => item.submenu === from));
-    }
-
-    // The submenus can be taller than the main list; keep them inside the parent.
-    onHeightChanged: {
-        if (visible && parent)
-            y = Math.max(0, Math.min(y, parent.height - height));
-    }
-
-    readonly property int visibleItemCount: {
-        let count = 0;
-        for (let i = 0; i < menuItems.length; i++) {
-            if (menuItems[i].type !== "separator")
-                count++;
+        if (!keyboardNavigation) {
+            selectedMenuIndex = -1;
+            return;
         }
-        return count;
+        if (name) {
+            selectedMenuIndex = 1;
+            return;
+        }
+        const selectableMain = mainItems.filter(item => item.type === "item");
+        selectedMenuIndex = Math.max(0, selectableMain.findIndex(item => item.submenu === from));
+    }
+
+    function handleKeyEvent(event) {
+        switch (event.key) {
+        case Qt.Key_J:
+            selectNext();
+            event.accepted = true;
+            return true;
+        case Qt.Key_K:
+            selectPrevious();
+            event.accepted = true;
+            return true;
+        case Qt.Key_Space:
+            activateSelected();
+            event.accepted = true;
+            return true;
+        case Qt.Key_Right:
+        case Qt.Key_L: {
+            const idx = selectedDelegateIndex();
+            if (idx >= 0 && menuItems[idx]?.submenu && menuItems[idx].enabled)
+                setSubmenu(menuItems[idx].submenu);
+            event.accepted = true;
+            return true;
+        }
+        case Qt.Key_Escape:
+        case Qt.Key_Left:
+        case Qt.Key_H:
+            if (submenu) {
+                setSubmenu("");
+                event.accepted = true;
+                return true;
+            }
+            if (event.key === Qt.Key_H) {
+                hide();
+                event.accepted = true;
+                return true;
+            }
+            return false;
+        default:
+            return false;
+        }
     }
 
     function show(x, y, fromKeyboard) {
-        let finalX = x;
-        let finalY = y;
-
-        if (processContextMenu.parent) {
-            const parentWidth = processContextMenu.parent.width;
-            const parentHeight = processContextMenu.parent.height;
-            const menuWidth = processContextMenu.width;
-            const menuHeight = processContextMenu.height;
-
-            if (finalX + menuWidth > parentWidth)
-                finalX = Math.max(0, parentWidth - menuWidth);
-            if (finalY + menuHeight > parentHeight)
-                finalY = Math.max(0, parentHeight - menuHeight);
-        }
-
-        processContextMenu.x = finalX;
-        processContextMenu.y = finalY;
         submenu = "";
-        keyboardNavigation = fromKeyboard || false;
-        selectedIndex = fromKeyboard ? 0 : -1;
-        open();
-    }
-
-    function selectNext() {
-        if (visibleItemCount === 0)
-            return;
-        let current = selectedIndex;
-        let next = current;
-        do {
-            next = (next + 1) % menuItems.length;
-        } while (menuItems[next].type === "separator" && next !== current)
-        selectedIndex = next;
-    }
-
-    function selectPrevious() {
-        if (visibleItemCount === 0)
-            return;
-        let current = selectedIndex;
-        let prev = current;
-        do {
-            prev = (prev - 1 + menuItems.length) % menuItems.length;
-        } while (menuItems[prev].type === "separator" && prev !== current)
-        selectedIndex = prev;
-    }
-
-    function activateSelected() {
-        if (selectedIndex < 0 || selectedIndex >= menuItems.length)
-            return;
-        const item = menuItems[selectedIndex];
-        if (item.type === "separator" || !item.enabled)
-            return;
-        item.action();
+        openAtItem(parent, x, y, fromKeyboard);
     }
 
     function copyPid() {
         if (processData)
             Quickshell.execDetached(["dms", "cl", "copy", "--", processData.pid.toString()]);
-        close();
     }
 
     function copyName() {
@@ -221,7 +228,6 @@ Popup {
             const name = processData.command || "";
             Quickshell.execDetached(["dms", "cl", "copy", "--", name]);
         }
-        close();
     }
 
     function copyFullCommand() {
@@ -229,14 +235,13 @@ Popup {
             const fullCmd = processData.fullCommand || processData.command || "";
             Quickshell.execDetached(["dms", "cl", "copy", "--", fullCmd]);
         }
-        close();
     }
 
     function requestAction(action) {
         if (!processData || !(action === "restart" ? ProcessActions.canRestart(processData) : ProcessActions.canEnd(processData)))
             return;
         const process = Object.assign({}, processData);
-        close();
+        hide();
         confirmation.open(process, action, action !== "restart" && ProcessActions.isCritical(process));
     }
 
@@ -244,12 +249,12 @@ Popup {
         if (!processData)
             return;
         const process = Object.assign({}, processData);
-        close();
+        hide();
         action(process);
     }
 
     function dismiss() {
-        close();
+        hide();
         confirmation.close();
     }
 
@@ -273,230 +278,6 @@ Popup {
         onTriggered: {
             if (!processContextMenu.confirmationOpen && processContextMenu.parentFocusItem?.visible)
                 processContextMenu.parentFocusItem.forceActiveFocus();
-        }
-    }
-
-    width: ProcessListMetrics.menuWidth
-    height: menuColumn.implicitHeight
-    padding: 0
-    // Modal so the click that closes the menu doesn't also act on the row under it.
-    modal: true
-    dim: false
-    closePolicy: Popup.CloseOnEscape
-
-    onClosed: {
-        closePolicy = Popup.CloseOnEscape;
-        submenu = "";
-        keyboardNavigation = false;
-        selectedIndex = -1;
-        menuClosed();
-        focusRestore.restart();
-    }
-
-    onOpened: {
-        outsideClickTimer.start();
-        if (keyboardNavigation)
-            Qt.callLater(() => keyboardHandler.forceActiveFocus());
-    }
-
-    Timer {
-        id: outsideClickTimer
-        interval: 100
-        onTriggered: processContextMenu.closePolicy = Popup.CloseOnEscape | Popup.CloseOnPressOutside
-    }
-
-    background: Rectangle {
-        color: "transparent"
-    }
-
-    // Groups split at separators; each is its own card, so the end actions stand apart from the copy actions.
-    readonly property var groups: {
-        const out = [[]];
-        menuItems.forEach((entry, index) => {
-            if (entry.type === "separator")
-                out.push([]);
-            else
-                out[out.length - 1].push({
-                    "entry": entry,
-                    "index": index
-                });
-        });
-        return out.filter(g => g.length > 0);
-    }
-
-    contentItem: Item {
-        Item {
-            id: keyboardHandler
-            anchors.fill: parent
-            focus: keyboardNavigation
-
-            Keys.onPressed: event => {
-                switch (event.key) {
-                case Qt.Key_Down:
-                case Qt.Key_J:
-                    keyboardNavigation = true;
-                    selectNext();
-                    event.accepted = true;
-                    return;
-                case Qt.Key_Up:
-                case Qt.Key_K:
-                    keyboardNavigation = true;
-                    selectPrevious();
-                    event.accepted = true;
-                    return;
-                case Qt.Key_Return:
-                case Qt.Key_Enter:
-                case Qt.Key_Space:
-                    activateSelected();
-                    event.accepted = true;
-                    return;
-                case Qt.Key_Right:
-                case Qt.Key_L:
-                    if (menuItems[selectedIndex]?.submenu && menuItems[selectedIndex].enabled)
-                        setSubmenu(menuItems[selectedIndex].submenu);
-                    event.accepted = true;
-                    return;
-                case Qt.Key_Escape:
-                case Qt.Key_Left:
-                case Qt.Key_H:
-                    if (submenu)
-                        setSubmenu("");
-                    else
-                        close();
-                    event.accepted = true;
-                    return;
-                }
-            }
-        }
-
-        Column {
-            id: menuColumn
-            anchors.left: parent.left
-            anchors.right: parent.right
-            spacing: Theme.spacingXS
-
-            Repeater {
-                model: processContextMenu.groups
-
-                Rectangle {
-                    id: groupCard
-                    required property var modelData
-                    width: menuColumn.width
-                    height: groupColumn.implicitHeight + ProcessListMetrics.menuPadding * 2
-                    color: Theme.foregroundColor(Theme.chipSurfaceNested, Theme.isFloatingWindow(processContextMenu))
-                    radius: Theme.windowRadius
-                    border.color: Theme.outlineMedium
-                    border.width: Theme.layerOutlineWidth
-
-                    Column {
-                        id: groupColumn
-                        anchors.fill: parent
-                        anchors.margins: ProcessListMetrics.menuPadding
-                        spacing: Theme.groupedListGap
-
-                        Repeater {
-                            model: groupCard.modelData
-
-                            Item {
-                                id: row
-                                required property var modelData
-                                readonly property var entry: modelData.entry
-                                readonly property int itemIndex: modelData.index
-                                width: groupColumn.width
-                                height: ProcessListMetrics.menuRowHeight
-
-                                Rectangle {
-                                    id: menuItem
-                                    width: parent.width
-                                    height: ProcessListMetrics.menuRowHeight
-                                    radius: Theme.cornerRadiusM
-                                    color: {
-                                        if (!row.entry.enabled)
-                                            return "transparent";
-                                        const isSelected = keyboardNavigation && selectedIndex === row.itemIndex;
-                                        if (row.entry.dangerous) {
-                                            if (isSelected)
-                                                return Theme.errorPressed;
-                                            return menuItemArea.containsMouse ? Theme.errorHover : Theme.withAlpha(Theme.errorHover, 0);
-                                        }
-                                        if (isSelected)
-                                            return Theme.selectedContainer;
-                                        return menuItemArea.pressed ? Theme.withAlpha(Theme.onSurface, Theme.stateLayerPressed) : menuItemArea.containsMouse ? Theme.withAlpha(Theme.onSurface, Theme.stateLayerHover) : "transparent";
-                                    }
-
-                                    Row {
-                                        anchors.left: parent.left
-                                        anchors.leftMargin: Theme.spacingS
-                                        anchors.right: parent.right
-                                        anchors.rightMargin: Theme.spacingS
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        spacing: Theme.spacingS
-
-                                        DIcon {
-                                            name: row.entry.icon || ""
-                                            size: Theme.iconSizeSmall
-                                            color: {
-                                                if (!row.entry.enabled)
-                                                    return Theme.onSurface_38;
-                                                const isSelected = keyboardNavigation && selectedIndex === row.itemIndex;
-                                                if (row.entry.dangerous && (menuItemArea.containsMouse || isSelected))
-                                                    return Theme.error;
-                                                return Theme.surfaceText;
-                                            }
-                                            anchors.verticalCenter: parent.verticalCenter
-                                        }
-
-                                        StyledText {
-                                            text: row.entry.text || ""
-                                            font.pixelSize: Theme.fontSizeSmall
-                                            font.weight: Theme.fontWeight
-                                            color: {
-                                                if (!row.entry.enabled)
-                                                    return Theme.onSurface_38;
-                                                const isSelected = keyboardNavigation && selectedIndex === row.itemIndex;
-                                                if (row.entry.dangerous && (menuItemArea.containsMouse || isSelected))
-                                                    return Theme.error;
-                                                return Theme.surfaceText;
-                                            }
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            elide: Text.ElideRight
-                                            width: parent.width - Theme.iconSizeSmall * (row.entry.submenu ? 2 : 1) - Theme.spacingS * (row.entry.submenu ? 2 : 1)
-                                        }
-
-                                        DIcon {
-                                            visible: !!row.entry.submenu
-                                            name: "chevron_right"
-                                            size: Theme.iconSizeSmall - 2
-                                            color: row.entry.enabled ? Theme.surfaceText : Theme.onSurface_38
-                                            anchors.verticalCenter: parent.verticalCenter
-                                        }
-                                    }
-
-                                    DRipple {
-                                        id: menuItemRipple
-                                        rippleColor: row.entry.dangerous ? Theme.error : Theme.surfaceText
-                                        cornerRadius: menuItem.radius
-                                    }
-
-                                    MouseArea {
-                                        id: menuItemArea
-                                        anchors.fill: parent
-                                        hoverEnabled: true
-                                        cursorShape: row.entry.enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
-                                        enabled: row.entry.enabled ?? false
-                                        onEntered: {
-                                            keyboardNavigation = false;
-                                            selectedIndex = row.itemIndex;
-                                        }
-                                        onPressed: mouse => menuItemRipple.trigger(mouse.x, mouse.y)
-                                        onClicked: row.entry.action()
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
         }
     }
 }
