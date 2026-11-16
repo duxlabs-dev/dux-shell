@@ -691,6 +691,16 @@ Column {
                                         root.previewRequested();
                                     }
                                     break;
+                                case Qt.Key_Plus:
+                                case Qt.Key_Equal:
+                                    event.accepted = true;
+                                    SettingsData.notepadFontSize = Math.min(48, SettingsData.notepadFontSize + 1);
+                                    break;
+                                case Qt.Key_Minus:
+                                case Qt.Key_Underscore:
+                                    event.accepted = true;
+                                    SettingsData.notepadFontSize = Math.max(8, SettingsData.notepadFontSize - 1);
+                                    break;
                                 }
                             }
                         }
