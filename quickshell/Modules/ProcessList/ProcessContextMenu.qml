@@ -33,6 +33,15 @@ DContextMenu {
     }
     onConfirmationOpenChanged: transientSurfaceTracker?.setActive(processContextMenu, renderActive || confirmationOpen, contextWindow)
 
+    Connections {
+        target: processContextMenu.transientSurfaceTracker
+        ignoreUnknownSignals: true
+
+        function onCloseRequested() {
+            confirmation.close();
+        }
+    }
+
     readonly property var mainItems: [
         {
             type: "item",
@@ -161,6 +170,47 @@ DContextMenu {
         }
         const selectableMain = mainItems.filter(item => item.type === "item");
         selectedMenuIndex = Math.max(0, selectableMain.findIndex(item => item.submenu === from));
+    }
+
+    function handleKeyEvent(event) {
+        switch (event.key) {
+        case Qt.Key_J:
+            selectNext();
+            event.accepted = true;
+            return true;
+        case Qt.Key_K:
+            selectPrevious();
+            event.accepted = true;
+            return true;
+        case Qt.Key_Space:
+            activateSelected();
+            event.accepted = true;
+            return true;
+        case Qt.Key_Right:
+        case Qt.Key_L: {
+            const idx = selectedDelegateIndex();
+            if (idx >= 0 && menuItems[idx]?.submenu && menuItems[idx].enabled)
+                setSubmenu(menuItems[idx].submenu);
+            event.accepted = true;
+            return true;
+        }
+        case Qt.Key_Escape:
+        case Qt.Key_Left:
+        case Qt.Key_H:
+            if (submenu) {
+                setSubmenu("");
+                event.accepted = true;
+                return true;
+            }
+            if (event.key === Qt.Key_H) {
+                hide();
+                event.accepted = true;
+                return true;
+            }
+            return false;
+        default:
+            return false;
+        }
     }
 
     function show(x, y, fromKeyboard) {

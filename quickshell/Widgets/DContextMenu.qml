@@ -255,6 +255,10 @@ Item {
             activate(menuItems[index]);
     }
 
+    function handleKeyEvent(event) {
+        return false;
+    }
+
     onRenderActiveChanged: transientSurfaceTracker?.setActive(root, renderActive, contextWindow)
     // A host maps its window from childrenChanged, which Qt emits before the item leaves its old window.
     onHostItemChanged: {
@@ -330,6 +334,8 @@ Item {
             focus: root.keyboardNavigable && root.openState
 
             Keys.onPressed: event => {
+                if (root.handleKeyEvent(event))
+                    return;
                 switch (event.key) {
                 case Qt.Key_Down:
                     root.selectNext();
