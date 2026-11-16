@@ -34,7 +34,7 @@ Item {
     readonly property bool hasSeekbar: seekbarEnabled && !!presentation && presentation.length > 0
     readonly property bool panelOpen: !!inlinePanel?.opened
     readonly property bool scrolling: root.player.live && !!presentation?.playing && !panelOpen
-    readonly property var availableFocusTargets: root.player.lyricsFocusTarget ? [root.player.lyricsFocusTarget].concat(focusTargets) : focusTargets
+    readonly property var availableFocusTargets: [root.player.lyricsFocusTarget, root.player.lyricsSourceButton].filter(Boolean).concat(focusTargets)
 
     readonly property Item focusTarget: panelOpen ? inlinePanel.focusTarget : availableFocusTargets.find(item => item?.visible && item.enabled) ?? null
     readonly property Item previousFocusTarget: panelOpen ? inlinePanel.focusTarget : availableFocusTargets.filter(item => item?.visible && item.enabled).slice(-1)[0] ?? null
@@ -48,7 +48,7 @@ Item {
     }
 
     function buttonForPanel(panelId) {
-        const usable = panelButtons.filter(button => button?.visible && button.enabled);
+        const usable = panelButtons.concat(root.player.lyricsSourceButton ?? []).filter(button => button?.visible && button.enabled);
         const opener = root.player.panelOpener;
         if (opener?.panelId === panelId && usable.includes(opener))
             return opener;

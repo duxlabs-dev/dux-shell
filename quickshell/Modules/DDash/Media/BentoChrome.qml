@@ -23,7 +23,9 @@ MediaChromeBase {
     readonly property bool cardBackgrounds: root.player.options?.cardBackgrounds ?? MediaOptions.defaults.cardBackgrounds
     readonly property real cardPadding: cardBackgrounds ? Theme.spacingL : 0
     // The transport takes what the artwork leaves over, so both columns end up about as tall.
-    readonly property real deckFixedHeight: sourceRow.height + titleBlock.height + (seekBlock.visible ? seekBlock.height + Theme.spacingL : 0) + optionGroup.height + cardPadding * 2 + Theme.spacingXL * 2 + Theme.spacingL
+    // seekBlock.visible reads false while a sheet hides the controls, which would resize the transport.
+    readonly property bool seekShown: seekbarEnabled && !!presentation
+    readonly property real deckFixedHeight: sourceRow.height + titleBlock.height + (seekShown ? seekBlock.height + Theme.spacingL : 0) + optionGroup.height + cardPadding * 2 + Theme.spacingXL * 2 + Theme.spacingL
     readonly property real transportSize: Math.round(Math.max(Theme.buttonHeightM, Math.min(DashMetrics.mediaTransportMaxHeight, artworkSize - deckFixedHeight)))
     readonly property real stageWidth: lyricsShown && !compact ? artColumnWidth : artworkSize
     readonly property real stageHeight: lyricsShown && !compact ? Math.max(artworkSize, deck.height) : artworkSize
@@ -207,7 +209,7 @@ MediaChromeBase {
 
                             width: parent.width
                             spacing: Theme.spacingXS
-                            visible: root.seekbarEnabled && !!root.presentation
+                            visible: root.seekShown
                             LayoutMirroring.enabled: false
                             LayoutMirroring.childrenInherit: true
 

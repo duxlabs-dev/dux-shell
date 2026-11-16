@@ -30,6 +30,7 @@ QtObject {
     property var lines: []
     property var plainLines: []
     property bool synced: false
+    property string source: ""
     property string attributionName: ""
     property string attributionUrl: ""
     property string attributionText: ""
@@ -42,6 +43,7 @@ QtObject {
     property real sampleTime: 0
     property var cueTimes: []
     property string state: "idle"
+    readonly property bool found: state === "ready" || state === "instrumental"
     readonly property bool pending: state === "loading" || (state === "idle" && enabled && requestDelay.running)
     property string requestedKey: ""
     property string requestedSong: ""
@@ -49,7 +51,15 @@ QtObject {
     property string shownResult: ""
     property bool refreshPending: false
     property int requestedDuration: 0
+    property var requestedQuery: null
     property var requestId: null
+    property bool listingChoices: false
+    // null until the sources have answered
+    property var choices: null
+    property string chosen: ""
+    property string choicesKey: ""
+    property var choicesRequest: null
+    property int choicesSerial: 0
     readonly property bool staleDuration: duration !== requestedDuration && state !== "ready" && state !== "instrumental"
     property int serial: 0
     property real anchorPosition: 0
@@ -75,6 +85,8 @@ QtObject {
         if (!refreshPending)
             restart();
         requestedKey = "";
+        if (listingChoices)
+            loadChoices();
         if (enabled)
             resume();
     }
@@ -144,11 +156,13 @@ QtObject {
         memo = {
             requestedKey,
             requestedDuration,
+            requestedQuery,
             requestedSong,
             lines,
             plainLines,
             synced,
             cueTimes,
+            source,
             attributionName,
             attributionUrl,
             attributionText,
@@ -200,6 +214,7 @@ QtObject {
         lines = [];
         plainLines = [];
         synced = false;
+        source = "";
         attributionName = "";
         attributionUrl = "";
         attributionText = "";
@@ -226,25 +241,104 @@ QtObject {
         refreshPending = false;
         if (!refreshing)
             clear();
-        requestedKey = trackKey;
+        const snapshot = track;
+        const searchable = !!snapshot && ((!!snapshot.title && !!snapshot.artist) || fileUrl !== "");
         requestedDuration = duration;
         requestedSong = songTitle();
-        const snapshot = track;
-        if (!snapshot || ((!snapshot.title || !snapshot.artist) && !fileUrl)) {
-            if (!refreshing)
-                useEmbeddedText("none");
-            return;
-        }
-        if (!refreshing)
-            state = "loading";
-        lookup({
+        requestedQuery = searchable ? {
             "title": snapshot.title || "",
             "artist": snapshot.artist || "",
             "album": snapshot.album || "",
             "duration": requestedDuration,
             "fileUrl": fileUrl,
             "providers": MediaOptions.enabledLyricsProviders
-        }, false, refreshing);
+        } : null;
+        requestedKey = trackKey;
+        if (listingChoices && choicesKey !== requestedKey)
+            loadChoices();
+        if (!requestedQuery) {
+            if (!refreshing)
+                useEmbeddedText("none");
+            return;
+        }
+        if (!refreshing)
+            state = "loading";
+        lookup(requestedQuery, false, refreshing);
+    }
+
+    function listChoices() {
+        if (listingChoices)
+            return;
+        listingChoices = true;
+        loadChoices();
+    }
+
+    function dropChoices() {
+        if (!listingChoices)
+            return;
+        listingChoices = false;
+        loadChoices();
+    }
+
+    function loadChoices() {
+        choicesSerial++;
+        if (choicesRequest !== null)
+            backend.cancelRequest(choicesRequest);
+        choicesRequest = null;
+        choices = null;
+        chosen = "";
+        choicesKey = requestedKey;
+        if (!listingChoices || requestedKey === "")
+            return;
+        askChoices(false);
+    }
+
+    function askChoices(allowNetwork) {
+        const token = choicesSerial;
+        const params = Object.assign({
+            "allowNetwork": allowNetwork
+        }, requestedQuery);
+        choicesRequest = backend.sendRequest("lyrics.choices", params, response => root.receiveChoices(token, response, allowNetwork), DashMetrics.mediaLyricsRequestTimeout) ?? null;
+    }
+
+    // The cached sources answer at once, then every enabled provider is asked.
+    function receiveChoices(token, response, complete) {
+        if (token !== choicesSerial)
+            return;
+        choicesRequest = null;
+        if (!complete)
+            askChoices(true);
+        const result = response.error ? null : response.result;
+        const listed = result?.choices ?? [];
+        if (!complete && listed.length === 0)
+            return;
+        if (!result && choices)
+            return;
+        if (!choices)
+            chosen = result?.chosen ?? "";
+        if (JSON.stringify(listed) !== JSON.stringify(choices))
+            choices = listed;
+    }
+
+    function choose(source) {
+        const key = requestedKey;
+        const params = Object.assign({
+            "source": source
+        }, requestedQuery);
+        chosen = source;
+        backend.sendRequest("lyrics.choose", params, response => root.applyChoice(key, response), DashMetrics.mediaLyricsRequestTimeout);
+    }
+
+    function applyChoice(key, response) {
+        if (response.error || key !== requestedKey)
+            return;
+        memo = null;
+        if (!enabled) {
+            requestedKey = "";
+            return;
+        }
+        refreshPending = true;
+        request();
     }
 
     function lookup(query, allowNetwork, refreshing) {
@@ -284,6 +378,7 @@ QtObject {
         shownResult = resultKey;
         if (result.instrumental) {
             clearContent();
+            source = result.source ?? "";
             state = "instrumental";
             return;
         }
@@ -294,6 +389,7 @@ QtObject {
             useEmbeddedText("none");
             return;
         }
+        source = result.source ?? "";
         attributionName = result.attribution?.name ?? "";
         attributionUrl = result.attribution?.url ?? "";
         attributionText = result.attribution?.text ?? "";

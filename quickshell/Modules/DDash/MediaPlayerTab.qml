@@ -23,6 +23,7 @@ Item {
     property bool lyricsOpen: false
     property Item lyricsFocusTarget: null
     property Item lyricsOpener: null
+    property Item lyricsSourceButton: null
     readonly property var presentation: mediaPresentation.current
     readonly property bool idle: !presentation
     property bool wallpaperEnabled: MediaOptions.albumArtBackdrop
@@ -88,8 +89,11 @@ Item {
     }
 
     onLyricsOpenChanged: {
-        if (!lyricsOpen)
-            lyricsFocusTimer.restart();
+        if (lyricsOpen)
+            return;
+        lyricsFocusTimer.restart();
+        if (panel === "lyrics")
+            panel = "";
     }
 
     Timer {

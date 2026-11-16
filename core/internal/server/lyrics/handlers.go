@@ -12,6 +12,7 @@ import (
 	corelyrics "github.com/duxlabs-dev/dux-go/lyrics"
 	"github.com/duxlabs-dev/dux-shell/core/internal/lowprio"
 	"github.com/duxlabs-dev/dux-shell/core/internal/plugins"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/models"
 	"github.com/duxlabs-dev/dux-shell/core/internal/utils"
 )
 
@@ -19,6 +20,10 @@ func HandleRequest(conn *ipc.ConnWriter, req ipc.Request) {
 	switch req.Method {
 	case "lyrics.get":
 		handleGet(conn, req)
+	case "lyrics.choices":
+		handleChoices(conn, req)
+	case "lyrics.choose":
+		handleChoose(conn, req)
 	default:
 		conn.RespondError(req.ID, fmt.Sprintf("unknown method: %s", req.Method))
 	}
@@ -60,23 +65,27 @@ func lowPriority(fetch corelyrics.Fetcher) corelyrics.Fetcher {
 	}
 }
 
-func handleGet(conn *ipc.ConnWriter, req ipc.Request) {
+func trackRequest(args map[string]any) corelyrics.Request {
 	var providers []corelyrics.Provider
-	if _, configured := req.Params["providers"]; configured {
+	if _, configured := args["providers"]; configured {
 		providers = []corelyrics.Provider{}
-		for _, id := range params.StringSlice(req.Params, "providers") {
+		for _, id := range params.StringSlice(args, "providers") {
 			providers = append(providers, corelyrics.Provider(id))
 		}
 	}
-	result, err := client.Lookup(context.Background(), corelyrics.Request{
-		Title:     params.StringOpt(req.Params, "title", ""),
-		Artist:    params.StringOpt(req.Params, "artist", ""),
-		Album:     params.StringOpt(req.Params, "album", ""),
-		Duration:  time.Duration(params.IntOpt(req.Params, "duration", 0)) * time.Second,
-		FileURL:   params.StringOpt(req.Params, "fileUrl", ""),
-		CacheOnly: !params.BoolOpt(req.Params, "allowNetwork", false),
+	return corelyrics.Request{
+		Title:     params.StringOpt(args, "title", ""),
+		Artist:    params.StringOpt(args, "artist", ""),
+		Album:     params.StringOpt(args, "album", ""),
+		Duration:  time.Duration(params.IntOpt(args, "duration", 0)) * time.Second,
+		FileURL:   params.StringOpt(args, "fileUrl", ""),
+		CacheOnly: !params.BoolOpt(args, "allowNetwork", false),
 		Providers: providers,
-	})
+	}
+}
+
+func handleGet(conn *ipc.ConnWriter, req ipc.Request) {
+	result, err := client.Lookup(context.Background(), trackRequest(req.Params))
 	if err != nil {
 		conn.RespondError(req.ID, err.Error())
 		return
@@ -84,4 +93,28 @@ func handleGet(conn *ipc.ConnWriter, req ipc.Request) {
 
 	conn.Respond(req.ID, result)
 	client.Prune()
+}
+
+type choicesResult struct {
+	Chosen  corelyrics.Provider `json:"chosen"`
+	Choices []corelyrics.Choice `json:"choices"`
+}
+
+func handleChoices(conn *ipc.ConnWriter, req ipc.Request) {
+	track := trackRequest(req.Params)
+	choices, err := client.Choices(context.Background(), track)
+	if err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
+	conn.Respond(req.ID, choicesResult{Chosen: client.Chosen(track), Choices: choices})
+}
+
+func handleChoose(conn *ipc.ConnWriter, req ipc.Request) {
+	source := corelyrics.Provider(params.StringOpt(req.Params, "source", ""))
+	if err := client.Choose(trackRequest(req.Params), source); err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
+	conn.Respond(req.ID, models.SuccessResult{Success: true})
 }

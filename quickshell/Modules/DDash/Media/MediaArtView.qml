@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import qs.Common
 import qs.Services
+import qs.DCommon.Widgets
 import qs.Widgets
 import qs.Modules.DDash
 
@@ -92,5 +93,49 @@ Item {
             radius: 0
             backgroundColor: "transparent"
         }
+    }
+
+    // Outside the overlay: focus navigation counts a focused child of that scope as the overlay itself.
+    DIconButton {
+        id: sourceButton
+
+        readonly property string panelId: "lyrics"
+
+        anchors.top: parent.top
+        anchors.right: parent.right
+        anchors.margins: Theme.spacingM
+        visible: root.lyricsOpen && LyricsService.controller.found
+        // Faded rather than hidden, so keyboard focus can still reach it.
+        opacity: viewHover.hovered || visualFocus ? 1 : 0
+        buttonSize: Theme.buttonHeightXS
+        iconSize: Theme.iconSizeSmall
+        variant: "tonal"
+        iconName: "swap_horiz"
+        containerColor: MediaAccentService.accentContainer
+        contentColor: MediaAccentService.onAccentContainer
+        focusRingColor: MediaAccentService.focusRing
+        tooltipText: I18n.tr("Lyrics providers", "Lyrics source priority settings")
+        onClicked: root.player.togglePanel(panelId, sourceButton)
+
+        Behavior on opacity {
+            enabled: root.animationsEnabled
+            NumberAnimation {
+                duration: Theme.expressiveDurations.expressiveEffects
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: Theme.expressiveCurves.expressiveEffects
+            }
+        }
+    }
+
+    HoverHandler {
+        id: viewHover
+    }
+
+    Binding {
+        target: root.player
+        when: root.showLyrics
+        property: "lyricsSourceButton"
+        value: sourceButton
+        restoreMode: Binding.RestoreBindingOrValue
     }
 }
