@@ -274,6 +274,10 @@ Scope {
 
                 onLauncherContentChanged: Qt.callLater(() => launcherContent?.searchField?.forceActiveFocus())
 
+                // Qt only gives an unfocused window an active focus item while no shell window is focused.
+                readonly property bool shellWindowFocused: Application.state === Qt.ApplicationActive
+                onShellWindowFocusedChanged: launcherContent?.searchField?.forceActiveFocus()
+
                 anchors {
                     top: true
                     left: true
