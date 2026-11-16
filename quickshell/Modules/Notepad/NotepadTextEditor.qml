@@ -694,13 +694,17 @@ Column {
                         }
 
                         MouseArea {
+                            property bool skipNextOpen: false
                             anchors.fill: parent
                             acceptedButtons: Qt.RightButton
                             cursorShape: Qt.IBeamCursor
                             onPressed: mouse => {
+                                skipNextOpen = contextMenu.visible || (Date.now() - contextMenu.lastClosedMs) < 200;
                                 mouse.accepted = true;
                             }
                             onClicked: mouse => {
+                                if (skipNextOpen)
+                                    return;
                                 const pos = mapToItem(root, mouse.x, mouse.y);
                                 contextMenu.show(pos.x, pos.y, false);
                             }

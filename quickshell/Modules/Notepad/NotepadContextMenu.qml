@@ -13,6 +13,7 @@ Popup {
     property int selectedIndex: -1
     property bool keyboardNavigation: false
     property int openRevision: 0
+    property double lastClosedMs: 0
 
     readonly property var menuItems: [
         {
@@ -140,7 +141,7 @@ Popup {
     width: Math.max(Theme.fieldDefaultWidth, labelMetrics.width + DCommon.Style.menuItemIconSize + Theme.spacingM * 2 + Theme.spacingS * 2 + Theme.spacingXS * 2)
     height: menuCard.height
     padding: 0
-    modal: true
+    modal: false
     dim: false
     closePolicy: Popup.CloseOnEscape
 
@@ -152,6 +153,7 @@ Popup {
 
     onClosed: {
         outsideClickTimer.stop();
+        lastClosedMs = Date.now();
         closePolicy = Popup.CloseOnEscape;
         keyboardNavigation = false;
         selectedIndex = -1;
@@ -224,6 +226,14 @@ Popup {
             radius: Theme.windowRadius
             border.color: Theme.outlineMedium
             border.width: Theme.layerOutlineWidth
+
+            MouseArea {
+                anchors.fill: parent
+                z: -1
+                acceptedButtons: Qt.RightButton
+                onPressed: mouse => mouse.accepted = true
+                onClicked: root.close()
+            }
 
             Column {
                 id: menuColumn
