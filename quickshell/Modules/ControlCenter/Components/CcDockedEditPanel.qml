@@ -29,19 +29,8 @@ Item {
 
     readonly property CcWidgetCategories categoryDefs: CcWidgetCategories {}
     readonly property var addable: widgets.filter(widget => widget.enabled !== false)
-    readonly property var chips: [
-        {
-            "label": I18n.tr("All"),
-            "value": "all"
-        }
-    ].concat(Catalog.shownCategories(categoryDefs.defs, addable).map(category => ({
-                "label": category.title,
-                "value": category.id
-            })))
-    property string category: "all"
-    readonly property int chipIndex: Math.max(0, chips.findIndex(chip => chip.value === category))
     readonly property string query: searchField.text.trim()
-    readonly property var matches: Catalog.filterWidgets(addable, query, chips[chipIndex].value)
+    readonly property var matches: Catalog.filterWidgets(addable, query)
     property string dragWidgetId: ""
     property point dragPoint
     readonly property var dragEntry: dragWidgetId === "" ? null : (addable.find(widget => widget.id === dragWidgetId) ?? null)
@@ -112,7 +101,6 @@ Item {
         if (visible)
             return;
         searchField.text = "";
-        category = "all";
         if (dragWidgetId === "")
             return;
         grid?.clearExternal();
@@ -212,13 +200,6 @@ Item {
                     if (root.matches.length > 0)
                         root.addRequested(root.matches[0].id);
                 }
-            }
-
-            DFilterChips {
-                Layout.fillWidth: true
-                model: root.chips
-                currentIndex: root.chipIndex
-                onSelectionChanged: index => root.category = root.chips[index].value
             }
 
             Item {
