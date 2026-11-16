@@ -930,7 +930,9 @@ type vscodeEditor struct {
 
 var vscodeEditors = []vscodeEditor{
 	{"vscode", ".vscode"},
+	{"vscode-flatpak", filepath.Join(".var", "app", "com.visualstudio.code", "data", "vscode")},
 	{"codium", ".vscode-oss"},
+	{"codium-flatpak", filepath.Join(".var", "app", "com.vscodium.codium", "data", "codium")},
 	{"cursor", ".cursor"},
 	{"windsurf", ".windsurf"},
 	{"positron", ".positron"},
