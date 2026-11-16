@@ -58,7 +58,8 @@ Item {
         return SettingsData.isDotBarConfig(bc) || !SettingsData.islandSetting(bc, "islandSatellitesEnabled");
     }
 
-    property bool hasMultipleBars: SettingsData.barConfigs.length > 1
+    readonly property var selectableBars: SettingsData.barConfigs.filter(cfg => cfg.enabled || !SettingsData.isDotBarConfig(cfg))
+    property bool hasMultipleBars: selectableBars.length > 1
     property int pluginCatalogRevision: 0
 
     property string highlightedId: ""
@@ -566,17 +567,15 @@ Item {
                     id: barSelectorGroup
                     arrowKeysSelect: false
                     width: parent.width
-                    model: SettingsData.barConfigs.map(cfg => cfg.name || ("Bar " + (SettingsData.barConfigs.indexOf(cfg) + 1)))
-                    currentIndex: {
-                        const idx = SettingsData.barConfigs.findIndex(cfg => cfg.id === selectedBarId);
-                        return idx >= 0 ? idx : 0;
-                    }
+                    model: widgetsTab.selectableBars.map(cfg => cfg.name || ("Bar " + (SettingsData.barConfigs.indexOf(cfg) + 1)))
+                    currentIndex: Math.max(0, widgetsTab.selectableBars.findIndex(cfg => cfg.id === widgetsTab.selectedBarId))
                     checkEnabled: false
                     onSelectionChanged: (index, selected) => {
                         if (!selected)
                             return;
-                        if (index >= 0 && index < SettingsData.barConfigs.length)
-                            selectedBarId = SettingsData.barConfigs[index].id;
+                        const config = widgetsTab.selectableBars[index];
+                        if (config)
+                            widgetsTab.selectedBarId = config.id;
                     }
                 }
             }
