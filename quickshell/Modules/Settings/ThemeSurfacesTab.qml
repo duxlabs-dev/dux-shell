@@ -437,6 +437,17 @@ Column {
             checked: SettingsData.scrollbarsEnabled
             onToggled: checked => SettingsData.set("scrollbarsEnabled", checked)
         }
+
+        SettingsToggleCard {
+            tab: "theme"
+            tags: ["scroll", "shadow", "shadows", "fade", "edge", "edges", "list", "page", "launcher"]
+            settingKey: "scrollShadowsEnabled"
+            iconName: "tonality"
+            title: I18n.tr("Scroll shadows", "theme settings toggle, fade content at the edges of scrollable views")
+            description: I18n.tr("Fades content at the top and bottom of scrollable views", "scroll shadows setting description")
+            checked: SettingsData.scrollShadowsEnabled
+            onToggled: checked => SettingsData.set("scrollShadowsEnabled", checked)
+        }
     }
 
     Repeater {

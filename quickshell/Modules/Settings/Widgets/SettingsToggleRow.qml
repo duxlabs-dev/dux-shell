@@ -18,7 +18,6 @@ SettingsRow {
     subtitle: description
     subtitleColor: descriptionColor
     clickable: true
-    resetKeys: []
     Accessible.role: Accessible.CheckBox
     Accessible.checkable: true
     Accessible.checked: checked

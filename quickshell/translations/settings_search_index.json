@@ -2296,6 +2296,33 @@
     "page": "notifications"
   },
   {
+    "section": "scrollShadowsEnabled",
+    "label": "Scroll shadows",
+    "tabIndex": -1,
+    "category": "Interface style",
+    "keywords": [
+      "bottom",
+      "content",
+      "edge",
+      "edges",
+      "fade",
+      "fades",
+      "interface",
+      "launcher",
+      "list",
+      "page",
+      "scroll",
+      "scrollable",
+      "shadow",
+      "shadows",
+      "style",
+      "views"
+    ],
+    "page": "theme_surfaces",
+    "icon": "tonality",
+    "description": "Fades content at the top and bottom of scrollable views"
+  },
+  {
     "section": "scrollbarsEnabled",
     "label": "Scrollbars",
     "tabIndex": -1,

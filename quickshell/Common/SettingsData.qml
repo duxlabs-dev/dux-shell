@@ -327,6 +327,8 @@ Singleton {
     onEnableRippleEffectsChanged: saveSettings()
     property bool scrollbarsEnabled: Spec.SPEC.scrollbarsEnabled.def
     onScrollbarsEnabledChanged: saveSettings()
+    property bool scrollShadowsEnabled: Spec.SPEC.scrollShadowsEnabled.def
+    onScrollShadowsEnabledChanged: saveSettings()
     property int motionEffect: SettingsData.AnimationEffect.Standard
     onMotionEffectChanged: saveSettings()
     property string density: Spec.SPEC.density.def

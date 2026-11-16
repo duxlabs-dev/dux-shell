@@ -39,7 +39,7 @@ var SETTINGS_MAP = {
         "matugenTemplateNeovimSetBackground"
     ],
     interface_style: [
-        "radiusStrength", "radiusMode", "fixedRadius", "scrollbarsEnabled", "blurBorderEnabled", "blurBorderColor",
+        "radiusStrength", "radiusMode", "fixedRadius", "scrollbarsEnabled", "scrollShadowsEnabled", "blurBorderEnabled", "blurBorderColor",
         "blurBorderCustomColor", "blurBorderOpacity", "popupTransparency", "floatingWindowSyncGlobal",
         "floatingWindowTitleBars", "floatingWindowTransparency", "floatingWindowForegroundLayers",
         "floatingWindowForegroundTransparency", "hostSurfaceColor", "hostSurfaceCustomColor", "cardSurfaceColor",
