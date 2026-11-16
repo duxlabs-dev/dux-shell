@@ -84,7 +84,7 @@ DPopout {
             }
 
             Keys.onPressed: event => {
-                if (processContextMenu.visible || processContextMenu.confirmationOpen)
+                if (processContextMenu.menuOpen || processContextMenu.confirmationOpen)
                     return;
 
                 switch (event.key) {
