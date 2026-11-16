@@ -122,16 +122,18 @@ type NetworkManagerBackend struct {
 
 	hotspotPendingDevice string
 
-	pendingVPNSave        *pendingVPNCredentials
-	pendingVPNSaveMu      sync.Mutex
-	cachedVPNCreds        *cachedVPNCredentials
-	cachedVPNCredsMu      sync.Mutex
-	cachedPKCS11PIN       *cachedPKCS11PIN
-	cachedPKCS11Mu        sync.Mutex
-	cachedOpenConnectAuth *cachedOpenConnectAuth
-	cachedOpenConnectMu   sync.Mutex
-	cachedWiFiSecret      *cachedWiFiSecret
-	cachedWiFiSecretMu    sync.Mutex
+	pendingVPNSave     *pendingVPNCredentials
+	pendingVPNSaveMu   sync.Mutex
+	cachedVPNCreds     *cachedVPNCredentials
+	cachedVPNCredsMu   sync.Mutex
+	cachedPKCS11PIN    *cachedPKCS11PIN
+	cachedPKCS11Mu     sync.Mutex
+	cachedVPNSecrets   *cachedVPNSecrets
+	cachedVPNSecretsMu sync.Mutex
+	cachedWiFiSecret   *cachedWiFiSecret
+	cachedWiFiSecretMu sync.Mutex
+	// Guarded by stateMutex.
+	vpnUnaskedFields []string
 
 	onStateChange func()
 }
@@ -175,12 +177,9 @@ type cachedWiFiSecret struct {
 // A var so tests can shorten it.
 var wifiSecretCacheTTL = 60 * time.Second
 
-type cachedOpenConnectAuth struct {
+type cachedVPNSecrets struct {
 	ConnectionUUID string
-	Cookie         string
-	Host           string
-	User           string
-	Fingerprint    string
+	Secrets        map[string]string
 }
 
 func NewNetworkManagerBackend(nmConn ...gonetworkmanager.NetworkManager) (*NetworkManagerBackend, error) {

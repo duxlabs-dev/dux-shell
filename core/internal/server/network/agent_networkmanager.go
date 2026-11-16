@@ -239,6 +239,16 @@ func (a *SecretAgent) GetSecrets(
 					return nil, dbus.NewError("org.freedesktop.NetworkManager.SecretAgent.Error.NoSecrets", nil)
 				}
 
+				// ConnectVPN already ran the plugin's dialog; anything it didn't return is saved for NM.
+				if pluginAuthDialog(vpnSvc, vpnDataFromSettings(conn)) != nil {
+					if cached := a.backend.takeCachedVPNSecrets(connUuid); cached != nil {
+						log.Infof("[SecretAgent] Using cached VPN authentication for %s", connUuid)
+						return vpnSecretsResponse(settingName, cached.Secrets), nil
+					}
+					log.Infof("[SecretAgent] VPN with empty hints and no cached login - deferring to system secrets for %s", vpnSvc)
+					return nil, dbus.NewError("org.freedesktop.NetworkManager.SecretAgent.Error.NoSecrets", nil)
+				}
+
 				fields = inferVPNFields(conn, vpnSvc)
 				log.Infof("[SecretAgent] VPN with empty hints but we're connecting - inferred fields: %v", fields)
 			} else {
@@ -352,17 +362,11 @@ func (a *SecretAgent) GetSecrets(
 		}
 		a.backend.cachedVPNCredsMu.Unlock()
 
-		a.backend.cachedOpenConnectMu.Lock()
-		cachedOpenConnect := a.backend.cachedOpenConnectAuth
-		if cachedOpenConnect != nil && cachedOpenConnect.ConnectionUUID == connUuid {
-			a.backend.cachedOpenConnectAuth = nil
-			a.backend.cachedOpenConnectMu.Unlock()
+		if cachedSecrets := a.backend.takeCachedVPNSecrets(connUuid); cachedSecrets != nil {
+			log.Infof("[SecretAgent] Using cached VPN authentication for %s", connUuid)
 
-			log.Infof("[SecretAgent] Using cached OpenConnect authentication for %s", connUuid)
-
-			return buildOpenConnectSecretsResponse(settingName, cachedOpenConnect.Cookie, cachedOpenConnect.Host, cachedOpenConnect.Fingerprint), nil
+			return vpnSecretsResponse(settingName, cachedSecrets.Secrets), nil
 		}
-		a.backend.cachedOpenConnectMu.Unlock()
 
 		if len(fields) == 1 && fields[0] == "fortinet-saml" {
 			data := vpnDataFromSettings(conn)
@@ -384,14 +388,12 @@ func (a *SecretAgent) GetSecrets(
 				return nil, dbus.MakeFailedError(fmt.Errorf("SAML authentication failed for the Fortinet gateway: %w", err))
 			}
 
-			a.backend.cachedOpenConnectMu.Lock()
-			a.backend.cachedOpenConnectAuth = &cachedOpenConnectAuth{
+			a.backend.cachedVPNSecretsMu.Lock()
+			a.backend.cachedVPNSecrets = &cachedVPNSecrets{
 				ConnectionUUID: connUuid,
-				Cookie:         authResult.Cookie,
-				Host:           authResult.Host,
-				Fingerprint:    authResult.Fingerprint,
+				Secrets:        openConnectSecrets(authResult.Cookie, authResult.Host, authResult.Fingerprint),
 			}
-			a.backend.cachedOpenConnectMu.Unlock()
+			a.backend.cachedVPNSecretsMu.Unlock()
 
 			return buildOpenConnectSecretsResponse(settingName, authResult.Cookie, authResult.Host, authResult.Fingerprint), nil
 		}
@@ -429,15 +431,12 @@ func (a *SecretAgent) GetSecrets(
 
 			log.Infof("[SecretAgent] GlobalProtect SAML authentication successful, returning cookie to NetworkManager")
 
-			a.backend.cachedOpenConnectMu.Lock()
-			a.backend.cachedOpenConnectAuth = &cachedOpenConnectAuth{
+			a.backend.cachedVPNSecretsMu.Lock()
+			a.backend.cachedVPNSecrets = &cachedVPNSecrets{
 				ConnectionUUID: connUuid,
-				Cookie:         authResult.Cookie,
-				Host:           authResult.Host,
-				User:           authResult.User,
-				Fingerprint:    authResult.Fingerprint,
+				Secrets:        openConnectSecrets(authResult.Cookie, authResult.Host, authResult.Fingerprint),
 			}
-			a.backend.cachedOpenConnectMu.Unlock()
+			a.backend.cachedVPNSecretsMu.Unlock()
 
 			return buildOpenConnectSecretsResponse(settingName, authResult.Cookie, authResult.Host, authResult.Fingerprint), nil
 		}
@@ -957,6 +956,17 @@ func buildFieldsInfo(setting string, fields []string, hints []string, vpnService
 	return result
 }
 
+func (b *NetworkManagerBackend) takeCachedVPNSecrets(uuid string) *cachedVPNSecrets {
+	b.cachedVPNSecretsMu.Lock()
+	defer b.cachedVPNSecretsMu.Unlock()
+	cached := b.cachedVPNSecrets
+	if cached == nil || cached.ConnectionUUID != uuid {
+		return nil
+	}
+	b.cachedVPNSecrets = nil
+	return cached
+}
+
 func vpnDataFromSettings(conn map[string]nmVariantMap) map[string]string {
 	vpnSettings, ok := conn["vpn"]
 	if !ok {
@@ -1062,6 +1072,13 @@ func secretFlagsNotRequired(flags string) bool {
 		return false
 	}
 	return n&0x4 != 0
+}
+
+// Secrets with neither agent-owned (1) nor not-saved (2) set are saved for the system,
+// and NetworkManager supplies those itself during activation. Not-required (4) is skipped.
+func secretFlagsAgentAsks(flags string) bool {
+	n, err := strconv.Atoi(flags)
+	return err == nil && n&0x3 != 0 && n&0x4 == 0
 }
 
 func needsExternalBrowserAuth(protocol, authType, username string, data map[string]string) bool {
@@ -1216,16 +1233,17 @@ func buildWiFiSecretsResponse(settingName string, secrets map[string]string) nmS
 }
 
 func buildOpenConnectSecretsResponse(settingName, cookie, host, fingerprint string) nmSettingMap {
-	out := nmSettingMap{}
-	vpnSec := nmVariantMap{}
+	return vpnSecretsResponse(settingName, openConnectSecrets(cookie, host, fingerprint))
+}
 
-	secrets := map[string]string{
+func openConnectSecrets(cookie, host, fingerprint string) map[string]string {
+	return map[string]string{
 		"cookie":  cookie,
 		"gateway": host,
 		"gwcert":  fingerprint,
 	}
-	vpnSec["secrets"] = dbus.MakeVariant(secrets)
+}
 
-	out[settingName] = vpnSec
-	return out
+func vpnSecretsResponse(settingName string, secrets map[string]string) nmSettingMap {
+	return nmSettingMap{settingName: nmVariantMap{"secrets": dbus.MakeVariant(secrets)}}
 }
