@@ -245,50 +245,66 @@ Rectangle {
                         }
                     }
 
-                    Rectangle {
-                        visible: !root.interactive && root.groupCount > 1
-                        width: notificationCount.implicitWidth + Theme.spacingS * 2
-                        height: Theme.iconSize
-                        radius: Theme.fullRadius(width, height)
-                        color: root.chipColor
+                    Loader {
+                        active: !root.interactive && root.groupCount > 1
+                        visible: active
 
-                        StyledText {
-                            id: notificationCount
-                            anchors.centerIn: parent
-                            text: root.groupCount.toString()
-                            font.pixelSize: Theme.fontSizeSmall
-                            color: Theme.onSurfaceVariant
+                        sourceComponent: Rectangle {
+                            width: notificationCount.implicitWidth + Theme.spacingS * 2
+                            height: Theme.iconSize
+                            radius: Theme.fullRadius(width, height)
+                            color: root.chipColor
+
+                            StyledText {
+                                id: notificationCount
+                                anchors.centerIn: parent
+                                text: root.groupCount.toString()
+                                font.pixelSize: Theme.fontSizeSmall
+                                color: Theme.onSurfaceVariant
+                            }
                         }
                     }
 
-                    DButton {
-                        visible: root.interactive && root.groupCount > 1
-                        text: root.groupCount.toString()
-                        iconName: root.groupExpanded ? "expand_less" : "expand_more"
-                        buttonHeight: NotificationMetrics.controlSize
-                        horizontalPadding: Theme.spacingS
-                        backgroundColor: root.chipColor
-                        textColor: Theme.onSurfaceVariant
-                        Accessible.name: root.groupExpanded ? I18n.tr("Collapse") : I18n.tr("Expand")
-                        onClicked: root.groupToggleRequested()
+                    Loader {
+                        active: root.interactive && root.groupCount > 1
+                        visible: active
+
+                        sourceComponent: DButton {
+                            text: root.groupCount.toString()
+                            iconName: root.groupExpanded ? "expand_less" : "expand_more"
+                            buttonHeight: NotificationMetrics.controlSize
+                            horizontalPadding: Theme.spacingS
+                            backgroundColor: root.chipColor
+                            textColor: Theme.onSurfaceVariant
+                            Accessible.name: root.groupExpanded ? I18n.tr("Collapse") : I18n.tr("Expand")
+                            onClicked: root.groupToggleRequested()
+                        }
                     }
 
-                    DActionButton {
-                        visible: root.interactive && root.canExpand && root.groupCount <= 1
-                        iconName: root.descriptionExpanded ? "expand_less" : "expand_more"
-                        buttonSize: NotificationMetrics.controlSize
-                        iconSize: Theme.iconSizeSmall
-                        Accessible.name: root.descriptionExpanded ? I18n.tr("Collapse") : I18n.tr("Expand")
-                        onClicked: root.expandRequested()
+                    Loader {
+                        active: root.interactive && root.canExpand && root.groupCount <= 1
+                        visible: active
+
+                        sourceComponent: DActionButton {
+                            iconName: root.descriptionExpanded ? "expand_less" : "expand_more"
+                            buttonSize: NotificationMetrics.controlSize
+                            iconSize: Theme.iconSizeSmall
+                            Accessible.name: root.descriptionExpanded ? I18n.tr("Collapse") : I18n.tr("Expand")
+                            onClicked: root.expandRequested()
+                        }
                     }
 
-                    DActionButton {
-                        visible: root.interactive && root.showClose
-                        iconName: "close"
-                        buttonSize: NotificationMetrics.controlSize
-                        iconSize: Theme.iconSizeSmall
-                        Accessible.name: I18n.tr("Dismiss")
-                        onClicked: root.closeRequested()
+                    Loader {
+                        active: root.interactive && root.showClose
+                        visible: active
+
+                        sourceComponent: DActionButton {
+                            iconName: "close"
+                            buttonSize: NotificationMetrics.controlSize
+                            iconSize: Theme.iconSizeSmall
+                            Accessible.name: I18n.tr("Dismiss")
+                            onClicked: root.closeRequested()
+                        }
                     }
                 }
             }

@@ -26,8 +26,11 @@ Item {
     property real swipeBleed: 0
     readonly property color cardSurfaceColor: Theme.foregroundColor(nested ? Theme.chipSurface : Theme.cardSurface, Theme.isFloatingWindow(root))
     readonly property color cardChipColor: nested ? Theme.withAlpha(Theme.onSurface, Theme.stateLayerFocus) : Theme.foregroundColor(Theme.chipSurface, Theme.isFloatingWindow(root))
+    readonly property Item expandedContent: expandedLoader.item
     readonly property real expandedTargetHeight: {
-        let total = groupHeader.height;
+        if (!expandedContent)
+            return collapsedCard.targetHeight;
+        let total = expandedContent.headerHeight;
         for (const child of expandedContent.children) {
             if (child.targetHeight === undefined)
                 continue;
@@ -37,6 +40,7 @@ Item {
     }
     readonly property real targetHeight: expanded ? expandedTargetHeight : collapsedCard.targetHeight
     readonly property bool isAnimating: heightAnimation.running
+    property bool _laidOut: false
 
     width: parent ? parent.width : NotificationMetrics.popupWidth
     height: targetHeight
@@ -44,11 +48,7 @@ Item {
 
     function forceLayout() {
         collapsedCard.forceLayout();
-        if (!expanded)
-            return;
-        for (let i = 0; i < notificationRepeater.count; i++)
-            notificationRepeater.itemAt(i)?.forceLayout();
-        expandedContent.forceLayout();
+        expandedContent?.layoutRows();
     }
 
     function toggleGroup() {
@@ -64,10 +64,21 @@ Item {
 
     function openContextMenu(item, notification) {
         contextActions.notification = notification;
-        notificationCardContextMenu.popupAnchorItem = item;
-        notificationCardContextMenu.showDropdownMenu();
+        contextMenuLoader.active = true;
+        contextMenuLoader.item.popupAnchorItem = item;
+        contextMenuLoader.item.showDropdownMenu();
     }
 
+    // positioners size on polish, so settle once the width is known or the card grows from its minimum height on the first frame
+    function settleLayout() {
+        if (_laidOut || width <= 0)
+            return;
+        forceLayout();
+        _laidOut = true;
+    }
+
+    onWidthChanged: Qt.callLater(settleLayout)
+    Component.onCompleted: settleLayout()
     Component.onDestruction: transientSurfaceTracker?.unregister(root)
 
     NotificationSwipeGroup {
@@ -78,12 +89,12 @@ Item {
         target: root.transientSurfaceTracker
         ignoreUnknownSignals: true
         function onCloseRequested() {
-            notificationCardContextMenu.closeDropdownMenu();
+            contextMenuLoader.item?.closeDropdownMenu();
         }
     }
 
     Behavior on height {
-        enabled: root.animateExpansion && NotificationMetrics.animationsEnabled
+        enabled: root._laidOut && root.animateExpansion && NotificationMetrics.animationsEnabled
         NumberAnimation {
             id: heightAnimation
             duration: root.expanded ? Theme.notificationExpandDuration : Theme.notificationCollapseDuration
@@ -123,129 +134,142 @@ Item {
         onContextMenuRequested: (x, y) => root.openContextMenu(collapsedCard, collapsedCard.notificationData)
     }
 
-    Column {
-        id: expandedContent
-        objectName: "expandedContent"
+    Loader {
+        id: expandedLoader
         width: parent.width
-        visible: root.expanded
-        opacity: root.contentOpacity
-        spacing: Theme.groupedListGap
+        active: root.expanded
 
-        Rectangle {
-            id: groupHeader
-            width: parent.width
-            height: NotificationMetrics.cardPadding * 2 + NotificationMetrics.controlSize
-            radius: Theme.groupedListOuterRadius
-            color: "transparent"
-            border.width: root.keyboardNavigationActive && root.isGroupSelected ? Theme.focusRingWidth : 0
-            border.color: Theme.focusRingColor
-            StyledText {
-                anchors.left: parent.left
-                anchors.leftMargin: NotificationMetrics.cardPadding
-                anchors.right: groupControls.left
-                anchors.verticalCenter: parent.verticalCenter
-                text: root.notificationGroup?.appName || ""
-                font.pixelSize: Theme.fontSizeMedium
-                font.weight: Theme.fontWeightMedium
-                color: Theme.primary
-                elide: Text.ElideRight
+        sourceComponent: Column {
+            id: expandedColumn
+
+            readonly property real headerHeight: groupHeader.height
+
+            function layoutRows() {
+                for (let i = 0; i < notificationRepeater.count; i++)
+                    notificationRepeater.itemAt(i)?.forceLayout();
+                forceLayout();
             }
-            Row {
-                id: groupControls
-                anchors.right: parent.right
-                anchors.rightMargin: NotificationMetrics.cardPadding
-                anchors.verticalCenter: parent.verticalCenter
-                spacing: Theme.spacingXS
-                DButton {
+
+            objectName: "expandedContent"
+            opacity: root.contentOpacity
+            spacing: Theme.groupedListGap
+
+            Rectangle {
+                id: groupHeader
+                width: parent.width
+                height: NotificationMetrics.cardPadding * 2 + NotificationMetrics.controlSize
+                radius: Theme.groupedListOuterRadius
+                color: "transparent"
+                border.width: root.keyboardNavigationActive && root.isGroupSelected ? Theme.focusRingWidth : 0
+                border.color: Theme.focusRingColor
+                StyledText {
+                    anchors.left: parent.left
+                    anchors.leftMargin: NotificationMetrics.cardPadding
+                    anchors.right: groupControls.left
                     anchors.verticalCenter: parent.verticalCenter
-                    text: I18n.tr("Dismiss")
-                    buttonHeight: NotificationMetrics.controlSize
-                    horizontalPadding: NotificationMetrics.actionPadding
-                    variant: "text"
-                    onClicked: NotificationService.dismissGroup(root.notificationGroup?.key || "")
+                    text: root.notificationGroup?.appName || ""
+                    font.pixelSize: Theme.fontSizeMedium
+                    font.weight: Theme.fontWeightMedium
+                    color: Theme.primary
+                    elide: Text.ElideRight
                 }
-                DButton {
+                Row {
+                    id: groupControls
+                    anchors.right: parent.right
+                    anchors.rightMargin: NotificationMetrics.cardPadding
                     anchors.verticalCenter: parent.verticalCenter
-                    text: (root.notificationGroup?.count || 0).toString()
-                    iconName: "expand_less"
-                    buttonHeight: NotificationMetrics.controlSize
-                    horizontalPadding: Theme.spacingS
-                    backgroundColor: root.cardChipColor
-                    textColor: Theme.onSurfaceVariant
-                    Accessible.name: I18n.tr("Collapse")
-                    onClicked: root.toggleGroup()
+                    spacing: Theme.spacingXS
+                    DButton {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: I18n.tr("Dismiss")
+                        buttonHeight: NotificationMetrics.controlSize
+                        horizontalPadding: NotificationMetrics.actionPadding
+                        variant: "text"
+                        onClicked: NotificationService.dismissGroup(root.notificationGroup?.key || "")
+                    }
+                    DButton {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: (root.notificationGroup?.count || 0).toString()
+                        iconName: "expand_less"
+                        buttonHeight: NotificationMetrics.controlSize
+                        horizontalPadding: Theme.spacingS
+                        backgroundColor: root.cardChipColor
+                        textColor: Theme.onSurfaceVariant
+                        Accessible.name: I18n.tr("Collapse")
+                        onClicked: root.toggleGroup()
+                    }
                 }
             }
-        }
 
-        Repeater {
-            id: notificationRepeater
-            objectName: "notificationRepeater"
-            model: ScriptModel {
-                values: root.expanded ? (root.notificationGroup?.notifications?.slice(0, NotificationMetrics.expandedLimit) || []) : []
-            }
-
-            NotificationSwipeRow {
-                id: row
-                required property var modelData
-                property bool collapsing: false
-                property var notificationToDismiss: null
-                readonly property real targetHeight: collapsing ? 0 : message.targetHeight
-
-                function forceLayout() {
-                    message.forceLayout();
+            Repeater {
+                id: notificationRepeater
+                objectName: "notificationRepeater"
+                model: ScriptModel {
+                    values: root.expanded ? (root.notificationGroup?.notifications?.slice(0, NotificationMetrics.expandedLimit) || []) : []
                 }
 
-                group: rowSwipe
-                bleed: root.swipeBleed
-                width: expandedContent.width
-                height: message.height
-                clip: collapsing
-                onDismissed: {
-                    notificationToDismiss = modelData;
-                    collapseAnimation.start();
-                }
+                NotificationSwipeRow {
+                    id: row
+                    required property var modelData
+                    property bool collapsing: false
+                    property var notificationToDismiss: null
+                    readonly property real targetHeight: collapsing ? 0 : message.targetHeight
 
-                Notifications.NotificationCard {
-                    id: message
-                    surfaceColor: root.cardSurfaceColor
-                    chipColor: root.cardChipColor
-                    x: row.offset
-                    width: parent.width
-                    notificationData: row.modelData
-                    firstInGroup: row.index === 0
-                    lastInGroup: row.index === notificationRepeater.count - 1
-                    topRoundness: row.topRoundness
-                    bottomRoundness: row.bottomRoundness
-                    contentOpacity: row.contentOpacity
-                    keyboardSelected: root.keyboardNavigationActive && root.selectedNotificationIndex === row.index
-                    keyboardHints: keyboardSelected
-                    descriptionExpanded: NotificationService.expandedMessages[(notificationData?.notification?.id || "") + "_desc"] || false
-                    onExpandRequested: NotificationService.toggleMessageExpansion((notificationData?.notification?.id || "") + "_desc")
-                    onDismissRequested: NotificationService.dismissNotification(row.modelData)
-                    onActionRequested: action => root.invokeAction(action)
-                    onBodyClicked: root.invokeAction(contextActions.defaultAction(notificationData))
-                    onContextMenuRequested: (x, y) => root.openContextMenu(message, row.modelData)
-                }
-
-                SequentialAnimation {
-                    id: collapseAnimation
-
-                    PropertyAction {
-                        target: row
-                        property: "collapsing"
-                        value: true
+                    function forceLayout() {
+                        message.forceLayout();
                     }
-                    NumberAnimation {
-                        target: row
-                        property: "height"
-                        to: 0
-                        duration: NotificationMetrics.animationsEnabled ? Theme.notificationExpandDuration : 0
-                        easing.type: Easing.BezierSpline
-                        easing.bezierCurve: NotificationMetrics.expandCurve
+
+                    group: rowSwipe
+                    bleed: root.swipeBleed
+                    width: expandedColumn.width
+                    height: message.height
+                    clip: collapsing
+                    onDismissed: {
+                        notificationToDismiss = modelData;
+                        collapseAnimation.start();
                     }
-                    ScriptAction {
-                        script: NotificationService.dismissNotification(row.notificationToDismiss)
+
+                    Notifications.NotificationCard {
+                        id: message
+                        surfaceColor: root.cardSurfaceColor
+                        chipColor: root.cardChipColor
+                        x: row.offset
+                        width: parent.width
+                        notificationData: row.modelData
+                        firstInGroup: row.index === 0
+                        lastInGroup: row.index === notificationRepeater.count - 1
+                        topRoundness: row.topRoundness
+                        bottomRoundness: row.bottomRoundness
+                        contentOpacity: row.contentOpacity
+                        keyboardSelected: root.keyboardNavigationActive && root.selectedNotificationIndex === row.index
+                        keyboardHints: keyboardSelected
+                        descriptionExpanded: NotificationService.expandedMessages[(notificationData?.notification?.id || "") + "_desc"] || false
+                        onExpandRequested: NotificationService.toggleMessageExpansion((notificationData?.notification?.id || "") + "_desc")
+                        onDismissRequested: NotificationService.dismissNotification(row.modelData)
+                        onActionRequested: action => root.invokeAction(action)
+                        onBodyClicked: root.invokeAction(contextActions.defaultAction(notificationData))
+                        onContextMenuRequested: (x, y) => root.openContextMenu(message, row.modelData)
+                    }
+
+                    SequentialAnimation {
+                        id: collapseAnimation
+
+                        PropertyAction {
+                            target: row
+                            property: "collapsing"
+                            value: true
+                        }
+                        NumberAnimation {
+                            target: row
+                            property: "height"
+                            to: 0
+                            duration: NotificationMetrics.animationsEnabled ? Theme.notificationExpandDuration : 0
+                            easing.type: Easing.BezierSpline
+                            easing.bezierCurve: NotificationMetrics.expandCurve
+                        }
+                        ScriptAction {
+                            script: NotificationService.dismissNotification(row.notificationToDismiss)
+                        }
                     }
                 }
             }
@@ -260,16 +284,20 @@ Item {
         onAppMuted: NotificationService.dismissGroup(root.notificationGroup?.key || "")
     }
 
-    DDropdown {
-        id: notificationCardContextMenu
-        showTrigger: false
-        popupWidth: NotificationMetrics.menuWidth
-        transientSurfaceTracker: root.transientSurfaceTracker
-        options: contextActions.items.map(item => item.label)
-        onValueChanged: value => {
-            const item = contextActions.items.find(item => item.label === value);
-            if (item)
-                contextActions.trigger(item.action);
+    Loader {
+        id: contextMenuLoader
+        active: false
+
+        sourceComponent: DDropdown {
+            showTrigger: false
+            popupWidth: NotificationMetrics.menuWidth
+            transientSurfaceTracker: root.transientSurfaceTracker
+            options: contextActions.items.map(item => item.label)
+            onValueChanged: value => {
+                const item = contextActions.items.find(item => item.label === value);
+                if (item)
+                    contextActions.trigger(item.action);
+            }
         }
     }
 }
