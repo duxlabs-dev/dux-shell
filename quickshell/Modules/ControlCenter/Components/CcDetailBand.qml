@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import Quickshell.Widgets
 import qs.Common
 import qs.Modules.ControlCenter
 import qs.Modules.ControlCenter.Details
@@ -43,7 +44,7 @@ FocusScope {
         return preferred > 0 ? preferred : CcMetrics.detailHeightDefault;
     }
     // The band's extent includes the gap above and below its card, so they grow and shrink with it.
-    readonly property real chromeHeight: CcMetrics.gridGap * 2 + CcMetrics.detailHeaderHeight + CcMetrics.detailBandPadding * 2
+    readonly property real chromeHeight: CcMetrics.gridGap * 2 + CcMetrics.detailHeaderHeight + CcMetrics.detailDialogPadding * 2
     readonly property real contentCap: Math.max(CcMetrics.detailHeightFloor(shownSection, pageItem?.preferredHeight ?? 0), maximumHeight - chromeHeight)
     readonly property real targetHeight: section === "" || pageHeight <= 0 ? 0 : chromeHeight + Math.min(pageHeight, contentCap)
     readonly property bool transitioning: heightAnimation.running
@@ -153,7 +154,7 @@ FocusScope {
             id: panel
 
             anchors.fill: parent
-            anchors.margins: CcMetrics.detailBandPadding
+            anchors.margins: CcMetrics.detailDialogPadding
             opacity: root.section !== "" ? (CcMetrics.hideCoveredContent ? 1 - root.coverage : 1) : 0
 
             Behavior on opacity {
@@ -209,17 +210,23 @@ FocusScope {
                 }
             }
 
-            Loader {
-                id: pageLoader
+            ClippingRectangle {
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.top: header.bottom
                 anchors.bottom: parent.bottom
-                active: root.shownSection !== ""
-                onLoaded: {
-                    const actions = item.headerActions ?? null;
-                    if (actions)
-                        actions.parent = headerSlot;
+                radius: Theme.groupedListOuterRadius
+                color: "transparent"
+
+                Loader {
+                    id: pageLoader
+                    anchors.fill: parent
+                    active: root.shownSection !== ""
+                    onLoaded: {
+                        const actions = item.headerActions ?? null;
+                        if (actions)
+                            actions.parent = headerSlot;
+                    }
                 }
             }
         }
