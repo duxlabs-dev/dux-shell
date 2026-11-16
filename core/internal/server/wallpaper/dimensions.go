@@ -40,6 +40,9 @@ var (
 	sizeReads = make(chan struct{}, maxSizeReads)
 	sizeMu    sync.Mutex
 	sizeCache = map[sizeKey]pixelSize{}
+
+	groupsMu      sync.Mutex
+	groupsEntries = map[string]string{}
 )
 
 // readSizes fills in Width and Height of plain items, reading at most maxSizeReads files at once across all callers.
@@ -130,11 +133,49 @@ type probeVideo struct {
 	} `json:"side_data_list"`
 }
 
+// groupEntries returns the stream group entries this ffprobe can show: FFmpeg 7.0 added stream_group_component
+// and 9.0 stream_group_side_data, and an unknown section makes ffprobe fail.
+func groupEntries(ctx context.Context, ffprobe string) (string, bool) {
+	groupsMu.Lock()
+	entries, ok := groupsEntries[ffprobe]
+	groupsMu.Unlock()
+	if ok {
+		return entries, true
+	}
+	ctx, cancel := context.WithTimeout(ctx, ffprobeTimeout)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, ffprobe, "-v", "error", "-sections")
+	cmd.WaitDelay = time.Second
+	pipe, err := cmd.StdoutPipe()
+	if err != nil || cmd.Start() != nil {
+		return "", false
+	}
+	out, readErr := io.ReadAll(io.LimitReader(pipe, ffprobeMaxBytes))
+	if cmd.Wait() != nil || readErr != nil || ctx.Err() != nil {
+		return "", false
+	}
+	if strings.Contains(string(out), "stream_group_component") {
+		entries = ":stream_group_component=width,height"
+		if strings.Contains(string(out), "stream_group_side_data") {
+			entries += ":stream_group_side_data=rotation"
+		}
+	}
+	groupsMu.Lock()
+	groupsEntries[ffprobe] = entries
+	groupsMu.Unlock()
+	return entries, true
+}
+
 func probeSize(ctx context.Context, ffprobe, path string) (pixelSize, bool) {
+	groups, ok := groupEntries(ctx, ffprobe)
+	if !ok {
+		return pixelSize{}, false
+	}
+	entries := "stream=width,height:stream_side_data=rotation" + groups
 	ctx, cancel := context.WithTimeout(ctx, ffprobeTimeout)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, ffprobe, "-v", "error", "-select_streams", "v:0",
-		"-show_entries", "stream=width,height:stream_side_data=rotation:stream_group_component=width,height:stream_group_side_data=rotation",
+		"-show_entries", entries,
 		"-of", "json", "-i", "file:"+path)
 	cmd.WaitDelay = time.Second
 	pipe, err := cmd.StdoutPipe()

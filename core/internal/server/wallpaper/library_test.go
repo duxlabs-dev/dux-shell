@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 	"testing"
 
 	"golang.org/x/image/bmp"
@@ -344,11 +345,25 @@ func writeImage(t *testing.T, path string, w, h int) {
 	}
 }
 
-// fakeFFprobe puts an ffprobe on an otherwise empty PATH that prints out, exits with code and leaves a marker file.
-func fakeFFprobe(t *testing.T, out string, code int) (ran string) {
+// fakeFFprobe puts an ffprobe on an otherwise empty PATH that leaves a marker file and lists sections for -sections.
+// A probe naming a stream_group section outside sections exits 1 like the real one; otherwise it prints out and exits with code.
+func fakeFFprobe(t *testing.T, out string, code int, sections ...string) (ran string) {
 	t.Helper()
 	dir := t.TempDir()
-	script := fmt.Sprintf("#!/bin/sh\n: > \"$0.ran\"\nprintf '%%s' '%s'\nexit %d\n", out, code)
+	if sections == nil {
+		sections = []string{"stream_group_component", "stream_group_side_data"}
+	}
+	script := fmt.Sprintf(`#!/bin/sh
+: > "$0.ran"
+case "$*" in *-sections*) printf '%%s\n' %s; exit 0;; esac
+IFS=:
+set -f
+for w in $*; do
+	case "$w" in stream_group_*) case " %s " in *" ${w%%%%=*} "*) ;; *) exit 1;; esac;; esac
+done
+printf '%%s' '%s'
+exit %d
+`, "root stream_groups "+strings.Join(sections, " "), strings.Join(sections, " "), out, code)
 	if err := os.WriteFile(filepath.Join(dir, "ffprobe"), []byte(script), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -364,6 +379,7 @@ func TestReadSizes(t *testing.T) {
 		raw        string
 		probe      string
 		code       int
+		sections   []string
 		variants   bool
 		wantW      int
 		wantH      int
@@ -375,6 +391,8 @@ func TestReadSizes(t *testing.T) {
 		{name: "corrupt png", file: "a.png", raw: "\x89PNG\r\n\x1a\ngarbage"},
 		{name: "svg", file: "a.svg", raw: "<svg/>", probe: `{"streams":[{"width":5,"height":5}]}`},
 		{name: "rotated video", file: "a.mp4", raw: "x", probe: `{"streams":[{"width":1920,"height":1080,"side_data_list":[{"rotation":90}]}]}`, wantW: 1080, wantH: 1920, wantProbe: true},
+		{name: "rotated video, ffprobe 6", file: "a.mp4", raw: "x", probe: `{"streams":[{"width":1920,"height":1080,"side_data_list":[{"rotation":90}]}]}`, sections: []string{"streams"}, wantW: 1080, wantH: 1920, wantProbe: true},
+		{name: "rotated video, ffprobe 7", file: "a.mp4", raw: "x", probe: `{"streams":[{"width":1920,"height":1080,"side_data_list":[{"rotation":90}]}]}`, sections: []string{"stream_group_component"}, wantW: 1080, wantH: 1920, wantProbe: true},
 		{name: "tile grid", file: "a.heic", raw: "x", probe: tiled, wantW: 3000, wantH: 4000, wantProbe: true},
 		{name: "ffprobe fails", file: "a.mp4", raw: "x", probe: `{"streams":[{"width":5,"height":5}]}`, code: 1, wantProbe: true},
 		{name: "package", file: "a.png", w: 30, h: 20, variants: true},
@@ -382,7 +400,7 @@ func TestReadSizes(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			ran := fakeFFprobe(t, c.probe, c.code)
+			ran := fakeFFprobe(t, c.probe, c.code, c.sections...)
 			path := filepath.Join(t.TempDir(), c.file)
 			if c.raw != "" {
 				if err := os.WriteFile(path, []byte(c.raw), 0o644); err != nil {
@@ -402,6 +420,11 @@ func TestReadSizes(t *testing.T) {
 			}
 			if _, err := os.Stat(ran); (err == nil) != c.wantProbe {
 				t.Errorf("ffprobe ran: %v, want %v", err == nil, c.wantProbe)
+			}
+			os.Remove(ran)
+			readSizes(context.Background(), items)
+			if _, err := os.Stat(ran); err == nil {
+				t.Error("ffprobe ran again for a final answer")
 			}
 		})
 	}
