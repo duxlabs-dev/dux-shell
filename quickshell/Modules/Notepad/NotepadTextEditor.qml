@@ -19,6 +19,7 @@ Column {
 
     property alias text: textArea.text
     property alias textArea: textArea
+    property alias contextMenuOpen: contextMenu.visible
     property bool contentLoaded: false
     property string lastSavedContent: ""
     property var currentTab: NotepadStorageService.tabs.length > NotepadStorageService.currentTabIndex ? NotepadStorageService.tabs[NotepadStorageService.currentTabIndex] : null
@@ -653,6 +654,13 @@ Column {
                         }
 
                         Keys.onPressed: event => {
+                            if (event.key === Qt.Key_Menu || (event.key === Qt.Key_F10 && (event.modifiers & Qt.ShiftModifier))) {
+                                event.accepted = true;
+                                const rect = textArea.cursorRectangle;
+                                const pos = textArea.mapToItem(root, rect.x, rect.y + rect.height);
+                                contextMenu.show(pos.x, pos.y, true);
+                                return;
+                            }
                             if (event.modifiers & Qt.ControlModifier) {
                                 switch (event.key) {
                                 case Qt.Key_S:
@@ -682,6 +690,19 @@ Column {
                                     }
                                     break;
                                 }
+                            }
+                        }
+
+                        MouseArea {
+                            anchors.fill: parent
+                            acceptedButtons: Qt.RightButton
+                            cursorShape: Qt.IBeamCursor
+                            onPressed: mouse => {
+                                mouse.accepted = true;
+                            }
+                            onClicked: mouse => {
+                                const pos = mapToItem(root, mouse.x, mouse.y);
+                                contextMenu.show(pos.x, pos.y, false);
                             }
                         }
 
@@ -903,6 +924,31 @@ Column {
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: Theme.spacingS
+
+                DActionButton {
+                    iconName: "undo"
+                    tooltipText: I18n.tr("Undo")
+                    iconSize: Theme.iconSize - 2
+                    iconColor: textArea.canUndo ? Theme.surfaceText : Theme.surfaceTextAlpha
+                    enabled: textArea.canUndo
+                    onClicked: textArea.undo()
+                }
+
+                DActionButton {
+                    iconName: "redo"
+                    tooltipText: I18n.tr("Redo")
+                    iconSize: Theme.iconSize - 2
+                    iconColor: textArea.canRedo ? Theme.surfaceText : Theme.surfaceTextAlpha
+                    enabled: textArea.canRedo
+                    onClicked: textArea.redo()
+                }
+
+                Rectangle {
+                    anchors.verticalCenter: parent.verticalCenter
+                    width: 1
+                    height: Theme.iconSize - 2
+                    color: Theme.outlineMedium
+                }
 
                 DActionButton {
                     visible: !root.inPopout
@@ -1133,5 +1179,15 @@ Column {
             applyingShared = false;
             syncContentToPlugin();
         }
+    }
+
+    onSurfaceVisibleChanged: {
+        if (!surfaceVisible)
+            contextMenu.close();
+    }
+
+    NotepadContextMenu {
+        id: contextMenu
+        targetTextArea: textArea
     }
 }
