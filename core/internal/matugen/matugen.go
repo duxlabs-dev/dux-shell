@@ -565,15 +565,7 @@ func buildOnce(opts *Options) (bool, error) {
 // as a durable copy for greeters, which read it before any user session exists
 // (see dux-greeter issue #48: user caches can be volatile, e.g. tmpfs mounts).
 func persistColorsStateCopy(data []byte) {
-	stateHome := os.Getenv("XDG_STATE_HOME")
-	if stateHome == "" {
-		home, err := os.UserHomeDir()
-		if err != nil {
-			return
-		}
-		stateHome = filepath.Join(home, ".local", "state")
-	}
-	stateDir := filepath.Join(stateHome, "dms")
+	stateDir := filepath.Join(utils.XDGStateHome(), "dms")
 	if err := os.MkdirAll(stateDir, 0o755); err != nil {
 		log.Warnf("matugen: failed to create state dir for colors copy: %v", err)
 		return
