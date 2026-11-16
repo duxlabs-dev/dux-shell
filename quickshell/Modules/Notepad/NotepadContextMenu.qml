@@ -12,30 +12,31 @@ Popup {
     property var targetTextArea: null
     property int selectedIndex: -1
     property bool keyboardNavigation: false
+    property int openRevision: 0
 
     readonly property var menuItems: [
         {
             text: I18n.tr("Cut"),
             icon: "content_cut",
-            enabled: !!targetTextArea && targetTextArea.selectedText.length > 0,
+            isEnabled: () => !!targetTextArea && targetTextArea.selectedText.length > 0,
             action: () => targetTextArea?.cut()
         },
         {
             text: I18n.tr("Copy"),
             icon: "content_copy",
-            enabled: !!targetTextArea && targetTextArea.selectedText.length > 0,
+            isEnabled: () => !!targetTextArea && targetTextArea.selectedText.length > 0,
             action: () => targetTextArea?.copy()
         },
         {
             text: I18n.tr("Paste"),
             icon: "content_paste",
-            enabled: !!targetTextArea && targetTextArea.canPaste,
+            isEnabled: () => !!targetTextArea && targetTextArea.canPaste,
             action: () => targetTextArea?.paste()
         },
         {
             text: I18n.tr("Delete"),
             icon: "delete",
-            enabled: !!targetTextArea && targetTextArea.selectedText.length > 0,
+            isEnabled: () => !!targetTextArea && targetTextArea.selectedText.length > 0,
             action: () => targetTextArea?.remove(targetTextArea.selectionStart, targetTextArea.selectionEnd)
         },
         {
@@ -44,12 +45,18 @@ Popup {
         {
             text: I18n.tr("Select All"),
             icon: "select_all",
-            enabled: !!targetTextArea && targetTextArea.length > 0,
+            isEnabled: () => !!targetTextArea && targetTextArea.length > 0,
             action: () => targetTextArea?.selectAll()
         }
     ]
 
-    readonly property int selectableCount: menuItems.filter(item => item.type !== "separator" && item.enabled).length
+    function isItemEnabled(item) {
+        return !!item && item.type !== "separator" && (item.isEnabled ? item.isEnabled() : true);
+    }
+
+    function hasSelectableItems() {
+        return menuItems.some(item => isItemEnabled(item));
+    }
 
     function show(x, y, fromKeyboard) {
         let finalX = x;
@@ -90,6 +97,7 @@ Popup {
 
         root.x = finalX;
         root.y = finalY;
+        openRevision++;
         keyboardNavigation = !!fromKeyboard;
         selectedIndex = -1;
         if (keyboardNavigation)
@@ -98,12 +106,11 @@ Popup {
     }
 
     function selectNext() {
-        if (selectableCount === 0)
+        if (!hasSelectableItems())
             return;
         for (let step = 1; step <= menuItems.length; step++) {
             const idx = (selectedIndex + step + menuItems.length) % menuItems.length;
-            const item = menuItems[idx];
-            if (item.type !== "separator" && item.enabled) {
+            if (isItemEnabled(menuItems[idx])) {
                 selectedIndex = idx;
                 return;
             }
@@ -111,13 +118,12 @@ Popup {
     }
 
     function selectPrevious() {
-        if (selectableCount === 0)
+        if (!hasSelectableItems())
             return;
         const start = selectedIndex < 0 ? 0 : selectedIndex;
         for (let step = 1; step <= menuItems.length; step++) {
             const idx = (start - step + menuItems.length) % menuItems.length;
-            const item = menuItems[idx];
-            if (item.type !== "separator" && item.enabled) {
+            if (isItemEnabled(menuItems[idx])) {
                 selectedIndex = idx;
                 return;
             }
@@ -125,7 +131,7 @@ Popup {
     }
 
     function activateItem(item) {
-        if (!item || item.type === "separator" || !item.enabled)
+        if (!isItemEnabled(item))
             return;
         item.action();
         close();
@@ -233,6 +239,7 @@ Popup {
                         required property var modelData
                         required property int index
                         readonly property bool isSeparator: modelData.type === "separator"
+                        readonly property bool itemEnabled: root.openRevision >= 0 && root.isItemEnabled(modelData)
                         width: menuColumn.width
                         height: isSeparator ? Theme.spacingXS + Theme.dividerWidth : DCommon.Style.menuRowHeight
 
@@ -250,7 +257,7 @@ Popup {
                             height: DCommon.Style.menuRowHeight
                             radius: Theme.cornerRadiusM
                             color: {
-                                if (!row.modelData.enabled)
+                                if (!row.itemEnabled)
                                     return "transparent";
                                 const isSelected = root.keyboardNavigation && root.selectedIndex === row.index;
                                 if (isSelected)
@@ -269,14 +276,14 @@ Popup {
                                 DIcon {
                                     name: row.modelData.icon || ""
                                     size: DCommon.Style.menuItemIconSize
-                                    color: row.modelData.enabled ? Theme.surfaceText : Theme.onSurface_38
+                                    color: row.itemEnabled ? Theme.surfaceText : Theme.onSurface_38
                                     anchors.verticalCenter: parent.verticalCenter
                                 }
 
                                 StyledText {
                                     text: row.modelData.text || ""
                                     font.pixelSize: Theme.fontSizeSmall
-                                    color: row.modelData.enabled ? Theme.surfaceText : Theme.onSurface_38
+                                    color: row.itemEnabled ? Theme.surfaceText : Theme.onSurface_38
                                     elide: Text.ElideRight
                                     width: parent.width - DCommon.Style.menuItemIconSize - Theme.spacingS
                                     anchors.verticalCenter: parent.verticalCenter
@@ -286,9 +293,9 @@ Popup {
                             MouseArea {
                                 id: itemArea
                                 anchors.fill: parent
-                                hoverEnabled: !!row.modelData.enabled
-                                enabled: !!row.modelData.enabled
-                                cursorShape: row.modelData.enabled ? Qt.PointingHandCursor : Qt.ArrowCursor
+                                hoverEnabled: row.itemEnabled
+                                enabled: row.itemEnabled
+                                cursorShape: row.itemEnabled ? Qt.PointingHandCursor : Qt.ArrowCursor
                                 onClicked: root.activateItem(row.modelData)
                             }
                         }

@@ -945,7 +945,7 @@ Column {
 
                 Rectangle {
                     anchors.verticalCenter: parent.verticalCenter
-                    width: 1
+                    width: Theme.dividerWidth
                     height: Theme.iconSize - 2
                     color: Theme.outlineMedium
                 }
