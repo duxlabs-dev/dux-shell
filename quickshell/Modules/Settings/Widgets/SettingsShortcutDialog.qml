@@ -25,6 +25,7 @@ Loader {
     property Item _returnFocusTo: null
 
     signal accepted(string key)
+    signal closed
 
     anchors.fill: parent
     z: 1000
@@ -57,6 +58,7 @@ Loader {
         _returnFocusTo = null;
         if (focusItem?.visible && focusItem.enabled)
             focusItem.forceActiveFocus(Qt.OtherFocusReason);
+        closed();
     }
 
     // hide() can run under one of the dialog's own handlers, so unload a turn later.
@@ -70,6 +72,9 @@ Loader {
 
         embedded: root.embedded
         opened: root.embedded
+        popout: root.embedded
+        padding: root.embedded ? PopoutMetrics.contentPadding : Theme.spacingXL
+        contentSpacing: root.embedded ? PopoutMetrics.contentGap : Theme.spacingL
         maximumWidth: SettingsMetrics.formDialogWidth
         surfaceColor: Theme.hostSurface
         title: root.title

@@ -52,7 +52,6 @@ DModal {
     function saveKey(key) {
         setKey(editingShortcut.id, key);
         editor.hide();
-        parkFocus();
     }
 
     // Focus left on a row's edit button would make the next Enter reopen it instead of adding.
@@ -61,6 +60,14 @@ DModal {
         if (focused && focused !== dialog)
             focused.focus = false;
         dialog.forceActiveFocus();
+    }
+
+    function dismissView() {
+        if (editor.opened) {
+            editor.hide();
+            return;
+        }
+        deny();
     }
 
     function allow() {
@@ -85,7 +92,7 @@ DModal {
     closeOnEscapeKey: false
     closeOnBackgroundClick: false
     modalWidth: Math.min(Theme.dialogMaxWidth, screenWidth - Theme.spacingXL * 2)
-    modalHeight: Math.min(editor.item?.implicitHeight ?? dialog.implicitHeight, screenHeight - Theme.spacingXL * 2)
+    modalHeight: Math.min(header.height + PopoutMetrics.contentGap + (editor.item?.implicitHeight ?? dialog.implicitHeight), screenHeight - Theme.spacingXL * 2)
     enableShadow: true
     directContent: surface
 
@@ -107,60 +114,85 @@ DModal {
     FocusScope {
         id: surface
 
-        DDialog {
-            id: dialog
+        Item {
+            anchors.top: header.bottom
+            anchors.topMargin: PopoutMetrics.contentGap - PopoutMetrics.contentPadding
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.bottom: parent.bottom
 
-            anchors.fill: parent
-            visible: !editor.opened
-            opened: root.shouldBeVisible
-            focus: root.shouldBeVisible && !editor.opened
-            title: I18n.tr("Keyboard shortcuts")
-            supportingText: I18n.tr("%1 can use these shortcuts from any window. Change them later in Settings.", "global shortcuts permission dialog, %1 is an app name").arg(root.appName)
-            onAccepted: root.allow()
-            onRejected: root.deny()
+            DDialog {
+                id: dialog
 
-            SettingsGroup {
-                Repeater {
-                    model: root.shortcuts
+                anchors.fill: parent
+                visible: !editor.opened
+                opened: root.shouldBeVisible
+                focus: root.shouldBeVisible && !editor.opened
+                popout: true
+                padding: PopoutMetrics.contentPadding
+                contentSpacing: PopoutMetrics.contentGap
+                supportingText: I18n.tr("%1 can use these shortcuts from any window. Change them later in Settings.", "global shortcuts permission dialog, %1 is an app name").arg(root.appName)
+                onAccepted: root.allow()
+                onRejected: root.deny()
 
-                    delegate: GlobalShortcutRow {
-                        id: shortcutRow
+                SettingsGroup {
+                    Repeater {
+                        model: root.shortcuts
 
-                        required property var modelData
+                        delegate: GlobalShortcutRow {
+                            id: shortcutRow
 
-                        shortcut: modelData
-                        key: root.keyFor(modelData)
-                        conflicts: GlobalShortcutsService.conflicts(key, root.appId, modelData.id, root.knownBinds)
-                        onEditRequested: root.editShortcut(shortcutRow.modelData)
-                        onResetRequested: root.setKey(shortcutRow.modelData.id, shortcutRow.preferredKey)
+                            required property var modelData
+
+                            shortcut: modelData
+                            key: root.keyFor(modelData)
+                            conflicts: GlobalShortcutsService.conflicts(key, root.appId, modelData.id, root.knownBinds)
+                            onEditRequested: root.editShortcut(shortcutRow.modelData)
+                            onResetRequested: root.setKey(shortcutRow.modelData.id, shortcutRow.preferredKey)
+                        }
                     }
                 }
+
+                actions: [
+                    DButton {
+                        maximumWidth: dialog.actionWidth
+                        wrapText: true
+                        text: I18n.tr("Cancel")
+                        variant: "text"
+                        onClicked: root.deny()
+                    },
+                    DButton {
+                        maximumWidth: dialog.actionWidth
+                        wrapText: true
+                        text: root.configuring ? I18n.tr("Save") : I18n.tr("Add")
+                        onClicked: root.allow()
+                    }
+                ]
             }
 
-            actions: [
-                DButton {
-                    maximumWidth: dialog.actionWidth
-                    wrapText: true
-                    text: I18n.tr("Cancel")
-                    variant: "text"
-                    onClicked: root.deny()
-                },
-                DButton {
-                    maximumWidth: dialog.actionWidth
-                    wrapText: true
-                    text: root.configuring ? I18n.tr("Save") : I18n.tr("Add")
-                    onClicked: root.allow()
-                }
-            ]
+            SettingsShortcutDialog {
+                id: editor
+                embedded: true
+                acceptText: I18n.tr("Apply")
+                supportingText: root.editingShortcut?.description ?? ""
+                conflicts: GlobalShortcutsService.conflicts(key, root.appId, root.editingShortcut?.id ?? "", root.knownBinds)
+                onAccepted: key => root.saveKey(key)
+                onClosed: root.parkFocus()
+            }
         }
 
-        SettingsShortcutDialog {
-            id: editor
-            embedded: true
-            acceptText: I18n.tr("Apply")
-            supportingText: root.editingShortcut?.description ?? ""
-            conflicts: GlobalShortcutsService.conflicts(key, root.appId, root.editingShortcut?.id ?? "", root.knownBinds)
-            onAccepted: key => root.saveKey(key)
+        DWindowHeader {
+            id: header
+
+            anchors.top: parent.top
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.margins: PopoutMetrics.contentPadding
+            controls: null
+            horizontalPadding: 0
+            verticalPadding: 0
+            title: editor.opened ? editor.title : I18n.tr("Keyboard shortcuts")
+            onCloseRequested: root.dismissView()
         }
     }
 }
