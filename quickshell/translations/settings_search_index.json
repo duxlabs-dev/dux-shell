@@ -1082,6 +1082,26 @@
     "icon": "dock_to_bottom"
   },
   {
+    "section": "dockOpacityOverrides",
+    "label": "Docks",
+    "tabIndex": -1,
+    "category": "Interface style",
+    "keywords": [
+      "dock",
+      "docks",
+      "interface",
+      "opacity",
+      "override",
+      "panel",
+      "style",
+      "surface",
+      "taskbar",
+      "transparency"
+    ],
+    "page": "theme_surfaces",
+    "icon": "visibility_off"
+  },
+  {
     "section": "dotEnabled",
     "label": "Dot",
     "tabIndex": -1,
@@ -6577,6 +6597,28 @@
     "parentLabel": "Bar"
   },
   {
+    "section": "barOpacity",
+    "label": "Opacity",
+    "tabIndex": 6,
+    "category": "Appearance",
+    "keywords": [
+      "appearance",
+      "bar",
+      "interface",
+      "island",
+      "opacity",
+      "override",
+      "panel",
+      "statusbar",
+      "style",
+      "taskbar",
+      "topbar",
+      "transparency"
+    ],
+    "parentLabel": "Bar",
+    "description": "Override"
+  },
+  {
     "section": "frameSurfaceOpacity",
     "label": "Opacity",
     "tabIndex": 6,
@@ -6601,7 +6643,7 @@
   },
   {
     "section": "islandSatelliteTransparency",
-    "label": "Override",
+    "label": "Opacity",
     "tabIndex": 6,
     "category": "Appearance",
     "keywords": [
@@ -6622,7 +6664,7 @@
       "transparency"
     ],
     "parentLabel": "Bar",
-    "description": "Opacity",
+    "description": "Override",
     "conditionKey": "islandEnabled"
   },
   {
@@ -7065,6 +7107,7 @@
       "maximize",
       "modules",
       "opacity",
+      "override",
       "padding",
       "panel",
       "pills",
@@ -7078,7 +7121,7 @@
     ],
     "parentLabel": "Bar",
     "icon": "widgets",
-    "description": "Opacity"
+    "description": "Override"
   },
   {
     "section": "islandCompactThickness",
