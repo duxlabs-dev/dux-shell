@@ -24,14 +24,14 @@ DEditableGrid {
     signal cardFocusChanged(string id)
 
     signal cardClicked(string cardId)
-    signal optionsRequested(string cardId)
+    signal optionsRequested(string cardId, string instanceId)
     signal navFocusRequested(bool backwards)
     signal detailRequested(var eventData)
     signal editorRequested(var eventData, var initialDate)
 
     readonly property real columnWidth: (width - DashMetrics.gridGap * (DashMetrics.gridColumns - 1)) / DashMetrics.gridColumns
     readonly property int usedColumns: slotLayout.slots.reduce((used, slot) => slot ? Math.max(used, slot.col + slot.cols) : used, 0)
-    readonly property var addableEntries: DashRegistry.unplaced.map(entry => ({
+    readonly property var addableEntries: DashRegistry.addableCards.map(entry => ({
                 "entry": entry,
                 "size": GridUtils.fitNewCard(sourceItems, DashMetrics.gridColumns, rowBudget, entry.id, DashRegistry.defaultSize(entry.id), DashRegistry.minSize(entry.id), DashRegistry.isCardAvailable)
             })).filter(candidate => candidate.size !== null)

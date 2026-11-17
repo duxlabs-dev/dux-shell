@@ -38,6 +38,7 @@ DCard {
     }
 
     property string entryId: ""
+    property string instanceId: ""
 
-    readonly property var options: DashRegistry.resolvedOptions(entryId)
+    readonly property var options: DashRegistry.resolvedOptions(entryId, DashRegistry.storedOptions(entryId, instanceId))
 }

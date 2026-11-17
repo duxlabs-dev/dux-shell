@@ -12,6 +12,7 @@ DEditableGridSlot {
     readonly property var cardData: JSON.parse(json)
     readonly property string cardId: cardData.id ?? ""
     readonly property var entry: DashRegistry.entry(cardId)
+    readonly property string instanceId: entry?.card?.allowMultiple === true && typeof cardData.instanceId === "string" ? cardData.instanceId : ""
     readonly property var cardItem: cardLoader.item
     readonly property int previewW: resizing ? grid.sizePreview.changes.w : (cardData.w || 1)
     readonly property int previewH: resizing ? grid.sizePreview.changes.h : (cardData.h || 1)
@@ -53,6 +54,8 @@ DEditableGridSlot {
             return;
         if ("entryId" in item)
             item.entryId = root.cardId;
+        if ("instanceId" in item)
+            item.instanceId = root.instanceId;
         if ("transientSurfaceTracker" in item)
             item.transientSurfaceTracker = Qt.binding(() => root.grid.transientSurfaceTracker);
         if (!root.entry?.isPlugin)
@@ -150,7 +153,7 @@ DEditableGridSlot {
             dragging: root.dragging
             resizing: root.resizing
             hasOptions: DashRegistry.hasOptions(root.cardId)
-            onOptionsRequested: root.grid.optionsRequested(root.cardId)
+            onOptionsRequested: root.grid.optionsRequested(root.cardId, root.instanceId)
             onRemoveRequested: CardUtils.removeCard(root.index)
             onResizeStarted: (px, py) => root.startResize(px, py)
             onResizeCanceled: root.cancelResize()

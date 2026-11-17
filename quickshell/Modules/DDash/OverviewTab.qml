@@ -71,9 +71,9 @@ FocusScope {
         });
     }
 
-    function presentOptions(cardId) {
+    function presentOptions(cardId, instanceId) {
         optionsSheet.active = true;
-        optionsSheet.item.presentFor(cardId);
+        optionsSheet.item.presentFor(cardId, instanceId);
     }
 
     function presentDetail(eventData) {
@@ -126,7 +126,7 @@ FocusScope {
                 root.tabRequested(cardId);
         }
         onNavFocusRequested: backwards => root.navFocusRequested(backwards)
-        onOptionsRequested: cardId => root.presentOptions(cardId)
+        onOptionsRequested: (cardId, instanceId) => root.presentOptions(cardId, instanceId)
         onDetailRequested: eventData => root.presentDetail(eventData)
         onEditorRequested: (eventData, initialDate) => root.presentEditor(eventData, initialDate)
     }
