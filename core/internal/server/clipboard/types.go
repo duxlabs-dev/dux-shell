@@ -173,6 +173,9 @@ type Manager struct {
 	state      *State
 	stateMutex sync.RWMutex
 
+	portalMu  sync.Mutex
+	portalKey string
+
 	subscribers pubsub.Broker[State]
 	dirty       chan struct{}
 	notifierWg  sync.WaitGroup

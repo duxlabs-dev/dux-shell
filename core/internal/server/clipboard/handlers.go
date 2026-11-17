@@ -6,6 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"mime"
+	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/duxlabs-dev/dux-go/ipc"
@@ -33,6 +37,8 @@ func HandleRequest(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
 		handleGetHistory(conn, req, m)
 	case "clipboard.getEntry":
 		handleGetEntry(conn, req, m)
+	case "clipboard.exportEntryFile":
+		handleExportEntryFile(conn, req, m)
 	case "clipboard.getEntries":
 		handleGetEntries(conn, req, m)
 	case "clipboard.import":
@@ -106,6 +112,121 @@ func handleGetEntry(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
 	}
 
 	conn.Respond(req.ID, entry)
+}
+
+const dragTempDirName = "dms-clipboard-drag"
+const dragTempFileTTL = 10 * time.Minute
+
+func extensionForMime(mimeType string) string {
+	base := strings.ToLower(strings.TrimSpace(strings.SplitN(mimeType, ";", 2)[0]))
+	switch base {
+	case "image/png":
+		return ".png"
+	case "image/jpeg", "image/jpg":
+		return ".jpg"
+	case "image/webp":
+		return ".webp"
+	case "image/gif":
+		return ".gif"
+	case "image/svg+xml":
+		return ".svg"
+	case "image/bmp":
+		return ".bmp"
+	case "text/plain":
+		return ".txt"
+	}
+	if exts, err := mime.ExtensionsByType(base); err == nil && len(exts) > 0 {
+		return exts[0]
+	}
+	return ".bin"
+}
+
+func cleanupExpiredDragFiles(dir string) {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return
+	}
+	cutoff := time.Now().Add(-dragTempFileTTL)
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		info, err := entry.Info()
+		if err != nil {
+			continue
+		}
+		if info.ModTime().Before(cutoff) {
+			_ = os.Remove(filepath.Join(dir, entry.Name()))
+		}
+	}
+}
+
+func dragTempDir() string {
+	if cacheDir, err := os.UserCacheDir(); err == nil && cacheDir != "" {
+		return filepath.Join(cacheDir, "dms", dragTempDirName)
+	}
+	return filepath.Join(os.TempDir(), dragTempDirName)
+}
+
+func handleExportEntryFile(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
+	id, err := params.Int(req.Params, "id")
+	if err != nil || id <= 0 {
+		conn.RespondError(req.ID, "invalid entry id")
+		return
+	}
+
+	entry, err := m.GetEntry(uint64(id))
+	if err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
+
+	if strings.EqualFold(strings.TrimSpace(strings.SplitN(entry.MimeType, ";", 2)[0]), "text/uri-list") {
+		if filePath := m.EntryToFile(entry); filePath != "" {
+			if _, err := os.Stat(filePath); err == nil {
+				conn.Respond(req.ID, map[string]any{
+					"filePath":  filePath,
+					"mimeType":  entry.MimeType,
+					"isTemp":    false,
+					"portalKey": m.exportPortalFile(filePath),
+				})
+				return
+			}
+		}
+	}
+
+	dir := dragTempDir()
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		conn.RespondError(req.ID, fmt.Sprintf("create drag temp dir: %v", err))
+		return
+	}
+	cleanupExpiredDragFiles(dir)
+
+	ext := extensionForMime(entry.MimeType)
+	tmpFile, err := os.CreateTemp(dir, fmt.Sprintf("dms-clip-%d-*%s", entry.ID, ext))
+	if err != nil {
+		conn.RespondError(req.ID, fmt.Sprintf("create drag temp file: %v", err))
+		return
+	}
+	tmpPath := tmpFile.Name()
+	if _, err := tmpFile.Write(entry.Data); err != nil {
+		_ = tmpFile.Close()
+		_ = os.Remove(tmpPath)
+		conn.RespondError(req.ID, fmt.Sprintf("write drag temp file: %v", err))
+		return
+	}
+	if err := tmpFile.Close(); err != nil {
+		_ = os.Remove(tmpPath)
+		conn.RespondError(req.ID, fmt.Sprintf("close drag temp file: %v", err))
+		return
+	}
+
+	conn.Respond(req.ID, map[string]any{
+		"filePath":  tmpPath,
+		"mimeType":  entry.MimeType,
+		"isTemp":    true,
+		"portalKey": m.exportPortalFile(tmpPath),
+	})
 }
 
 func handleGetEntries(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
