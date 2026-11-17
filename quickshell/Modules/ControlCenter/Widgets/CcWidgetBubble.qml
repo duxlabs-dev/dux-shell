@@ -10,7 +10,9 @@ StyledButton {
 
     required property var entry
     property real bubbleSize: CcMetrics.previewSize
+    property real previewWidth: bubbleSize
     property bool draggable: false
+    property bool addAllowed: true
     property bool roundAll: true
     property bool wrapLabel: false
     property var canStep: (dx, dy) => true
@@ -22,7 +24,8 @@ StyledButton {
 
     height: preview.height + Theme.spacingS + label.height
     Accessible.name: entry.text
-    Accessible.description: entry.description ?? ""
+    readonly property string blockedText: I18n.tr("Does not fit here. Drag to another spot.")
+    Accessible.description: addAllowed ? (entry.description ?? "") : blockedText
 
     function tryStep(event, dx, dy) {
         event.accepted = canStep(dx, dy);
@@ -44,8 +47,8 @@ StyledButton {
         id: preview
 
         anchors.horizontalCenter: parent.horizontalCenter
-        width: item.bubbleSize
-        height: width
+        width: item.previewWidth
+        height: item.bubbleSize
         radius: item.roundAll || item.entry.id === "user" ? Theme.fullRadius(width, height) : Theme.cornerRadiusLIncreased
         color: CcMetrics.iconBoxInactiveColor
 
@@ -53,7 +56,7 @@ StyledButton {
             anchors.centerIn: parent
             name: item.entry.icon
             size: Theme.iconSizeLarge
-            color: Theme.primary
+            color: item.addAllowed ? Theme.primary : Theme.surfaceVariantText
             visible: item.entry.id !== "user" || PortalService.profileImageUrl === ""
         }
 
@@ -73,6 +76,7 @@ StyledButton {
         StateLayer {
             control: item
             stateColor: Theme.primary
+            tooltipText: item.addAllowed ? "" : item.blockedText
         }
     }
 

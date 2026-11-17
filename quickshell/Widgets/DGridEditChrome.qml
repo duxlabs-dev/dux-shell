@@ -18,6 +18,9 @@ Item {
     property bool removable: true
     property string removeIcon: "close"
     property bool horizontalResize: false
+    property bool verticalResize: false
+    property bool verticalResizeAbove: false
+    property real verticalResizeOffset: 0
     property bool edgeResize: false
     property bool cornerResize: true
     property real resizeEdgeWidth: -1
@@ -278,6 +281,30 @@ Item {
         anchors.rightMargin: root.contentInset - (root.horizontalResize ? width / 2 : root.handleOverhang)
         z: 1
         visible: root.cornerResize
+    }
+
+    Item {
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.horizontalCenterOffset: root.verticalResizeOffset
+        y: root.verticalResizeAbove ? root.contentInset - height / 2 : root.height - root.contentInset - height / 2
+        width: root.touchTargetSize
+        height: root.touchTargetSize
+        visible: root.verticalResize
+        z: 1
+
+        Rectangle {
+            anchors.centerIn: parent
+            width: root.buttonSize
+            height: root.handleThickness
+            radius: Theme.fullRadius(width, height)
+            color: Theme.primary
+        }
+
+        ResizeBand {
+            anchors.fill: parent
+            signX: 0
+            cursorShape: Qt.SizeVerCursor
+        }
     }
 
     Loader {

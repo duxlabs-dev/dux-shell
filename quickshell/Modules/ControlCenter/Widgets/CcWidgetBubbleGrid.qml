@@ -10,8 +10,10 @@ Grid {
     property var entries: []
     property bool roundAll: true
     property bool wrapLabels: false
+    property bool fillPreviews: false
     property real bubbleSize: CcMetrics.previewSize
     property bool draggable: false
+    property var canAdd: widgetId => true
     property Item fallbackFocus: null
     property int refocusIndex: -1
 
@@ -50,6 +52,7 @@ Grid {
             required property int index
 
             entry: modelData
+            addAllowed: grid.canAdd(modelData.id)
             bubbleSize: grid.bubbleSize
             draggable: grid.draggable
             roundAll: grid.roundAll
@@ -59,7 +62,10 @@ Grid {
                 return target >= 0 && target < repeater.count;
             }
             width: (grid.width - grid.columnSpacing * (grid.columns - 1)) / grid.columns
+            previewWidth: grid.fillPreviews ? width : grid.bubbleSize
             onClicked: {
+                if (!bubble.addAllowed)
+                    return;
                 grid.refocusIndex = bubble.activeFocus ? index : -1;
                 grid.chosen(modelData.id);
             }

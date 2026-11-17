@@ -16,6 +16,7 @@ Item {
     property bool dragging: false
     property bool dragRemovable: false
     property bool canUndo: false
+    property bool fixedHeight: false
     property var transientSurfaceTracker: null
     readonly property bool trashShown: editMode && dragging && dragRemovable
     property bool overTrash: false
@@ -42,6 +43,7 @@ Item {
     signal undoRequested
     signal resetRequested
     signal clearRequested
+    signal heightModeRequested(bool fixed)
     signal finishRequested
     signal cancelRequested
 
@@ -128,10 +130,12 @@ Item {
 
         CcEditMenuButton {
             canUndo: root.canUndo
+            fixedHeight: root.fixedHeight
             transientSurfaceTracker: root.transientSurfaceTracker
             onUndoRequested: root.undoRequested()
             onResetRequested: root.resetRequested()
             onClearRequested: root.clearRequested()
+            onHeightModeRequested: fixed => root.heightModeRequested(fixed)
         }
     }
 

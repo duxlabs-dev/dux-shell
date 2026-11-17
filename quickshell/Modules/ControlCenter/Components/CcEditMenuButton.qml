@@ -8,6 +8,7 @@ DActionButton {
     id: root
 
     property bool canUndo: false
+    property bool fixedHeight: false
     // The docked panel has its own Undo button.
     property bool undoInMenu: true
     property var transientSurfaceTracker: null
@@ -15,6 +16,7 @@ DActionButton {
     signal undoRequested
     signal resetRequested
     signal clearRequested
+    signal heightModeRequested(bool fixed)
 
     buttonSize: Theme.iconButtonSize
     iconName: "more_horiz"
@@ -29,6 +31,19 @@ DActionButton {
 
         transientSurfaceTracker: root.transientSurfaceTracker
         items: [
+            {
+                "iconName": "height",
+                "label": I18n.tr("Auto height"),
+                "trailingIcon": root.fixedHeight ? "" : "check",
+                "action": () => root.heightModeRequested(false)
+            },
+            {
+                "iconName": "height",
+                "label": I18n.tr("Fixed height"),
+                "trailingIcon": root.fixedHeight ? "check" : "",
+                "action": () => root.heightModeRequested(true)
+            },
+            { "type": "separator" },
             {
                 "iconName": "undo",
                 "label": I18n.tr("Undo"),

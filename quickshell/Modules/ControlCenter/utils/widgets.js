@@ -2,15 +2,17 @@
 .import qs.Services as Services
 .import qs.Modules.ControlCenter as ControlCenter
 .import "../../../Common/GridLayout.js" as GridLayout
+.import "../../../Common/ControlCenterLayout.js" as PanelLayout
 .import "../../../Common/settings/SettingsSpec.js" as Spec
 .import "catalog.js" as Catalog
 .import "pages.js" as Pages
 
 var OPTION_IDS = ["diskUsage", "brightnessSlider", "idleInhibitor", "user", "battery", "quickTiles"];
-var GROUP_ID = "quickTiles";
+var GROUP_ID = PanelLayout.GROUP_ID;
 var BATTERY_STYLES = ["icon", "solid", "outline", "ring", "duo"];
 var ACTION_IDS = ["settings", "lock", "power"];
 var EDIT_ID = "edit";
+var SPACER_ID = "spacer";
 var BUTTON_IDS = ACTION_IDS.concat([EDIT_ID]);
 var USER_SHAPES = ["circle", "cookie4", "cookie7", "cookie12", "clover4", "clover8", "sunny", "pentagon", "arch", "slanted", "gem", "square"];
 
@@ -27,7 +29,7 @@ function isSmall(widget, rows) {
 }
 
 function canGroup(widget) {
-    return canShrink(widget?.id) && !isSliderWidget(widget?.id) && widget?.id !== GROUP_ID;
+    return canShrink(widget?.id) && !isSliderWidget(widget?.id) && ![GROUP_ID, SPACER_ID].includes(widget?.id);
 }
 
 // Members of a group that no longer exists fall back to the grid.
@@ -144,7 +146,7 @@ function newWidget(widgetId, columns) {
         widget.showMountPath = true;
     }
 
-    if (widgetId === GROUP_ID)
+    if (widgetId === GROUP_ID || widgetId === SPACER_ID)
         widget.instanceId = generateUniqueId();
 
     if (widgetId === "brightnessSlider") {
@@ -155,32 +157,25 @@ function newWidget(widgetId, columns) {
 }
 
 // `base` replaces the saved list, so a drop can commit the grid's rearranged layout together with the new tile.
-// `room` is the free run of columns at the spot; the tile narrows into it instead of sliding below.
-function addWidget(widgetId, columns, col, row, base, page, room) {
+// With `room` ({layout, rowLimit}) the tile narrows into the spot's free run instead of sliding below.
+function addWidget(widgetId, columns, col, row, base, page, room, prepareLayout, size) {
     const widgets = (base ?? Common.SettingsData.controlCenterWidgets).slice();
     const widget = Pages.withPage(newWidget(widgetId, columns), Number.isInteger(page) ? page : 0);
-    if (Number.isFinite(col) && Number.isFinite(row))
-        Object.assign(widget, placedInRoom(widget, columns, col, row, room));
+    if (size)
+        Object.assign(widget, clampSize(Object.assign({}, widget, size), columns));
+    if (Number.isFinite(col) && Number.isFinite(row)) {
+        const cell = placedInRoom(widget, columns, col, row, room);
+        if (!cell)
+            return false;
+        Object.assign(widget, cell);
+    }
     widgets.push(widget);
-    Common.SettingsData.set("controlCenterWidgets", widgets);
+    setLayout(prepareLayout ? prepareLayout(widgets) : widgets);
+    return true;
 }
 
-// The size clamp only ever narrows a fitted width further, so the tile stays inside the room.
 function placedInRoom(widget, columns, col, row, room) {
-    if (!room || !(room.to > room.from))
-        return {
-            "col": col,
-            "row": row
-        };
-    const fit = GridLayout.fitInRun(room, col, widget.w);
-    return Object.assign(clampSize({
-        "id": widget.id,
-        "w": fit.w,
-        "h": widget.h
-    }, columns), {
-        "col": fit.col,
-        "row": row
-    });
+    return PanelLayout.placedInRoom(widget, columns, col, row, room, clampSize);
 }
 
 function generateUniqueId() {
@@ -266,7 +261,7 @@ function setLayout(widgets) {
 }
 
 function resetToDefault() {
-    Common.SettingsData.resetToDefault(["controlCenterWidgets", "controlCenterColumns"]);
+    Common.SettingsData.resetToDefault(["controlCenterWidgets", "controlCenterColumns", "controlCenterRows"]);
 }
 
 function clearAll() {

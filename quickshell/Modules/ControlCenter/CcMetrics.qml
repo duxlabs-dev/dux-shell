@@ -11,6 +11,9 @@ Singleton {
     readonly property int minimumColumns: 4
     readonly property int osdSheetColumns: 6
     readonly property real sheetPadding: PopoutMetrics.contentPadding
+    readonly property real pageDotVerticalPadding: Theme.spacingXS + Theme.outlineWidth * 2
+    readonly property real pageFooterHeight: pageDotSize + pageDotVerticalPadding * 2
+    readonly property real gridVerticalPadding: sheetPadding + pageFooterHeight
     readonly property real columnWidth: tileHeight
     readonly property real gridStep: 0.5
     property int columnPreview: 0
@@ -43,8 +46,10 @@ Singleton {
     readonly property real maxHeightInset: 100
     // Short-grid floors scale with the row unit, or compact would pad small layouts back out.
     readonly property int minimumRows: 2
-    readonly property real minHeight: sheetPadding * 2 + gridRowUnit * minimumRows
+    readonly property real minHeight: gridVerticalPadding + gridRowUnit * minimumRows
     readonly property real islandInset: Theme.spacingXS
+    // Keeps the island's edit ring clear of the page dots.
+    readonly property real islandChromeInset: Theme.outlineWidthFocused
     readonly property real fallbackScreenHeight: 1080
     readonly property real triggerWidth: 80
 
@@ -129,7 +134,7 @@ Singleton {
     readonly property real libraryPanelHeight: 400
     readonly property real widgetSheetHeightRatio: 0.85
     readonly property real previewSize: 76
-    readonly property real dockedPanelWidth: columnWidth * 4 + gridGap * 3 + sheetPadding * 2
+    readonly property real dockedPanelWidth: sheetWidthFor(dockedPanelColumns + 1)
     readonly property real dockedPanelGap: PopoutMetrics.contentGap
     // Clears the concave flares a connected body draws along the bar.
     readonly property real dockedPanelConnectedGap: Math.max(PopoutMetrics.contentGap, Theme.connectedCornerRadius + Theme.spacingXS)
@@ -171,7 +176,7 @@ Singleton {
     readonly property real quickBareWidth: iconBoxIconSize + quickBarePadding
     readonly property real quickTileGap: Theme.spacingXS
 
-    readonly property real pageDotSize: Theme.spacingXS + Theme.spacingXXS
+    readonly property real pageDotSize: Theme.spacingS
     readonly property real pageDotActiveWidth: pageDotSize * 3
     readonly property color pageDotColor: Theme.onSurfaceVariant_40
     readonly property real pageSwipeDistance: 0.2

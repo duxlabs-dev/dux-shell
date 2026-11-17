@@ -1146,7 +1146,7 @@ Item {
         }
     }
 
-    function _connectedAlignedY(overTop, overBottom) {
+    function _connectedAlignedY(overTop, overBottom, height) {
         const popupGap = _popupGapValue();
         const edgeGapTop = _edgeGapFor("top", popupGap);
         const edgeGapBottom = _edgeGapFor("bottom", popupGap);
@@ -1154,15 +1154,15 @@ Item {
 
         switch (effectiveBarPosition) {
         case SettingsData.Position.Bottom:
-            return Math.max(edgeGapTop + overTop, Math.min(screenHeight - popupHeight - overBottom - popupGap, anchorY - popupHeight - overBottom));
+            return Math.max(edgeGapTop + overTop, Math.min(screenHeight - height - overBottom - popupGap, anchorY - height - overBottom));
         case SettingsData.Position.Top:
-            return Math.max(popupGap + overTop, Math.min(screenHeight - popupHeight - overBottom - edgeGapBottom, anchorY + overTop));
+            return Math.max(popupGap + overTop, Math.min(screenHeight - height - overBottom - edgeGapBottom, anchorY + overTop));
         default:
-            const rawY = triggerY - (popupHeight / 2);
+            const rawY = triggerY - (height / 2);
             const clearTop = adjacentBarClearance(adjacentBarInfo.topBar);
             const clearBottom = adjacentBarClearance(adjacentBarInfo.bottomBar);
             const minY = Math.max(edgeGapTop, clearTop) + overTop;
-            const maxY = screenHeight - popupHeight - overBottom - Math.max(edgeGapBottom, clearBottom);
+            const maxY = screenHeight - height - overBottom - Math.max(edgeGapBottom, clearBottom);
             return _snapNearFrameBound(Math.max(minY, Math.min(maxY, rawY)), minY, maxY, edgeGapTop >= clearTop, edgeGapBottom >= clearBottom);
         }
     }
@@ -1191,20 +1191,20 @@ Item {
         }
     }
 
-    function _standaloneAlignedY(overTop, overBottom) {
+    function _standaloneAlignedY(overTop, overBottom, height) {
         const popupGap = _standalonePopupGap();
         const topGap = _edgeClearance("top", popupGap, adjacentBarInfo.topBar > 0 ? adjacentBarInfo.topBar : 0);
         const bottomGap = _edgeClearance("bottom", popupGap, adjacentBarInfo.bottomBar > 0 ? adjacentBarInfo.bottomBar : 0);
 
         switch (effectiveBarPosition) {
         case SettingsData.Position.Bottom:
-            return Math.max(topGap + overTop, Math.min(screenHeight - popupHeight - overBottom - bottomGap, triggerY - popupHeight - overBottom));
+            return Math.max(topGap + overTop, Math.min(screenHeight - height - overBottom - bottomGap, triggerY - height - overBottom));
         case SettingsData.Position.Top:
-            return Math.max(topGap + overTop, Math.min(screenHeight - popupHeight - overBottom - bottomGap, triggerY + overTop));
+            return Math.max(topGap + overTop, Math.min(screenHeight - height - overBottom - bottomGap, triggerY + overTop));
         default:
-            const rawY = triggerY - (popupHeight / 2);
+            const rawY = triggerY - (height / 2);
             const minY = topGap + overTop;
-            const maxY = screenHeight - popupHeight - overBottom - bottomGap;
+            const maxY = screenHeight - height - overBottom - bottomGap;
             return Math.max(minY, Math.min(maxY, rawY));
         }
     }
@@ -1215,8 +1215,8 @@ Item {
 
     readonly property real alignedX: alignedXFor(popupWidth)
 
-    function alignedYFor(overTop, overBottom) {
-        return Theme.snap(connected ? _connectedAlignedY(overTop, overBottom) : _standaloneAlignedY(overTop, overBottom), dpr);
+    function alignedYFor(overTop, overBottom, height = popupHeight) {
+        return Theme.snap(connected ? _connectedAlignedY(overTop, overBottom, height) : _standaloneAlignedY(overTop, overBottom, height), dpr);
     }
 
     readonly property real alignedY: alignedYFor(topOverflow, bottomOverflow)

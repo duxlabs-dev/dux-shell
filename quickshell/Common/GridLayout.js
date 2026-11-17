@@ -232,12 +232,12 @@ function rowAt(layout, y) {
     return band * layout.step;
 }
 
-function cellAt(layout, x, y, cols, rows) {
+function cellAt(layout, x, y, cols, rows, rowLimit = 0) {
     const px = layout.mirror ? layout.width - x - (cols * layout.colW + (cols - 1) * layout.gap) : x;
     const col = Math.round(px / (layout.colW + layout.gap) / layout.step) * layout.step;
     return {
         "col": Math.max(0, Math.min(layout.columns - cols, col)),
-        "row": Math.max(0, rowAt(layout, y))
+        "row": Math.max(0, Math.min(rowAt(layout, y), rowLimit > 0 ? rowLimit - rows : Infinity))
     };
 }
 
@@ -251,10 +251,14 @@ function bandTop(layout, band) {
     return layout.totalHeight + layout.gap + (band - tops.length) * pitch;
 }
 
-function freeCellAt(layout, x, y, bottom) {
+function inRows(layout, y, rows) {
+    return !(rows > 0) || y <= bandTop(layout, Math.round(rows / layout.step)) - layout.gap;
+}
+
+function freeCellAt(layout, x, y, bottom, rowLimit = 0, columnStep = 1) {
     const step = layout.step;
     const pitchX = layout.colW + layout.gap;
-    const col = Math.floor((layout.mirror ? layout.width - x : x) / pitchX);
+    const col = Math.floor((layout.mirror ? layout.width - x : x) / pitchX / columnStep) * columnStep;
     if (!(pitchX > 0) || !(layout.rowUnit + layout.gap > 0) || col < 0 || col >= layout.columns || y < 0)
         return null;
     const span = Math.round(1 / step);
@@ -273,6 +277,8 @@ function freeCellAt(layout, x, y, bottom) {
     // Gravity lifts the added tile until it rests, so the spot rises with it.
     while (first > 0 && !busy(first - 1))
         first--;
+    if (rowLimit > 0 && first * step + 1 > rowLimit)
+        return null;
     const top = bandTop(layout, first);
     const height = bandTop(layout, first + span) - layout.gap - top;
     if (top + height > bottom)
@@ -311,23 +317,24 @@ function fitInRun(run, col, w) {
     };
 }
 
-// With gravity, a tile dropped onto the stack it came from rises back toward the hole it left. So the drop tries
-// the target row and the rows below it, packing each, and keeps the one that settles nearest the target.
-function dropInto(items, cells, index, target, pack, step = 1) {
+// Gravity can lift a drop toward the hole it left.
+function dropInto(items, cells, index, target, pack, step = 1, rowLimit = 0) {
     const origin = cells[index];
     if (!origin || !target || !pack)
         return items;
     if (target.col < origin.col + origin.cols && origin.col < target.col + origin.cols && target.row < origin.row + origin.rows && origin.row < target.row + origin.rows)
         return items;
-    const limit = cells.reduce((bottom, cell) => cell ? Math.max(bottom, cell.row + cell.rows) : bottom, 0) + origin.rows;
+    const limit = rowLimit > 0 ? rowLimit - origin.rows : cells.reduce((bottom, cell) => cell ? Math.max(bottom, cell.row + cell.rows) : bottom, 0) + origin.rows;
     let best = null;
-    for (let row = target.row; row <= limit; row += step) {
+    for (let row = rowLimit > 0 ? 0 : target.row; row <= limit; row += step) {
         const trial = items.map((item, i) => i === index ? Object.assign({}, item, {
                 "row": row
             }) : item);
         const landed = pack(trial)[index]?.row;
         if (landed === undefined)
             return items;
+        if (rowLimit > 0 && landed + origin.rows > rowLimit)
+            continue;
         const distance = Math.abs(landed - target.row);
         if (!best || distance < best.distance || (distance === best.distance && landed >= target.row))
             best = {
@@ -337,7 +344,7 @@ function dropInto(items, cells, index, target, pack, step = 1) {
         if (landed >= target.row)
             break;
     }
-    return best.trial;
+    return best?.trial ?? items;
 }
 
 function placedItems(items, slots) {

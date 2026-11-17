@@ -8,6 +8,7 @@ import "../utils/sections.js" as Sections
 import "../utils/widgets.js" as WidgetUtils
 import "../utils/pages.js" as Pages
 import "../../../Common/GridLayout.js" as GridUtils
+import "../../../Common/ControlCenterLayout.js" as PanelLayout
 
 DEditableGrid {
     id: root
@@ -16,9 +17,11 @@ DEditableGrid {
     property int page: 0
     property bool live: true
     property string screenName: ""
+    property Item overflowHost: null
+    property real scrollOffset: 0
     property int columns: CcMetrics.gridColumns
     property real availableHeight: CcMetrics.fallbackScreenHeight - CcMetrics.maxHeightInset
-    readonly property int maximumRows: CcMetrics.rowCapFor(availableHeight, cellWidth - CcMetrics.gridGap)
+    readonly property int maximumRows: rowLimit > 0 ? rowLimit : CcMetrics.rowCapFor(availableHeight, cellWidth - CcMetrics.gridGap)
     // The detail band opens under this tile's row and pushes the rows below it down. While a band is shown the
     // slots follow its animated height frame by frame instead of running their own motion, so one animation drives
     // both; the section is the band's own, which it keeps until it has fully collapsed.
@@ -29,6 +32,8 @@ DEditableGrid {
     readonly property int expandedIndex: indexForSection(expandedSection)
     readonly property real bandY: slotLayout.bandY ?? 0
     readonly property real baseHeight: baseLayout.totalHeight
+    readonly property real dropHeight: rowLimit > 0 ? GridUtils.bandTop(pinnedLayout ?? baseLayout, Math.round(rowLimit / CcMetrics.gridStep)) - CcMetrics.gridGap : height
+    readonly property bool overflowPreview: interacting && baseLayout.commitSlots !== undefined
     readonly property real targetHeight: GridUtils.insertBand(baseLayout, expandedIndex, expandedSection !== "" ? bandTargetHeight : 0).totalHeight
 
     signal expandClicked(var widgetData)
@@ -56,7 +61,7 @@ DEditableGrid {
     property string carryGroup: ""
     readonly property string hoverGroup: carryGroup !== "" ? carryGroup : heldOutside && !carried && draggingSourceIndex >= 0 ? (groupAt(dragScenePoint, draggingSourceIndex)?.groupId ?? "") : ""
 
-    readonly property var savedWidgets: SettingsData.controlCenterWidgets || []
+    property var savedWidgets: SettingsData.controlCenterWidgets || []
     readonly property var groupIds: WidgetUtils.groupIds(savedWidgets)
     readonly property var shownIndices: savedWidgets.reduce((indices, widget, i) => Pages.pageOf(widget) === page && !WidgetUtils.inGroup(widget, groupIds) && WidgetUtils.isShown(widget) && model?.componentForWidget(widget) ? indices.concat([i]) : indices, [])
 
@@ -64,7 +69,7 @@ DEditableGrid {
     readonly property var baseLayout: {
         const items = clamped(layoutItems);
         const layout = GridUtils.packCards(items, placementOrder, columns, width, CcMetrics.gridGap, cellWidth - CcMetrics.gridGap, I18n.isRtl, null, CcMetrics.gridStep, true);
-        return GridUtils.shrinkRows(layout, items.map(item => WidgetUtils.isSmall(item, item.h)), CcMetrics.smallRowHeight);
+        return PanelLayout.pageLayout(GridUtils.shrinkRows(layout, items.map(item => WidgetUtils.isSmall(item, item.h)), CcMetrics.smallRowHeight), rowLimit, interactingIndex);
     }
     // Whole pixels keep the rows crisp while they ride the band's animation.
     slotLayout: GridUtils.insertBand(baseLayout, expandedIndex, Math.round(bandHeight))
@@ -116,7 +121,7 @@ DEditableGrid {
     function groupAt(scenePoint, excludeIndex) {
         for (let i = 0; i < tileRepeater.count; i++) {
             const slot = tileRepeater.itemAt(i) as CcTileSlot;
-            if (i === excludeIndex || slot?.widgetData.id !== WidgetUtils.GROUP_ID)
+            if (i === excludeIndex || !slot?.enabled || slot.widgetData.id !== WidgetUtils.GROUP_ID)
                 continue;
             if (slot.contains(slot.mapFromItem(null, scenePoint.x, scenePoint.y)))
                 return slot.tileItem;
@@ -126,6 +131,15 @@ DEditableGrid {
 
     function savedIndex(index) {
         return shownIndices[index] ?? -1;
+    }
+
+    function containsTile(scenePoint) {
+        for (let i = 0; i < tileRepeater.count; i++) {
+            const slot = tileRepeater.itemAt(i) as CcTileSlot;
+            if (slot?.visible && slot.enabled && (editMode || slot.widgetData.id !== WidgetUtils.SPACER_ID) && slot.contains(slot.mapFromItem(null, scenePoint.x, scenePoint.y)))
+                return true;
+        }
+        return false;
     }
 
     function externalSpec(widgetId) {
@@ -139,7 +153,7 @@ DEditableGrid {
     }
 
     function externalGhostSize(widgetId) {
-        const spec = externalSpec(widgetId);
+        const spec = externalItem?.id === widgetId ? externalItem : externalSpec(widgetId);
         const rowUnit = cellWidth - CcMetrics.gridGap;
         const height = WidgetUtils.isSmall(spec, spec.h) ? CcMetrics.smallRowHeight : spec.h * rowUnit + (spec.h - 1) * CcMetrics.gridGap;
         return Qt.size(spec.w * cellWidth - CcMetrics.gridGap, height);
@@ -147,14 +161,23 @@ DEditableGrid {
 
     function hoverNew(widgetId, scenePoint) {
         const point = mapFromItem(null, scenePoint.x, scenePoint.y);
-        const margin = CcMetrics.sheetPadding;
-        if (!editMode || point.x < -margin || point.x > width + margin || point.y < -margin || point.y > height + margin) {
+        if (!acceptsDrop(scenePoint)) {
             clearExternal();
             return false;
         }
-        const spec = externalSpec(widgetId);
-        previewExternal(spec, point.x - cellWidth * spec.w / 2, point.y - slotLayout.rowUnit * spec.h / 2);
+        if (!pinnedCells)
+            pin();
+        const widget = externalSpec(widgetId);
+        const fit = PanelLayout.externalPlacement(widget, pinnedLayout, point.x, point.y, height, rowLimit, WidgetUtils.clampSize);
+        const spec = Object.assign({}, widget, fit);
+        previewExternal(spec, point.x - cellWidth * spec.w / 2, point.y - slotLayout.rowUnit * spec.h / 2, fit);
         return true;
+    }
+
+    function acceptsDrop(scenePoint) {
+        const point = mapFromItem(null, scenePoint.x, scenePoint.y);
+        const margin = CcMetrics.sheetPadding;
+        return editMode && point.x >= -margin && point.x <= width + margin && point.y >= -margin && point.y <= height + margin && GridUtils.inRows(pinnedLayout ?? slotLayout, point.y, rowLimit);
     }
 
     function dropNew(widgetId) {
@@ -164,7 +187,7 @@ DEditableGrid {
         const cell = placed.pop();
         const widgets = withHidden(placed);
         Qt.callLater(() => {
-            model.addWidgetAt(widgetId, cell.col, cell.row, widgets, page);
+            model.addWidgetAt(widgetId, cell.col, cell.row, widgets, page, cell);
             cancelInteraction();
         });
         return true;

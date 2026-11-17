@@ -24,6 +24,7 @@ Item {
     property var pinnedCells: null
     property real heldHeight: 0
     property real pinnedHeight: 0
+    property var pinnedLayout: null
     property point dragScenePoint: Qt.point(0, 0)
     // Takes (sourceIndex, scenePoint, rect) with the dragged item's unsnapped rect; true while it hovers a target
     // outside the grid, which holds the grid still.
@@ -42,6 +43,7 @@ Item {
     // whether gravity would lift the dragged item back above where it was dropped.
     property var packer: null
     property real rowStep: 1
+    property int rowLimit: 0
     readonly property alias tileModel: tiles
     readonly property bool interacting: draggingSourceIndex >= 0 || sizePreview !== null || externalItem !== null
     readonly property real layoutHeight: interacting ? Math.max(heldHeight, slotLayout.totalHeight) : slotLayout.totalHeight
@@ -54,13 +56,14 @@ Item {
         if (interactingIndex < 0 || !changes)
             return items;
         const changed = items.map((item, i) => i === interactingIndex ? Object.assign({}, item, changes) : item);
-        return gravity && dragCell && draggingSourceIndex >= 0 ? GridUtils.dropInto(changed, pinnedCells, draggingSourceIndex, dragCell, packer, rowStep) : changed;
+        return gravity && dragCell && draggingSourceIndex >= 0 ? GridUtils.dropInto(changed, pinnedCells, draggingSourceIndex, dragCell, packer, rowStep, rowLimit) : changed;
     }
 
     implicitHeight: Math.max(minimumHeight, layoutHeight) + contentPadding * 2
     height: implicitHeight
 
     function pin() {
+        pinnedLayout = slotLayout;
         pinnedCells = slotLayout.slots.slice();
         heldHeight = slotLayout.totalHeight;
         pinnedHeight = heldHeight;
@@ -73,11 +76,12 @@ Item {
         externalItem = null;
         heldOutside = false;
         pinnedCells = null;
+        pinnedLayout = null;
         heldHeight = 0;
     }
 
     function committedItems() {
-        return GridUtils.placedItems(layoutItems, slotLayout.slots);
+        return GridUtils.placedItems(layoutItems, slotLayout.commitSlots ?? slotLayout.slots);
     }
 
     function syncTiles() {
@@ -125,7 +129,7 @@ Item {
     }
 
     function updateDragTarget(x, y) {
-        const slot = draggingSourceIndex >= 0 ? slotLayout.slots[draggingSourceIndex] : null;
+        const slot = draggingSourceIndex >= 0 ? (slotLayout.commitSlots ?? slotLayout.slots)[draggingSourceIndex] : null;
         if (!slot)
             return;
         heldOutside = dragsOutside?.(draggingSourceIndex, dragScenePoint, Qt.rect(x - contentPadding, y - contentPadding, slot.w, slot.h)) ?? false;
@@ -133,7 +137,12 @@ Item {
             dragCell = null;
             return;
         }
-        const cell = GridUtils.cellAt(slotLayout, x - contentPadding, y - contentPadding, slot.cols, slot.rows);
+        const point = mapFromItem(null, dragScenePoint.x, dragScenePoint.y);
+        if (!GridUtils.inRows(pinnedLayout ?? slotLayout, point.y - contentPadding, rowLimit)) {
+            dragCell = null;
+            return;
+        }
+        const cell = GridUtils.cellAt(slotLayout, x - contentPadding, y - contentPadding, slot.cols, slot.rows, rowLimit);
         if (dragCell && dragCell.col === cell.col && dragCell.row === cell.row)
             return;
         dragCell = cell;
@@ -151,13 +160,13 @@ Item {
             commitHandler?.(items);
     }
 
-    function previewExternal(item, x, y) {
+    function previewExternal(item, x, y, target = null) {
         if (!editMode || draggingSourceIndex >= 0 || sizePreview)
             return;
         if (!pinnedCells)
             pin();
-        const cell = GridUtils.cellAt(slotLayout, x - contentPadding, y - contentPadding, item.w, item.h);
-        if (externalItem?.col === cell.col && externalItem?.row === cell.row)
+        const cell = target ?? GridUtils.cellAt(slotLayout, x - contentPadding, y - contentPadding, item.w, item.h, rowLimit);
+        if (externalItem?.id === item.id && externalItem?.w === item.w && externalItem?.h === item.h && externalItem?.col === cell.col && externalItem?.row === cell.row)
             return;
         externalItem = Object.assign({}, item, cell);
     }
@@ -170,10 +179,12 @@ Item {
     function previewSize(index, changes) {
         if (!editMode || draggingSourceIndex >= 0 || !sourceItems[index])
             return;
-        if (sizePreview?.index === index && JSON.stringify(sizePreview.changes) === JSON.stringify(changes))
-            return;
         if (!pinnedCells)
             pin();
+        if (rowLimit > 0 && changes.h !== undefined)
+            changes = Object.assign({}, changes, { "h": Math.min(changes.h, rowLimit - pinnedCells[index].row) });
+        if (sizePreview?.index === index && JSON.stringify(sizePreview.changes) === JSON.stringify(changes))
+            return;
         sizePreview = {
             "index": index,
             "changes": changes

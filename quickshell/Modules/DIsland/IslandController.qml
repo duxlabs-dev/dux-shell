@@ -677,8 +677,8 @@ QtObject {
     readonly property real launcherMaxHeight: Math.min(dashboardAvailableHeight, LauncherMetrics.sizeHeight(SettingsData.dankLauncherV2Size, LauncherMetrics.islandEdgeInset, false))
     readonly property real launcherContentHeight: destinationContentHeight("launcher")
     readonly property var launcherExpandedTarget: sheetTarget(Math.min(dashboardAvailableWidth, LauncherMetrics.sizeWidth(SettingsData.dankLauncherV2Size)), launcherContentHeight > 0 ? Math.min(launcherMaxHeight, launcherContentHeight) : launcherMaxHeight)
-    function controlCenterTargetFor(bodyWidth) {
-        const target = sheetTarget(bodyWidth + controlCenterDockReserve, controlCenterHeight);
+    function controlCenterTargetFor(bodyWidth, height = controlCenterHeight) {
+        const target = sheetTarget(bodyWidth + controlCenterDockReserve, height);
         const offset = controlCenterDockReserve / 2 * (controlCenterDockSide === "left" ? -1 : 1);
         if (!isVertical)
             target.offsetAlong += offset;

@@ -92,6 +92,10 @@ DPopout {
     readonly property int gridColumns: Math.min(CcMetrics.gridColumns, gridColumnCap)
     readonly property real sheetContentWidth: CcMetrics.sheetWidthFor(gridColumns)
     readonly property real availableHeight: _maxPopupHeight(0)
+
+    function resizeYFor(height) {
+        return alignedYFor(topOverflow, bottomOverflow, height);
+    }
     property bool powerMenuOpen: powerMenuModalLoader?.item?.shouldBeVisible ?? false
     property var colorPickerModal: null
     property var powerMenuModalLoader: null

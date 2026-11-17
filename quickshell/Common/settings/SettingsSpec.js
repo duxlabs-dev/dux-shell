@@ -636,6 +636,10 @@ var LOCAL_SPEC = {
     controlCenterColumns: {
         def: 8
     },
+    controlCenterRows: {
+        def: 0,
+        coerce: v => Number.isInteger(v) && v >= 0 ? v : undefined
+    },
     controlCenterIconScale: {
         def: 1.0
     },

@@ -13,6 +13,7 @@ import "./utils/sections.js" as Sections
 import "./utils/widgets.js" as WidgetUtils
 import "./utils/pages.js" as Pages
 import "../../Common/GridLayout.js" as GridUtils
+import "../../Common/ControlCenterLayout.js" as PanelLayout
 
 FocusScope {
     id: root
@@ -22,13 +23,20 @@ FocusScope {
     property bool live: Window.window?.visible ?? false
     readonly property bool hostOpen: host.shouldBeVisible ?? false
     property bool audioRefHeld: false
+    property bool ready: false
 
     LayoutMirroring.enabled: I18n.isRtl
     LayoutMirroring.childrenInherit: true
 
     readonly property string openSection: host.expandedSection ?? ""
     readonly property bool pageOpen: openSection !== ""
-    readonly property int usedPageCount: Pages.pageCount(SettingsData.controlCenterWidgets || [], widget => widgetModel.isTileShown(widget))
+    // Fixed rows paginate unsaved for this host's columns, so a narrower screen or a tile becoming available never hides tiles.
+    // A height drag previews from its grab snapshot and saves only on release.
+    readonly property var layoutWidgets: {
+        const base = resizeBase?.vertical ? resizeBase.widgets : SettingsData.controlCenterWidgets || [];
+        return fixedHeight ? rowLayout(base, gridColumns, fixedRows, (resizeBase?.vertical ?? false) && fixedRows > resizeBase.rows) : base;
+    }
+    readonly property int usedPageCount: Pages.pageCount(layoutWidgets, widget => widgetModel.isTileShown(widget))
     // Edit mode adds an empty page after the last used one to drop or add on.
     readonly property int pageCount: usedPageCount + (host.editMode ? 1 : 0)
     readonly property CcTileGrid widgetGrid: pager.currentItem as CcTileGrid
@@ -85,30 +93,52 @@ FocusScope {
     readonly property var addHint: addSpot ?? addPin
 
     // A function, so plugin widget components are only instantiated once a sheet or panel asks.
-    function addableWidgets() {
+    function addableWidgets(fitSpot = false) {
         const existingIds = placedWidgetIds.split(",");
         const allWidgets = widgetModel.baseWidgetDefinitions.concat(widgetModel.getPluginWidgets());
-        return allWidgets.filter(w => w.allowMultiple || !existingIds.includes(w.id));
+        return allWidgets.filter(widget => {
+            if (!widget.allowMultiple && existingIds.includes(widget.id))
+                return false;
+            return !fitSpot || canAddAtPin(widget.id);
+        });
+    }
+
+    function canAddAtPin(widgetId) {
+        if (!addPin || addPin.page !== pager.currentIndex)
+            return true;
+        const tile = WidgetUtils.defaultWidget(widgetId, gridColumns);
+        return WidgetUtils.placedInRoom(tile, gridColumns, addPin.col, addPin.row, addPin.room) !== null;
     }
     // A spare row to drop below the last one, only where growth leaves the grid still.
-    readonly property real dragRoom: gridDragging && (host.growsFromTop ?? true) && restingGridHeight + newRowUnit <= availableGridHeight ? newRowUnit : 0
+    readonly property real dragRoom: !fixedHeight && gridDragging && (host.growsFromTop ?? true) && restingGridHeight + newRowUnit <= availableGridHeight ? newRowUnit : 0
     readonly property real newRowUnit: CcMetrics.gridGap + (widgetGrid?.slotLayout.rowUnit ?? 0)
     // Held during a drag so the trash never moves under the pointer.
     readonly property real heldGridHeight: gridDragging ? restingGridHeight + dragRoom : gridHeight
     // The popout sizes to where the band is going; the content inside follows the band frame by frame.
-    readonly property real targetImplicitHeight: CcMetrics.sheetPadding * 2 + (gridDragging ? heldGridHeight : gridTargetHeight)
+    readonly property real targetImplicitHeight: CcMetrics.gridVerticalPadding + (fixedHeight ? Math.max(fixedGridHeight, gridDragging ? heldGridHeight : gridTargetHeight) : gridDragging ? heldGridHeight : gridTargetHeight)
     readonly property bool contentOverflows: targetImplicitHeight > (host.availableHeight ?? Infinity)
     property Item detailReturnFocus: null
     // One string so Discard and undo can compare and restore the whole session state at once.
     readonly property string editState: JSON.stringify({
         "widgets": SettingsData.controlCenterWidgets || [],
-        "columns": SettingsData.controlCenterColumns
+        "columns": SettingsData.controlCenterColumns,
+        "rows": SettingsData.controlCenterRows
     })
     property string editSnapshot: ""
     property string undoBase: ""
     property var undoStack: []
     readonly property int undoLimit: 50
     property bool undoBatching: false
+    property int rowPreview: -1
+    property var resizeBase: null
+    property bool repaginating: false
+    readonly property int panelRows: rowPreview >= 0 ? rowPreview : SettingsData.controlCenterRows
+    readonly property bool fixedHeight: panelRows > 0
+    readonly property int rowCap: CcMetrics.rowCapFor(availableGridHeight)
+    readonly property int fixedRows: Math.max(CcMetrics.minimumRows, panelRows)
+    readonly property var pageLayouts: pageGrids.map(item => (item as CcTileGrid).baseLayout)
+    readonly property real fixedGridHeight: PanelLayout.heightForRows(pageLayouts, fixedRows, CcMetrics.gridRowUnit, CcMetrics.gridGap)
+    readonly property int naturalRows: Math.max(CcMetrics.minimumRows, ...pageLayouts.map(layout => Math.ceil(layout.rows)))
     readonly property bool editIdle: !libraryDragging && carrySource === null && !(widgetGrid?.interacting ?? false) && !(widgetGrid?.memberDragging ?? false) && !panelResizing
     readonly property bool canUndo: host.editMode && undoStack.length > 0 && editIdle && !widgetSheetOpen && !pageOpen
     readonly property bool panelResizing: panelResizer.resizing
@@ -119,7 +149,8 @@ FocusScope {
     readonly property bool sheetsDim: !CcMetrics.hideCoveredContent || Math.min(surfaceCornerRadii.x, surfaceCornerRadii.y, surfaceCornerRadii.z, surfaceCornerRadii.w) > 0
     readonly property int gridColumnCap: host.gridColumnCap ?? CcMetrics.columnCapFor((host.triggerScreen?.width ?? CcMetrics.sheetWidthDefault + Theme.spacingL * 2) - Theme.spacingL * 2)
     readonly property int gridColumns: host.gridColumns ?? Math.min(CcMetrics.gridColumns, gridColumnCap)
-    readonly property real availableGridHeight: (host.availableHeight ?? (host.triggerScreen?.height ?? CcMetrics.fallbackScreenHeight) - CcMetrics.maxHeightInset) - CcMetrics.sheetPadding * 2 - editRoom
+    readonly property real availableGridHeight: (host.availableHeight ?? (host.triggerScreen?.height ?? CcMetrics.fallbackScreenHeight) - CcMetrics.maxHeightInset) - CcMetrics.gridVerticalPadding - editRoom
+    readonly property real pageGridHeight: fixedHeight ? Math.min(availableGridHeight, fixedGridHeight) : availableGridHeight
     readonly property DPanelResizer panelResizer: DPanelResizer {
         popout: root.host
         pointerItem: panelChrome
@@ -127,14 +158,43 @@ FocusScope {
         stepWidth: CcMetrics.columnWidth + CcMetrics.gridGap
         widthFor: columns => CcMetrics.sheetWidthFor(columns) + root.sheetContentWidth - CcMetrics.sheetWidthFor(root.gridColumns)
         currentStep: () => root.gridColumns
+        currentRows: () => Math.min(root.rowCap, root.fixedHeight ? root.fixedRows : root.naturalRows)
         minStep: Math.min(CcMetrics.minimumColumns, root.gridColumnCap)
         maxStep: root.gridColumnCap
-        onPreview: columns => CcMetrics.columnPreview = columns
-        onCommitted: columns => {
-            SettingsData.set("controlCenterColumns", columns);
-            CcMetrics.columnPreview = 0;
+        rowEdgeFor: rows => {
+            const gridHeight = PanelLayout.heightForRows(root.pageLayouts, rows, CcMetrics.gridRowUnit, CcMetrics.gridGap);
+            // Logical edges stay distinct below the dock floor, so a smaller height can be chosen before Finish.
+            const height = CcMetrics.gridVerticalPadding + gridHeight + root.chromeHeight;
+            return root.host.resizeYFor(height) + ((root.host.growsFromTop ?? true) ? height : 0);
         }
-        onCanceled: CcMetrics.columnPreview = 0
+        minRows: Math.min(root.rowCap, CcMetrics.minimumRows)
+        maxRows: root.rowCap
+        onPreview: (columns, rows) => {
+            CcMetrics.columnPreview = columns;
+            if (root.resizeBase?.vertical)
+                root.rowPreview = rows;
+        }
+        onCommitted: (columns, rows, columnsChanged, rowsChanged) => {
+            const base = root.resizeBase;
+            root.batchEdit(() => {
+                if (base.vertical && rowsChanged && rows > 0)
+                    root.applyRowLayout(base.widgets, columns, rows, rows > base.rows);
+                if (columnsChanged)
+                    SettingsData.set("controlCenterColumns", columns);
+                if (rowsChanged)
+                    SettingsData.set("controlCenterRows", rows);
+                CcMetrics.columnPreview = 0;
+                root.rowPreview = -1;
+                // Wider pages take back tiles a narrower layout spilled.
+                root.enforceFixedHeight(columnsChanged && columns > base.columns);
+            }, base.state);
+            root.resizeBase = null;
+        }
+        onCanceled: {
+            CcMetrics.columnPreview = 0;
+            root.rowPreview = -1;
+            root.resizeBase = null;
+        }
     }
 
     implicitHeight: targetImplicitHeight
@@ -161,6 +221,7 @@ FocusScope {
         portSelectorLoader.item?.dismiss();
     }
     Component.onCompleted: {
+        ready = true;
         WidgetUtils.ensureEditButton();
         syncAudioRef(live);
         pager.goTo(host.currentPage ?? 0, false);
@@ -242,10 +303,46 @@ FocusScope {
         if (state === "")
             return;
         const wanted = JSON.parse(state);
+        const batching = undoBatching;
+        undoBatching = true;
         if (JSON.stringify(SettingsData.controlCenterWidgets || []) !== JSON.stringify(wanted.widgets))
             SettingsData.set("controlCenterWidgets", wanted.widgets);
         if (SettingsData.controlCenterColumns !== wanted.columns)
             SettingsData.set("controlCenterColumns", wanted.columns);
+        if (SettingsData.controlCenterRows !== wanted.rows)
+            SettingsData.set("controlCenterRows", wanted.rows);
+        undoBatching = batching;
+    }
+
+    function rowLayout(widgets, columns, rows, pull = false) {
+        const sized = widgets.map(widget => {
+            if (!widgetModel.isTileShown(widget) || Pages.groupOf(widgets, widget))
+                return widget;
+            return Object.assign({}, widget, WidgetUtils.clampSize(widget, columns, rows));
+        });
+        return PanelLayout.paginate(sized, columns, rows, widget => widgetModel.isTileShown(widget), pull);
+    }
+
+    function applyRowLayout(widgets, columns, rows, pull = false) {
+        const next = rowLayout(widgets, columns, rows, pull);
+        if (JSON.stringify(next) !== JSON.stringify(SettingsData.controlCenterWidgets))
+            SettingsData.set("controlCenterWidgets", next);
+    }
+
+    // An untouched layout stays a projection, so opening edit on a narrower host never rewrites its pages.
+    function enforceFixedHeight(pull = false) {
+        if (!ready || !hostOpen || !host.editMode || !fixedHeight || repaginating || !editIdle || editState === editSnapshot)
+            return;
+        repaginating = true;
+        applyRowLayout(SettingsData.controlCenterWidgets || [], gridColumns, fixedRows, pull);
+        repaginating = false;
+    }
+
+    function setFixedHeight(enabled) {
+        batchEdit(() => {
+            SettingsData.set("controlCenterRows", enabled ? Math.min(rowCap, naturalRows) : 0);
+            enforceFixedHeight();
+        });
     }
 
     // Restored before leaving, so the exit compacts the snapshot and never writes the discarded layout.
@@ -278,6 +375,8 @@ FocusScope {
     onEditIdleChanged: {
         if (!editIdle)
             addPin = null;
+        else if (!repaginating)
+            settleEdit.schedule();
     }
     onCarriedIndexChanged: {
         if (carriedIndex >= 0 || !carrySource)
@@ -325,8 +424,9 @@ FocusScope {
     function showSectionPage(animate) {
         if (openSection === "")
             return;
-        const widgets = SettingsData.controlCenterWidgets || [];
-        const widget = Sections.widgetForSection(openSection);
+        // The grid shows the unsaved pagination, not the saved pages.
+        const widgets = layoutWidgets;
+        const widget = Sections.widgetForSection(openSection, widgets);
         bandPage = Math.max(0, Math.min(widget ? Pages.pageOf(Pages.groupOf(widgets, widget) ?? widget) : pager.currentIndex, pager.count - 1));
         if (bandPage !== pager.currentIndex)
             pager.goTo(bandPage, animate && live);
@@ -334,15 +434,38 @@ FocusScope {
 
     onEditStateChanged: {
         addPin = null;
-        if (!host.editMode || undoBatching || editState === undoBase)
+        if (!repaginating && !undoBatching)
+            settleEdit.schedule();
+    }
+
+    // Settings changes must finish syncing every grid before pagination can write again.
+    DeferredAction {
+        id: settleEdit
+        enabled: root.ready && root.hostOpen && root.host.editMode
+        onEnabledChanged: {
+            if (enabled)
+                schedule();
+        }
+        onTriggered: root.trackEditState()
+    }
+
+    function trackEditState() {
+        if (!ready || !hostOpen || repaginating || !editIdle || resizeBase !== null || undoBatching)
+            return;
+        enforceFixedHeight();
+        if (!host.editMode || editState === undoBase)
             return;
         undoStack = undoStack.concat([undoBase]).slice(-undoLimit);
         undoBase = editState;
     }
 
+    onPageGridHeightChanged: {
+        if (!repaginating && !undoBatching && resizeBase === null)
+            settleEdit.schedule();
+    }
+
     // Keeps the intermediate states of a multi-key write out of the undo stack.
-    function batchEdit(change) {
-        const before = editState;
+    function batchEdit(change, before = editState) {
         undoBatching = true;
         change();
         undoBatching = false;
@@ -413,7 +536,7 @@ FocusScope {
         carryGroupId = group?.groupId ?? "";
         carryHover = group ? "group" : trashTakesGridDrag(scenePoint) ? "trash" : "";
         const point = grid.mapFromItem(null, scenePoint.x, scenePoint.y);
-        if (carryHover !== "" || !grid.contains(point))
+        if (carryHover !== "" || !grid.acceptsDrop(scenePoint))
             grid.clearExternal();
         else
             grid.previewExternal(carrySource.sourceItems[carriedIndex], point.x - carryOffset.x, point.y - carryOffset.y);
@@ -441,20 +564,21 @@ FocusScope {
         const groupId = group?.groupId ?? "";
         const before = group ? group.savedIndexAtSlot(group.incomingSlot) : -1;
         const trashed = carryHover === "trash";
+        const placedOnPage = target !== source && target.externalItem !== null && target.acceptsDrop(source.dragScenePoint);
         let cell = null;
         let base = null;
-        if (target !== source && target.externalItem) {
+        if (placedOnPage) {
             const placed = target.committedItems();
             cell = placed.pop();
             base = target.withHidden(placed);
         }
-        carryDropped = target !== source;
+        carryDropped = placedOnPage || trashed || groupId !== "";
         Qt.callLater(() => {
             if (groupId !== "")
                 WidgetUtils.moveToGroup(savedIndex, groupId, before);
             else if (trashed)
                 widgetModel.removeWidget(savedIndex);
-            else if (target !== source)
+            else if (placedOnPage)
                 widgetModel.moveToPage(savedIndex, page, base, cell);
             target.cancelInteraction();
             source.cancelInteraction();
@@ -488,12 +612,14 @@ FocusScope {
 
     function addWidget(widgetId) {
         const pin = addPin;
-        addPin = null;
         if (pin?.page === pager.currentIndex) {
-            widgetModel.addWidget(widgetId, pin.col, pin.row, pin.page, pin.room);
-            return;
+            if (!widgetModel.addWidget(widgetId, pin.col, pin.row, pin.page, pin.room))
+                return false;
+        } else {
+            widgetModel.addWidget(widgetId, undefined, undefined, pager.currentIndex);
         }
-        widgetModel.addWidget(widgetId, undefined, undefined, pager.currentIndex);
+        addPin = null;
+        return true;
     }
 
     // Edit chrome overhangs a tile's corners, so the spot stays hidden near them.
@@ -506,7 +632,7 @@ FocusScope {
         const nearCorner = slot => slot && [slot.x, slot.x + slot.w].some(x => Math.abs(point.x - x) <= reach) && [slot.y, slot.y + slot.h].some(y => Math.abs(point.y - y) <= reach);
         if (grid.slotLayout.slots.some(nearCorner))
             return null;
-        const cell = GridUtils.freeCellAt(grid.slotLayout, point.x, point.y, grid.height);
+        const cell = GridUtils.freeCellAt(grid.slotLayout, point.x, point.y, grid.height, grid.rowLimit);
         if (!cell)
             return null;
         const origin = body.mapFromItem(grid, cell.x, cell.y);
@@ -514,7 +640,7 @@ FocusScope {
             "page": pager.currentIndex,
             "col": cell.col,
             "row": cell.row,
-            "room": GridUtils.freeRun(grid.slotLayout, cell.col, cell.row),
+            "room": { "layout": grid.slotLayout, "rowLimit": grid.rowLimit },
             "x": origin.x,
             "y": origin.y,
             "w": cell.w,
@@ -689,20 +815,24 @@ FocusScope {
         anchors.bottomMargin: (root.host.panelChromeInset ?? 0) - contentInset - (editActions.visible && editActions.joined && !root.stripAbove ? editActions.height : 0)
         z: 1
         visible: root.host.editMode
-        enabled: detailBand.shownSection === "" && !root.widgetSheetOpen
+        enabled: detailBand.shownSection === "" && !root.widgetSheetOpen && !root.widgetPopoverOpen
         edgeResize: root.panelResizing ? resizeSide < 0 : root.panelResizer.sideMovable(-1, root.gridColumns)
         cornerResize: root.panelResizing ? resizeSide > 0 : root.panelResizer.sideMovable(1, root.gridColumns)
         horizontalResize: true
+        verticalResize: root.fixedHeight
+        verticalResizeAbove: !(root.host.growsFromTop ?? true)
+        verticalResizeOffset: pageDots.visible && !verticalResizeAbove ? Math.min(Math.max(0, (width - contentInset * 2 - touchTargetSize) / 2), (pageDots.implicitWidth + touchTargetSize) / 2 + Theme.spacingS) : 0
         removable: false
         // Frame-attached corners are square, but the ring keeps the surface radius.
         cornerRadius: root.surfaceRadius
         buttonSize: Theme.iconSize
         iconSize: PopoutMetrics.chromeIconSize
         resizing: root.panelResizing
-        atDefault: root.gridColumns === Math.min(CcMetrics.defaultColumns, root.gridColumnCap)
-        sizeText: root.gridColumns + "×" + (root.widgetGrid?.slotLayout.rows ?? 0)
+        atDefault: !root.fixedHeight && root.gridColumns === Math.min(CcMetrics.defaultColumns, root.gridColumnCap)
+        sizeText: root.gridColumns + "×" + (root.fixedHeight ? root.fixedRows : root.widgetGrid?.slotLayout.rows ?? 0)
         onResizeStarted: (px, py, signX) => {
             resizeSide = signX;
+            root.resizeBase = { "widgets": SettingsData.controlCenterWidgets, "rows": root.panelResizer.currentRows(), "columns": root.gridColumns, "vertical": signX === 0, "state": root.editState };
             root.panelResizer.begin(px, py, signX);
         }
         onResizeMoved: (px, py) => root.panelResizer.move(px, py)
@@ -714,6 +844,7 @@ FocusScope {
         id: widgetModel
         columns: root.gridColumns
         maximumRows: root.widgetGrid?.maximumRows ?? CcMetrics.rowCapFor(root.availableGridHeight)
+        prepareLayout: widgets => root.fixedHeight ? root.rowLayout(widgets, root.gridColumns, root.fixedRows) : widgets
     }
 
     Rectangle {
@@ -744,11 +875,23 @@ FocusScope {
         anchors.right: parent.right
         anchors.top: parent.top
         anchors.bottom: parent.bottom
-        anchors.bottomMargin: root.chromeHeight
+        anchors.bottomMargin: root.chromeHeight + CcMetrics.pageFooterHeight
         clip: contentHeight > height
         contentWidth: width
-        contentHeight: Math.max(height, mainColumn.y + mainColumn.implicitHeight + CcMetrics.sheetPadding)
+        contentHeight: Math.max(height, mainColumn.y + mainColumn.implicitHeight)
         interactive: contentHeight > height
+
+        MouseArea {
+            width: root.sheetContentWidth
+            height: contentFlickable.contentHeight
+            z: -1
+            enabled: root.hostOpen && !root.host.editMode && !root.pageOpen && !root.widgetSheetOpen && !root.widgetPopoverOpen && !pager.moving && !root.host.powerMenuOpen
+            acceptedButtons: Qt.RightButton
+            onPressed: mouse => {
+                mouse.accepted = !(root.widgetGrid?.containsTile(mapToItem(null, mouse.x, mouse.y)) ?? false);
+            }
+            onClicked: root.host.editMode = true
+        }
 
         Column {
             id: mainColumn
@@ -762,7 +905,7 @@ FocusScope {
                 id: body
 
                 width: parent.width
-                height: Math.max(root.gridHeight, root.heldGridHeight)
+                height: Math.max(root.fixedHeight ? root.fixedGridHeight : 0, root.gridHeight, root.heldGridHeight)
                 opacity: CcMetrics.hideCoveredContent ? 1 - root.coveredAmount : 1
 
                 HoverHandler {
@@ -862,7 +1005,7 @@ FocusScope {
                     id: pager
 
                     width: parent.width
-                    height: parent.height
+                    height: Math.max(parent.height, contentFlickable.height - CcMetrics.sheetPadding)
                     count: root.pageCount
                     gutter: CcMetrics.sheetPadding
                     swipeEnabled: root.swipeAllowed
@@ -887,10 +1030,14 @@ FocusScope {
                         readonly property bool holdsBand: index === root.bandPage
 
                         page: index
+                        savedWidgets: root.layoutWidgets
+                        overflowHost: overflowLayer
+                        scrollOffset: contentFlickable.contentY
                         columns: root.gridColumns
-                        availableHeight: root.availableGridHeight
+                        availableHeight: root.pageGridHeight
+                        rowLimit: root.fixedHeight ? root.fixedRows : 0
                         // Short and empty pages must accept drops across the available panel height.
-                        minimumHeight: Math.max(pager.height, contentFlickable.height - CcMetrics.sheetPadding * 2)
+                        minimumHeight: Math.max(pager.height, contentFlickable.height - CcMetrics.sheetPadding)
                         editMode: root.host.editMode
                         model: widgetModel
                         live: root.host.shouldBeVisible && pager.pageShown(index)
@@ -935,6 +1082,20 @@ FocusScope {
                     }
                 }
 
+                StyledText {
+                    parent: pager
+                    readonly property real reserveTop: Math.min(pager.height, root.widgetGrid?.dropHeight ?? body.height)
+                    x: Theme.spacingXL
+                    y: reserveTop + (pager.height - reserveTop - height) / 2
+                    width: Math.max(0, pager.width - Theme.spacingXL * 2)
+                    visible: root.host.editMode && root.fixedHeight && (root.editIdle || root.libraryDragging || (root.widgetGrid?.overflowPreview ?? false)) && !pager.moving && !root.pageOpen && !root.widgetSheetOpen && !root.widgetPopoverOpen && pager.height - reserveTop >= implicitHeight + Theme.spacingXL * 2
+                    text: (root.widgetGrid?.overflowPreview ?? false) ? I18n.tr("Overflow moves to the next page") : reserveTop < body.height ? I18n.tr("Space reserved for stable page height") : I18n.tr("Space reserved for editing\nFinish to apply the selected height.")
+                    font.pixelSize: Theme.fontSizeSmall
+                    color: Theme.surfaceVariantText
+                    horizontalAlignment: Text.AlignHCenter
+                    wrapMode: Text.WordWrap
+                }
+
                 CcDetailBand {
                     id: detailBand
 
@@ -973,7 +1134,7 @@ FocusScope {
                     x: mainColumn.x + body.x + pager.x
                     y: CcMetrics.sheetPadding
                     width: pager.width
-                    height: Math.max(0, contentFlickable.height - CcMetrics.sheetPadding * 2)
+                    height: Math.max(0, contentFlickable.height - CcMetrics.sheetPadding)
                     z: 2
                     active: root.host.editMode
                     sourceComponent: CcPageEdge {
@@ -990,15 +1151,25 @@ FocusScope {
         CcPageDots {
             id: pageDots
 
+            parent: root
+            z: panelChrome.z + 1
             x: mainColumn.x
-            // Centered in the bottom padding, so the last row sits as close to the dots as the dots to the edge.
-            y: mainColumn.y + body.height + (CcMetrics.sheetPadding - height) / 2
+            y: contentFlickable.y + contentFlickable.height
             width: mainColumn.width
             count: pager.count
             currentIndex: pager.currentIndex
             opacity: body.opacity
             enabled: root.editIdle
             onPageRequested: index => pager.goTo(index)
+
+            // The dots sit outside the pager, so a swipe over them pages too.
+            MouseArea {
+                anchors.fill: parent
+                acceptedButtons: Qt.NoButton
+                cursorShape: undefined
+                enabled: pager.swipeEnabled && pager.count > 1
+                onWheel: event => pager.wheelBy(event)
+            }
         }
     }
 
@@ -1006,7 +1177,7 @@ FocusScope {
         id: editActions
 
         x: 0
-        y: root.editRoom > 0 ? Math.max(root.height - root.editRoom, CcMetrics.sheetPadding * 2 + root.heldGridHeight) + (root.editRoom - height) / 2 : (root.stripAbove ? -height : root.height)
+        y: root.editRoom > 0 ? Math.max(root.height - root.editRoom, CcMetrics.gridVerticalPadding + root.heldGridHeight) + (root.editRoom - height) / 2 : (root.stripAbove ? -height : root.height)
         width: root.sheetContentWidth
         height: implicitHeight
         // Below the edit rings so the trash fill never covers them.
@@ -1024,8 +1195,18 @@ FocusScope {
         cornerRadii: root.surfaceCornerRadii
         opacity: body.opacity
         canUndo: root.canUndo
+        fixedHeight: root.fixedHeight
         onAddWidgetRequested: root.openWidgetSheet()
         onUndoRequested: root.undoEdit()
+        onHeightModeRequested: fixed => root.setFixedHeight(fixed)
+
+        MouseArea {
+            anchors.fill: parent
+            acceptedButtons: Qt.NoButton
+            cursorShape: undefined
+            enabled: editActions.editMode && pager.swipeEnabled && pager.count > 1
+            onWheel: event => pager.wheelBy(event)
+        }
         onResetRequested: root.resetLayout()
         onClearRequested: root.clearLayout()
         onFinishRequested: root.host.editMode = false
@@ -1054,6 +1235,7 @@ FocusScope {
         enabled: detailBand.shownSection === ""
         sourceComponent: CcDockedEditPanel {
             widgets: root.addableWidgets()
+            canAdd: widgetId => root.canAddAtPin(widgetId)
             grid: root.widgetGrid
             pageMoving: pager.moving
             prepareDrop: () => pager.goTo(pager.currentIndex, false)
@@ -1061,6 +1243,7 @@ FocusScope {
             floating: !root.docked
             fadeOut: root.gridDragWidget !== null
             canUndo: root.canUndo
+            fixedHeight: root.fixedHeight
             removeTarget: root.docked && root.overTrash
             // Docked it matches the body, opaque where blur can't reach; floating it sits a tier up and hides the tiles.
             surfaceColor: {
@@ -1072,6 +1255,7 @@ FocusScope {
             onCloseRequested: root.widgetPopoverOpen = false
             onAddRequested: widgetId => root.addWidget(widgetId)
             onUndoRequested: root.undoEdit()
+            onHeightModeRequested: fixed => root.setFixedHeight(fixed)
             onResetRequested: root.resetLayout()
             onClearRequested: root.clearLayout()
             onFinishRequested: root.host.editMode = false
@@ -1134,13 +1318,25 @@ FocusScope {
             scrimRadii: root.surfaceCornerRadii
             scrimVisible: root.sheetsDim
             surfaceColor: CcMetrics.dialogColor
-            widgets: root.addableWidgets()
+            widgets: root.addableWidgets(true)
             onDismissRequested: opened = false
             onChosen: widgetId => {
-                root.addWidget(widgetId);
-                opened = false;
+                if (root.addWidget(widgetId))
+                    opened = false;
             }
         }
+    }
+
+    // Spilling tiles paint above the dock's drag ghost and clip at the viewport, so they leave like a page swipe.
+    Item {
+        id: overflowLayer
+
+        x: contentFlickable.x
+        y: contentFlickable.y
+        width: contentFlickable.width
+        height: contentFlickable.height
+        z: CcMetrics.overlayZ + 2
+        clip: true
     }
 
     // The slot keeps the pointer grab; its preview escapes scrolling clips and paints above the dock.

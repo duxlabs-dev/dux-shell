@@ -132,8 +132,8 @@ Item {
         return impl.item?.alignedXFor(width) ?? 0;
     }
 
-    function alignedYFor(overTop, overBottom) {
-        return impl.item?.alignedYFor(overTop, overBottom) ?? 0;
+    function alignedYFor(overTop, overBottom, height = popupHeight) {
+        return impl.item?.alignedYFor(overTop, overBottom, height) ?? 0;
     }
     readonly property vector4d surfaceCornerRadii: impl.item?.surfaceCornerRadii ?? Qt.vector4d(Theme.windowRadius, Theme.windowRadius, Theme.windowRadius, Theme.windowRadius)
     readonly property real maskX: impl.item ? impl.item.maskX : 0

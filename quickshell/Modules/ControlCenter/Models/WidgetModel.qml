@@ -14,6 +14,7 @@ QtObject {
 
     property int columns: CcMetrics.gridColumns
     property int maximumRows: CcMetrics.rowCapFor(CcMetrics.fallbackScreenHeight)
+    property var prepareLayout: null
     property var builtinInstances: ({})
     readonly property var _pluginWidgetsCache: ({})
 
@@ -121,6 +122,9 @@ QtObject {
     readonly property Component actionTile: Component {
         ActionTile {}
     }
+    readonly property Component spacerTile: Component {
+        SpacerTile {}
+    }
     readonly property Component runningAppsTile: Component {
         RunningAppsTile {}
     }
@@ -193,6 +197,8 @@ QtObject {
             return runningAppsTile;
         case "quickTiles":
             return quickTilesGroup;
+        case "spacer":
+            return spacerTile;
         default:
             return null;
         }
@@ -251,7 +257,7 @@ QtObject {
             "id": "edit",
             "text": I18n.tr("Edit"),
             "description": I18n.tr("Edit widgets"),
-            "icon": "edit",
+            "icon": "dashboard_customize",
             "type": "action",
             "category": "system",
             "enabled": true
@@ -270,6 +276,16 @@ QtObject {
             "text": I18n.tr("Quick tiles", "control center widget that holds small tiles in one row"),
             "description": I18n.tr("Drag small tiles in to group them", "control center quick tiles widget description"),
             "icon": "view_module",
+            "type": "action",
+            "category": "system",
+            "enabled": true,
+            "allowMultiple": true
+        },
+        {
+            "id": "spacer",
+            "text": I18n.tr("Spacer"),
+            "description": I18n.tr("Empty space"),
+            "icon": "crop_free",
             "type": "action",
             "category": "system",
             "enabled": true,
@@ -530,12 +546,12 @@ QtObject {
     }
 
     function addWidget(widgetId, col, row, page, room) {
-        WidgetUtils.addWidget(widgetId, columns, col, row, undefined, page, room);
+        return WidgetUtils.addWidget(widgetId, columns, col, row, undefined, page, room, prepareLayout);
     }
 
     // `placedItems` is the grid's layout with the new tile's slot removed; the caller passes it through withHidden().
-    function addWidgetAt(widgetId, col, row, placedItems, page) {
-        WidgetUtils.addWidget(widgetId, columns, col, row, placedItems, page);
+    function addWidgetAt(widgetId, col, row, placedItems, page, size) {
+        WidgetUtils.addWidget(widgetId, columns, col, row, placedItems, page, undefined, prepareLayout, size);
     }
 
     function removeWidget(index) {
@@ -555,7 +571,7 @@ QtObject {
     }
 
     function setLayout(widgets) {
-        WidgetUtils.setLayout(widgets);
+        WidgetUtils.setLayout(prepareLayout ? prepareLayout(widgets) : widgets);
     }
 
     function setOption(index, key, value) {

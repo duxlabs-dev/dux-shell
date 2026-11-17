@@ -461,6 +461,7 @@ Singleton {
     property int systemTrayIconTintStrength: Spec.SPEC.systemTrayIconTintStrength.def
 
     property int controlCenterColumns: Spec.SPEC.controlCenterColumns.def
+    property int controlCenterRows: Spec.SPEC.controlCenterRows.def
     property real controlCenterIconScale: Spec.SPEC.controlCenterIconScale.def
     property string controlCenterEditLayout: Spec.SPEC.controlCenterEditLayout.def
     property var controlCenterWidgets: Spec.SPEC.controlCenterWidgets.def

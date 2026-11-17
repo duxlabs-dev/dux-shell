@@ -11,7 +11,7 @@ Item {
     property int count: 0
     property int currentIndex: 0
     // Only the bottom padding, so its taps never reach the tiles above.
-    property real targetHeight: CcMetrics.sheetPadding
+    property real targetHeight: CcMetrics.pageFooterHeight
 
     signal pageRequested(int index)
 
@@ -50,7 +50,8 @@ Item {
     Row {
         id: dots
 
-        anchors.centerIn: parent
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.top: parent.top
         layoutDirection: I18n.isRtl ? Qt.RightToLeft : Qt.LeftToRight
         // The direction is already the reading order; an inherited mirror would flip it back.
         LayoutMirroring.enabled: false
@@ -64,7 +65,7 @@ Item {
                 required property int index
                 readonly property bool current: index === root.currentIndex
 
-                width: pip.width + CcMetrics.pageDotSize
+                width: pip.width + CcMetrics.pageDotSize + Theme.outlineWidth * 2
                 height: root.targetHeight
                 Accessible.role: Accessible.PageTab
                 Accessible.name: I18n.tr("Page %1 of %2", "control center page indicator, %1 is the page number, %2 the page count").arg(index + 1).arg(root.count)
@@ -74,7 +75,9 @@ Item {
                 Rectangle {
                     id: pip
 
-                    anchors.centerIn: parent
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    anchors.top: parent.top
+                    anchors.topMargin: CcMetrics.pageDotVerticalPadding
                     width: dot.current ? CcMetrics.pageDotActiveWidth : CcMetrics.pageDotSize
                     height: CcMetrics.pageDotSize
                     radius: Theme.fullRadius(width, height)

@@ -16,6 +16,7 @@ QtObject {
     property int minStep: 0
     property int maxStep: 0
     property real rowUnit: 0
+    property var rowEdgeFor: null
     property int minRows: 0
     property int maxRows: 0
     readonly property bool resizing: _drag !== null
@@ -55,14 +56,23 @@ QtObject {
         const edges = {};
         for (let candidate = minStep; candidate <= maxStep; candidate++)
             edges[candidate] = edgeFor(candidate, side);
+        const rowEdges = {};
+        if (signX === 0 && rowEdgeFor) {
+            for (let candidate = minRows; candidate <= maxRows; candidate++)
+                rowEdges[candidate] = rowEdgeFor(candidate);
+        }
         _drag = {
             "step": step,
             "rows": rows,
             "previewStep": step,
             "previewRows": rows,
             "edges": edges,
+            "rowEdges": rowEdges,
             "minStep": minStep,
             "maxStep": maxStep,
+            "minRows": minRows,
+            "maxRows": maxRows,
+            "vertical": signX === 0,
             "x": point.x,
             "y": point.y
         };
@@ -74,8 +84,14 @@ QtObject {
             return;
         const point = pointerAt(px, py);
         const wanted = drag.edges[drag.step] + point.x - drag.x;
-        const step = GridUtils.nearestStep(step => drag.edges[step], drag.step, Math.max(minStep, drag.minStep), Math.min(maxStep, drag.maxStep), wanted);
-        const rows = rowUnit > 0 ? Math.max(minRows, Math.min(maxRows, drag.rows + Math.round((point.y - drag.y) / rowUnit))) : drag.rows;
+        const step = drag.vertical ? drag.step :GridUtils.nearestStep(step => drag.edges[step], drag.step, Math.max(minStep, drag.minStep), Math.min(maxStep, drag.maxStep), wanted);
+        let rows = drag.rows;
+        if (drag.vertical && rowEdgeFor) {
+            const wantedRow = drag.rowEdges[drag.rows] + point.y - drag.y;
+            rows = GridUtils.nearestStep(rows => drag.rowEdges[rows], drag.rows, drag.minRows, drag.maxRows, wantedRow);
+        } else if (rowUnit > 0) {
+            rows = Math.max(minRows, Math.min(maxRows, drag.rows + Math.round((point.y - drag.y) / rowUnit)));
+        }
         if (step === drag.previewStep && rows === drag.previewRows)
             return;
         drag.previewStep = step;

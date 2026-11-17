@@ -73,7 +73,7 @@ var SETTINGS_MAP = {
         "desktopWidgetInstances", "desktopWidgetGroups", "desktopContextMenu"
     ],
     control_center: [
-        "controlCenterWidgets", "controlCenterColumns", "controlCenterEditLayout"
+        "controlCenterWidgets", "controlCenterColumns", "controlCenterRows", "controlCenterEditLayout"
     ],
     dashboard: [
         "dashTabs", "dashCards", "dashTabPosition", "dashTabsEvenlySpaced", "dashOptions"

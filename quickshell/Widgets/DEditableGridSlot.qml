@@ -8,7 +8,8 @@ Item {
     required property string json
     required property var grid
 
-    readonly property var slot: grid.slotLayout.slots[index] ?? null
+    property var retainedSlot: null
+    readonly property var slot: grid.slotLayout.slots[index] ?? retainedSlot
     readonly property bool dragging: grid.draggingSourceIndex === index
     readonly property bool resizing: grid.sizePreview?.index === index
     property var resizeOrigin: null

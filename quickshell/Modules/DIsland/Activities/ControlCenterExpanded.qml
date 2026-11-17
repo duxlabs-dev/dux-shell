@@ -90,7 +90,7 @@ FocusScope {
         readonly property string dockSide: (root._editLayout === "left" || root._editLayout === "right") && availableHeight >= CcMetrics.dockedPanelMinHeight && root.controller.dashboardAvailableWidth >= CcMetrics.sheetWidthFor(CcMetrics.minimumColumns) + root.inset * 2 + CcMetrics.dockedPanelWidth + CcMetrics.dockedPanelGap + PopoutMetrics.editOverflow * 2 ? root._editLayout : ""
         readonly property bool dockFits: editMode && dockSide !== ""
         readonly property bool editPopover: editMode && !dockFits && SettingsData.controlCenterEditLayout === "docked"
-        readonly property real panelChromeInset: PopoutMetrics.panelChromeInset
+        readonly property real panelChromeInset: CcMetrics.islandChromeInset
         onDockSideChanged: root.controller.controlCenterDockSide = dockSide
 
         readonly property int gridColumnCap: root.controller.controlCenterColumnCap
@@ -143,6 +143,10 @@ FocusScope {
 
         function alignedXFor(width) {
             return (root.resizeGeometry?.controlCenterXFor(width + root.inset * 2) ?? 0) + root.bodyOffset + root.inset;
+        }
+
+        function resizeYFor(height) {
+            return (root.resizeGeometry?.controlCenterYFor(height + root.inset * 2) ?? 0) + root.inset;
         }
     }
 

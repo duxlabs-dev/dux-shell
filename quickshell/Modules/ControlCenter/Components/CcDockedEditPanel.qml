@@ -16,12 +16,14 @@ Item {
     LayoutMirroring.childrenInherit: true
 
     property var widgets: []
+    property var canAdd: widgetId => true
     property var grid: null
     property bool pageMoving: false
     property var prepareDrop: null
     property bool floating: false
     property bool fadeOut: false
     property bool canUndo: false
+    property bool fixedHeight: false
     property bool removeTarget: false
     property var transientSurfaceTracker: null
     property color surfaceColor: Theme.withAlpha(CcMetrics.dialogColor, 1)
@@ -42,6 +44,7 @@ Item {
     signal undoRequested
     signal resetRequested
     signal clearRequested
+    signal heightModeRequested(bool fixed)
     signal finishRequested
     signal cancelRequested
     signal closeRequested
@@ -287,7 +290,9 @@ Item {
                                         columnSpacing: CcMetrics.gridGap
                                         rowSpacing: Theme.spacingM
                                         wrapLabels: true
+                                        fillPreviews: true
                                         draggable: true
+                                        canAdd: root.canAdd
                                         fallbackFocus: searchField
                                         onChosen: widgetId => root.addRequested(widgetId)
                                         onItemFocused: item => {
@@ -323,9 +328,11 @@ Item {
                 CcEditMenuButton {
                     anchors.left: parent.left
                     undoInMenu: false
+                    fixedHeight: root.fixedHeight
                     transientSurfaceTracker: root.transientSurfaceTracker
                     onResetRequested: root.resetRequested()
                     onClearRequested: root.clearRequested()
+                    onHeightModeRequested: fixed => root.heightModeRequested(fixed)
                 }
 
                 Row {
