@@ -57,6 +57,7 @@ Item {
     }
     readonly property real screenY: stackMotion.value
     readonly property real stackTarget: stackMotion.target
+    property real stackShiftX: 0
     readonly property bool stackMoving: stackMotion.running
     readonly property real stackOriginTop: Theme.snap(_topEdgeBase() - windowShadowPad, dpr)
     readonly property real slotBottom: Theme.snap(_topEdgeBase() + stackTarget - windowShadowPad, dpr) + layoutHeight + windowShadowPad * 2
@@ -446,6 +447,15 @@ Item {
         return base + screenY;
     }
 
+    function edgeMargin(side) {
+        if (connectedFrameMode)
+            return _frameEdgeInset(side);
+        if (frameVisibleWithoutConnectedChrome)
+            return _frameGapMargin(side);
+        const bar = getBarInfo()[side + "Bar"];
+        return bar > 0 ? bar : Theme.popupDistance;
+    }
+
     function getLeftMargin() {
         if (isCenterPosition)
             return screen ? (screen.width - alignedWidth) / 2 : 0;
@@ -455,12 +465,7 @@ Item {
         if (!isLeft)
             return 0;
 
-        if (connectedFrameMode)
-            return _frameEdgeInset("left");
-        if (frameVisibleWithoutConnectedChrome)
-            return _frameGapMargin("left");
-        const barInfo = getBarInfo();
-        return barInfo.leftBar > 0 ? barInfo.leftBar : Theme.popupDistance;
+        return edgeMargin("left");
     }
 
     function getRightMargin() {
@@ -472,12 +477,7 @@ Item {
         if (!isRight)
             return 0;
 
-        if (connectedFrameMode)
-            return _frameEdgeInset("right");
-        if (frameVisibleWithoutConnectedChrome)
-            return _frameGapMargin("right");
-        const barInfo = getBarInfo();
-        return barInfo.rightBar > 0 ? barInfo.rightBar : Theme.popupDistance;
+        return edgeMargin("right");
     }
 
     function getContentX() {
@@ -489,10 +489,10 @@ Item {
         const barRight = getRightMargin();
 
         if (isCenterPosition)
-            return Theme.snap((screen.width - alignedWidth) / 2, dpr);
+            return Theme.snap((screen.width - alignedWidth) / 2 + stackShiftX, dpr);
         if (popupPos === SettingsData.Position.Left || popupPos === SettingsData.Position.Bottom)
-            return Theme.snap(barLeft, dpr);
-        return Theme.snap(screen.width - alignedWidth - barRight, dpr);
+            return Theme.snap(barLeft + stackShiftX, dpr);
+        return Theme.snap(screen.width - alignedWidth - barRight + stackShiftX, dpr);
     }
 
     function getAllocatedContentY() {
