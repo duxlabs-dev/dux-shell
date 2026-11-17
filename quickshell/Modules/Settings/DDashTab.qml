@@ -17,7 +17,7 @@ FocusScope {
     focus: true
 
     readonly property var tabs: DashRegistry.tabEntries
-    readonly property var optionEntryIds: DashRegistry.entries.filter(e => (e.options?.length ?? 0) > 0).map(e => e.id)
+    readonly property var optionEntryIds: DashRegistry.entries.filter(e => (e.options?.length ?? 0) > 0 && e.card?.allowMultiple !== true).map(e => e.id)
 
     function showDashPluginBrowser() {
         dashPluginBrowserLoader.active = true;

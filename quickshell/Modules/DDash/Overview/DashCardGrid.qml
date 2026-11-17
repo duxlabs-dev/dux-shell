@@ -96,7 +96,7 @@ DEditableGrid {
     function cardItemFor(id) {
         for (let i = 0; i < slotRepeater.count; i++) {
             const slot = slotRepeater.itemAt(i);
-            if (slot && slot.cardId === id)
+            if (slot && slot.focusKey === id)
                 return slot.cardItem;
         }
         return null;
@@ -126,7 +126,7 @@ DEditableGrid {
     function slotFor(id) {
         for (let i = 0; i < slotRepeater.count; i++) {
             const slot = slotRepeater.itemAt(i);
-            if (slot?.cardId === id)
+            if (slot?.focusKey === id)
                 return slot;
         }
         return null;
@@ -157,7 +157,7 @@ DEditableGrid {
     function focusPreferred(reason) {
         const wanted = slotFor(preferredFocusId) ?? slotFor("calendar");
         if (wanted?.loading) {
-            pendingFocusId = wanted.cardId;
+            pendingFocusId = wanted.focusKey;
             pendingFocusReason = reason;
             return true;
         }
@@ -170,7 +170,7 @@ DEditableGrid {
     }
 
     function slotLoaded(slot) {
-        if (slot.cardId !== pendingFocusId)
+        if (slot.focusKey !== pendingFocusId)
             return;
         pendingFocusId = "";
         if (editMode)
@@ -188,7 +188,7 @@ DEditableGrid {
     }
 
     function noteSlotFocus(slot) {
-        cardFocusChanged(slot.cardId);
+        cardFocusChanged(slot.focusKey);
         const changed = flashSlot !== null && flashSlot !== slot;
         const keyboard = _focusReason === Qt.TabFocusReason || _focusReason === Qt.BacktabFocusReason;
         flashSlot = slot;

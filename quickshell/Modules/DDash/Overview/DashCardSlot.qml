@@ -13,6 +13,7 @@ DEditableGridSlot {
     readonly property string cardId: cardData.id ?? ""
     readonly property var entry: DashRegistry.entry(cardId)
     readonly property string instanceId: entry?.card?.allowMultiple === true && typeof cardData.instanceId === "string" ? cardData.instanceId : ""
+    readonly property string focusKey: instanceId !== "" ? cardId + ":" + instanceId : cardId
     readonly property var cardItem: cardLoader.item
     readonly property int previewW: resizing ? grid.sizePreview.changes.w : (cardData.w || 1)
     readonly property int previewH: resizing ? grid.sizePreview.changes.h : (cardData.h || 1)

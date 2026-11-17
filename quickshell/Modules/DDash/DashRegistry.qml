@@ -241,6 +241,7 @@ Singleton {
             "text": I18n.tr("Clock"),
             "icon": "schedule",
             "card": {
+                "allowMultiple": true,
                 "source": Qt.resolvedUrl("Overview/ClockCard.qml"),
                 "w": 2,
                 "h": 2,

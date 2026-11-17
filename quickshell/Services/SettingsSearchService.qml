@@ -445,6 +445,8 @@ Singleton {
     function _runtimeSearchEntries() {
         var entries = _barWidgetSearchEntries();
         for (const entry of DashRegistry.entries) {
+            if (entry.card?.allowMultiple === true)
+                continue;
             for (const spec of entry.options ?? []) {
                 entries.push({
                     section: "dashOptions:" + entry.id + ":" + spec.key,
