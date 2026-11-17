@@ -228,7 +228,7 @@ Column {
                                         height: 20
                                         radius: Theme.cornerRadius
                                         color: closeMouseArea.containsMouse ? Theme.surfaceTextHover : Theme.withAlpha(Theme.surfaceTextHover, 0)
-                                        visible: NotepadStorageService.tabs.length > 1 && !delegateItem.editing
+                                        visible: !delegateItem.editing
                                         anchors.verticalCenter: parent.verticalCenter
 
                                         DIcon {

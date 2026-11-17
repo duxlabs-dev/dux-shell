@@ -640,8 +640,8 @@ Item {
                             loadBrowserLoader.item.open();
                     });
                 } else if (root.pendingAction.startsWith("close_tab_")) {
+                    const tabIndex = parseInt(root.pendingAction.split("_")[2]);
                     Qt.callLater(() => {
-                        var tabIndex = parseInt(root.pendingAction.split("_")[2]);
                         performCloseTab(tabIndex);
                     });
                 }
