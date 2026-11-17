@@ -17,6 +17,9 @@ DListItem {
     signal unpinRequested(var targetEntry)
     signal editRequested
     signal previewRequested
+    signal dragRequested(var entry)
+
+    property bool _dragTriggered: false
 
     readonly property string entryType: modal ? modal.getEntryType(entry) : "text"
     readonly property string entryPreview: modal ? modal.getEntryPreview(entry) : ""
@@ -38,12 +41,43 @@ DListItem {
     lastInGroup: itemIndex === listView.count - 1
     Accessible.name: entryPreview
     Accessible.description: entryType === "image" ? I18n.tr("Image") : I18n.tr("Text")
+    ListView.onPooled: {
+        holdTimer.stop();
+        _dragTriggered = false;
+    }
+    ListView.onReused: {
+        holdTimer.stop();
+        _dragTriggered = false;
+    }
+    onDownChanged: {
+        if (down) {
+            _dragTriggered = false;
+            holdTimer.restart();
+        } else {
+            holdTimer.stop();
+        }
+    }
     onClicked: {
+        if (_dragTriggered) {
+            _dragTriggered = false;
+            return;
+        }
         if (SettingsData.clipboardClickToPaste) {
             pasteRequested();
             return;
         }
         copyRequested();
+    }
+
+    Timer {
+        id: holdTimer
+        interval: 250
+        onTriggered: {
+            if (!root.down || root.listView?.moving)
+                return;
+            root._dragTriggered = true;
+            root.dragRequested(root.entry);
+        }
     }
 
     Row {
