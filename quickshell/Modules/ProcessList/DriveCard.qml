@@ -29,8 +29,9 @@ Rectangle {
 
     readonly property bool asleep: drive?.asleep ?? false
     readonly property var rates: (DgopService.diskRates ?? []).find(d => d.device === drive?.name) ?? null
-    readonly property var history: DgopService.deviceHistory[Devices.deviceKey("disk", drive?.name ?? "")] ?? ({})
-    readonly property real axisMax: Devices.rateAxisMax(history.a, history.b, 1024 * 1024)
+    readonly property var historyA: DgopService.history(Devices.deviceKey("disk", drive?.name ?? ""), "read")
+    readonly property var historyB: DgopService.history(Devices.deviceKey("disk", drive?.name ?? ""), "write")
+    readonly property real axisMax: Devices.rateAxisMax(historyA, historyB, 1024 * 1024)
     readonly property var allRows: Drives.summaryRows(drive)
     readonly property var powerOn: allRows.find(r => r.id === "powerOnTime") ?? null
     readonly property var smartRows: allRows.filter(r => r.id !== "wear" && r.id !== "powerOnTime" && r.id !== "dataWritten")
@@ -270,8 +271,8 @@ Rectangle {
                     Layout.preferredWidth: Theme.iconButtonSize * 2
                     Layout.preferredHeight: Theme.buttonHeightXXS
                     compact: true
-                    values: root.history.a ?? []
-                    secondaryValues: root.history.b ?? []
+                    values: root.historyA
+                    secondaryValues: root.historyB
                     maximum: root.axisMax
                     historyLength: DgopService.historySize
                 }
@@ -329,8 +330,8 @@ Rectangle {
                 valueText: root.rates?.readRate != null ? Format.formatRate(root.rates.readRate, 1) : "—"
                 secondaryLabel: I18n.tr("Disk write", "disk write rate")
                 secondaryValueText: root.rates?.writeRate != null ? Format.formatRate(root.rates.writeRate, 1) : "—"
-                values: root.history.a ?? []
-                secondaryValues: root.history.b ?? []
+                values: root.historyA
+                secondaryValues: root.historyB
                 maximum: root.axisMax
                 maximumText: Format.formatRate(root.axisMax, 1)
                 historyLength: DgopService.historySize

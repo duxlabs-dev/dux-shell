@@ -21,7 +21,6 @@ DevicePane {
     }
     readonly property real clockMHz: meanMHz > 0 ? meanMHz : DgopService.cpuFrequency
     readonly property int threads: info?.count ?? 0
-    property var threadHistory: []
     readonly property bool perThread: ProcessListMetrics.cpuPerThread && DgopService.perCoreCpuUsage.length > 0
 
     function ghz(mhz) {
@@ -161,7 +160,7 @@ DevicePane {
                         anchors.fill: parent
                         anchors.topMargin: threadLabel.height
                         compact: true
-                        values: root.threadHistory[thread.index] ?? []
+                        values: DgopService.history("cpu", "thread" + thread.index)
                         maximum: 100
                         historyLength: DgopService.historySize
                     }
