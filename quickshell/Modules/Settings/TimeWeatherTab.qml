@@ -382,58 +382,62 @@ Item {
             }
         }
 
-        SettingsCard {
-            tab: "time"
-            title: I18n.tr("Calendar")
-            settingKey: "calendarSettings"
-            iconName: "event"
-            tags: ["calendar", "backend", "tasks", "events"]
-
-            SettingsDropdownRow {
+        SettingsDeferred {
+            SettingsCard {
                 tab: "time"
-                tags: ["calendar", "backend", "daemon", "khal", "dankcalendar", "events"]
-                settingKey: "calendarBackend"
-                text: I18n.tr("Calendar backend")
-                readonly property var _backendValues: ["auto", "khal", "dankcal"]
-                readonly property var _backendLabels: [I18n.tr("Auto", "calendar backend option"), I18n.tr("khal", "calendar backend option"), I18n.tr("Dux Calendar", "calendar backend option")]
-                options: _backendLabels
-                currentValue: _backendLabels[Math.max(0, _backendValues.indexOf(SettingsData.calendarBackend))]
-                onValueChanged: value => {
-                    const idx = _backendLabels.indexOf(value);
-                    if (idx < 0)
-                        return;
-                    SettingsData.set("calendarBackend", _backendValues[idx]);
-                }
-            }
+                title: I18n.tr("Calendar")
+                settingKey: "calendarSettings"
+                iconName: "event"
+                tags: ["calendar", "backend", "tasks", "events"]
 
-            SettingsDropdownRow {
-                tab: "time"
-                tags: ["calendar", "tasks", "list", "default", "caldav", "todo"]
-                settingKey: "defaultTaskCalendarId"
-                visible: CalendarService.isDankActive && _taskLists.length > 0
-                text: I18n.tr("Default task list")
-                readonly property var _taskLists: (CalendarService.calendars || []).filter(c => c.holdsTasks && !c.readOnly && !c.hidden)
-                readonly property var _labels: [I18n.tr("Auto")].concat(_taskLists.map(c => c.name))
-                options: _labels
-                currentValue: {
-                    const idx = _taskLists.findIndex(c => c.id === SettingsData.defaultTaskCalendarId);
-                    return idx >= 0 ? _labels[idx + 1] : I18n.tr("Auto");
+                SettingsDropdownRow {
+                    tab: "time"
+                    tags: ["calendar", "backend", "daemon", "khal", "dankcalendar", "events"]
+                    settingKey: "calendarBackend"
+                    text: I18n.tr("Calendar backend")
+                    readonly property var _backendValues: ["auto", "khal", "dankcal"]
+                    readonly property var _backendLabels: [I18n.tr("Auto", "calendar backend option"), I18n.tr("khal", "calendar backend option"), I18n.tr("Dux Calendar", "calendar backend option")]
+                    options: _backendLabels
+                    currentValue: _backendLabels[Math.max(0, _backendValues.indexOf(SettingsData.calendarBackend))]
+                    onValueChanged: value => {
+                        const idx = _backendLabels.indexOf(value);
+                        if (idx < 0)
+                            return;
+                        SettingsData.set("calendarBackend", _backendValues[idx]);
+                    }
                 }
-                onValueChanged: value => {
-                    const idx = _labels.indexOf(value);
-                    SettingsData.set("defaultTaskCalendarId", idx > 0 ? _taskLists[idx - 1].id : "");
+
+                SettingsDropdownRow {
+                    tab: "time"
+                    tags: ["calendar", "tasks", "list", "default", "caldav", "todo"]
+                    settingKey: "defaultTaskCalendarId"
+                    visible: CalendarService.isDankActive && _taskLists.length > 0
+                    text: I18n.tr("Default task list")
+                    readonly property var _taskLists: (CalendarService.calendars || []).filter(c => c.holdsTasks && !c.readOnly && !c.hidden)
+                    readonly property var _labels: [I18n.tr("Auto")].concat(_taskLists.map(c => c.name))
+                    options: _labels
+                    currentValue: {
+                        const idx = _taskLists.findIndex(c => c.id === SettingsData.defaultTaskCalendarId);
+                        return idx >= 0 ? _labels[idx + 1] : I18n.tr("Auto");
+                    }
+                    onValueChanged: value => {
+                        const idx = _labels.indexOf(value);
+                        SettingsData.set("defaultTaskCalendarId", idx > 0 ? _taskLists[idx - 1].id : "");
+                    }
                 }
             }
         }
 
-        SettingsCard {
-            SettingsNavRow {
-                tab: "time"
-                settingKey: "weather"
-                tags: ["weather", "location", "units"]
-                title: I18n.tr("Weather")
-                iconName: "partly_cloudy_day"
-                onClicked: keyboard => root.parentModal?.navigateTo("weather", keyboard)
+        SettingsDeferred {
+            SettingsCard {
+                SettingsNavRow {
+                    tab: "time"
+                    settingKey: "weather"
+                    tags: ["weather", "location", "units"]
+                    title: I18n.tr("Weather")
+                    iconName: "partly_cloudy_day"
+                    onClicked: keyboard => root.parentModal?.navigateTo("weather", keyboard)
+                }
             }
         }
     }

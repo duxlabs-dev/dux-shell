@@ -386,6 +386,18 @@ def extract_property(block, prop_name):
     return None
 
 
+DEFERRED_WHEN = re.compile(r"SettingsDeferred\s*\{\s*\n\s*when:\s*([^\n]+)\n\s*$")
+
+
+def own_visible(content, start, own):
+    """A component's own visible binding, or the `when` of the SettingsDeferred wrapped directly around it."""
+    visible = extract_property(own, "visible")
+    if visible:
+        return visible
+    wrapper = DEFERRED_WHEN.search(content[:start])
+    return wrapper.group(1).strip() if wrapper else None
+
+
 def own_scope(block):
     """The block with every nested component body removed, so a card without a title does not borrow one from its rows."""
     depth = 0
@@ -571,7 +583,7 @@ def find_settings_components(content, filename, wrappers, tab_meta, hub_meta):
                 description = extract_i18n_string(desc_raw)
                 description_args = literal_args(desc_raw)
 
-            visible_raw = extract_property(own_scope(block), "visible")
+            visible_raw = own_visible(content, match.start(), own)
             page_meta = hub_meta.get(file_page) if file_page else None
             condition_key = page_meta[2] if page_meta else tab_meta.get(tab_index, TAB_META_DEFAULT)[2]
             if visible_raw:
@@ -634,7 +646,7 @@ def find_settings_components(content, filename, wrappers, tab_meta, hub_meta):
             if filename == "DDotTab.qml" and not condition_key and setting_key != "dotEnabled":
                 condition_key = "dotEnabled"
             if component == "SettingsCard":
-                card_conditions.append((match.start(), block_end, condition_key if extract_property(own, "visible") else None))
+                card_conditions.append((match.start(), block_end, condition_key if visible_raw else None))
             elif not condition_key:
                 condition_key = next((cond for start, end, cond in card_conditions if start < match.start() < end), None)
 

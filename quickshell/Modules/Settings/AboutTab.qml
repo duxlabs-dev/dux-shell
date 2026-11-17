@@ -229,101 +229,108 @@ Item {
             }
         }
 
-        SettingsCard {
-            iconName: "memory"
-            title: I18n.tr("Runtime")
+        SettingsDeferred {
+            SettingsCard {
+                iconName: "memory"
+                title: I18n.tr("Runtime")
 
-            SettingsRow {
-                title: ShellVersionService.runtimeName
-                trailingBadge: ShellVersionService.runtimeVersion
-            }
+                SettingsRow {
+                    title: ShellVersionService.runtimeName
+                    trailingBadge: ShellVersionService.runtimeVersion
+                }
 
-            SettingsRow {
-                visible: ShellVersionService.runtimeRevision !== ""
-                title: I18n.tr("Revision", "about page runtime build revision")
-                subtitle: ShellVersionService.runtimeRevision
-            }
+                SettingsRow {
+                    visible: ShellVersionService.runtimeRevision !== ""
+                    title: I18n.tr("Revision", "about page runtime build revision")
+                    subtitle: ShellVersionService.runtimeRevision
+                }
 
-            SettingsRow {
-                visible: ShellVersionService.runtimeLibrary !== ""
-                title: I18n.tr("Library")
-                body: StyledText {
-                    width: parent.width
-                    text: ShellVersionService.runtimeLibrary
-                    textFormat: Text.PlainText
-                    font.pixelSize: Theme.fontSizeSmall
-                    color: Theme.surfaceVariantText
-                    wrapMode: Text.WrapAnywhere
+                SettingsRow {
+                    visible: ShellVersionService.runtimeLibrary !== ""
+                    title: I18n.tr("Library")
+                    body: StyledText {
+                        width: parent.width
+                        text: ShellVersionService.runtimeLibrary
+                        textFormat: Text.PlainText
+                        font.pixelSize: Theme.fontSizeSmall
+                        color: Theme.surfaceVariantText
+                        wrapMode: Text.WrapAnywhere
+                    }
                 }
             }
         }
 
-        SettingsCard {
-            visible: DMSService.isConnected
-            iconName: "dns"
-            title: I18n.tr("Backend", "noun, settings label for the backend service in use")
+        SettingsDeferred {
+            when: DMSService.isConnected
 
-            SettingsRow {
-                title: I18n.tr("Version")
-                trailingBadge: DMSService.cliVersion || "—"
-            }
+            SettingsCard {
+                iconName: "dns"
+                title: I18n.tr("Backend", "noun, settings label for the backend service in use")
 
-            SettingsRow {
-                title: I18n.tr("API", "about page card title, application programming interface version")
-                trailingBadge: `v${DMSService.apiVersion}`
-            }
-
-            SettingsRow {
-                title: I18n.tr("Status")
-                trailingBadge: I18n.tr("Connected")
-
-                DBadge {
-                    color: Theme.success
+                SettingsRow {
+                    title: I18n.tr("Version")
+                    trailingBadge: DMSService.cliVersion || "—"
                 }
-            }
 
-            SettingsRow {
-                visible: DMSService.capabilities.length > 0
-                title: I18n.tr("Capabilities")
-                body: Flow {
-                    width: parent.width
-                    spacing: Theme.spacingS
+                SettingsRow {
+                    title: I18n.tr("API", "about page card title, application programming interface version")
+                    trailingBadge: `v${DMSService.apiVersion}`
+                }
 
-                    Repeater {
-                        model: DMSService.capabilities
+                SettingsRow {
+                    title: I18n.tr("Status")
+                    trailingBadge: I18n.tr("Connected")
 
-                        DBadge {
-                            required property string modelData
-                            text: modelData
-                            color: Theme.primaryHover
-                            textColor: Theme.primary
+                    DBadge {
+                        color: Theme.success
+                    }
+                }
+
+                SettingsRow {
+                    visible: DMSService.capabilities.length > 0
+                    title: I18n.tr("Capabilities")
+                    body: Flow {
+                        width: parent.width
+                        spacing: Theme.spacingS
+
+                        Repeater {
+                            model: DMSService.capabilities
+
+                            DBadge {
+                                required property string modelData
+                                text: modelData
+                                color: Theme.primaryHover
+                                textColor: Theme.primary
+                            }
                         }
                     }
                 }
             }
         }
 
-        SettingsCard {
-            iconName: "build"
-            title: I18n.tr("Tools", "about page card title for welcome and system check")
+        SettingsDeferred {
+            SettingsCard {
+                iconName: "build"
+                title: I18n.tr("Tools", "about page card title for welcome and system check")
 
-            SettingsNavRow {
-                iconName: "system_update_alt"
-                title: I18n.tr("Software updates", "settings page, modal and bar widget title, DMS and system package updates")
-                hint: root.versionText()
-                onClicked: keyboard => root.parentModal?.navigateTo("updater", keyboard)
-            }
+                SettingsNavRow {
+                    iconName: "system_update_alt"
+                    title: I18n.tr("Software updates", "settings page, modal and bar widget title, DMS and system package updates")
+                    hint: root.versionText()
+                    onClicked: keyboard => root.parentModal?.navigateTo("updater", keyboard)
+                }
 
-            SettingsNavRow {
-                iconName: "waving_hand"
-                title: I18n.tr("Show welcome")
-                onClicked: FirstLaunchService.showWelcome()
-            }
+                SettingsNavRow {
+                    iconName: "waving_hand"
+                    title: I18n.tr("Show welcome")
+                    onClicked: FirstLaunchService.showWelcome()
+                }
 
-            SettingsNavRow {
-                iconName: "vital_signs"
-                title: I18n.tr("System check")
-                onClicked: FirstLaunchService.showDoctor()
+                SettingsNavRow {
+                    iconName: "vital_signs"
+                    title: I18n.tr("System check")
+                    onClicked: FirstLaunchService.showDoctor()
+                }
             }
         }
 

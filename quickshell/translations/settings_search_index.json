@@ -9885,7 +9885,8 @@
       "rfkill",
       "screen",
       "wifi"
-    ]
+    ],
+    "icon": "airplanemode_active"
   },
   {
     "section": "osdAlwaysShowValue",
@@ -9917,7 +9918,8 @@
       "popup",
       "screen",
       "switch"
-    ]
+    ],
+    "icon": "speaker"
   },
   {
     "section": "osdBrightnessEnabled",
@@ -9934,7 +9936,8 @@
       "osd",
       "popup",
       "screen"
-    ]
+    ],
+    "icon": "brightness_6"
   },
   {
     "section": "osdCapsLockEnabled",
@@ -9949,7 +9952,8 @@
       "osd",
       "popup",
       "screen"
-    ]
+    ],
+    "icon": "keyboard_capslock"
   },
   {
     "section": "osdDoNotDisturbEnabled",
@@ -9965,7 +9969,8 @@
       "osd",
       "popup",
       "screen"
-    ]
+    ],
+    "icon": "do_not_disturb_on"
   },
   {
     "section": "osdIdleInhibitorEnabled",
@@ -9984,7 +9989,8 @@
       "screen",
       "screensaver",
       "timeout"
-    ]
+    ],
+    "icon": "coffee"
   },
   {
     "section": "osdInputMethodEnabled",
@@ -9999,7 +10005,8 @@
       "osd",
       "popup",
       "screen"
-    ]
+    ],
+    "icon": "language"
   },
   {
     "section": "osdKeyboardLayoutEnabled",
@@ -10014,7 +10021,8 @@
       "osd",
       "popup",
       "screen"
-    ]
+    ],
+    "icon": "keyboard"
   },
   {
     "section": "osdMediaPlaybackEnabled",
@@ -10029,7 +10037,8 @@
       "playback",
       "popup",
       "screen"
-    ]
+    ],
+    "icon": "play_arrow"
   },
   {
     "section": "osdMediaVolumeEnabled",
@@ -10048,7 +10057,8 @@
       "sound",
       "speaker",
       "volume"
-    ]
+    ],
+    "icon": "music_note"
   },
   {
     "section": "osdMicMuteEnabled",
@@ -10063,7 +10073,8 @@
       "osd",
       "popup",
       "screen"
-    ]
+    ],
+    "icon": "mic_off"
   },
   {
     "section": "osdMicVolumeEnabled",
@@ -10082,7 +10093,8 @@
       "sound",
       "speaker",
       "volume"
-    ]
+    ],
+    "icon": "mic"
   },
   {
     "section": "osdNumLockEnabled",
@@ -10097,7 +10109,8 @@
       "osd",
       "popup",
       "screen"
-    ]
+    ],
+    "icon": "dialpad"
   },
   {
     "section": "osd",
@@ -10145,7 +10158,8 @@
       "shutdown",
       "sleep",
       "suspend"
-    ]
+    ],
+    "icon": "bolt"
   },
   {
     "section": "osdEvents",
@@ -10163,7 +10177,8 @@
       "screen",
       "show",
       "wifi"
-    ]
+    ],
+    "icon": "volume_up"
   },
   {
     "section": "osdTouchpadEnabled",
@@ -10178,6 +10193,7 @@
       "screen",
       "touchpad"
     ],
+    "icon": "touchpad_mouse",
     "conditionKey": "isNiri"
   },
   {
@@ -10196,7 +10212,8 @@
       "sound",
       "speaker",
       "volume"
-    ]
+    ],
+    "icon": "volume_up"
   },
   {
     "section": "osdWorkspaceEnabled",
@@ -10213,7 +10230,8 @@
       "switch",
       "virtual",
       "workspace"
-    ]
+    ],
+    "icon": "view_carousel"
   },
   {
     "section": "appIdSubstitutions",
@@ -17714,8 +17732,24 @@
     "parentLabel": "Appearance"
   },
   {
-    "section": "themeSchedule",
+    "section": "themeScheduleDarkMode",
     "label": "Dark mode",
+    "tabIndex": 51,
+    "category": "Dark mode",
+    "keywords": [
+      "appearance",
+      "dark",
+      "dark mode",
+      "light",
+      "mode",
+      "night"
+    ],
+    "parentLabel": "Appearance",
+    "icon": "dark_mode"
+  },
+  {
+    "section": "themeSchedule",
+    "label": "Schedule",
     "tabIndex": 51,
     "category": "Dark mode",
     "keywords": [
@@ -17735,23 +17769,7 @@
       "wallpaper"
     ],
     "parentLabel": "Appearance",
-    "icon": "dark_mode"
-  },
-  {
-    "section": "themeScheduleDarkMode",
-    "label": "Dark mode",
-    "tabIndex": 51,
-    "category": "Dark mode",
-    "keywords": [
-      "appearance",
-      "dark",
-      "dark mode",
-      "light",
-      "mode",
-      "night"
-    ],
-    "parentLabel": "Appearance",
-    "icon": "dark_mode"
+    "icon": "schedule"
   },
   {
     "section": "themeModeShareGammaSettings",

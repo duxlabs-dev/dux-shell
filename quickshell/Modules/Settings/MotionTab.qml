@@ -168,48 +168,50 @@ Item {
         }
 
         SettingsAdvancedSection {
-            SettingsCard {
-                tab: "motion"
-                tags: ["animation", "popout", "modal", "sync", "duration"]
-                title: I18n.tr("Advanced", "adjective, settings section title for advanced options")
-                settingKey: "motionAdvanced"
-
-                SettingsToggleRow {
+            SettingsDeferred {
+                SettingsCard {
                     tab: "motion"
-                    tags: ["animation", "sync", "popout", "modal", "global"]
-                    settingKey: "syncComponentAnimationSpeeds"
-                    text: I18n.tr("Sync popouts and modals")
-                    description: I18n.tr("Popouts and modals use the main animation duration", "sync popout and modal animation toggle description")
-                    checked: SettingsData.syncComponentAnimationSpeeds
-                    onToggled: checked => SettingsData.set("syncComponentAnimationSpeeds", checked)
-                }
+                    tags: ["animation", "popout", "modal", "sync", "duration"]
+                    title: I18n.tr("Advanced", "adjective, settings section title for advanced options")
+                    settingKey: "motionAdvanced"
 
-                SettingsSliderRow {
-                    visible: !SettingsData.syncComponentAnimationSpeeds
-                    tab: "motion"
-                    tags: ["animation", "duration", "speed", "popout"]
-                    settingKey: "popoutAnimationDuration"
-                    text: I18n.tr("Popouts", "plural noun, shell popout panels, animation and shadow setting label")
-                    minimumLabel: I18n.tr("Off")
-                    minimum: 0
-                    maximum: 1000
-                    value: SettingsData.popoutAnimationDuration
-                    unit: "ms"
-                    onSliderValueChanged: newValue => SettingsData.set("popoutAnimationDuration", newValue)
-                }
+                    SettingsToggleRow {
+                        tab: "motion"
+                        tags: ["animation", "sync", "popout", "modal", "global"]
+                        settingKey: "syncComponentAnimationSpeeds"
+                        text: I18n.tr("Sync popouts and modals")
+                        description: I18n.tr("Popouts and modals use the main animation duration", "sync popout and modal animation toggle description")
+                        checked: SettingsData.syncComponentAnimationSpeeds
+                        onToggled: checked => SettingsData.set("syncComponentAnimationSpeeds", checked)
+                    }
 
-                SettingsSliderRow {
-                    visible: !SettingsData.syncComponentAnimationSpeeds
-                    tab: "motion"
-                    tags: ["animation", "duration", "speed", "modal"]
-                    settingKey: "modalAnimationDuration"
-                    text: I18n.tr("Modals", "plural noun, shell modal dialogs, animation and shadow setting label")
-                    minimumLabel: I18n.tr("Off")
-                    minimum: 0
-                    maximum: 1000
-                    value: SettingsData.modalAnimationDuration
-                    unit: "ms"
-                    onSliderValueChanged: newValue => SettingsData.set("modalAnimationDuration", newValue)
+                    SettingsSliderRow {
+                        visible: !SettingsData.syncComponentAnimationSpeeds
+                        tab: "motion"
+                        tags: ["animation", "duration", "speed", "popout"]
+                        settingKey: "popoutAnimationDuration"
+                        text: I18n.tr("Popouts", "plural noun, shell popout panels, animation and shadow setting label")
+                        minimumLabel: I18n.tr("Off")
+                        minimum: 0
+                        maximum: 1000
+                        value: SettingsData.popoutAnimationDuration
+                        unit: "ms"
+                        onSliderValueChanged: newValue => SettingsData.set("popoutAnimationDuration", newValue)
+                    }
+
+                    SettingsSliderRow {
+                        visible: !SettingsData.syncComponentAnimationSpeeds
+                        tab: "motion"
+                        tags: ["animation", "duration", "speed", "modal"]
+                        settingKey: "modalAnimationDuration"
+                        text: I18n.tr("Modals", "plural noun, shell modal dialogs, animation and shadow setting label")
+                        minimumLabel: I18n.tr("Off")
+                        minimum: 0
+                        maximum: 1000
+                        value: SettingsData.modalAnimationDuration
+                        unit: "ms"
+                        onSliderValueChanged: newValue => SettingsData.set("modalAnimationDuration", newValue)
+                    }
                 }
             }
         }

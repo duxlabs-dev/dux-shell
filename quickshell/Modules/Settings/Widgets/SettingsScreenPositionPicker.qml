@@ -27,27 +27,6 @@ Item {
     onSelectedAreaChanged: placeIndicator()
     Component.onCompleted: placeIndicator()
 
-    function labelFor(position) {
-        switch (position) {
-        case SettingsData.Position.Top:
-            return I18n.tr("Top Right", "screen position option");
-        case SettingsData.Position.Left:
-            return I18n.tr("Top Left", "screen position option");
-        case SettingsData.Position.TopCenter:
-            return I18n.tr("Top Center", "screen position option");
-        case SettingsData.Position.Right:
-            return I18n.tr("Bottom Right", "screen position option");
-        case SettingsData.Position.Bottom:
-            return I18n.tr("Bottom Left", "screen position option");
-        case SettingsData.Position.LeftCenter:
-            return I18n.tr("Left Center", "screen position option");
-        case SettingsData.Position.RightCenter:
-            return I18n.tr("Right Center", "screen position option");
-        default:
-            return I18n.tr("Bottom Center", "screen position option");
-        }
-    }
-
     function cellFor(position) {
         switch (position) {
         case SettingsData.Position.Left:
@@ -181,7 +160,7 @@ Item {
                 height: area.height + touchPad * 2
                 focusPolicy: isSelected || activeFocus ? Qt.StrongFocus : Qt.ClickFocus
                 Accessible.role: Accessible.RadioButton
-                Accessible.name: root.labelFor(modelData)
+                Accessible.name: ScreenPositions.label(modelData)
                 Accessible.checked: isSelected
                 onClicked: root.picked(modelData)
                 Keys.onLeftPressed: root.step(modelData, -1, 0)

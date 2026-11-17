@@ -2,6 +2,7 @@ import QtQuick
 import Quickshell
 import qs.Common
 import qs.Modals.FileBrowser
+import qs.Modules.ColorPicker
 import qs.Services
 import qs.DCommon.Widgets
 import qs.Widgets
@@ -178,6 +179,13 @@ DFloatingWindow {
         menuVisible = !menuVisible;
         if (menuVisible)
             focusSearch();
+    }
+
+    // Color pickers opened from a settings page show inside the content pane like every other settings dialog
+    readonly property bool hostsColorPicker: visible && (contentFocusScope.Window.window?.active ?? false)
+
+    function pickColor(source) {
+        colorDialog.present(source);
     }
 
     function dialogHostFor(item): Item {
@@ -496,6 +504,69 @@ DFloatingWindow {
         Item {
             id: dialogOverlay
             anchors.fill: contentBackdrop
+
+            Loader {
+                id: colorDialog
+
+                property var source: null
+                property bool shown: false
+                property Item returnFocusTo: null
+
+                function present(source) {
+                    colorDialog.source = source;
+                    returnFocusTo = Window.window?.activeFocusItem ?? null;
+                    shown = true;
+                    if (item)
+                        item.present();
+                    else
+                        active = true;
+                }
+
+                function dismiss() {
+                    if (!shown)
+                        return;
+                    shown = false;
+                    item.opened = false;
+                    source.onColorSelectedCallback = null;
+                    const focusItem = returnFocusTo;
+                    returnFocusTo = null;
+                    if (focusItem?.visible && focusItem.enabled)
+                        focusItem.forceActiveFocus(Qt.OtherFocusReason);
+                }
+
+                anchors.fill: parent
+                z: 1000
+                active: false
+                onLoaded: item.present()
+
+                sourceComponent: ColorPickerContent {
+                    popout: false
+                    embedded: false
+                    opened: false
+                    maximumWidth: Theme.dialogMaxWidth
+                    surfaceColor: Theme.hostSurface
+                    pickerTitle: colorDialog.source.pickerTitle
+                    showSaveButton: typeof colorDialog.source.onColorSelectedCallback === "function"
+                    onColorSelected: color => colorDialog.source.colorSelected(color)
+                    onCloseRequested: colorDialog.dismiss()
+                    onHideRequested: {
+                        opened = false;
+                        startScreenPick();
+                    }
+                    onShowRequested: opened = true
+                    onActiveChanged: {
+                        if (!active && !colorDialog.shown)
+                            colorDialog.active = false;
+                    }
+
+                    function present() {
+                        setColor(colorDialog.source.selectedColor);
+                        opened = true;
+                        forceActiveFocus();
+                        focusInitial();
+                    }
+                }
+            }
         }
     }
 

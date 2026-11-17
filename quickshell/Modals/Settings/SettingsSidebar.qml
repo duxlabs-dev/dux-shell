@@ -46,6 +46,7 @@ Item {
         searchField.forceActiveFocus();
     }
 
+    // Choosing a page keeps the keyboard in the list; only a search result picked by key lands in the page
     function focusAfterNavigation(keyboard) {
         if (keyboard || (parentModal?.isCompactMode && !parentModal.menuVisible)) {
             parentModal?.focusCurrentPage(keyboard);
@@ -129,11 +130,20 @@ Item {
             return;
         pageRequested(keyboardHighlightId);
         keyboardHighlightId = "";
-        root.focusAfterNavigation(true);
+        root.focusAfterNavigation(false);
     }
 
+    function _inList(item) {
+        for (let p = item; p; p = p.parent) {
+            if (p === sidebarFlickable.contentItem)
+                return true;
+        }
+        return false;
+    }
+
+    // The search field sits above the list; scrolling it "into view" would throw the list back to the top
     function ensureRowVisible(item) {
-        if (!item || sidebarFlickable.height <= 0)
+        if (!item || sidebarFlickable.height <= 0 || !_inList(item))
             return;
         const itemY = item.mapToItem(sidebarFlickable.contentItem, 0, 0).y;
         const viewH = sidebarFlickable.height;
@@ -468,10 +478,10 @@ Item {
                                     accent: SettingsTabs.accentFor(modelData.id)
                                     active: root.activeCategoryId === modelData.id && !SettingsTabs.isPluginPage(root.currentPage)
                                     highlighted: isHighlighted
-                                    onClicked: keyboard => {
+                                    onClicked: {
                                         root.keyboardHighlightId = "";
                                         root.pageRequested(modelData.id);
-                                        root.focusAfterNavigation(keyboard);
+                                        root.focusAfterNavigation(false);
                                     }
                                 }
                             }

@@ -27,6 +27,7 @@ PanelWindow {
     readonly property bool _row: band === "top" || band === "bottom" || band === "row"
     readonly property real screenWidth: screen?.width ?? 0
     readonly property real screenHeight: screen?.height ?? 0
+    readonly property real originStep: PopoutBounds.deviceStep(CompositorService.getScreenScale(screen))
     readonly property int bandExtent: Math.max(1, Math.ceil(bandSize))
     readonly property real bandOriginX: band === "right" ? screenWidth - bandExtent : band === "column" ? Math.round((screenWidth - bandExtent) / 2) : 0
     readonly property real bandX: bounded ? renderBounds.x : bandOriginX
@@ -73,7 +74,8 @@ PanelWindow {
     function _boundsFrom(base) {
         if (!active || requestedBounds.width <= 0 || requestedBounds.height <= 0)
             return Qt.rect(0, 0, 0, 0);
-        const bounds = PopoutBounds.clip(PopoutBounds.unite(base, requestedBounds), screenWidth, screenHeight);
+        // An origin on a fractional device pixel is rounded by the compositor, which moves the content by a pixel when the bounds change
+        const bounds = PopoutBounds.alignOrigin(PopoutBounds.clip(PopoutBounds.unite(base, requestedBounds), screenWidth, screenHeight), originStep);
         return Qt.rect(bounds.x, bounds.y, bounds.width, bounds.height);
     }
 

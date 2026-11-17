@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import qs.Common
+import qs.Services
 import qs.DCommon.Widgets
 import qs.Widgets
 
@@ -14,6 +15,9 @@ Column {
     property bool expanded: false
     property bool userToggled: false
     readonly property bool populated: expanded || reveal.height > 0
+    // Search scrolls to registered rows, so a target that is not registered yet may be a row in here
+    readonly property bool searchPending: SettingsSearchService.targetSection !== "" && SettingsSearchService.registeredCards[SettingsSearchService.targetSection] === undefined
+    readonly property bool contentWanted: populated || searchPending
 
     function toggle() {
         userToggled = true;

@@ -135,114 +135,120 @@ Item {
             }
         }
 
-        SettingsCard {
-            width: parent.width
-            visible: dock.appsEntry !== null
-            iconName: "auto_awesome"
-            title: I18n.tr("Visual effects")
-            settingKey: "dockVisualEffects"
-            tags: ["dock", "indicator", "running", "active", "colorize", "highlight"]
+        SettingsDeferred {
+            when: dock.appsEntry !== null
 
-            SettingsToggleRow {
-                text: I18n.tr("Indicators")
-                checked: !dock.appsValue("appsDockHideIndicators")
-                onToggled: checked => dock.setAppsOption("appsDockHideIndicators", !checked)
-            }
+            SettingsCard {
+                width: parent.width
+                iconName: "auto_awesome"
+                title: I18n.tr("Visual effects")
+                settingKey: "dockVisualEffects"
+                tags: ["dock", "indicator", "running", "active", "colorize", "highlight"]
 
-            SettingsButtonGroupRow {
-                resetStore: dock
-                resetKeys: ["indicatorStyle"]
-                text: I18n.tr("Indicator style")
-                enabled: !dock.appsValue("appsDockHideIndicators")
-                model: [I18n.tr("Circle", "dock indicator style option"), I18n.tr("Line", "dock indicator style option")]
-                buttonPadding: Theme.spacingS
-                currentIndex: dock.config?.indicatorStyle === "circle" ? 0 : 1
-                onSelectionChanged: (index, selected) => {
-                    if (!selected)
-                        return;
-                    dock.setOption("indicatorStyle", index === 0 ? "circle" : "line");
+                SettingsToggleRow {
+                    text: I18n.tr("Indicators")
+                    checked: !dock.appsValue("appsDockHideIndicators")
+                    onToggled: checked => dock.setAppsOption("appsDockHideIndicators", !checked)
                 }
-            }
 
-            SettingsToggleRow {
-                text: I18n.tr("Colorize active")
-                checked: dock.appsValue("appsDockColorizeActive")
-                onToggled: checked => dock.setAppsOption("appsDockColorizeActive", checked)
-            }
+                SettingsButtonGroupRow {
+                    resetStore: dock
+                    resetKeys: ["indicatorStyle"]
+                    text: I18n.tr("Indicator style")
+                    enabled: !dock.appsValue("appsDockHideIndicators")
+                    model: [I18n.tr("Circle", "dock indicator style option"), I18n.tr("Line", "dock indicator style option")]
+                    buttonPadding: Theme.spacingS
+                    currentIndex: dock.config?.indicatorStyle === "circle" ? 0 : 1
+                    onSelectionChanged: (index, selected) => {
+                        if (!selected)
+                            return;
+                        dock.setOption("indicatorStyle", index === 0 ? "circle" : "line");
+                    }
+                }
 
-            ColorDropdownRow {
-                resetStore: dock.apps
-                resetKeys: ["appsDockActiveColorMode"]
-                text: I18n.tr("Active color")
-                enabled: dock.appsValue("appsDockColorizeActive")
-                options: [({
-                            "value": "primary",
-                            "label": I18n.tr("Primary")
-                        }), ({
-                            "value": "secondary",
-                            "label": I18n.tr("Secondary")
-                        }), ({
-                            "value": "primaryContainer",
-                            "label": I18n.tr("Primary Container")
-                        }), ({
-                            "value": "error",
-                            "label": I18n.tr("Error")
-                        }), ({
-                            "value": "success",
-                            "label": I18n.tr("Success", "noun, theme color name in active color dropdown")
-                        })]
-                currentMode: dock.appsValue("appsDockActiveColorMode")
-                onModeSelected: mode => dock.setAppsOption("appsDockActiveColorMode", mode)
+                SettingsToggleRow {
+                    text: I18n.tr("Colorize active")
+                    checked: dock.appsValue("appsDockColorizeActive")
+                    onToggled: checked => dock.setAppsOption("appsDockColorizeActive", checked)
+                }
+
+                ColorDropdownRow {
+                    resetStore: dock.apps
+                    resetKeys: ["appsDockActiveColorMode"]
+                    text: I18n.tr("Active color")
+                    enabled: dock.appsValue("appsDockColorizeActive")
+                    options: [({
+                                "value": "primary",
+                                "label": I18n.tr("Primary")
+                            }), ({
+                                "value": "secondary",
+                                "label": I18n.tr("Secondary")
+                            }), ({
+                                "value": "primaryContainer",
+                                "label": I18n.tr("Primary Container")
+                            }), ({
+                                "value": "error",
+                                "label": I18n.tr("Error")
+                            }), ({
+                                "value": "success",
+                                "label": I18n.tr("Success", "noun, theme color name in active color dropdown")
+                            })]
+                    currentMode: dock.appsValue("appsDockActiveColorMode")
+                    onModeSelected: mode => dock.setAppsOption("appsDockActiveColorMode", mode)
+                }
             }
         }
 
-        SettingsToggleCard {
-            width: parent.width
-            visible: dock.hasConfig && !dock.connectedFrameModeActive
-            iconName: "border_style"
-            settingKey: "dockBorder"
-            tags: ["dock", "border", "outline"]
-            title: I18n.tr("Border")
-            checked: dock.config?.borderEnabled ?? false
-            onToggled: checked => dock.setOption("borderEnabled", checked)
+        SettingsDeferred {
+            when: dock.hasConfig && !dock.connectedFrameModeActive
 
-            SettingsButtonGroupRow {
-                resetStore: dock
-                resetKeys: ["borderColor"]
-                readonly property var colors: ["surfaceText", "secondary", "primary"]
+            SettingsToggleCard {
+                width: parent.width
+                iconName: "border_style"
+                settingKey: "dockBorder"
+                tags: ["dock", "border", "outline"]
+                title: I18n.tr("Border")
+                checked: dock.config?.borderEnabled ?? false
+                onToggled: checked => dock.setOption("borderEnabled", checked)
 
-                text: I18n.tr("Color", "noun, settings label for choosing a border, shadow or frame color")
-                model: [I18n.tr("Surface", "color option"), I18n.tr("Secondary", "color option"), I18n.tr("Primary", "color option")]
-                buttonPadding: Theme.spacingS
-                minButtonWidth: 44
-                textSize: Theme.fontSizeSmall
-                currentIndex: Math.max(0, colors.indexOf(dock.config?.borderColor ?? "surfaceText"))
-                onSelectionChanged: (index, selected) => {
-                    if (!selected)
-                        return;
-                    dock.setOption("borderColor", colors[index]);
+                SettingsButtonGroupRow {
+                    resetStore: dock
+                    resetKeys: ["borderColor"]
+                    readonly property var colors: ["surfaceText", "secondary", "primary"]
+
+                    text: I18n.tr("Color", "noun, settings label for choosing a border, shadow or frame color")
+                    model: [I18n.tr("Surface", "color option"), I18n.tr("Secondary", "color option"), I18n.tr("Primary", "color option")]
+                    buttonPadding: Theme.spacingS
+                    minButtonWidth: 44
+                    textSize: Theme.fontSizeSmall
+                    currentIndex: Math.max(0, colors.indexOf(dock.config?.borderColor ?? "surfaceText"))
+                    onSelectionChanged: (index, selected) => {
+                        if (!selected)
+                            return;
+                        dock.setOption("borderColor", colors[index]);
+                    }
                 }
-            }
 
-            SettingsSliderRow {
-                resetStore: dock
-                resetKeys: ["borderOpacity"]
-                text: I18n.tr("Opacity")
-                value: Math.round((dock.config?.borderOpacity ?? 1) * 100)
-                minimum: 0
-                maximum: 100
-                onSliderValueChanged: value => dock.setOption("borderOpacity", value / 100)
-            }
+                SettingsSliderRow {
+                    resetStore: dock
+                    resetKeys: ["borderOpacity"]
+                    text: I18n.tr("Opacity")
+                    value: Math.round((dock.config?.borderOpacity ?? 1) * 100)
+                    minimum: 0
+                    maximum: 100
+                    onSliderValueChanged: value => dock.setOption("borderOpacity", value / 100)
+                }
 
-            SettingsSliderRow {
-                resetStore: dock
-                resetKeys: ["borderThickness"]
-                text: I18n.tr("Thickness", "slider label, border or outline width in pixels")
-                value: dock.config?.borderThickness ?? 1
-                minimum: 1
-                maximum: 10
-                unit: "px"
-                onSliderValueChanged: value => dock.setOption("borderThickness", value)
+                SettingsSliderRow {
+                    resetStore: dock
+                    resetKeys: ["borderThickness"]
+                    text: I18n.tr("Thickness", "slider label, border or outline width in pixels")
+                    value: dock.config?.borderThickness ?? 1
+                    minimum: 1
+                    maximum: 10
+                    unit: "px"
+                    onSliderValueChanged: value => dock.setOption("borderThickness", value)
+                }
             }
         }
 

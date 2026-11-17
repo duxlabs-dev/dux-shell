@@ -2,6 +2,7 @@ import QtQuick
 import Quickshell.Io
 import qs.Common
 import qs.Modals.Common
+import qs.Services
 import qs.Modules.ColorPicker
 
 DModal {
@@ -22,6 +23,10 @@ DModal {
     allowStacking: true
 
     function show(overlayLayer = false) {
+        if (PopoutService.settingsModal?.hostsColorPicker) {
+            PopoutService.settingsModal.pickColor(root);
+            return;
+        }
         useOverlayLayer = overlayLayer;
         open();
         contentLoader?.item?.setColor(selectedColor);

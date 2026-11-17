@@ -123,83 +123,87 @@ Item {
             }
         }
 
-        SettingsCard {
-            width: parent.width
-            iconName: "timer"
-            title: I18n.tr("App limits", "settings card title, per-app screen time limits")
-            settingKey: "wellbeingAppLimits"
-            tab: "wellbeing"
-            tags: ["wellbeing", "screen time", "limit", "app"]
-
-            SettingsRow {
-                visible: root.limitedApps.length === 0
-                title: I18n.tr("No app limits", "empty state, per-app screen time limits list")
-                subtitle: I18n.tr("Pick an app from the list above or the dashboard tab", "app limits empty state description")
-            }
-
-            Repeater {
-                model: root.limitedApps
+        SettingsDeferred {
+            SettingsCard {
+                width: parent.width
+                iconName: "timer"
+                title: I18n.tr("App limits", "settings card title, per-app screen time limits")
+                settingKey: "wellbeingAppLimits"
+                tab: "wellbeing"
+                tags: ["wellbeing", "screen time", "limit", "app"]
 
                 SettingsRow {
-                    id: limitRow
+                    visible: root.limitedApps.length === 0
+                    title: I18n.tr("No app limits", "empty state, per-app screen time limits list")
+                    subtitle: I18n.tr("Pick an app from the list above or the dashboard tab", "app limits empty state description")
+                }
 
-                    required property string modelData
+                Repeater {
+                    model: root.limitedApps
 
-                    settingKey: "wellbeingAppLimits:" + modelData
-                    resetKeys: []
-                    title: WellbeingService.appName(modelData)
+                    SettingsRow {
+                        id: limitRow
 
-                    leading: CcAppIcon {
-                        appId: limitRow.modelData
-                        iconSize: Theme.iconSizeLarge
-                    }
+                        required property string modelData
 
-                    DurationSteppers {
-                        anchors.verticalCenter: parent.verticalCenter
-                        minutes: WellbeingService.appLimitMinutes(limitRow.modelData)
-                        onCommitted: next => WellbeingService.setAppLimit(limitRow.modelData, next)
-                    }
+                        settingKey: "wellbeingAppLimits:" + modelData
+                        resetKeys: []
+                        title: WellbeingService.appName(modelData)
 
-                    DActionButton {
-                        anchors.verticalCenter: parent.verticalCenter
-                        iconName: "close"
-                        iconColor: Theme.surfaceVariantText
-                        Accessible.name: I18n.tr("Remove")
-                        onClicked: WellbeingService.setAppLimit(limitRow.modelData, 0)
+                        leading: CcAppIcon {
+                            appId: limitRow.modelData
+                            iconSize: Theme.iconSizeLarge
+                        }
+
+                        DurationSteppers {
+                            anchors.verticalCenter: parent.verticalCenter
+                            minutes: WellbeingService.appLimitMinutes(limitRow.modelData)
+                            onCommitted: next => WellbeingService.setAppLimit(limitRow.modelData, next)
+                        }
+
+                        DActionButton {
+                            anchors.verticalCenter: parent.verticalCenter
+                            iconName: "close"
+                            iconColor: Theme.surfaceVariantText
+                            Accessible.name: I18n.tr("Remove")
+                            onClicked: WellbeingService.setAppLimit(limitRow.modelData, 0)
+                        }
                     }
                 }
             }
         }
 
-        SettingsCard {
-            width: parent.width
-            iconName: "history"
-            title: I18n.tr("History")
-            settingKey: "wellbeingHistory"
-            tab: "wellbeing"
-            tags: ["wellbeing", "screen time", "history", "clear"]
+        SettingsDeferred {
+            SettingsCard {
+                width: parent.width
+                iconName: "history"
+                title: I18n.tr("History")
+                settingKey: "wellbeingHistory"
+                tab: "wellbeing"
+                tags: ["wellbeing", "screen time", "history", "clear"]
 
-            SettingsRow {
-                title: I18n.tr("Screen time history", "settings row title, stored screen time data")
-                subtitle: I18n.tr("Kept for %1 days on this device", "screen time history description, %1 is a number of days").arg(WellbeingMetrics.retentionDays)
+                SettingsRow {
+                    title: I18n.tr("Screen time history", "settings row title, stored screen time data")
+                    subtitle: I18n.tr("Kept for %1 days on this device", "screen time history description, %1 is a number of days").arg(WellbeingMetrics.retentionDays)
 
-                DButton {
-                    anchors.verticalCenter: parent.verticalCenter
-                    buttonHeight: Theme.buttonHeightXS
-                    text: I18n.tr("Clear")
-                    variant: "tonal"
-                    danger: true
-                    enabled: root.available
-                    onClicked: clearConfirm.showWithOptions({
-                        "title": I18n.tr("Clear History?"),
-                        "message": I18n.tr("Deletes all stored screen time", "confirmation message before clearing screen time history"),
-                        "confirmText": I18n.tr("Clear"),
-                        "danger": true,
-                        "onConfirm": () => {
-                            WellbeingService.clearHistory();
-                            root.days = [];
-                        }
-                    })
+                    DButton {
+                        anchors.verticalCenter: parent.verticalCenter
+                        buttonHeight: Theme.buttonHeightXS
+                        text: I18n.tr("Clear")
+                        variant: "tonal"
+                        danger: true
+                        enabled: root.available
+                        onClicked: clearConfirm.showWithOptions({
+                            "title": I18n.tr("Clear History?"),
+                            "message": I18n.tr("Deletes all stored screen time", "confirmation message before clearing screen time history"),
+                            "confirmText": I18n.tr("Clear"),
+                            "danger": true,
+                            "onConfirm": () => {
+                                WellbeingService.clearHistory();
+                                root.days = [];
+                            }
+                        })
+                    }
                 }
             }
         }

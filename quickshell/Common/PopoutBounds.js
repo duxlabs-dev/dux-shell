@@ -35,6 +35,28 @@ function clip(area, screenWidth, screenHeight) {
     };
 }
 
+// Smallest whole logical step that lands on a whole device pixel. wp-fractional-scale carries scale in 120ths.
+function deviceStep(scale) {
+    let a = Math.round(scale * 120);
+    let b = 120;
+    while (b)
+        [a, b] = [b, a % b];
+    return a > 0 ? 120 / a : 1;
+}
+
+function alignOrigin(area, step) {
+    if (step <= 1 || area.width <= 0 || area.height <= 0)
+        return area;
+    const x = Math.floor(area.x / step) * step;
+    const y = Math.floor(area.y / step) * step;
+    return {
+        x,
+        y,
+        width: area.width + area.x - x,
+        height: area.height + area.y - y
+    };
+}
+
 function motion(screenWidth, screenHeight, body, origin, offsetX, offsetY, collapsedScale, padding, spring) {
     const ratio = spring.damping / (2 * Math.sqrt(spring.stiffness * spring.mass));
     const lobeDecay = ratio < 1 ? Math.exp(-Math.PI * ratio / Math.sqrt(1 - ratio * ratio)) : 0;

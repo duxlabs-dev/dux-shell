@@ -677,547 +677,559 @@ Column {
         }
     }
 
-    SettingsCard {
-        tab: "wallpaper"
-        tags: ["material", "seed", "color", "palette", "hue", "matugen", "dynamic", "theme"]
-        title: I18n.tr("Theme color", "Material wallpaper seed card")
-        settingKey: "materialSeed"
-        visible: root.materialWallpaper
+    SettingsDeferred {
+        when: root.materialWallpaper
 
-        SettingsNoteRow {
-            visible: !Theme.matugenAvailable
-            text: I18n.tr("Install the %1 package for dynamic theming", "matugen installation hint, %1 is the package name").arg("matugen")
-        }
-
-        SettingsRow {
-            visible: Theme.matugenAvailable && !root.dynamicTheme
-            title: I18n.tr("Dynamic theme is off", "Material seed card status")
-            subtitle: I18n.tr("Shapes use the %1 theme's colors", "Material seed card status, %1 is a theme name").arg(Theme.currentThemeLabel)
-            DButton {
-                text: I18n.tr("Use Dynamic", "switch the shell theme to the dynamic palette")
-                onClicked: Theme.switchTheme(Theme.dynamic)
-            }
-        }
-
-        SettingsRow {
-            visible: root.dynamicTheme && SettingsData.matugenSeedColor !== ""
-            title: I18n.tr("A custom seed color overrides this", "Material seed card status")
-            subtitle: I18n.tr("Set under Theme & colors, Derived color", "Material seed card status")
-            leading: DColorSwatch {
-                width: SettingsMetrics.heroLeadingSize
-                height: width
-                swatchColor: SettingsData.matugenSeedColor
-            }
-            DButton {
-                text: I18n.tr("Remove override", "clear the custom matugen seed color")
-                onClicked: SettingsData.setMatugenSeedColor("")
-            }
-        }
-
-        SettingsRow {
+        SettingsCard {
             tab: "wallpaper"
-            tags: ["seed", "hue", "color", "material", "palette"]
-            settingKey: "materialSeedColor"
-            visible: root.dynamicTheme
-            enabled: Theme.matugenAvailable
-            title: I18n.tr("Seed color", "color picker title, the color the dynamic palette is built from")
-            subtitle: I18n.tr("The shell palette is built from this color. Shapes take their colors from that palette.", "Material seed picker description")
-            modified: root.materialEntry.seed !== Art.defaultSeed
-            onResetRequested: root.selectSeed(Art.defaultSeed)
-            DActionButton {
-                iconName: "colorize"
-                iconColor: Theme.primary
-                backgroundColor: SettingsMetrics.controlColor
+            tags: ["material", "seed", "color", "palette", "hue", "matugen", "dynamic", "theme"]
+            title: I18n.tr("Theme color", "Material wallpaper seed card")
+            settingKey: "materialSeed"
+
+            SettingsNoteRow {
+                visible: !Theme.matugenAvailable
+                text: I18n.tr("Install the %1 package for dynamic theming", "matugen installation hint, %1 is the package name").arg("matugen")
+            }
+
+            SettingsRow {
+                visible: Theme.matugenAvailable && !root.dynamicTheme
+                title: I18n.tr("Dynamic theme is off", "Material seed card status")
+                subtitle: I18n.tr("Shapes use the %1 theme's colors", "Material seed card status, %1 is a theme name").arg(Theme.currentThemeLabel)
+                DButton {
+                    text: I18n.tr("Use Dynamic", "switch the shell theme to the dynamic palette")
+                    onClicked: Theme.switchTheme(Theme.dynamic)
+                }
+            }
+
+            SettingsRow {
+                visible: root.dynamicTheme && SettingsData.matugenSeedColor !== ""
+                title: I18n.tr("A custom seed color overrides this", "Material seed card status")
+                subtitle: I18n.tr("Set under Theme & colors, Derived color", "Material seed card status")
+                leading: DColorSwatch {
+                    width: SettingsMetrics.heroLeadingSize
+                    height: width
+                    swatchColor: SettingsData.matugenSeedColor
+                }
+                DButton {
+                    text: I18n.tr("Remove override", "clear the custom matugen seed color")
+                    onClicked: SettingsData.setMatugenSeedColor("")
+                }
+            }
+
+            SettingsRow {
+                tab: "wallpaper"
+                tags: ["seed", "hue", "color", "material", "palette"]
+                settingKey: "materialSeedColor"
+                visible: root.dynamicTheme
                 enabled: Theme.matugenAvailable
-                Accessible.name: I18n.tr("Custom color")
-                tooltipText: Accessible.name
-                onClicked: root.pickSeed()
+                title: I18n.tr("Seed color", "color picker title, the color the dynamic palette is built from")
+                subtitle: I18n.tr("The shell palette is built from this color. Shapes take their colors from that palette.", "Material seed picker description")
+                modified: root.materialEntry.seed !== Art.defaultSeed
+                onResetRequested: root.selectSeed(Art.defaultSeed)
+                DActionButton {
+                    iconName: "colorize"
+                    iconColor: Theme.primary
+                    backgroundColor: SettingsMetrics.controlColor
+                    enabled: Theme.matugenAvailable
+                    Accessible.name: I18n.tr("Custom color")
+                    tooltipText: Accessible.name
+                    onClicked: root.pickSeed()
+                }
+                body: MaterialSeedPicker {
+                    id: seedPicker
+                    seed: root.materialEntry.seed
+                    enabled: Theme.matugenAvailable
+                    onSeedSelected: seed => root.selectSeed(seed)
+                }
             }
-            body: MaterialSeedPicker {
-                id: seedPicker
-                seed: root.materialEntry.seed
+
+            SettingsSliderRow {
+                tab: "wallpaper"
+                tags: ["hue", "seed", "color", "material", "warm", "cool"]
+                settingKey: "materialSeedHue"
+                visible: root.dynamicTheme
                 enabled: Theme.matugenAvailable
-                onSeedSelected: seed => root.selectSeed(seed)
+                text: I18n.tr("Hue", "Hue angle in the color picker")
+                description: I18n.tr("Fine-tune the seed around the color wheel", "Material seed hue slider description")
+                minimum: 0
+                maximum: 359
+                unit: "°"
+                value: Math.round(Art.hueOf(root.materialEntry.seed)) % 360
+                onSliderDragFinished: finalValue => root.selectSeed(Art.seedForHue(finalValue, root.materialEntry.seed))
+                trackGradient: Gradient {
+                    orientation: Gradient.Horizontal
+                    GradientStop {
+                        position: 0
+                        color: Art.seedForHue(0)
+                    }
+                    GradientStop {
+                        position: 1 / 12
+                        color: Art.seedForHue(30)
+                    }
+                    GradientStop {
+                        position: 2 / 12
+                        color: Art.seedForHue(60)
+                    }
+                    GradientStop {
+                        position: 3 / 12
+                        color: Art.seedForHue(90)
+                    }
+                    GradientStop {
+                        position: 4 / 12
+                        color: Art.seedForHue(120)
+                    }
+                    GradientStop {
+                        position: 5 / 12
+                        color: Art.seedForHue(150)
+                    }
+                    GradientStop {
+                        position: 6 / 12
+                        color: Art.seedForHue(180)
+                    }
+                    GradientStop {
+                        position: 7 / 12
+                        color: Art.seedForHue(210)
+                    }
+                    GradientStop {
+                        position: 8 / 12
+                        color: Art.seedForHue(240)
+                    }
+                    GradientStop {
+                        position: 9 / 12
+                        color: Art.seedForHue(270)
+                    }
+                    GradientStop {
+                        position: 10 / 12
+                        color: Art.seedForHue(300)
+                    }
+                    GradientStop {
+                        position: 11 / 12
+                        color: Art.seedForHue(330)
+                    }
+                    GradientStop {
+                        position: 1
+                        color: Art.seedForHue(360)
+                    }
+                }
             }
-        }
 
-        SettingsSliderRow {
-            tab: "wallpaper"
-            tags: ["hue", "seed", "color", "material", "warm", "cool"]
-            settingKey: "materialSeedHue"
-            visible: root.dynamicTheme
-            enabled: Theme.matugenAvailable
-            text: I18n.tr("Hue", "Hue angle in the color picker")
-            description: I18n.tr("Fine-tune the seed around the color wheel", "Material seed hue slider description")
-            minimum: 0
-            maximum: 359
-            unit: "°"
-            value: Math.round(Art.hueOf(root.materialEntry.seed)) % 360
-            onSliderDragFinished: finalValue => root.selectSeed(Art.seedForHue(finalValue, root.materialEntry.seed))
-            trackGradient: Gradient {
-                orientation: Gradient.Horizontal
-                GradientStop {
-                    position: 0
-                    color: Art.seedForHue(0)
-                }
-                GradientStop {
-                    position: 1 / 12
-                    color: Art.seedForHue(30)
-                }
-                GradientStop {
-                    position: 2 / 12
-                    color: Art.seedForHue(60)
-                }
-                GradientStop {
-                    position: 3 / 12
-                    color: Art.seedForHue(90)
-                }
-                GradientStop {
-                    position: 4 / 12
-                    color: Art.seedForHue(120)
-                }
-                GradientStop {
-                    position: 5 / 12
-                    color: Art.seedForHue(150)
-                }
-                GradientStop {
-                    position: 6 / 12
-                    color: Art.seedForHue(180)
-                }
-                GradientStop {
-                    position: 7 / 12
-                    color: Art.seedForHue(210)
-                }
-                GradientStop {
-                    position: 8 / 12
-                    color: Art.seedForHue(240)
-                }
-                GradientStop {
-                    position: 9 / 12
-                    color: Art.seedForHue(270)
-                }
-                GradientStop {
-                    position: 10 / 12
-                    color: Art.seedForHue(300)
-                }
-                GradientStop {
-                    position: 11 / 12
-                    color: Art.seedForHue(330)
-                }
-                GradientStop {
-                    position: 1
-                    color: Art.seedForHue(360)
+            SettingsRow {
+                visible: root.dynamicTheme && MatugenPreviewService.seedPreviewFailed
+                title: I18n.tr("Color previews unavailable", "Material seed card status")
+                subtitle: I18n.tr("Swatches show the seed color itself", "Material seed card status")
+                DButton {
+                    text: I18n.tr("Retry")
+                    onClicked: seedPicker.retry()
                 }
             }
-        }
 
-        SettingsRow {
-            visible: root.dynamicTheme && MatugenPreviewService.seedPreviewFailed
-            title: I18n.tr("Color previews unavailable", "Material seed card status")
-            subtitle: I18n.tr("Swatches show the seed color itself", "Material seed card status")
-            DButton {
-                text: I18n.tr("Retry")
-                onClicked: seedPicker.retry()
-            }
-        }
-
-        SettingsNavRow {
-            tab: "wallpaper"
-            tags: ["scheme", "palette", "vibrant", "neutral", "expressive", "matugen"]
-            settingKey: "paletteStyleNav"
-            visible: root.dynamicTheme
-            title: I18n.tr("Palette style", "matugen scheme navigation row")
-            hint: Theme.getMatugenScheme(SettingsData.matugenScheme).label
-            leading: DPaletteSwatch {
-                width: SettingsMetrics.heroLeadingSize
-                height: width
-                primaryColor: root.themePalette.primary
-                secondaryColor: root.themePalette.secondary
-                tertiaryColor: root.themePalette.tertiary
-            }
-            onClicked: keyboard => {
-                SettingsSearchService.navigateToSection("matugenScheme");
-                root.parentModal?.navigateTo("theme", keyboard);
+            SettingsNavRow {
+                tab: "wallpaper"
+                tags: ["scheme", "palette", "vibrant", "neutral", "expressive", "matugen"]
+                settingKey: "paletteStyleNav"
+                visible: root.dynamicTheme
+                title: I18n.tr("Palette style", "matugen scheme navigation row")
+                hint: Theme.getMatugenScheme(SettingsData.matugenScheme).label
+                leading: DPaletteSwatch {
+                    width: SettingsMetrics.heroLeadingSize
+                    height: width
+                    primaryColor: root.themePalette.primary
+                    secondaryColor: root.themePalette.secondary
+                    tertiaryColor: root.themePalette.tertiary
+                }
+                onClicked: keyboard => {
+                    SettingsSearchService.navigateToSection("matugenScheme");
+                    root.parentModal?.navigateTo("theme", keyboard);
+                }
             }
         }
     }
 
-    SettingsCard {
-        tab: "wallpaper"
-        tags: ["surface", "color", "bar", "popout", "modal", "card", "chip", "tooltip", "background", "elevation"]
-        title: I18n.tr("Surfaces")
-        settingKey: "surfaceRoles"
+    SettingsDeferred {
+        SettingsCard {
+            tab: "wallpaper"
+            tags: ["surface", "color", "bar", "popout", "modal", "card", "chip", "tooltip", "background", "elevation"]
+            title: I18n.tr("Surfaces")
+            settingKey: "surfaceRoles"
 
-        SettingsRow {
-            settingKey: "surfaceRolesPreview"
-            body: SettingsSurfacePreview {
-                width: parent.width
+            SettingsRow {
+                settingKey: "surfaceRolesPreview"
+                body: SettingsSurfacePreview {
+                    width: parent.width
+                }
             }
-        }
 
-        SurfaceColorRow {
-            tab: "wallpaper"
-            tags: ["surface", "color", "host", "bar", "popout", "modal", "window"]
-            settingKey: "hostSurfaceColor"
-            resetKeys: ["hostSurfaceColor", "hostSurfaceCustomColor"]
-            text: I18n.tr("Host")
-            defaultColor: Theme.roleColor("s")
-            currentMode: SettingsData.hostSurfaceColor
-            customColor: SettingsData.hostSurfaceCustomColor
-            onModeSelected: mode => SettingsData.set("hostSurfaceColor", mode)
-            onCustomColorSelected: selectedColor => SettingsData.set("hostSurfaceCustomColor", selectedColor.toString())
-        }
+            SurfaceColorRow {
+                tab: "wallpaper"
+                tags: ["surface", "color", "host", "bar", "popout", "modal", "window"]
+                settingKey: "hostSurfaceColor"
+                resetKeys: ["hostSurfaceColor", "hostSurfaceCustomColor"]
+                text: I18n.tr("Host")
+                defaultColor: Theme.roleColor("s")
+                currentMode: SettingsData.hostSurfaceColor
+                customColor: SettingsData.hostSurfaceCustomColor
+                onModeSelected: mode => SettingsData.set("hostSurfaceColor", mode)
+                onCustomColorSelected: selectedColor => SettingsData.set("hostSurfaceCustomColor", selectedColor.toString())
+            }
 
-        SurfaceColorRow {
-            tab: "wallpaper"
-            tags: ["surface", "color", "card", "row", "section"]
-            settingKey: "cardSurfaceColor"
-            resetKeys: ["cardSurfaceColor", "cardSurfaceCustomColor"]
-            text: I18n.tr("Cards")
-            defaultColor: Theme.roleColor("sc")
-            currentMode: SettingsData.cardSurfaceColor
-            customColor: SettingsData.cardSurfaceCustomColor
-            onModeSelected: mode => SettingsData.set("cardSurfaceColor", mode)
-            onCustomColorSelected: selectedColor => SettingsData.set("cardSurfaceCustomColor", selectedColor.toString())
-        }
+            SurfaceColorRow {
+                tab: "wallpaper"
+                tags: ["surface", "color", "card", "row", "section"]
+                settingKey: "cardSurfaceColor"
+                resetKeys: ["cardSurfaceColor", "cardSurfaceCustomColor"]
+                text: I18n.tr("Cards")
+                defaultColor: Theme.roleColor("sc")
+                currentMode: SettingsData.cardSurfaceColor
+                customColor: SettingsData.cardSurfaceCustomColor
+                onModeSelected: mode => SettingsData.set("cardSurfaceColor", mode)
+                onCustomColorSelected: selectedColor => SettingsData.set("cardSurfaceCustomColor", selectedColor.toString())
+            }
 
-        SurfaceColorRow {
-            tab: "wallpaper"
-            tags: ["surface", "color", "chip", "field", "dropdown", "input"]
-            settingKey: "chipSurfaceColor"
-            resetKeys: ["chipSurfaceColor", "chipSurfaceCustomColor"]
-            text: I18n.tr("Chip", "surface role")
-            defaultColor: Theme.roleColor("sch")
-            currentMode: SettingsData.chipSurfaceColor
-            customColor: SettingsData.chipSurfaceCustomColor
-            onModeSelected: mode => SettingsData.set("chipSurfaceColor", mode)
-            onCustomColorSelected: selectedColor => SettingsData.set("chipSurfaceCustomColor", selectedColor.toString())
-        }
+            SurfaceColorRow {
+                tab: "wallpaper"
+                tags: ["surface", "color", "chip", "field", "dropdown", "input"]
+                settingKey: "chipSurfaceColor"
+                resetKeys: ["chipSurfaceColor", "chipSurfaceCustomColor"]
+                text: I18n.tr("Chip", "surface role")
+                defaultColor: Theme.roleColor("sch")
+                currentMode: SettingsData.chipSurfaceColor
+                customColor: SettingsData.chipSurfaceCustomColor
+                onModeSelected: mode => SettingsData.set("chipSurfaceColor", mode)
+                onCustomColorSelected: selectedColor => SettingsData.set("chipSurfaceCustomColor", selectedColor.toString())
+            }
 
-        SurfaceColorRow {
-            tab: "wallpaper"
-            tags: ["surface", "color", "nested", "chip", "control"]
-            settingKey: "chipSurfaceNestedColor"
-            resetKeys: ["chipSurfaceNestedColor", "chipSurfaceNestedCustomColor"]
-            text: I18n.tr("Nested chip", "surface role")
-            defaultColor: Theme.roleColor("schh")
-            currentMode: SettingsData.chipSurfaceNestedColor
-            customColor: SettingsData.chipSurfaceNestedCustomColor
-            onModeSelected: mode => SettingsData.set("chipSurfaceNestedColor", mode)
-            onCustomColorSelected: selectedColor => SettingsData.set("chipSurfaceNestedCustomColor", selectedColor.toString())
-        }
+            SurfaceColorRow {
+                tab: "wallpaper"
+                tags: ["surface", "color", "nested", "chip", "control"]
+                settingKey: "chipSurfaceNestedColor"
+                resetKeys: ["chipSurfaceNestedColor", "chipSurfaceNestedCustomColor"]
+                text: I18n.tr("Nested chip", "surface role")
+                defaultColor: Theme.roleColor("schh")
+                currentMode: SettingsData.chipSurfaceNestedColor
+                customColor: SettingsData.chipSurfaceNestedCustomColor
+                onModeSelected: mode => SettingsData.set("chipSurfaceNestedColor", mode)
+                onCustomColorSelected: selectedColor => SettingsData.set("chipSurfaceNestedCustomColor", selectedColor.toString())
+            }
 
-        SurfaceColorRow {
-            tab: "wallpaper"
-            tags: ["surface", "color", "tooltip", "hint", "hover", "toast"]
-            settingKey: "tooltipSurfaceColor"
-            resetKeys: ["tooltipSurfaceColor", "tooltipSurfaceCustomColor"]
-            text: I18n.tr("Tooltip", "surface role")
-            defaultColor: Theme.roleColor("inverseSurface")
-            currentMode: SettingsData.tooltipSurfaceColor
-            customColor: SettingsData.tooltipSurfaceCustomColor
-            onModeSelected: mode => SettingsData.set("tooltipSurfaceColor", mode)
-            onCustomColorSelected: selectedColor => SettingsData.set("tooltipSurfaceCustomColor", selectedColor.toString())
+            SurfaceColorRow {
+                tab: "wallpaper"
+                tags: ["surface", "color", "tooltip", "hint", "hover", "toast"]
+                settingKey: "tooltipSurfaceColor"
+                resetKeys: ["tooltipSurfaceColor", "tooltipSurfaceCustomColor"]
+                text: I18n.tr("Tooltip", "surface role")
+                defaultColor: Theme.roleColor("inverseSurface")
+                currentMode: SettingsData.tooltipSurfaceColor
+                customColor: SettingsData.tooltipSurfaceCustomColor
+                onModeSelected: mode => SettingsData.set("tooltipSurfaceColor", mode)
+                onCustomColorSelected: selectedColor => SettingsData.set("tooltipSurfaceCustomColor", selectedColor.toString())
+            }
         }
     }
 
-    SettingsCard {
-        tab: "theme"
-        tags: ["icon", "theme", "system"]
-        title: I18n.tr("Icons", "settings card title for icon theme and icon options")
-        settingKey: "iconTheme"
-
-        SettingsToggleRow {
-            tab: "theme"
-            tags: ["icon", "theme", "light", "dark", "mode"]
-            settingKey: "iconThemePerMode"
-            text: I18n.tr("Separate light and dark themes")
-            checked: SettingsData.iconThemePerMode
-            onToggled: checked => SettingsData.setIconThemePerMode(checked)
-        }
-
-        SettingsDropdownRow {
-            enabled: !SettingsData.iconThemePerMode
+    SettingsDeferred {
+        SettingsCard {
             tab: "theme"
             tags: ["icon", "theme", "system"]
+            title: I18n.tr("Icons", "settings card title for icon theme and icon options")
             settingKey: "iconTheme"
-            resetKeys: ["iconThemeDark"]
-            resetByKeys: false
-            onResetRequested: SettingsData.setIconThemeForMode(SettingsData.specDefault("iconThemeDark"), false)
-            text: I18n.tr("Theme")
-            currentValue: SettingsData.iconThemeDark
-            enableFuzzySearch: true
-            popupWidthOffset: 100
-            maxPopupHeight: 236
-            options: root.cachedIconThemes
-            onValueChanged: value => {
-                SettingsData.setIconThemeForMode(value, false);
-                root.warnIfMissingQtTheme();
-            }
-        }
 
-        SettingsDropdownRow {
-            enabled: SettingsData.iconThemePerMode
-            tab: "theme"
-            tags: ["icon", "theme", "system", "dark"]
-            settingKey: "iconThemeDark"
-            resetByKeys: false
-            onResetRequested: SettingsData.setIconThemeForMode(SettingsData.specDefault("iconThemeDark"), false)
-            text: I18n.tr("Dark mode theme")
-            currentValue: SettingsData.iconThemeDark
-            enableFuzzySearch: true
-            popupWidthOffset: 100
-            maxPopupHeight: 236
-            options: root.cachedIconThemes
-            onValueChanged: value => {
-                SettingsData.setIconThemeForMode(value, false);
-                root.warnIfMissingQtTheme();
+            SettingsToggleRow {
+                tab: "theme"
+                tags: ["icon", "theme", "light", "dark", "mode"]
+                settingKey: "iconThemePerMode"
+                text: I18n.tr("Separate light and dark themes")
+                checked: SettingsData.iconThemePerMode
+                onToggled: checked => SettingsData.setIconThemePerMode(checked)
             }
-        }
 
-        SettingsDropdownRow {
-            enabled: SettingsData.iconThemePerMode
-            tab: "theme"
-            tags: ["icon", "theme", "system", "light"]
-            settingKey: "iconThemeLight"
-            resetByKeys: false
-            onResetRequested: SettingsData.setIconThemeForMode(SettingsData.specDefault("iconThemeLight"), true)
-            text: I18n.tr("Light mode theme")
-            currentValue: SettingsData.iconThemeLight
-            enableFuzzySearch: true
-            popupWidthOffset: 100
-            maxPopupHeight: 236
-            options: root.cachedIconThemes
-            onValueChanged: value => {
-                SettingsData.setIconThemeForMode(value, true);
-                root.warnIfMissingQtTheme();
+            SettingsDropdownRow {
+                visible: !SettingsData.iconThemePerMode
+                tab: "theme"
+                tags: ["icon", "theme", "system"]
+                settingKey: "iconTheme"
+                resetKeys: ["iconThemeDark"]
+                resetByKeys: false
+                onResetRequested: SettingsData.setIconThemeForMode(SettingsData.specDefault("iconThemeDark"), false)
+                text: I18n.tr("Theme")
+                currentValue: SettingsData.iconThemeDark
+                enableFuzzySearch: true
+                popupWidthOffset: 100
+                maxPopupHeight: 236
+                options: root.cachedIconThemes
+                onValueChanged: value => {
+                    SettingsData.setIconThemeForMode(value, false);
+                    root.warnIfMissingQtTheme();
+                }
+            }
+
+            SettingsDropdownRow {
+                visible: SettingsData.iconThemePerMode
+                tab: "theme"
+                tags: ["icon", "theme", "system", "dark"]
+                settingKey: "iconThemeDark"
+                resetByKeys: false
+                onResetRequested: SettingsData.setIconThemeForMode(SettingsData.specDefault("iconThemeDark"), false)
+                text: I18n.tr("Dark mode theme")
+                currentValue: SettingsData.iconThemeDark
+                enableFuzzySearch: true
+                popupWidthOffset: 100
+                maxPopupHeight: 236
+                options: root.cachedIconThemes
+                onValueChanged: value => {
+                    SettingsData.setIconThemeForMode(value, false);
+                    root.warnIfMissingQtTheme();
+                }
+            }
+
+            SettingsDropdownRow {
+                visible: SettingsData.iconThemePerMode
+                tab: "theme"
+                tags: ["icon", "theme", "system", "light"]
+                settingKey: "iconThemeLight"
+                resetByKeys: false
+                onResetRequested: SettingsData.setIconThemeForMode(SettingsData.specDefault("iconThemeLight"), true)
+                text: I18n.tr("Light mode theme")
+                currentValue: SettingsData.iconThemeLight
+                enableFuzzySearch: true
+                popupWidthOffset: 100
+                maxPopupHeight: 236
+                options: root.cachedIconThemes
+                onValueChanged: value => {
+                    SettingsData.setIconThemeForMode(value, true);
+                    root.warnIfMissingQtTheme();
+                }
             }
         }
     }
 
-    SettingsCard {
-        tab: "theme"
-        tags: ["cursor", "mouse", "pointer", "theme", "size", "hide", "typing", "touch", "timeout"]
-        title: I18n.tr("Cursor", "settings card title for mouse cursor theme")
-        settingKey: "cursorTheme"
-        visible: CompositorService.supportsCursorConfig
+    SettingsDeferred {
+        when: CompositorService.supportsCursorConfig
 
-        IncludeSetupBanner {
-            include: cursorInclude
-        }
-
-        SettingsDropdownRow {
+        SettingsCard {
             tab: "theme"
-            tags: ["cursor", "mouse", "pointer", "theme"]
+            tags: ["cursor", "mouse", "pointer", "theme", "size", "hide", "typing", "touch", "timeout"]
+            title: I18n.tr("Cursor", "settings card title for mouse cursor theme")
             settingKey: "cursorTheme"
-            text: I18n.tr("Theme")
-            currentValue: SettingsData.cursorSettings.theme
-            enableFuzzySearch: true
-            popupWidthOffset: 100
-            maxPopupHeight: 236
-            options: root.cachedCursorThemes
-            modified: SettingsData.cursorSettings.theme !== SettingsData.specDefault("cursorSettings").theme
-            onResetRequested: SettingsData.setCursorTheme(SettingsData.specDefault("cursorSettings").theme)
-            onValueChanged: value => SettingsData.setCursorTheme(value)
-        }
 
-        SettingsSliderRow {
-            tab: "theme"
-            tags: ["cursor", "mouse", "pointer", "size"]
-            settingKey: "cursorSize"
-            text: I18n.tr("Size")
-            value: SettingsData.cursorSettings.size
-            minimum: 12
-            maximum: 128
-            unit: "px"
-            modified: SettingsData.cursorSettings.size !== SettingsData.specDefault("cursorSettings").size
-            onResetRequested: SettingsData.setCursorSize(SettingsData.specDefault("cursorSettings").size)
-            onSliderValueChanged: newValue => SettingsData.setCursorSize(newValue)
-        }
+            IncludeSetupBanner {
+                include: cursorInclude
+            }
 
-        SettingsToggleRow {
-            tab: "theme"
-            tags: ["cursor", "hide", "typing", "keyboard"]
-            settingKey: "cursorHideWhenTyping"
-            text: I18n.tr("Hide cursor when typing")
-            visible: CompositorService.isNiri || CompositorService.isHyprland
-            modified: checked
-            checked: CompositorService.isNiri ? (SettingsData.cursorSettings.niri?.hideWhenTyping || false) : (SettingsData.cursorSettings.hyprland?.hideOnKeyPress || false)
-            onToggled: checked => {
-                const updated = JSON.parse(JSON.stringify(SettingsData.cursorSettings));
-                if (CompositorService.isNiri) {
-                    updated.niri = updated.niri || {};
-                    updated.niri.hideWhenTyping = checked;
-                } else {
-                    updated.hyprland = updated.hyprland || {};
-                    updated.hyprland.hideOnKeyPress = checked;
+            SettingsDropdownRow {
+                tab: "theme"
+                tags: ["cursor", "mouse", "pointer", "theme"]
+                settingKey: "cursorTheme"
+                text: I18n.tr("Theme")
+                currentValue: SettingsData.cursorSettings.theme
+                enableFuzzySearch: true
+                popupWidthOffset: 100
+                maxPopupHeight: 236
+                options: root.cachedCursorThemes
+                modified: SettingsData.cursorSettings.theme !== SettingsData.specDefault("cursorSettings").theme
+                onResetRequested: SettingsData.setCursorTheme(SettingsData.specDefault("cursorSettings").theme)
+                onValueChanged: value => SettingsData.setCursorTheme(value)
+            }
+
+            SettingsSliderRow {
+                tab: "theme"
+                tags: ["cursor", "mouse", "pointer", "size"]
+                settingKey: "cursorSize"
+                text: I18n.tr("Size")
+                value: SettingsData.cursorSettings.size
+                minimum: 12
+                maximum: 128
+                unit: "px"
+                modified: SettingsData.cursorSettings.size !== SettingsData.specDefault("cursorSettings").size
+                onResetRequested: SettingsData.setCursorSize(SettingsData.specDefault("cursorSettings").size)
+                onSliderValueChanged: newValue => SettingsData.setCursorSize(newValue)
+            }
+
+            SettingsToggleRow {
+                tab: "theme"
+                tags: ["cursor", "hide", "typing", "keyboard"]
+                settingKey: "cursorHideWhenTyping"
+                text: I18n.tr("Hide cursor when typing")
+                visible: CompositorService.isNiri || CompositorService.isHyprland
+                modified: checked
+                checked: CompositorService.isNiri ? (SettingsData.cursorSettings.niri?.hideWhenTyping || false) : (SettingsData.cursorSettings.hyprland?.hideOnKeyPress || false)
+                onToggled: checked => {
+                    const updated = JSON.parse(JSON.stringify(SettingsData.cursorSettings));
+                    if (CompositorService.isNiri) {
+                        updated.niri = updated.niri || {};
+                        updated.niri.hideWhenTyping = checked;
+                    } else {
+                        updated.hyprland = updated.hyprland || {};
+                        updated.hyprland.hideOnKeyPress = checked;
+                    }
+                    SettingsData.set("cursorSettings", updated);
                 }
-                SettingsData.set("cursorSettings", updated);
             }
-        }
 
-        SettingsToggleRow {
-            tab: "theme"
-            tags: ["cursor", "hide", "touch"]
-            settingKey: "cursorHideOnTouch"
-            text: I18n.tr("Hide cursor on touch")
-            visible: CompositorService.isHyprland
-            modified: checked
-            checked: SettingsData.cursorSettings.hyprland?.hideOnTouch || false
-            onToggled: checked => {
-                const updated = JSON.parse(JSON.stringify(SettingsData.cursorSettings));
-                updated.hyprland = updated.hyprland || {};
-                updated.hyprland.hideOnTouch = checked;
-                SettingsData.set("cursorSettings", updated);
+            SettingsToggleRow {
+                tab: "theme"
+                tags: ["cursor", "hide", "touch"]
+                settingKey: "cursorHideOnTouch"
+                text: I18n.tr("Hide cursor on touch")
+                visible: CompositorService.isHyprland
+                modified: checked
+                checked: SettingsData.cursorSettings.hyprland?.hideOnTouch || false
+                onToggled: checked => {
+                    const updated = JSON.parse(JSON.stringify(SettingsData.cursorSettings));
+                    updated.hyprland = updated.hyprland || {};
+                    updated.hyprland.hideOnTouch = checked;
+                    SettingsData.set("cursorSettings", updated);
+                }
             }
-        }
 
-        SettingsDropdownRow {
-            readonly property var modes: [-1, 0, 1, 2]
-            tab: "theme"
-            tags: ["cursor", "warp", "monitor", "display", "focus", "warp_on_monitor_change"]
-            settingKey: "cursorWarpOnMonitorChange"
-            text: I18n.tr("Warp on display change", "Hyprland cursor option, move the pointer to the last focused window when focus moves to another display")
-            visible: CompositorService.isHyprland && HyprlandService.hyprSupports("cursor:warp_on_monitor_change")
-            options: [I18n.tr("Same as workspace change", "Hyprland cursor warp option, follow the workspace change warp setting"), I18n.tr("Off"), I18n.tr("On"), I18n.tr("Force", "Hyprland cursor warp option, warp even when cursor warps are disabled")]
-            currentValue: options[Math.max(0, modes.indexOf(SettingsData.cursorSettings.hyprland?.warpOnMonitorChange ?? -1))]
-            modified: (SettingsData.cursorSettings.hyprland?.warpOnMonitorChange ?? -1) !== -1
-            onResetRequested: root.setHyprlandCursorWarp(-1)
-            onValueChanged: value => {
-                const index = options.indexOf(value);
-                if (index < 0)
-                    return;
-                root.setHyprlandCursorWarp(modes[index]);
+            SettingsDropdownRow {
+                readonly property var modes: [-1, 0, 1, 2]
+                tab: "theme"
+                tags: ["cursor", "warp", "monitor", "display", "focus", "warp_on_monitor_change"]
+                settingKey: "cursorWarpOnMonitorChange"
+                text: I18n.tr("Warp on display change", "Hyprland cursor option, move the pointer to the last focused window when focus moves to another display")
+                visible: CompositorService.isHyprland && HyprlandService.hyprSupports("cursor:warp_on_monitor_change")
+                options: [I18n.tr("Same as workspace change", "Hyprland cursor warp option, follow the workspace change warp setting"), I18n.tr("Off"), I18n.tr("On"), I18n.tr("Force", "Hyprland cursor warp option, warp even when cursor warps are disabled")]
+                currentValue: options[Math.max(0, modes.indexOf(SettingsData.cursorSettings.hyprland?.warpOnMonitorChange ?? -1))]
+                modified: (SettingsData.cursorSettings.hyprland?.warpOnMonitorChange ?? -1) !== -1
+                onResetRequested: root.setHyprlandCursorWarp(-1)
+                onValueChanged: value => {
+                    const index = options.indexOf(value);
+                    if (index < 0)
+                        return;
+                    root.setHyprlandCursorWarp(modes[index]);
+                }
             }
-        }
 
-        SettingsSliderRow {
-            tab: "theme"
-            tags: ["cursor", "hide", "timeout", "inactive"]
-            settingKey: "cursorHideAfterInactive"
-            text: I18n.tr("Cursor auto-hide timeout")
-            minimumLabel: I18n.tr("Off")
-            visible: CompositorService.supportsCursorConfig
-            value: {
-                if (CompositorService.isNiri)
-                    return SettingsData.cursorSettings.niri?.hideAfterInactiveMs || 0;
-                if (CompositorService.isHyprland)
-                    return SettingsData.cursorSettings.hyprland?.inactiveTimeout || 0;
-                return SettingsData.cursorSettings.mango?.cursorHideTimeout || 0;
+            SettingsSliderRow {
+                tab: "theme"
+                tags: ["cursor", "hide", "timeout", "inactive"]
+                settingKey: "cursorHideAfterInactive"
+                text: I18n.tr("Cursor auto-hide timeout")
+                minimumLabel: I18n.tr("Off")
+                visible: CompositorService.supportsCursorConfig
+                value: {
+                    if (CompositorService.isNiri)
+                        return SettingsData.cursorSettings.niri?.hideAfterInactiveMs || 0;
+                    if (CompositorService.isHyprland)
+                        return SettingsData.cursorSettings.hyprland?.inactiveTimeout || 0;
+                    return SettingsData.cursorSettings.mango?.cursorHideTimeout || 0;
+                }
+                minimum: 0
+                maximum: CompositorService.isNiri ? 5000 : 10
+                unit: CompositorService.isNiri ? "ms" : "s"
+                modified: value !== 0
+                onResetRequested: root.setCursorHideTimeout(0)
+                onSliderValueChanged: newValue => root.setCursorHideTimeout(newValue)
             }
-            minimum: 0
-            maximum: CompositorService.isNiri ? 5000 : 10
-            unit: CompositorService.isNiri ? "ms" : "s"
-            modified: value !== 0
-            onResetRequested: root.setCursorHideTimeout(0)
-            onSliderValueChanged: newValue => root.setCursorHideTimeout(newValue)
         }
     }
 
-    SettingsCard {
-        tab: "theme"
-        tags: ["font", "fonts", "family", "text", "typography", "monospace"]
-        title: I18n.tr("Typography", "settings card title for font options")
-        settingKey: "typography"
-        iconName: "text_fields"
+    SettingsDeferred {
+        SettingsCard {
+            tab: "theme"
+            tags: ["font", "fonts", "family", "text", "typography", "monospace"]
+            title: I18n.tr("Typography", "settings card title for font options")
+            settingKey: "typography"
+            iconName: "text_fields"
 
-        SettingsRow {
-            body: Column {
-                width: parent.width
-                spacing: Theme.spacingXS
-
-                StyledText {
+            SettingsRow {
+                body: Column {
                     width: parent.width
-                    text: "Aa Bb Cc 123"
-                    font.family: Theme.resolvedFontFamily(SettingsData.fontFamily)
-                    font.pixelSize: Theme.fontSizeXXLarge
-                    color: Theme.surfaceText
-                    elide: Text.ElideRight
-                }
+                    spacing: Theme.spacingXS
 
-                StyledText {
-                    width: parent.width
-                    text: "Display Aa Bb Cc"
-                    fontToken: "display"
-                    font.pixelSize: Theme.fontSizeXLarge
-                    color: Theme.surfaceText
-                    elide: Text.ElideRight
-                }
+                    StyledText {
+                        width: parent.width
+                        text: "Aa Bb Cc 123"
+                        font.family: Theme.resolvedFontFamily(SettingsData.fontFamily)
+                        font.pixelSize: Theme.fontSizeXXLarge
+                        color: Theme.surfaceText
+                        elide: Text.ElideRight
+                    }
 
-                StyledText {
-                    width: parent.width
-                    text: I18n.tr("The quick brown fox jumps over the lazy dog")
-                    font.family: Theme.resolvedFontFamily(SettingsData.fontFamily)
-                    font.pixelSize: Theme.fontSizeMedium
-                    color: Theme.surfaceText
-                    elide: Text.ElideRight
-                }
+                    StyledText {
+                        width: parent.width
+                        text: "Display Aa Bb Cc"
+                        fontToken: "display"
+                        font.pixelSize: Theme.fontSizeXLarge
+                        color: Theme.surfaceText
+                        elide: Text.ElideRight
+                    }
 
-                StyledText {
-                    width: parent.width
-                    text: "monospace { code: 0x1F; }"
-                    font.family: Theme.resolvedMonoFontFamily(SettingsData.monoFontFamily)
-                    font.pixelSize: Theme.fontSizeSmall
-                    color: Theme.surfaceVariantText
-                    elide: Text.ElideRight
+                    StyledText {
+                        width: parent.width
+                        text: I18n.tr("The quick brown fox jumps over the lazy dog")
+                        font.family: Theme.resolvedFontFamily(SettingsData.fontFamily)
+                        font.pixelSize: Theme.fontSizeMedium
+                        color: Theme.surfaceText
+                        elide: Text.ElideRight
+                    }
+
+                    StyledText {
+                        width: parent.width
+                        text: "monospace { code: 0x1F; }"
+                        font.family: Theme.resolvedMonoFontFamily(SettingsData.monoFontFamily)
+                        font.pixelSize: Theme.fontSizeSmall
+                        color: Theme.surfaceVariantText
+                        elide: Text.ElideRight
+                    }
                 }
             }
-        }
 
-        SettingsFontDropdownRow {
-            tab: "theme"
-            tags: ["font", "fonts", "family", "normal", "text"]
-            settingKey: "fontFamily"
-            text: I18n.tr("Family", "font family dropdown label")
-            maxPopupHeight: 400
-            currentFont: SettingsData.fontFamily
-            onFontSelected: family => SettingsData.set("fontFamily", family || Theme.defaultFontFamily)
-        }
+            SettingsFontDropdownRow {
+                tab: "theme"
+                tags: ["font", "fonts", "family", "normal", "text"]
+                settingKey: "fontFamily"
+                text: I18n.tr("Family", "font family dropdown label")
+                maxPopupHeight: 400
+                currentFont: SettingsData.fontFamily
+                onFontSelected: family => SettingsData.set("fontFamily", family || Theme.defaultFontFamily)
+            }
 
-        SettingsSliderRow {
-            tab: "theme"
-            tags: ["font", "weight", "bold", "light"]
-            settingKey: "fontWeight"
-            text: I18n.tr("Weight", "font weight slider label")
-            minimum: Font.Thin
-            maximum: Font.Black
-            step: 100
-            showStops: true
-            unit: ""
-            value: SettingsData.fontWeight
-            onSliderValueChanged: newValue => SettingsData.set("fontWeight", newValue)
-        }
+            SettingsSliderRow {
+                tab: "theme"
+                tags: ["font", "weight", "bold", "light"]
+                settingKey: "fontWeight"
+                text: I18n.tr("Weight", "font weight slider label")
+                minimum: Font.Thin
+                maximum: Font.Black
+                step: 100
+                showStops: true
+                unit: ""
+                value: SettingsData.fontWeight
+                onSliderValueChanged: newValue => SettingsData.set("fontWeight", newValue)
+            }
 
-        SettingsSliderRow {
-            tab: "theme"
-            tags: ["font", "scale", "size", "zoom"]
-            settingKey: "fontScale"
-            text: I18n.tr("Scale", "noun, font scale slider and display scale setting label")
-            minimum: 75
-            maximum: 150
-            value: Math.round(SettingsData.fontScale * 100)
-            onSliderValueChanged: newValue => SettingsData.set("fontScale", newValue / 100)
-        }
-        SettingsFontDropdownRow {
-            tab: "theme"
-            tags: ["font", "monospace", "code", "terminal", "process"]
-            settingKey: "monoFontFamily"
-            text: I18n.tr("Monospace family")
-            maxPopupHeight: 400
-            defaultFamily: Theme.defaultMonoFontFamily
-            currentFont: SettingsData.monoFontFamily
-            onFontSelected: family => SettingsData.set("monoFontFamily", family || Theme.defaultMonoFontFamily)
-        }
+            SettingsSliderRow {
+                tab: "theme"
+                tags: ["font", "scale", "size", "zoom"]
+                settingKey: "fontScale"
+                text: I18n.tr("Scale", "noun, font scale slider and display scale setting label")
+                minimum: 75
+                maximum: 150
+                value: Math.round(SettingsData.fontScale * 100)
+                onSliderValueChanged: newValue => SettingsData.set("fontScale", newValue / 100)
+            }
+            SettingsFontDropdownRow {
+                tab: "theme"
+                tags: ["font", "monospace", "code", "terminal", "process"]
+                settingKey: "monoFontFamily"
+                text: I18n.tr("Monospace family")
+                maxPopupHeight: 400
+                defaultFamily: Theme.defaultMonoFontFamily
+                currentFont: SettingsData.monoFontFamily
+                onFontSelected: family => SettingsData.set("monoFontFamily", family || Theme.defaultMonoFontFamily)
+            }
 
-        SettingsFontDropdownRow {
-            tab: "theme"
-            tags: ["font", "display", "stylistic", "serif", "title", "headline"]
-            settingKey: "displayFontFamily"
-            text: I18n.tr("Display family")
-            maxPopupHeight: 400
-            defaultFamily: Theme.defaultDisplayFontFamily
-            currentFont: SettingsData.displayFontFamily
-            onFontSelected: family => SettingsData.set("displayFontFamily", family || Theme.defaultDisplayFontFamily)
+            SettingsFontDropdownRow {
+                tab: "theme"
+                tags: ["font", "display", "stylistic", "serif", "title", "headline"]
+                settingKey: "displayFontFamily"
+                text: I18n.tr("Display family")
+                maxPopupHeight: 400
+                defaultFamily: Theme.defaultDisplayFontFamily
+                currentFont: SettingsData.displayFontFamily
+                onFontSelected: family => SettingsData.set("displayFontFamily", family || Theme.defaultDisplayFontFamily)
+            }
         }
     }
 

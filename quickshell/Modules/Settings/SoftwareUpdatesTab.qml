@@ -798,53 +798,55 @@ Item {
         }
 
         SettingsAdvancedSection {
-            SettingsCard {
-                width: parent.width
-                iconName: "terminal"
-                title: I18n.tr("Advanced")
-                settingKey: "systemUpdaterAdvanced"
+            SettingsDeferred {
+                SettingsCard {
+                    width: parent.width
+                    iconName: "terminal"
+                    title: I18n.tr("Advanced")
+                    settingKey: "systemUpdaterAdvanced"
 
-                SettingsToggleRow {
-                    settingKey: "systemUpdaterCustomCommand"
-                    tags: ["custom", "command", "terminal"]
-                    text: I18n.tr("Use custom command")
-                    checked: SettingsData.updaterUseCustomCommand
-                    onToggled: checked => {
-                        if (!checked) {
-                            updaterCustomCommand.value = "";
-                            updaterTerminalCustomClass.value = "";
-                            SettingsData.set("updaterCustomCommand", "");
-                            SettingsData.set("updaterTerminalAdditionalParams", "");
+                    SettingsToggleRow {
+                        settingKey: "systemUpdaterCustomCommand"
+                        tags: ["custom", "command", "terminal"]
+                        text: I18n.tr("Use custom command")
+                        checked: SettingsData.updaterUseCustomCommand
+                        onToggled: checked => {
+                            if (!checked) {
+                                updaterCustomCommand.value = "";
+                                updaterTerminalCustomClass.value = "";
+                                SettingsData.set("updaterCustomCommand", "");
+                                SettingsData.set("updaterTerminalAdditionalParams", "");
+                            }
+                            SettingsData.set("updaterUseCustomCommand", checked);
                         }
-                        SettingsData.set("updaterUseCustomCommand", checked);
                     }
-                }
 
-                SettingsNoteRow {
-                    enabled: SettingsData.updaterUseCustomCommand
-                    text: I18n.tr("Custom command and terminal params are split on whitespace; paths with spaces will break.")
-                }
+                    SettingsNoteRow {
+                        enabled: SettingsData.updaterUseCustomCommand
+                        text: I18n.tr("Custom command and terminal params are split on whitespace; paths with spaces will break.")
+                    }
 
-                SettingsTextFieldRow {
-                    id: updaterCustomCommand
-                    leftIconName: "terminal"
-                    visible: SettingsData.updaterUseCustomCommand
-                    resetKeys: ["updaterCustomCommand"]
-                    text: I18n.tr("Custom update command")
-                    placeholderText: "topgrade --no-retry"
-                    value: SettingsData.updaterCustomCommand
-                    onValueEdited: value => SettingsData.set("updaterCustomCommand", value.trim())
-                }
+                    SettingsTextFieldRow {
+                        id: updaterCustomCommand
+                        leftIconName: "terminal"
+                        visible: SettingsData.updaterUseCustomCommand
+                        resetKeys: ["updaterCustomCommand"]
+                        text: I18n.tr("Custom update command")
+                        placeholderText: "topgrade --no-retry"
+                        value: SettingsData.updaterCustomCommand
+                        onValueEdited: value => SettingsData.set("updaterCustomCommand", value.trim())
+                    }
 
-                SettingsTextFieldRow {
-                    id: updaterTerminalCustomClass
-                    leftIconName: "terminal"
-                    visible: SettingsData.updaterUseCustomCommand
-                    resetKeys: ["updaterTerminalAdditionalParams"]
-                    text: I18n.tr("Terminal additional parameters")
-                    placeholderText: "-T updater"
-                    value: SettingsData.updaterTerminalAdditionalParams
-                    onValueEdited: value => SettingsData.set("updaterTerminalAdditionalParams", value.trim())
+                    SettingsTextFieldRow {
+                        id: updaterTerminalCustomClass
+                        leftIconName: "terminal"
+                        visible: SettingsData.updaterUseCustomCommand
+                        resetKeys: ["updaterTerminalAdditionalParams"]
+                        text: I18n.tr("Terminal additional parameters")
+                        placeholderText: "-T updater"
+                        value: SettingsData.updaterTerminalAdditionalParams
+                        onValueEdited: value => SettingsData.set("updaterTerminalAdditionalParams", value.trim())
+                    }
                 }
             }
         }

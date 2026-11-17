@@ -45,25 +45,26 @@ Item {
     }
 
     SettingsPage {
+        SettingsMainToggle {
+            tab: "theme"
+            tags: ["light", "dark", "mode"]
+            settingKey: "themeScheduleDarkMode"
+            iconName: "dark_mode"
+            text: I18n.tr("Dark mode")
+            checked: !SessionData.isLightMode
+            onToggled: toggled => {
+                if (toggled === !SessionData.isLightMode)
+                    return;
+                Theme.screenTransition();
+                Theme.setLightMode(!toggled);
+            }
+        }
+
         SettingsCard {
             tab: "theme"
             tags: ["light", "dark", "mode", "appearance", "automatic", "schedule", "sunrise", "sunset", "matugen", "smart", "wallpaper", "brightness"]
+            title: I18n.tr("Schedule", "noun, time based light and dark theme switching mode")
             settingKey: "themeSchedule"
-
-            SettingsToggleRow {
-                tab: "theme"
-                tags: ["light", "dark", "mode"]
-                settingKey: "themeScheduleDarkMode"
-                iconName: "dark_mode"
-                text: I18n.tr("Dark mode")
-                checked: !SessionData.isLightMode
-                onToggled: toggled => {
-                    if (toggled === !SessionData.isLightMode)
-                        return;
-                    Theme.screenTransition();
-                    Theme.setLightMode(!toggled);
-                }
-            }
 
             SettingsButtonGroupRow {
                 tab: "theme"

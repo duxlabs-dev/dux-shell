@@ -353,134 +353,142 @@ Item {
             }
         }
 
-        SettingsCard {
-            title: I18n.tr("Appearance")
-            settingKey: "greeterAppearance"
-            tags: ["greeter", "login", "sync", "theme", "wallpaper"]
+        SettingsDeferred {
+            SettingsCard {
+                title: I18n.tr("Appearance")
+                settingKey: "greeterAppearance"
+                tags: ["greeter", "login", "sync", "theme", "wallpaper"]
 
-            SettingsRow {
-                subtitle: I18n.tr("Uses your wallpaper, fonts and lock screen settings.", "login screen appearance")
-            }
+                SettingsRow {
+                    subtitle: I18n.tr("Uses your wallpaper, fonts and lock screen settings.", "login screen appearance")
+                }
 
-            SettingsNavRow {
-                title: SettingsTabs.page("personalization")?.text ?? ""
-                iconName: "wallpaper"
-                onClicked: keyboard => root.parentModal?.navigateTo("personalization", keyboard)
-            }
+                SettingsNavRow {
+                    title: SettingsTabs.page("personalization")?.text ?? ""
+                    iconName: "wallpaper"
+                    onClicked: keyboard => root.parentModal?.navigateTo("personalization", keyboard)
+                }
 
-            SettingsNavRow {
-                title: I18n.tr("Lock screen")
-                iconName: "lock"
-                onClicked: keyboard => root.parentModal?.navigateTo("lock_screen", keyboard)
-            }
-        }
-
-        SettingsCard {
-            width: parent.width
-            iconName: "history"
-            title: I18n.tr("Behavior")
-            settingKey: "greeterBehavior"
-
-            SettingsToggleRow {
-                settingKey: "greeterRememberLastSession"
-                tags: ["greeter", "session", "remember", "login"]
-                text: I18n.tr("Remember last session")
-                checked: SettingsData.greeterRememberLastSession
-                onToggled: checked => SettingsData.set("greeterRememberLastSession", checked)
-            }
-
-            SettingsToggleRow {
-                settingKey: "greeterRememberLastUser"
-                tags: ["greeter", "user", "remember", "login", "username"]
-                text: I18n.tr("Remember last user")
-                checked: SettingsData.greeterRememberLastUser
-                onToggled: checked => SettingsData.set("greeterRememberLastUser", checked)
-            }
-
-            SettingsToggleRow {
-                settingKey: "greeterAutoLogin"
-                tags: ["greeter", "autologin", "login", "startup", "password"]
-                text: I18n.tr("Auto-login on startup")
-                description: SettingsData.greeterRememberLastUser && SettingsData.greeterRememberLastSession ? I18n.tr("Skip the greeter password after boot until you sign out. Lock screen unlock is unchanged. Takes effect on the next reboot after sync.") : I18n.tr("Requires remembering the last user and session. Enable those options first.")
-                checked: SettingsData.greeterAutoLogin
-                enabled: SettingsData.greeterRememberLastUser && SettingsData.greeterRememberLastSession
-                onToggled: checked => SettingsData.set("greeterAutoLogin", checked)
-            }
-        }
-
-        SettingsCard {
-            width: parent.width
-            iconName: "extension"
-            title: I18n.tr("Dependencies & documentation")
-            settingKey: "greeterDeps"
-
-            SettingsRow {
-                body: StyledText {
-                    text: I18n.tr("Requires %1, %2, and your user in the %3 group (plus %4 for fingerprint, %5 for security keys).", "greeter requirements note, %1 and %2 are package names, %3 a group name, %4 and %5 PAM modules").arg("greetd").arg("dms-greeter").arg("greeter").arg("fprintd/pam_fprintd").arg("pam_u2f")
-                    font.pixelSize: Theme.fontSizeSmall
-                    color: Theme.surfaceVariantText
-                    width: parent.width
-                    wrapMode: Text.Wrap
-                    horizontalAlignment: Text.AlignLeft
+                SettingsNavRow {
+                    title: I18n.tr("Lock screen")
+                    iconName: "lock"
+                    onClicked: keyboard => root.parentModal?.navigateTo("lock_screen", keyboard)
                 }
             }
+        }
 
-            SettingsRow {
-                body: StyledText {
-                    text: I18n.tr("Installation and PAM setup are documented in the %1.", "%1 is a link to the greeter docs").arg("<a href=\"" + Site.docs + "/dms-greeter/installation\" style=\"text-decoration:none; color:" + Theme.primary + ";\">" + I18n.tr("Dux Greeter docs", "link text") + "</a>")
-                    textFormat: Text.RichText
-                    font.pixelSize: Theme.fontSizeSmall
-                    color: Theme.surfaceVariantText
-                    linkColor: Theme.primary
-                    width: parent.width
-                    wrapMode: Text.Wrap
-                    horizontalAlignment: Text.AlignLeft
-                    onLinkActivated: url => Qt.openUrlExternally(url)
+        SettingsDeferred {
+            SettingsCard {
+                width: parent.width
+                iconName: "history"
+                title: I18n.tr("Behavior")
+                settingKey: "greeterBehavior"
 
-                    MouseArea {
-                        anchors.fill: parent
-                        cursorShape: parent.hoveredLink ? Qt.PointingHandCursor : Qt.ArrowCursor
-                        acceptedButtons: Qt.NoButton
-                        propagateComposedEvents: true
+                SettingsToggleRow {
+                    settingKey: "greeterRememberLastSession"
+                    tags: ["greeter", "session", "remember", "login"]
+                    text: I18n.tr("Remember last session")
+                    checked: SettingsData.greeterRememberLastSession
+                    onToggled: checked => SettingsData.set("greeterRememberLastSession", checked)
+                }
+
+                SettingsToggleRow {
+                    settingKey: "greeterRememberLastUser"
+                    tags: ["greeter", "user", "remember", "login", "username"]
+                    text: I18n.tr("Remember last user")
+                    checked: SettingsData.greeterRememberLastUser
+                    onToggled: checked => SettingsData.set("greeterRememberLastUser", checked)
+                }
+
+                SettingsToggleRow {
+                    settingKey: "greeterAutoLogin"
+                    tags: ["greeter", "autologin", "login", "startup", "password"]
+                    text: I18n.tr("Auto-login on startup")
+                    description: SettingsData.greeterRememberLastUser && SettingsData.greeterRememberLastSession ? I18n.tr("Skip the greeter password after boot until you sign out. Lock screen unlock is unchanged. Takes effect on the next reboot after sync.") : I18n.tr("Requires remembering the last user and session. Enable those options first.")
+                    checked: SettingsData.greeterAutoLogin
+                    enabled: SettingsData.greeterRememberLastUser && SettingsData.greeterRememberLastSession
+                    onToggled: checked => SettingsData.set("greeterAutoLogin", checked)
+                }
+            }
+        }
+
+        SettingsDeferred {
+            SettingsCard {
+                width: parent.width
+                iconName: "extension"
+                title: I18n.tr("Dependencies & documentation")
+                settingKey: "greeterDeps"
+
+                SettingsRow {
+                    body: StyledText {
+                        text: I18n.tr("Requires %1, %2, and your user in the %3 group (plus %4 for fingerprint, %5 for security keys).", "greeter requirements note, %1 and %2 are package names, %3 a group name, %4 and %5 PAM modules").arg("greetd").arg("dms-greeter").arg("greeter").arg("fprintd/pam_fprintd").arg("pam_u2f")
+                        font.pixelSize: Theme.fontSizeSmall
+                        color: Theme.surfaceVariantText
+                        width: parent.width
+                        wrapMode: Text.Wrap
+                        horizontalAlignment: Text.AlignLeft
+                    }
+                }
+
+                SettingsRow {
+                    body: StyledText {
+                        text: I18n.tr("Installation and PAM setup are documented in the %1.", "%1 is a link to the greeter docs").arg("<a href=\"" + Site.docs + "/dms-greeter/installation\" style=\"text-decoration:none; color:" + Theme.primary + ";\">" + I18n.tr("Dux Greeter docs", "link text") + "</a>")
+                        textFormat: Text.RichText
+                        font.pixelSize: Theme.fontSizeSmall
+                        color: Theme.surfaceVariantText
+                        linkColor: Theme.primary
+                        width: parent.width
+                        wrapMode: Text.Wrap
+                        horizontalAlignment: Text.AlignLeft
+                        onLinkActivated: url => Qt.openUrlExternally(url)
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: parent.hoveredLink ? Qt.PointingHandCursor : Qt.ArrowCursor
+                            acceptedButtons: Qt.NoButton
+                            propagateComposedEvents: true
+                        }
                     }
                 }
             }
         }
 
         SettingsAdvancedSection {
-            SettingsCard {
-                width: parent.width
-                iconName: "tune"
-                title: I18n.tr("Advanced")
-                settingKey: "greeterAdvanced"
-                tags: ["greeter", "login", "sync", "status", "repair"]
+            SettingsDeferred {
+                SettingsCard {
+                    width: parent.width
+                    iconName: "tune"
+                    title: I18n.tr("Advanced")
+                    settingKey: "greeterAdvanced"
+                    tags: ["greeter", "login", "sync", "status", "repair"]
 
-                SettingsRow {
-                    iconName: "sync"
-                    title: I18n.tr("Run full sync", "greeter advanced action")
-                    subtitle: I18n.tr("Re-applies the greetd command, permissions and PAM authentication. Needs administrator access.", "greeter advanced action")
-                    clickable: true
-                    enabled: root.greeterBinaryExists && !root.busy
-                    onClicked: GreeterService.sync()
-                }
+                    SettingsRow {
+                        iconName: "sync"
+                        title: I18n.tr("Run full sync", "greeter advanced action")
+                        subtitle: I18n.tr("Re-applies the greetd command, permissions and PAM authentication. Needs administrator access.", "greeter advanced action")
+                        clickable: true
+                        enabled: root.greeterBinaryExists && !root.busy
+                        onClicked: GreeterService.sync()
+                    }
 
-                SettingsRow {
-                    iconName: "fact_check"
-                    title: I18n.tr("Check status", "greeter settings button, runs dms-greeter status")
-                    clickable: true
-                    enabled: root.greeterBinaryExists && !root.greeterStatusRunning
-                    onClicked: root.runGreeterStatus()
-                }
+                    SettingsRow {
+                        iconName: "fact_check"
+                        title: I18n.tr("Check status", "greeter settings button, runs dms-greeter status")
+                        clickable: true
+                        enabled: root.greeterBinaryExists && !root.greeterStatusRunning
+                        onClicked: root.runGreeterStatus()
+                    }
 
-                SettingsRow {
-                    iconName: "link_off"
-                    iconColor: Theme.error
-                    title: I18n.tr("Unlink login screen", "greeter advanced action")
-                    subtitle: I18n.tr("Stops syncing your DMS settings to the greeter. Set up links them again.", "greeter advanced action")
-                    visible: GreeterService.slotState !== ""
-                    clickable: true
-                    enabled: root.greeterBinaryExists && !root.busy
-                    onClicked: root.promptUnlink()
+                    SettingsRow {
+                        iconName: "link_off"
+                        iconColor: Theme.error
+                        title: I18n.tr("Unlink login screen", "greeter advanced action")
+                        subtitle: I18n.tr("Stops syncing your DMS settings to the greeter. Set up links them again.", "greeter advanced action")
+                        visible: GreeterService.slotState !== ""
+                        clickable: true
+                        enabled: root.greeterBinaryExists && !root.busy
+                        onClicked: root.promptUnlink()
+                    }
                 }
             }
         }

@@ -24,6 +24,7 @@ Item {
 
     Loader {
         active: root.active && root.screen !== null && root.width > 0
+        asynchronous: true
 
         sourceComponent: Item {
             id: host

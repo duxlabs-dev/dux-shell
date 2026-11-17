@@ -455,116 +455,118 @@ Item {
             }
         }
 
-        SettingsCard {
-            tab: "audio"
-            tags: ["audio", "device", "input", "microphone"]
-            title: I18n.tr("Input devices")
-            settingKey: "audioInputDevices"
-            iconName: "mic"
+        SettingsDeferred {
+            SettingsCard {
+                tab: "audio"
+                tags: ["audio", "device", "input", "microphone"]
+                title: I18n.tr("Input devices")
+                settingKey: "audioInputDevices"
+                iconName: "mic"
 
-            SettingsRow {
-                body: Column {
-                    width: parent.width
-                    spacing: Theme.spacingM
-
-                    StyledText {
+                SettingsRow {
+                    body: Column {
                         width: parent.width
-                        text: I18n.tr("Set custom names for your audio input devices", "Audio settings description")
-                        font.pixelSize: Theme.fontSizeSmall
-                        color: Theme.surfaceVariantText
-                        wrapMode: Text.WordWrap
-                        horizontalAlignment: Text.AlignLeft
-                    }
+                        spacing: Theme.spacingM
 
-                    Repeater {
-                        model: root.shownInputDevices
+                        StyledText {
+                            width: parent.width
+                            text: I18n.tr("Set custom names for your audio input devices", "Audio settings description")
+                            font.pixelSize: Theme.fontSizeSmall
+                            color: Theme.surfaceVariantText
+                            wrapMode: Text.WordWrap
+                            horizontalAlignment: Text.AlignLeft
+                        }
 
-                        delegate: DeviceAliasRow {
-                            required property var modelData
+                        Repeater {
+                            model: root.shownInputDevices
 
-                            deviceNode: modelData
-                            deviceType: "input"
-                            showHideButton: true
+                            delegate: DeviceAliasRow {
+                                required property var modelData
 
-                            onEditRequested: device => root.openRenameDialog(device, "input")
+                                deviceNode: modelData
+                                deviceType: "input"
+                                showHideButton: true
 
-                            onHideRequested: device => {
-                                root.persistHiddenInputDeviceNames([...root.hiddenInputDeviceNames, device.name]);
+                                onEditRequested: device => root.openRenameDialog(device, "input")
+
+                                onHideRequested: device => {
+                                    root.persistHiddenInputDeviceNames([...root.hiddenInputDeviceNames, device.name]);
+                                }
                             }
                         }
-                    }
 
-                    StyledText {
-                        width: parent.width
-                        text: I18n.tr("No input devices found", "Audio settings empty state")
-                        font.pixelSize: Theme.fontSizeSmall
-                        color: Theme.surfaceVariantText
-                        horizontalAlignment: Text.AlignHCenter
-                        visible: root.shownInputDevices.length === 0 && root.hiddenInputDevices.length === 0
-                        topPadding: Theme.spacingM
-                    }
-
-                    Column {
-                        width: parent.width
-                        spacing: 0
-                        visible: root.hiddenInputDevices.length > 0
-
-                        Item {
+                        StyledText {
                             width: parent.width
-                            height: 36
-
-                            Row {
-                                anchors.left: parent.left
-                                anchors.verticalCenter: parent.verticalCenter
-                                spacing: Theme.spacingS
-
-                                DIcon {
-                                    name: "visibility_off"
-                                    size: Theme.iconSizeMedium
-                                    color: Theme.surfaceVariantText
-                                    anchors.verticalCenter: parent.verticalCenter
-                                }
-
-                                StyledText {
-                                    text: I18n.tr("Hidden (%1)", "count of hidden audio devices").arg(root.hiddenInputDevices.length)
-                                    font.pixelSize: Theme.fontSizeSmall
-                                    color: Theme.surfaceVariantText
-                                    anchors.verticalCenter: parent.verticalCenter
-                                }
-                            }
-
-                            DIcon {
-                                name: root.showHiddenInputDevices ? "expand_less" : "expand_more"
-                                size: Theme.iconSizeMedium
-                                color: Theme.surfaceVariantText
-                                anchors.right: parent.right
-                                anchors.verticalCenter: parent.verticalCenter
-                            }
-
-                            MouseArea {
-                                anchors.fill: parent
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: root.showHiddenInputDevices = !root.showHiddenInputDevices
-                            }
+                            text: I18n.tr("No input devices found", "Audio settings empty state")
+                            font.pixelSize: Theme.fontSizeSmall
+                            color: Theme.surfaceVariantText
+                            horizontalAlignment: Text.AlignHCenter
+                            visible: root.shownInputDevices.length === 0 && root.hiddenInputDevices.length === 0
+                            topPadding: Theme.spacingM
                         }
 
                         Column {
                             width: parent.width
                             spacing: 0
-                            visible: root.showHiddenInputDevices
+                            visible: root.hiddenInputDevices.length > 0
 
-                            Repeater {
-                                model: root.hiddenInputDevices
+                            Item {
+                                width: parent.width
+                                height: 36
 
-                                delegate: DeviceAliasRow {
-                                    required property var modelData
-                                    deviceNode: modelData
-                                    deviceType: "input"
-                                    isHidden: true
-                                    showHideButton: true
+                                Row {
+                                    anchors.left: parent.left
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    spacing: Theme.spacingS
 
-                                    onHideRequested: device => {
-                                        root.persistHiddenInputDeviceNames(root.hiddenInputDeviceNames.filter(n => n !== device.name));
+                                    DIcon {
+                                        name: "visibility_off"
+                                        size: Theme.iconSizeMedium
+                                        color: Theme.surfaceVariantText
+                                        anchors.verticalCenter: parent.verticalCenter
+                                    }
+
+                                    StyledText {
+                                        text: I18n.tr("Hidden (%1)", "count of hidden audio devices").arg(root.hiddenInputDevices.length)
+                                        font.pixelSize: Theme.fontSizeSmall
+                                        color: Theme.surfaceVariantText
+                                        anchors.verticalCenter: parent.verticalCenter
+                                    }
+                                }
+
+                                DIcon {
+                                    name: root.showHiddenInputDevices ? "expand_less" : "expand_more"
+                                    size: Theme.iconSizeMedium
+                                    color: Theme.surfaceVariantText
+                                    anchors.right: parent.right
+                                    anchors.verticalCenter: parent.verticalCenter
+                                }
+
+                                MouseArea {
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: root.showHiddenInputDevices = !root.showHiddenInputDevices
+                                }
+                            }
+
+                            Column {
+                                width: parent.width
+                                spacing: 0
+                                visible: root.showHiddenInputDevices
+
+                                Repeater {
+                                    model: root.hiddenInputDevices
+
+                                    delegate: DeviceAliasRow {
+                                        required property var modelData
+                                        deviceNode: modelData
+                                        deviceType: "input"
+                                        isHidden: true
+                                        showHideButton: true
+
+                                        onHideRequested: device => {
+                                            root.persistHiddenInputDeviceNames(root.hiddenInputDeviceNames.filter(n => n !== device.name));
+                                        }
                                     }
                                 }
                             }

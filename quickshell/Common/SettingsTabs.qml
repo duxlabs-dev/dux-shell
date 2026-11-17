@@ -645,7 +645,6 @@ Singleton {
                 },
                 {
                     "id": "running_apps",
-                    "advanced": true,
                     "text": I18n.tr("Running apps"),
                     "icon": "app_registration",
                     "tabIndex": 19,

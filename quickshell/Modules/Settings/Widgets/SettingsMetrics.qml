@@ -31,6 +31,8 @@ Singleton {
     readonly property real rowMinHeightTwoLine: Theme.listItemTwoLineHeight + Theme.densityStepM
     readonly property real cardGap: Theme.spacingL + Theme.densityStepS
     readonly property real rowContentSpacing: Theme.spacingL
+    readonly property real resetChipPaddingH: Theme.spacingM
+    readonly property real resetChipPaddingV: Theme.spacingXS
     readonly property real heroPadding: rowPaddingV
     readonly property real heroLeadingSize: Theme.avatarSize
     readonly property real sectionLabelTopGap: Math.max(Theme.spacingXS, Theme.spacingS + Theme.densityStepS)
@@ -52,6 +54,8 @@ Singleton {
     readonly property real buttonGroupCompactThreshold: 200
     readonly property real choiceCardPreviewRatio: 10 / 16
     readonly property real positionPickerMaxWidth: 360
+    readonly property real tileMinWidth: 300
+    readonly property real tileGap: Theme.spacingS
     readonly property real wallpaperThumbRatio: 10 / 16
     readonly property int wallpaperThumbCache: 1024
     readonly property int wallpaperGridColumns: 5
@@ -74,9 +78,12 @@ Singleton {
     readonly property color selectedRowColor: Theme.selectedContainer
     readonly property int transitionDuration: Theme.expressiveDurations.expressiveFastSpatial
     readonly property int fadeDuration: Theme.expressiveDurations.expressiveEffects
-    readonly property int exitDuration: Theme.expressiveDurations.expressiveFastEffects
-    readonly property int pageSettleFrames: 2
-    readonly property int pageSettleDeadline: 250
+    readonly property int pageExitDuration: Theme.expressiveDurations.expressiveFastEffects / 2
+    readonly property int pageEnterFadeDuration: Theme.expressiveDurations.expressiveFastEffects
+    readonly property real pageSlideOffset: Theme.spacingXL * 2
+    readonly property int pageWarmUpDuration: 50
+    readonly property real pagePrepaintOpacity: 0.01
+    readonly property int pageCacheLimit: 6
     readonly property int pageSpinnerDelay: 500
     readonly property real fieldWidthXS: Theme.iconButtonSize * 1.5
     readonly property real fieldWidthS: Theme.iconButtonSize * 2

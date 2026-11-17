@@ -214,59 +214,62 @@ Item {
             }
         }
 
-        SettingsCard {
-            title: I18n.tr("Current status")
-            visible: SessionData.nightModeAutoEnabled && NightModeService.gammaControlAvailable && NightModeService.nightModeEnabled && NightModeService.gammaCurrentTemp > 0
+        SettingsDeferred {
+            when: SessionData.nightModeAutoEnabled && NightModeService.gammaControlAvailable && NightModeService.nightModeEnabled && NightModeService.gammaCurrentTemp > 0
 
-            Column {
-                spacing: Theme.spacingM
+            SettingsCard {
+                title: I18n.tr("Current status")
 
-                Row {
-                    width: parent.width
+                Column {
                     spacing: Theme.spacingM
 
-                    StatusTile {
-                        iconName: "device_thermostat"
-                        value: NightModeService.gammaCurrentTemp + "K"
-                        label: I18n.tr("Current temperature")
+                    Row {
+                        width: parent.width
+                        spacing: Theme.spacingM
+
+                        StatusTile {
+                            iconName: "device_thermostat"
+                            value: NightModeService.gammaCurrentTemp + "K"
+                            label: I18n.tr("Current temperature")
+                        }
+
+                        StatusTile {
+                            iconName: NightModeService.gammaIsDay ? "wb_sunny" : "nightlight"
+                            iconColor: NightModeService.gammaIsDay ? Theme.warning : Theme.secondary
+                            value: NightModeService.gammaIsDay ? I18n.tr("Daytime", "night mode status label, current period is day") : I18n.tr("Night")
+                            label: I18n.tr("Current period")
+                        }
                     }
 
-                    StatusTile {
-                        iconName: NightModeService.gammaIsDay ? "wb_sunny" : "nightlight"
-                        iconColor: NightModeService.gammaIsDay ? Theme.warning : Theme.secondary
-                        value: NightModeService.gammaIsDay ? I18n.tr("Daytime", "night mode status label, current period is day") : I18n.tr("Night")
-                        label: I18n.tr("Current period")
+                    Row {
+                        width: parent.width
+                        spacing: Theme.spacingM
+                        visible: autoModeGroup.locationMode && (NightModeService.gammaSunriseTime || NightModeService.gammaSunsetTime)
+
+                        StatusTile {
+                            visible: NightModeService.gammaSunriseTime
+                            iconName: "wb_twilight"
+                            iconColor: Theme.warning
+                            value: Format.formatIsoTime(NightModeService.gammaSunriseTime)
+                            label: I18n.tr("Sunrise")
+                        }
+
+                        StatusTile {
+                            visible: NightModeService.gammaSunsetTime
+                            iconName: "wb_twilight"
+                            iconColor: Theme.secondary
+                            value: Format.formatIsoTime(NightModeService.gammaSunsetTime)
+                            label: I18n.tr("Sunset")
+                        }
                     }
                 }
 
-                Row {
-                    width: parent.width
-                    spacing: Theme.spacingM
-                    visible: autoModeGroup.locationMode && (NightModeService.gammaSunriseTime || NightModeService.gammaSunsetTime)
-
-                    StatusTile {
-                        visible: NightModeService.gammaSunriseTime
-                        iconName: "wb_twilight"
-                        iconColor: Theme.warning
-                        value: Format.formatIsoTime(NightModeService.gammaSunriseTime)
-                        label: I18n.tr("Sunrise")
-                    }
-
-                    StatusTile {
-                        visible: NightModeService.gammaSunsetTime
-                        iconName: "wb_twilight"
-                        iconColor: Theme.secondary
-                        value: Format.formatIsoTime(NightModeService.gammaSunsetTime)
-                        label: I18n.tr("Sunset")
-                    }
+                SettingsRow {
+                    visible: NightModeService.gammaNextTransition
+                    iconName: "schedule"
+                    title: I18n.tr("Next Transition")
+                    subtitle: Format.formatIsoTime(NightModeService.gammaNextTransition)
                 }
-            }
-
-            SettingsRow {
-                visible: NightModeService.gammaNextTransition
-                iconName: "schedule"
-                title: I18n.tr("Next Transition")
-                subtitle: Format.formatIsoTime(NightModeService.gammaNextTransition)
             }
         }
 
