@@ -14685,7 +14685,8 @@
       "mfact",
       "ratio",
       "size",
-      "system"
+      "system",
+      "tile"
     ],
     "conditionKey": "layoutCapable"
   },
@@ -15086,15 +15087,21 @@
     "tabIndex": 37,
     "category": "System & integrations",
     "keywords": [
+      "center tile",
+      "deck",
       "dwindle",
       "general:layout",
       "hyprland",
       "integrations",
       "layout",
       "master",
+      "monocle",
+      "right tile",
       "scrolling",
       "system",
-      "tiling"
+      "tile",
+      "tiling",
+      "vertical tile"
     ],
     "icon": "view_quilt",
     "conditionKey": "isHyprland"
