@@ -2,7 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import qs.Common
-import qs.Widgets
+import qs.DCommon.Widgets
 
 Row {
     id: root
@@ -12,21 +12,29 @@ Row {
     spacing: Theme.spacingXS
     anchors.verticalCenter: parent?.verticalCenter
 
+    StyledTextMetrics {
+        id: widestLabel
+
+        text: "32px"
+        font.pixelSize: Theme.fontSizeSmall
+        font.weight: Font.Bold
+    }
+
     StyledText {
         anchors.verticalCenter: parent.verticalCenter
         text: Math.round(root.target.strokeSize) + "px"
         font.pixelSize: Theme.fontSizeSmall
         font.weight: Font.Bold
         color: Theme.surfaceText
-        width: 34
+        width: widestLabel.advanceWidth
         horizontalAlignment: Text.AlignRight
     }
 
-    DankSlider {
+    DSlider {
         id: sizeSlider
 
         anchors.verticalCenter: parent.verticalCenter
-        width: 90
+        width: Theme.iconSize * 4
         minimum: 1
         maximum: 32
         step: 1

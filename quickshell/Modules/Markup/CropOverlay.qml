@@ -7,7 +7,7 @@ Item {
 
     property var rect: null
     property real unitScale: 1
-    property color dimColor: Theme.withAlpha(Theme.background, 0.6)
+    property color dimColor: Theme.withAlpha(Theme.scrimColor, Theme.scrimAlpha)
 
     readonly property real rx: (rect?.x ?? 0) * unitScale
     readonly property real ry: (rect?.y ?? 0) * unitScale

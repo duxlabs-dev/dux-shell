@@ -5,7 +5,7 @@ import Quickshell
 import Quickshell.Wayland
 import qs.Common
 import qs.Services
-import qs.Widgets
+import qs.DCommon.Widgets
 
 // Print-screen capture: freezes every output, select a region on one, annotate it in place.
 Scope {
@@ -72,7 +72,7 @@ Scope {
             summary: I18n.tr("Screenshot captured", "notification title after taking a screenshot"),
             body: lines.join("\n")
         };
-        DMSService.sendRequest("notify.send", params);
+        DMSService.notifySend(params);
     }
 
     Variants {
@@ -291,17 +291,17 @@ Scope {
                         return sel.y + gap;
                     return sel.y + sel.height + gap;
                 }
-                width: 32
-                height: 24
-                radius: Theme.cornerRadiusSmall
-                color: Theme.surfaceContainer
+                width: Theme.iconSize + Theme.spacingS
+                height: Theme.iconSizeSmall + Theme.spacingS
+                radius: Theme.cornerRadiusS
+                color: Theme.readableSurface
                 border.color: Theme.outlineVariant
-                border.width: 1
+                border.width: Theme.outlineWidth
 
-                DankIcon {
+                DIcon {
                     anchors.centerIn: parent
                     name: "drag_pan"
-                    size: 16
+                    size: Theme.iconSizeSmall
                     color: Theme.surfaceText
                 }
 
@@ -365,8 +365,8 @@ Scope {
                         return sel.y - gap - height;
                     return sel.y + sel.height - gap - height;
                 }
-                radius: Theme.cornerRadius
-                color: Theme.surfaceContainer
+                radius: Theme.fullRadius(width, height)
+                color: Theme.readableSurface
 
                 MouseArea {
                     anchors.fill: parent
@@ -385,13 +385,13 @@ Scope {
                     }
 
                     Rectangle {
-                        width: 1
-                        height: 20
+                        width: Theme.outlineWidth
+                        height: Theme.chipIconSize
                         anchors.verticalCenter: parent.verticalCenter
                         color: Theme.outlineVariant
                     }
 
-                    DankActionButton {
+                    DActionButton {
                         iconName: "undo"
                         iconSize: Theme.chipIconSize
                         iconColor: Theme.surfaceText
@@ -400,7 +400,7 @@ Scope {
                         onClicked: layer.undo()
                     }
 
-                    DankActionButton {
+                    DActionButton {
                         iconName: "redo"
                         iconSize: Theme.chipIconSize
                         iconColor: Theme.surfaceText
@@ -409,7 +409,7 @@ Scope {
                         onClicked: layer.redo()
                     }
 
-                    DankActionButton {
+                    DActionButton {
                         iconName: "content_copy"
                         iconSize: Theme.chipIconSize
                         iconColor: Theme.surfaceText
@@ -417,7 +417,7 @@ Scope {
                         onClicked: root.finish("copy")
                     }
 
-                    DankActionButton {
+                    DActionButton {
                         iconName: "save"
                         iconSize: Theme.chipIconSize
                         iconColor: Theme.surfaceText
@@ -425,7 +425,7 @@ Scope {
                         onClicked: root.finish("save")
                     }
 
-                    DankActionButton {
+                    DActionButton {
                         iconName: "check"
                         iconSize: Theme.chipIconSize
                         iconColor: Theme.primary
@@ -443,8 +443,8 @@ Scope {
                 height: toolbar.height
                 x: toolbar.x + toolbar.width + toolbar.gap
                 y: toolbar.y
-                radius: Theme.cornerRadius
-                color: Theme.surfaceContainer
+                radius: Theme.fullRadius(width, height)
+                color: Theme.readableSurface
 
                 MouseArea {
                     anchors.fill: parent
@@ -452,7 +452,7 @@ Scope {
                     onPressed: mouse => mouse.accepted = true
                 }
 
-                DankActionButton {
+                DActionButton {
                     anchors.centerIn: parent
                     iconName: "close"
                     iconSize: Theme.chipIconSize

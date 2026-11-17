@@ -2,7 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import qs.Common
-import qs.Widgets
+import qs.DCommon.Widgets
 
 Row {
     id: root
@@ -45,8 +45,8 @@ Row {
     spacing: Theme.spacingXS
 
     component Separator: Rectangle {
-        width: 1
-        height: 20
+        width: Theme.outlineWidth
+        height: Theme.chipIconSize
         anchors.verticalCenter: parent?.verticalCenter
         color: Theme.outlineVariant
     }
@@ -54,7 +54,7 @@ Row {
     Repeater {
         model: root.toolIds
 
-        delegate: DankActionButton {
+        delegate: DActionButton {
             required property string modelData
             readonly property bool selected: root.target.tool === modelData
 
@@ -81,26 +81,17 @@ Row {
             required property color modelData
             readonly property bool selected: Qt.colorEqual(root.target.strokeColor, modelData)
 
-            width: 24
-            height: 24
+            width: Theme.iconSize
+            height: Theme.iconSize
             anchors.verticalCenter: parent?.verticalCenter
 
-            Rectangle {
+            DColorSwatch {
                 anchors.centerIn: parent
-                width: 22
-                height: 22
-                radius: width / 2
-                color: "transparent"
-                border.color: Theme.primary
-                border.width: Theme.outlineWidthFocused
-                visible: swatch.selected
-            }
-
-            DankColorSwatch {
-                anchors.centerIn: parent
-                width: 16
-                height: 16
+                width: swatch.selected ? Theme.iconSize - Theme.spacingXS : Theme.iconSizeSmall
+                height: width
                 swatchColor: swatch.modelData
+                ringColor: swatch.selected ? Theme.primary : Theme.outline
+                ringWidth: swatch.selected ? Theme.outlineWidthFocused : Theme.outlineWidth
             }
 
             StateLayer {
