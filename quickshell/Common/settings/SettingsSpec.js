@@ -1785,6 +1785,39 @@ var LOCAL_SPEC = {
     clipboardVisibleEntryActions: {
         def: ["pin", "edit", "delete"]
     },
+    screenshotDir: {
+        def: ""
+    },
+    screenshotFormat: {
+        def: "png"
+    },
+    screenshotQuality: {
+        def: 90
+    },
+    screenshotCursor: {
+        def: false
+    },
+    screenshotClipboard: {
+        def: true
+    },
+    screenshotClipboardFile: {
+        def: false
+    },
+    screenshotSaveFile: {
+        def: true
+    },
+    screenshotNotify: {
+        def: true
+    },
+    screenshotConfirmRegion: {
+        def: true
+    },
+    screenshotHud: {
+        def: "auto"
+    },
+    screenshotScrollInterval: {
+        def: 45
+    },
     launcherPluginVisibility: {
         def: {}
     },

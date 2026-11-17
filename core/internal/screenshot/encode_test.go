@@ -2,6 +2,7 @@ package screenshot
 
 import (
 	"encoding/binary"
+	"path/filepath"
 	"testing"
 )
 
@@ -41,5 +42,18 @@ func TestBufferToImageWithFormat10Bit(t *testing.T) {
 				t.Errorf("pixel = %v, want %v", got, want)
 			}
 		})
+	}
+}
+
+func TestGetOutputDirWithoutUserDirs(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
+	t.Setenv("XDG_PICTURES_DIR", "")
+	t.Setenv("DMS_SCREENSHOT_DIR", "")
+
+	want := filepath.Join(home, "Pictures", "Screenshots")
+	if got := GetOutputDir(); got != want {
+		t.Fatalf("GetOutputDir() = %q, want %q", got, want)
 	}
 }

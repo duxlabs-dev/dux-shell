@@ -715,6 +715,13 @@ Singleton {
                     "hint": I18n.tr("History size, retention, paste behavior")
                 },
                 {
+                    "id": "screenshot",
+                    "text": I18n.tr("Screenshot", "noun, settings page name for screenshot defaults"),
+                    "icon": "screenshot_region",
+                    "tabIndex": 79,
+                    "hint": I18n.tr("Save location, format, capture behavior", "settings sidebar hint for the screenshot page")
+                },
+                {
                     "id": "compositor_layout",
                     "text": CompositorService.displayName,
                     "icon": "layers",
