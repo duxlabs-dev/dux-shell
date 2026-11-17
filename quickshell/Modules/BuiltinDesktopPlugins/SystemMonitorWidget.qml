@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import qs.Common
 import qs.Services
+import qs.Widgets
 import qs.DCommon.Widgets
 import "../../Common/Format.js" as Format
 
@@ -631,9 +632,8 @@ Item {
                 spacing: Theme.spacingXS
                 visible: root.showTopProcesses && root.sortedProcesses.length > 0
 
-                Rectangle {
+                DDivider {
                     Layout.fillWidth: true
-                    height: 1
                     color: Theme.withAlpha(Theme.outline, 0.15)
                 }
 
@@ -696,9 +696,8 @@ Item {
                 spacing: Theme.spacingXS
                 visible: root.showDisk && DgopService.diskMounts.length > 0
 
-                Rectangle {
+                DDivider {
                     Layout.fillWidth: true
-                    height: 1
                     color: Theme.withAlpha(Theme.outline, 0.15)
                 }
 

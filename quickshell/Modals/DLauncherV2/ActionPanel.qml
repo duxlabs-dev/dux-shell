@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import qs.Common
 import qs.Services
+import qs.Widgets
 import qs.DCommon.Widgets
 import qs.Modals.DLauncherV2.Components
 
@@ -137,10 +138,8 @@ Rectangle {
         }
     }
 
-    Rectangle {
+    DDivider {
         anchors.top: parent.top
-        width: parent.width
-        height: Theme.outlineWidth
         color: Theme.outlineMedium
     }
 

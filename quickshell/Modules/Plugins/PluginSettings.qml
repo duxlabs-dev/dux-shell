@@ -2,6 +2,7 @@ import QtQuick
 import Quickshell
 import qs.Common
 import qs.Services
+import qs.Widgets
 import qs.DCommon.Widgets
 
 Item {
@@ -229,9 +230,7 @@ Item {
                 width: parent.width
                 spacing: Theme.spacingS
 
-                Rectangle {
-                    width: parent.width
-                    height: 1
+                DDivider {
                     color: Theme.outline
                     opacity: 0.3
                     visible: root.content.length > 0

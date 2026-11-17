@@ -106,11 +106,10 @@ Item {
             width: root.vertical ? root.availableWidth : (root.split ? Theme.groupedListGap : dot.implicitWidth)
             height: root.vertical ? Theme.spacingM : root.fontSize
 
-            Rectangle {
+            DDivider {
                 visible: root.vertical
                 anchors.centerIn: parent
                 width: parent.width * 0.6
-                height: 1
                 color: root.separatorColor
             }
 

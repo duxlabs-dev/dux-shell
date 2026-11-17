@@ -793,10 +793,9 @@ Column {
                             color: Theme.surfaceTextMedium
                         }
 
-                        Rectangle {
-                            width: 1
+                        DDivider {
+                            vertical: true
                             height: 20
-                            color: Theme.outlineVariant
                             anchors.verticalCenter: parent.verticalCenter
                         }
 
@@ -959,9 +958,9 @@ Column {
                     onClicked: textArea.redo()
                 }
 
-                Rectangle {
+                DDivider {
+                    vertical: true
                     anchors.verticalCenter: parent.verticalCenter
-                    width: Theme.dividerWidth
                     height: Theme.iconSize - 2
                     color: Theme.outlineMedium
                 }

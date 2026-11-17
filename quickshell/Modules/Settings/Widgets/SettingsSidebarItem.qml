@@ -72,10 +72,8 @@ Rectangle {
     border.width: SettingsMetrics.groupEdgeWidth
     border.color: Theme.outlineMedium
 
-    Rectangle {
-        x: Theme.spacingL
-        width: parent.width - Theme.spacingL * 2
-        height: Theme.dividerWidth
+    DDivider {
+        inset: Theme.spacingL
         visible: SettingsMetrics.continuousGroups && !root.isFirstInGroup && !root.active
         color: SettingsMetrics.groupDividerColor
     }

@@ -4,6 +4,7 @@ import QtQuick
 import QtQuick.Templates as T
 import qs.Common
 import qs.Services
+import qs.Widgets
 import qs.DCommon.Widgets
 
 T.Control {
@@ -153,10 +154,8 @@ T.Control {
         border.width: root.inGroup ? SettingsMetrics.groupEdgeWidth : Theme.layerOutlineWidth
         border.color: Theme.outlineMedium
 
-        Rectangle {
-            x: root.paddingH
-            width: parent.width - root.paddingH * 2
-            height: Theme.dividerWidth
+        DDivider {
+            inset: root.paddingH
             visible: SettingsMetrics.continuousGroups && root.dividerBefore
             color: SettingsMetrics.groupDividerColor
         }

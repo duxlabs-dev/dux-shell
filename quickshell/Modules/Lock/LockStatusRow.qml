@@ -3,6 +3,7 @@ import QtQuick.Window
 import Quickshell.Services.Mpris
 import qs.Common
 import qs.Services
+import qs.Widgets
 import qs.DCommon.Widgets
 import qs.DCommon.Session
 import "../../DCommon/Common/LayoutCodes.js" as LayoutCodes
@@ -42,8 +43,8 @@ Row {
     Component.onCompleted: KeyboardLayoutService.consumers++
     Component.onDestruction: KeyboardLayoutService.consumers--
 
-    component Divider: Rectangle {
-        width: Theme.dividerWidth
+    component Divider: DDivider {
+        vertical: true
         height: Theme.iconSize
         color: root.dividerColor
         anchors.verticalCenter: parent.verticalCenter

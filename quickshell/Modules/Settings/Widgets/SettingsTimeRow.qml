@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Window
 import qs.Common
+import qs.Widgets
 import qs.DCommon.Widgets
 
 Item {
@@ -51,21 +52,18 @@ Item {
     width: parent?.width ?? 0
     height: halves.implicitHeight
 
-    Rectangle {
-        x: SettingsMetrics.rowPaddingH
+    DDivider {
         z: 1
-        width: parent.width - SettingsMetrics.rowPaddingH * 2
-        height: Theme.dividerWidth
+        inset: SettingsMetrics.rowPaddingH
         visible: SettingsMetrics.continuousGroups && root.inGroup && !root.isFirstInGroup
         color: SettingsMetrics.groupDividerColor
     }
 
-    Rectangle {
-        x: (parent.width - width) / 2
-        y: SettingsMetrics.rowPaddingV
+    DDivider {
+        vertical: true
+        anchors.horizontalCenter: parent.horizontalCenter
         z: 1
-        width: Theme.dividerWidth
-        height: parent.height - SettingsMetrics.rowPaddingV * 2
+        inset: SettingsMetrics.rowPaddingV
         visible: SettingsMetrics.continuousGroups && root.showEnd
         color: SettingsMetrics.groupDividerColor
     }

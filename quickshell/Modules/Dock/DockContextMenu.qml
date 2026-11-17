@@ -2,6 +2,7 @@ import QtQuick
 import Quickshell.Widgets
 import qs.Common
 import qs.Services
+import qs.Widgets
 import qs.DCommon.Widgets
 
 DockContextMenuBase {
@@ -159,7 +160,7 @@ DockContextMenuBase {
         }
     }
 
-    Rectangle {
+    DDivider {
         visible: {
             if (!root.appData)
                 return false;
@@ -167,8 +168,6 @@ DockContextMenuBase {
                 return false;
             return root.appData.windowCount > 0;
         }
-        width: parent.width
-        height: 1
         color: Theme.outlineHeavy
     }
 
@@ -249,10 +248,8 @@ DockContextMenuBase {
             width: parent.width
             spacing: 1
 
-            Rectangle {
+            DDivider {
                 visible: jumpGroup.index > 0
-                width: parent.width
-                height: 1
                 color: Theme.outlineHeavy
             }
 
@@ -274,22 +271,18 @@ DockContextMenuBase {
         }
     }
 
-    Rectangle {
+    DDivider {
         visible: root.settingsJumpGroups.length > 0 && !root.hidePin
-        width: parent.width
-        height: 1
         color: Theme.outlineHeavy
     }
 
-    Rectangle {
+    DDivider {
         visible: {
             if (!root.desktopEntry?.actions || root.desktopEntry.actions.length === 0) {
                 return false;
             }
             return !root.hidePin || (!root.isDmsWindow && root.desktopEntry && SessionService.nvidiaCommand);
         }
-        width: parent.width
-        height: 1
         color: Theme.outlineHeavy
     }
 
@@ -353,7 +346,7 @@ DockContextMenuBase {
         }
     }
 
-    Rectangle {
+    DDivider {
         visible: {
             const hasNvidia = !root.isDmsWindow && root.desktopEntry && SessionService.nvidiaCommand;
             const hasWindow = root.appData && (root.appData.type === "window" || (root.appData.type === "grouped" && root.appData.windowCount > 0));
@@ -361,8 +354,6 @@ DockContextMenuBase {
             const hasContentAbove = hasPinOption || hasNvidia;
             return hasContentAbove && hasWindow;
         }
-        width: parent.width
-        height: 1
         color: Theme.outlineHeavy
     }
 
