@@ -159,8 +159,8 @@ var SETTINGS_MAP = {
     ],
     general: [
         "powerActionConfirm", "powerActionHoldDuration", "powerMenuActions", "powerMenuDefaultAction",
-        "powerMenuGridLayout", "appIdSubstitutions", "centeringMode", "keybindsFloatingWindow", "wellbeingEnabled",
-        "wellbeingDailyLimit", "notepadUseMonospace", "notepadFontFamily", "notepadFontSize",
+        "powerMenuGridLayout", "appIdSubstitutions", "centeringMode", "keybindsFloatingWindow", "keybindsModifierStyle",
+        "wellbeingEnabled", "wellbeingDailyLimit", "notepadUseMonospace", "notepadFontFamily", "notepadFontSize",
         "notepadShowLineNumbers", "notepadAutoSave", "notepadSlideoutSide", "notepadDefaultMode",
         "notepadTransparencyOverride", "notepadLastCustomTransparency", "notepadUseCompositorGap", "notepadEdgeGap",
         "muxSessionFilter", "updaterCheckOnStart", "updaterIntervalSeconds", "updaterNotify",
