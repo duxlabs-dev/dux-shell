@@ -50,7 +50,7 @@ DIdleSurface {
             id: dismissal
             screen: root.screen
             renders: false
-            active: root.active && root.bounded && (root.activeHost?.shouldBeVisible ?? false) && (root.activeHost?.backgroundInteractive ?? false)
+            active: root.active && root.bounded && (root.activeHost?.shouldBeVisible ?? false) && (root.activeHost?.backgroundInteractive ?? false) && !(root.activeHost?.dragPassthrough ?? false)
             WlrLayershell.namespace: "dms:popout-dismiss"
             WlrLayershell.layer: root.WlrLayershell.layer
             WlrLayershell.keyboardFocus: WlrKeyboardFocus.None

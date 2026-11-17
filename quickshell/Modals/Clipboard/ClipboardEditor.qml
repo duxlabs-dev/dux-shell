@@ -6,6 +6,7 @@ import QtQuick.Layouts
 import qs.Common
 import qs.Services
 import qs.DCommon.Widgets
+import "ClipboardUtils.js" as ClipboardUtils
 
 Item {
     id: root
@@ -37,50 +38,7 @@ Item {
     }
 
     function decodeEntryData(data) {
-        if (!data) {
-            return "";
-        }
-        if (typeof data !== "string") {
-            return String(data);
-        }
-
-        const sanitized = data.replace(/\s+/g, "");
-        if (sanitized.length === 0) {
-            return "";
-        }
-
-        try {
-            const decoded = Qt.atob(sanitized);
-            if (!decoded) {
-                return data;
-            }
-
-            let binary = "";
-            if (typeof decoded === "string") {
-                // Pre-6.11 Qt.atob returns a binary string directly
-                binary = decoded;
-            } else {
-                // Qt 6.11+ Qt.atob returns an ArrayBuffer — convert to avoid O(n²) concat/stack limits
-                const bytes = new Uint8Array(decoded);
-                const chunkSize = 8192;
-                const chunks = [];
-                for (let i = 0; i < bytes.length; i += chunkSize) {
-                    chunks.push(String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize)));
-                }
-                binary = chunks.join("");
-            }
-
-            if (!binary) {
-                return data;
-            }
-            try {
-                return decodeURIComponent(escape(binary));
-            } catch (e) {
-                return binary;
-            }
-        } catch (e) {
-            return data;
-        }
+        return ClipboardUtils.decodeEntryData(data);
     }
 
     function fetchEntry(requestedId) {
