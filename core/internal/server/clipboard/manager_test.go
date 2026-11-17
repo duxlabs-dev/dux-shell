@@ -1193,3 +1193,63 @@ func TestEditEntry_ReportsFailedCopyButKeepsEdit(t *testing.T) {
 	require.Len(t, history, 1)
 	assert.Equal(t, "edited", history[0].Preview)
 }
+
+func TestTextOnlyPayload(t *testing.T) {
+	tests := []struct {
+		name     string
+		entry    Entry
+		wantData string
+		wantMime string
+	}{
+		{
+			name:     "file uri becomes plain path",
+			entry:    Entry{Data: []byte(encodeFileURI("/tmp/吉祥物 男女(2).fbx") + "\r\n"), MimeType: "text/uri-list"},
+			wantData: "/tmp/吉祥物 男女(2).fbx",
+			wantMime: "text/plain;charset=utf-8",
+		},
+		{
+			name:     "every uri is kept, non-file uris verbatim",
+			entry:    Entry{Data: []byte("# comment\r\nfile:///a/b%20c\r\nhttps://example.com/x\r\n"), MimeType: "text/uri-list"},
+			wantData: "/a/b c\nhttps://example.com/x",
+			wantMime: "text/plain;charset=utf-8",
+		},
+		{
+			name:     "stored alternate wins",
+			entry:    Entry{Data: []byte("file:///tmp/x\r\n"), MimeType: "text/uri-list", AltData: []byte("prose"), AltMimeType: "text/plain;charset=utf-8"},
+			wantData: "prose",
+			wantMime: "text/plain;charset=utf-8",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			data, mime := textOnlyPayload(&tt.entry)
+			assert.Equal(t, tt.wantData, string(data))
+			assert.Equal(t, tt.wantMime, mime)
+		})
+	}
+}
+
+// Copy Text on a file entry used to fall through to CopyFile, which serves the
+// uri-list that browser text fields refuse.
+func TestHandleCopyEntry_TextOnlyFileEntrySkipsFileCopy(t *testing.T) {
+	m := newTestManagerWithDB(t)
+
+	path := filepath.Join(t.TempDir(), "notes.txt")
+	require.NoError(t, os.WriteFile(path, []byte("body"), 0o644))
+	require.NoError(t, m.CopyFile(t.Context(), path))
+
+	history := m.GetHistory()
+	require.Len(t, history, 1)
+
+	mc := newClipboardTestConn()
+	handleCopyEntry(ipc.NewConnWriter(mc), ipc.Request{
+		ID:     1,
+		Params: map[string]any{"id": float64(history[0].ID), "textOnly": true},
+	}, m)
+
+	var resp ipc.Response[map[string]any]
+	require.NoError(t, json.NewDecoder(mc.writeBuf).Decode(&resp))
+	require.Empty(t, resp.Error)
+	require.NotNil(t, resp.Result)
+	assert.NotContains(t, *resp.Result, "filePath")
+}

@@ -2165,6 +2165,30 @@ func (m *Manager) EntryToFile(entry *Entry) string {
 	return pathFromFileURI(uri)
 }
 
+// A uri-list is served as plain paths because browsers treat any uri-list
+// offer as dropped files, which text-only editors paste as nothing.
+func textOnlyPayload(entry *Entry) ([]byte, string) {
+	if entry.AltMimeType != "" {
+		return entry.AltData, entry.AltMimeType
+	}
+	if entry.MimeType != "text/uri-list" {
+		return entry.Data, entry.MimeType
+	}
+
+	var lines []string
+	for line := range strings.Lines(string(entry.Data)) {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		if path := pathFromFileURI(line); path != "" {
+			line = path
+		}
+		lines = append(lines, line)
+	}
+	return []byte(strings.Join(lines, "\n")), "text/plain;charset=utf-8"
+}
+
 func (m *Manager) dbusConnForFlatpak() (*dbus.Conn, error) {
 	m.dbusConnMutex.Lock()
 	defer m.dbusConnMutex.Unlock()

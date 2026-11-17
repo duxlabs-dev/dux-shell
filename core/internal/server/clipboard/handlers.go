@@ -284,9 +284,9 @@ func handleCopyEntry(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
 
 	ctx, cancel := copyContext()
 	defer cancel()
-	textOnly := params.BoolOpt(req.Params, "textOnly", false) && entry.AltMimeType != ""
+	textOnly := params.BoolOpt(req.Params, "textOnly", false) && (entry.AltMimeType != "" || entry.MimeType == "text/uri-list")
 
-	if entry.AltMimeType == "" {
+	if entry.AltMimeType == "" && !textOnly {
 		filePath := m.EntryToFile(entry)
 		if filePath != "" {
 			if err := m.CopyFile(ctx, filePath); err != nil {
@@ -304,7 +304,8 @@ func handleCopyEntry(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
 	var setErr error
 	switch {
 	case textOnly:
-		setErr = m.SetClipboard(ctx, entry.AltData, entry.AltMimeType)
+		data, mime := textOnlyPayload(entry)
+		setErr = m.SetClipboard(ctx, data, mime)
 	default:
 		setErr = m.SetClipboardEntry(ctx, entry)
 	}
