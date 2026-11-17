@@ -39,6 +39,11 @@ Item {
     property bool closeOnEscapeKey: modalHandle.closeOnEscapeKey
     property bool closeOnBackgroundClick: modalHandle.closeOnBackgroundClick
     property string animationType: modalHandle.animationType
+    readonly property bool dragPassthrough: modalHandle?.dragPassthrough ?? false
+    onDragPassthroughChanged: {
+        if (connected)
+            _queueFullSync();
+    }
 
     property string preferredConnectedBarSide: SettingsData.frameModalEmergeSide
 
@@ -120,8 +125,8 @@ Item {
             surfaceKind: "modal"
             screenName: root._currentScreenName()
             enabled: root.frameOwnsConnectedChrome
-            active: root.shouldBeVisible
-            presented: root.shouldBeVisible || contentWindow.visible
+            active: root.shouldBeVisible && !root.dragPassthrough
+            presented: (root.shouldBeVisible || contentWindow.visible) && !root.dragPassthrough
             dockBlocked: root._dockBlocksEmergence
             dockSide: root.resolvedConnectedBarSide
             onRecoveryRequested: root._queueFullSync()
@@ -131,7 +136,7 @@ Item {
     function _publishModalChromeState() {
         if (!connected)
             return false;
-        const presented = shouldBeVisible || contentWindow.visible;
+        const presented = (shouldBeVisible || contentWindow.visible) && !dragPassthrough;
         const phase = !presented ? "hidden" : (!shouldBeVisible && contentWindow.visible ? "closing" : (!contentWindow.visible ? "opening" : "open"));
         const bodyRect = {
             "x": alignedX + fluidBody.x,
@@ -471,24 +476,34 @@ Item {
         visible: false
         color: "transparent"
 
+        Item {
+            id: fullWindowMask
+            anchors.fill: parent
+            visible: false
+        }
+
+        mask: Region {
+            item: root.dragPassthrough ? null : fullWindowMask
+        }
+
         WindowBlur {
             targetWindow: contentWindow
-            blurEnabled: !root.frameOwnsConnectedChrome
+            blurEnabled: !root.frameOwnsConnectedChrome && !root.dragPassthrough
             surfaceColor: root.effectiveBackgroundColor
             readonly property real s: Math.min(1, modalContainer.scaleValue)
             readonly property real op: Math.max(0, Math.min(1, (morph.value - 0.06) * 2))
             readonly property real visibleScale: root.connected ? s : s * op
             blurX: root._fluidMotionActive ? (modalReveal.x + modalContainer.x + root.fluidBody.x) : modalReveal.x + modalContainer.x + modalContainer.width * (1 - visibleScale) * 0.5 + Theme.snap(modalContainer.animX, root.dpr)
             blurY: root._fluidMotionActive ? (modalReveal.y + modalContainer.y + root.fluidBody.y) : modalReveal.y + modalContainer.y + modalContainer.height * (1 - visibleScale) * 0.5 + Theme.snap(modalContainer.animY, root.dpr)
-            blurWidth: root._fluidMotionActive ? (root.shouldBeVisible ? root.fluidBody.width : 0) : (root.shouldBeVisible && !root.frameOwnsConnectedChrome) ? modalContainer.width * visibleScale : 0
-            blurHeight: root._fluidMotionActive ? (root.shouldBeVisible ? root.fluidBody.height : 0) : (root.shouldBeVisible && !root.frameOwnsConnectedChrome) ? modalContainer.height * visibleScale : 0
+            blurWidth: root.dragPassthrough ? 0 : (root._fluidMotionActive ? (root.shouldBeVisible ? root.fluidBody.width : 0) : (root.shouldBeVisible && !root.frameOwnsConnectedChrome) ? modalContainer.width * visibleScale : 0)
+            blurHeight: root.dragPassthrough ? 0 : (root._fluidMotionActive ? (root.shouldBeVisible ? root.fluidBody.height : 0) : (root.shouldBeVisible && !root.frameOwnsConnectedChrome) ? modalContainer.height * visibleScale : 0)
             blurRadius: root.effectiveCornerRadius
         }
 
         WlrLayershell.namespace: root.layerNamespace
         WlrLayershell.layer: root.effectiveModalLayer
         WlrLayershell.exclusiveZone: -1
-        WlrLayershell.keyboardFocus: KeyboardFocus.keyboardFocus(root.shouldHaveFocus, root.customKeyboardFocus)
+        WlrLayershell.keyboardFocus: root.dragPassthrough ? WlrKeyboardFocus.None : KeyboardFocus.keyboardFocus(root.shouldHaveFocus, root.customKeyboardFocus)
 
         anchors {
             left: true
@@ -521,7 +536,7 @@ Item {
 
         MouseArea {
             anchors.fill: parent
-            enabled: root.closeOnBackgroundClick && root.shouldBeVisible
+            enabled: root.closeOnBackgroundClick && root.shouldBeVisible && !root.dragPassthrough
             z: -2
             onClicked: root.backgroundClicked()
         }
@@ -530,7 +545,7 @@ Item {
             anchors.fill: parent
             z: -1
             color: Theme.backdropColor
-            opacity: root.useBackground ? root.backgroundOpacity * contentFade.value : 0
+            opacity: (!root.dragPassthrough && root.useBackground) ? root.backgroundOpacity * contentFade.value : 0
             visible: root.useBackground
         }
 
@@ -542,6 +557,7 @@ Item {
             width: root.alignedWidth
             height: root.alignedHeight
             clip: root.frameOwnsConnectedChrome
+            opacity: root.dragPassthrough ? 0 : 1
 
             Item {
                 id: modalContainer
@@ -554,7 +570,7 @@ Item {
 
                 MouseArea {
                     anchors.fill: parent
-                    enabled: root.shouldBeVisible
+                    enabled: root.shouldBeVisible && !root.dragPassthrough
                     hoverEnabled: false
                     acceptedButtons: Qt.AllButtons
                     onPressed: mouse => mouse.accepted = true

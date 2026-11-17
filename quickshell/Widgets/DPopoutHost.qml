@@ -28,9 +28,14 @@ Item {
     readonly property var surface: IdleSurfaces.surfaceFor("popout", _attachedScreenName)
     readonly property bool attached: _attachedScreenName !== ""
     readonly property var contentWindow: attached ? surface : null
-    readonly property Item maskItem: (shouldBeVisible && backgroundInteractive) ? backgroundDismissalMask : contentMaskRect
-    readonly property int surfaceKeyboardFocus: KeyboardFocus.keyboardFocus(shouldBeVisible && (_keyboardReady || !connected), customKeyboardFocus)
-    readonly property var blurRegion: chromeLoader.item?.blur?.effectiveRegion ?? null
+    readonly property bool dragPassthrough: popoutHandle?.dragPassthrough ?? false
+    onDragPassthroughChanged: {
+        if (frameOwnsConnectedChrome)
+            _publishConnectedChromeState(false);
+    }
+    readonly property Item maskItem: dragPassthrough ? null : ((shouldBeVisible && backgroundInteractive) ? backgroundDismissalMask : contentMaskRect)
+    readonly property int surfaceKeyboardFocus: dragPassthrough ? WlrKeyboardFocus.None : KeyboardFocus.keyboardFocus(shouldBeVisible && (_keyboardReady || !connected), customKeyboardFocus)
+    readonly property var blurRegion: dragPassthrough ? null : (chromeLoader.item?.blur?.effectiveRegion ?? null)
     // The frame blurs what it owns from below; this window's own blur does not show above the frame.
     readonly property bool frameBlursSide: frameOwnsConnectedChrome && !joinsBar
     readonly property Item sideBlurShown: shouldBeVisible && !frameBlursSide ? sideBlurItem : null
@@ -256,8 +261,8 @@ Item {
 
     function _connectedChromeState(visibleOverride) {
         // Track intent rather than the transient wl_surface state during remap.
-        const visible = visibleOverride !== undefined ? !!visibleOverride : (root.attached || root.shouldBeVisible);
-        const presented = root.attached || root.shouldBeVisible;
+        const visible = visibleOverride !== undefined ? !!visibleOverride : ((root.attached || root.shouldBeVisible) && !root.dragPassthrough);
+        const presented = (root.attached || root.shouldBeVisible) && !root.dragPassthrough;
         const phase = root.isClosing ? "closing" : (!presented ? "hidden" : (!root.attached && root.shouldBeVisible ? "opening" : "open"));
         const bodyX = Theme.snap(root.pubBodyX, root.dpr);
         const bodyY = Theme.snap(root.pubBodyY, root.dpr);
@@ -1357,7 +1362,7 @@ Item {
             globalOffsetY: root.surface?.bandY ?? 0
             anchors.fill: parent
             dismissEnabled: root.hoverDismissEnabled
-            dismissSuspended: root.hoverDismissSuspended
+            dismissSuspended: root.hoverDismissSuspended || root.dragPassthrough
             surfaceVisible: root.shouldBeVisible
             onDismissRequested: root.closeFromHoverDismiss()
         }
@@ -1432,6 +1437,7 @@ Item {
 
         Item {
             id: contentContainer
+            opacity: root.dragPassthrough ? 0 : 1
             readonly property real surfaceOriginX: root.surface?.bandX ?? 0
             readonly property real surfaceOriginY: root.surface?.bandY ?? 0
             clip: root.morphTravelEnabled

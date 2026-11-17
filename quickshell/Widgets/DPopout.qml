@@ -67,6 +67,7 @@ Item {
     property var screen: null
     property int effectiveBarPosition: 0
     property real effectiveBarBottomGap: 0
+    property bool dragPassthrough: false
 
     signal opened
     signal popoutClosed
@@ -90,7 +91,7 @@ Item {
                 return surfaces;
             return surfaces.concat(KeyboardFocus.barWindows, KeyboardFocus.grabPeerWindows);
         }
-        wanted: KeyboardFocus.wantsGrab(root.shouldBeVisible, root.customKeyboardFocus)
+        wanted: KeyboardFocus.wantsGrab(root.shouldBeVisible && !root.dragPassthrough, root.customKeyboardFocus)
     }
 
     Loader {
@@ -205,6 +206,7 @@ Item {
     }
 
     function open() {
+        dragPassthrough = false;
         _maybeResolveBackend();
         if (impl.item) {
             _pendingOpen = false;
