@@ -31,7 +31,6 @@ Item {
             id: hotspotCard
 
             width: parent.width
-            title: I18n.tr("Hotspot", "hotspot settings card title")
             iconName: "wifi_tethering"
             settingKey: "networkHotspot"
             tags: ["wifi", "wi-fi", "wireless", "network", "hotspot", "access point", "sharing", "ssid", "qr code", "channel", "wpa3", "hidden", "security"]

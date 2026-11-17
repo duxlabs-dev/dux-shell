@@ -730,161 +730,161 @@ Item {
             }
         }
 
-        SettingsCard {
-            width: parent.width
-            iconName: "tune"
-            title: I18n.tr("Advanced")
-            settingKey: "lockScreenAdvanced"
-            tags: ["pam", "authentication", "source", "loginctl", "u2f"]
-            collapsible: true
-            expanded: false
+        SettingsAdvancedSection {
+            SettingsCard {
+                width: parent.width
+                iconName: "tune"
+                title: I18n.tr("Advanced")
+                settingKey: "lockScreenAdvanced"
+                tags: ["pam", "authentication", "source", "loginctl", "u2f"]
 
-            SettingsRow {
-                body: StyledText {
-                    text: I18n.tr("Authentication changes apply automatically")
-                    font.pixelSize: Theme.fontSizeSmall
-                    color: Theme.surfaceVariantText
-                    width: parent.width
-                    wrapMode: Text.Wrap
+                SettingsRow {
+                    body: StyledText {
+                        text: I18n.tr("Authentication changes apply automatically")
+                        font.pixelSize: Theme.fontSizeSmall
+                        color: Theme.surfaceVariantText
+                        width: parent.width
+                        wrapMode: Text.Wrap
+                    }
                 }
-            }
 
-            SettingsDropdownRow {
-                settingKey: "lockPamPath"
-                resetKeys: []
-                tags: ["lock", "screen", "pam", "authentication", "source", "service"]
-                text: I18n.tr("Authentication source", "lock screen PAM source setting")
-                description: SettingsData.lockPamPath !== "" ? SettingsData.lockPamPath : I18n.tr("Which PAM service the lock screen uses to authenticate", "lock screen PAM source setting")
-                options: root.authOptions
-                currentValue: root.authCurrentValue
-                onValueChanged: value => {
-                    if (value === root.authAutoLabel) {
+                SettingsDropdownRow {
+                    settingKey: "lockPamPath"
+                    resetKeys: []
+                    tags: ["lock", "screen", "pam", "authentication", "source", "service"]
+                    text: I18n.tr("Authentication source", "lock screen PAM source setting")
+                    description: SettingsData.lockPamPath !== "" ? SettingsData.lockPamPath : I18n.tr("Which PAM service the lock screen uses to authenticate", "lock screen PAM source setting")
+                    options: root.authOptions
+                    currentValue: root.authCurrentValue
+                    onValueChanged: value => {
+                        if (value === root.authAutoLabel) {
+                            root.authShowCustom = false;
+                            root.applyAutoAuthSource();
+                            return;
+                        }
+                        if (value === root.authCustomLabel) {
+                            root.authShowCustom = true;
+                            return;
+                        }
                         root.authShowCustom = false;
-                        root.applyAutoAuthSource();
-                        return;
-                    }
-                    if (value === root.authCustomLabel) {
-                        root.authShowCustom = true;
-                        return;
-                    }
-                    root.authShowCustom = false;
-                    const svc = root.authServices.find(s => root.authServiceLabel(s) === value);
-                    if (svc)
-                        root.validateAndApplyAuthSource(svc.path);
-                }
-            }
-
-            SettingsRow {
-                visible: root.authShowCustom || root.authCurrentValue === root.authCustomLabel
-                body: Row {
-                    width: parent.width
-                    spacing: Theme.spacingS
-
-                    DTextField {
-                        id: customPamField
-                        outlined: true
-                        leftIconName: "lock"
-                        labelText: I18n.tr("Path")
-                        width: parent.width - validatePamButton.width - Theme.spacingS
-                        placeholderText: "/etc/pam.d/my-service"
-                        text: SettingsData.lockPamPath
-                    }
-
-                    DButton {
-                        id: validatePamButton
-                        text: I18n.tr("Apply changes")
-                        enabled: !root.authValidateRunning && customPamField.text.trim() !== ""
-                        onClicked: root.validateAndApplyAuthSource(customPamField.text.trim())
+                        const svc = root.authServices.find(s => root.authServiceLabel(s) === value);
+                        if (svc)
+                            root.validateAndApplyAuthSource(svc.path);
                     }
                 }
-            }
 
-            SettingsNoteRow {
-                visible: root.authValidateMessage !== ""
-                noteIconName: ""
-                monospace: true
-                maxHeight: SettingsMetrics.noteMaxHeight
-                text: root.authValidateMessage
-                tint: !root.authValidateOk ? Theme.error : (root.authValidateWarn ? Theme.warning : Theme.surfaceVariantText)
-                tintBackground: SettingsMetrics.controlColor
-            }
+                SettingsRow {
+                    visible: root.authShowCustom || root.authCurrentValue === root.authCustomLabel
+                    body: Row {
+                        width: parent.width
+                        spacing: Theme.spacingS
 
-            SettingsDropdownRow {
-                settingKey: "lockU2fPamPath"
-                resetKeys: []
-                tags: ["lock", "screen", "pam", "u2f", "security", "key", "source", "service"]
-                text: I18n.tr("Security key PAM source", "lock screen dedicated U2F PAM source setting")
-                description: SettingsData.lockU2fPamPath !== "" ? SettingsData.lockU2fPamPath : I18n.tr("Auto uses an installed or bundled key-only service.", "lock screen dedicated U2F PAM source setting")
-                visible: !root.lockU2fControlledByPrimary
-                options: [root.authAutoLabel, root.authCustomLabel]
-                currentValue: root.u2fAuthCurrentValue
-                onValueChanged: value => {
-                    if (value === root.authAutoLabel) {
-                        root.u2fShowCustom = false;
-                        root.applyAutoU2fSource();
-                        return;
-                    }
-                    root.u2fShowCustom = true;
-                }
-            }
+                        DTextField {
+                            id: customPamField
+                            outlined: true
+                            leftIconName: "lock"
+                            labelText: I18n.tr("Path")
+                            width: parent.width - validatePamButton.width - Theme.spacingS
+                            placeholderText: "/etc/pam.d/my-service"
+                            text: SettingsData.lockPamPath
+                        }
 
-            SettingsRow {
-                visible: !root.lockU2fControlledByPrimary && (root.u2fShowCustom || root.u2fAuthCurrentValue === root.authCustomLabel)
-                body: Row {
-                    width: parent.width
-                    spacing: Theme.spacingS
-
-                    DTextField {
-                        id: customU2fPamField
-                        outlined: true
-                        leftIconName: "key"
-                        labelText: I18n.tr("Path")
-                        width: parent.width - validateU2fPamButton.width - Theme.spacingS
-                        placeholderText: "/etc/pam.d/dankshell-u2f"
-                        text: SettingsData.lockU2fPamPath
-                    }
-
-                    DButton {
-                        id: validateU2fPamButton
-                        text: I18n.tr("Apply changes")
-                        enabled: !root.u2fValidateRunning && customU2fPamField.text.trim() !== ""
-                        onClicked: root.validateAndApplyU2fSource(customU2fPamField.text.trim())
+                        DButton {
+                            id: validatePamButton
+                            text: I18n.tr("Apply changes")
+                            enabled: !root.authValidateRunning && customPamField.text.trim() !== ""
+                            onClicked: root.validateAndApplyAuthSource(customPamField.text.trim())
+                        }
                     }
                 }
-            }
 
-            SettingsNoteRow {
-                visible: !root.lockU2fControlledByPrimary && root.u2fValidateMessage !== ""
-                noteIconName: ""
-                monospace: true
-                maxHeight: SettingsMetrics.noteMaxHeight
-                text: root.u2fValidateMessage
-                tint: !root.u2fValidateOk ? Theme.error : (root.u2fValidateWarn ? Theme.warning : Theme.surfaceVariantText)
-                tintBackground: SettingsMetrics.controlColor
-            }
-
-            SettingsRow {
-                visible: !SessionService.loginctlAvailable
-                body: StyledText {
-                    text: I18n.tr("%1 not available - lock integration requires the DMS socket connection", "lock screen warning, %1 is the loginctl binary").arg("loginctl")
-                    font.pixelSize: Theme.fontSizeSmall
-                    color: Theme.warning
-                    width: parent.width
-                    wrapMode: Text.Wrap
+                SettingsNoteRow {
+                    visible: root.authValidateMessage !== ""
+                    noteIconName: ""
+                    monospace: true
+                    maxHeight: SettingsMetrics.noteMaxHeight
+                    text: root.authValidateMessage
+                    tint: !root.authValidateOk ? Theme.error : (root.authValidateWarn ? Theme.warning : Theme.surfaceVariantText)
+                    tintBackground: SettingsMetrics.controlColor
                 }
-            }
 
-            SettingsToggleRow {
-                settingKey: "loginctlLockIntegration"
-                tags: ["lock", "screen", "loginctl", "dbus", "integration", "external"]
-                text: I18n.tr("loginctl integration")
-                description: SettingsData.isManaged("loginctlLockIntegration") ? root.managedNote : I18n.tr("Disable when using an external lock screen")
-                checked: SessionService.loginctlAvailable && SettingsData.loginctlLockIntegration
-                enabled: SessionService.loginctlAvailable && !SettingsData.isManaged("loginctlLockIntegration")
-                onToggled: checked => {
-                    if (!SessionService.loginctlAvailable)
-                        return;
-                    SettingsData.set("loginctlLockIntegration", checked);
+                SettingsDropdownRow {
+                    settingKey: "lockU2fPamPath"
+                    resetKeys: []
+                    tags: ["lock", "screen", "pam", "u2f", "security", "key", "source", "service"]
+                    text: I18n.tr("Security key PAM source", "lock screen dedicated U2F PAM source setting")
+                    description: SettingsData.lockU2fPamPath !== "" ? SettingsData.lockU2fPamPath : I18n.tr("Auto uses an installed or bundled key-only service.", "lock screen dedicated U2F PAM source setting")
+                    visible: !root.lockU2fControlledByPrimary
+                    options: [root.authAutoLabel, root.authCustomLabel]
+                    currentValue: root.u2fAuthCurrentValue
+                    onValueChanged: value => {
+                        if (value === root.authAutoLabel) {
+                            root.u2fShowCustom = false;
+                            root.applyAutoU2fSource();
+                            return;
+                        }
+                        root.u2fShowCustom = true;
+                    }
+                }
+
+                SettingsRow {
+                    visible: !root.lockU2fControlledByPrimary && (root.u2fShowCustom || root.u2fAuthCurrentValue === root.authCustomLabel)
+                    body: Row {
+                        width: parent.width
+                        spacing: Theme.spacingS
+
+                        DTextField {
+                            id: customU2fPamField
+                            outlined: true
+                            leftIconName: "key"
+                            labelText: I18n.tr("Path")
+                            width: parent.width - validateU2fPamButton.width - Theme.spacingS
+                            placeholderText: "/etc/pam.d/dankshell-u2f"
+                            text: SettingsData.lockU2fPamPath
+                        }
+
+                        DButton {
+                            id: validateU2fPamButton
+                            text: I18n.tr("Apply changes")
+                            enabled: !root.u2fValidateRunning && customU2fPamField.text.trim() !== ""
+                            onClicked: root.validateAndApplyU2fSource(customU2fPamField.text.trim())
+                        }
+                    }
+                }
+
+                SettingsNoteRow {
+                    visible: !root.lockU2fControlledByPrimary && root.u2fValidateMessage !== ""
+                    noteIconName: ""
+                    monospace: true
+                    maxHeight: SettingsMetrics.noteMaxHeight
+                    text: root.u2fValidateMessage
+                    tint: !root.u2fValidateOk ? Theme.error : (root.u2fValidateWarn ? Theme.warning : Theme.surfaceVariantText)
+                    tintBackground: SettingsMetrics.controlColor
+                }
+
+                SettingsRow {
+                    visible: !SessionService.loginctlAvailable
+                    body: StyledText {
+                        text: I18n.tr("%1 not available - lock integration requires the DMS socket connection", "lock screen warning, %1 is the loginctl binary").arg("loginctl")
+                        font.pixelSize: Theme.fontSizeSmall
+                        color: Theme.warning
+                        width: parent.width
+                        wrapMode: Text.Wrap
+                    }
+                }
+
+                SettingsToggleRow {
+                    settingKey: "loginctlLockIntegration"
+                    tags: ["lock", "screen", "loginctl", "dbus", "integration", "external"]
+                    text: I18n.tr("loginctl integration")
+                    description: SettingsData.isManaged("loginctlLockIntegration") ? root.managedNote : I18n.tr("Disable when using an external lock screen")
+                    checked: SessionService.loginctlAvailable && SettingsData.loginctlLockIntegration
+                    enabled: SessionService.loginctlAvailable && !SettingsData.isManaged("loginctlLockIntegration")
+                    onToggled: checked => {
+                        if (!SessionService.loginctlAvailable)
+                            return;
+                        SettingsData.set("loginctlLockIntegration", checked);
+                    }
                 }
             }
         }

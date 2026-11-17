@@ -16,6 +16,7 @@ Item {
     property string currentPage: ""
     property string activeCategoryId: ""
     property var parentModal: null
+    property real topInset: 0
 
     signal pageRequested(string pageId)
 
@@ -230,6 +231,7 @@ Item {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: parent.top
+        anchors.topMargin: root.topInset
         anchors.leftMargin: sideInset
         anchors.rightMargin: sideInset
         placeholderText: I18n.tr("Search settings", "settings search field placeholder")

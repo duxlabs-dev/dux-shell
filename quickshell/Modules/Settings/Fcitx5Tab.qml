@@ -315,7 +315,7 @@ Item {
     SettingsRenameDialog {
         id: renameDialog
 
-        parent: root.parentModal?.modalFocusScope ?? root
+        parent: root.parentModal?.dialogHostFor(root) ?? root
         title: I18n.tr("Rename")
         onAccepted: name => root.renameGroup(root.renameTarget, name)
     }

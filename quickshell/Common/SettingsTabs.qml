@@ -13,12 +13,12 @@ Singleton {
     readonly property var structure: [
         {
             "id": "personalization",
-            "text": I18n.tr("Wallpaper & colors"),
+            "text": I18n.tr("Appearance", "settings page and section title for visual options"),
             "icon": "wallpaper",
-            "hint": I18n.tr("Theme, palette, dark mode", "settings sidebar hint for the wallpaper and colors page"),
+            "hint": I18n.tr("Wallpaper, colors, typography", "settings sidebar hint for the appearance page"),
             "tabIndex": 0,
             "hubHeader": "WallpaperColorsTab",
-            "aliases": ["wallpaper", "colors", "wallpaper_colors", "theme_cursor_icons"],
+            "aliases": ["wallpaper", "colors", "wallpaper_colors", "theme_cursor_icons", "appearance", "fonts", "typography"],
             "children": [
                 {
                     "id": "theme",
@@ -121,12 +121,12 @@ Singleton {
             ]
         },
         {
-            "id": "typography",
-            "aliases": ["fonts", "fonts_motion"],
-            "text": I18n.tr("Fonts & motion"),
-            "icon": "text_fields",
+            "id": "motion",
+            "aliases": ["motions", "fonts_motion"],
+            "text": I18n.tr("Motion", "settings page name for animation options"),
+            "icon": "animation",
             "tabIndex": 14,
-            "hint": I18n.tr("Fonts, scale, animations", "settings sidebar hint for the fonts and motion page")
+            "hint": I18n.tr("Animations and motion", "settings sidebar hint for the motion page")
         },
         {
             "id": "separator_1",
@@ -166,26 +166,33 @@ Singleton {
                     "icon": "blur_on",
                     "tabIndex": 65,
                     "hint": I18n.tr("A floating companion that works alongside any bar layout", "bar settings: what the dot is")
-                }
-            ]
-        },
-        {
-            "id": "dankbar_widgets",
-            "text": I18n.tr("Bar widgets"),
-            "icon": "widgets",
-            "tabIndex": 22,
-            "hubHeader": "WidgetsTab",
-            "aliases": ["bar_widgets", "workspaces", "workspaces_widgets"],
-            "hint": I18n.tr("Add, reorder, configure", "settings sidebar hint for the bar widgets page"),
-            "children": [
+                },
+                {
+                    "id": "dankbar_widgets",
+                    "hidden": true,
+                    "text": I18n.tr("Bar widgets"),
+                    "icon": "widgets",
+                    "tabIndex": 22,
+                    "aliases": ["bar_widgets", "workspaces", "workspaces_widgets"],
+                    "hint": I18n.tr("Add, reorder, configure", "settings sidebar hint for the bar widgets page")
+                },
                 {
                     "id": "bar_widget",
                     "hidden": true,
+                    "backPage": "dankbar_widgets",
                     "titleFrom": "selectedWidgetTitle",
                     "text": I18n.tr("Widget settings"),
                     "icon": "tune",
                     "tabIndex": 54,
                     "hint": I18n.tr("Options of one widget instance")
+                },
+                {
+                    "id": "dank_dash",
+                    "text": I18n.tr("Dashboard", "settings page name for the dank dash popout"),
+                    "icon": "space_dashboard",
+                    "tabIndex": 43,
+                    "aliases": ["dashboard", "dashboards_osd"],
+                    "hint": I18n.tr("Tabs and weather")
                 }
             ]
         },
@@ -237,14 +244,6 @@ Singleton {
             "icon": "grid_view",
             "tabIndex": 9,
             "hint": I18n.tr("Style, search, hidden apps", "settings sidebar hint for the launcher page")
-        },
-        {
-            "id": "dank_dash",
-            "text": I18n.tr("Dashboard", "settings page name for the dank dash popout"),
-            "icon": "space_dashboard",
-            "tabIndex": 43,
-            "aliases": ["dashboard", "dashboards_osd"],
-            "hint": I18n.tr("Tabs and weather")
         },
         {
             "id": "desktop_widgets",
@@ -474,7 +473,7 @@ Singleton {
                     "id": "network_hotspot",
                     "text": I18n.tr("Hotspot", "settings page title for the Wi-Fi hotspot"),
                     "icon": "wifi_tethering",
-                    "tabIndex": 75,
+                    "tabIndex": 82,
                     "hotspotOnly": true
                 },
                 {
@@ -484,7 +483,7 @@ Singleton {
                     "titleFrom": "wifiConnectTitle",
                     "text": I18n.tr("Connect to Wi-Fi"),
                     "icon": "wifi",
-                    "tabIndex": 74
+                    "tabIndex": 81
                 },
                 {
                     "id": "network_ethernet",
@@ -504,7 +503,7 @@ Singleton {
                     "id": "network_tailscale",
                     "text": I18n.tr("Tailscale", "Tailscale mesh VPN widget title"),
                     "icon": "hub",
-                    "tabIndex": 73,
+                    "tabIndex": 80,
                     "tailscaleOnly": true,
                     "hint": I18n.tr("Tailscale Network")
                 },
@@ -515,7 +514,7 @@ Singleton {
                     "tailscaleOnly": true,
                     "text": I18n.tr("Add account", "Tailscale: add another account"),
                     "icon": "person_add",
-                    "tabIndex": 76
+                    "tabIndex": 83
                 },
                 {
                     "id": "network_cellular",
@@ -529,7 +528,7 @@ Singleton {
                     "id": "network_connections",
                     "text": I18n.tr("Connections", "settings page listing saved network connection profiles"),
                     "icon": "network_manage",
-                    "tabIndex": 71,
+                    "tabIndex": 78,
                     "connectionEditorOnly": true,
                     "hint": I18n.tr("Saved configurations"),
                     "hubFooter": I18n.tr("Manage all connections", "settings link on the network overview to the list of every saved network connection")
@@ -542,7 +541,7 @@ Singleton {
                     "titleFrom": "selectedConnectionTitle",
                     "text": I18n.tr("Profile"),
                     "icon": "tune",
-                    "tabIndex": 72
+                    "tabIndex": 79
                 },
                 {
                     "id": "network_status",

@@ -299,7 +299,7 @@ Item {
 
     SettingsRenameDialog {
         id: renameDialog
-        parent: root.parentModal?.modalFocusScope ?? root
+        parent: root.parentModal?.dialogHostFor(root) ?? root
         supportingText: root.allGroups.find(g => g.id === root.renamingGroupId)?.name ?? ""
         leftIconName: "folder"
         onAccepted: name => root.saveGroupName(name)

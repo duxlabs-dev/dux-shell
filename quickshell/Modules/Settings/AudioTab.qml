@@ -162,7 +162,7 @@ Item {
 
     ConfirmDialogOverlay {
         id: disableCardConfirm
-        parent: root.parentModal?.modalFocusScope ?? root
+        parent: root.parentModal?.dialogHostFor(root) ?? root
     }
 
     SettingsPage {
@@ -617,7 +617,7 @@ Item {
 
     SettingsRenameDialog {
         id: renameDialog
-        parent: root.parentModal?.modalFocusScope ?? root
+        parent: root.parentModal?.dialogHostFor(root) ?? root
         title: I18n.tr("Set custom device name")
         supportingText: root.editingDevice?.name ?? ""
         labelText: I18n.tr("Custom name")

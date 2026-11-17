@@ -276,6 +276,7 @@ Item {
             }
 
             SettingsTimeRow {
+                dialogHost: root.parentModal?.dialogHostFor(root) ?? null
                 visible: root.mode === "time"
                 showEnd: false
                 is24Hour: SettingsData.use24HourClock

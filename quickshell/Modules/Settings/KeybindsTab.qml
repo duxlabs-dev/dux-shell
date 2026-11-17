@@ -551,7 +551,7 @@ Item {
 
     Loader {
         id: editorLoader
-        parent: keybindsTab.parentModal?.modalFocusScope ?? keybindsTab
+        parent: keybindsTab.parentModal?.dialogHostFor(keybindsTab) ?? keybindsTab
         anchors.fill: parent
         z: 100
         active: keybindsTab.editorMounted
@@ -576,7 +576,7 @@ Item {
 
     ConfirmDialogOverlay {
         id: removeBindConfirm
-        parent: keybindsTab.parentModal?.modalFocusScope ?? keybindsTab
+        parent: keybindsTab.parentModal?.dialogHostFor(keybindsTab) ?? keybindsTab
         z: 101
     }
 }

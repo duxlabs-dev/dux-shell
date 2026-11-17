@@ -148,89 +148,89 @@ Column {
         store: root.page.store
     }
 
-    SettingsCard {
-        title: I18n.tr("Advanced")
-        settingKey: "workspaceAdvanced"
-        collapsible: true
-        expanded: false
+    SettingsAdvancedSection {
+        SettingsCard {
+            title: I18n.tr("Advanced")
+            settingKey: "workspaceAdvanced"
 
-        SettingsToggleSliderRow {
-            resetStore: root.page
-            valueKeys: ["workspacePaddingCount"]
-            text: I18n.tr("Minimum workspaces", "workspace switcher slider label")
-            description: CompositorService.supportsPersistentWorkspaces ? I18n.tr("Workspaces up to the count are always shown and can be opened", "workspace switcher minimum workspaces description on compositors with persistent workspaces") : I18n.tr("Empty placeholders fill the switcher up to the count", "workspace switcher minimum workspaces description")
-            checked: root.page.value("showWorkspacePadding")
-            unit: ""
-            value: root.page.value("workspacePaddingCount")
-            minimum: 2
-            maximum: 10
-            onToggled: checked => root.page.set("showWorkspacePadding", checked)
-            onSliderValueChanged: newValue => root.page.set("workspacePaddingCount", newValue)
-        }
+            SettingsToggleSliderRow {
+                resetStore: root.page
+                valueKeys: ["workspacePaddingCount"]
+                text: I18n.tr("Minimum workspaces", "workspace switcher slider label")
+                description: CompositorService.supportsPersistentWorkspaces ? I18n.tr("Workspaces up to the count are always shown and can be opened", "workspace switcher minimum workspaces description on compositors with persistent workspaces") : I18n.tr("Empty placeholders fill the switcher up to the count", "workspace switcher minimum workspaces description")
+                checked: root.page.value("showWorkspacePadding")
+                unit: ""
+                value: root.page.value("workspacePaddingCount")
+                minimum: 2
+                maximum: 10
+                onToggled: checked => root.page.set("showWorkspacePadding", checked)
+                onSliderValueChanged: newValue => root.page.set("workspacePaddingCount", newValue)
+            }
 
-        SettingsToggleRow {
-            enabled: root.showApps
-            text: I18n.tr("Group apps")
-            checked: root.page.value("groupWorkspaceApps")
-            onToggled: checked => root.page.set("groupWorkspaceApps", checked)
-        }
+            SettingsToggleRow {
+                enabled: root.showApps
+                text: I18n.tr("Group apps")
+                checked: root.page.value("groupWorkspaceApps")
+                onToggled: checked => root.page.set("groupWorkspaceApps", checked)
+            }
 
-        SettingsToggleRow {
-            enabled: root.showApps && root.page.value("groupWorkspaceApps")
-            text: I18n.tr("Group on active workspace")
-            checked: root.page.value("groupActiveWorkspaceApps")
-            onToggled: checked => root.page.set("groupActiveWorkspaceApps", checked)
-        }
+            SettingsToggleRow {
+                enabled: root.showApps && root.page.value("groupWorkspaceApps")
+                text: I18n.tr("Group on active workspace")
+                checked: root.page.value("groupActiveWorkspaceApps")
+                onToggled: checked => root.page.set("groupActiveWorkspaceApps", checked)
+            }
 
-        SettingsToggleRow {
-            enabled: root.showApps
-            text: I18n.tr("Highlight focused app")
-            checked: root.page.value("workspaceActiveAppHighlightEnabled")
-            onToggled: checked => root.page.set("workspaceActiveAppHighlightEnabled", checked)
-        }
+            SettingsToggleRow {
+                enabled: root.showApps
+                text: I18n.tr("Highlight focused app")
+                checked: root.page.value("workspaceActiveAppHighlightEnabled")
+                onToggled: checked => root.page.set("workspaceActiveAppHighlightEnabled", checked)
+            }
 
-        SettingsToggleRow {
-            enabled: root.showApps
-            text: I18n.tr("Don't dim unfocused apps", "workspace switcher toggle: show icons of unfocused apps at full opacity")
-            checked: root.page.value("workspaceUnfocusedAppsFullOpacity")
-            onToggled: checked => root.page.set("workspaceUnfocusedAppsFullOpacity", checked)
-        }
+            SettingsToggleRow {
+                enabled: root.showApps
+                text: I18n.tr("Don't dim unfocused apps", "workspace switcher toggle: show icons of unfocused apps at full opacity")
+                checked: root.page.value("workspaceUnfocusedAppsFullOpacity")
+                onToggled: checked => root.page.set("workspaceUnfocusedAppsFullOpacity", checked)
+            }
 
-        SettingsToggleRow {
-            text: I18n.tr("Follow display focus")
-            description: I18n.tr("Lists workspaces from whichever display has focus", "workspace switcher follow display focus toggle description")
-            visible: CompositorService.supportsWorkspaceFollowFocus
-            checked: root.page.value("workspaceFollowFocus")
-            onToggled: checked => root.page.set("workspaceFollowFocus", checked)
-        }
+            SettingsToggleRow {
+                text: I18n.tr("Follow display focus")
+                description: I18n.tr("Lists workspaces from whichever display has focus", "workspace switcher follow display focus toggle description")
+                visible: CompositorService.supportsWorkspaceFollowFocus
+                checked: root.page.value("workspaceFollowFocus")
+                onToggled: checked => root.page.set("workspaceFollowFocus", checked)
+            }
 
-        SettingsToggleRow {
-            text: I18n.tr("Move workspace to this display")
-            description: I18n.tr("Clicking a workspace from another display moves it to the display of the bar you clicked", "workspace switcher move to this display toggle description")
-            visible: CompositorService.isHyprland
-            checked: root.page.value("workspaceMoveToOutput")
-            onToggled: checked => root.page.set("workspaceMoveToOutput", checked)
-        }
+            SettingsToggleRow {
+                text: I18n.tr("Move workspace to this display")
+                description: I18n.tr("Clicking a workspace from another display moves it to the display of the bar you clicked", "workspace switcher move to this display toggle description")
+                visible: CompositorService.isHyprland
+                checked: root.page.value("workspaceMoveToOutput")
+                onToggled: checked => root.page.set("workspaceMoveToOutput", checked)
+            }
 
-        SettingsToggleRow {
-            text: I18n.tr("Reverse scroll direction")
-            visible: CompositorService.supportsWorkspaces
-            checked: root.page.value("reverseScrolling")
-            onToggled: checked => root.page.set("reverseScrolling", checked)
-        }
+            SettingsToggleRow {
+                text: I18n.tr("Reverse scroll direction")
+                visible: CompositorService.supportsWorkspaces
+                checked: root.page.value("reverseScrolling")
+                onToggled: checked => root.page.set("reverseScrolling", checked)
+            }
 
-        SettingsToggleRow {
-            text: I18n.tr("Drag to reorder")
-            visible: CompositorService.isNiri
-            checked: root.page.value("workspaceDragReorder")
-            onToggled: checked => root.page.set("workspaceDragReorder", checked)
-        }
+            SettingsToggleRow {
+                text: I18n.tr("Drag to reorder")
+                visible: CompositorService.isNiri
+                checked: root.page.value("workspaceDragReorder")
+                onToggled: checked => root.page.set("workspaceDragReorder", checked)
+            }
 
-        SettingsToggleRow {
-            text: I18n.tr("Show all tags")
-            visible: CompositorService.isMango
-            checked: root.page.value("dwlShowAllTags")
-            onToggled: checked => root.page.set("dwlShowAllTags", checked)
+            SettingsToggleRow {
+                text: I18n.tr("Show all tags")
+                visible: CompositorService.isMango
+                checked: root.page.value("dwlShowAllTags")
+                onToggled: checked => root.page.set("dwlShowAllTags", checked)
+            }
         }
     }
 }

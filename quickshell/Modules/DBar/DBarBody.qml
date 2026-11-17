@@ -52,7 +52,7 @@ Item {
         if (!isIsland)
             return Theme.hostSurface;
         if (SettingsData.islandSetting(barConfig, "islandHighContrast"))
-            return Theme.surfaceContainerHighest;
+            return Theme.highContrastSurface;
         const palette = SettingsData.islandSetting(barConfig, "islandPalette");
         return palette === "bright" ? Theme.surfaceBright : palette === "dim" ? Theme.surfaceDim : _hostSurface;
     }

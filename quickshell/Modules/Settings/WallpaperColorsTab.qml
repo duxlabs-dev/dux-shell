@@ -236,7 +236,6 @@ Column {
     SettingsCard {
         tab: "wallpaper"
         tags: ["background", "image", "picture", "light", "dark", "mode", "theme", "color", "palette"]
-        title: I18n.tr("Appearance")
         settingKey: "wallpaper"
         SettingsDropdownRow {
             tab: "wallpaper"
@@ -359,14 +358,16 @@ Column {
     SettingsCard {
         tab: "wallpaper"
         tags: ["profile", "setup", "preset", "snapshot", "switch"]
-        title: I18n.tr("Profiles", "settings page for saved setups of DMS settings")
+        title: profileGrid.visible ? I18n.tr("Profiles", "settings page for saved setups of DMS settings") : ""
         iconName: "style"
         settingKey: "configProfiles"
 
         // The first profile is only made on the Profiles page, so browsing here never starts the profile service.
         ProfileGrid {
+            id: profileGrid
+
             width: parent?.width ?? 0
-            visible: SessionData.activeConfigProfile !== ""
+            visible: ConfigProfileService.profiles.length > 1
             columns: Math.max(2, Math.floor(width / SettingsMetrics.previewTileMinWidth))
             cellSpacing: Theme.spacingS
             compact: true
@@ -376,7 +377,8 @@ Column {
 
         SettingsNavRow {
             tab: "wallpaper"
-            title: I18n.tr("Manage profiles", "link row opening the page that creates, edits and deletes config profiles")
+            iconName: profileGrid.visible ? "" : "style"
+            title: profileGrid.visible ? I18n.tr("Manage profiles", "link row opening the page that creates, edits and deletes config profiles") : I18n.tr("Profiles", "settings page for saved setups of DMS settings")
             onClicked: keyboard => root.parentModal?.navigateTo("profiles", keyboard)
         }
     }
@@ -1113,39 +1115,241 @@ Column {
     }
 
     SettingsCard {
-        tab: "wallpaper"
-        tags: ["blur", "layer", "external", "disable", "swww", "hyprpaper", "swaybg"]
-        title: I18n.tr("Advanced")
-        settingKey: "wallpaperAdvanced"
-        collapsible: true
-        expanded: false
+        tab: "theme"
+        tags: ["font", "fonts", "family", "text", "typography", "monospace"]
+        title: I18n.tr("Typography", "settings card title for font options")
+        settingKey: "typography"
+        iconName: "text_fields"
 
-        SettingsToggleRow {
-            tab: "wallpaper"
-            tags: ["disable", "external", "management", "swww", "hyprpaper", "swaybg"]
-            settingKey: "disableWallpapers"
-            text: I18n.tr("Use external manager")
-            description: I18n.tr("DMS stops drawing wallpapers on every display", "use external wallpaper manager toggle description")
-            checked: {
-                const prefs = SettingsData.screenPreferences?.wallpaper;
-                return Array.isArray(prefs) && prefs.length === 0;
-            }
-            onToggled: checked => {
-                const prefs = Object.assign({}, SettingsData.screenPreferences || {});
-                prefs.wallpaper = checked ? [] : ["all"];
-                SettingsData.set("screenPreferences", prefs);
+        SettingsRow {
+            body: Column {
+                width: parent.width
+                spacing: Theme.spacingXS
+
+                StyledText {
+                    width: parent.width
+                    text: "Aa Bb Cc 123"
+                    font.family: Theme.resolvedFontFamily(SettingsData.fontFamily)
+                    font.pixelSize: Theme.fontSizeXXLarge
+                    color: Theme.surfaceText
+                    elide: Text.ElideRight
+                }
+
+                StyledText {
+                    width: parent.width
+                    text: "Display Aa Bb Cc"
+                    fontToken: "display"
+                    font.pixelSize: Theme.fontSizeXLarge
+                    color: Theme.surfaceText
+                    elide: Text.ElideRight
+                }
+
+                StyledText {
+                    width: parent.width
+                    text: I18n.tr("The quick brown fox jumps over the lazy dog")
+                    font.family: Theme.resolvedFontFamily(SettingsData.fontFamily)
+                    font.pixelSize: Theme.fontSizeMedium
+                    color: Theme.surfaceText
+                    elide: Text.ElideRight
+                }
+
+                StyledText {
+                    width: parent.width
+                    text: "monospace { code: 0x1F; }"
+                    font.family: Theme.resolvedMonoFontFamily(SettingsData.monoFontFamily)
+                    font.pixelSize: Theme.fontSizeSmall
+                    color: Theme.surfaceVariantText
+                    elide: Text.ElideRight
+                }
             }
         }
 
-        SettingsToggleRow {
+        SettingsFontDropdownRow {
+            tab: "theme"
+            tags: ["font", "fonts", "family", "normal", "text"]
+            settingKey: "fontFamily"
+            text: I18n.tr("Family", "font family dropdown label")
+            maxPopupHeight: 400
+            currentFont: SettingsData.fontFamily
+            onFontSelected: family => SettingsData.set("fontFamily", family || Theme.defaultFontFamily)
+        }
+
+        SettingsSliderRow {
+            tab: "theme"
+            tags: ["font", "weight", "bold", "light"]
+            settingKey: "fontWeight"
+            text: I18n.tr("Weight", "font weight slider label")
+            minimum: Font.Thin
+            maximum: Font.Black
+            step: 100
+            showStops: true
+            unit: ""
+            value: SettingsData.fontWeight
+            onSliderValueChanged: newValue => SettingsData.set("fontWeight", newValue)
+        }
+
+        SettingsSliderRow {
+            tab: "theme"
+            tags: ["font", "scale", "size", "zoom"]
+            settingKey: "fontScale"
+            text: I18n.tr("Scale", "noun, font scale slider and display scale setting label")
+            minimum: 75
+            maximum: 150
+            value: Math.round(SettingsData.fontScale * 100)
+            onSliderValueChanged: newValue => SettingsData.set("fontScale", newValue / 100)
+        }
+        SettingsFontDropdownRow {
+            tab: "theme"
+            tags: ["font", "monospace", "code", "terminal", "process"]
+            settingKey: "monoFontFamily"
+            text: I18n.tr("Monospace family")
+            maxPopupHeight: 400
+            defaultFamily: Theme.defaultMonoFontFamily
+            currentFont: SettingsData.monoFontFamily
+            onFontSelected: family => SettingsData.set("monoFontFamily", family || Theme.defaultMonoFontFamily)
+        }
+
+        SettingsFontDropdownRow {
+            tab: "theme"
+            tags: ["font", "display", "stylistic", "serif", "title", "headline"]
+            settingKey: "displayFontFamily"
+            text: I18n.tr("Display family")
+            maxPopupHeight: 400
+            defaultFamily: Theme.defaultDisplayFontFamily
+            currentFont: SettingsData.displayFontFamily
+            onFontSelected: family => SettingsData.set("displayFontFamily", family || Theme.defaultDisplayFontFamily)
+        }
+    }
+
+    readonly property Component advancedContent: Column {
+        width: parent?.width ?? 0
+        spacing: SettingsMetrics.cardGap
+
+        SettingsCard {
             tab: "wallpaper"
-            tags: ["blur", "duplicate", "layer", "compositor", "niri", "blurwallpaper"]
-            settingKey: "blurredWallpaperLayer"
-            visible: CompositorService.isNiri
-            text: I18n.tr("Blur layer")
-            description: I18n.tr("Layer namespace %1, needs a niri blur rule", "blur layer toggle description, %1 is the layer namespace").arg("dms:blurwallpaper")
-            checked: SettingsData.blurredWallpaperLayer
-            onToggled: checked => SettingsData.set("blurredWallpaperLayer", checked)
+            tags: ["blur", "layer", "external", "disable", "swww", "hyprpaper", "swaybg"]
+            title: I18n.tr("Wallpaper layer", "settings card title for how the wallpaper surface is drawn")
+            settingKey: "wallpaperAdvanced"
+
+            SettingsToggleRow {
+                tab: "wallpaper"
+                tags: ["disable", "external", "management", "swww", "hyprpaper", "swaybg"]
+                settingKey: "disableWallpapers"
+                text: I18n.tr("Use external manager")
+                description: I18n.tr("DMS stops drawing wallpapers on every display", "use external wallpaper manager toggle description")
+                checked: {
+                    const prefs = SettingsData.screenPreferences?.wallpaper;
+                    return Array.isArray(prefs) && prefs.length === 0;
+                }
+                onToggled: checked => {
+                    const prefs = Object.assign({}, SettingsData.screenPreferences || {});
+                    prefs.wallpaper = checked ? [] : ["all"];
+                    SettingsData.set("screenPreferences", prefs);
+                }
+            }
+
+            SettingsToggleRow {
+                tab: "wallpaper"
+                tags: ["blur", "duplicate", "layer", "compositor", "niri", "blurwallpaper"]
+                settingKey: "blurredWallpaperLayer"
+                visible: CompositorService.isNiri
+                text: I18n.tr("Blur layer")
+                description: I18n.tr("Layer namespace %1, needs a niri blur rule", "blur layer toggle description, %1 is the layer namespace").arg("dms:blurwallpaper")
+                checked: SettingsData.blurredWallpaperLayer
+                onToggled: checked => SettingsData.set("blurredWallpaperLayer", checked)
+            }
+        }
+
+        SettingsCard {
+            tab: "theme"
+            tags: ["text", "render", "rendering", "quality"]
+            title: I18n.tr("Text rendering", "settings card title for the text renderer options")
+            settingKey: "textRendering"
+
+            SettingsButtonGroupRow {
+                tab: "theme"
+                tags: ["text", "render", "rendering", "type", "native", "qt", "curve", "freetype", "distance-field", "rasterizer"]
+                settingKey: "textRenderType"
+                text: I18n.tr("Renderer", "text rendering engine setting label")
+                model: [I18n.tr("Native", "adjective, text renderer option, native platform rendering"), "Qt", I18n.tr("Curve", "noun, text renderer option, qt curve rendering")]
+                currentIndex: {
+                    switch (SettingsData.textRenderType) {
+                    case SettingsData.TextRenderType.Qt:
+                        return 1;
+                    case SettingsData.TextRenderType.Curve:
+                        return 2;
+                    default:
+                        return 0;
+                    }
+                }
+                onSelectionChanged: (index, selected) => {
+                    if (!selected)
+                        return;
+                    switch (index) {
+                    case 1:
+                        SettingsData.set("textRenderType", SettingsData.TextRenderType.Qt);
+                        break;
+                    case 2:
+                        SettingsData.set("textRenderType", SettingsData.TextRenderType.Curve);
+                        break;
+                    default:
+                        SettingsData.set("textRenderType", SettingsData.TextRenderType.Native);
+                        break;
+                    }
+                }
+            }
+
+            SettingsDropdownRow {
+                id: renderQualityRow
+                tab: "theme"
+                tags: ["text", "render", "quality", "level"]
+                settingKey: "textRenderQuality"
+                text: I18n.tr("Quality", "text render quality dropdown label")
+                options: [I18n.tr("Default"), I18n.tr("Low", "quality level option"), I18n.tr("Normal", "quality level option"), I18n.tr("High", "quality level option"), I18n.tr("Very High", "quality level option")]
+                currentValue: options[SettingsData.textRenderQuality] ?? options[0]
+                onValueChanged: value => {
+                    const index = renderQualityRow.options.indexOf(value);
+                    if (index < 0)
+                        return;
+                    SettingsData.set("textRenderQuality", index);
+                }
+            }
+        }
+
+        SettingsCard {
+            tab: "theme"
+            tags: ["render", "control", "cache", "startup", "performance"]
+            title: I18n.tr("Performance")
+            settingKey: "shellPerformance"
+            visible: "renderControl" in Quickshell
+
+            SettingsToggleRow {
+                // dms turns this off for the runtime at launch
+                readonly property bool launchedEnabled: Quickshell.env("QS_DISABLE_RENDER_CONTROL") === null
+
+                visible: "renderControl" in Quickshell
+                tab: "theme"
+                tags: ["render", "control", "damage", "gpu", "vram", "memory", "performance"]
+                settingKey: "renderControlEnabled"
+                text: I18n.tr("Render control", "toggle for the shell's own render loop")
+                description: checked !== launchedEnabled ? I18n.tr("Requires restart") : I18n.tr("Redraws only what changed on screen", "render control toggle description")
+                checked: SettingsData.renderControlEnabled
+                onToggled: checked => SettingsData.set("renderControlEnabled", checked)
+            }
+
+            SettingsToggleRow {
+                // dms turns this off for the runtime at launch
+                readonly property bool launchedEnabled: Quickshell.env("QS_DISABLE_DISK_CACHE") === null
+
+                visible: "renderControl" in Quickshell
+                tab: "theme"
+                tags: ["cache", "qml", "startup", "start", "disk", "performance"]
+                settingKey: "qmlCacheEnabled"
+                text: I18n.tr("Startup cache", "toggle for the compiled interface cache")
+                description: checked !== launchedEnabled ? I18n.tr("Requires restart") : I18n.tr("Reuses the compiled interface from the last start", "startup cache toggle description")
+                checked: SettingsData.qmlCacheEnabled
+                onToggled: checked => SettingsData.set("qmlCacheEnabled", checked)
+            }
         }
     }
 

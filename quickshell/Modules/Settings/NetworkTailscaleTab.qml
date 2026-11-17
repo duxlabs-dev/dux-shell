@@ -163,7 +163,6 @@ Item {
 
     SettingsPage {
         SettingsCard {
-            title: I18n.tr("Tailscale", "Tailscale mesh VPN widget title")
             iconName: "hub"
             settingKey: "networkTailscale"
             tags: ["tailscale", "vpn", "tailnet", "exit node", "magicdns", "ssh", "subnet", "account", "login"]

@@ -609,148 +609,149 @@ Item {
             }
         }
 
-        SettingsCard {
-            iconName: "tune"
-            title: I18n.tr("Advanced")
-            settingKey: "barAdvanced"
-            tags: ["bar", "advanced", "overlay", "layer", "click", "through", "maximize", "island", "spring", "motion", "exclusive", "zone", "popup", "gaps"]
-            collapsible: true
-            expanded: false
-            visible: bar.selectedBarConfig?.enabled ?? false
-
-            SettingsToggleRow {
-                settingKey: "barClickThrough"
-                tags: ["clickthrough", "click", "through", "mouse", "input", "mask", "passthrough"]
-                visible: !bar.islandOwnsSelectedBarTop
-                text: I18n.tr("Click through")
-                description: I18n.tr("Clicks on empty bar space reach the windows below", "bar click through toggle description")
-                checked: bar.selectedBarConfig?.clickThrough ?? false
-                onToggled: toggled => SettingsData.updateBarConfig(bar.selectedBarId, {
-                        clickThrough: toggled
-                    })
-            }
-
-            SettingsToggleRow {
-                settingKey: "barUseOverlayLayer"
-                tags: ["bar", "fullscreen", "overlay", "layer"]
-                visible: !bar.islandOwnsSelectedBarTop && !(bar.selectedBarFrameStyled && !SettingsData.connectedFrameModeActive)
-                text: I18n.tr("Use overlay layer")
-                checked: bar.selectedBarConfig?.useOverlayLayer ?? false
-                onToggled: toggled => {
-                    SettingsData.updateBarConfig(bar.selectedBarId, {
-                        useOverlayLayer: toggled
-                    });
-                    bar.notifyHorizontalBarChange();
-                }
-            }
-
-            SettingsToggleRow {
-                settingKey: "barHideOnFullscreen"
-                resetStore: bar
-                resetKeys: ["hideOnFullscreen"]
-                tags: ["bar", "fullscreen", "hide", "visibility"]
-                visible: CompositorService.isNiri && !bar.islandOwnsSelectedBarTop && (bar.selectedBarConfig?.useOverlayLayer ?? false)
-                text: I18n.tr("Hide bar on fullscreen", "bar visibility toggle")
-                description: I18n.tr("Slide the bar away over fullscreen applications. Move the pointer to the screen edge to reveal it.", "bar fullscreen auto-hide description")
-                checked: bar.selectedBarConfig?.hideOnFullscreen ?? false
-                onToggled: toggled => SettingsData.updateBarConfig(bar.selectedBarId, {
-                        hideOnFullscreen: toggled
-                    })
-            }
-
-            SettingsToggleRow {
-                settingKey: "islandUseOverlayLayer"
-                tags: ["island", "fullscreen", "overlay", "layer"]
-                visible: bar.selectedBarIsIsland && !bar.selectedBarFrameStyled
-                text: I18n.tr("Use overlay layer")
-                checked: bar.islandSetting("islandUseOverlayLayer")
-                onToggled: checked => bar.apply("islandUseOverlayLayer", checked)
-            }
-
-            SettingsControlledBy {
-                visible: bar.selectedBarFrameStyled && (bar.selectedBarIsIsland || (!bar.islandOwnsSelectedBarTop && !SettingsData.connectedFrameModeActive))
-                parentModal: dankBarTab.parentModal
-                section: "frameBorder"
-                settingLabel: I18n.tr("Use overlay layer")
-                reason: I18n.tr("Disabled by Frame Mode")
-            }
-
-            SettingsToggleRow {
-                settingKey: "barMaximizeDetection"
-                tags: ["maximize", "gaps", "border", "fullscreen"]
-                visible: CompositorService.supportsBarAutoHideReveal && !bar.selectedBarFrameStyled
-                text: I18n.tr("Maximize detection")
-                description: I18n.tr("Drops bar gaps and rounding while a window is maximized", "bar maximize detection toggle description")
-                checked: bar.selectedBarConfig?.maximizeDetection ?? true
-                onToggled: toggled => SettingsData.updateBarConfig(bar.selectedBarId, {
-                        maximizeDetection: toggled
-                    })
-            }
-
-            SettingsControlledBy {
-                visible: CompositorService.supportsBarAutoHideReveal && bar.selectedBarFrameStyled
-                parentModal: dankBarTab.parentModal
-                section: "frameBorder"
-                settingLabel: I18n.tr("Maximize detection")
-                reason: I18n.tr("Disabled by Frame Mode")
-            }
-
-            SettingsSliderRow {
-                settingKey: "barExclusiveZone"
-                tags: ["exclusive", "zone", "reserved", "offset"]
-                visible: !bar.islandOwnsSelectedBarTop && !bar.selectedBarFrameStyled
-                text: I18n.tr("Exclusive zone offset")
-                description: I18n.tr("Grows or shrinks the space windows keep clear", "bar and dock exclusive zone offset slider description")
-                resetStore: bar
-                resetKeys: ["bottomGap"]
-                value: bar.selectedBarConfig?.bottomGap ?? 0
-                minimum: -50
-                maximum: 50
-                unit: "px"
-                onSliderDragFinished: finalValue => SettingsData.updateBarConfig(bar.selectedBarId, {
-                        bottomGap: finalValue
-                    })
-            }
-
-            SettingsToggleRow {
-                text: I18n.tr("Auto popup gaps")
-                description: I18n.tr("Gap between the bar and its popouts follows edge spacing", "bar auto popup gaps toggle description")
-                tags: ["popup", "gaps", "auto"]
-                visible: !dankBarTab.popupGapsZeroed
-                checked: bar.selectedBarConfig?.popupGapsAuto ?? true
-                onToggled: checked => SettingsData.updateBarConfig(bar.selectedBarId, {
-                        popupGapsAuto: checked
-                    })
-            }
-
-            SettingsSliderRow {
-                visible: !dankBarTab.popupGapsZeroed && !(bar.selectedBarConfig?.popupGapsAuto ?? true)
-                text: I18n.tr("Gap size")
-                tags: ["popup", "gaps", "size"]
-                resetStore: bar
-                resetKeys: ["popupGapsManual"]
-                unit: "px"
-                value: bar.selectedBarConfig?.popupGapsManual ?? 4
-                minimum: 0
-                maximum: 50
-                onSliderDragFinished: finalValue => SettingsData.updateBarConfig(bar.selectedBarId, {
-                        popupGapsManual: finalValue
-                    })
-            }
-
-            SettingsControlledBy {
-                visible: dankBarTab.popupGapsZeroed
-                target: dankBarTab.popupGapsFramed ? "" : "appearance"
-                parentModal: dankBarTab.parentModal
-                section: dankBarTab.popupGapsFramed ? "frameBorder" : (bar.selectedBarIsIsland ? "islandSatellites" : "barCorners")
-                settingLabel: I18n.tr("Auto popup gaps")
-                reason: dankBarTab.popupGapsFramed ? I18n.tr("Disabled by Frame Mode") : I18n.tr("Disabled by Connected popouts", "bar popouts card, Connected popouts is the Appearance toggle name")
-            }
-        }
-
         IslandMotionCard {
             store: bar.islandStore
             visible: dankBarTab.selectedIslandEnabled
+        }
+
+        SettingsAdvancedSection {
+            visible: bar.selectedBarConfig?.enabled ?? false
+
+            SettingsCard {
+                iconName: "tune"
+                title: I18n.tr("Advanced")
+                settingKey: "barAdvanced"
+                tags: ["bar", "advanced", "overlay", "layer", "click", "through", "maximize", "island", "spring", "motion", "exclusive", "zone", "popup", "gaps"]
+
+                SettingsToggleRow {
+                    settingKey: "barClickThrough"
+                    tags: ["clickthrough", "click", "through", "mouse", "input", "mask", "passthrough"]
+                    visible: !bar.islandOwnsSelectedBarTop
+                    text: I18n.tr("Click through")
+                    description: I18n.tr("Clicks on empty bar space reach the windows below", "bar click through toggle description")
+                    checked: bar.selectedBarConfig?.clickThrough ?? false
+                    onToggled: toggled => SettingsData.updateBarConfig(bar.selectedBarId, {
+                            clickThrough: toggled
+                        })
+                }
+
+                SettingsToggleRow {
+                    settingKey: "barUseOverlayLayer"
+                    tags: ["bar", "fullscreen", "overlay", "layer"]
+                    visible: !bar.islandOwnsSelectedBarTop && !(bar.selectedBarFrameStyled && !SettingsData.connectedFrameModeActive)
+                    text: I18n.tr("Use overlay layer")
+                    checked: bar.selectedBarConfig?.useOverlayLayer ?? false
+                    onToggled: toggled => {
+                        SettingsData.updateBarConfig(bar.selectedBarId, {
+                            useOverlayLayer: toggled
+                        });
+                        bar.notifyHorizontalBarChange();
+                    }
+                }
+
+                SettingsToggleRow {
+                    settingKey: "barHideOnFullscreen"
+                    resetStore: bar
+                    resetKeys: ["hideOnFullscreen"]
+                    tags: ["bar", "fullscreen", "hide", "visibility"]
+                    visible: CompositorService.isNiri && !bar.islandOwnsSelectedBarTop && (bar.selectedBarConfig?.useOverlayLayer ?? false)
+                    text: I18n.tr("Hide bar on fullscreen", "bar visibility toggle")
+                    description: I18n.tr("Slide the bar away over fullscreen applications. Move the pointer to the screen edge to reveal it.", "bar fullscreen auto-hide description")
+                    checked: bar.selectedBarConfig?.hideOnFullscreen ?? false
+                    onToggled: toggled => SettingsData.updateBarConfig(bar.selectedBarId, {
+                            hideOnFullscreen: toggled
+                        })
+                }
+
+                SettingsToggleRow {
+                    settingKey: "islandUseOverlayLayer"
+                    tags: ["island", "fullscreen", "overlay", "layer"]
+                    visible: bar.selectedBarIsIsland && !bar.selectedBarFrameStyled
+                    text: I18n.tr("Use overlay layer")
+                    checked: bar.islandSetting("islandUseOverlayLayer")
+                    onToggled: checked => bar.apply("islandUseOverlayLayer", checked)
+                }
+
+                SettingsControlledBy {
+                    visible: bar.selectedBarFrameStyled && (bar.selectedBarIsIsland || (!bar.islandOwnsSelectedBarTop && !SettingsData.connectedFrameModeActive))
+                    parentModal: dankBarTab.parentModal
+                    section: "frameBorder"
+                    settingLabel: I18n.tr("Use overlay layer")
+                    reason: I18n.tr("Disabled by Frame Mode")
+                }
+
+                SettingsToggleRow {
+                    settingKey: "barMaximizeDetection"
+                    tags: ["maximize", "gaps", "border", "fullscreen"]
+                    visible: CompositorService.supportsBarAutoHideReveal && !bar.selectedBarFrameStyled
+                    text: I18n.tr("Maximize detection")
+                    description: I18n.tr("Drops bar gaps and rounding while a window is maximized", "bar maximize detection toggle description")
+                    checked: bar.selectedBarConfig?.maximizeDetection ?? true
+                    onToggled: toggled => SettingsData.updateBarConfig(bar.selectedBarId, {
+                            maximizeDetection: toggled
+                        })
+                }
+
+                SettingsControlledBy {
+                    visible: CompositorService.supportsBarAutoHideReveal && bar.selectedBarFrameStyled
+                    parentModal: dankBarTab.parentModal
+                    section: "frameBorder"
+                    settingLabel: I18n.tr("Maximize detection")
+                    reason: I18n.tr("Disabled by Frame Mode")
+                }
+
+                SettingsSliderRow {
+                    settingKey: "barExclusiveZone"
+                    tags: ["exclusive", "zone", "reserved", "offset"]
+                    visible: !bar.islandOwnsSelectedBarTop && !bar.selectedBarFrameStyled
+                    text: I18n.tr("Exclusive zone offset")
+                    description: I18n.tr("Grows or shrinks the space windows keep clear", "bar and dock exclusive zone offset slider description")
+                    resetStore: bar
+                    resetKeys: ["bottomGap"]
+                    value: bar.selectedBarConfig?.bottomGap ?? 0
+                    minimum: -50
+                    maximum: 50
+                    unit: "px"
+                    onSliderDragFinished: finalValue => SettingsData.updateBarConfig(bar.selectedBarId, {
+                            bottomGap: finalValue
+                        })
+                }
+
+                SettingsToggleRow {
+                    text: I18n.tr("Auto popup gaps")
+                    description: I18n.tr("Gap between the bar and its popouts follows edge spacing", "bar auto popup gaps toggle description")
+                    tags: ["popup", "gaps", "auto"]
+                    visible: !dankBarTab.popupGapsZeroed
+                    checked: bar.selectedBarConfig?.popupGapsAuto ?? true
+                    onToggled: checked => SettingsData.updateBarConfig(bar.selectedBarId, {
+                            popupGapsAuto: checked
+                        })
+                }
+
+                SettingsSliderRow {
+                    visible: !dankBarTab.popupGapsZeroed && !(bar.selectedBarConfig?.popupGapsAuto ?? true)
+                    text: I18n.tr("Gap size")
+                    tags: ["popup", "gaps", "size"]
+                    resetStore: bar
+                    resetKeys: ["popupGapsManual"]
+                    unit: "px"
+                    value: bar.selectedBarConfig?.popupGapsManual ?? 4
+                    minimum: 0
+                    maximum: 50
+                    onSliderDragFinished: finalValue => SettingsData.updateBarConfig(bar.selectedBarId, {
+                            popupGapsManual: finalValue
+                        })
+                }
+
+                SettingsControlledBy {
+                    visible: dankBarTab.popupGapsZeroed
+                    target: dankBarTab.popupGapsFramed ? "" : "appearance"
+                    parentModal: dankBarTab.parentModal
+                    section: dankBarTab.popupGapsFramed ? "frameBorder" : (bar.selectedBarIsIsland ? "islandSatellites" : "barCorners")
+                    settingLabel: I18n.tr("Auto popup gaps")
+                    reason: dankBarTab.popupGapsFramed ? I18n.tr("Disabled by Frame Mode") : I18n.tr("Disabled by Connected popouts", "bar popouts card, Connected popouts is the Appearance toggle name")
+                }
+            }
         }
     }
 }

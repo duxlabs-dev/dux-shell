@@ -180,6 +180,14 @@ DFloatingWindow {
             focusSearch();
     }
 
+    function dialogHostFor(item): Item {
+        for (let p = item; p; p = p.parent) {
+            if (p.dialogLayer)
+                return p.dialogLayer;
+        }
+        return null;
+    }
+
     objectName: "settingsModal"
     title: I18n.tr("Settings", "settings window title")
     minimumSize: Qt.size(SettingsMetrics.windowMinWidth, SettingsMetrics.windowMinHeight)
@@ -299,18 +307,27 @@ DFloatingWindow {
             event.accepted = true;
         }
 
+        Rectangle {
+            id: contentBackdrop
+
+            x: contentPane.x
+            width: contentPane.width
+            height: parent.height
+            color: SettingsMetrics.paneColor
+
+            Rectangle {
+                anchors.left: parent.left
+                width: Theme.layerOutlineWidth
+                height: parent.height
+                color: Theme.outlineMedium
+                visible: width > 0 && !settingsModal.isCompactMode
+            }
+        }
+
         Column {
             anchors.fill: parent
+            topPadding: titleBar.integrated ? 0 : titleBar.height
             spacing: 0
-
-            DWindowHeader {
-                id: titleBar
-                width: parent.width
-                z: 10
-                controls: windowControls
-                title: I18n.tr("Settings")
-                onCloseRequested: settingsModal.hide()
-            }
 
             Item {
                 id: readOnlyBanner
@@ -324,10 +341,10 @@ DFloatingWindow {
 
                 Rectangle {
                     anchors.fill: parent
-                    anchors.leftMargin: body.paneInset
-                    anchors.rightMargin: body.paneInset
+                    anchors.leftMargin: SettingsMetrics.paneMargin
+                    anchors.rightMargin: SettingsMetrics.paneMargin
                     radius: SettingsMetrics.paneRadius
-                    color: SettingsMetrics.paneColor
+                    color: SettingsMetrics.rowColor
                     border.width: Theme.layerOutlineWidth
                     border.color: Theme.outlineMedium
                 }
@@ -347,8 +364,8 @@ DFloatingWindow {
                     anchors.right: parent.right
                     anchors.bottom: parent.bottom
                     anchors.bottomMargin: Theme.spacingM
-                    anchors.leftMargin: body.paneInset + SettingsMetrics.panePadding
-                    anchors.rightMargin: body.paneInset + SettingsMetrics.panePadding
+                    anchors.leftMargin: SettingsMetrics.paneMargin + SettingsMetrics.panePadding
+                    anchors.rightMargin: SettingsMetrics.paneMargin + SettingsMetrics.panePadding
                     spacing: Theme.spacingM
 
                     DIcon {
@@ -404,11 +421,8 @@ DFloatingWindow {
             Item {
                 id: body
 
-                readonly property real paneInset: SettingsMetrics.paneMargin
-                readonly property real paneSpace: width - sidebar.width - paneInset
-
                 width: parent.width
-                height: parent.height - titleBar.height - readOnlyBanner.height
+                height: parent.height - parent.topPadding - readOnlyBanner.height
                 clip: true
 
                 SettingsSidebar {
@@ -417,6 +431,7 @@ DFloatingWindow {
                     anchors.left: parent.left
                     width: settingsModal.isCompactMode ? parent.width : sidebar.implicitWidth
                     parentModal: settingsModal
+                    topInset: titleBar.integrated ? SettingsMetrics.paneMargin : 0
                     visible: !settingsModal.isCompactMode || settingsModal.menuVisible
                     currentPage: settingsModal.currentPage
                     activeCategoryId: settingsModal.activeCategoryId
@@ -427,24 +442,19 @@ DFloatingWindow {
                     }
                 }
 
-                Rectangle {
+                Item {
                     id: contentPane
                     enabled: !settingsModal.isCompactMode || !settingsModal.menuVisible
 
                     x: {
-                        const flip = I18n.isRtl ? -1 : 1;
-                        if (settingsModal.isCompactMode)
-                            return (settingsModal.menuVisible ? body.width * flip : 0) + body.paneInset;
-                        const slack = (body.paneSpace - width) / 2;
-                        return (I18n.isRtl ? body.paneInset : sidebar.width) + slack;
+                        if (!settingsModal.isCompactMode)
+                            return I18n.isRtl ? 0 : sidebar.width;
+                        if (!settingsModal.menuVisible)
+                            return 0;
+                        return I18n.isRtl ? -body.width : body.width;
                     }
-                    width: settingsModal.isCompactMode ? body.width - body.paneInset * 2 : Math.min(body.paneSpace, SettingsMetrics.paneMaxWidth)
-                    height: body.height - body.paneInset
-                    radius: SettingsMetrics.paneRadius
-                    color: SettingsMetrics.paneColor
-                    border.width: Theme.layerOutlineWidth
-                    border.color: Theme.outlineMedium
-                    clip: true
+                    width: settingsModal.isCompactMode ? body.width : body.width - sidebar.width
+                    height: body.height
 
                     Behavior on x {
                         enabled: settingsModal.isCompactMode && !SettingsData.reduceMotion && Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
@@ -461,9 +471,31 @@ DFloatingWindow {
                         anchors.fill: parent
                         parentModal: settingsModal
                         currentPage: settingsModal.currentPage
+                        dialogHost: dialogOverlay
+                        windowButtonsReserve: titleBar.ownsPageHeader ? titleBar.buttonsReserve : 0
+                        windowDragControls: titleBar.ownsPageHeader ? windowControls : null
                     }
                 }
             }
+        }
+
+        DWindowHeader {
+            id: titleBar
+
+            readonly property bool integrated: !settingsModal.isCompactMode
+            readonly property bool ownsPageHeader: integrated && !compositorDecorated
+
+            anchors.right: parent.right
+            y: integrated ? readOnlyBanner.height : 0
+            width: integrated ? buttonsReserve : parent.width
+            visible: !integrated || ownsPageHeader
+            controls: windowControls
+            onCloseRequested: settingsModal.hide()
+        }
+
+        Item {
+            id: dialogOverlay
+            anchors.fill: contentBackdrop
         }
     }
 

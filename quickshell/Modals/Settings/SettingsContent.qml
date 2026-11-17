@@ -13,6 +13,9 @@ FocusScope {
 
     property string currentPage: ""
     property var parentModal: null
+    property Item dialogHost: null
+    property real windowButtonsReserve: 0
+    property FloatingWindowControls windowDragControls: null
 
     readonly property bool sessionVisible: parentModal?.shouldBeVisible ?? false
     readonly property list<string> pagePath: (parentModal?.pageHistory ?? []).concat([currentPage])
@@ -189,6 +192,14 @@ FocusScope {
         return "";
     }
 
+    function pageSource(page) {
+        return Qt.resolvedUrl("../../Modules/Settings/" + _fileFor(page));
+    }
+
+    function pageProperties(page) {
+        return _propertiesFor(page);
+    }
+
     function _propertiesFor(page) {
         if (SettingsTabs.isPluginPage(page))
             return {
@@ -198,6 +209,7 @@ FocusScope {
         if (!pageFiles[page] && SettingsTabs.page(page)?.kind === "hub")
             return {
                 "parentModal": Qt.binding(() => root.parentModal),
+                "pageHost": root,
                 "hubId": page
             };
         const properties = {};
@@ -355,6 +367,7 @@ FocusScope {
             required property int pathIndex
             readonly property bool pageActive: root.sessionVisible && page === root.currentPage && pageStack.currentItem === host
             readonly property alias item: loader.item
+            readonly property alias dialogLayer: dialogLayer
             readonly property int status: loader.status
             readonly property bool settled: !pending && loader.status !== Loader.Loading && (presented || loader.status !== Loader.Ready)
 
@@ -389,11 +402,19 @@ FocusScope {
                 pending = false;
             }
 
+            MouseArea {
+                width: parent.width
+                height: pageHeader.height
+                enabled: root.windowDragControls !== null
+                onPressed: root.windowDragControls.tryStartMove()
+                onDoubleClicked: root.windowDragControls.tryToggleMaximize()
+            }
+
             Item {
                 id: pageHeader
                 width: Math.min(host.item?.contentMaxWidth ?? SettingsMetrics.contentMaxWidth, parent.width - SettingsMetrics.panePadding * 2)
                 anchors.horizontalCenter: parent.horizontalCenter
-                height: Math.max(SettingsMetrics.pageHeaderHeight, pageHeading.implicitHeight + Theme.spacingM * 2)
+                height: Math.max(SettingsMetrics.pageHeaderHeight, pageHeading.implicitHeight + Theme.spacingS * 2)
 
                 Item {
                     id: backSlot
@@ -421,6 +442,7 @@ FocusScope {
                     id: pageHeading
                     anchors.left: backSlot.right
                     anchors.right: parent.right
+                    anchors.rightMargin: Math.max(0, root.windowButtonsReserve - (host.width - pageHeader.width) / 2)
                     wrapMode: Text.WordWrap
                     anchors.verticalCenter: parent.verticalCenter
                     text: host.pageTitle
@@ -462,6 +484,14 @@ FocusScope {
                         });
                     root._focusPage();
                 }
+            }
+
+            Item {
+                id: dialogLayer
+
+                parent: root.dialogHost ?? host
+                anchors.fill: parent
+                visible: host.pageActive
             }
 
             FrameAnimation {
@@ -546,7 +576,7 @@ FocusScope {
             "lock_screen": "LockScreenTab.qml",
             "greeter": "GreeterTab.qml",
             "about": "AboutTab.qml",
-            "typography": "TypographyMotionTab.qml",
+            "motion": "MotionTab.qml",
             "sounds": "SoundsTab.qml",
             "media_player": "MediaPlayerTab.qml",
             "notification_rules": "NotificationRulesTab.qml",
@@ -581,7 +611,7 @@ FocusScope {
             "profile_inspect": "ProfileInspectTab.qml"
         })
 
-    readonly property var pagesWithParentModal: ["dankbar_widgets", "window_rules", "notification_rules", "display_config", "users", "time_weather", "weather", "lock_screen", "greeter", "dank_dash", "wallpaper_cycling", "wallpaper_folders", "wallpaper_folder", "theme_schedule", "surface_shadows", "keybinds", "dankbar_settings", "dankbar_appearance", "bar_widget", "dock_general", "dock_widgets", "dock_appearance", "dock_advanced", "fcitx5", "global_shortcuts", "launcher", "theme", "theme_apps", "media_player", "desktop_widgets", "desktop_widget", "autostart", "compositor_layout", "compositor_includes", "typography", "updater", "display_gamma", "about", "profiles", "profile_edit", "profile_inspect", "network_connections", "network_connection", "network_ethernet", "network_wifi", "network_hotspot", "network_wifi_connect", "network_vpn", "network_cellular", "network_tailscale", "network_tailscale_add", "screenshot"]
+    readonly property var pagesWithParentModal: ["dankbar_widgets", "window_rules", "notification_rules", "display_config", "users", "time_weather", "weather", "lock_screen", "greeter", "dank_dash", "wallpaper_cycling", "wallpaper_folders", "wallpaper_folder", "theme_schedule", "surface_shadows", "keybinds", "dankbar_settings", "dankbar_appearance", "bar_widget", "dock_general", "dock_widgets", "dock_appearance", "dock_advanced", "fcitx5", "global_shortcuts", "launcher", "theme", "theme_apps", "media_player", "desktop_widgets", "desktop_widget", "autostart", "compositor_layout", "compositor_includes", "motion", "updater", "display_gamma", "about", "profiles", "profile_edit", "profile_inspect", "network_connections", "network_connection", "network_ethernet", "network_wifi", "network_hotspot", "network_wifi_connect", "network_vpn", "network_cellular", "network_tailscale", "network_tailscale_add", "screenshot"]
 
     // The page scroller stops at the Loader edges; wheel over the header and gutters lands here instead
     WheelHandler {

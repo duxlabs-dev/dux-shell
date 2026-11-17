@@ -961,30 +961,30 @@ Item {
             }
         }
 
-        SettingsCard {
-            width: parent.width
-            title: I18n.tr("Advanced")
-            settingKey: "launcherAdvanced"
-            tags: ["launcher", "advanced", "overlay", "layer", "unload", "memory"]
-            collapsible: true
-            expanded: false
+        SettingsAdvancedSection {
+            SettingsCard {
+                width: parent.width
+                title: I18n.tr("Advanced")
+                settingKey: "launcherAdvanced"
+                tags: ["launcher", "advanced", "overlay", "layer", "unload", "memory"]
 
-            SettingsToggleRow {
-                settingKey: "launcherUseOverlayLayer"
-                tags: ["launcher", "fullscreen", "overlay", "layer"]
-                text: I18n.tr("Use overlay layer")
-                checked: SettingsData.launcherUseOverlayLayer
-                onToggled: checked => SettingsData.set("launcherUseOverlayLayer", checked)
-            }
+                SettingsToggleRow {
+                    settingKey: "launcherUseOverlayLayer"
+                    tags: ["launcher", "fullscreen", "overlay", "layer"]
+                    text: I18n.tr("Use overlay layer")
+                    checked: SettingsData.launcherUseOverlayLayer
+                    onToggled: checked => SettingsData.set("launcherUseOverlayLayer", checked)
+                }
 
-            SettingsToggleRow {
-                enabled: !root.spotlightIgnoresRows
-                settingKey: "dankLauncherV2UnloadOnClose"
-                tags: ["launcher", "unload", "close", "memory", "vram"]
-                text: I18n.tr("Unload on close")
-                description: I18n.tr("Frees the launcher when closed and rebuilds it on open", "launcher unload on close toggle description")
-                checked: SettingsData.dankLauncherV2UnloadOnClose
-                onToggled: checked => SettingsData.set("dankLauncherV2UnloadOnClose", checked)
+                SettingsToggleRow {
+                    enabled: !root.spotlightIgnoresRows
+                    settingKey: "dankLauncherV2UnloadOnClose"
+                    tags: ["launcher", "unload", "close", "memory", "vram"]
+                    text: I18n.tr("Unload on close")
+                    description: I18n.tr("Frees the launcher when closed and rebuilds it on open", "launcher unload on close toggle description")
+                    checked: SettingsData.dankLauncherV2UnloadOnClose
+                    onToggled: checked => SettingsData.set("dankLauncherV2UnloadOnClose", checked)
+                }
             }
         }
     }

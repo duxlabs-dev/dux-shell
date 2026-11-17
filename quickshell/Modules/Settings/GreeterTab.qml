@@ -363,15 +363,9 @@ Item {
             }
 
             SettingsNavRow {
-                title: I18n.tr("Wallpaper & colors")
+                title: SettingsTabs.page("personalization")?.text ?? ""
                 iconName: "wallpaper"
                 onClicked: keyboard => root.parentModal?.navigateTo("personalization", keyboard)
-            }
-
-            SettingsNavRow {
-                title: I18n.tr("Fonts & motion")
-                iconName: "text_fields"
-                onClicked: keyboard => root.parentModal?.navigateTo("typography", keyboard)
             }
 
             SettingsNavRow {
@@ -416,44 +410,6 @@ Item {
 
         SettingsCard {
             width: parent.width
-            iconName: "tune"
-            title: I18n.tr("Advanced")
-            settingKey: "greeterAdvanced"
-            tags: ["greeter", "login", "sync", "status", "repair"]
-            collapsible: true
-            expanded: false
-
-            SettingsRow {
-                iconName: "sync"
-                title: I18n.tr("Run full sync", "greeter advanced action")
-                subtitle: I18n.tr("Re-applies the greetd command, permissions and PAM authentication. Needs administrator access.", "greeter advanced action")
-                clickable: true
-                enabled: root.greeterBinaryExists && !root.busy
-                onClicked: GreeterService.sync()
-            }
-
-            SettingsRow {
-                iconName: "fact_check"
-                title: I18n.tr("Check status", "greeter settings button, runs dms-greeter status")
-                clickable: true
-                enabled: root.greeterBinaryExists && !root.greeterStatusRunning
-                onClicked: root.runGreeterStatus()
-            }
-
-            SettingsRow {
-                iconName: "link_off"
-                iconColor: Theme.error
-                title: I18n.tr("Unlink login screen", "greeter advanced action")
-                subtitle: I18n.tr("Stops syncing your DMS settings to the greeter. Set up links them again.", "greeter advanced action")
-                visible: GreeterService.slotState !== ""
-                clickable: true
-                enabled: root.greeterBinaryExists && !root.busy
-                onClicked: root.promptUnlink()
-            }
-        }
-
-        SettingsCard {
-            width: parent.width
             iconName: "extension"
             title: I18n.tr("Dependencies & documentation")
             settingKey: "greeterDeps"
@@ -487,6 +443,44 @@ Item {
                         acceptedButtons: Qt.NoButton
                         propagateComposedEvents: true
                     }
+                }
+            }
+        }
+
+        SettingsAdvancedSection {
+            SettingsCard {
+                width: parent.width
+                iconName: "tune"
+                title: I18n.tr("Advanced")
+                settingKey: "greeterAdvanced"
+                tags: ["greeter", "login", "sync", "status", "repair"]
+
+                SettingsRow {
+                    iconName: "sync"
+                    title: I18n.tr("Run full sync", "greeter advanced action")
+                    subtitle: I18n.tr("Re-applies the greetd command, permissions and PAM authentication. Needs administrator access.", "greeter advanced action")
+                    clickable: true
+                    enabled: root.greeterBinaryExists && !root.busy
+                    onClicked: GreeterService.sync()
+                }
+
+                SettingsRow {
+                    iconName: "fact_check"
+                    title: I18n.tr("Check status", "greeter settings button, runs dms-greeter status")
+                    clickable: true
+                    enabled: root.greeterBinaryExists && !root.greeterStatusRunning
+                    onClicked: root.runGreeterStatus()
+                }
+
+                SettingsRow {
+                    iconName: "link_off"
+                    iconColor: Theme.error
+                    title: I18n.tr("Unlink login screen", "greeter advanced action")
+                    subtitle: I18n.tr("Stops syncing your DMS settings to the greeter. Set up links them again.", "greeter advanced action")
+                    visible: GreeterService.slotState !== ""
+                    clickable: true
+                    enabled: root.greeterBinaryExists && !root.busy
+                    onClicked: root.promptUnlink()
                 }
             }
         }

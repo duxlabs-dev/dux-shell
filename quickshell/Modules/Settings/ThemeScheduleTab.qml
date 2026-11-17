@@ -91,6 +91,7 @@ Item {
             }
 
             SettingsTimeRow {
+                dialogHost: root.parentModal?.dialogHostFor(root) ?? null
                 visible: root.ownSchedule && root.mode === "time"
                 is24Hour: SettingsData.use24HourClock
                 startTitle: I18n.tr("Dark mode starts")

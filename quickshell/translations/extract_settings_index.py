@@ -75,7 +75,7 @@ CATEGORY_KEYWORDS = {
     "Lock screen": ["security", "login", "password"],
     "Plugins": ["extend", "addon"],
     "About": ["info", "version", "credits", "help"],
-    "Fonts & motion": ["fonts", "animation", "text"],
+    "Motion": ["animation"],
     "Sounds": ["audio", "sfx", "effects"],
     "Media player": ["music", "spotify", "mpris"],
     "Notifications": ["alerts", "messages", "toast"],
@@ -102,6 +102,7 @@ TAB_INDEX_MAP = {
     "WeatherSettingsTab.qml": 56,
     "KeybindsTab.qml": 2,
     "DBarTab.qml": 3,
+    "WidgetsTab.qml": 22,
     "DDashTab.qml": 43,
     "DigitalWellbeingTab.qml": 67,
     "CompositorLayoutTab.qml": 37,
@@ -117,9 +118,9 @@ TAB_INDEX_MAP = {
     "NetworkStatusTab.qml": 7,
     "NetworkEthernetTab.qml": 39,
     "NetworkWifiTab.qml": 40,
-    "NetworkHotspotTab.qml": 75,
+    "NetworkHotspotTab.qml": 82,
     "NetworkVpnTab.qml": 41,
-    "NetworkTailscaleTab.qml": 73,
+    "NetworkTailscaleTab.qml": 80,
     "NetworkCellularTab.qml": 47,
     "PrinterTab.qml": 8,
     "LauncherTab.qml": 9,
@@ -137,7 +138,7 @@ TAB_INDEX_MAP = {
     "ProfileEditTab.qml": 76,
     "ProfileInspectTab.qml": 77,
     "AboutTab.qml": 13,
-    "TypographyMotionTab.qml": 14,
+    "MotionTab.qml": 14,
     "SoundsTab.qml": 15,
     "MediaPlayerTab.qml": 16,
     "NotificationRulesTab.qml": 55,
@@ -145,10 +146,10 @@ TAB_INDEX_MAP = {
     "RunningAppsTab.qml": 19,
     "SoftwareUpdatesTab.qml": 20,
     "ChangelogTab.qml": 66,
-    "NetworkConnectionsTab.qml": 71,
-    "NetworkConnectionTab.qml": 72,
-    "NetworkWifiConnectTab.qml": 74,
-    "NetworkTailscaleAddTab.qml": 76,
+    "NetworkConnectionsTab.qml": 78,
+    "NetworkConnectionTab.qml": 79,
+    "NetworkWifiConnectTab.qml": 81,
+    "NetworkTailscaleAddTab.qml": 83,
     "PowerSleepTab.qml": 21,
     "ClipboardTab.qml": 23,
     "ScreenshotTab.qml": 79,
@@ -207,13 +208,15 @@ SIDEBAR_GATE_CONDITIONS = [
 FILE_PAGE_MAP = {
     "WallpaperColorsTab.qml": "personalization",
     "ThemeSurfacesTab.qml": "theme_surfaces",
-    "WidgetsTab.qml": "dankbar_widgets",
     "NotificationsTab.qml": "notifications",
     "UserAccountsTab.qml": "user_accounts",
     "BarHubHeader.qml": "dankbar",
     "DockHubHeader.qml": "dock",
     "PluginsHubHeader.qml": "plugins",
 }
+
+# The Appearance page's rows stay findable by what the page holds, which its name no longer says
+PAGE_TAGS = {"personalization": "wallpaper colors"}
 
 TAB_META_DEFAULT = ("Settings", None, None)
 
@@ -636,7 +639,9 @@ def find_settings_components(content, filename, wrappers, tab_meta, hub_meta):
                 condition_key = next((cond for start, end, cond in card_conditions if start < match.start() < end), None)
 
             category, parent_label, _ = page_meta if page_meta else tab_meta.get(tab_index, TAB_META_DEFAULT)
-            enriched_keywords = enrich_keywords(label, apply_args(description, description_args) if description else description, category, tags, parent_label)
+            page_phrase = PAGE_TAGS.get(file_page, "")
+            page_tags = page_phrase.split() + sorted(alias_keywords(page_phrase))
+            enriched_keywords = enrich_keywords(label, apply_args(description, description_args) if description else description, category, tags + page_tags, parent_label)
 
             entry = {
                 "section": setting_key,
@@ -899,7 +904,7 @@ def extract_settings_index(root_dir, tab_meta, hub_meta):
             {
                 "section": "islandHomeLayout",
                 "label": "Island widgets",
-                "tabIndex": -1,
+                "tabIndex": 22,
                 "category": "Bar widgets",
                 "keywords": enrich_keywords(
                     "Island widgets",
@@ -907,7 +912,6 @@ def extract_settings_index(root_dir, tab_meta, hub_meta):
                     "Bar widgets",
                     ["home", "compact", "layout", "groups", "order", "activities", "media", "launcher", "weather", "battery", "volume", "brightness", "notifications", "clock"],
                 ),
-                "page": "dankbar_widgets",
                 "icon": "view_in_ar",
                 "conditionKey": "islandEnabled",
             }

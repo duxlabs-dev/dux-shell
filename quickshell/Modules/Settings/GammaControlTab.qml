@@ -174,6 +174,7 @@ Item {
             }
 
             SettingsTimeRow {
+                dialogHost: root.parentModal?.dialogHostFor(root) ?? null
                 visible: !autoModeGroup.locationMode
                 is24Hour: SettingsData.use24HourClock
                 startTitle: I18n.tr("Start")

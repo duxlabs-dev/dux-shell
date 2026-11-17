@@ -171,7 +171,7 @@ Column {
 
     ConfirmDialogOverlay {
         id: updateConfirm
-        parent: root.parentModal?.modalFocusScope ?? root.parent
+        parent: root.parentModal?.dialogHostFor(root) ?? root.parent
     }
 
     function updatePlugin(row) {
@@ -256,7 +256,7 @@ Column {
 
     ConfirmDialogOverlay {
         id: uninstallConfirm
-        parent: root.parentModal?.modalFocusScope ?? root.parent
+        parent: root.parentModal?.dialogHostFor(root) ?? root.parent
     }
 
     function showPluginBrowser() {

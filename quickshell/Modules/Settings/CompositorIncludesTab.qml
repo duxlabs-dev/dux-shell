@@ -60,7 +60,6 @@ Item {
         SettingsCard {
             width: parent.width
             tags: ["niri", "hyprland", "mango", "include", "config", "compositor", "manage", "unmanage", "opt out", "restore", "manual", "files"]
-            title: I18n.tr("Managed files", "settings card title, compositor config files dms writes")
             settingKey: "compositorIncludes"
             iconName: "description"
 
