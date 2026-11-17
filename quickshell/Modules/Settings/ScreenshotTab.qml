@@ -44,7 +44,7 @@ Item {
                 text: I18n.tr("Folder", "noun, screenshot settings label for the save directory")
                 enabled: SettingsData.screenshotSaveFile
                 placeholderText: root.defaultDir
-                description: savedDir === "" ? I18n.tr("Default saves to %1", "screenshot folder field hint, %1 is the default screenshots folder").arg(root.defaultDir) : ""
+                alwaysFloatLabel: true
                 // The row's reset writes the field and breaks a plain value binding.
                 readonly property string savedDir: SettingsData.screenshotDir
                 value: savedDir
