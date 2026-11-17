@@ -15,21 +15,31 @@ DPopout {
     // Hangs above wherever a strip below would push the panel off its resting spot (bottom bar, low side-bar trigger).
     readonly property bool stripAbove: alignedYFor(0, CcMetrics.editActionsHeight) !== alignedYFor(0, 0)
     readonly property bool growsFromTop: effectiveBarPosition === SettingsData.Position.Top
-    bottomOverflow: _stripEdit && !stripAbove ? CcMetrics.editActionsHeight : 0
-    topOverflow: _stripEdit && stripAbove ? CcMetrics.editActionsHeight : 0
-    leftOverflow: dockFits && dockSide === "left" ? _dockReserve : 0
-    rightOverflow: dockFits && dockSide === "right" ? _dockReserve : 0
+    bottomOverflow: editMode ? reservedBounds.bottomOverflow : 0
+    topOverflow: editMode ? reservedBounds.topOverflow : 0
+    leftOverflow: editMode ? reservedBounds.leftOverflow : 0
+    rightOverflow: editMode ? reservedBounds.rightOverflow : 0
     // The docked panel keeps its own floor and hangs past a shorter body, toward the side with room.
     readonly property real dockPanelMinHeight: CcMetrics.dockedPanelMinHeight
-    readonly property real dockOverhang: dockFits ? Math.max(0, _dockMinHeight - popupHeight) : 0
+    readonly property real dockOverhang: _plannedDockSide !== "" ? Math.max(0, _dockMinHeight - popupHeight) : 0
     // Judged at the shortest body, so a height drag never flips the panel across and moves the body under the pointer.
-    readonly property bool dockAbove: dockFits && alignedYFor(0, Math.max(0, _dockMinHeight - CcMetrics.minHeight), CcMetrics.minHeight) !== alignedYFor(0, 0, CcMetrics.minHeight)
-    sideTopOverflow: dockAbove ? dockOverhang : 0
-    sideBottomOverflow: dockAbove ? 0 : dockOverhang
+    readonly property bool dockAbove: _plannedDockSide !== "" && alignedYFor(0, Math.max(0, _dockMinHeight - CcMetrics.minHeight), CcMetrics.minHeight) !== alignedYFor(0, 0, CcMetrics.minHeight)
+    sideTopOverflow: editMode ? reservedBounds.sideTopOverflow : 0
+    sideBottomOverflow: editMode ? reservedBounds.sideBottomOverflow : 0
     sideBlurItem: contentLoader.item?.dockedBlurItem ?? null
     sideBlurRadius: contentLoader.item?.surfaceRadius ?? 0
     inputMargin: editMode ? CcMetrics.editOverflow : 0
     minimumSurfaceWidth: editMode ? CcMetrics.sheetWidthFor(gridColumnCap) : 0
+    reservedBounds: ({
+            "minimumWidth": CcMetrics.sheetWidthFor(_plannedDockSide !== "" ? Math.min(_baseColumnCap, _dockedCap(_plannedDockSide)) : _baseColumnCap),
+            "inputMargin": CcMetrics.editOverflow,
+            "leftOverflow": _plannedDockSide === "left" ? _dockReserve : 0,
+            "rightOverflow": _plannedDockSide === "right" ? _dockReserve : 0,
+            "topOverflow": _plannedDockSide === "" && stripAbove ? CcMetrics.editActionsHeight : 0,
+            "bottomOverflow": _plannedDockSide === "" && !stripAbove ? CcMetrics.editActionsHeight : 0,
+            "sideTopOverflow": dockAbove ? dockOverhang : 0,
+            "sideBottomOverflow": dockAbove ? 0 : dockOverhang
+        })
 
     property string expandedSection: ""
     property string pendingSection: ""
@@ -39,8 +49,10 @@ DPopout {
     property bool editMode: false
     // Latched on entering edit mode ("" until decided, then "strip", "left" or "right") so a width change cannot move the body mid-edit.
     property string _editLayout: ""
+    readonly property string _plannedLayout: editMode ? _editLayout : _pickDockSide()
     // Drops to the strip if the screen loses the room mid-edit (output change, bar resize) instead of squeezing the panel.
-    readonly property string dockSide: (_editLayout === "left" || _editLayout === "right") && _dockRoomFor(_editLayout) ? _editLayout : ""
+    readonly property string _plannedDockSide: (_plannedLayout === "left" || _plannedLayout === "right") && _dockRoomFor(_plannedLayout) ? _plannedLayout : ""
+    readonly property string dockSide: editMode ? _plannedDockSide : ""
     readonly property bool _stripEdit: editMode && editLayoutDecided && dockSide === ""
     // Connected, the body's flares run along the bar, so the panel keeps clear of them and of the bar itself.
     readonly property real dockGap: usesConnectedSurfaceChrome ? CcMetrics.dockedPanelConnectedGap : CcMetrics.dockedPanelGap

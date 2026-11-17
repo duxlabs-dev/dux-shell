@@ -51,6 +51,8 @@ Item {
     property real sideBlurRadius: popoutHandle.sideBlurRadius
     property real inputMargin: popoutHandle.inputMargin
     property real minimumSurfaceWidth: popoutHandle.minimumSurfaceWidth
+    property var reservedBounds: popoutHandle.reservedBounds
+    readonly property rect interactiveBounds: Qt.rect(contentMaskRect.x, contentMaskRect.y, contentMaskRect.width, contentMaskRect.height)
     property bool _surfaceFitOwed: false
     property real triggerX: popoutHandle.triggerX
     property real triggerY: popoutHandle.triggerY
@@ -72,14 +74,21 @@ Item {
     readonly property rect renderBounds: {
         if (_travelFromHandoff)
             return Qt.rect(0, 0, screenWidth, screenHeight);
-        const padding = Theme.elevationRenderPadding(shadowLevel, effectiveShadowDirection, shadowFallbackOffset, Theme.connectedCornerRadius + inputMargin, Theme.spacingL) + Theme.fluidOvershootLimit;
-        const reservedWidth = Theme.px(Math.min(minimumSurfaceWidth, screenWidth), dpr);
+        const padding = Theme.elevationRenderPadding(shadowLevel, effectiveShadowDirection, shadowFallbackOffset, Theme.connectedCornerRadius + Math.max(inputMargin, reservedBounds?.inputMargin ?? 0), Theme.spacingL) + Theme.fluidOvershootLimit;
+        const rLeft = Math.max(leftOverflow, reservedBounds?.leftOverflow ?? 0);
+        const rRight = Math.max(rightOverflow, reservedBounds?.rightOverflow ?? 0);
+        const rTop = Math.max(topOverflow, reservedBounds?.topOverflow ?? 0);
+        const rBottom = Math.max(bottomOverflow, reservedBounds?.bottomOverflow ?? 0);
+        const rSideTop = Math.max(sideTopOverflow, reservedBounds?.sideTopOverflow ?? 0);
+        const rSideBottom = Math.max(sideBottomOverflow, reservedBounds?.sideBottomOverflow ?? 0);
+        const rMinWidth = Math.max(minimumSurfaceWidth, reservedBounds?.minimumWidth ?? 0);
+        const reservedWidth = Theme.px(Math.min(rMinWidth, screenWidth), dpr);
         const reserved = reservedWidth > alignedWidth;
         const body = {
-            x: (reserved ? alignedXFor(reservedWidth) : alignedX) - leftOverflow,
-            y: alignedY - topOverflow - sideTopOverflow,
-            width: (reserved ? reservedWidth : alignedWidth) + leftOverflow + rightOverflow,
-            height: alignedHeight + topOverflow + bottomOverflow + sideTopOverflow + sideBottomOverflow
+            x: (reserved ? alignedXFor(reservedWidth) : alignedX) - rLeft,
+            y: alignedYFor(rTop + rSideTop, rBottom + rSideBottom) - rTop - rSideTop,
+            width: (reserved ? reservedWidth : alignedWidth) + rLeft + rRight,
+            height: alignedHeight + rTop + rBottom + rSideTop + rSideBottom
         };
         const area = PopoutBounds.motion(screenWidth, screenHeight, body, _surfaceMotionOrigin, _fluidMotionActive ? 0 : contentContainer.offsetX, _fluidMotionActive ? 0 : contentContainer.offsetY, _fluidMotionActive ? 1 : animationScaleCollapsed, padding, _geometrySpringParams);
         return Qt.rect(area.x, area.y, area.width, area.height);

@@ -60,10 +60,10 @@ DIdleSurface {
                 width: dismissal.active ? (root.activeHost?.maskWidth ?? 0) : 0
                 height: dismissal.active ? (root.activeHost?.maskHeight ?? 0) : 0
                 Region {
-                    x: root.renderBounds.x
-                    y: root.renderBounds.y
-                    width: root.renderBounds.width
-                    height: root.renderBounds.height
+                    x: root.activeHost?.interactiveBounds.x ?? root.renderBounds.x
+                    y: root.activeHost?.interactiveBounds.y ?? root.renderBounds.y
+                    width: root.activeHost?.interactiveBounds.width ?? root.renderBounds.width
+                    height: root.activeHost?.interactiveBounds.height ?? root.renderBounds.height
                     intersection: Intersection.Subtract
                 }
             }
