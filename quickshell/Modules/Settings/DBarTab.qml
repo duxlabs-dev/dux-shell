@@ -460,7 +460,7 @@ Item {
                 tags: ["bar", "hover", "popout", "reveal", "widget", "delay"]
                 iconName: "touch_app"
                 title: I18n.tr("Hover popouts")
-                description: enabled ? "" : root.clickThroughHint
+                description: enabled ? "" : dankBarTab.clickThroughHint
                 enabled: !(bar.selectedBarConfig?.clickThrough ?? false)
                 opacity: (bar.selectedBarConfig?.clickThrough ?? false) ? 0.5 : 1.0
                 checked: bar.selectedBarConfig?.hoverPopouts ?? false
