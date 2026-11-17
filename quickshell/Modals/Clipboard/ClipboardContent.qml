@@ -4,6 +4,7 @@ import qs.Common
 import qs.DCommon.Widgets
 import qs.Widgets
 import qs.Services
+import "ClipboardUtils.js" as ClipboardUtils
 
 Item {
     id: clipboardContent
@@ -41,36 +42,6 @@ Item {
         contextMenu.show(localPos.x, localPos.y, entry);
     }
 
-    function decodeEntryText(data) {
-        if (!data)
-            return "";
-        try {
-            const decoded = Qt.atob(data);
-            if (!decoded)
-                return data;
-            let binary = "";
-            if (typeof decoded === "string") {
-                binary = decoded;
-            } else {
-                const bytes = new Uint8Array(decoded);
-                const chunkSize = 8192;
-                const chunks = [];
-                for (let i = 0; i < bytes.length; i += chunkSize)
-                    chunks.push(String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize)));
-                binary = chunks.join("");
-            }
-            if (!binary)
-                return data;
-            try {
-                return decodeURIComponent(escape(binary));
-            } catch (e) {
-                return binary;
-            }
-        } catch (e) {
-            return data;
-        }
-    }
-
     function startEntryDrag(entry) {
         if (_dragInProgress || !entry || entry.id === undefined || entry.id === null)
             return;
@@ -79,7 +50,7 @@ Item {
             return;
         _dragInProgress = true;
         const entryType = clipboardContent.modal.getEntryType(entry);
-        const isFileOrImage = entryType === "image" || (entry.mimeType ?? "") === "text/uri-list";
+        const isFileOrImage = entryType === "image" || (entry.mimeType ?? "").toLowerCase().startsWith("text/uri-list");
 
         function finishDrag(action) {
             clipboardContent._dragInProgress = false;
@@ -101,20 +72,23 @@ Item {
             DMSService.sendRequest("clipboard.exportEntryFile", {
                 "id": entry.id
             }, function (response) {
-                if ((host && !host.shouldBeVisible) || response?.error || !response?.result?.filePath) {
+                const res = response?.result;
+                const uriList = res?.uriList || (res?.fileUrl ? res.fileUrl + "\r\n" : "");
+                if ((host && !host.shouldBeVisible) || response?.error || !uriList) {
                     clipboardContent._dragInProgress = false;
                     return;
                 }
-                const fileUrl = "file://" + response.result.filePath;
+                const fileUrl = res.fileUrl || "";
+                const gnomeCopy = uriList.trim().split(/\r?\n/).filter(Boolean).join("\n");
                 dragGhost.isImage = entryType === "image";
                 dragGhost.imageSource = entryType === "image" ? fileUrl : "";
                 dragGhost.previewText = clipboardContent.modal.getEntryPreview(entry);
                 const mimeData = {
-                    "text/uri-list": fileUrl + "\r\n",
-                    "x-special/gnome-copied-files": "copy\n" + fileUrl + "\n"
+                    "text/uri-list": uriList,
+                    "x-special/gnome-copied-files": "copy\n" + gnomeCopy + "\n"
                 };
-                if (response.result.portalKey)
-                    mimeData["application/vnd.portal.filetransfer"] = response.result.portalKey;
+                if (res.portalKey)
+                    mimeData["application/vnd.portal.filetransfer"] = res.portalKey;
                 dragLauncher.launch(host, dragGhost, mimeData, Qt.point(dragGhost.width / 2, dragGhost.height / 2), finishDrag);
             });
             return;
@@ -127,7 +101,7 @@ Item {
                 clipboardContent._dragInProgress = false;
                 return;
             }
-            const text = decodeEntryText(response.result.data);
+            const text = ClipboardUtils.decodeEntryData(response.result.data);
             if (!text) {
                 clipboardContent._dragInProgress = false;
                 return;

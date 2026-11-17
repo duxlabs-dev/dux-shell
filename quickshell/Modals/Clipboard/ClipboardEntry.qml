@@ -20,6 +20,8 @@ DListItem {
     signal dragRequested(var entry)
 
     property bool _dragTriggered: false
+    property bool _holdReady: false
+    property point _pressPos: Qt.point(0, 0)
 
     readonly property string entryType: modal ? modal.getEntryType(entry) : "text"
     readonly property string entryPreview: modal ? modal.getEntryPreview(entry) : ""
@@ -43,19 +45,13 @@ DListItem {
     Accessible.description: entryType === "image" ? I18n.tr("Image") : I18n.tr("Text")
     ListView.onPooled: {
         holdTimer.stop();
+        _holdReady = false;
         _dragTriggered = false;
     }
     ListView.onReused: {
         holdTimer.stop();
+        _holdReady = false;
         _dragTriggered = false;
-    }
-    onDownChanged: {
-        if (down) {
-            _dragTriggered = false;
-            holdTimer.restart();
-        } else {
-            holdTimer.stop();
-        }
     }
     onClicked: {
         if (_dragTriggered) {
@@ -69,14 +65,42 @@ DListItem {
         copyRequested();
     }
 
+    PointHandler {
+        acceptedButtons: Qt.LeftButton
+        onActiveChanged: {
+            if (active) {
+                root._pressPos = point.position;
+                root._holdReady = false;
+                root._dragTriggered = false;
+                holdTimer.restart();
+            } else {
+                holdTimer.stop();
+                root._holdReady = false;
+            }
+        }
+        onPointChanged: {
+            if (!active || !root.down || root._dragTriggered || root.listView?.moving)
+                return;
+            const dx = point.position.x - root._pressPos.x;
+            const dy = point.position.y - root._pressPos.y;
+            if (Math.hypot(dx, dy) < Qt.styleHints.startDragDistance)
+                return;
+            if (!root._holdReady) {
+                holdTimer.stop();
+                return;
+            }
+            root._dragTriggered = true;
+            root.dragRequested(root.entry);
+        }
+    }
+
     Timer {
         id: holdTimer
         interval: 250
         onTriggered: {
             if (!root.down || root.listView?.moving)
                 return;
-            root._dragTriggered = true;
-            root.dragRequested(root.entry);
+            root._holdReady = true;
         }
     }
 

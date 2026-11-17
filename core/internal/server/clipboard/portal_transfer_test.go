@@ -69,15 +69,32 @@ func TestExportPortalTransferReplacesPreviousKey(t *testing.T) {
 	m := &Manager{}
 	client := &fakePortalClient{}
 
-	first, err := m.exportPortalTransfer(context.Background(), client, tmpFile)
+	first, err := m.exportPortalTransfer(context.Background(), client, []string{tmpFile})
 	require.NoError(t, err)
 	assert.Equal(t, "key-a", first)
 	assert.Equal(t, 1, client.added["key-a"])
 	assert.Empty(t, client.stopped)
 
-	second, err := m.exportPortalTransfer(context.Background(), client, tmpFile)
+	second, err := m.exportPortalTransfer(context.Background(), client, []string{tmpFile})
 	require.NoError(t, err)
 	assert.Equal(t, "key-b", second)
 	assert.Equal(t, []string{"key-a"}, client.stopped)
 	assert.Equal(t, "key-b", m.portalKey)
+}
+
+func TestParseURIListFiles(t *testing.T) {
+	dir := t.TempDir()
+	first := filepath.Join(dir, "my photo.png")
+	second := filepath.Join(dir, "second.txt")
+	require.NoError(t, os.WriteFile(first, []byte("png"), 0o600))
+	require.NoError(t, os.WriteFile(second, []byte("txt"), 0o600))
+
+	raw := "file://" + dir + "/my%20photo.png\r\n# comment\r\nfile://" + second + "\r\nfile://" + filepath.Join(dir, "missing.txt") + "\r\n"
+	uris, paths := parseURIListFiles([]byte(raw))
+
+	assert.Equal(t, []string{first, second}, paths)
+	assert.Equal(t, []string{
+		"file://" + dir + "/my%20photo.png",
+		"file://" + second,
+	}, uris)
 }

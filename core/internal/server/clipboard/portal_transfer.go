@@ -13,6 +13,7 @@ const (
 	portalBusName       = "org.freedesktop.portal.Documents"
 	portalObjectPath    = "/org/freedesktop/portal/documents"
 	portalTransferIface = "org.freedesktop.portal.FileTransfer"
+	portalBatchSize     = 16
 	portalTimeout       = 2 * time.Second
 )
 
@@ -45,6 +46,13 @@ func (c dbusPortalTransfer) StopTransfer(ctx context.Context, key string) {
 }
 
 func (m *Manager) exportPortalFile(path string) string {
+	return m.exportPortalFiles([]string{path})
+}
+
+func (m *Manager) exportPortalFiles(paths []string) string {
+	if len(paths) == 0 {
+		return ""
+	}
 	bus, err := dbus.SessionBus()
 	if err != nil {
 		log.Debugf("clipboard portalTransfer: session bus: %v", err)
@@ -55,7 +63,7 @@ func (m *Manager) exportPortalFile(path string) string {
 	defer cancel()
 
 	client := dbusPortalTransfer{obj: bus.Object(portalBusName, portalObjectPath)}
-	key, err := m.exportPortalTransfer(ctx, client, path)
+	key, err := m.exportPortalTransfer(ctx, client, paths)
 	if err != nil {
 		log.Debugf("clipboard portalTransfer: %v", err)
 		return ""
@@ -63,7 +71,7 @@ func (m *Manager) exportPortalFile(path string) string {
 	return key
 }
 
-func (m *Manager) exportPortalTransfer(ctx context.Context, client portalTransferClient, path string) (string, error) {
+func (m *Manager) exportPortalTransfer(ctx context.Context, client portalTransferClient, paths []string) (string, error) {
 	m.portalMu.Lock()
 	prev := m.portalKey
 	m.portalKey = ""
@@ -78,9 +86,12 @@ func (m *Manager) exportPortalTransfer(ctx context.Context, client portalTransfe
 		return "", err
 	}
 
-	if err := sendPortalFile(ctx, client, key, path); err != nil {
-		client.StopTransfer(ctx, key)
-		return "", err
+	for i := 0; i < len(paths); i += portalBatchSize {
+		end := min(i+portalBatchSize, len(paths))
+		if err := sendPortalBatch(ctx, client, key, paths[i:end]); err != nil {
+			client.StopTransfer(ctx, key)
+			return "", err
+		}
 	}
 
 	m.portalMu.Lock()
@@ -94,14 +105,20 @@ func (m *Manager) exportPortalTransfer(ctx context.Context, client portalTransfe
 	return key, nil
 }
 
-func sendPortalFile(ctx context.Context, client portalTransferClient, key, path string) error {
-	fd, err := syscall.Open(path, syscall.O_RDONLY|syscall.O_NONBLOCK|syscall.O_CLOEXEC, 0)
-	if err != nil {
-		return err
-	}
+func sendPortalBatch(ctx context.Context, client portalTransferClient, key string, paths []string) error {
+	fds := make([]dbus.UnixFD, 0, len(paths))
 	defer func() {
-		_ = syscall.Close(fd)
+		for _, fd := range fds {
+			_ = syscall.Close(int(fd))
+		}
 	}()
 
-	return client.AddFiles(ctx, key, []dbus.UnixFD{dbus.UnixFD(fd)})
+	for _, p := range paths {
+		fd, err := syscall.Open(p, syscall.O_RDONLY|syscall.O_NONBLOCK|syscall.O_CLOEXEC, 0)
+		if err != nil {
+			return err
+		}
+		fds = append(fds, dbus.UnixFD(fd))
+	}
+	return client.AddFiles(ctx, key, fds)
 }

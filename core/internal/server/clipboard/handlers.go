@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math"
 	"mime"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -168,6 +169,30 @@ func dragTempDir() string {
 	return filepath.Join(os.TempDir(), dragTempDirName)
 }
 
+func parseURIListFiles(data []byte) ([]string, []string) {
+	var uris []string
+	var paths []string
+	for line := range strings.SplitSeq(string(data), "\n") {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" || strings.HasPrefix(trimmed, "#") {
+			continue
+		}
+		if !strings.HasPrefix(trimmed, "file://") {
+			continue
+		}
+		parsed, err := url.Parse(trimmed)
+		if err != nil || parsed.Path == "" {
+			continue
+		}
+		if _, err := os.Stat(parsed.Path); err != nil {
+			continue
+		}
+		uris = append(uris, (&url.URL{Scheme: "file", Path: parsed.Path}).String())
+		paths = append(paths, parsed.Path)
+	}
+	return uris, paths
+}
+
 func handleExportEntryFile(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
 	id, err := params.Int(req.Params, "id")
 	if err != nil || id <= 0 {
@@ -182,16 +207,16 @@ func handleExportEntryFile(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
 	}
 
 	if strings.EqualFold(strings.TrimSpace(strings.SplitN(entry.MimeType, ";", 2)[0]), "text/uri-list") {
-		if filePath := m.EntryToFile(entry); filePath != "" {
-			if _, err := os.Stat(filePath); err == nil {
-				conn.Respond(req.ID, map[string]any{
-					"filePath":  filePath,
-					"mimeType":  entry.MimeType,
-					"isTemp":    false,
-					"portalKey": m.exportPortalFile(filePath),
-				})
-				return
-			}
+		if uris, paths := parseURIListFiles(entry.Data); len(paths) > 0 {
+			conn.Respond(req.ID, map[string]any{
+				"filePath":  paths[0],
+				"fileUrl":   uris[0],
+				"uriList":   strings.Join(uris, "\r\n") + "\r\n",
+				"mimeType":  entry.MimeType,
+				"isTemp":    false,
+				"portalKey": m.exportPortalFiles(paths),
+			})
+			return
 		}
 	}
 
@@ -221,8 +246,11 @@ func handleExportEntryFile(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
 		return
 	}
 
+	fileURL := (&url.URL{Scheme: "file", Path: tmpPath}).String()
 	conn.Respond(req.ID, map[string]any{
 		"filePath":  tmpPath,
+		"fileUrl":   fileURL,
+		"uriList":   fileURL + "\r\n",
 		"mimeType":  entry.MimeType,
 		"isTemp":    true,
 		"portalKey": m.exportPortalFile(tmpPath),
