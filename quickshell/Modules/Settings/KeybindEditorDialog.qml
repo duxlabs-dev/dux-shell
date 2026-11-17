@@ -55,7 +55,8 @@ DDialog {
     readonly property var dmsParsedArgs: argConfig?.type === "dms" ? Actions.parseDmsActionArgs(editAction) : null
     readonly property var dmsArgDefs: dmsParsedArgs?.base ? (Actions.getDmsActionArgs()[dmsParsedArgs.base]?.args ?? []) : []
     readonly property var dmsFlagArgs: dmsArgDefs.filter(arg => arg.type === "flag")
-    readonly property bool showDmsArgs: actionType === "dms" && argConfig?.type === "dms"
+    readonly property bool dmsArgsOpaque: dmsParsedArgs?.opaque === true
+    readonly property bool showDmsArgs: actionType === "dms" && argConfig?.type === "dms" && !dmsArgsOpaque
     readonly property bool showCompositorPicker: actionType === "compositor" && !useCustomCompositor
     readonly property var compositorParsedArgs: Actions.parseCompositorActionArgs(KeybindsService.currentProvider, editAction)
     readonly property var compositorArgDefs: argConfig?.config?.args ?? []
@@ -288,7 +289,7 @@ DDialog {
     }
 
     function setDmsArgs(changes) {
-        if (!dmsParsedArgs)
+        if (!dmsParsedArgs || dmsArgsOpaque)
             return;
         const args = Object.assign({}, dmsParsedArgs.args, changes);
         updateEdit({
@@ -340,9 +341,9 @@ DDialog {
 
     function dmsFlagLabel(name) {
         switch (name) {
-        case "no-file":
+        case "save":
             return I18n.tr("Save");
-        case "no-clipboard":
+        case "clipboard":
             return I18n.tr("Clipboard");
         case "clipboard-file":
             return I18n.tr("Copy path");
@@ -355,9 +356,9 @@ DDialog {
 
     function dmsFlagTooltip(name) {
         switch (name) {
-        case "no-file":
+        case "save":
             return saveTooltip;
-        case "no-clipboard":
+        case "clipboard":
             return I18n.tr("Copies the screenshot to the clipboard", "keybind screenshot option tooltip");
         case "clipboard-file":
             return I18n.tr("Copies the saved file too, so terminals paste its path", "keybind screenshot option tooltip");
@@ -369,13 +370,14 @@ DDialog {
     }
 
     function dmsFlagChecked(flag) {
-        const set = dmsParsedArgs?.args[flag.name] === true;
-        return flag.inverted ? !set : set;
+        const state = dmsParsedArgs?.args[flag.name];
+        return state === undefined ? Actions.dmsFlagDefault(flag, dmsParsedArgs?.args, SettingsData) : state;
     }
 
+    // Matching the default drops the flag so the bind keeps following Settings.
     function setDmsFlag(flag, checked) {
         const changes = {};
-        changes[flag.name] = flag.inverted ? !checked : checked;
+        changes[flag.name] = checked === Actions.dmsFlagDefault(flag, dmsParsedArgs?.args, SettingsData) ? undefined : checked;
         setDmsArgs(changes);
     }
 
@@ -1024,6 +1026,12 @@ DDialog {
                         "tab": root.dashTabValue(value)
                     })
             }
+        }
+
+        SettingsRow {
+            visible: root.actionType === "dms" && root.dmsArgsOpaque
+            iconName: "terminal"
+            subtitle: I18n.tr("This command has options the editor doesn't manage, so edit them in your config file", "keybind editor notice for a hand-written screenshot bind with extra options")
         }
 
         SettingsRow {
