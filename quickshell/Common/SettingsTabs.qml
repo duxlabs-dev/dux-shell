@@ -528,7 +528,7 @@ Singleton {
                     "id": "network_connections",
                     "text": I18n.tr("Connections", "settings page listing saved network connection profiles"),
                     "icon": "network_manage",
-                    "tabIndex": 78,
+                    "tabIndex": 84,
                     "connectionEditorOnly": true,
                     "hint": I18n.tr("Saved configurations"),
                     "hubFooter": I18n.tr("Manage all connections", "settings link on the network overview to the list of every saved network connection")
@@ -541,7 +541,7 @@ Singleton {
                     "titleFrom": "selectedConnectionTitle",
                     "text": I18n.tr("Profile"),
                     "icon": "tune",
-                    "tabIndex": 79
+                    "tabIndex": 85
                 },
                 {
                     "id": "network_status",

@@ -146,8 +146,8 @@ TAB_INDEX_MAP = {
     "RunningAppsTab.qml": 19,
     "SoftwareUpdatesTab.qml": 20,
     "ChangelogTab.qml": 66,
-    "NetworkConnectionsTab.qml": 78,
-    "NetworkConnectionTab.qml": 79,
+    "NetworkConnectionsTab.qml": 84,
+    "NetworkConnectionTab.qml": 85,
     "NetworkWifiConnectTab.qml": 81,
     "NetworkTailscaleAddTab.qml": 83,
     "PowerSleepTab.qml": 21,
@@ -972,6 +972,9 @@ def validate(all_entries, leaves, hubs, sidebar_file, root_dir):
     for page_id, count in seen_ids.items():
         if count > 1:
             errors.append(f"page id '{page_id}' is declared {count} times")
+    for tab_index, count in Counter(leaf["tabIndex"] for leaf in leaves).items():
+        if count > 1:
+            errors.append(f"tabIndex {tab_index} is used by {count} pages")
     for tab_file in sorted(settings_dir.glob("*Tab.qml")):
         if tab_file.name not in TAB_INDEX_MAP and tab_file.name not in FILE_PAGE_MAP:
             errors.append(f"{tab_file.name} missing from TAB_INDEX_MAP")
