@@ -210,7 +210,8 @@ Item {
                 function buildGroupedItems(pinnedApps, sortedToplevels) {
                     const items = [];
                     const appGroups = new Map();
-                    const separatePinnedAndRunning = root.options.separatePinnedAndRunningApps;
+                    const showRunning = root.options.showRunningApps !== false;
+                    const separatePinnedAndRunning = root.options.separatePinnedAndRunningApps && showRunning;
 
                     if (!separatePinnedAndRunning) {
                         pinnedApps.forEach(rawAppId => {
@@ -275,6 +276,10 @@ Item {
                         });
                     }
 
+                    // pinned-only dock: running apps keep their indicator on the pinned icon
+                    if (!showRunning)
+                        unpinnedGroups.length = 0;
+
                     pinnedGroups.forEach(item => items.push(item));
                     insertLauncher(items);
 
@@ -295,7 +300,8 @@ Item {
                     const items = [];
                     const runningAppIds = new Set();
                     const windowItems = [];
-                    const separatePinnedAndRunning = root.options.separatePinnedAndRunningApps;
+                    const showRunning = root.options.showRunningApps !== false;
+                    const separatePinnedAndRunning = root.options.separatePinnedAndRunningApps && showRunning;
 
                     sortedToplevels.forEach((toplevel, index) => {
                         const uniqueKey = CompositorService.windowKey(toplevel);
@@ -342,6 +348,9 @@ Item {
                             items.push(ApplicationModel.pinnedItem(appId, coreAppData, runningAppIds.has(appId)));
                         }
                     });
+
+                    if (!showRunning)
+                        remainingWindowItems.length = 0;
 
                     root.pinnedAppCount = pinnedApps.length + (root.options.launcherEnabled ? 1 : 0);
                     insertLauncher(items);
@@ -485,6 +494,7 @@ Item {
     onPinnedAppsChanged: modelUpdate.schedule()
     readonly property string modelOptions: JSON.stringify({
         separatePinnedAndRunningApps: options.separatePinnedAndRunningApps,
+        showRunningApps: options.showRunningApps,
         isolateDisplays: options.isolateDisplays,
         launcherEnabled: options.launcherEnabled,
         showTrash: options.showTrash
