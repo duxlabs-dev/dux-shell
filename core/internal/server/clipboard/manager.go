@@ -1102,6 +1102,7 @@ func (m *Manager) deleteUnpinnedWhere(pred entryMatcher) (int, error) {
 	}
 
 	if deleted > 0 {
+		clearDragTempDir(dragTempDir())
 		m.updateState()
 		m.notifySubscribers()
 	}
