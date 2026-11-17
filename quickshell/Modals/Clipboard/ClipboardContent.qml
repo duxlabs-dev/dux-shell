@@ -468,6 +468,9 @@ Item {
             anchors.margins: Theme.spacingXS
             visible: dragGhost.isImage && dragGhost.imageSource !== ""
             source: dragGhost.imageSource
+            sourceSize.width: dragGhost.width
+            sourceSize.height: dragGhost.height
+            cache: false
             fillMode: Image.PreserveAspectCrop
             asynchronous: false
             smooth: true

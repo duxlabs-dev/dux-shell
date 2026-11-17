@@ -109,6 +109,7 @@ func NewManager(wlCtx wlcontext.WaylandContext, config Config) (*Manager, error)
 		}
 	}
 	m.pruneStore(strayMaxAge)
+	cleanupExpiredDragFiles(dragTempDir())
 
 	m.alive = true
 	m.updateState()
@@ -1056,6 +1057,7 @@ func (m *Manager) DeleteEntry(id uint64) error {
 	})
 
 	if err == nil {
+		removeDragFilesForEntry(dragTempDir(), id)
 		m.updateState()
 		m.notifySubscribers()
 	}
@@ -1173,6 +1175,7 @@ func (m *Manager) ClearHistory() {
 		}
 	}
 	m.pruneStore(0)
+	clearDragTempDir(dragTempDir())
 
 	m.updateState()
 	m.notifySubscribers()
@@ -1958,6 +1961,7 @@ func (m *Manager) PinEntry(id uint64) error {
 	})
 
 	if err == nil {
+		removeDragFilesForEntry(dragTempDir(), id)
 		m.updateState()
 		m.notifySubscribers()
 	}
@@ -1995,6 +1999,7 @@ func (m *Manager) UnpinEntry(id uint64) error {
 	})
 
 	if err == nil {
+		removeDragFilesForEntry(dragTempDir(), id)
 		m.updateState()
 		m.notifySubscribers()
 	}
