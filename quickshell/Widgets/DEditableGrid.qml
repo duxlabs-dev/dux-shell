@@ -26,8 +26,7 @@ Item {
     property real pinnedHeight: 0
     property var pinnedLayout: null
     property point dragScenePoint: Qt.point(0, 0)
-    // Takes (sourceIndex, scenePoint, rect) with the dragged item's unsnapped rect; true while it hovers a target
-    // outside the grid, which holds the grid still.
+    // (sourceIndex, scenePoint, unsnapped rect) => true over an outside target, which holds the grid still.
     property var dragsOutside: null
     property bool heldOutside: false
     // Takes (sourceIndex, scenePoint) and returns true when something outside the grid claims the dropped item.
@@ -39,8 +38,7 @@ Item {
     property var commitHandler: null
     // The layout compacts upward, so a drop has to account for the hole the dragged item leaves.
     property bool gravity: false
-    // Takes the items with the dragged one at its target and returns their packed cells, so a drop can tell
-    // whether gravity would lift the dragged item back above where it was dropped.
+    // Packs the items with the dragged one at its target, so a drop can tell whether gravity lifts it back above.
     property var packer: null
     property real rowStep: 1
     property int rowLimit: 0

@@ -317,14 +317,38 @@ function fitInRun(run, col, w) {
     };
 }
 
+// Mostly covering one same-size tile trades places with it; settling only moves the covered tile down, past a fixed last row.
+function swapInto(items, cells, index, target) {
+    const origin = cells[index];
+    const overlap = cell => Math.max(0, Math.min(target.col + origin.cols, cell.col + cell.cols) - Math.max(target.col, cell.col)) * Math.max(0, Math.min(target.row + origin.rows, cell.row + cell.rows) - Math.max(target.row, cell.row));
+    const covered = cells.reduce((hits, cell, i) => i !== index && cell && overlap(cell) > 0 ? hits.concat([i]) : hits, []);
+    if (covered.length !== 1)
+        return null;
+    const other = cells[covered[0]];
+    // Past halfway only, so a small nudge never trades places and a neighboring group keeps its drop target.
+    if (other.cols !== origin.cols || other.rows !== origin.rows || overlap(other) <= overlap(origin))
+        return null;
+    return items.map((item, i) => i === index ? Object.assign({}, item, {
+            "col": other.col,
+            "row": other.row
+        }) : i === covered[0] ? Object.assign({}, item, {
+            "col": origin.col,
+            "row": origin.row
+        }) : item);
+}
+
 // Gravity can lift a drop toward the hole it left.
 function dropInto(items, cells, index, target, pack, step = 1, rowLimit = 0) {
     const origin = cells[index];
     if (!origin || !target || !pack)
         return items;
+    const swapped = target.row === origin.row ? swapInto(items, cells, index, target) : null;
+    if (swapped)
+        return swapped;
     if (target.col < origin.col + origin.cols && origin.col < target.col + origin.cols && target.row < origin.row + origin.rows && origin.row < target.row + origin.rows)
         return items;
-    const limit = rowLimit > 0 ? rowLimit - origin.rows : cells.reduce((bottom, cell) => cell ? Math.max(bottom, cell.row + cell.rows) : bottom, 0) + origin.rows;
+    // Trials past the last row still count: gravity settles one there back onto the tiles it covered.
+    const limit = cells.reduce((bottom, cell) => cell ? Math.max(bottom, cell.row + cell.rows) : bottom, 0) + origin.rows;
     let best = null;
     for (let row = rowLimit > 0 ? 0 : target.row; row <= limit; row += step) {
         const trial = items.map((item, i) => i === index ? Object.assign({}, item, {
@@ -344,7 +368,10 @@ function dropInto(items, cells, index, target, pack, step = 1, rowLimit = 0) {
         if (landed >= target.row)
             break;
     }
-    return best?.trial ?? items;
+    const result = best?.trial ?? items;
+    if (!(rowLimit > 0) || !pack(result).some(cell => cell && cell.row + cell.rows > rowLimit))
+        return result;
+    return swapInto(items, cells, index, target) ?? result;
 }
 
 function placedItems(items, slots) {

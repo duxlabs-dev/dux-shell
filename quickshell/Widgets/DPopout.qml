@@ -30,6 +30,9 @@ Item {
     property real topOverflow: 0
     property real leftOverflow: 0
     property real rightOverflow: 0
+    // Side overflow columns reach this far past the body's top or bottom; the body itself stays its own height.
+    property real sideTopOverflow: 0
+    property real sideBottomOverflow: 0
     // Body-relative rect of a surface hung in the side overflow, blurred like the body.
     property Item sideBlurItem: null
     property real sideBlurRadius: 0
@@ -376,9 +379,9 @@ Item {
             return false;
         const padding = 24;
         const x = renderedAlignedX - leftOverflow - padding;
-        const y = renderedAlignedY - topOverflow - padding;
+        const y = renderedAlignedY - topOverflow - sideTopOverflow - padding;
         const w = renderedAlignedWidth + leftOverflow + rightOverflow + padding * 2;
-        const h = renderedAlignedHeight + topOverflow + bottomOverflow + padding * 2;
+        const h = renderedAlignedHeight + topOverflow + bottomOverflow + sideTopOverflow + sideBottomOverflow + padding * 2;
         return gx >= x && gx <= x + w && gy >= y && gy <= y + h;
     }
 

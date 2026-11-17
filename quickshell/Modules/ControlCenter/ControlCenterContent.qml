@@ -18,6 +18,32 @@ import "../../Common/ControlCenterLayout.js" as PanelLayout
 FocusScope {
     id: root
 
+    component DashedOutline: Shape {
+        id: outline
+
+        property real radius: 0
+        property color strokeColor: Theme.outlineVariant
+        property color fillColor: "transparent"
+
+        preferredRendererType: Shape.CurveRenderer
+
+        ShapePath {
+            strokeColor: outline.strokeColor
+            strokeWidth: Theme.outlineWidthFocused
+            strokeStyle: ShapePath.DashLine
+            dashPattern: CcMetrics.addHintDashPattern
+            fillColor: outline.fillColor
+
+            PathRectangle {
+                x: Theme.outlineWidthFocused / 2
+                y: Theme.outlineWidthFocused / 2
+                width: outline.width - Theme.outlineWidthFocused
+                height: outline.height - Theme.outlineWidthFocused
+                radius: Math.max(0, outline.radius - Theme.outlineWidthFocused / 2)
+            }
+        }
+    }
+
     required property var host
 
     property bool live: Window.window?.visible ?? false
@@ -821,12 +847,13 @@ FocusScope {
         horizontalResize: true
         verticalResize: root.fixedHeight
         verticalResizeAbove: !(root.host.growsFromTop ?? true)
-        verticalResizeOffset: pageDots.visible && !verticalResizeAbove ? Math.min(Math.max(0, (width - contentInset * 2 - touchTargetSize) / 2), (pageDots.implicitWidth + touchTargetSize) / 2 + Theme.spacingS) : 0
         removable: false
         // Frame-attached corners are square, but the ring keeps the surface radius.
         cornerRadius: root.surfaceRadius
         buttonSize: Theme.iconSize
         iconSize: PopoutMetrics.chromeIconSize
+        handleLength: Theme.buttonHeightM
+        handleThickness: Theme.spacingS
         resizing: root.panelResizing
         atDefault: !root.fixedHeight && root.gridColumns === Math.min(CcMetrics.defaultColumns, root.gridColumnCap)
         sizeText: root.gridColumns + "×" + (root.fixedHeight ? root.fixedRows : root.widgetGrid?.slotLayout.rows ?? 0)
@@ -959,24 +986,9 @@ FocusScope {
                     Loader {
                         anchors.fill: parent
                         active: addHintItem.visible
-                        sourceComponent: Shape {
-                            preferredRendererType: Shape.CurveRenderer
-
-                            ShapePath {
-                                strokeColor: addHintItem.hovered ? Theme.primary : Theme.outlineVariant
-                                strokeWidth: Theme.outlineWidthFocused
-                                strokeStyle: ShapePath.DashLine
-                                dashPattern: CcMetrics.addHintDashPattern
-                                fillColor: "transparent"
-
-                                PathRectangle {
-                                    x: Theme.outlineWidthFocused / 2
-                                    y: Theme.outlineWidthFocused / 2
-                                    width: addHintItem.width - Theme.outlineWidthFocused
-                                    height: addHintItem.height - Theme.outlineWidthFocused
-                                    radius: Math.max(0, addHintItem.radius - Theme.outlineWidthFocused / 2)
-                                }
-                            }
+                        sourceComponent: DashedOutline {
+                            radius: addHintItem.radius
+                            strokeColor: addHintItem.hovered ? Theme.primary : Theme.outlineVariant
                         }
                     }
 
@@ -998,6 +1010,38 @@ FocusScope {
                             target: addHintItem
                             side: "top"
                         }
+                    }
+                }
+
+                // The edit floor holds the surface taller than the chosen rows; Finish shrinks it to this room's top.
+                Item {
+                    id: heldRoom
+
+                    readonly property bool overflow: root.widgetGrid?.overflowPreview ?? false
+
+                    y: body.height + CcMetrics.gridGap
+                    width: body.width
+                    height: pager.height - y - CcMetrics.gridGap
+                    visible: root.host.editMode && root.fixedHeight && height >= Theme.spacingXL * 2 && !root.pageOpen && !root.widgetSheetOpen && !root.widgetPopoverOpen
+
+                    Loader {
+                        anchors.fill: parent
+                        active: heldRoom.visible
+                        sourceComponent: DashedOutline {
+                            radius: Math.min(Theme.cornerRadiusXL, Theme.fullRadius(width, height))
+                            fillColor: Theme.withAlpha(Theme.onSurface, Theme.stateLayerHover)
+                        }
+                    }
+
+                    StyledText {
+                        anchors.centerIn: parent
+                        width: Math.max(0, parent.width - Theme.spacingXL * 2)
+                        visible: (root.editIdle || root.panelResizing || root.libraryDragging || heldRoom.overflow) && !pager.moving && parent.height >= implicitHeight + Theme.spacingXL * 2
+                        text: heldRoom.overflow ? I18n.tr("Overflow moves to the next page") : I18n.tr("Space reserved for editing\nFinish to apply the selected height.")
+                        font.pixelSize: Theme.fontSizeSmall
+                        color: Theme.surfaceVariantText
+                        horizontalAlignment: Text.AlignHCenter
+                        wrapMode: Text.WordWrap
                     }
                 }
 
@@ -1085,10 +1129,12 @@ FocusScope {
                 StyledText {
                     parent: pager
                     readonly property real reserveTop: Math.min(pager.height, root.widgetGrid?.dropHeight ?? body.height)
+                    // The held room labels the edit floor and overflow itself.
+                    readonly property real reserveBottom: heldRoom.visible ? body.height : pager.height
                     x: Theme.spacingXL
-                    y: reserveTop + (pager.height - reserveTop - height) / 2
+                    y: reserveTop + (reserveBottom - reserveTop - height) / 2
                     width: Math.max(0, pager.width - Theme.spacingXL * 2)
-                    visible: root.host.editMode && root.fixedHeight && (root.editIdle || root.libraryDragging || (root.widgetGrid?.overflowPreview ?? false)) && !pager.moving && !root.pageOpen && !root.widgetSheetOpen && !root.widgetPopoverOpen && pager.height - reserveTop >= implicitHeight + Theme.spacingXL * 2
+                    visible: root.host.editMode && root.fixedHeight && (root.editIdle || root.libraryDragging || (root.widgetGrid?.overflowPreview ?? false)) && !(heldRoom.visible && heldRoom.overflow) && !pager.moving && !root.pageOpen && !root.widgetSheetOpen && !root.widgetPopoverOpen && reserveBottom - reserveTop >= implicitHeight + Theme.spacingXL * 2
                     text: (root.widgetGrid?.overflowPreview ?? false) ? I18n.tr("Overflow moves to the next page") : reserveTop < body.height ? I18n.tr("Space reserved for stable page height") : I18n.tr("Space reserved for editing\nFinish to apply the selected height.")
                     font.pixelSize: Theme.fontSizeSmall
                     color: Theme.surfaceVariantText
@@ -1152,12 +1198,15 @@ FocusScope {
             id: pageDots
 
             parent: root
-            z: panelChrome.z + 1
+            // Under the chrome while it carries the height grip, so the grip's inner edge stays grabbable.
+            z: panelChrome.z + (root.host.editMode && panelChrome.verticalResize ? -0.5 : 1)
             x: mainColumn.x
             y: contentFlickable.y + contentFlickable.height
             width: mainColumn.width
             count: pager.count
             currentIndex: pager.currentIndex
+            // They share the bottom edge with the height handle, so they step aside while it drags.
+            visible: count > 1 && !(root.panelResizing && (root.resizeBase?.vertical ?? false))
             opacity: body.opacity
             enabled: root.editIdle
             onPageRequested: index => pager.goTo(index)
@@ -1227,9 +1276,16 @@ FocusScope {
                 return I18n.isRtl ? root.width - width - CcMetrics.sheetPadding : CcMetrics.sheetPadding;
             return root.dockSide === "left" ? -(width + dockGap) : root.width + dockGap;
         }
-        y: root.docked ? (insetTop ? barInset : 0) : CcMetrics.sheetPadding
+        y: {
+            if (!root.docked)
+                return CcMetrics.sheetPadding;
+            if (root.host.dockAbove ?? false)
+                return root.height - (insetTop ? 0 : barInset) - height;
+            return insetTop ? barInset : 0;
+        }
         width: root.docked ? CcMetrics.dockedPanelWidth : popoverWidth
-        height: root.docked ? root.height - barInset : root.height - CcMetrics.sheetPadding * 2
+        // A host that hangs the panel past a shorter body gives its floor; others grow the body to it.
+        height: root.docked ? Math.max(root.height - barInset, root.host.dockPanelMinHeight ?? 0) : root.height - CcMetrics.sheetPadding * 2
         z: CcMetrics.overlayZ
         active: root.docked || (root.widgetPopoverOpen && (root.host.editPopover ?? false))
         enabled: detailBand.shownSection === ""

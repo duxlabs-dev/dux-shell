@@ -142,7 +142,7 @@ Singleton {
     readonly property real dockedLibraryRowHeight: dockedBubbleSize + Theme.spacingS + Theme.fontSizeSmall * 3
     readonly property real dockedLibraryMinHeight: dockedLibraryRowHeight * 2 + Theme.spacingM * 6 + Theme.iconSizeMedium * 2 + Theme.spacingS
     readonly property real widgetPopoverMinHeight: sheetPadding * 2 + Theme.spacingL * 3 + Theme.listItemTwoLineHeight + Theme.fieldHeightLarge + Theme.buttonHeightXS * 2 + Theme.spacingS + dockedLibraryMinHeight
-    readonly property real dockedPanelMinHeight: widgetPopoverMinHeight + Theme.spacingL + Theme.iconButtonSize
+    readonly property real dockedPanelMinHeight: widgetPopoverMinHeight + Theme.spacingXXS
     readonly property int dockedPanelColumns: 4
     readonly property real removeOverlayOpacity: 0.7
     readonly property real configMenuWidth: 260

@@ -22,9 +22,7 @@ DEditableGrid {
     property int columns: CcMetrics.gridColumns
     property real availableHeight: CcMetrics.fallbackScreenHeight - CcMetrics.maxHeightInset
     readonly property int maximumRows: rowLimit > 0 ? rowLimit : CcMetrics.rowCapFor(availableHeight, cellWidth - CcMetrics.gridGap)
-    // The detail band opens under this tile's row and pushes the rows below it down. While a band is shown the
-    // slots follow its animated height frame by frame instead of running their own motion, so one animation drives
-    // both; the section is the band's own, which it keeps until it has fully collapsed.
+    // Slots ride the band's animated height so one animation drives both; the section stays until the band fully collapses.
     property string expandedSection: ""
     property real bandHeight: 0
     property real bandTargetHeight: 0

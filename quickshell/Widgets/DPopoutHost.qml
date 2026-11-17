@@ -45,6 +45,8 @@ Item {
     property real topOverflow: popoutHandle.topOverflow
     property real leftOverflow: popoutHandle.leftOverflow
     property real rightOverflow: popoutHandle.rightOverflow
+    property real sideTopOverflow: popoutHandle.sideTopOverflow
+    property real sideBottomOverflow: popoutHandle.sideBottomOverflow
     property Item sideBlurItem: popoutHandle.sideBlurItem
     property real sideBlurRadius: popoutHandle.sideBlurRadius
     property real inputMargin: popoutHandle.inputMargin
@@ -75,9 +77,9 @@ Item {
         const reserved = reservedWidth > alignedWidth;
         const body = {
             x: (reserved ? alignedXFor(reservedWidth) : alignedX) - leftOverflow,
-            y: alignedY - topOverflow,
+            y: alignedY - topOverflow - sideTopOverflow,
             width: (reserved ? reservedWidth : alignedWidth) + leftOverflow + rightOverflow,
-            height: alignedHeight + topOverflow + bottomOverflow
+            height: alignedHeight + topOverflow + bottomOverflow + sideTopOverflow + sideBottomOverflow
         };
         const area = PopoutBounds.motion(screenWidth, screenHeight, body, _surfaceMotionOrigin, _fluidMotionActive ? 0 : contentContainer.offsetX, _fluidMotionActive ? 0 : contentContainer.offsetY, _fluidMotionActive ? 1 : animationScaleCollapsed, padding, _geometrySpringParams);
         return Qt.rect(area.x, area.y, area.width, area.height);
@@ -1219,7 +1221,7 @@ Item {
         return Theme.snap(connected ? _connectedAlignedY(overTop, overBottom, height) : _standaloneAlignedY(overTop, overBottom, height), dpr);
     }
 
-    readonly property real alignedY: alignedYFor(topOverflow, bottomOverflow)
+    readonly property real alignedY: alignedYFor(topOverflow + sideTopOverflow, bottomOverflow + sideBottomOverflow)
 
     function _maxBodyWidthFor(startGap, endGap, anchorX) {
         switch (effectiveBarPosition) {
@@ -1376,9 +1378,9 @@ Item {
             id: contentMaskRect
             visible: false
             x: contentContainer.x - contentContainer.horizontalConnectorExtent - root.inputMargin - root.leftOverflow
-            y: contentContainer.y - contentContainer.verticalConnectorExtent - root.inputMargin
+            y: contentContainer.y - contentContainer.verticalConnectorExtent - root.inputMargin - root.sideTopOverflow
             width: root.shouldBeVisible ? root.renderedAlignedWidth + contentContainer.horizontalConnectorExtent * 2 + root.inputMargin * 2 + root.leftOverflow + root.rightOverflow : 0
-            height: root.shouldBeVisible ? root.renderedAlignedHeight + contentContainer.verticalConnectorExtent * 2 + root.inputMargin * 2 : 0
+            height: root.shouldBeVisible ? root.renderedAlignedHeight + contentContainer.verticalConnectorExtent * 2 + root.inputMargin * 2 + root.sideTopOverflow + root.sideBottomOverflow : 0
         }
 
         Loader {
@@ -1395,14 +1397,14 @@ Item {
                     x: 0
                     y: 0
                     width: parent.width
-                    height: Math.max(0, root.renderedAlignedY - root.topOverflow)
+                    height: Math.max(0, root.renderedAlignedY - root.topOverflow - root.sideTopOverflow)
                     enabled: parent.enabled
                     acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
                     onClicked: root.backgroundClicked()
                 }
                 MouseArea {
                     x: 0
-                    y: root.renderedAlignedY + root.renderedAlignedHeight + root.bottomOverflow
+                    y: root.renderedAlignedY + root.renderedAlignedHeight + root.bottomOverflow + root.sideBottomOverflow
                     width: parent.width
                     height: Math.max(0, parent.height - y)
                     enabled: parent.enabled
@@ -1411,19 +1413,38 @@ Item {
                 }
                 MouseArea {
                     x: 0
-                    y: root.renderedAlignedY - root.topOverflow
+                    y: root.renderedAlignedY - root.topOverflow - root.sideTopOverflow
                     width: Math.max(0, root.renderedAlignedX - root.leftOverflow)
-                    height: root.renderedAlignedHeight + root.topOverflow + root.bottomOverflow
+                    height: root.renderedAlignedHeight + root.topOverflow + root.bottomOverflow + root.sideTopOverflow + root.sideBottomOverflow
                     enabled: parent.enabled
                     acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
                     onClicked: root.backgroundClicked()
                 }
                 MouseArea {
                     x: root.renderedAlignedX + root.renderedAlignedWidth + root.rightOverflow
-                    y: root.renderedAlignedY - root.topOverflow
+                    y: root.renderedAlignedY - root.topOverflow - root.sideTopOverflow
                     width: Math.max(0, parent.width - x)
-                    height: root.renderedAlignedHeight + root.topOverflow + root.bottomOverflow
+                    height: root.renderedAlignedHeight + root.topOverflow + root.bottomOverflow + root.sideTopOverflow + root.sideBottomOverflow
                     enabled: parent.enabled
+                    acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
+                    onClicked: root.backgroundClicked()
+                }
+                // Beside a side column that outreaches the body, the room off the body's end still dismisses.
+                MouseArea {
+                    x: root.renderedAlignedX
+                    y: root.renderedAlignedY - root.topOverflow - root.sideTopOverflow
+                    width: root.renderedAlignedWidth
+                    height: root.sideTopOverflow
+                    enabled: parent.enabled && root.sideTopOverflow > 0
+                    acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
+                    onClicked: root.backgroundClicked()
+                }
+                MouseArea {
+                    x: root.renderedAlignedX
+                    y: root.renderedAlignedY + root.renderedAlignedHeight + root.bottomOverflow
+                    width: root.renderedAlignedWidth
+                    height: root.sideBottomOverflow
+                    enabled: parent.enabled && root.sideBottomOverflow > 0
                     acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
                     onClicked: root.backgroundClicked()
                 }
@@ -1862,8 +1883,8 @@ Item {
                 revealY: chrome.revealY
                 revealWidth: chrome.revealWidth
                 revealHeight: chrome.revealHeight
-                topOverflow: root.topOverflow
-                bottomOverflow: root.bottomOverflow
+                topOverflow: root.topOverflow + root.sideTopOverflow
+                bottomOverflow: root.bottomOverflow + root.sideBottomOverflow
                 leftOverflow: root.leftOverflow
                 rightOverflow: root.rightOverflow
 

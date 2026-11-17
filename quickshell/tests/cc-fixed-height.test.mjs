@@ -312,3 +312,20 @@ test("fixed pagination keeps every shown tile inside the row budget without over
         }
     }
 });
+
+test("fixed pages reorder within the last row without spilling a tile", () => {
+    const drag = (items, index, target, rowLimit) => {
+        const cells = grid.packCells(items, items.map((_, i) => i), 7, null, 0.5, true).cells;
+        const order = grid.interactionOrder(items, cells, index, false);
+        const pack = trial => grid.packCells(trial, order, 7, null, 0.5, true).cells;
+        const changed = items.map((item, i) => i === index ? { ...item, ...target } : item);
+        return plain(pack(grid.dropInto(changed, cells, index, target, pack, 0.5, rowLimit))).map(cell => [cell.col, cell.row]);
+    };
+    const pills = [[0, 0], [3.5, 0], [0, 1], [3.5, 1], [0, 2], [3.5, 2]].map(([col, row], i) => ({ id: String(i), w: 3.5, h: 1, col, row }));
+    for (const [index, other] of [[4, 5], [5, 4], [2, 3]]) {
+        const placed = drag(pills, index, { col: pills[other].col, row: pills[other].row }, 3);
+        assert.deepEqual([placed[index], placed[other]], [[pills[other].col, pills[other].row], [pills[index].col, pills[index].row]], `swap ${index} with ${other}`);
+    }
+    const stack = [0, 1, 2].map(row => ({ id: String(row), w: 7, h: 1, col: 0, row }));
+    assert.deepEqual(drag(stack, 0, { col: 0, row: 2 }, 3), [[0, 2], [0, 0], [0, 1]], "the last row takes a tile dragged onto it");
+});

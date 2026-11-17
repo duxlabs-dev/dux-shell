@@ -10,7 +10,7 @@ Item {
 
     property int count: 0
     property int currentIndex: 0
-    // Only the bottom padding, so its taps never reach the tiles above.
+    // Only the footer, so its taps never reach the tiles above.
     property real targetHeight: CcMetrics.pageFooterHeight
 
     signal pageRequested(int index)
