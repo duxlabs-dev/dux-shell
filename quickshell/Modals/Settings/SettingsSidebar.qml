@@ -217,23 +217,12 @@ Item {
     DSearchField {
         id: searchField
 
-        property real sideInset: root.searchActive ? Theme.spacingS : SettingsMetrics.paneMargin
-
-        Behavior on sideInset {
-            enabled: Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
-            NumberAnimation {
-                duration: Theme.expressiveDurations.expressiveFastSpatial
-                easing.type: Easing.BezierSpline
-                easing.bezierCurve: Theme.expressiveCurves.expressiveFastSpatial
-            }
-        }
-
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: parent.top
         anchors.topMargin: root.topInset
-        anchors.leftMargin: sideInset
-        anchors.rightMargin: sideInset
+        anchors.leftMargin: SettingsMetrics.paneMargin
+        anchors.rightMargin: SettingsMetrics.paneMargin
         placeholderText: I18n.tr("Search settings", "settings search field placeholder")
         rightAccessoryWidth: avatarButton.visible ? avatarButton.width + Theme.spacingXS : 0
         onFocusStateChanged: hasFocus => {
