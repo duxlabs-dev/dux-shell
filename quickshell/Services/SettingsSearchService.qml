@@ -86,6 +86,7 @@ Singleton {
             "animationsCapable": () => CompositorService.supportsAnimationsConfig,
             "animationsPopupsCapable": () => CompositorAnimations.groups(CompositorService.compositor).includes("popups"),
             "keybindsAvailable": () => KeybindsService.available,
+            "globalShortcutsAvailable": () => GlobalShortcutsService.available,
             "soundsAvailable": () => !MultimediaService.unavailable,
             "cupsAvailable": () => CupsService.cupsAvailable,
             "networkAvailable": () => NetworkService.networkAvailable,

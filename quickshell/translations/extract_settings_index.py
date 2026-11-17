@@ -171,6 +171,7 @@ TAB_INDEX_MAP = {
     "KeyboardTab.qml": 45,
     "Fcitx5Tab.qml": 68,
     "Fcitx5AddonTab.qml": 69,
+    "GlobalShortcutsTab.qml": 78,
 }
 
 # Extra sidebar tabIndexes that reuse a file already in TAB_INDEX_MAP.
@@ -181,6 +182,7 @@ UNSEARCHABLE_TABS = {76, 77}
 
 SIDEBAR_GATE_CONDITIONS = [
     ("shortcutsOnly", "keybindsAvailable"),
+    ("globalShortcutsOnly", "globalShortcutsAvailable"),
     ("soundsOnly", "soundsAvailable"),
     ("cupsOnly", "cupsAvailable"),
     ("greeterOnly", "greeterAvailable"),

@@ -24,6 +24,7 @@ import (
 	serverDgop "github.com/duxlabs-dev/dux-shell/core/internal/server/dgop"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/evdev"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/freedesktop"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/globalshortcuts"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/location"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/loginctl"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/network"
@@ -44,7 +45,7 @@ import (
 	"github.com/spf13/afero"
 )
 
-const APIVersion = 42
+const APIVersion = 43
 
 var CLIVersion = "dev"
 
@@ -85,6 +86,8 @@ var locationManager *location.Manager
 var sysUpdateManager *sysupdate.Manager
 var notifyActionsManager *notifyactions.Manager
 var wellbeingManager *wellbeing.Manager
+var globalShortcutsManager *globalshortcuts.Manager
+var globalShortcutsProvider *globalshortcuts.GnomeProvider
 var geoClientInstance geolocation.Client
 
 const dbusClientID = "dms-dbus-client"
@@ -418,6 +421,22 @@ func InitializeNotifyActionsManager() error {
 	return nil
 }
 
+func InitializeGlobalShortcutsManager() error {
+	manager, err := globalshortcuts.NewManager()
+	if err != nil {
+		return err
+	}
+	provider, err := globalshortcuts.StartGnomeProvider(manager)
+	if err != nil {
+		manager.Close()
+		return err
+	}
+	globalShortcutsManager = manager
+	globalShortcutsProvider = provider
+	log.Info("Global shortcuts manager initialized")
+	return nil
+}
+
 func InitializeSysUpdateManager() error {
 	manager, err := sysupdate.NewManager(CLIVersion)
 	if err != nil {
@@ -534,6 +553,10 @@ func getCapabilities() Capabilities {
 
 	if sysUpdateManager != nil {
 		caps = append(caps, "sysupdate")
+	}
+
+	if globalShortcutsManager != nil {
+		caps = append(caps, "globalshortcuts")
 	}
 
 	if filesService != nil {
@@ -811,6 +834,15 @@ func handleSubscribe(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request)
 		}, mgr.GetState)
 	}
 
+	if shouldSubscribe("globalshortcuts") && globalShortcutsManager != nil {
+		mgr := globalShortcutsManager
+		id := clientID + "-globalshortcuts"
+		source := mgr.Subscribe(id)
+		forwardSubscription(&wg, eventChan, stopChan, "globalshortcuts", source, func() {
+			mgr.Unsubscribe(id, source)
+		}, mgr.GetState)
+	}
+
 	if shouldSubscribe("files") && filesService != nil {
 		id := clientID + "-files"
 		source := filesEvents.Subscribe(id)
@@ -950,6 +982,12 @@ func cleanupManagers() {
 	}
 	if wellbeingManager != nil {
 		wellbeingManager.Close()
+	}
+	if globalShortcutsProvider != nil {
+		globalShortcutsProvider.Close()
+	}
+	if globalShortcutsManager != nil {
+		globalShortcutsManager.Close()
 	}
 	if geoClientInstance != nil {
 		geoClientInstance.Close()
@@ -1210,6 +1248,12 @@ func (s *Server) Serve(printDocs bool) error {
 		log.Info(" wellbeing.setLimits                    - Set daily and per-app limits in seconds (params: daily?, apps?)")
 		log.Info(" wellbeing.summary                      - Per-day screen time ending today (params: days?)")
 		log.Info(" wellbeing.clear                        - Delete the screen time history")
+		log.Info("Global shortcuts:")
+		log.Info(" globalshortcuts.getState               - Apps with saved shortcuts and pending prompts")
+		log.Info(" globalshortcuts.submit                 - Answer a prompt (params: token, shortcuts [{id, triggers}])")
+		log.Info(" globalshortcuts.cancel                 - Deny a prompt (params: token)")
+		log.Info(" globalshortcuts.setTriggers            - Change one saved shortcut (params: appId, id, triggers)")
+		log.Info(" globalshortcuts.remove                 - Forget an app's shortcuts (params: appId)")
 		log.Info("")
 	}
 	log.Info("Initializing managers...")
@@ -1447,6 +1491,17 @@ func (s *Server) Serve(printDocs bool) error {
 	go func() {
 		if err := InitializeNotifyActionsManager(); err != nil {
 			log.Warnf("Notification action manager unavailable: %v", err)
+		}
+	}()
+
+	go func() {
+		switch err := InitializeGlobalShortcutsManager(); {
+		case err == nil:
+			notifyCapabilityChange()
+		case errors.Is(err, globalshortcuts.ErrNoGrabSupport):
+			log.Debugf("Global shortcuts manager unavailable: %v", err)
+		default:
+			log.Warnf("Global shortcuts manager unavailable: %v", err)
 		}
 	}()
 

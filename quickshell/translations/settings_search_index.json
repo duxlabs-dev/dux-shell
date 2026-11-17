@@ -1519,6 +1519,7 @@
       "bindings",
       "extensions",
       "framework",
+      "global",
       "hotkeys",
       "input",
       "keybinds",
@@ -21553,5 +21554,22 @@
     ],
     "icon": "style",
     "parentLabel": "Wallpaper & colors"
+  },
+  {
+    "section": "_tab_78",
+    "label": "Global shortcuts",
+    "tabIndex": 78,
+    "category": "Global shortcuts",
+    "keywords": [
+      "apps",
+      "global",
+      "input",
+      "shortcuts",
+      "window"
+    ],
+    "icon": "app_shortcut",
+    "parentLabel": "Input",
+    "description": "Shortcuts apps use from any window",
+    "conditionKey": "globalShortcutsAvailable"
   }
 ]

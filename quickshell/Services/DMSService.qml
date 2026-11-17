@@ -77,6 +77,7 @@ Singleton {
     signal sysupdateStateUpdate(var data)
     signal tailscaleStateUpdate(var data)
     signal wellbeingStateUpdate(var data)
+    signal globalShortcutsStateUpdate(var data)
     signal filesEvent(var data)
 
     property bool capsLockState: false
@@ -88,7 +89,7 @@ Singleton {
     property bool screensaverInhibited: false
     property var screensaverInhibitors: []
 
-    property var activeSubscriptions: ["network", "network.credentials", "loginctl", "freedesktop", "freedesktop.screensaver", "gamma", "wallpaper", "bluetooth", "bluetooth.pairing", "brightness", "wlroutput", "evdev", "rfkill", "browser", "dbus"]
+    property var activeSubscriptions: ["network", "network.credentials", "loginctl", "freedesktop", "freedesktop.screensaver", "gamma", "wallpaper", "bluetooth", "bluetooth.pairing", "brightness", "wlroutput", "evdev", "rfkill", "browser", "dbus", "globalshortcuts"]
     property var connectionCapabilities: null
 
     Component.onCompleted: {
@@ -374,6 +375,8 @@ Singleton {
             tailscaleStateUpdate(data);
         } else if (service === "wellbeing") {
             wellbeingStateUpdate(data);
+        } else if (service === "globalshortcuts") {
+            globalShortcutsStateUpdate(data);
         } else if (service === "files") {
             filesEvent(data);
         }

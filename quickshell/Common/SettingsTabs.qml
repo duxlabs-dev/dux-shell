@@ -380,6 +380,14 @@ Singleton {
                     "hint": I18n.tr("Compositor and shell key bindings")
                 },
                 {
+                    "id": "global_shortcuts",
+                    "text": I18n.tr("Global shortcuts", "settings page name, shortcuts apps register through the desktop portal"),
+                    "icon": "app_shortcut",
+                    "tabIndex": 78,
+                    "globalShortcutsOnly": true,
+                    "hint": I18n.tr("Shortcuts apps use from any window", "settings sidebar hint for the global shortcuts page")
+                },
+                {
                     "id": "keyboard",
                     "text": I18n.tr("Keyboard", "settings page name"),
                     "icon": "keyboard",
@@ -903,6 +911,8 @@ Singleton {
         if (entry.cupsOnly && !CupsService.cupsAvailable)
             return false;
         if (entry.shortcutsOnly && !KeybindsService.available)
+            return false;
+        if (entry.globalShortcutsOnly && !GlobalShortcutsService.available)
             return false;
         if (entry.soundsOnly && MultimediaService.unavailable)
             return false;
