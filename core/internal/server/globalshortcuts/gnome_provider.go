@@ -49,12 +49,13 @@ func StartGnomeProvider(manager *Manager) (*GnomeProvider, error) {
 		return nil, ErrNoGrabSupport
 	}
 
-	reply, err := conn.RequestName(gnomeProviderName, dbus.NameFlagDoNotQueue)
+	// Queued, not refused: gnome-control-center's provider is bus activated and exits when idle.
+	reply, err := conn.RequestName(gnomeProviderName, 0)
 	if err != nil {
 		return nil, fmt.Errorf("request %s: %w", gnomeProviderName, err)
 	}
-	if reply != dbus.RequestNameReplyPrimaryOwner {
-		return nil, fmt.Errorf("%s is owned by another process", gnomeProviderName)
+	if reply == dbus.RequestNameReplyInQueue {
+		log.Infof("%s is owned by another process, taking over when it exits", gnomeProviderName)
 	}
 
 	provider := &GnomeProvider{conn: conn}

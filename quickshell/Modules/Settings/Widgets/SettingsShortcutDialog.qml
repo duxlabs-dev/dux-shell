@@ -17,6 +17,7 @@ Loader {
     property string key: ""
     property var conflicts: []
     property bool embedded: false
+    property var windowControls: null
     readonly property bool opened: _opened
     readonly property bool changed: key !== _initialKey
 
@@ -72,9 +73,7 @@ Loader {
 
         embedded: root.embedded
         opened: root.embedded
-        popout: root.embedded
-        padding: root.embedded ? PopoutMetrics.contentPadding : Theme.spacingXL
-        contentSpacing: root.embedded ? PopoutMetrics.contentGap : Theme.spacingL
+        windowControls: root.windowControls
         maximumWidth: SettingsMetrics.formDialogWidth
         surfaceColor: Theme.hostSurface
         title: root.title
