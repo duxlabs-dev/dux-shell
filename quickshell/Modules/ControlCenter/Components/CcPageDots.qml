@@ -57,7 +57,7 @@ Item {
         LayoutMirroring.enabled: false
 
         Repeater {
-            model: root.count
+            model: root.count > 1 ? root.count : 0
 
             Item {
                 id: dot

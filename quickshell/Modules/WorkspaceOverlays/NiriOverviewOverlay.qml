@@ -69,20 +69,6 @@ Scope {
             hideSpotlight();
     }
 
-    onIsClosingChanged: {
-        if (!isClosing) {
-            closeTimer.stop();
-            return;
-        }
-        closeTimer.restart();
-    }
-
-    Timer {
-        id: closeTimer
-        interval: Theme.expressiveDurations.fast
-        onTriggered: niriOverviewScope.resetState()
-    }
-
     Loader {
         id: niriOverlayLoader
         active: overlayActive || isClosing
@@ -229,6 +215,8 @@ Scope {
                 }
 
                 onShouldShowSpotlightChanged: {
+                    scaleMorph.retarget(shouldShowSpotlight ? 1 : 0);
+                    slideMorph.retarget(shouldShowSpotlight ? 1 : 0);
                     if (shouldShowSpotlight) {
                         if (launcherContent?.controller) {
                             launcherContent.controller.searchMode = SessionData.niriOverviewLastMode || "apps";
@@ -315,17 +303,14 @@ Scope {
                     height: overlayWindow.useSpotlightStyle ? Math.ceil(overlayWindow.launcherContent?.implicitHeight ?? LauncherMetrics.pillHeight) : Math.min(baseHeight, overlayWindow.screen.height - LauncherMetrics.screenMargin)
 
                     readonly property bool animatingOut: niriOverviewScope.isClosing && overlayWindow.isSpotlightScreen
+                    readonly property bool exitSettled: animatingOut && (Theme.isConnectedEffect ? slideMorph.value === 0 : opacity <= 0)
+                    onExitSettledChanged: {
+                        if (exitSettled)
+                            Qt.callLater(niriOverviewScope.resetState);
+                    }
 
                     readonly property var scaleSpringParams: Theme.springPreset("fast", Theme.expressiveDurations.fast)
                     readonly property var slideSpringParams: Theme.springPreset("default", Theme.popoutAnimationDuration)
-
-                    function checkExitSettled() {
-                        if (!spotlightContainer.animatingOut)
-                            return;
-                        const spring = Theme.isConnectedEffect ? slideMorph : scaleMorph;
-                        if (!spring.running)
-                            niriOverviewScope.resetState();
-                    }
 
                     SpringMotion {
                         id: scaleMorph
@@ -338,7 +323,6 @@ Scope {
                         value: overlayWindow.shouldShowSpotlight ? 1 : 0
 
                         Component.onCompleted: snapTo(overlayWindow.shouldShowSpotlight ? 1 : 0)
-                        onRunningChanged: spotlightContainer.checkExitSettled()
                     }
 
                     SpringMotion {
@@ -352,16 +336,6 @@ Scope {
                         value: overlayWindow.shouldShowSpotlight ? 1 : 0
 
                         Component.onCompleted: snapTo(overlayWindow.shouldShowSpotlight ? 1 : 0)
-                        onRunningChanged: spotlightContainer.checkExitSettled()
-                    }
-
-                    Connections {
-                        target: overlayWindow
-                        function onShouldShowSpotlightChanged() {
-                            scaleMorph.retarget(overlayWindow.shouldShowSpotlight ? 1 : 0);
-                            slideMorph.retarget(overlayWindow.shouldShowSpotlight ? 1 : 0);
-                            spotlightContainer.checkExitSettled();
-                        }
                     }
 
                     scale: Theme.isConnectedEffect ? 1.0 : (0.96 + 0.04 * scaleMorph.value)
@@ -430,6 +404,12 @@ Scope {
                             sourceComponent: SpotlightLauncherContent {
                                 parentModal: overlayWindow.fakeParentModal
                             }
+                        }
+
+                        Binding {
+                            target: overlayWindow.launcherContent?.searchField ?? null
+                            property: "placeholderText"
+                            value: ""
                         }
 
                         Connections {
