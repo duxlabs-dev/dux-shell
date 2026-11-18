@@ -89,8 +89,9 @@ DEditableGridSlot {
     // Matches the chrome's hitOverflow, so reaching for a button never hides it.
     hoverMargin: CcMetrics.gridGap / 2
     readonly property bool editing: grid.editMode
+    readonly property bool configOpen: grid.configIndex >= 0 && grid.savedIndex(index) === grid.configIndex
     // The origins lead the grid's interacting, so the grip never hides under its own press.
-    readonly property bool chromeShown: resizeOrigin !== null || dragOrigin !== null || dragging || resizing || activeFocus || (hovered && !grid.interacting)
+    readonly property bool chromeShown: configOpen || resizeOrigin !== null || dragOrigin !== null || dragging || resizing || activeFocus || (hovered && !grid.interacting)
 
     activeFocusOnTab: editing
     onEditingChanged: {
@@ -116,7 +117,7 @@ DEditableGridSlot {
     onPressAndHold: {
         if (!WidgetUtils.hasOptions(widgetData.id))
             return;
-        root.grid.configRequested(root.grid.savedIndex(root.index), root.widgetData, chromeBounds);
+        root.grid.configRequested(root.grid.savedIndex(root.index), root.widgetData, root);
     }
 
     onResizeRequested: (requestedWidth, requestedHeight) => {
@@ -225,7 +226,7 @@ DEditableGridSlot {
             onResizeEnded: root.finishResize()
             onResizeCanceled: root.cancelResize()
             onRemoveRequested: root.grid.removeWidget(root.grid.savedIndex(root.index))
-            onConfigRequested: anchor => root.grid.configRequested(root.grid.savedIndex(root.index), root.widgetData, anchor)
+            onConfigRequested: root.grid.configRequested(root.grid.savedIndex(root.index), root.widgetData, root)
         }
     }
 }

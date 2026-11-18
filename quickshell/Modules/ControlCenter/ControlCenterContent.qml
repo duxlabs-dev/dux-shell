@@ -99,6 +99,7 @@ FocusScope {
     readonly property real surfaceRadius: Math.max(surfaceCornerRadii.x, surfaceCornerRadii.y, surfaceCornerRadii.z, surfaceCornerRadii.w)
     readonly property Item dockedBlurItem: docked && dockedPanel ? dockedPanelLoader : null
     readonly property bool widgetSheetOpen: widgetSheetLoader.item?.active ?? false
+    readonly property int configIndex: configOverlayLoader.item?.visible ? configOverlayLoader.item.widgetIndex : -1
     readonly property real coveredAmount: Math.max(widgetSheetLoader.item?.progress ?? 0, codecSelectorLoader.item?.presence ?? 0, portSelectorLoader.item?.presence ?? 0)
     property bool widgetSheetRequested: false
     property bool widgetPopoverOpen: false
@@ -1105,6 +1106,7 @@ FocusScope {
                         // Short and empty pages must accept drops across the available panel height.
                         minimumHeight: Math.max(pager.height, contentFlickable.height - CcMetrics.sheetPadding)
                         editMode: root.host.editMode
+                        configIndex: root.configIndex
                         model: widgetModel
                         live: root.host.shouldBeVisible && shown
                         expandedSection: holdsBand ? detailBand.shownSection : ""
@@ -1450,6 +1452,7 @@ FocusScope {
 
         active: false
         sourceComponent: WidgetConfigOverlay {
+            hostItem: root
             transientSurfaceTracker: root.host.transientSurfaceTracker
             onVisibleChanged: {
                 if (visible)
