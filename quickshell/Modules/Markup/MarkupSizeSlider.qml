@@ -43,6 +43,7 @@ Row {
         showValue: false
 
         onSliderValueChanged: val => root.target.strokeSize = Math.max(1, Math.min(32, Math.round(val)))
+        onSliderDragFinished: root.target.sizeEditRevision = -1
 
         Binding {
             target: sizeSlider

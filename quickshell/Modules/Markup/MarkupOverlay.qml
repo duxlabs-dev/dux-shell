@@ -11,10 +11,12 @@ import qs.DCommon.Widgets
 Scope {
     id: root
 
-    // {path, file, clipboard, notify} from `dms screenshot draw`.
+    // {cursor, finish} from `dms screenshot draw`; finish holds the output flags for `dms screenshot finish`.
     property var options: ({})
     property var owner: null
     property bool exporting: false
+    // Only the grab itself crops the view, so the frozen frame stays whole while dms writes the result.
+    property bool grabbing: false
 
     signal dismissed
 
@@ -42,37 +44,23 @@ Scope {
     function finish(mode) {
         if (exporting || !owner?.layer.crop)
             return;
-        const toFile = mode === "save" || (mode === "confirm" && options.file);
-        const toClipboard = mode === "copy" || (mode === "confirm" && options.clipboard);
-        if (!toFile && !toClipboard)
-            return;
-        const path = toFile ? options.path : Quickshell.env("XDG_RUNTIME_DIR") + "/dms-markup-copy.png";
-        exporting = true;
-        owner.exportTo(path, ok => {
+        // Uncompressed: Qt's PNG encoder blocks the UI for most of a second on a 4K region.
+        const scratch = Quickshell.env("XDG_RUNTIME_DIR") + "/dms-markup-" + Quickshell.processId + ".ppm";
+        const done = (ok, details) => {
             exporting = false;
-            if (!ok) {
-                ToastService.showError(I18n.tr("Failed to save screenshot", "error toast, screenshot markup"), path);
-                return;
-            }
-            if (toClipboard)
-                Quickshell.execDetached(["sh", "-c", "exec \"$0\" cl copy -t image/png < \"$1\"", Proc.dmsBin, path]);
-            if (options.notify)
-                notify(toFile ? path : "", toClipboard);
+            if (!ok)
+                return ToastService.showError(I18n.tr("Failed to save screenshot", "error toast, screenshot markup"), details);
             dismiss();
-        });
-    }
-
-    function notify(path, copied) {
-        const lines = [];
-        if (path)
-            lines.push(path.split("/").pop());
-        if (copied)
-            lines.push(I18n.tr("Copied to clipboard", "toast or notification body after copying a screenshot"));
-        const params = {
-            summary: I18n.tr("Screenshot captured", "notification title after taking a screenshot"),
-            body: lines.join("\n")
         };
-        DMSService.notifySend(params);
+        exporting = true;
+        grabbing = true;
+        owner.grab(result => {
+            grabbing = false;
+            if (!result?.saveToFile(scratch))
+                return done(false, scratch);
+            // No timeout: dms waits out a stalled clipboard service before serving the copy itself.
+            Proc.runCommand(null, [Proc.dmsBin, "screenshot", "finish", mode, scratch].concat(options.finish), (output, exitCode) => done(exitCode === 0), 0, Proc.noTimeout, root);
+        });
     }
 
     Variants {
@@ -88,11 +76,15 @@ Scope {
             readonly property bool ready: shot.hasContent
             property var pendingSelection: null
 
-            function exportTo(path, done) {
+            function grab(done) {
                 layer.commitText();
+                // An unfinished drag and the selection box would end up in the image.
+                layer.commitMove();
+                layer.selectedIndex = -1;
                 const sel = layer.crop;
                 // grabToImage scales targetSize by the output scale, so a logical size yields physical pixels.
-                cropBox.grabToImage(result => done(result.saveToFile(path)), Qt.size(sel.width, sel.height));
+                if (!cropBox.grabToImage(done, Qt.size(sel.width, sel.height)))
+                    done(null);
             }
 
             screen: modelData
@@ -117,6 +109,7 @@ Scope {
             }
             Shortcut {
                 sequences: ["Escape"]
+                // Live during export too: a dms that fails to start never reports back.
                 enabled: !layer.editingText
                 onActivated: root.dismiss()
             }
@@ -141,7 +134,7 @@ Scope {
             Item {
                 id: cropBox
 
-                readonly property bool cropping: root.exporting && win.isOwner
+                readonly property bool cropping: root.grabbing && win.isOwner
 
                 x: cropping ? layer.crop.x : 0
                 y: cropping ? layer.crop.y : 0
@@ -163,6 +156,7 @@ Scope {
                         anchors.fill: parent
                         captureSource: win.screen
                         live: false
+                        paintCursor: root.options.cursor ?? false
                     }
 
                     MouseArea {
@@ -350,7 +344,9 @@ Scope {
                 readonly property var sel: layer.crop
                 readonly property real gap: Theme.spacingS
                 readonly property bool fitsBelow: sel !== null && sel.y + sel.height + gap + height <= win.height
-                readonly property real totalWidth: width + gap + closeButtonCard.width
+                // Shrinks to fit an output narrower than the tools.
+                readonly property real fit: Math.min(1, (win.width - gap * 2) / (width + gap + closeButtonCard.width))
+                readonly property real totalWidth: (width + gap + closeButtonCard.width) * fit
 
                 visible: win.isOwner && sel !== null && win.pendingSelection === null && !root.exporting
                 width: toolbarRow.implicitWidth + Theme.spacingS * 2
@@ -367,6 +363,8 @@ Scope {
                 }
                 radius: Theme.fullRadius(width, height)
                 color: Theme.readableSurface
+                scale: fit
+                transformOrigin: Item.TopLeft
 
                 MouseArea {
                     anchors.fill: parent
@@ -382,31 +380,6 @@ Scope {
 
                     MarkupToolbar {
                         target: layer
-                    }
-
-                    Rectangle {
-                        width: Theme.outlineWidth
-                        height: Theme.chipIconSize
-                        anchors.verticalCenter: parent.verticalCenter
-                        color: Theme.outlineVariant
-                    }
-
-                    DActionButton {
-                        iconName: "undo"
-                        iconSize: Theme.chipIconSize
-                        iconColor: Theme.surfaceText
-                        enabled: layer.canUndo
-                        tooltipText: I18n.tr("Undo", "screenshot markup, reverts the last edit")
-                        onClicked: layer.undo()
-                    }
-
-                    DActionButton {
-                        iconName: "redo"
-                        iconSize: Theme.chipIconSize
-                        iconColor: Theme.surfaceText
-                        enabled: layer.canRedo
-                        tooltipText: I18n.tr("Redo", "screenshot markup, reapplies the last undone edit")
-                        onClicked: layer.redo()
                     }
 
                     DActionButton {
@@ -441,10 +414,12 @@ Scope {
                 visible: toolbar.visible
                 width: toolbar.height
                 height: toolbar.height
-                x: toolbar.x + toolbar.width + toolbar.gap
+                x: toolbar.x + (toolbar.width + toolbar.gap) * toolbar.fit
                 y: toolbar.y
                 radius: Theme.fullRadius(width, height)
                 color: Theme.readableSurface
+                scale: toolbar.fit
+                transformOrigin: Item.TopLeft
 
                 MouseArea {
                     anchors.fill: parent

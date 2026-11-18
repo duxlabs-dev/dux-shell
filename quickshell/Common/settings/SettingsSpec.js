@@ -1812,6 +1812,9 @@ var LOCAL_SPEC = {
     screenshotConfirmRegion: {
         def: true
     },
+    screenshotAnnotate: {
+        def: false
+    },
     screenshotHud: {
         def: "auto"
     },

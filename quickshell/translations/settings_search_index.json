@@ -21162,6 +21162,34 @@
     "icon": "task_alt"
   },
   {
+    "section": "screenshotAnnotate",
+    "label": "Annotate region captures",
+    "tabIndex": 79,
+    "category": "Screenshot",
+    "keywords": [
+      "annotate",
+      "arrow",
+      "before",
+      "capture",
+      "captures",
+      "draw",
+      "editor",
+      "highlight",
+      "integrations",
+      "markup",
+      "print screen",
+      "region",
+      "saved",
+      "screen capture",
+      "screenshot",
+      "snip",
+      "system",
+      "text"
+    ],
+    "parentLabel": "System & integrations",
+    "description": "Draw, highlight and add text on a region before it is saved"
+  },
+  {
     "section": "screenshotCapture",
     "label": "Capture",
     "tabIndex": 79,

@@ -1,18 +1,17 @@
 import QtQuick
 import qs.Common
 
-// Dims everything outside rect (in content units, scaled by unitScale) and outlines it.
+// Dims everything outside rect and outlines it.
 Item {
     id: root
 
     property var rect: null
-    property real unitScale: 1
     property color dimColor: Theme.withAlpha(Theme.scrimColor, Theme.scrimAlpha)
 
-    readonly property real rx: (rect?.x ?? 0) * unitScale
-    readonly property real ry: (rect?.y ?? 0) * unitScale
-    readonly property real rw: (rect?.width ?? 0) * unitScale
-    readonly property real rh: (rect?.height ?? 0) * unitScale
+    readonly property real rx: rect?.x ?? 0
+    readonly property real ry: rect?.y ?? 0
+    readonly property real rw: rect?.width ?? 0
+    readonly property real rh: rect?.height ?? 0
 
     Rectangle {
         width: parent.width

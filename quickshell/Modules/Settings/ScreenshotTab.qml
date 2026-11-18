@@ -152,6 +152,16 @@ Item {
                 onToggled: checked => SettingsData.set("screenshotConfirmRegion", checked)
             }
 
+            SettingsToggleRow {
+                tab: "screenshot"
+                tags: ["screenshot", "annotate", "draw", "markup", "editor", "arrow", "text", "highlight"]
+                settingKey: "screenshotAnnotate"
+                text: I18n.tr("Annotate region captures", "screenshot settings toggle, open the drawing editor on a selected region before it is saved")
+                description: I18n.tr("Draw, highlight and add text on a region before it is saved", "screenshot settings description for the annotate toggle")
+                checked: SettingsData.screenshotAnnotate
+                onToggled: checked => SettingsData.set("screenshotAnnotate", checked)
+            }
+
             SettingsDropdownRow {
                 tab: "screenshot"
                 tags: ["screenshot", "hud", "hints", "keybinds", "shortcuts", "overlay"]

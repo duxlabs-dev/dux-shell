@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import qs.Common
 import qs.DCommon.Widgets
+import qs.Widgets
 
 Row {
     id: root
@@ -44,11 +45,10 @@ Row {
 
     spacing: Theme.spacingXS
 
-    component Separator: Rectangle {
-        width: Theme.outlineWidth
+    component Separator: DDivider {
+        vertical: true
         height: Theme.chipIconSize
         anchors.verticalCenter: parent?.verticalCenter
-        color: Theme.outlineVariant
     }
 
     Repeater {
@@ -106,5 +106,25 @@ Row {
 
     MarkupSizeSlider {
         target: root.target
+    }
+
+    Separator {}
+
+    DActionButton {
+        iconName: "undo"
+        iconSize: Theme.chipIconSize
+        iconColor: Theme.surfaceText
+        enabled: root.target.canUndo
+        tooltipText: I18n.tr("Undo", "screenshot markup, reverts the last edit")
+        onClicked: root.target.undo()
+    }
+
+    DActionButton {
+        iconName: "redo"
+        iconSize: Theme.chipIconSize
+        iconColor: Theme.surfaceText
+        enabled: root.target.canRedo
+        tooltipText: I18n.tr("Redo", "screenshot markup, reapplies the last undone edit")
+        onClicked: root.target.redo()
     }
 }

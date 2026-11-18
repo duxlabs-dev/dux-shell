@@ -23,6 +23,7 @@ Item {
     required property var workspaceRenameModalLoaderRef
     required property var windowRuleModalLoaderRef
     required property var markupOverlayLoaderRef
+    required property var annotateOverlayLoaderRef
 
     function getPreferredBar(refPropertyName) {
         const focusedScreenName = BarWidgetService.getFocusedScreenName();
@@ -326,7 +327,7 @@ Item {
             return JSON.stringify(PopoutManager.getActiveSurfaces());
         }
 
-        // options: JSON {path, file, clipboard, notify} from `dms screenshot draw`.
+        // options: JSON {cursor, finish} from `dms screenshot draw`.
         function draw(options: string): string {
             if (root.markupOverlayLoaderRef.active)
                 return "DRAW_BUSY";
@@ -336,7 +337,7 @@ Item {
             } catch (e) {
                 return "DRAW_FAILED";
             }
-            if (!opts?.path)
+            if (!Array.isArray(opts?.finish))
                 return "DRAW_FAILED";
             root.markupOverlayLoaderRef.active = true;
             const overlay = root.markupOverlayLoaderRef.item;
@@ -347,6 +348,32 @@ Item {
         }
 
         target: "screenshot"
+    }
+
+    IpcHandler {
+        function toggle(): string {
+            const loader = root.annotateOverlayLoaderRef;
+            if (loader.active) {
+                loader.active = false;
+                return "ANNOTATE_CLOSED";
+            }
+            loader.active = true;
+            if (!loader.item?.start()) {
+                loader.active = false;
+                return "ANNOTATE_FAILED";
+            }
+            return "ANNOTATE_OPENED";
+        }
+
+        function passthrough(): string {
+            const overlay = root.annotateOverlayLoaderRef.active ? root.annotateOverlayLoaderRef.item : null;
+            if (!overlay)
+                return "ANNOTATE_NOT_OPEN";
+            overlay.setPassthrough(!overlay.passthrough);
+            return overlay.passthrough ? "ANNOTATE_PASSTHROUGH_ON" : "ANNOTATE_PASSTHROUGH_OFF";
+        }
+
+        target: "annotate"
     }
 
     function dashIslandActivity(tabId) {

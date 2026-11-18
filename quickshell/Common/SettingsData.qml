@@ -130,6 +130,7 @@ Singleton {
     property bool screenshotSaveFile: Spec.SPEC.screenshotSaveFile.def
     property bool screenshotNotify: Spec.SPEC.screenshotNotify.def
     property bool screenshotConfirmRegion: Spec.SPEC.screenshotConfirmRegion.def
+    property bool screenshotAnnotate: Spec.SPEC.screenshotAnnotate.def
     property string screenshotHud: Spec.SPEC.screenshotHud.def
     property int screenshotScrollInterval: Spec.SPEC.screenshotScrollInterval.def
 

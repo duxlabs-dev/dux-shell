@@ -168,7 +168,7 @@ var SETTINGS_MAP = {
         "clipboardClickToPaste", "clipboardEnterToPaste", "clipboardRememberTypeFilter", "clipboardUseOverlayLayer",
         "clipboardSize", "clipboardTypeFilter", "clipboardVisibleEntryActions", "powerMenuFirmwareSetup",
         "screenshotFormat", "screenshotQuality", "screenshotCursor", "screenshotClipboard", "screenshotClipboardFile",
-        "screenshotSaveFile", "screenshotNotify", "screenshotConfirmRegion", "screenshotHud",
+        "screenshotSaveFile", "screenshotNotify", "screenshotConfirmRegion", "screenshotAnnotate", "screenshotHud",
         "screenshotScrollInterval"
     ],
     never: [

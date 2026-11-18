@@ -582,6 +582,18 @@ const DMS_ACTIONS = [
         label: "Screenshot: Scrolling"
     },
     {
+        id: "spawn dms screenshot draw",
+        label: "Screenshot: Draw"
+    },
+    {
+        id: "spawn dms ipc call annotate toggle",
+        label: "Annotate: Toggle"
+    },
+    {
+        id: "spawn dms ipc call annotate passthrough",
+        label: "Annotate: Toggle Click-Through"
+    },
+    {
         id: "spawn dms ipc call hypr toggleOverview",
         label: "Hyprland: Toggle Overview",
         compositor: "hyprland"
@@ -2976,6 +2988,10 @@ const DMS_ACTION_ARGS = {
     "screenshot scroll": {
         base: "spawn dms screenshot scroll",
         args: SCREENSHOT_FLAGS.filter(flag => flag.name !== "cursor")
+    },
+    "screenshot draw": {
+        base: "spawn dms screenshot draw",
+        args: SCREENSHOT_FLAGS
     }
 };
 

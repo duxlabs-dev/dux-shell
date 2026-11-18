@@ -1295,6 +1295,7 @@ Item {
         workspaceRenameModalLoaderRef: workspaceRenameModalLoader
         windowRuleModalLoaderRef: windowRuleModalLoader
         markupOverlayLoaderRef: markupOverlayLoader
+        annotateOverlayLoaderRef: annotateOverlayLoader
     }
 
     LazyLoader {
@@ -1304,6 +1305,16 @@ Item {
 
         MarkupOverlay {
             onDismissed: markupOverlayLoader.active = false
+        }
+    }
+
+    LazyLoader {
+        id: annotateOverlayLoader
+
+        active: false
+
+        AnnotateOverlay {
+            onDismissed: annotateOverlayLoader.active = false
         }
     }
 

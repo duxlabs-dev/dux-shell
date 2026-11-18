@@ -23,20 +23,21 @@ Item {
     property var undoStack: []
     property var redoStack: []
     property int revision: 0
-    property int savedRevision: 0
+    // Revision of the last size edit, so one slider drag or wheel run is one undo step.
+    property int sizeEditRevision: -1
 
     property var draft: null
     property var textAnchor: null
     property int selectedIndex: -1
 
-    readonly property bool dirty: revision !== savedRevision
     readonly property bool editingText: textAnchor !== null
     readonly property bool canUndo: undoStack.length > 0
     readonly property bool canRedo: redoStack.length > 0
-    readonly property bool drawingTool: ["select", "pen", "highlighter", "arrow", "rect", "text", "eraser"].includes(tool)
     readonly property real strokeWidth: strokeSize / viewScale
     readonly property real fontSize: Math.max(12, strokeSize * 4) / viewScale
-    readonly property var selectedShape: selectedIndex >= 0 && selectedIndex < shapes.length ? shapes[selectedIndex] : null
+    // Selected shape mid-drag, kept out of shapes so the Repeater isn't rebuilt per mouse move.
+    property var moving: null
+    readonly property var selectedShape: moving ?? (selectedIndex >= 0 && selectedIndex < shapes.length ? shapes[selectedIndex] : null)
     readonly property var selectionBox: shapeBounds(selectedShape)
 
     function changeStrokeSize(delta) {
@@ -53,18 +54,22 @@ Item {
                 width: draft.type === "highlighter" ? strokeWidth * 4 : strokeWidth
             });
         }
-        if (tool === "select" && selectedIndex >= 0 && selectedIndex < shapes.length) {
-            const shape = shapes[selectedIndex];
-            const targetWidth = shape.type === "highlighter" ? strokeWidth * 4 : strokeWidth;
-            if (shape.width !== targetWidth) {
-                const updated = Object.assign({}, shape, {
-                    width: targetWidth
-                });
-                const newShapes = shapes.slice();
-                newShapes[selectedIndex] = updated;
-                shapes = newShapes;
-            }
+        if (tool !== "select" || selectedIndex < 0 || selectedIndex >= shapes.length)
+            return;
+        const shape = shapes[selectedIndex];
+        const targetWidth = shape.type === "highlighter" ? strokeWidth * 4 : strokeWidth;
+        if (shape.width === undefined || shape.width === targetWidth)
+            return;
+        const next = shapes.slice();
+        next[selectedIndex] = Object.assign({}, shape, {
+            width: targetWidth
+        });
+        if (revision === sizeEditRevision) {
+            shapes = next;
+            return;
         }
+        commit(next, crop);
+        sizeEditRevision = revision;
     }
 
     onStrokeColorChanged: {
@@ -90,31 +95,36 @@ Item {
     }
 
     onSelectedIndexChanged: {
-        if (tool === "select" && selectedIndex >= 0 && selectedIndex < shapes.length) {
-            const shape = shapes[selectedIndex];
-            syncingSelection = true;
-            if (shape.width !== undefined) {
-                const baseWidth = shape.type === "highlighter" ? shape.width / 4 : shape.width;
-                strokeSize = Math.max(1, Math.min(32, baseWidth * viewScale));
-            }
-            if (shape.color) {
-                strokeColor = shape.color;
-            }
-            syncingSelection = false;
+        sizeEditRevision = -1;
+        syncSelection();
+    }
+
+    // Points the size and color controls at the selected mark without editing it.
+    function syncSelection() {
+        if (tool !== "select" || selectedIndex < 0 || selectedIndex >= shapes.length)
+            return;
+        const shape = shapes[selectedIndex];
+        syncingSelection = true;
+        if (shape.width !== undefined) {
+            const baseWidth = shape.type === "highlighter" ? shape.width / 4 : shape.width;
+            strokeSize = Math.max(1, Math.min(32, baseWidth * viewScale));
         }
+        if (shape.color)
+            strokeColor = shape.color;
+        syncingSelection = false;
     }
 
     function reset() {
         tool = "pen";
         textAnchor = null;
         draft = null;
+        moving = null;
         selectedIndex = -1;
         shapes = [];
         crop = null;
         undoStack = [];
         redoStack = [];
         revision = 0;
-        savedRevision = 0;
     }
 
     function commit(nextShapes, nextCrop) {
@@ -132,6 +142,7 @@ Item {
         commitText();
         if (!canUndo)
             return;
+        moving = null;
         redoStack = redoStack.concat([{
                 shapes: shapes,
                 crop: crop
@@ -141,11 +152,13 @@ Item {
         shapes = prev.shapes;
         crop = prev.crop;
         revision++;
+        syncSelection();
     }
 
     function redo() {
         if (!canRedo)
             return;
+        moving = null;
         undoStack = undoStack.concat([{
                 shapes: shapes,
                 crop: crop
@@ -155,10 +168,17 @@ Item {
         shapes = next.shapes;
         crop = next.crop;
         revision++;
+        syncSelection();
     }
 
-    function markSaved() {
-        savedRevision = revision;
+    function commitMove() {
+        const moved = moving;
+        moving = null;
+        if (!moved || selectedIndex < 0 || selectedIndex >= shapes.length)
+            return;
+        const next = shapes.slice();
+        next[selectedIndex] = moved;
+        commit(next, crop);
     }
 
     function commitText() {
@@ -181,10 +201,6 @@ Item {
             }]), crop);
     }
 
-    function distanceToSegment(p, a, b) {
-        return Helpers.distanceToSegment(p, a, b);
-    }
-
     function hits(shape, p, tolerance) {
         return Helpers.hits(shape, p, tolerance, viewScale);
     }
@@ -203,7 +219,7 @@ Item {
     }
 
     function hitIndexAt(p) {
-        const tolerance = 6 / viewScale;
+        const tolerance = Theme.spacingS / viewScale;
         for (let i = shapes.length - 1; i >= 0; i--) {
             if (hits(shapes[i], p, tolerance))
                 return i;
@@ -315,16 +331,18 @@ Item {
 
         delegate: Annotation {
             required property var modelData
+            required property int index
             anchors.fill: parent
+            visible: root.moving === null || index !== root.selectedIndex
             shape: modelData
         }
     }
 
     Loader {
         anchors.fill: parent
-        active: root.draft !== null
+        active: root.draft !== null || root.moving !== null
         sourceComponent: Annotation {
-            shape: root.draft ?? {}
+            shape: root.moving ?? root.draft ?? {}
         }
     }
 
@@ -339,7 +357,7 @@ Item {
         font.pixelSize: root.fontSize
         font.weight: Font.Medium
         cursorDelegate: Rectangle {
-            width: Math.max(1, 2 / root.viewScale)
+            width: Theme.outlineWidthFocused / root.viewScale
             color: root.strokeColor
         }
 
@@ -363,11 +381,10 @@ Item {
         height: box?.height ?? 0
         color: "transparent"
         border.color: Theme.primary
-        border.width: 1.5 / root.viewScale
-        radius: 3 / root.viewScale
+        border.width: Theme.outlineWidthFocused / root.viewScale
+        radius: Theme.cornerRadiusXXS / root.viewScale
         z: 20
 
-        // 4 corner resize handles
         Repeater {
             model: [Qt.point(0, 0), Qt.point(1, 0), Qt.point(0, 1), Qt.point(1, 1)]
             delegate: Rectangle {
@@ -376,31 +393,32 @@ Item {
 
                 x: modelData.x * parent.width - width / 2
                 y: modelData.y * parent.height - height / 2
-                width: 10 / root.viewScale
-                height: 10 / root.viewScale
+                width: Theme.spacingM / root.viewScale
+                height: width
                 radius: width / 2
                 color: Theme.primary
                 border.color: Theme.onPrimary
-                border.width: 1.5 / root.viewScale
+                border.width: Theme.outlineWidthFocused / root.viewScale
 
                 MouseArea {
                     property var startShape: null
                     property var startBox: null
 
                     anchors.fill: parent
-                    anchors.margins: -4 / root.viewScale
+                    anchors.margins: -Theme.spacingXS / root.viewScale
                     cursorShape: (cornerHandle.modelData.x === cornerHandle.modelData.y) ? Qt.SizeFDiagCursor : Qt.SizeBDiagCursor
 
                     onPressed: mouse => {
                         mouse.accepted = true;
                         if (root.selectedIndex >= 0 && root.selectedIndex < root.shapes.length) {
-                            startShape = JSON.parse(JSON.stringify(root.shapes[root.selectedIndex]));
+                            startShape = root.shapes[root.selectedIndex];
                             startBox = root.shapeBounds(startShape);
                         }
                     }
 
                     onPositionChanged: mouse => {
-                        if (!startShape || !startBox)
+                        // Undo or redo mid-drag can put another shape at this index.
+                        if (!startBox || root.shapes[root.selectedIndex] !== startShape)
                             return;
                         const p = mapToItem(root, mouse.x, mouse.y);
                         const f = cornerHandle.modelData;
@@ -410,26 +428,12 @@ Item {
                         const bottom = f.y === 1 ? p.y : startBox.y + startBox.height;
                         const newBox = root.normalizedRect(Qt.point(left, top), Qt.point(right, bottom));
 
-                        if (newBox.width >= 4 && newBox.height >= 4) {
-                            const resized = root.resizeShape(startShape, startBox, newBox);
-                            const newShapes = root.shapes.slice();
-                            newShapes[root.selectedIndex] = resized;
-                            root.shapes = newShapes;
-                        }
+                        if (newBox.width >= 4 && newBox.height >= 4)
+                            root.moving = root.resizeShape(startShape, startBox, newBox);
                     }
 
                     onReleased: {
-                        if (startShape && startBox) {
-                            const curShapes = root.shapes.slice();
-                            const beforeShapes = curShapes.slice();
-                            beforeShapes[root.selectedIndex] = startShape;
-                            root.undoStack = root.undoStack.concat([{
-                                shapes: beforeShapes,
-                                crop: root.crop
-                            }]);
-                            root.redoStack = [];
-                            root.revision++;
-                        }
+                        root.commitMove();
                         startShape = null;
                         startBox = null;
                     }
@@ -444,7 +448,6 @@ Item {
         property bool draggingShape: false
 
         anchors.fill: parent
-        enabled: root.drawingTool
         hoverEnabled: true
 
         onWheel: wheel => {
@@ -453,7 +456,8 @@ Item {
                 wheel.accepted = false;
                 return;
             }
-            if (wheel.angleDelta.y === 0)
+            // A size change mid-drag would be overwritten by the move on release.
+            if (wheel.angleDelta.y === 0 || root.moving)
                 return;
             const step = wheel.angleDelta.y > 0 ? 1 : -1;
             root.changeStrokeSize(step);
@@ -479,14 +483,13 @@ Item {
             root.commitText();
             start = p;
             if (root.tool === "select") {
-                // If clicked on currently selected shape or its bounding box
                 if (root.selectedIndex !== -1) {
                     const selBox = root.selectionBox;
                     const onBox = selBox && p.x >= selBox.x && p.x <= selBox.x + selBox.width && p.y >= selBox.y && p.y <= selBox.y + selBox.height;
                     const hitIdx = root.hitIndexAt(p);
                     if (hitIdx === root.selectedIndex || (hitIdx === -1 && onBox)) {
                         draggingShape = true;
-                        dragStartShape = JSON.parse(JSON.stringify(root.shapes[root.selectedIndex]));
+                        dragStartShape = root.shapes[root.selectedIndex];
                         return;
                     }
                 }
@@ -494,7 +497,7 @@ Item {
                 root.selectedIndex = hit;
                 if (hit !== -1) {
                     draggingShape = true;
-                    dragStartShape = JSON.parse(JSON.stringify(root.shapes[hit]));
+                    dragStartShape = root.shapes[hit];
                 }
                 return;
             }
@@ -519,18 +522,14 @@ Item {
         onPositionChanged: mouse => {
             let p = Qt.point(mouse.x, mouse.y);
             if (root.tool === "select") {
-                if (draggingShape && dragStartShape && root.selectedIndex !== -1) {
-                    const dx = p.x - start.x;
-                    const dy = p.y - start.y;
-                    const moved = root.translateShape(dragStartShape, dx, dy);
-                    const newShapes = root.shapes.slice();
-                    newShapes[root.selectedIndex] = moved;
-                    root.shapes = newShapes;
+                if (draggingShape && root.shapes[root.selectedIndex] === dragStartShape) {
+                    root.moving = root.translateShape(dragStartShape, p.x - start.x, p.y - start.y);
                 }
                 return;
             }
             if (root.tool === "eraser") {
-                root.eraseAt(p);
+                if (pressed)
+                    root.eraseAt(p);
                 return;
             }
             if (!root.draft)
@@ -578,32 +577,23 @@ Item {
             });
         }
 
-        onReleased: mouse => {
-            if (root.tool === "select") {
-                if (draggingShape) {
-                    draggingShape = false;
-                    const p = Qt.point(mouse.x, mouse.y);
-                    if (Math.hypot(p.x - start.x, p.y - start.y) > 1) {
-                        const curShapes = root.shapes.slice();
-                        // Rollback state in undoStack by committing the change
-                        const beforeShapes = curShapes.slice();
-                        beforeShapes[root.selectedIndex] = dragStartShape;
-                        root.undoStack = root.undoStack.concat([{
-                            shapes: beforeShapes,
-                            crop: root.crop
-                        }]);
-                        root.redoStack = [];
-                        root.revision++;
-                    }
-                    dragStartShape = null;
-                }
-                return;
+        function endGesture(moved) {
+            if (draggingShape) {
+                draggingShape = false;
+                if (moved)
+                    root.commitMove();
+                root.moving = null;
+                dragStartShape = null;
             }
             if (!root.draft)
                 return;
-            let shape = root.draft;
+            const shape = root.draft;
             root.draft = null;
             root.commit(root.shapes.concat([shape]), root.crop);
         }
+
+        onReleased: mouse => endGesture(Math.hypot(mouse.x - start.x, mouse.y - start.y) > 1)
+        // Click-through disables the layer mid-gesture, which cancels the press instead of releasing it.
+        onCanceled: endGesture(true)
     }
 }
