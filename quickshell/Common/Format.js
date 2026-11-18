@@ -95,14 +95,6 @@ function formatUntil(ts, use24h) {
     return h12 + ":" + pad2(minutes) + " " + suffix;
 }
 
-function addToHistory(arr, val, max) {
-    const newArr = arr.slice();
-    newArr.push(val);
-    if (newArr.length > max)
-        newArr.shift();
-    return newArr;
-}
-
 function escapeHtml(text) {
     return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }

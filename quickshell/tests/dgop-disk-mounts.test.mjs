@@ -17,9 +17,9 @@ function service() {
         DMSService: { sendRequest: (method, params, callback) => requests.push({ method, params, callback }) },
         log: { warn() {} },
         statsUpdated() {},
-        deviceHistory: {}
+        historyStore: null
     });
-    const methods = ["initializeDiskMounts", "hasModule", "parseData", "releaseUnusedData", "removeDeviceHistory"];
+    const methods = ["initializeDiskMounts", "hasModule", "parseData", "releaseUnusedData", "recordHistory"];
     const found = [];
     for (const match of source.matchAll(/^    function (\w+)\([^\n]*\)(?:: \w+)? \{\n[\s\S]*?^    \}/gm)) {
         if (!methods.includes(match[1]))

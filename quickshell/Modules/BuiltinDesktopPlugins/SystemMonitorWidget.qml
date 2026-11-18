@@ -4,6 +4,7 @@ import qs.Common
 import qs.Services
 import qs.DCommon.Widgets
 import "../../Common/Format.js" as Format
+import "../../Services/SysmonHistory.js" as SysmonHistory
 
 Item {
     id: root
@@ -77,31 +78,6 @@ Item {
     property var activeModuleRefs: []
     readonly property bool monitoringActive: visible && enabled && (Window.window?.visible ?? false)
 
-    property var cpuHistory: []
-    property var memHistory: []
-    property var netRxHistory: []
-    property var netTxHistory: []
-    property var diskReadHistory: []
-    property var diskWriteHistory: []
-    readonly property int historySize: 60
-
-    readonly property int sampleInterval: {
-        switch (graphInterval) {
-        case 60:
-            return 1000;
-        case 300:
-            return 5000;
-        case 600:
-            return 10000;
-        case 900:
-            return 15000;
-        case 1800:
-            return 30000;
-        default:
-            return 1000;
-        }
-    }
-
     readonly property var enabledTiles: {
         var tiles = [];
         if (showCpu)
@@ -173,17 +149,7 @@ Item {
             DgopService.removeGpuPciId(currentGpuPciIdRef);
     }
 
-    onMonitoringActiveChanged: {
-        updateGpuRef();
-        if (monitoringActive)
-            return;
-        cpuHistory = [];
-        memHistory = [];
-        netRxHistory = [];
-        netTxHistory = [];
-        diskReadHistory = [];
-        diskWriteHistory = [];
-    }
+    onMonitoringActiveChanged: updateGpuRef()
 
     onShowGpuTempChanged: updateGpuRef()
     onSelectedGpuPciIdChanged: updateGpuRef()
@@ -218,28 +184,6 @@ Item {
         if (kb < 1024 * 1024)
             return (kb / 1024).toFixed(0) + "M";
         return (kb / (1024 * 1024)).toFixed(1) + "G";
-    }
-
-    function sampleData() {
-        if (showCpuGraph)
-            cpuHistory = Format.addToHistory(cpuHistory, DgopService.cpuUsage, historySize);
-        if (showMemoryGraph)
-            memHistory = Format.addToHistory(memHistory, DgopService.memoryUsage, historySize);
-        if (showNetworkGraph) {
-            netRxHistory = Format.addToHistory(netRxHistory, DgopService.networkRxRate, historySize);
-            netTxHistory = Format.addToHistory(netTxHistory, DgopService.networkTxRate, historySize);
-        }
-        if (showDisk) {
-            diskReadHistory = Format.addToHistory(diskReadHistory, DgopService.diskReadRate, historySize);
-            diskWriteHistory = Format.addToHistory(diskWriteHistory, DgopService.diskWriteRate, historySize);
-        }
-    }
-
-    Timer {
-        interval: root.sampleInterval
-        running: root.monitoringActive
-        repeat: true
-        onTriggered: root.sampleData()
     }
 
     Rectangle {
@@ -358,26 +302,32 @@ Item {
                             visible: tile.hasGraph
                             renderStrategy: Canvas.Cooperative
 
+                            readonly property bool live: root.monitoringActive && tile.hasGraph
+                            readonly property int rangeMs: root.graphInterval * 1000
                             property var hist: {
+                                if (!live)
+                                    return [];
                                 switch (tile.tileType) {
                                 case "cpu":
-                                    return root.cpuHistory;
+                                    return DgopService.history("cpu", "usage", rangeMs, 60);
                                 case "mem":
-                                    return root.memHistory;
+                                    return DgopService.history("memory", "used", rangeMs, 60);
                                 case "net":
-                                    return root.netRxHistory;
+                                    return DgopService.history("net", "down", rangeMs, 60);
                                 case "disk":
-                                    return root.diskReadHistory;
+                                    return DgopService.history("disk", "read", rangeMs, 60);
                                 default:
                                     return [];
                                 }
                             }
                             property var hist2: {
+                                if (!live)
+                                    return null;
                                 switch (tile.tileType) {
                                 case "net":
-                                    return root.netTxHistory;
+                                    return DgopService.history("net", "up", rangeMs, 60);
                                 case "disk":
-                                    return root.diskWriteHistory;
+                                    return DgopService.history("disk", "write", rangeMs, 60);
                                 default:
                                     return null;
                                 }
@@ -402,11 +352,16 @@ Item {
                                 if (tile.tileType === "net" || tile.tileType === "disk") {
                                     maxVal = 1;
                                     for (var k = 0; k < hist.length; k++)
-                                        maxVal = Math.max(maxVal, hist[k]);
+                                        if (isFinite(hist[k]))
+                                            maxVal = Math.max(maxVal, hist[k]);
                                     if (hist2)
                                         for (var l = 0; l < hist2.length; l++)
-                                            maxVal = Math.max(maxVal, hist2[l]);
+                                            if (isFinite(hist2[l]))
+                                                maxVal = Math.max(maxVal, hist2[l]);
                                 }
+
+                                var step = width / (hist.length - 1);
+                                var yOf = v => height - (v / maxVal) * height * 0.85;
 
                                 var c = root.accentColor;
                                 var grad = ctx.createLinearGradient(0, 0, 0, height);
@@ -415,35 +370,20 @@ Item {
 
                                 ctx.fillStyle = grad;
                                 ctx.beginPath();
-                                ctx.moveTo(0, height);
-                                for (var i = 0; i < hist.length; i++) {
-                                    var x = (width / (root.historySize - 1)) * i;
-                                    var y = height - (hist[i] / maxVal) * height * 0.85;
-                                    ctx.lineTo(x, y);
-                                }
-                                ctx.lineTo((width / (root.historySize - 1)) * (hist.length - 1), height);
-                                ctx.closePath();
+                                SysmonHistory.traceRuns(ctx, hist, step, yOf, height);
                                 ctx.fill();
 
                                 ctx.strokeStyle = Theme.withAlpha(c, 0.6);
                                 ctx.lineWidth = 1.5;
                                 ctx.beginPath();
-                                for (var j = 0; j < hist.length; j++) {
-                                    var px = (width / (root.historySize - 1)) * j;
-                                    var py = height - (hist[j] / maxVal) * height * 0.85;
-                                    j === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
-                                }
+                                SysmonHistory.traceRuns(ctx, hist, step, yOf);
                                 ctx.stroke();
 
                                 if (hist2 && hist2.length >= 2) {
                                     ctx.strokeStyle = Theme.withAlpha(c, 0.3);
                                     ctx.lineWidth = 1;
                                     ctx.beginPath();
-                                    for (var m = 0; m < hist2.length; m++) {
-                                        var sx = (width / (root.historySize - 1)) * m;
-                                        var sy = height - (hist2[m] / maxVal) * height * 0.85;
-                                        m === 0 ? ctx.moveTo(sx, sy) : ctx.lineTo(sx, sy);
-                                    }
+                                    SysmonHistory.traceRuns(ctx, hist2, step, yOf);
                                     ctx.stroke();
                                 }
                             }

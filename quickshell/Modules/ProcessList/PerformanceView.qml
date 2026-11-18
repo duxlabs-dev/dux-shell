@@ -27,15 +27,6 @@ Item {
             vpn: I18n.tr("VPN")
         })
 
-    function history(key) {
-        return DgopService.deviceHistory[key] ?? ({});
-    }
-
-    // Bar widgets keep cpu/memory history while this page is closed; use it so the chart starts full.
-    function longer(a, b) {
-        return (a ?? []).length >= (b ?? []).length ? (a ?? []) : b;
-    }
-
     function rate(value) {
         return value === null || value === undefined ? "—" : Format.formatRate(value, 1);
     }
@@ -65,7 +56,7 @@ Item {
                 icon: "memory",
                 name: I18n.tr("CPU", "processor label in system monitor"),
                 value: DgopService.cpuSampleCount === 0 ? "—" : DgopService.cpuUsage.toFixed(0) + "%",
-                values: longer(history("cpu").a, DgopService.cpuHistory),
+                values: DgopService.history("cpu", "usage"),
                 maximum: 100
             },
             {
@@ -74,7 +65,7 @@ Item {
                 icon: "developer_board",
                 name: I18n.tr("Memory", "system RAM label in system monitor"),
                 value: DgopService.memoryInfo === null ? "—" : Format.formatBytes(DgopService.usedMemoryKB * 1024, true) + " / " + Format.formatBytes(DgopService.totalMemoryKB * 1024, true),
-                values: longer(history("memory").a, DgopService.memoryHistory),
+                values: DgopService.history("memory", "used"),
                 maximum: 100
             }
         ];
@@ -89,7 +80,7 @@ Item {
                 icon: "gpu",
                 name: g.fullName,
                 value: off ? I18n.tr("Monitoring off", "GPU monitoring is turned off in settings") : suspended ? I18n.tr("Idle", "adjective, printer state", true) : (g.usage != null ? Math.round(g.usage) + "%" : "—"),
-                values: suspended || off ? [] : (history(key).a ?? []),
+                values: suspended || off ? [] : DgopService.history(key, "usage"),
                 maximum: 100
             });
         }
@@ -109,8 +100,8 @@ Item {
                 name: Drives.driveFor(d.device, DriveService.drives)?.model || d.device,
                 value: pairTotal(d.readRate, d.writeRate),
                 valueTooltip: I18n.tr("Disk read", "disk read rate") + ": " + rate(d.readRate) + "\n" + I18n.tr("Disk write", "disk write rate") + ": " + rate(d.writeRate),
-                values: history(key).a ?? [],
-                secondaryValues: history(key).b ?? []
+                values: DgopService.history(key, "read"),
+                secondaryValues: DgopService.history(key, "write")
             });
         }
 
@@ -129,22 +120,11 @@ Item {
                 name: sameKind === 1 && netKindNames[kind] ? netKindNames[kind] : net.iface,
                 value: pairTotal(net.rxRate, net.txRate),
                 valueTooltip: I18n.tr("Down", "network direction") + ": " + rate(net.rxRate) + "\n" + I18n.tr("Up", "network direction") + ": " + rate(net.txRate),
-                values: history(key).a ?? [],
-                secondaryValues: history(key).b ?? []
+                values: DgopService.history(key, "down"),
+                secondaryValues: DgopService.history(key, "up")
             });
         }
         return items;
-    }
-
-    // Per-thread usage history for the CPU pane; it fills while the window is open, whichever page is shown.
-    property var threadHistory: []
-
-    Connections {
-        target: DgopService
-        function onPerCoreCpuUsageChanged() {
-            const usage = DgopService.perCoreCpuUsage;
-            root.threadHistory = usage.map((u, i) => Format.addToHistory(root.threadHistory[i] || [], u, DgopService.historySize));
-        }
     }
 
     readonly property var activeEntry: railModel.find(e => e.key === currentKey) ?? railModel[0]
@@ -198,7 +178,6 @@ Item {
         id: cpuPane
         CpuPane {
             values: root.railModel[0].values
-            threadHistory: root.threadHistory
         }
     }
 

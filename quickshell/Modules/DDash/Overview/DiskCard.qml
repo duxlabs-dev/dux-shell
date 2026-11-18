@@ -26,6 +26,6 @@ MetricCard {
     badgeIcon: "swap_vert"
     trendMaximum: 0
     showTrend: options.trend === true
-    trend: DgopService.diskHistory.read
-    secondaryTrend: DgopService.diskHistory.write
+    trend: showTrend && live ? DgopService.history("disk", "read").map(v => v / 1048576) : []
+    secondaryTrend: showTrend && live ? DgopService.history("disk", "write").map(v => v / 1048576) : []
 }
