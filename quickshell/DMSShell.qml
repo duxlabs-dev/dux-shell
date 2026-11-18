@@ -16,6 +16,7 @@ import qs.Modules.DDash
 import qs.Modules.ControlCenter
 import qs.Modules.Dock
 import qs.Modules.Lock
+import qs.Modules.Markup
 import qs.Modules.Notepad
 import qs.Modules.Notifications.Center
 import qs.Widgets
@@ -1293,6 +1294,17 @@ Item {
         hyprlandOverviewLoader: root.core?.hyprlandOverviewLoader ?? null
         workspaceRenameModalLoaderRef: workspaceRenameModalLoader
         windowRuleModalLoaderRef: windowRuleModalLoader
+        markupOverlayLoaderRef: markupOverlayLoader
+    }
+
+    LazyLoader {
+        id: markupOverlayLoader
+
+        active: false
+
+        MarkupOverlay {
+            onDismissed: markupOverlayLoader.active = false
+        }
     }
 
     Variants {

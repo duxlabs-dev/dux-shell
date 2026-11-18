@@ -22,6 +22,7 @@ Item {
     required property var hyprlandOverviewLoader
     required property var workspaceRenameModalLoaderRef
     required property var windowRuleModalLoaderRef
+    required property var markupOverlayLoaderRef
 
     function getPreferredBar(refPropertyName) {
         const focusedScreenName = BarWidgetService.getFocusedScreenName();
@@ -323,6 +324,26 @@ Item {
 
         function getSurfaces(): string {
             return JSON.stringify(PopoutManager.getActiveSurfaces());
+        }
+
+        // options: JSON {path, file, clipboard, notify} from `dms screenshot draw`.
+        function draw(options: string): string {
+            if (root.markupOverlayLoaderRef.active)
+                return "DRAW_BUSY";
+            let opts;
+            try {
+                opts = JSON.parse(options);
+            } catch (e) {
+                return "DRAW_FAILED";
+            }
+            if (!opts?.path)
+                return "DRAW_FAILED";
+            root.markupOverlayLoaderRef.active = true;
+            const overlay = root.markupOverlayLoaderRef.item;
+            if (!overlay)
+                return "DRAW_FAILED";
+            overlay.start(opts);
+            return "DRAW_OPENED";
         }
 
         target: "screenshot"
