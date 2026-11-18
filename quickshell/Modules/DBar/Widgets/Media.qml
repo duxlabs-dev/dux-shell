@@ -124,59 +124,40 @@ BasePill {
         if (scrollMode === "nothing")
             return;
 
-        const isMouseWheelY = !WheelInput.isTouchpad(wheelEvent);
+        const isTouchpad = WheelInput.isTouchpad(wheelEvent);
+        if (isTouchpad && wheelEvent.phase === Qt.ScrollBegin)
+            scrollAccumulatorY = 0;
+        const threshold = isTouchpad ? touchpadThreshold : 120;
 
         if (scrollMode === "volume") {
             if (!usePlayerVolume)
                 return;
 
             wheelEvent.accepted = true;
+            scrollAccumulatorY = (scrollAccumulatorY * deltaY < 0 ? 0 : scrollAccumulatorY) + deltaY;
+            if (Math.abs(scrollAccumulatorY) < threshold)
+                return;
 
             const currentVolume = activePlayer.volume * 100;
-
-            let newVolume = currentVolume;
-            if (isMouseWheelY) {
-                if (deltaY > 0) {
-                    newVolume = Math.min(100, currentVolume + SettingsData.audioWheelScrollAmount);
-                } else if (deltaY < 0) {
-                    newVolume = Math.max(0, currentVolume - SettingsData.audioWheelScrollAmount);
-                }
-            } else {
-                scrollAccumulatorY += deltaY;
-                if (Math.abs(scrollAccumulatorY) >= touchpadThreshold) {
-                    if (scrollAccumulatorY > 0) {
-                        newVolume = Math.min(100, currentVolume + 1);
-                    } else {
-                        newVolume = Math.max(0, currentVolume - 1);
-                    }
-                    scrollAccumulatorY = 0;
-                }
-            }
-
+            const step = isTouchpad ? 1 : SettingsData.audioWheelScrollAmount;
+            const newVolume = scrollAccumulatorY > 0 ? Math.min(100, currentVolume + step) : Math.max(0, currentVolume - step);
+            scrollAccumulatorY = 0;
             activePlayer.volume = newVolume / 100;
         } else if (scrollMode === "song") {
             if (!activePlayer)
                 return;
 
             wheelEvent.accepted = true;
+            scrollAccumulatorY = (scrollAccumulatorY * deltaY < 0 ? 0 : scrollAccumulatorY) + deltaY;
+            if (Math.abs(scrollAccumulatorY) < threshold)
+                return;
 
-            if (isMouseWheelY) {
-                if (deltaY > 0) {
-                    MprisController.previousOrRewind();
-                } else {
-                    MprisController.next();
-                }
+            if (scrollAccumulatorY > 0) {
+                MprisController.previousOrRewind();
             } else {
-                scrollAccumulatorY += deltaY;
-                if (Math.abs(scrollAccumulatorY) >= touchpadThreshold) {
-                    if (scrollAccumulatorY > 0) {
-                        MprisController.previousOrRewind();
-                    } else {
-                        MprisController.next();
-                    }
-                    scrollAccumulatorY = 0;
-                }
+                MprisController.next();
             }
+            scrollAccumulatorY = 0;
         }
     }
 

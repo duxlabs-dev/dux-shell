@@ -45,6 +45,8 @@ function createScrollArea(overrides = {}) {
         barConfig: {},
         touchpadAccumulatorX: 0,
         touchpadAccumulatorY: 0,
+        mouseAccumulatorX: 0,
+        mouseAccumulatorY: 0,
         actionInProgress: false,
         gestureActive: false,
         gestureHorizontal: false,
@@ -92,7 +94,6 @@ function createScrollArea(overrides = {}) {
         "fire",
         "stepLevelAccumulator",
         "levelStepAmount",
-        "mouseWheelUnits",
         "accumulateLevelX",
         "accumulateLevelY",
         "accumulateX",
@@ -141,24 +142,37 @@ test("volume scroll increases on scroll up, ignores workspace reverseScrolling, 
     assert.equal(events.cooldownRestarts, 0);
 });
 
-test("compositor-scaled mouse wheel (e.g. 0.7x -> 84 angleDelta) fires immediately on first notch", () => {
+test("high-res mouse sub-detents accumulate cleanly to 120 and reset opposite-sign remainder on reversal", () => {
     const { context, events } = createScrollArea({
         yBehavior: "volume",
         xBehavior: "brightness",
         barConfig: { scrollBrightnessStep: 12 }
     });
 
-    context.processWheel(mouseWheel(84));
-    context.processWheel(mouseWheel(-84));
+    context.processWheel(mouseWheel(40));
+    context.processWheel(mouseWheel(40));
+    assert.deepEqual(events.volume, []);
+    context.processWheel(mouseWheel(40));
+    assert.deepEqual(events.volume, [[5, 1]]);
+
+    // Partial upward remainder (+60) is discarded when scrolling down (-120)
+    context.processWheel(mouseWheel(60));
+    context.processWheel(mouseWheel(-120));
     assert.deepEqual(events.volume, [[5, 1], [5, -1]]);
 
-    // Shift + scaled vertical wheel fires custom scrollBrightnessStep immediately on click 1
-    context.processWheel(mouseWheel(84, 0, QtStub.ShiftModifier));
+    // Shift + high-res vertical wheel accumulates to 120 before firing custom scrollBrightnessStep
+    context.processWheel(mouseWheel(40, 0, QtStub.ShiftModifier));
+    context.processWheel(mouseWheel(40, 0, QtStub.ShiftModifier));
+    assert.deepEqual(events.brightness, []);
+    context.processWheel(mouseWheel(40, 0, QtStub.ShiftModifier));
     assert.deepEqual(events.brightness, [["DP-1", 12, 1]]);
 
-    // Discrete workspace switch also fires on click 1 with scaled mouseScrollFactor
+    // Discrete workspace switch also accumulates 40 * 3 to 120 before firing once
     context.yBehavior = "workspace";
-    context.processWheel(mouseWheel(84));
+    context.processWheel(mouseWheel(40));
+    context.processWheel(mouseWheel(40));
+    assert.deepEqual(events.workspace, []);
+    context.processWheel(mouseWheel(40));
     assert.deepEqual(events.workspace, [-1]);
 });
 
@@ -247,12 +261,20 @@ test("scrollable bar widgets default scrollEnabled to true, expose bar/island sc
     assert.equal(disabledVert.accepted, false);
     assert.deepEqual(adjustments, []);
 
-    // Enabled vertical wheel fires immediately on scaled mouse wheel (84) using barConfig.scrollBrightnessStep
+    // Enabled vertical wheel consumes event and targets the battery's screen, accumulating sub-120 high-res detents
     battery.scrollEnabled = true;
-    const activeVert = mouseWheel(84);
+    battery.handleBatteryWheel(mouseWheel(40));
+    battery.handleBatteryWheel(mouseWheel(40));
+    assert.deepEqual(adjustments, []);
+    const activeVert = mouseWheel(40);
     battery.handleBatteryWheel(activeVert);
     assert.equal(activeVert.accepted, true);
     assert.deepEqual(adjustments, [["DP-1", 8, 1]]);
+});
+
+test("BarScrollArea.qml does not define a root onWheel handler that duplicates DBarBody scrollArea.onWheel", () => {
+    const source = readFileSync(new URL(SCROLL_AREA, import.meta.url), "utf8");
+    assert.equal(/^\s*onWheel\s*:/m.test(source), false);
 });
 
 test("DBarBody.pointInIslandSatellite distinguishes satellite widget bounds from empty strip space", () => {

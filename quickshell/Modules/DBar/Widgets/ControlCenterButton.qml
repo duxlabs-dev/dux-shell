@@ -213,26 +213,19 @@ BasePill {
 
     function stepWheelAccumulator(accumulatorKey, wheelEvent, delta) {
         const isTouchpad = WheelInput.isTouchpad(wheelEvent);
-        if (!isTouchpad) {
-            return {
-                units: Math.max(1, Math.trunc(Math.abs(delta) / 120)),
-                sign: delta > 0 ? 1 : -1,
-                isTouchpad: false
-            };
-        }
-        if (wheelEvent.phase === Qt.ScrollBegin)
+        if (isTouchpad && wheelEvent.phase === Qt.ScrollBegin)
             root[accumulatorKey] = 0;
-        const threshold = touchpadThreshold;
+        const threshold = isTouchpad ? touchpadThreshold : 120;
         const prev = root[accumulatorKey];
         const next = (prev * delta < 0 ? 0 : prev) + delta;
         const units = Math.trunc(Math.abs(next) / threshold);
         if (units <= 0) {
             root[accumulatorKey] = next;
-            return { units: 0, sign: 0, isTouchpad: true };
+            return { units: 0, sign: 0, isTouchpad };
         }
         const sign = next > 0 ? 1 : -1;
         root[accumulatorKey] = next - sign * units * threshold;
-        return { units, sign, isTouchpad: true };
+        return { units, sign, isTouchpad };
     }
 
     function handleVolumeWheel(wheelEvent, delta) {

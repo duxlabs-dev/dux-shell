@@ -300,21 +300,17 @@ BasePill {
 
         wheel.accepted = true;
         const isTouchpad = WheelInput.isTouchpad(wheel);
-        if (!isTouchpad) {
-            const units = Math.max(1, Math.trunc(Math.abs(delta) / 120));
-            const step = Math.max(1, battery.barConfig?.scrollBrightnessStep ?? 5) * units;
-            BrightnessService.adjustScreenBrightness(battery.parentScreen, step, delta > 0 ? 1 : -1);
-            return;
-        }
-        if (wheel.phase === Qt.ScrollBegin)
+        if (isTouchpad && wheel.phase === Qt.ScrollBegin)
             touchpadAccumulator = 0;
+        const threshold = isTouchpad ? 100 : 120;
         touchpadAccumulator = (touchpadAccumulator * delta < 0 ? 0 : touchpadAccumulator) + delta;
-        const units = Math.trunc(Math.abs(touchpadAccumulator) / 100);
+        const units = Math.trunc(Math.abs(touchpadAccumulator) / threshold);
         if (units <= 0)
             return;
         const sign = touchpadAccumulator > 0 ? 1 : -1;
-        touchpadAccumulator -= sign * units * 100;
-        BrightnessService.adjustScreenBrightness(battery.parentScreen, units, sign);
+        touchpadAccumulator -= sign * units * threshold;
+        const step = isTouchpad ? units : Math.max(1, battery.barConfig?.scrollBrightnessStep ?? 5) * units;
+        BrightnessService.adjustScreenBrightness(battery.parentScreen, step, sign);
     }
 
     onWheel: wheelEvent => battery.handleBatteryWheel(wheelEvent)
