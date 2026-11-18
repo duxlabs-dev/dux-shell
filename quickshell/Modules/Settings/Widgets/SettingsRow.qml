@@ -75,6 +75,7 @@ T.Control {
     readonly property bool focusWithin: (activeItem?.visualFocus ?? false) && _contains(activeItem)
     readonly property real headerBand: paddingV * 2 + headerLine.height
     readonly property bool headerHovered: rowHover.hovered && (!hasBody || rowHover.point.position.y < headerBand)
+    readonly property bool resetChipHovered: resetChipLoader.item?.hovered ?? false
 
     function _contains(item) {
         for (let p = item; p; p = p.parent) {
@@ -198,7 +199,7 @@ T.Control {
                         return Theme.stateLayerPressed;
                     if (root.focusWithin)
                         return Theme.stateLayerFocus;
-                    return root.headerHovered ? Theme.stateLayerHover : 0;
+                    return root.headerHovered && !root.resetChipHovered ? Theme.stateLayerHover : 0;
                 }
                 topLeftRadius: root.topLeftRadius
                 topRightRadius: root.topRightRadius
@@ -351,6 +352,7 @@ T.Control {
 
                     // The chip bleeds past the title box on every side, so the title never moves when a row turns modified
                     Loader {
+                        id: resetChipLoader
                         anchors.left: parent.left
                         anchors.leftMargin: -SettingsMetrics.resetChipPaddingH
                         y: -SettingsMetrics.resetChipPaddingV
@@ -362,8 +364,17 @@ T.Control {
                         sourceComponent: StyledButton {
                             id: chip
                             radius: Theme.fullRadius(width, height)
-                            color: SettingsMetrics.controlColor
+                            color: hovered || visualFocus || down ? SettingsMetrics.controlColor : Theme.withAlpha(SettingsMetrics.controlColor, 0)
                             enabled: root.enabled
+
+                            Behavior on color {
+                                enabled: Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
+                                ColorAnimation {
+                                    duration: SettingsMetrics.fadeDuration
+                                    easing.type: Easing.BezierSpline
+                                    easing.bezierCurve: Theme.expressiveCurves.expressiveEffects
+                                }
+                            }
                             Accessible.name: I18n.tr("Reset to default")
                             Accessible.description: root.title
                             onClicked: root.resetRequested()
