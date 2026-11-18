@@ -188,7 +188,7 @@ DIdleSurface {
 
     Timer {
         id: sweeper
-        interval: 500
+        interval: Timing.settleLong
         running: false
         repeat: true
         onTriggered: {

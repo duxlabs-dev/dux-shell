@@ -76,17 +76,9 @@ Scope {
 
                 Timer {
                     id: delayedGrabTimer
-                    interval: 150
+                    interval: Timing.settle
                     repeat: false
                     onTriggered: root.grabArmed = true
-                }
-
-                Timer {
-                    id: closeTimer
-                    interval: Math.max(Theme.expressiveDurations.expressiveDefaultSpatial + 120, Math.round(morph.settleDurationMs) + 120)
-                    onTriggered: {
-                        root.visible = false;
-                    }
                 }
 
                 Rectangle {
@@ -109,7 +101,6 @@ Scope {
                             const localPos = mapToItem(contentAnchor, mouse.x, mouse.y);
                             if (localPos.x < 0 || localPos.x > contentAnchor.width || localPos.y < 0 || localPos.y > contentAnchor.height) {
                                 overviewScope.overviewOpen = false;
-                                closeTimer.restart();
                             }
                         }
                     }
@@ -197,7 +188,6 @@ Scope {
                         if (!root.monitorIsFocused)
                             return;
                         overviewScope.overviewOpen = false;
-                        closeTimer.restart();
                         event.accepted = true;
                     }
 
@@ -266,14 +256,12 @@ Scope {
                 Connections {
                     target: overviewScope
                     function onOverviewOpenChanged() {
-                        if (overviewScope.overviewOpen) {
-                            closeTimer.stop();
-                            root.visible = true;
-                            Qt.callLater(() => focusScope.forceActiveFocus());
-                        } else {
-                            closeTimer.restart();
+                        if (!overviewScope.overviewOpen) {
                             root.grabArmed = false;
+                            return;
                         }
+                        root.visible = true;
+                        Qt.callLater(() => focusScope.forceActiveFocus());
                     }
                 }
             }

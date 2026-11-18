@@ -1012,7 +1012,7 @@ Singleton {
     }
 
     Timer {
-        interval: 10000
+        interval: Timing.poll
         repeat: true
         running: root.autoScan && root.networkAvailable && root.wifiEnabled
         onTriggered: root.scanWifi()

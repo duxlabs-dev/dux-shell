@@ -598,18 +598,18 @@ Singleton {
         for (const sink of sinks || []) {
             const info = sinkPorts?.[sink.name];
             const ports = (info?.ports || []).slice().sort((a, b) => b.priority - a.priority).map(port => ({
-                kind: "port",
-                sinkName: sink.name,
-                portName: port.name,
-                title: port.description,
-                availability: port.availability,
-                active: port.name === info.active
-            }));
+                        kind: "port",
+                        sinkName: sink.name,
+                        portName: port.name,
+                        title: port.description,
+                        availability: port.availability,
+                        active: port.name === info.active
+                    }));
             const profiles = (switchable || []).filter(entry => sinkBelongsToCard(sink, entry.cardName, entry.cardId));
             bySink[sink.name] = ports.concat(profiles.map(entry => Object.assign({
-                kind: "profile",
-                active: false
-            }, entry)));
+                    kind: "profile",
+                    active: false
+                }, entry)));
         }
         return bySink;
     }
@@ -705,7 +705,7 @@ Singleton {
 
     Timer {
         id: pendingCardSwitchTimer
-        interval: 5000
+        interval: Timing.timeoutShort
         onTriggered: root.pendingCardSwitch = null
     }
 
@@ -1692,7 +1692,7 @@ EOFCONFIG
 
     Timer {
         id: freeBsdVolumeWriteTimer
-        interval: 35
+        interval: Timing.debounceFast
         repeat: false
         onTriggered: root.flushFreeBsdVolumeWrites()
     }
@@ -1895,7 +1895,7 @@ EOFCONFIG
     }
 
     Timer {
-        interval: 5000
+        interval: Timing.pollFast
         repeat: true
         running: root.freebsdAudio && root.refCount > 0
         onTriggered: root.refreshFreeBsdDevices()

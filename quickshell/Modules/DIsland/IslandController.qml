@@ -1320,7 +1320,7 @@ QtObject {
     }
 
     property Timer visualsReleaseTimer: Timer {
-        interval: 260
+        interval: Timing.settle
         onTriggered: root.dropIdleVisuals()
     }
 }

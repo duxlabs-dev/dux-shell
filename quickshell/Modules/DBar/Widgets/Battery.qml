@@ -43,7 +43,7 @@ BasePill {
 
     // Stepped on purpose: an Animation repaints the bar at the full refresh rate.
     Timer {
-        interval: 50
+        interval: Timing.slowTick
         repeat: true
         running: battery.critical && battery.surfaceLive && !Theme.reduceMotion
         onRunningChanged: {

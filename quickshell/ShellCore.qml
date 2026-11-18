@@ -174,7 +174,7 @@ Item {
     function triggerSurfaceRecovery(source) {
         log.info("Surface recovery triggered by:", source, "screens:", Quickshell.screens.length, Quickshell.screens.map(s => s.name).join(","), "barLoaded:", root.barSurfacesLoaded, "frameLoaded:", root.frameSurfacesLoaded);
         surfaceResumeRecoveryTimer.pass = 0;
-        surfaceResumeRecoveryTimer.interval = 800;
+        surfaceResumeRecoveryTimer.interval = Timing.settleSlow;
         surfaceResumeRecoveryTimer.restart();
     }
 
@@ -240,7 +240,7 @@ Item {
         id: screenReconnectDebounce
         // Wide enough to collapse the output-remove + output-re-add pair that one
         // DPMS off/on cycle emits as two near-simultaneous events into one recovery.
-        interval: 450
+        interval: Timing.settleLong
         repeat: false
         onTriggered: {
             root._screenRecoveryCooldown = true;
@@ -252,7 +252,7 @@ Item {
 
     Timer {
         id: surfaceRefreshVerifyTimer
-        interval: 800
+        interval: Timing.settleSlow
         repeat: false
         onTriggered: {
             const stale = SurfaceRecovery.staleWindows();
@@ -267,7 +267,7 @@ Item {
         id: screenReconnectCooldown
         // Must exceed surfaceRefreshVerifyTimer plus the two-pass
         // surfaceResumeRecoveryTimer sequence (800 + 800 + 2000 ms).
-        interval: 4000
+        interval: Timing.holdLong
         repeat: false
         onTriggered: {
             root._screenRecoveryCooldown = false;
@@ -280,7 +280,7 @@ Item {
 
     Timer {
         id: surfaceResumeRecoveryTimer
-        interval: 800
+        interval: Timing.settleSlow
         repeat: false
         property int pass: 0
         onTriggered: {
@@ -288,7 +288,7 @@ Item {
             if (!root._hasRealScreen()) {
                 log.info("Surface recovery skipped: no real screen");
                 pass = 0;
-                interval = 800;
+                interval = Timing.settleSlow;
                 return;
             }
 
@@ -305,11 +305,11 @@ Item {
             root.surfaceRecoveryPass();
 
             if (pass < 2) {
-                interval = 2000;
+                interval = Timing.hold;
                 restart();
             } else {
                 pass = 0;
-                interval = 800;
+                interval = Timing.settleSlow;
             }
         }
     }

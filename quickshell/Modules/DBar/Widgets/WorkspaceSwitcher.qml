@@ -813,7 +813,7 @@ BasePill {
 
                 Timer {
                     id: dataUpdateTimer
-                    interval: 50
+                    interval: Timing.debounceFast
                     onTriggered: delegateRoot.loadData()
                 }
 

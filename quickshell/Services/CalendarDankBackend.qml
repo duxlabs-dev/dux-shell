@@ -108,7 +108,7 @@ Item {
 
     Timer {
         id: rediscoverTimer
-        interval: 3000
+        interval: Timing.pollFast
         repeat: true
         running: root.enabled && !root.connected && (root.preferred || (root.binaryChecked && root.binaryExists)) && root._rediscoverMisses < root._rediscoverCap
         onTriggered: {
@@ -219,7 +219,7 @@ Item {
 
     Timer {
         id: refreshDebounce
-        interval: 400
+        interval: Timing.debounceSlow
         repeat: false
         onTriggered: {
             root.refreshCalendars();
@@ -229,7 +229,7 @@ Item {
 
     Timer {
         id: tasksDebounce
-        interval: 400
+        interval: Timing.debounceSlow
         repeat: false
         onTriggered: root.reloadTasks()
     }

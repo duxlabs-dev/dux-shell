@@ -83,7 +83,7 @@ Column {
 
                         Timer {
                             id: longPressTimer
-                            interval: 200
+                            interval: Timing.longPress
                             repeat: false
                             onTriggered: {
                                 if (NotepadStorageService.tabs.length > 1) {
@@ -205,7 +205,7 @@ Column {
                                         // timer fires afterwards so the field keeps focus + selection.
                                         Timer {
                                             id: renameFocusTimer
-                                            interval: 20
+                                            interval: Timing.frame
                                             repeat: false
                                             onTriggered: {
                                                 renameField.forceActiveFocus();

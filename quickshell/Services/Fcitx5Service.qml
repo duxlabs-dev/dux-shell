@@ -37,7 +37,7 @@ Singleton {
     Timer {
         id: resolveTimer
 
-        interval: 100
+        interval: Timing.debounceShort
         repeat: false
         onTriggered: root.resolve()
     }

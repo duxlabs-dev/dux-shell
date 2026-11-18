@@ -669,8 +669,6 @@ Item {
                 width: mainListView.width
                 height: rowData?.height ?? LauncherMetrics.rowHeight
 
-                Component.onCompleted: mainListView.fadeIn(delegateRoot, index)
-
                 Loader {
                     active: delegateRoot.rowType === "list_item"
                     sourceComponent: Rectangle {
@@ -681,7 +679,6 @@ Item {
                         height: delegateRoot.height - LauncherMetrics.rowGap
                         z: -1
                         visible: delegateRoot.visible
-                        opacity: delegateRoot.opacity
                         color: Theme.foregroundColor(Theme.cardSurface, Theme.isFloatingWindow(root))
                         border.width: Theme.layerOutlineWidth
                         border.color: Theme.outlineMedium
@@ -773,7 +770,6 @@ Item {
                                     height: delegateRoot.height - LauncherMetrics.tileGap
                                     z: -1
                                     visible: delegateRoot.visible && !gridCellDelegate.isBare
-                                    opacity: delegateRoot.opacity
                                     color: Theme.foregroundColor(Theme.cardSurface, Theme.isFloatingWindow(root))
                                     border.width: Theme.layerOutlineWidth
                                     border.color: Theme.outlineMedium

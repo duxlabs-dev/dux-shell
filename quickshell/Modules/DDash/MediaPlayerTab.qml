@@ -123,13 +123,6 @@ Item {
         player: root
     }
 
-    Timer {
-        interval: DashMetrics.mediaPositionPollInterval
-        running: root.live && root.activePlayer?.playbackState === MprisPlaybackState.Playing && !root.isSeeking
-        repeat: true
-        onTriggered: MprisController.refreshPosition(root.activePlayer)
-    }
-
     function syncAudioRef(wanted) {
         if (wanted === audioRefHeld)
             return;

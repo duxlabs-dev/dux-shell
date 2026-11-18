@@ -50,9 +50,9 @@ Singleton {
                 hasDetails = currentDetails.length > 0 || currentCommand.length > 0;
                 resetToastState();
                 if (hasDetails) {
-                    toastTimer.interval = 8000;
+                    toastTimer.interval = Timing.holdExtraLong;
                 } else {
-                    toastTimer.interval = 5000;
+                    toastTimer.interval = Timing.holdLong;
                 }
                 toastTimer.restart();
                 return;
@@ -144,10 +144,10 @@ Singleton {
         if (isStickyCategory(toast.category)) {
             toastTimer.stop();
         } else if (toast.level === levelError && hasDetails) {
-            toastTimer.interval = 8000;
+            toastTimer.interval = Timing.holdExtraLong;
             toastTimer.start();
         } else {
-            toastTimer.interval = toast.level === levelError ? 5000 : toast.level === levelWarn ? 3000 : 1500;
+            toastTimer.interval = toast.level === levelError ? Timing.holdLong : toast.level === levelWarn ? Timing.holdMedium : Timing.holdShort;
             toastTimer.start();
         }
     }
@@ -163,7 +163,7 @@ Singleton {
             return;
         }
         if (hasDetails && currentLevel === levelError) {
-            toastTimer.interval = 8000;
+            toastTimer.interval = Timing.holdExtraLong;
             toastTimer.restart();
         }
     }
@@ -175,7 +175,7 @@ Singleton {
     Timer {
         id: toastTimer
 
-        interval: 5000
+        interval: Timing.holdLong
         running: false
         repeat: false
         onTriggered: hideToast()

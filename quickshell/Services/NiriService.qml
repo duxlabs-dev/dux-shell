@@ -52,7 +52,6 @@ Singleton {
     property string configValidationOutput: ""
     property bool hasInitialConnection: false
     property bool suppressConfigToast: true
-    property bool suppressNextConfigToast: false
     property bool matugenSuppression: false
     property bool configGenerationPending: false
     property int _layoutRequestRevision: 0
@@ -121,13 +120,13 @@ Singleton {
 
     Timer {
         id: suppressToastTimer
-        interval: 3000
+        interval: Timing.holdMedium
         onTriggered: root.suppressConfigToast = false
     }
 
     Timer {
         id: suppressResetTimer
-        interval: 5000
+        interval: Timing.holdLong
         onTriggered: root.matugenSuppression = false
     }
 
@@ -751,12 +750,8 @@ Singleton {
             configGenerationAction.schedule();
         configReloaded();
 
-        if (hasInitialConnection && !suppressConfigToast && !suppressNextConfigToast && !matugenSuppression && SessionData.showConfigReloadToast) {
+        if (hasInitialConnection && !suppressConfigToast && !matugenSuppression && SessionData.showConfigReloadToast)
             ToastService.showInfo(I18n.tr("niri: config reloaded"), "", "", "niri-config");
-        } else if (suppressNextConfigToast) {
-            suppressNextConfigToast = false;
-            suppressResetTimer.stop();
-        }
 
         if (!hasInitialConnection) {
             hasInitialConnection = true;

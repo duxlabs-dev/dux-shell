@@ -51,13 +51,6 @@ Card {
         return FocusNavigation.moveFocus(playbackFocusTargets, !!(event.modifiers & Qt.ShiftModifier));
     }
 
-    Timer {
-        interval: DashMetrics.mediaPositionPollInterval
-        running: root.live && root.visible && root.interactive && root.showSeekbar && root.playing && !root.isSeeking
-        repeat: true
-        onTriggered: MprisController.refreshPosition(root.activePlayer)
-    }
-
     Loader {
         anchors.fill: parent
         anchors.margins: -root.pad

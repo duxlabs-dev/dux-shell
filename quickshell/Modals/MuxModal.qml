@@ -136,7 +136,7 @@ DModal {
     onBackgroundClicked: hide()
 
     Timer {
-        interval: 3000
+        interval: Timing.pollFast
         running: muxModal.shouldBeVisible
         repeat: true
         onTriggered: MuxService.refreshSessions()

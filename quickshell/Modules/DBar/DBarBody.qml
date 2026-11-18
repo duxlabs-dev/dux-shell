@@ -306,7 +306,7 @@ Item {
 
     Timer {
         id: _blurRebuildTimer
-        interval: 1
+        interval: 0
         onTriggered: barBlur.rebuild()
     }
 
@@ -912,7 +912,7 @@ Item {
     // Waits out the collapse's last frame.
     Timer {
         id: islandRoomRelease
-        interval: 150
+        interval: Timing.settle
         onTriggered: {
             if (barWindow.islandSheetOut)
                 return;
@@ -954,7 +954,7 @@ Item {
 
     // Outlives the close so moving between popouts doesn't resize the window.
     Timer {
-        interval: 1000
+        interval: Timing.settleSlow
         running: barWindow.popoutRoomState !== "" && !barWindow.popoutOut
         onTriggered: {
             if (!barWindow.popoutRoomAlwaysHeld)
@@ -1149,7 +1149,7 @@ Item {
         // the timer re-evaluates against the post-transition mask.
         Timer {
             id: revealSettle
-            interval: 600
+            interval: Timing.settleSlow
             repeat: false
             onTriggered: topBarCore.evaluateReveal()
         }

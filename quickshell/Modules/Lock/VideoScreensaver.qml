@@ -49,7 +49,7 @@ Item {
 
     Timer {
         id: inputEnableTimer
-        interval: 500
+        interval: Timing.settleLong
         onTriggered: root.inputEnabled = true
     }
 

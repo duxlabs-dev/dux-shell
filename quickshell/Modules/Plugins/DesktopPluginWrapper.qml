@@ -38,7 +38,7 @@ Item {
 
     Timer {
         id: lingerTimer
-        interval: 64
+        interval: Timing.settleShort
         onTriggered: root.surfaceLingering = false
     }
 

@@ -4041,7 +4041,7 @@ Singleton {
 
         property Timer timer: Timer {
             id: settingsFileReloadDebounce
-            interval: 50
+            interval: Timing.debounceFast
             onTriggered: settingsFileView.reload()
             repeat: false
         }
@@ -4271,7 +4271,7 @@ Singleton {
     }
     Timer {
         id: settingsFilesModelSyncDebounce
-        interval: 50
+        interval: Timing.debounceFast
         repeat: false
         running: false
         onTriggered: _syncSettingsFilesModels()
@@ -4364,7 +4364,7 @@ Singleton {
 
     Timer {
         id: settingsSaveDebounce
-        interval: 50
+        interval: Timing.debounceFast
         repeat: false
         running: false
         onTriggered: _saveSettings(true)

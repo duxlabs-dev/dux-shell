@@ -123,7 +123,7 @@ Singleton {
 
     Timer {
         id: colorSchemeSettleTimer
-        interval: 750
+        interval: Timing.portalColorSchemeSettleDelay
         onTriggered: {
             if (!root.canSyncColorScheme())
                 return;

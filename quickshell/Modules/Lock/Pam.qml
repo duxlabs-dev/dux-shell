@@ -598,21 +598,21 @@ Scope {
     Timer {
         id: u2fErrorRetry
 
-        interval: 800
+        interval: Timing.settleSlow
         onTriggered: u2f.start()
     }
 
     Timer {
         id: u2fPendingTimeout
 
-        interval: 30000
+        interval: Timing.timeoutLong
         onTriggered: root.cancelU2fPending()
     }
 
     Timer {
         id: passwdActiveTimeout
 
-        interval: 15000
+        interval: Timing.pamActiveTimeout
         onTriggered: {
             if (passwd.active)
                 root.recoverFromAuthStall("error");
@@ -622,7 +622,7 @@ Scope {
     Timer {
         id: unlockRequestTimeout
 
-        interval: 8000
+        interval: Timing.timeout
         onTriggered: {
             if (root.unlockInProgress)
                 root.recoverFromAuthStall("error");
@@ -632,7 +632,7 @@ Scope {
     Timer {
         id: stateReset
 
-        interval: 4000
+        interval: Timing.holdLong
         onTriggered: {
             if (root.state !== "max")
                 root.state = "";
@@ -642,7 +642,7 @@ Scope {
     Timer {
         id: fprintStateReset
 
-        interval: 4000
+        interval: Timing.holdLong
         onTriggered: {
             if (root.fprintState !== "max")
                 root.fprintState = "";

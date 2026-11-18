@@ -210,7 +210,7 @@ QtObject {
     property real _mouseAccumulator: 0
     property bool _scrollInProgress: false
     readonly property Timer _scrollCooldown: Timer {
-        interval: 100
+        interval: Timing.settleShort
         onTriggered: root._scrollInProgress = false
     }
 

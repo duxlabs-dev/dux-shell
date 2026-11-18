@@ -194,7 +194,7 @@ Item {
 
     Timer {
         id: cavaTickWatch
-        interval: 150
+        interval: Timing.debounce
     }
 
     Connections {

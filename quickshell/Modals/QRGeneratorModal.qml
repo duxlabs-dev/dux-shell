@@ -73,7 +73,7 @@ DModal {
 
     Timer {
         id: genTimer
-        interval: 200
+        interval: Timing.debounceLong
         repeat: false
         onTriggered: root.generateQR(root._pendingPayload)
     }

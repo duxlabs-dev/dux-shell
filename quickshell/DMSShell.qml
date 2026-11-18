@@ -213,10 +213,7 @@ Item {
         }
 
         function onSurfaceRecoveryPass() {
-            root.dockEnabled = false;
-            Qt.callLater(() => {
-                root.dockEnabled = true;
-            });
+            dockRecreateDebounce.restart();
         }
     }
 
@@ -224,7 +221,7 @@ Item {
 
     Timer {
         id: dockRecreateDebounce
-        interval: 500
+        interval: Timing.settleLong
         repeat: false
         onTriggered: {
             root.dockEnabled = false;
@@ -238,7 +235,7 @@ Item {
         id: loginSoundTimer
         // Half a second delay before playing login sound, otherwise the sound may be cut off
         // 50 is the minimum that seems to work, but 500 is safer
-        interval: 500
+        interval: Timing.settleLong
         repeat: false
         onTriggered: {
             AudioService.playLoginSoundIfApplicable();
@@ -247,7 +244,7 @@ Item {
 
     Timer {
         id: osdResumeRecreateTimer
-        interval: 400
+        interval: Timing.resumeRecoverySchedule[0]
         repeat: false
         onTriggered: {
             root.recreateOsdSurfaces();
@@ -255,25 +252,25 @@ Item {
 
             if (root.pendingOsdResumeReloads <= 0) {
                 root.pendingOsdResumeReloads = 0;
-                interval = 400;
+                interval = Timing.resumeRecoverySchedule[0];
                 return;
             }
 
-            interval = 1400;
+            interval = Timing.resumeRecoverySchedule[1];
             restart();
         }
     }
 
     Timer {
         id: osdSurfaceReloadTimer
-        interval: 120
+        interval: Timing.settle
         repeat: false
         onTriggered: root.osdSurfacesLoaded = true
     }
 
     Timer {
         id: osdStartupTimer
-        interval: 1000
+        interval: Timing.settleSlow
         repeat: false
         onTriggered: root.osdSurfacesLoaded = true
     }
@@ -984,7 +981,7 @@ Item {
 
         function onSessionResumed() {
             root.pendingOsdResumeReloads = 2;
-            osdResumeRecreateTimer.interval = 400;
+            osdResumeRecreateTimer.interval = Timing.resumeRecoverySchedule[0];
             osdResumeRecreateTimer.restart();
         }
     }

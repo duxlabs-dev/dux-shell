@@ -305,7 +305,7 @@ DIdleSurface {
 
                             Timer {
                                 id: detailsTooltipTimer
-                                interval: 1500
+                                interval: Timing.holdShort
                                 onTriggered: copyDetailsButton.showTooltip = false
                             }
 
@@ -389,7 +389,7 @@ DIdleSurface {
 
                             Timer {
                                 id: tooltipTimer
-                                interval: 1500
+                                interval: Timing.holdShort
                                 onTriggered: copyButton.showTooltip = false
                             }
 

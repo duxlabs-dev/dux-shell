@@ -28,6 +28,7 @@ DListItem {
 
     signal actionRequested(string action)
     signal groupToggled
+    signal expansionSettled
 
     readonly property real leadWidth: ProcessListMetrics.expanderWidth + (member ? ProcessListMetrics.appIconSize : 0) + ProcessListMetrics.appIconSize + Theme.spacingS
     readonly property real cellsWidth: columns.reduce((sum, id) => sum + cellWidth(id) + Theme.spacingXS, 0)
@@ -54,8 +55,11 @@ DListItem {
             easing.type: Easing.BezierSpline
             easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
             onRunningChanged: {
-                if (!running)
-                    Qt.callLater(details.release);
+                if (running)
+                    return;
+                Qt.callLater(details.release);
+                if (root.isExpanded)
+                    root.expansionSettled();
             }
         }
     }

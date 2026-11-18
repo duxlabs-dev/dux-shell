@@ -402,6 +402,9 @@ Item {
         onTriggered: root._finishClose()
     }
 
+    readonly property bool _standardMotion: !connected && !Theme.isDirectionalEffect && !Theme.isDepthEffect && !_fluidMotionActive
+    readonly property var _morphSpringParams: Theme.springPreset(_standardMotion ? "fastSpatial" : "defaultSpatial")
+
     readonly property var shadowLevel: Theme.elevationLevel3
     readonly property real shadowFallbackOffset: Theme.spacingS
     readonly property real alignedWidth: Theme.px(modalWidth, dpr)
@@ -688,8 +691,8 @@ Item {
                     reducedMotion: root.animationDuration <= 0
                     positionEpsilon: Math.max(0.001, 0.25 / root.dpr / modalContainer.morphTravelPx)
                     velocityEpsilon: positionEpsilon * damping / Math.max(0.001, 2 * mass)
-                    stiffness: Theme.springPreset("defaultSpatial").stiffness
-                    damping: Theme.springPreset("defaultSpatial").damping
+                    stiffness: root._morphSpringParams.stiffness
+                    damping: root._morphSpringParams.damping
 
                     Component.onCompleted: snapTo(root.shouldBeVisible ? 1 : 0)
                 }

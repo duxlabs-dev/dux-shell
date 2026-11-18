@@ -276,7 +276,7 @@ Item {
 
     Timer {
         id: searchDebounce
-        interval: 150
+        interval: Timing.debounce
         onTriggered: keybindsTab._updateFiltered()
     }
 

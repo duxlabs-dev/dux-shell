@@ -152,7 +152,7 @@ Item {
 
     Timer {
         id: delayTimer
-        interval: 2000
+        interval: Timing.hold
         repeat: false
         onTriggered: {
             root.isReloadingAudio = false;

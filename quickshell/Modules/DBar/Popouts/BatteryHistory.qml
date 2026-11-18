@@ -1,4 +1,5 @@
 import QtQuick
+import qs.Common
 import qs.Services
 import "BatteryHistory.js" as History
 
@@ -128,7 +129,7 @@ Item {
     }
 
     Timer {
-        interval: 60000
+        interval: Timing.minute
         repeat: true
         running: root.active && root.busAvailable && root.nativePath !== ""
         onTriggered: root.refresh()

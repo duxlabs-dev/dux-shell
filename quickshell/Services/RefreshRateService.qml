@@ -20,7 +20,7 @@ Singleton {
 
     Timer {
         id: cascadeGuard
-        interval: 3000
+        interval: Timing.holdMedium
         repeat: false
         onTriggered: root._lastAppliedTargets = ({})
     }
@@ -29,17 +29,14 @@ Singleton {
 
     Timer {
         id: syncDebounce
-        interval: 300
+        interval: Timing.debounceSlow
         repeat: false
         onTriggered: root._runSync()
     }
 
-    Timer {
-        id: startupRefreshRateSync
-        interval: 500
-        repeat: false
-        running: SettingsData.lowerDisplayRefreshRateOnBattery
-        onTriggered: root.requestSync("startup")
+    Component.onCompleted: {
+        if (SettingsData.lowerDisplayRefreshRateOnBattery)
+            requestSync("startup");
     }
 
     Timer {

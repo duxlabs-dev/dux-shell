@@ -260,7 +260,7 @@ Singleton {
         _scrollPass = 0;
         _stablePasses = 0;
         _lastGeometry = "";
-        scrollTimer.interval = 50;
+        scrollTimer.interval = Timing.settleShort;
         const entry = registeredCards[section];
         if (!entry)
             return;
@@ -320,7 +320,7 @@ Singleton {
 
     function _finishScroll() {
         targetSection = "";
-        scrollTimer.interval = 50;
+        scrollTimer.interval = Timing.settleShort;
     }
 
     function clearHighlight() {
@@ -329,13 +329,13 @@ Singleton {
 
     Timer {
         id: scrollTimer
-        interval: 50
+        interval: Timing.settleShort
         onTriggered: root.scrollToTarget()
     }
 
     Timer {
         id: highlightTimer
-        interval: 2500
+        interval: Timing.holdMedium
         onTriggered: root.highlightSection = ""
     }
 

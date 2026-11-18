@@ -1043,7 +1043,7 @@ Singleton {
 
     Timer {
         id: primeTimer
-        interval: 1000
+        interval: Timing.second
         onTriggered: root.updateAllStats()
     }
 

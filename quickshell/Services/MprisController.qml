@@ -181,7 +181,7 @@ Singleton {
     // Chromium reports stopped media w/blank metadata, resolve by checking idle status
     Timer {
         id: _idleGraceTimer
-        interval: 3000
+        interval: Timing.holdMedium
         onTriggered: {
             if (!root.isIdle(root.activePlayer))
                 return;
@@ -391,20 +391,20 @@ Singleton {
 
     Timer {
         id: _mprisPublishTimer
-        interval: 25
+        interval: Timing.debounceFast
         repeat: false
         onTriggered: root._publishMPRISSnapshot()
     }
 
     Timer {
         id: _mprisRetryTimer
-        interval: 2000
+        interval: Timing.hold
         repeat: false
         onTriggered: root._scheduleMPRISPublish()
     }
 
     Timer {
-        interval: 1000
+        interval: Timing.second
         running: root.positionConsumers > 0 && root.activePlayer?.playbackState === MprisPlaybackState.Playing
         repeat: true
         onTriggered: root.refreshPosition(root.activePlayer)

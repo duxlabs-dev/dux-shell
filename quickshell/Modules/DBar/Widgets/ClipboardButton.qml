@@ -61,7 +61,7 @@ BasePill {
 
     Timer {
         id: dropConfirmationTimer
-        interval: 1200
+        interval: Timing.holdShort
         onTriggered: root.dropConfirmed = false
     }
 

@@ -229,7 +229,7 @@ Item {
 
     Timer {
         id: previewSettleTimer
-        interval: 80
+        interval: Timing.settleShort
         repeat: true
         onTriggered: {
             if (root.isSeeking || root.committedSeekRatio < 0) {

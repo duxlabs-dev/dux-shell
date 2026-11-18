@@ -359,7 +359,7 @@ Singleton {
 
     Timer {
         id: reusedSourceDelay
-        interval: 150
+        interval: Timing.settle
         onTriggered: root.loadArtwork(root._pendingSrcUrl, root._pendingArtKey, root._requestSerial)
     }
 

@@ -91,7 +91,7 @@ Singleton {
 
     Timer {
         id: screenShareReleaseTimer
-        interval: 4000
+        interval: Timing.holdLong
         repeat: false
         running: false
         onTriggered: root._endScreenShareDnd()
@@ -115,7 +115,7 @@ Singleton {
 
     Timer {
         id: osdSuppressTimer
-        interval: 2000
+        interval: Timing.hold
         running: true
         onTriggered: root.suppressOSD = false
     }

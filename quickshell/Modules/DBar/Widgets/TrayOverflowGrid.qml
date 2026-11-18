@@ -90,7 +90,7 @@ Grid {
 
                 Timer {
                     id: popupLongPressTimer
-                    interval: 400
+                    interval: Timing.longPress
                     repeat: false
                     onTriggered: popupDragHandler.longPressing = true
                 }

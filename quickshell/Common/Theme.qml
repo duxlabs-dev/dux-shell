@@ -1113,7 +1113,7 @@ Singleton {
     readonly property real stateLayerDrag: 0.16
 
     readonly property int popoutAnimationDuration: expressiveDurations.expressiveEffects
-    readonly property int modalAnimationDuration: expressiveDurations.expressiveEffects
+    readonly property int modalAnimationDuration: expressiveDurations.expressiveFastEffects
 
     readonly property real radiusStrength: typeof SettingsData !== "undefined" ? SettingsData.radiusStrength : 50
     readonly property real fixedRadius: typeof SettingsData !== "undefined" && SettingsData.radiusMode === "fixed" ? SettingsData.fixedRadius : -1
@@ -2471,7 +2471,7 @@ Singleton {
 
     Timer {
         id: colorsReloadRetry
-        interval: 150
+        interval: Timing.settle
         repeat: false
         onTriggered: dynamicColorsFileView.reload()
     }
@@ -2497,7 +2497,7 @@ Singleton {
 
     Timer {
         id: typographyPublishDebounce
-        interval: 250
+        interval: Timing.debounceLong
         repeat: false
         onTriggered: {
             if (!root.publishTypography)
@@ -2531,7 +2531,7 @@ Singleton {
 
     Timer {
         id: _themeGenerateDebounce
-        interval: 100
+        interval: Timing.debounceShort
         repeat: false
         onTriggered: root._executeThemeGeneration()
     }
@@ -2539,7 +2539,7 @@ Singleton {
     // These timers are for screen transitions, since sometimes QML still beats the niri call
     Timer {
         id: themeTransitionTimer
-        interval: 50
+        interval: Timing.settleShort
         repeat: false
         property string themeName: ""
         property bool savePrefs: true
@@ -2548,7 +2548,7 @@ Singleton {
 
     Timer {
         id: lightModeTransitionTimer
-        interval: 100
+        interval: Timing.settleShort
         repeat: false
         property bool lightMode: false
         property bool savePrefs: true
@@ -2557,7 +2557,7 @@ Singleton {
 
     Timer {
         id: themeCategoryTransitionTimer
-        interval: 50
+        interval: Timing.settleShort
         repeat: false
         property string category: ""
         property string defaultTheme: ""

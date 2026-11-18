@@ -91,7 +91,6 @@ Item {
     // Keyboard focus grabbed one tick after emerge starts, to avoid stalling first frames.
     property bool _keyboardReady: false
     readonly property bool contentActive: focusHelper.Window.active
-    property bool _resizeActive: false
     property real _chromeAnimTravelX: 1
     property real _chromeAnimTravelY: 1
     property bool _fullSyncQueued: false
@@ -532,7 +531,7 @@ Item {
     // A bar that can't answer must not cost the popout its open.
     Timer {
         id: barRoomWait
-        interval: 200
+        interval: Timing.settle
         onTriggered: root._open()
     }
 
@@ -679,7 +678,7 @@ Item {
 
     Timer {
         id: contentRetention
-        interval: 3000
+        interval: Timing.holdMedium
         onTriggered: {
             if (!root.shouldBeVisible && !root.attached)
                 root._retainedContent = false;
@@ -1100,30 +1099,15 @@ Item {
 
     onAlignedHeightChanged: {
         _retargetBody();
-        if (suspendShadowWhileResizing && shouldBeVisible) {
-            _resizeActive = true;
-            resizeSettleTimer.restart();
-        }
         _queueFullSync();
     }
     onShouldBeVisibleChanged: {
-        if (shouldBeVisible) {
+        if (shouldBeVisible)
             _contentRenderActive = true;
-            return;
-        }
-        _resizeActive = false;
-        resizeSettleTimer.stop();
     }
     on_ContentRenderActiveChanged: {
         if (!_contentRenderActive && isClosing && !shouldBeVisible)
             closeAnimationFinished();
-    }
-
-    Timer {
-        id: resizeSettleTimer
-        interval: 80
-        repeat: false
-        onTriggered: root._resizeActive = false
     }
 
     function _connectedAlignedXFor(width) {
@@ -1729,7 +1713,7 @@ Item {
                         bottomRightRadius: chrome.surfaceBottomRightRadius
                         // Shadow only; contentWrapper paints the fill.
                         targetColor: "transparent"
-                        shadowEnabled: Theme.elevationEnabled && SettingsData.popoutElevationEnabled && Quickshell.env("DMS_DISABLE_LAYER") !== "true" && Quickshell.env("DMS_DISABLE_LAYER") !== "1" && !(root.suspendShadowWhileResizing && root._resizeActive) && !root.frameOwnsConnectedChrome
+                        shadowEnabled: Theme.elevationEnabled && SettingsData.popoutElevationEnabled && Quickshell.env("DMS_DISABLE_LAYER") !== "true" && Quickshell.env("DMS_DISABLE_LAYER") !== "1" && !(root.suspendShadowWhileResizing && bodySpring.running) && !root.frameOwnsConnectedChrome
                     }
 
                     Item {
@@ -1739,7 +1723,7 @@ Item {
                         readonly property real extraLeft: (contentContainer.barTop || contentContainer.barBottom) ? Theme.connectedCornerRadius : 0
                         readonly property real extraTop: (contentContainer.barLeft || contentContainer.barRight) ? Theme.connectedCornerRadius : 0
 
-                        readonly property bool shadowsOn: Theme.elevationEnabled && SettingsData.popoutElevationEnabled && Quickshell.env("DMS_DISABLE_LAYER") !== "true" && Quickshell.env("DMS_DISABLE_LAYER") !== "1" && !(root.suspendShadowWhileResizing && root._resizeActive)
+                        readonly property bool shadowsOn: Theme.elevationEnabled && SettingsData.popoutElevationEnabled && Quickshell.env("DMS_DISABLE_LAYER") !== "true" && Quickshell.env("DMS_DISABLE_LAYER") !== "1" && !(root.suspendShadowWhileResizing && bodySpring.running)
                         readonly property real shadowBlurPx: root.shadowLevel && root.shadowLevel.blurPx !== undefined ? root.shadowLevel.blurPx : 0
                         readonly property real shadowSpreadPx: root.shadowLevel && root.shadowLevel.spreadPx !== undefined ? root.shadowLevel.spreadPx : 0
                         readonly property real shadowOffsetX: Theme.elevationOffsetXFor(root.shadowLevel, root.effectiveShadowDirection, root.shadowFallbackOffset)
@@ -1905,7 +1889,7 @@ Item {
                     fallbackOffset: root.shadowFallbackOffset
                     targetRadius: Theme.windowRadius
                     targetColor: root._fluidMotionActive ? Theme.readableSurface : "transparent"
-                    shadowEnabled: Theme.elevationEnabled && SettingsData.popoutElevationEnabled && Quickshell.env("DMS_DISABLE_LAYER") !== "true" && Quickshell.env("DMS_DISABLE_LAYER") !== "1" && !(root.suspendShadowWhileResizing && root._resizeActive)
+                    shadowEnabled: Theme.elevationEnabled && SettingsData.popoutElevationEnabled && Quickshell.env("DMS_DISABLE_LAYER") !== "true" && Quickshell.env("DMS_DISABLE_LAYER") !== "1" && !(root.suspendShadowWhileResizing && bodySpring.running)
                 }
 
                 DLayer {

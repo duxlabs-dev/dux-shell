@@ -68,7 +68,7 @@ Singleton {
     // Only the network path is debounced, so a cover already on disk shows without the skip-through wait.
     Timer {
         id: _debounce
-        interval: 1500
+        interval: Timing.holdShort
         onTriggered: root._search(root._cacheKey, root._serial)
     }
 

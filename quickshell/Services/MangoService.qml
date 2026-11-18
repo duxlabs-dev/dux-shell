@@ -486,7 +486,7 @@ Singleton {
     // Trailing edge: an editor's save arrives as several events and the first may see a half-written file.
     Timer {
         id: watchedReloadTimer
-        interval: 400
+        interval: Timing.debounceSlow
         onTriggered: root.reloadConfig(false, false)
     }
 

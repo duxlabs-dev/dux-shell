@@ -82,7 +82,7 @@ Singleton {
 
     Timer {
         id: unloadTimer
-        interval: 3000
+        interval: Timing.holdMedium
         onTriggered: root._flushPendingUnloads()
     }
 

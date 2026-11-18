@@ -699,7 +699,7 @@ BasePill {
 
                 Timer {
                     id: longPressTimer
-                    interval: 400
+                    interval: Timing.longPress
                     repeat: false
                     onTriggered: dragHandler.longPressing = true
                 }
@@ -988,7 +988,7 @@ BasePill {
 
     Timer {
         id: pendingActionCloseTimer
-        interval: 80
+        interval: Timing.settleShort
         repeat: false
         onTriggered: trayMenuState.close()
     }

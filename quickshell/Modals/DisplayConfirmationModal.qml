@@ -21,7 +21,7 @@ DModal {
 
     Timer {
         id: countdownTimer
-        interval: 1000
+        interval: Timing.second
         repeat: true
         running: root.shouldBeVisible
         onTriggered: {

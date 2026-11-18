@@ -23,7 +23,6 @@ FocusScope {
         if (!editMode)
             return;
         closeExpansion();
-        tooltipRevealDelay.stop();
         dockTooltip.hide();
         forceActiveFocus();
     }
@@ -354,8 +353,12 @@ FocusScope {
         damping: dock.slideSpringParams.damping
         value: dockSlide.targetX
 
-        onRunningChanged: if (!running)
-            dock._syncDockChromeState()
+        onRunningChanged: {
+            if (running)
+                return;
+            dock._syncDockChromeState();
+            dock.showTooltipForHoveredButton();
+        }
     }
 
     SpringMotion {
@@ -366,8 +369,12 @@ FocusScope {
         damping: dock.slideSpringParams.damping
         value: dockSlide.targetY
 
-        onRunningChanged: if (!running)
-            dock._syncDockChromeState()
+        onRunningChanged: {
+            if (running)
+                return;
+            dock._syncDockChromeState();
+            dock.showTooltipForHoveredButton();
+        }
     }
 
     property bool contextMenuOpen: !!(widgetStrip.interactionActive || (dock.contextMenu && dock.contextMenu.visible && dock.contextMenu.surfaceContext?.host === dock) || (dock.trashContextMenu && dock.trashContextMenu.visible && dock.trashContextMenu.surfaceContext?.host === dock))
@@ -382,7 +389,7 @@ FocusScope {
 
     Timer {
         id: revealHold
-        interval: 250
+        interval: Timing.settle
         repeat: false
         onTriggered: dock.revealSticky = false
     }
@@ -398,7 +405,7 @@ FocusScope {
 
     Timer {
         id: startupRevealTimer
-        interval: 200
+        interval: Timing.settle
         running: true
         onTriggered: dock.startupRevealDone = true
     }
@@ -461,11 +468,10 @@ FocusScope {
             editMode = false;
         dock._syncDockChromeState();
         if (!reveal) {
-            tooltipRevealDelay.stop();
             dockTooltip.hide();
-        } else {
-            tooltipRevealDelay.restart();
+            return;
         }
+        Qt.callLater(dock.showTooltipForHoveredButton);
     }
     onHoveredButtonChanged: showTooltipForHoveredButton()
     onWidthChanged: dock._syncDockChromeState()
@@ -595,13 +601,6 @@ FocusScope {
         id: dockTooltip
         targetScreen: dock.screen
         persistent: dock.config.enabled && (dock.hostWindow?.visible ?? false) && !dock.fullscreenOnScreen
-    }
-
-    Timer {
-        id: tooltipRevealDelay
-        interval: 250
-        repeat: false
-        onTriggered: dock.showTooltipForHoveredButton()
     }
 
     function showTooltipForHoveredButton() {

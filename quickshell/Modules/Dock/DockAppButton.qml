@@ -252,7 +252,7 @@ Item {
     Timer {
         id: longPressTimer
 
-        interval: 500
+        interval: Timing.longPress
         repeat: false
         onTriggered: {
             if (appData && appData.isPinned) {

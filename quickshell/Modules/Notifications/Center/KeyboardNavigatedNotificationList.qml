@@ -18,13 +18,10 @@ DListView {
     property real stableContentHeight: 0
     property bool cardAnimateExpansion: true
     property bool trackStableContentHeight: true
-    property bool trackSessionContentHeight: false
     property bool listInitialized: false
     property real swipeBleed: 0
-    property real sessionContentHeight: 0
     property var transientSurfaceTracker: null
     property bool nested: false
-    readonly property real estimatedCollapsedCardHeight: NotificationMetrics.estimatedCardHeight
 
     Timer {
         interval: 0
@@ -32,14 +29,7 @@ DListView {
         onTriggered: {
             listView.listInitialized = true;
             listView.syncStableContentHeight(false);
-            listView.syncSessionContentHeight();
         }
-    }
-
-    Timer {
-        id: sessionHeightTimer
-        interval: 0
-        onTriggered: listView.syncSessionContentHeight()
     }
 
     Timer {
@@ -70,57 +60,6 @@ DListView {
             }
             listView.isAnimatingExpansion = false;
         }
-    }
-
-    function estimateContentHeight(groupCount) {
-        if (groupCount <= 0)
-            return 0;
-        return topMargin + bottomMargin + groupCount * estimatedCollapsedCardHeight + Math.max(0, groupCount - 1) * spacing;
-    }
-
-    function estimateExpandedCardHeight(group) {
-        const count = Math.min(NotificationMetrics.expandedLimit, Math.max(1, group?.count || 1));
-        return Theme.iconButtonSize + count * (estimatedCollapsedCardHeight + Theme.groupedListGap);
-    }
-
-    function estimatedHeightForGroup(group) {
-        if (!group)
-            return estimatedCollapsedCardHeight;
-        if (NotificationService.expandedGroups[group.key])
-            return estimateExpandedCardHeight(group);
-        return estimatedCollapsedCardHeight;
-    }
-
-    function computeSessionContentHeight() {
-        const groups = NotificationService.groupedNotifications;
-        const count = groups ? groups.length : 0;
-        if (count <= 0)
-            return 0;
-
-        let total = topMargin + bottomMargin + Math.max(0, count - 1) * spacing;
-        for (let i = 0; i < count; i++) {
-            const item = itemAtIndex(i);
-            if (item && item.nonAnimHeight !== undefined && item.nonAnimHeight > 0)
-                total += item.nonAnimHeight;
-            else
-                total += estimatedHeightForGroup(groups[i]);
-        }
-        return Math.max(0, total);
-    }
-
-    function syncSessionContentHeight() {
-        if (!trackSessionContentHeight)
-            return;
-        const next = computeSessionContentHeight();
-        if (Math.abs(next - sessionContentHeight) <= 0.5)
-            return;
-        sessionContentHeight = next;
-    }
-
-    function queueSessionContentHeightUpdate() {
-        if (!trackSessionContentHeight || sessionHeightTimer.running)
-            return;
-        sessionHeightTimer.start();
     }
 
     function targetContentHeight() {
@@ -216,10 +155,7 @@ DListView {
         id: swipeGroup
     }
 
-    onCountChanged: listView.queueSessionContentHeightUpdate()
-
     onModelChanged: {
-        listView.queueSessionContentHeightUpdate();
         if (!keyboardController || !keyboardController.keyboardNavigationActive)
             return;
         keyboardController.rebuildFlatNavigation();
@@ -245,7 +181,6 @@ DListView {
             running: true
             onTriggered: {
                 listView.queueStableContentHeightUpdate(listView.isAnimatingExpansion);
-                listView.queueSessionContentHeightUpdate();
             }
         }
 
@@ -284,7 +219,6 @@ DListView {
             }
 
             onTargetHeightChanged: {
-                listView.queueSessionContentHeightUpdate();
                 if (!listView.trackStableContentHeight)
                     return;
                 if (isAnimating || listView.isAnimatingExpansion)
@@ -316,7 +250,6 @@ DListView {
     readonly property var serviceExpandedMessages: NotificationService.expandedMessages
 
     onServiceGroupedNotificationsChanged: {
-        queueSessionContentHeightUpdate();
         if (!keyboardController) {
             return;
         }
@@ -334,7 +267,6 @@ DListView {
     }
 
     onServiceExpandedGroupsChanged: {
-        queueSessionContentHeightUpdate();
         keyboardController?.rebuildFlatNavigation();
         if (!keyboardController || !keyboardController.keyboardNavigationActive)
             return;
@@ -342,7 +274,6 @@ DListView {
     }
 
     onServiceExpandedMessagesChanged: {
-        queueSessionContentHeightUpdate();
         if (!keyboardController || !keyboardController.keyboardNavigationActive)
             return;
         expansionEnsureVisibleTimer.restart();

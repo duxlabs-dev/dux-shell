@@ -20,7 +20,7 @@ HyprlandFocusGrab {
     readonly property Toplevel liveToplevel: ToplevelManager.activeToplevel
 
     property Timer _releaseTimer: Timer {
-        interval: 50
+        interval: Timing.settleShort
         onTriggered: {
             root._held = false;
             root.active = false;

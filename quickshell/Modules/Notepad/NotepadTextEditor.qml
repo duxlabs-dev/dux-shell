@@ -1125,7 +1125,7 @@ Column {
 
     Timer {
         id: autoSaveTimer
-        interval: 2000
+        interval: Timing.hold
         repeat: false
         onTriggered: {
             autoSaveToSession();
@@ -1134,7 +1134,7 @@ Column {
 
     Timer {
         id: pluginSyncTimer
-        interval: 350
+        interval: Timing.debounceSlow
         repeat: false
         onTriggered: syncContentToPlugin()
     }

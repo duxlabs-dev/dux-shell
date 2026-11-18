@@ -96,7 +96,7 @@ DListItem {
 
     Timer {
         id: holdTimer
-        interval: 250
+        interval: Timing.longPress
         onTriggered: {
             if (!root.down || root.listView?.moving)
                 return;

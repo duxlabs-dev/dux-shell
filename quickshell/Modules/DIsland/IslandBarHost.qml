@@ -175,9 +175,8 @@ Item {
     readonly property int hostThickness: outerGap + nearInset + (root.isVertical ? maxActivityWidth : maxActivityHeight) + Theme.spacingS + shadowPadding
     readonly property real maximumAlongOffset: root.isVertical ? Math.max(0, (height - maxActivityHeight) / 2 - Theme.spacingS - shadowPadding) : Math.max(0, (width - maxActivityWidth) / 2 - Theme.spacingS - shadowPadding)
     readonly property bool scrollEnabled: root.barConfig?.scrollEnabled ?? true
-    property bool keyboardFocusArmed: true
     property bool keyboardReclaiming: false
-    readonly property int keyboardFocusPolicy: root.keyboardReclaiming && controller.keyboardDismissRequested ? WlrKeyboardFocus.Exclusive : KeyboardFocus.keyboardFocus(controller.keyboardDismissRequested && root.keyboardFocusArmed && !controller.keyboardYielded, null)
+    readonly property int keyboardFocusPolicy: root.keyboardReclaiming && controller.keyboardDismissRequested ? WlrKeyboardFocus.Exclusive : KeyboardFocus.keyboardFocus(controller.keyboardDismissRequested && !controller.keyboardYielded, null)
     readonly property bool wantsFocusGrab: KeyboardFocus.wantsGrab(controller.keyboardDismissRequested && !controller.keyboardYielded, null)
     readonly property var transientFocusWindows: islandTransientSurfaces.focusWindows
     property var dismissWindow: null
@@ -227,13 +226,8 @@ Item {
     }
 
     function requestKeyboardFocus() {
-        if (!controller.keyboardDismissRequested) {
-            keyboardFocusArmed = false;
-            keyboardRearmTimer.restart();
+        if (!controller.keyboardDismissRequested)
             return;
-        }
-        keyboardRearmTimer.stop();
-        keyboardFocusArmed = true;
         islandFocus.forceActiveFocus(Qt.PopupFocusReason);
         surface.requestActivityFocus();
     }
@@ -371,15 +365,8 @@ Item {
     Timer {
         id: keyboardReclaimTimer
 
-        interval: 80
+        interval: Timing.settleShort
         onTriggered: root.keyboardReclaiming = false
-    }
-
-    Timer {
-        id: keyboardRearmTimer
-
-        interval: 80
-        onTriggered: root.keyboardFocusArmed = true
     }
 
     Connections {

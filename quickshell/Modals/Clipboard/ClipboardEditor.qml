@@ -21,7 +21,7 @@ Item {
 
     Timer {
         id: loadTimeoutTimer
-        interval: 5000
+        interval: Timing.timeoutShort
         repeat: false
         onTriggered: {
             if (!root.textLoaded) {

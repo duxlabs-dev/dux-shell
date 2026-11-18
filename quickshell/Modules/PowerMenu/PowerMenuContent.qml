@@ -147,7 +147,7 @@ FocusScope {
 
     Timer {
         id: holdTimer
-        interval: 16
+        interval: Timing.cappedTick
         repeat: true
         onTriggered: {
             root.holdProgress = Math.min(1, root.holdProgress + (interval / root.holdDurationMs));
@@ -160,13 +160,13 @@ FocusScope {
 
     Timer {
         id: hintTimer
-        interval: 2000
+        interval: Timing.hold
         onTriggered: root.showHoldHint = false
     }
 
     Timer {
         id: commitFallbackTimer
-        interval: 5000
+        interval: Timing.timeoutShort
         onTriggered: root.executeCommittedAction()
     }
 

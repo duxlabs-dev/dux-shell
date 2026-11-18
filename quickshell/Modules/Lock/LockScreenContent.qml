@@ -202,7 +202,7 @@ FocusScope {
     Timer {
         id: placeholderDelay
 
-        interval: 4000
+        interval: Timing.holdLong
         onTriggered: root.pamState = ""
     }
 

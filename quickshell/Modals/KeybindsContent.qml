@@ -539,7 +539,7 @@ FocusScope {
 
     Timer {
         id: searchDebounce
-        interval: 120
+        interval: Timing.debounce
         repeat: false
         onTriggered: {
             content.activeSearchQuery = searchField.text;

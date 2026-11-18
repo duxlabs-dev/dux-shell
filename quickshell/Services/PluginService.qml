@@ -61,14 +61,14 @@ Singleton {
 
     Timer {
         id: resyncDebounce
-        interval: 120
+        interval: Timing.debounceShort
         repeat: false
         onTriggered: resyncAll()
     }
 
     Timer {
         id: _stateWriteTimer
-        interval: 150
+        interval: Timing.debounce
         repeat: false
         onTriggered: root._flushDirtyStates()
     }
@@ -1498,7 +1498,7 @@ Singleton {
 
     Timer {
         id: undoUninstallTimer
-        interval: 8000
+        interval: Timing.holdExtraLong
         onTriggered: root.lastUninstalledPlugin = null
     }
 
@@ -1610,7 +1610,7 @@ Singleton {
             id: waiter
             required property string pluginId
             required property var done
-            interval: 10000
+            interval: Timing.timeout
             running: true
 
             function complete() {

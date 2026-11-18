@@ -120,7 +120,7 @@ Item {
     // Grace timer to prevent flicker when crossing gaps.
     Timer {
         id: _hoverCloseTimer
-        interval: 120
+        interval: Timing.debounce
         repeat: false
         onTriggered: root._commitHoverClose()
     }

@@ -47,8 +47,8 @@ Item {
         reducedMotion: root.launcherAnimationDuration <= 0
         positionEpsilon: 0.001
         velocityEpsilon: 0.001
-        stiffness: Theme.springPreset("defaultSpatial").stiffness
-        damping: Theme.springPreset("defaultSpatial").damping
+        stiffness: root._morphSpringParams.stiffness
+        damping: root._morphSpringParams.damping
 
         Component.onCompleted: snapTo(0)
     }
@@ -184,6 +184,9 @@ Item {
 
     readonly property bool connectedSurfaceOverride: frameOwnsConnectedChrome
     readonly property int launcherAnimationDuration: frameOwnsConnectedChrome ? Theme.popoutAnimationDuration : Theme.modalAnimationDuration
+    readonly property var launcherAnimationCurve: frameOwnsConnectedChrome ? Theme.expressiveCurves.expressiveEffects : Theme.expressiveCurves.expressiveFastEffects
+    readonly property bool _standardMotion: !connected && !Theme.isDirectionalEffect && !Theme.isDepthEffect && !_fluidMotionActive
+    readonly property var _morphSpringParams: Theme.springPreset(_standardMotion ? "fastSpatial" : "defaultSpatial")
     readonly property color backgroundColor: connectedSurfaceOverride ? Theme.connectedSurfaceColor : Theme.floatingWindowSurface
     readonly property real cornerRadius: connectedSurfaceOverride ? Theme.connectedSurfaceRadius : spotlight ? LauncherMetrics.spotlightRadius(modalWidth) : Theme.windowRadius
     readonly property real frameBottomRadius: spotlight && !connectedSurfaceOverride ? LauncherMetrics.spotlightBottomRadius(modalWidth, _contentImplicitH) : cornerRadius
@@ -668,7 +671,7 @@ Item {
 
     Timer {
         id: _edgeRetractGrace
-        interval: 150
+        interval: Timing.debounce
         repeat: false
         onTriggered: {
             if (root._edgeRetractEnabled && root._edgeArmed && !root._edgeBodyHover)
@@ -1049,7 +1052,7 @@ Item {
                                 NumberAnimation {
                                     easing.type: Easing.BezierSpline
                                     duration: root.launcherAnimationDuration
-                                    easing.bezierCurve: Theme.expressiveCurves.expressiveEffects
+                                    easing.bezierCurve: root.launcherAnimationCurve
                                     onRunningChanged: if (!running && !root.launcherMotionVisible)
                                         root._renderActive = false
                                 }
@@ -1136,7 +1139,7 @@ Item {
                     NumberAnimation {
                         easing.type: Easing.BezierSpline
                         duration: root.contentVisible ? chrome.openDuration : chrome.closeDuration
-                        easing.bezierCurve: Theme.expressiveCurves.expressiveEffects
+                        easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
                     }
                 }
             }
@@ -1172,7 +1175,7 @@ Item {
                     NumberAnimation {
                         easing.type: Easing.BezierSpline
                         duration: root.contentVisible ? chrome.openDuration : chrome.closeDuration
-                        easing.bezierCurve: Theme.expressiveCurves.expressiveEffects
+                        easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
                         onRunningChanged: if (!running && !root.contentVisible)
                             root._renderActive = false
                     }
