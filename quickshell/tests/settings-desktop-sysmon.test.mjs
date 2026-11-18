@@ -18,7 +18,7 @@ test("an old default config lands on tiles with the same four metrics", () => {
         { device: "cpu", vals: ["usage", "temp"], graph: true, on: true },
         { device: "memory", vals: ["used"], graph: true, on: true },
         { device: "net", vals: ["down", "up"], graph: true, on: true },
-        { device: "disk", vals: ["read", "write"], graph: true, on: true }
+        { device: "disk", vals: ["read", "write", "space"], graph: true, on: true }
     ]);
     assert.equal(config.layout, "tiles");
     assert.equal(config.style, "icon");
@@ -33,7 +33,7 @@ test("switches off, list mode and a GPU keep their meaning", () => {
         { device: "cpu", vals: ["usage"], graph: false, on: false },
         { device: "memory", vals: ["used"], graph: false, on: false },
         { device: "net", vals: ["down", "up"], graph: false, on: false },
-        { device: "disk", vals: ["read", "write"], graph: true, on: false },
+        { device: "disk", vals: ["read", "write", "space"], graph: true, on: false },
         { device: "gpu:1002:15bf", vals: ["temp"], graph: false, on: true }
     ]);
     assert.equal(config.layout, "list");

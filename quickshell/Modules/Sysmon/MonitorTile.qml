@@ -3,7 +3,9 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell.Widgets
 import qs.Common
+import qs.DCommon.Common as DCommon
 import qs.DCommon.Widgets
+import qs.Modules.DDash.Overview
 import qs.Modules.ProcessList
 import qs.Modules.Sysmon
 
@@ -54,7 +56,7 @@ Item {
     Component {
         id: gaugeGlyph
 
-        MonitorGauge {
+        MetricGauge {
             width: root.big ? MonitorMetrics.gaugeSizeHero : MonitorMetrics.gaugeSize
             height: width
             usage: root.missing ? -1 : root.fraction
@@ -89,15 +91,38 @@ Item {
         font.weight: Theme.fontWeightMedium
     }
 
+    // Measured on each kind's widest sample, so the choice holds while values change.
+    function fitExtras(values, available) {
+        const font = extrasProbe.font;
+        const digit = DCommon.Fonts.widestDigit(font);
+        const widths = short => values.map(v => Theme.iconSizeSmall + Theme.spacingXXS + Math.ceil(DCommon.Fonts.textWidth(font, (MonitorMetrics.reserveFor(v?.kind ?? "", short) || (short ? v?.shortText : "") || v?.text || "—").replace(/\d/g, digit))));
+        const total = list => list.reduce((sum, w) => sum + w, 0) + Theme.spacingS * Math.max(0, list.length - 1);
+        if (total(widths(false)) <= available)
+            return {
+                "count": values.length,
+                "short": false
+            };
+        const short = widths(true);
+        let count = short.length;
+        while (count > 0 && total(short.slice(0, count)) > available)
+            count--;
+        return {
+            "count": count,
+            "short": true
+        };
+    }
+
     component Extras: Row {
         id: extrasHost
 
         property var values: root.extras
+        property real available: parent?.width ?? 0
+        readonly property var fit: root.fitExtras(values, available)
 
         spacing: Theme.spacingS
 
         Repeater {
-            model: extrasHost.visible ? extrasHost.values.length : 0
+            model: extrasHost.visible ? extrasHost.fit.count : 0
 
             Row {
                 id: extra
@@ -118,7 +143,7 @@ Item {
                 MonitorText {
                     halo: root.halo
                     anchors.verticalCenter: parent.verticalCenter
-                    text: root.missing ? "—" : (extra.modelData.text ?? "—")
+                    text: root.missing ? "—" : ((extrasHost.fit.short ? extra.modelData.shortText : undefined) ?? extra.modelData.text ?? "—")
                     font.pixelSize: Theme.fontSizeMedium
                     font.weight: Theme.fontWeightMedium
                     color: extra.flagged ? MonitorMetrics.levelColor(extra.modelData?.level, root.accentColor) : root.contentColor
@@ -166,7 +191,8 @@ Item {
             anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
             values: parent.badgeValues
-            visible: parent.showBadge && values.length > 0
+            available: parent.width - glyph.width - Theme.spacingS * 2
+            visible: parent.showBadge && fit.count > 0
         }
     }
 

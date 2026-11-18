@@ -835,7 +835,7 @@ function migrateDesktopSystemMonitor(settings) {
                 { device: "cpu", vals: old.showCpuTemp !== false ? ["usage", "temp"] : ["usage"], graph: old.showCpuGraph !== false, on: old.showCpu !== false },
                 { device: "memory", vals: ["used"], graph: old.showMemoryGraph !== false, on: old.showMemory !== false },
                 { device: "net", vals: ["down", "up"], graph: old.showNetworkGraph !== false, on: old.showNetwork !== false },
-                { device: "disk", vals: ["read", "write"], graph: true, on: old.showDisk !== false }
+                { device: "disk", vals: ["read", "write", "space"], graph: true, on: old.showDisk !== false }
             ];
             if (typeof old.gpuPciId === "string" && old.gpuPciId)
                 metrics.push({ device: "gpu:" + old.gpuPciId, vals: ["temp"], graph: false, on: old.showGpuTemp === true });

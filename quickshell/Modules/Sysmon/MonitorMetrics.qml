@@ -9,8 +9,6 @@ import qs.Modules.DDash
 Singleton {
     readonly property real gaugeSize: DashMetrics.gaugeSize
     readonly property real gaugeSizeHero: DashMetrics.gaugeSizeHero
-    readonly property real gaugeStroke: DashMetrics.gaugeStroke
-    readonly property real gaugeGap: DashMetrics.gaugeGap
     readonly property real tileTrendRatio: DashMetrics.tileTrendRatio
     readonly property real tileTrendFillAlpha: DashMetrics.tileTrendFillAlpha
     readonly property real tileValueSizeCompact: DashMetrics.tileValueSizeCompact

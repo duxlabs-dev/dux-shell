@@ -80,15 +80,10 @@ QtObject {
         }
     }
 
-    readonly property Connections networkEvents: Connections {
-        target: NetworkService
-        enabled: root.active
-        function onPrimaryConnectionChanged() {
-            root.scheduleRebuild();
-        }
-    }
+    readonly property string primaryConnection: NetworkService.primaryConnection
 
     onActiveChanged: scheduleRebuild()
+    onPrimaryConnectionChanged: scheduleRebuild()
     onMetricsChanged: scheduleRebuild()
     onChartsChanged: scheduleRebuild()
     onRangeSecondsChanged: scheduleRebuild()
