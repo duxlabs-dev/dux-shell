@@ -97,12 +97,23 @@ DFlickable {
     function _buildLater() {
         if (!settled)
             return;
-        _incubating = _incubating.filter(card => card.status === Loader.Loading);
+        _incubating = _incubating.filter(card => card.status === Loader.Loading && _onPage(card));
         while (_later.length > 0 && _incubating.length < SettingsMetrics.pageIncubationDepth) {
             const card = _later.shift();
+            if (!_onPage(card))
+                continue;
             card.active = true;
             _incubating.push(card);
         }
+    }
+
+    // A card dropped by a Repeater reset stays queued but never loads, so it would hold an incubation slot for good
+    function _onPage(card) {
+        for (let p = card.parent; p; p = p.parent) {
+            if (p === root)
+                return true;
+        }
+        return false;
     }
 
     function _fill(budget) {
