@@ -27,3 +27,8 @@ layer-rule {
         xray false
     }
 }
+
+layer-rule {
+    match namespace="^dms:desktop-widget:" layer="background"
+    place-within-backdrop true
+}

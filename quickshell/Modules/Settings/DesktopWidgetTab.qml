@@ -92,49 +92,6 @@ Item {
         }
 
         SettingsCard {
-            title: I18n.tr("Behavior")
-
-            SettingsToggleRow {
-                visible: !root.lockScreenInstance
-                text: I18n.tr("Show on overlay")
-                description: I18n.tr("Keeps the widget above windows instead of below them", "desktop widget show on overlay toggle description")
-                checked: root.cfg.showOnOverlay ?? false
-                onToggled: checked => root.updateConfig("showOnOverlay", checked)
-            }
-
-            SettingsToggleRow {
-                visible: CompositorService.isNiri && !root.lockScreenInstance
-                text: I18n.tr("Show on overview")
-                checked: root.cfg.showOnOverview ?? false
-                onToggled: checked => root.updateConfig("showOnOverview", checked)
-            }
-
-            SettingsToggleRow {
-                visible: CompositorService.isNiri && !root.lockScreenInstance
-                text: I18n.tr("Show on overview only")
-                checked: root.cfg.showOnOverviewOnly ?? false
-                onToggled: checked => root.updateConfig("showOnOverviewOnly", checked)
-            }
-
-            SettingsToggleRow {
-                visible: !root.lockScreenInstance
-                text: I18n.tr("Click through")
-                checked: root.cfg.clickThrough ?? false
-                onToggled: checked => root.updateConfig("clickThrough", checked)
-            }
-
-            SettingsToggleRow {
-                text: I18n.tr("Sync position across displays")
-                checked: root.cfg.syncPositionAcrossScreens ?? false
-                onToggled: checked => {
-                    if (checked)
-                        SessionData.syncDesktopWidgetPositionToAllScreens(root.instanceId);
-                    root.updateConfig("syncPositionAcrossScreens", checked);
-                }
-            }
-        }
-
-        SettingsCard {
             visible: !root.lockScreenInstance
             title: I18n.tr("Command")
 

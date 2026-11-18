@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Effects
 import Quickshell
 import Quickshell.Wayland
 import qs.Common
@@ -14,10 +15,19 @@ Item {
     property var instanceData: null
     property bool widgetEnabled: true
 
-    readonly property bool showOnOverlay: instanceData?.config?.showOnOverlay ?? false
+    readonly property string configuredLayer: {
+        const raw = instanceData?.config?.layer;
+        if (raw === "wallpaper")
+            return "background";
+        if (raw === "background" || raw === "bottom" || raw === "overlay")
+            return raw;
+        return (instanceData?.config?.showOnOverlay ?? false) ? "overlay" : "bottom";
+    }
+    readonly property bool showOnOverlay: configuredLayer === "overlay"
     readonly property bool showOnOverview: instanceData?.config?.showOnOverview ?? false
     readonly property bool showOnOverviewOnly: instanceData?.config?.showOnOverviewOnly ?? false
     readonly property bool overviewActive: CompositorService.isNiri && NiriService.inOverview
+    readonly property bool overviewBlurActive: CompositorService.isNiri && (SettingsData.blurWallpaperOnOverview ?? false) && overviewActive && configuredLayer === "background" && !showOnOverview && !showOnOverviewOnly
     readonly property bool clickThrough: instanceData?.config?.clickThrough ?? false
 
     // Unmapping with the widget still in the last buffer leaves a stale image in
@@ -66,11 +76,17 @@ Item {
 
         WlrLayershell.namespace: "dms:desktop-widget:" + root.pluginId + (root.instanceId ? ":" + root.instanceId : "")
         WlrLayershell.layer: {
-            if (root.showOnOverlay)
-                return WlrLayer.Overlay;
             if (root.overviewActive && (root.showOnOverview || root.showOnOverviewOnly))
                 return WlrLayer.Overlay;
-            return WlrLayer.Bottom;
+            switch (root.configuredLayer) {
+            case "background":
+                return WlrLayer.Background;
+            case "overlay":
+                return WlrLayer.Overlay;
+            case "bottom":
+            default:
+                return WlrLayer.Bottom;
+            }
         }
         WlrLayershell.exclusionMode: ExclusionMode.Ignore
         WlrLayershell.keyboardFocus: {
@@ -111,6 +127,14 @@ Item {
             instanceData: root.instanceData
             screen: root.screen
             geometry: geometry
+
+            layer.enabled: root.overviewBlurActive
+            layer.effect: MultiEffect {
+                blurEnabled: true
+                blur: 0.8
+                blurMax: 75
+                autoPaddingEnabled: false
+            }
         }
     }
 }
