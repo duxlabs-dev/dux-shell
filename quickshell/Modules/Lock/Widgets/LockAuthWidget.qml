@@ -67,7 +67,7 @@ Item {
     implicitWidth: ring ? ringSize : Math.min(LockMetrics.passwordRowWidth, (lockHost?.width ?? LockMetrics.passwordRowWidth) - Theme.spacingXL * 2)
     implicitHeight: passwordLayout.implicitHeight
     // Feedback and the caps lock warning hang below the box so centring the box centres the field.
-    readonly property real bottomOverflow: Theme.spacingS + Math.max(capsLockRow.implicitHeight, authFeedbackText.height)
+    readonly property real bottomOverflow: Theme.spacingS + Math.max(capsLockRow.implicitHeight, authFeedbackText.visible ? authFeedbackText.height : 0)
 
     function encodeFileUrl(path) {
         if (!path)
@@ -1188,7 +1188,7 @@ Item {
             id: authFeedbackText
 
             width: parent.width
-            height: text.length > 0 ? Math.min(implicitHeight, Math.ceil(Theme.fontSizeSmall * 4.5)) : 0
+            visible: text.length > 0
             text: root.currentAuthFeedbackText()
             color: root.authFeedbackIsHint() ? Theme.outline : Theme.error
             font.pixelSize: Theme.fontSizeSmall

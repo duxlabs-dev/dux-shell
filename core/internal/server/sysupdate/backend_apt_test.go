@@ -70,3 +70,15 @@ func TestFilterAptHeld(t *testing.T) {
 		t.Errorf("filterAptHeld(nil held) = %#v\nwant %#v", unfiltered, pkgs)
 	}
 }
+
+func TestForeignAptBinaryDoesNotShadowPortage(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("PATH", dir)
+	writeUpdateExecutable(t, dir, "apt", "exit 1")
+	writeUpdateExecutable(t, dir, "emerge", "exit 0")
+
+	selection := Select(t.Context())
+	if selection.System == nil || selection.System.ID() != "portage" {
+		t.Fatalf("selection = %#v, want portage", selection.System)
+	}
+}

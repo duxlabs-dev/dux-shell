@@ -150,11 +150,16 @@ Item {
     }
 
     Loader {
+        id: islandLoader
         active: SettingsData.dankIslandEnabled
         asynchronous: false
-        sourceComponent: DIsland {
-            hyprlandOverviewLoader: root.hyprlandOverviewLoader
-        }
+        source: "Modules/DIsland/DIsland.qml"
+    }
+
+    Binding {
+        target: islandLoader.item
+        property: "hyprlandOverviewLoader"
+        value: root.hyprlandOverviewLoader
     }
 
     property bool hadRealScreen: true

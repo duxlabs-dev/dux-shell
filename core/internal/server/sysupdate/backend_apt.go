@@ -21,8 +21,10 @@ func (aptBackend) DisplayName() string  { return "APT" }
 func (aptBackend) Repo() RepoKind       { return RepoSystem }
 func (aptBackend) NeedsAuth() bool      { return true }
 func (aptBackend) RunsInTerminal() bool { return false }
+
+// Gentoo can carry an unrelated JDK tool named apt next to emerge; only Debian's apt ships apt-get.
 func (aptBackend) IsAvailable(_ context.Context) bool {
-	return commandExists("apt") || commandExists("apt-get")
+	return commandExists("apt") && commandExists("apt-get")
 }
 
 func (aptBackend) CheckUpdates(ctx context.Context) ([]Package, error) {
@@ -65,12 +67,8 @@ func filterAptHeld(pkgs []Package, held map[string]bool) []Package {
 }
 
 func (aptBackend) Upgrade(ctx context.Context, opts UpgradeOptions, onLine func(string)) error {
-	bin := "apt-get"
-	if !commandExists(bin) {
-		bin = "apt"
-	}
 	if opts.DryRun {
-		return Run(ctx, []string{bin, "upgrade", "--dry-run"}, RunOptions{
+		return Run(ctx, []string{"apt-get", "upgrade", "--dry-run"}, RunOptions{
 			Env:    []string{"DEBIAN_FRONTEND=noninteractive", "LC_ALL=C"},
 			OnLine: onLine,
 		})
@@ -78,7 +76,7 @@ func (aptBackend) Upgrade(ctx context.Context, opts UpgradeOptions, onLine func(
 	if !BackendHasTargets(aptBackend{}, opts.Targets, opts.IncludeAUR, opts.IncludeFlatpak) {
 		return nil
 	}
-	return Run(ctx, aptUpgradeArgv(bin, opts), RunOptions{OnLine: onLine, AttachStdio: opts.AttachStdio})
+	return Run(ctx, aptUpgradeArgv("apt-get", opts), RunOptions{OnLine: onLine, AttachStdio: opts.AttachStdio})
 }
 
 func aptUpgradeArgv(bin string, opts UpgradeOptions) []string {

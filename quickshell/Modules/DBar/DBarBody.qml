@@ -1558,30 +1558,14 @@ Item {
                     // Band-sized and empty until the island loads; Qt's pointer-clip cache is already set by then.
                     PointerOverflowMarker {}
 
-                    sourceComponent: IslandBarHost {
-                        barConfig: barWindow.barConfig
-                        screen: barWindow.screen
-                        hostWindow: barWindow.hostWindow
-                        barId: barWindow._barId
-                        originOffsetX: topBarMouseArea.x + islandLoader.x
-                        originOffsetY: topBarMouseArea.y + islandLoader.y
-                        hostOffsetX: barWindow.hostOffsetX
-                        hostOffsetY: barWindow.hostOffsetY
-                        chrome: barWindow.islandChromeMode
-                        frameHosted: barWindow.frameHosted
-                        anchorItem: topBarContainer
-                        slotItem: barWindow.islandSlot
-                        barBody: barWindow
-                        bandThickness: barWindow.isVertical ? barUnitInset.width : barUnitInset.height
-                        bandInset: barUnitInset.spacingPx
-                        bandAlongStart: barWindow.isVertical ? barUnitInset.y : barUnitInset.x
-                        bandAlongEnd: barWindow.isVertical ? barUnitInset.y + barUnitInset.height : barUnitInset.x + barUnitInset.width
-                        bandColor: barWindow._bgColor
-                        leadingSectionRect: barWindow.leadingSectionRect
-                        centerSectionRect: barWindow.centerSectionRect
-                        trailingSectionRect: barWindow.trailingSectionRect
-                        onScrollWheel: wheel => scrollArea.processWheel(wheel)
-                    }
+                    Component.onCompleted: setSource("DBarIslandHost.qml", {
+                        body: barWindow,
+                        originItem: topBarMouseArea,
+                        slotLoader: islandLoader,
+                        anchorItem: topBarContainer,
+                        bandItem: barUnitInset,
+                        scrollItem: scrollArea
+                    })
                 }
 
                 Loader {

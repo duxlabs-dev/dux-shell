@@ -105,7 +105,10 @@ Singleton {
         }
     }
 
-    readonly property bool soundsAvailable: MultimediaService.available
+    readonly property bool soundsAvailable: soundCommandAvailable || MultimediaService.available
+    readonly property string soundNodeName: "dms-sound"
+    property bool soundCommandProbed: false
+    property bool soundCommandAvailable: false
     property bool playersRequested: false
     property bool soundThemeSupported: false
     property bool soundThemeResolved: false
@@ -127,7 +130,14 @@ Singleton {
     Loader {
         id: soundsLoader
         active: root.playersRequested && root.soundsAvailable
-        source: "AudioSoundPlayers.qml"
+        source: root.soundCommandAvailable ? "AudioSoundCommands.qml" : "AudioSoundPlayers.qml"
+    }
+
+    // QtMultimedia players keep the ffmpeg backend loaded for the life of the process.
+    Process {
+        id: soundCommandProbe
+        command: ["sh", "-c", "command -v pw-play"]
+        onExited: exitCode => root.resolveSoundCommand(exitCode === 0)
     }
 
     property var deviceAliases: ({})
@@ -1149,6 +1159,16 @@ EOFCONFIG
 
     function markSoundThemeResolved() {
         soundThemeResolved = true;
+        replayPendingSound();
+    }
+
+    function resolveSoundCommand(available) {
+        soundCommandAvailable = available;
+        soundCommandProbed = true;
+        replayPendingSound();
+    }
+
+    function replayPendingSound() {
         const player = pendingSoundPlayer;
         pendingSoundPlayer = "";
         if (player)
@@ -1212,7 +1232,12 @@ EOFCONFIG
     function ensurePlayers() {
         if (!SettingsData.soundsEnabled)
             return;
-        MultimediaService.ensureProbed();
+        if (!soundCommandProbed) {
+            soundCommandProbe.running = true;
+            return;
+        }
+        if (!soundCommandAvailable)
+            MultimediaService.ensureProbed();
         playersRequested = true;
     }
 
@@ -1221,7 +1246,7 @@ EOFCONFIG
             return;
         ensurePlayers();
         // before the theme paths land the player holds the bundled file, and the source swap stops it
-        if (SettingsData.useSystemSoundTheme && !soundThemeResolved) {
+        if (!soundCommandProbed || (SettingsData.useSystemSoundTheme && !soundThemeResolved)) {
             pendingSoundPlayer = playerName;
             return;
         }
@@ -1359,7 +1384,9 @@ EOFCONFIG
 
     // QtMultimedia's pipewire stream carries no application.* props, only node.name set to the app name.
     function isOwnStream(node) {
-        return !!node?.isStream && node.name === "quickshell";
+        if (!node?.isStream)
+            return false;
+        return node.name === "quickshell" || node.name === soundNodeName;
     }
 
     function displayName(node) {
