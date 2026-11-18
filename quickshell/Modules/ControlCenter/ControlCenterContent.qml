@@ -312,7 +312,7 @@ FocusScope {
         loader.active = false;
     }
 
-    function openConfigOverlay(index, widgetData, anchor, boundsItem = anchor) {
+    function openConfigOverlay(index, widgetData, anchor, boundsItem) {
         configOverlayLoader.active = true;
         const overlay = configOverlayLoader.item;
         if (!overlay)

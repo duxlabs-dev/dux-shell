@@ -45,7 +45,7 @@ Item {
 
     visible: widgetIndex >= 0 || contextMenu.renderActive
 
-    function open(index, data, anchorItem, boundsItem = anchorItem) {
+    function open(index, data, anchorItem, boundsItem) {
         // Attached once widgetIndex settles; built earlier, the rows read stale data and their toggles slide.
         contextMenu.customContent = null;
         widgetIndex = index;
@@ -54,8 +54,7 @@ Item {
         // Placement needs the final menu height, which settles after widgetIndex propagates.
         Qt.callLater(() => {
             const window = root.QsWindow.window;
-            const target = boundsItem ?? anchorItem;
-            const pos = QmlUtils.screenPointOf(window, target, 0, 0);
+            const pos = QmlUtils.screenPointOf(window, boundsItem, 0, 0);
             const hostItem = root.hostItem;
             const hostPos = hostItem ? QmlUtils.screenPointOf(window, hostItem, 0, 0) : null;
             if (root.widgetIndex !== index || !pos)
@@ -63,15 +62,15 @@ Item {
             const screen = window.screen;
             const menuW = contextMenu.effectiveMenuWidth;
             const menuH = contextMenu.effectiveMenuHeight;
-            const idealX = I18n.isRtl ? pos.x : pos.x + target.width - menuW;
+            const idealX = I18n.isRtl ? pos.x : pos.x + boundsItem.width - menuW;
             const minX = hostPos ? hostPos.x + Theme.spacingS : Theme.spacingS;
             const maxX = hostPos ? Math.max(minX, hostPos.x + hostItem.width - Theme.spacingS - menuW) : idealX;
             const menuX = Math.max(minX, Math.min(maxX, idealX));
 
-            const belowY = pos.y + target.height + Theme.spacingS;
+            const belowY = pos.y + boundsItem.height + Theme.spacingS;
             const aboveY = () => pos.y - contextMenu.effectiveMenuHeight - Theme.spacingS;
             const spaceAbove = hostPos ? pos.y - hostPos.y - Theme.spacingS : pos.y - Theme.spacingS;
-            const spaceBelow = hostPos ? (hostPos.y + hostItem.height) - (pos.y + target.height) - Theme.spacingS : (screen?.height ?? 0) - belowY;
+            const spaceBelow = hostPos ? (hostPos.y + hostItem.height) - (pos.y + boundsItem.height) - Theme.spacingS : (screen?.height ?? 0) - belowY;
             const needed = menuH + Theme.spacingS;
             const fitsBelow = spaceBelow >= needed;
             const fitsAbove = spaceAbove >= needed;
