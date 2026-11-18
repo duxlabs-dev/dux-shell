@@ -184,7 +184,6 @@ Item {
 
                 width: (gapBefore ? root.gapWidth + root.gap : 0) + (lifted ? 0 : ownWidth + root.gap)
                 height: memberRow.height
-                z: lifted ? 1 : 0
 
                 Behavior on width {
                     enabled: CcMetrics.animationsEnabled && (root.memberDragging || root.receiving)
@@ -207,14 +206,16 @@ Item {
                 Item {
                     id: body
 
+                    parent: member.lifted ? root : member
+                    z: member.lifted ? 1 : 0
                     x: {
                         if (member.lifted)
-                            return root.liftPoint.x - memberRow.x - member.x;
+                            return root.liftPoint.x;
                         if (I18n.isRtl)
                             return root.gap;
                         return member.gapBefore ? root.gapWidth + root.gap : 0;
                     }
-                    y: member.lifted ? root.liftPoint.y - memberRow.y : 0
+                    y: member.lifted ? root.liftPoint.y : 0
                     width: member.ownWidth
                     height: memberRow.height
 
