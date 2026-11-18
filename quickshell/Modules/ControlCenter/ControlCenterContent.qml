@@ -312,12 +312,12 @@ FocusScope {
         loader.active = false;
     }
 
-    function openConfigOverlay(index, widgetData, anchor) {
+    function openConfigOverlay(index, widgetData, anchor, boundsItem = anchor) {
         configOverlayLoader.active = true;
         const overlay = configOverlayLoader.item;
         if (!overlay)
             return;
-        overlay.open(index, widgetData, anchor);
+        overlay.open(index, widgetData, anchor, boundsItem);
     }
 
     function releaseConfigOverlay() {
@@ -1127,7 +1127,7 @@ FocusScope {
                         dropHandler: (index, scenePoint) => root.dropFromGrid(pageGrid, index, scenePoint)
                         onExpandClicked: widgetData => root.openWidgetPage(widgetData)
                         onRemoveWidget: index => widgetModel.removeWidget(index)
-                        onConfigRequested: (index, widgetData, anchor) => root.openConfigOverlay(index, widgetData, anchor)
+                        onConfigRequested: (index, widgetData, anchor, boundsItem) => root.openConfigOverlay(index, widgetData, anchor, boundsItem)
                         onColorPickerRequested: root.host.openColorPicker()
                         onCloseRequested: root.host.close()
                         onSettingsRequested: root.host.openSettings()

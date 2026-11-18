@@ -117,7 +117,7 @@ DEditableGridSlot {
     onPressAndHold: {
         if (!WidgetUtils.hasOptions(widgetData.id))
             return;
-        root.grid.configRequested(root.grid.savedIndex(root.index), root.widgetData, root);
+        root.grid.configRequested(root.grid.savedIndex(root.index), root.widgetData, root, root);
     }
 
     onResizeRequested: (requestedWidth, requestedHeight) => {
@@ -226,7 +226,7 @@ DEditableGridSlot {
             onResizeEnded: root.finishResize()
             onResizeCanceled: root.cancelResize()
             onRemoveRequested: root.grid.removeWidget(root.grid.savedIndex(root.index))
-            onConfigRequested: root.grid.configRequested(root.grid.savedIndex(root.index), root.widgetData, root)
+            onConfigRequested: anchor => root.grid.configRequested(root.grid.savedIndex(root.index), root.widgetData, anchor, root)
         }
     }
 }

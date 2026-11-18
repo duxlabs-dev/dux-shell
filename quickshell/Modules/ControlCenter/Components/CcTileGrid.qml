@@ -39,7 +39,7 @@ DEditableGrid {
 
     signal expandClicked(var widgetData)
     signal removeWidget(int index)
-    signal configRequested(int index, var widgetData, var anchor)
+    signal configRequested(int index, var widgetData, var anchor, var boundsItem)
     signal colorPickerRequested
     signal lockRequested
     signal powerRequested
