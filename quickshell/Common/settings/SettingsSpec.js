@@ -1271,6 +1271,10 @@ var LOCAL_SPEC = {
         def: "default",
         onChange: "regenSystemThemes"
     },
+    contrastOverrides: {
+        def: {},
+        onChange: "regenSystemThemes"
+    },
     muxType: {
         def: "tmux"
     },

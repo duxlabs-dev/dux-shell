@@ -29,6 +29,7 @@ func handleMatugenQueue(conn *ipc.ConnWriter, req ipc.Request) {
 		TerminalsAlwaysDark: req.GetOr("terminalsAlwaysDark", false),
 		TerminalOpacity:     int(req.GetOr("terminalOpacity", 0.0)),
 		TerminalPalette:     req.GetOr("terminalPalette", ""),
+		ContrastOverrides:   matugen.NewContrastOverrides(req.GetOr("contrastOverrides", "")),
 		SkipTemplates:       req.GetOr("skipTemplates", ""),
 		Contrast:            req.GetOr("contrast", 0.0),
 		SourceMode:          req.GetOr("sourceMode", ""),

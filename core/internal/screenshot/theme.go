@@ -3,11 +3,9 @@ package screenshot
 import (
 	"encoding/json"
 	"os"
-	"path/filepath"
 	"strings"
 	"sync"
 
-	"github.com/duxlabs-dev/dux-shell/core/internal/log"
 	"github.com/duxlabs-dev/dux-shell/core/internal/utils"
 )
 
@@ -67,8 +65,7 @@ func loadOverlayStyle() OverlayStyle {
 }
 
 func loadColorsFile() *ColorScheme {
-	path := getColorsFilePath()
-	data, err := os.ReadFile(path)
+	data, err := os.ReadFile(utils.ColorsFilePath())
 	if err != nil {
 		return nil
 	}
@@ -79,15 +76,6 @@ func loadColorsFile() *ColorScheme {
 	}
 
 	return &file.Colors
-}
-
-func getColorsFilePath() string {
-	cacheDir, err := os.UserCacheDir()
-	if err != nil {
-		log.Error("Failed to get user cache dir", "err", err)
-		return ""
-	}
-	return filepath.Join(cacheDir, "dms", "dms-colors.json")
 }
 
 func isLightMode() bool {
