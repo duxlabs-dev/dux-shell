@@ -15,6 +15,7 @@ DEditableGrid {
 
     property var model: null
     property int page: 0
+    property int configIndex: -1
     property bool live: true
     // Latched the first time the page shows: a page nobody visits builds no tiles.
     property bool populated: false

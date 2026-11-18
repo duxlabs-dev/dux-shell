@@ -18,6 +18,7 @@ Item {
 
     property int widgetIndex: -1
     property var transientSurfaceTracker: null
+    property Item hostItem: null
     property Item _anchor: null
 
     readonly property var widgetData: {
@@ -54,15 +55,37 @@ Item {
         Qt.callLater(() => {
             const window = root.QsWindow.window;
             const pos = QmlUtils.screenPointOf(window, anchorItem, 0, 0);
+            const hostItem = root.hostItem;
+            const hostPos = hostItem ? QmlUtils.screenPointOf(window, hostItem, 0, 0) : null;
             if (root.widgetIndex !== index || !pos)
                 return;
             const screen = window.screen;
-            const x = pos.x;
-            const y = pos.y;
-            const menuX = I18n.isRtl ? x : x + anchorItem.width - contextMenu.effectiveMenuWidth;
-            const aboveY = () => y - contextMenu.effectiveMenuHeight - Theme.spacingS;
-            if (aboveY() < Theme.spacingS) {
-                contextMenu.open(screen, menuX, y + anchorItem.height + Theme.spacingS, false);
+            const menuW = contextMenu.effectiveMenuWidth;
+            const menuH = contextMenu.effectiveMenuHeight;
+            const idealX = I18n.isRtl ? pos.x : pos.x + anchorItem.width - menuW;
+            const minX = hostPos ? hostPos.x + Theme.spacingS : Theme.spacingS;
+            const maxX = hostPos ? Math.max(minX, hostPos.x + hostItem.width - Theme.spacingS - menuW) : idealX;
+            const menuX = Math.max(minX, Math.min(maxX, idealX));
+
+            const belowY = pos.y + anchorItem.height + Theme.spacingS;
+            const aboveY = () => pos.y - contextMenu.effectiveMenuHeight - Theme.spacingS;
+            const spaceAbove = hostPos ? pos.y - hostPos.y - Theme.spacingS : pos.y - Theme.spacingS;
+            const spaceBelow = hostPos ? (hostPos.y + hostItem.height) - (pos.y + anchorItem.height) - Theme.spacingS : (screen?.height ?? 0) - belowY;
+            const needed = menuH + Theme.spacingS;
+            const fitsBelow = spaceBelow >= needed;
+            const fitsAbove = spaceAbove >= needed;
+
+            let placeBelow;
+            if (fitsBelow || fitsAbove) {
+                placeBelow = fitsBelow && (!fitsAbove || spaceBelow >= spaceAbove);
+            } else {
+                const screenBelow = (screen?.height ?? 0) - belowY;
+                const screenAbove = pos.y - Theme.spacingS;
+                placeBelow = screenBelow >= screenAbove;
+            }
+
+            if (placeBelow) {
+                contextMenu.open(screen, menuX, belowY, false);
                 return;
             }
             contextMenu.open(screen, menuX, aboveY(), false);
