@@ -1639,6 +1639,9 @@ var LOCAL_SPEC = {
     updaterIncludeFlatpak: {
         def: true
     },
+    updaterIncludeHomebrew: {
+        def: true
+    },
     updaterAllowAUR: {
         def: true
     },
