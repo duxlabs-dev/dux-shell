@@ -24,7 +24,7 @@ Singleton {
     id: root
     readonly property var log: Log.scoped("SettingsData")
 
-    readonly property int settingsConfigVersion: 45
+    readonly property int settingsConfigVersion: 46
 
     enum Position {
         Top,
@@ -1357,35 +1357,6 @@ Singleton {
         set("greeterWidgetInstances", Spec.greeterWidgetDefaults().map(inst => inst.widgetType === "greeterSession" ? inst : Object.assign(inst, {
                 id: "gw_" + inst.id
             })));
-    }
-
-    function getDefaultSystemMonitorConfig() {
-        return {
-            showHeader: true,
-            transparency: 0.8,
-            colorMode: "primary",
-            customColor: "#ffffff",
-            showCpu: true,
-            showCpuGraph: true,
-            showCpuTemp: true,
-            showGpuTemp: false,
-            gpuPciId: "",
-            showMemory: true,
-            showMemoryGraph: true,
-            showNetwork: true,
-            showNetworkGraph: true,
-            showDisk: true,
-            showTopProcesses: false,
-            topProcessCount: 3,
-            topProcessSortBy: "cpu",
-            layoutMode: "auto",
-            graphInterval: 60,
-            x: -1,
-            y: -1,
-            width: 320,
-            height: 480,
-            displayPreferences: ["all"]
-        };
     }
 
     function widgetInstanceListKey(instanceId) {

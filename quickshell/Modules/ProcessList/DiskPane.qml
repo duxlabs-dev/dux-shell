@@ -3,7 +3,7 @@ import qs.Common
 import qs.Services
 import "../../Common/Format.js" as Format
 import "../../Services/SysmonDevices.js" as SysmonDevices
-import "Drives.js" as Drives
+import "../../Services/Drives.js" as Drives
 
 DevicePane {
     id: root

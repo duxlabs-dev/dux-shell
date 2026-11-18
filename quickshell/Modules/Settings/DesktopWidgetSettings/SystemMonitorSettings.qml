@@ -4,163 +4,123 @@ import QtQuick
 import qs.Common
 import qs.Services
 import qs.Modules.Settings.Widgets
+import "../../../Services/SysmonCatalog.js" as SysmonCatalog
 
 DesktopWidgetInstanceSettings {
     id: root
 
-    readonly property var gpus: DgopService.availableGpus ?? []
+    readonly property var config: SysmonCatalog.normalizeConfig(cfg, SysmonCatalog.defaultDesktopConfig())
+    readonly property bool styled: config.layout === "tiles" || config.layout === "list"
 
-    Component.onCompleted: DgopService.ensureMeta()
-    readonly property var gpuLabels: gpus.map(gpu => (gpu.driver ? gpu.driver.toUpperCase() + " " : "") + (gpu.displayName ?? ""))
+    optionsTitle: I18n.tr("Layout", "noun, settings section title for arrangement options")
+    backgroundOption: true
+
+    SettingsButtonGroupRow {
+        text: I18n.tr("Layout", "noun, settings section title for arrangement options")
+        model: [I18n.tr("Tiles", "system monitor layout and background option"), I18n.tr("List", "noun, list view mode option"), I18n.tr("Bars", "system monitor layout option: bar meters, not the shell bars", true), I18n.tr("Graphs", "system monitor layout option")]
+        values: ["tiles", "list", "bars", "graphs"]
+        value: root.config.layout
+        onValueSelected: value => root.updateConfig("layout", value)
+    }
+
+    SettingsButtonGroupRow {
+        visible: root.styled
+        text: I18n.tr("Style", "noun, visual style option label for a widget or the dock")
+        model: [I18n.tr("Classic", "system monitor tile style option"), I18n.tr("Icon", "system monitor tile style option"), I18n.tr("Meter", "system monitor tile style option"), I18n.tr("Ring", "system monitor tile style option"), I18n.tr("Graph", "system monitor tile style option")]
+        values: ["classic", "icon", "meter", "ring", "graph"]
+        value: root.config.style
+        onValueSelected: value => root.updateConfig("style", value)
+    }
+
+    SettingsButtonGroupRow {
+        visible: root.config.layout === "bars"
+        text: I18n.tr("Orientation", "system monitor bars: horizontal or vertical bars")
+        model: [I18n.tr("Auto", "system monitor bars orientation: follow the widget shape"), I18n.tr("Horizontal", "system monitor bars orientation"), I18n.tr("Vertical", "system monitor bars orientation")]
+        values: ["auto", "horizontal", "vertical"]
+        value: root.config.barOrientation
+        onValueSelected: value => root.updateConfig("barOrientation", value)
+    }
+
+    SettingsToggleRow {
+        visible: root.config.layout === "bars"
+        text: I18n.tr("Names", "system monitor bars: show device names")
+        checked: root.config.barNames
+        onToggled: checked => root.updateConfig("barNames", checked)
+    }
 
     SettingsToggleRow {
         text: I18n.tr("Show header")
-        checked: root.cfg.showHeader ?? true
+        checked: root.config.showHeader
         onToggled: checked => root.updateConfig("showHeader", checked)
     }
 
-    SettingsButtonGroupRow {
-        readonly property var intervals: [60, 300, 600, 1800]
-        text: I18n.tr("Graph time range")
-        model: ["1m", "5m", "10m", "30m"]
-        currentIndex: Math.max(0, intervals.indexOf(root.cfg.graphInterval ?? 60))
-        checkEnabled: false
-        onSelectionChanged: (index, selected) => {
-            if (!selected)
-                return;
-            root.updateConfig("graphInterval", intervals[index]);
+    SettingsTextFieldRow {
+        visible: root.config.showHeader
+        text: I18n.tr("Title", "noun, window title match field, also name field label")
+        value: root.config.title
+        alwaysFloatLabel: true
+        placeholderText: SysmonCatalog.shortCpuName(DgopService.cpuModel) || DgopService.hostname
+        maximumLength: SysmonCatalog.maxSuffix
+        onEditingFinished: value => {
+            if (value !== root.config.title)
+                root.updateConfig("title", value);
         }
     }
 
-    SettingsToggleRow {
-        text: I18n.tr("CPU")
-        checked: root.cfg.showCpu ?? true
-        onToggled: checked => root.updateConfig("showCpu", checked)
-    }
+    cards: [
+        SettingsCard {
+            title: I18n.tr("Metrics", "system monitor settings section title for the shown devices")
 
-    SettingsToggleRow {
-        enabled: root.cfg.showCpu ?? true
-        text: I18n.tr("CPU graph")
-        checked: root.cfg.showCpuGraph ?? true
-        onToggled: checked => root.updateConfig("showCpuGraph", checked)
-    }
+            SettingsMetricList {
+                metrics: root.config.metrics
+                allowGraph: root.styled && !(root.config.layout === "tiles" && root.config.style === "graph")
+                onMetricsEdited: metrics => root.updateConfig("metrics", metrics)
+            }
 
-    SettingsToggleRow {
-        enabled: root.cfg.showCpu ?? true
-        text: I18n.tr("CPU temperature")
-        checked: root.cfg.showCpuTemp ?? true
-        onToggled: checked => root.updateConfig("showCpuTemp", checked)
-    }
+            SettingsButtonGroupRow {
+                visible: root.config.layout === "graphs"
+                text: I18n.tr("Legend", "system monitor chart legend placement")
+                model: [I18n.tr("Off", "system monitor chart legend option"), I18n.tr("Inline", "system monitor chart legend option"), I18n.tr("List", "noun, list view mode option")]
+                values: ["off", "inline", "list"]
+                value: root.config.legend
+                onValueSelected: value => root.updateConfig("legend", value)
+            }
 
-    SettingsToggleRow {
-        text: I18n.tr("GPU temperature")
-        checked: root.cfg.showGpuTemp ?? false
-        onToggled: checked => root.updateConfig("showGpuTemp", checked)
-    }
+            SettingsButtonGroupRow {
+                visible: root.config.layout !== "bars"
+                text: I18n.tr("Graph time range")
+                model: ["1m", "5m", "10m", "30m"]
+                values: [60, 300, 600, 1800]
+                value: root.config.graphInterval
+                onValueSelected: value => root.updateConfig("graphInterval", value)
+            }
+        },
+        SettingsCard {
+            title: I18n.tr("Top processes")
 
-    SettingsDropdownRow {
-        visible: root.cfg.showGpuTemp ?? false
-        text: I18n.tr("GPU")
-        options: root.gpuLabels
-        emptyText: I18n.tr("No GPU detected", "empty state when no graphics card is found")
-        currentValue: root.gpuLabels[root.gpus.findIndex(gpu => gpu.pciId === root.cfg.gpuPciId)] ?? ""
-        onValueChanged: value => {
-            const index = root.gpuLabels.indexOf(value);
-            if (index < 0)
-                return;
-            root.updateConfig("gpuPciId", root.gpus[index].pciId);
-        }
-    }
+            SettingsToggleRow {
+                text: I18n.tr("Top processes")
+                checked: root.config.showTopProcesses
+                onToggled: checked => root.updateConfig("showTopProcesses", checked)
+            }
 
-    SettingsToggleRow {
-        text: I18n.tr("Memory")
-        checked: root.cfg.showMemory ?? true
-        onToggled: checked => root.updateConfig("showMemory", checked)
-    }
+            SettingsButtonGroupRow {
+                visible: root.config.showTopProcesses
+                text: I18n.tr("Process count")
+                model: ["3", "5", "10"]
+                values: [3, 5, 10]
+                value: root.config.topProcessCount
+                onValueSelected: value => root.updateConfig("topProcessCount", value)
+            }
 
-    SettingsToggleRow {
-        enabled: root.cfg.showMemory ?? true
-        text: I18n.tr("Memory graph")
-        checked: root.cfg.showMemoryGraph ?? true
-        onToggled: checked => root.updateConfig("showMemoryGraph", checked)
-    }
-
-    SettingsToggleRow {
-        text: I18n.tr("Network")
-        checked: root.cfg.showNetwork ?? true
-        onToggled: checked => root.updateConfig("showNetwork", checked)
-    }
-
-    SettingsToggleRow {
-        enabled: root.cfg.showNetwork ?? true
-        text: I18n.tr("Network graph")
-        checked: root.cfg.showNetworkGraph ?? true
-        onToggled: checked => root.updateConfig("showNetworkGraph", checked)
-    }
-
-    SettingsToggleRow {
-        text: I18n.tr("Disk")
-        checked: root.cfg.showDisk ?? true
-        onToggled: checked => root.updateConfig("showDisk", checked)
-    }
-
-    SettingsToggleRow {
-        text: I18n.tr("Top processes")
-        checked: root.cfg.showTopProcesses ?? false
-        onToggled: checked => root.updateConfig("showTopProcesses", checked)
-    }
-
-    SettingsButtonGroupRow {
-        readonly property var counts: [3, 5, 10]
-        visible: root.cfg.showTopProcesses ?? false
-        text: I18n.tr("Process count")
-        model: counts.map(count => String(count))
-        currentIndex: Math.max(0, counts.indexOf(root.cfg.topProcessCount ?? 3))
-        checkEnabled: false
-        onSelectionChanged: (index, selected) => {
-            if (!selected)
-                return;
-            root.updateConfig("topProcessCount", counts[index]);
-        }
-    }
-
-    SettingsButtonGroupRow {
-        visible: root.cfg.showTopProcesses ?? false
-        text: I18n.tr("Sort by")
-        model: ["CPU", "MEM"]
-        currentIndex: (root.cfg.topProcessSortBy ?? "cpu") === "cpu" ? 0 : 1
-        checkEnabled: false
-        onSelectionChanged: (index, selected) => {
-            if (!selected)
-                return;
-            root.updateConfig("topProcessSortBy", index === 0 ? "cpu" : "memory");
-        }
-    }
-
-    SettingsDropdownRow {
-        text: I18n.tr("Layout")
-        options: [I18n.tr("Auto"), I18n.tr("Grid"), I18n.tr("List")]
-        currentValue: {
-            switch (root.cfg.layoutMode ?? "auto") {
-            case "grid":
-                return I18n.tr("Grid");
-            case "list":
-                return I18n.tr("List");
-            default:
-                return I18n.tr("Auto");
+            SettingsButtonGroupRow {
+                visible: root.config.showTopProcesses
+                text: I18n.tr("Sort by")
+                model: [I18n.tr("CPU", "processor label in system monitor"), I18n.tr("Memory", "system RAM label in system monitor")]
+                values: ["cpu", "memory"]
+                value: root.config.topProcessSortBy
+                onValueSelected: value => root.updateConfig("topProcessSortBy", value)
             }
         }
-        onValueChanged: value => {
-            switch (value) {
-            case I18n.tr("Grid"):
-                root.updateConfig("layoutMode", "grid");
-                return;
-            case I18n.tr("List"):
-                root.updateConfig("layoutMode", "list");
-                return;
-            default:
-                root.updateConfig("layoutMode", "auto");
-            }
-        }
-    }
+    ]
 }

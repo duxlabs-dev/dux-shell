@@ -155,7 +155,7 @@ DevicePane {
             text: I18n.tr("GPU Monitoring")
             checked: root.monitored || heldByWidget
             enabled: !heldByWidget
-            description: heldByWidget ? I18n.tr("Bar widgets") : ""
+            description: heldByWidget ? I18n.tr("Widgets") : ""
             onToggled: on => DgopService.setGpuMonitoring(root.stat.pciId, on)
         }
     }

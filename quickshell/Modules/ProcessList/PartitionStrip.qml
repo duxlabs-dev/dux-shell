@@ -6,7 +6,7 @@ import qs.Common
 import qs.Widgets
 import qs.DCommon.Widgets
 import "../../Common/Format.js" as Format
-import "Drives.js" as Drives
+import "../../Services/Drives.js" as Drives
 
 Item {
     id: stripRow

@@ -7,6 +7,7 @@ import Quickshell.Io
 import Quickshell.Services.UPower
 import qs.Common
 import qs.Services
+import "Drives.js" as Drives
 import "SysmonDevices.js" as SysmonDevices
 import "SysmonHistory.js" as SysmonHistory
 import "ProcessSort.js" as ProcessSort
@@ -673,6 +674,7 @@ Singleton {
         const sampleTime = Date.now();
         const samples = [];
         const departed = [];
+        let diskDeparted = null;
         if (hasModule("cpu") && data.cpu) {
             const cpu = data.cpu;
             cpuSampleCount++;
@@ -685,6 +687,10 @@ Singleton {
             perCoreCpuUsage = cpu.coreUsage || [];
             cpuInfo = cpu;
             samples.push([SysmonHistory.key("cpu", "usage"), cpuUsage]);
+            if (cpuTemperature > 0)
+                samples.push([SysmonHistory.key("cpu", "temp"), cpuTemperature]);
+            if (cpuFrequency > 0)
+                samples.push([SysmonHistory.key("cpu", "clock"), cpuFrequency]);
             for (let i = 0; i < perCoreCpuUsage.length; i++)
                 samples.push([SysmonHistory.key("cpu", "thread" + i), perCoreCpuUsage[i]]);
 
@@ -718,6 +724,8 @@ Singleton {
 
             memoryInfo = mem;
             samples.push([SysmonHistory.key("memory", "used"), memoryUsage]);
+            if (totalSwapKB > 0)
+                samples.push([SysmonHistory.key("memory", "swap"), usedSwapKB / totalSwapKB * 100]);
         }
 
         if (hasModule("network") && data.network && Array.isArray(data.network)) {
@@ -793,7 +801,26 @@ Singleton {
                 for (let i = 0; i < whole.length; i++)
                     samples.push([SysmonHistory.key(keys[i], "read"), whole[i].readRate || 0], [SysmonHistory.key(keys[i], "write"), whole[i].writeRate || 0]);
             }
-            departed.push(["disk", keys]);
+            diskDeparted = ["disk", keys];
+            departed.push(diskDeparted);
+        }
+
+        if (hasModule("diskmounts") && Array.isArray(data.diskmounts)) {
+            const space = Drives.usedSpace(DriveService.drives, data.diskmounts, "", "");
+            if (space)
+                samples.push([SysmonHistory.key("disk", "space"), space.percent]);
+            for (const d of DriveService.drives || []) {
+                const dev = d.name || d.device;
+                if (!SysmonDevices.isWholeDisk(dev))
+                    continue;
+                const own = Drives.usedSpace(DriveService.drives, data.diskmounts, dev, "");
+                if (!own)
+                    continue;
+                const key = SysmonDevices.deviceKey("disk", dev);
+                samples.push([SysmonHistory.key(key, "space"), own.percent]);
+                if (diskDeparted)
+                    diskDeparted[1].push(key);
+            }
         }
 
         if (hasModule("net-rate") && data.netrate && Array.isArray(data.netrate.interfaces)) {
@@ -844,6 +871,10 @@ Singleton {
                 samples.push([SysmonHistory.key(key, "usage"), g.usage]);
                 if (g.memoryUsed !== undefined && g.memoryTotal > 0)
                     samples.push([SysmonHistory.key(key, "vram"), g.memoryUsed / g.memoryTotal * 100]);
+                if (g.temperature > 0)
+                    samples.push([SysmonHistory.key(key, "temp"), g.temperature]);
+                if (g.power !== undefined)
+                    samples.push([SysmonHistory.key(key, "power"), g.power]);
             }
             departed.push(["gpu", data.gpu.gpus.map(g => SysmonDevices.deviceKey("gpu", SysmonDevices.gpuSlot(g)))]);
         }
