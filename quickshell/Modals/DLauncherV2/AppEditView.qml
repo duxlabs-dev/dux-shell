@@ -1,6 +1,7 @@
 import QtQuick
 import qs.Common
 import qs.Services
+import qs.Widgets
 import qs.DCommon.Widgets
 
 FocusScope {
@@ -152,9 +153,7 @@ FocusScope {
             }
         }
 
-        Rectangle {
-            width: parent.width
-            height: Theme.outlineWidth
+        DDivider {
             color: Theme.outlineMedium
         }
 

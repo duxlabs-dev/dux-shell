@@ -1,6 +1,7 @@
 import QtQuick
 import qs.Common
 import qs.Services
+import qs.Widgets
 
 DockContextMenuBase {
     id: root
@@ -37,9 +38,7 @@ DockContextMenuBase {
         }
     }
 
-    Rectangle {
-        width: parent.width
-        height: 1
+    DDivider {
         color: Theme.outlineHeavy
     }
 

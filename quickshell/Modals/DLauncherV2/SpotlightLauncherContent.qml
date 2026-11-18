@@ -4,6 +4,7 @@ import QtQuick
 import Quickshell.Widgets
 import qs.Common
 import qs.Services
+import qs.Widgets
 import qs.DCommon.Widgets
 import qs.Modals.DLauncherV2.Components
 import "../../Common/LauncherKeybinds.js" as LauncherKeybinds
@@ -429,13 +430,11 @@ FocusScope {
         }
     }
 
-    Rectangle {
+    DDivider {
         anchors.top: mesgRow.bottom
         anchors.left: parent.left
         anchors.right: parent.right
-        height: Theme.outlineWidth
         z: 1
-        color: Theme.outlineVariant
         visible: !root.editMode && root._hasQuery && !(Theme.focusRingWidth > 0 && searchInput.getActiveFocus())
     }
 

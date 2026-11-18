@@ -475,11 +475,10 @@ Item {
                                     sourceComponent: menuItemDelegate.modelData.component ?? null
                                 }
 
-                                Rectangle {
+                                DDivider {
                                     visible: menuItemDelegate.isSeparator
-                                    width: parent.width - Theme.spacingS * 2
-                                    height: Theme.outlineWidth
                                     anchors.centerIn: parent
+                                    inset: Theme.spacingS
                                     color: Theme.outlineHeavy
                                 }
 

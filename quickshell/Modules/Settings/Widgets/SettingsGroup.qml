@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import qs.Common
+import qs.Widgets
 
 Item {
     id: root
@@ -128,10 +129,8 @@ Item {
             border.width: SettingsMetrics.groupEdgeWidth
             border.color: Theme.outlineMedium
 
-            Rectangle {
-                x: SettingsMetrics.rowPaddingH
-                width: parent.width - SettingsMetrics.rowPaddingH * 2
-                height: Theme.dividerWidth
+            DDivider {
+                inset: SettingsMetrics.rowPaddingH
                 visible: SettingsMetrics.continuousGroups && !parent.first
                 color: SettingsMetrics.groupDividerColor
             }

@@ -5,6 +5,7 @@ import Quickshell
 import Quickshell.Wayland
 import qs.Common
 import qs.Services
+import qs.Widgets
 import qs.DCommon.Widgets
 import "../Common/KeyUtils.js" as KeyUtils
 import "../Common/KeybindActions.js" as Actions
@@ -746,11 +747,8 @@ FocusScope {
                 anchors.bottom: parent.bottom
                 spacing: Theme.spacingS
 
-                Rectangle {
-                    width: parent.width - Theme.spacingS * 2
-                    height: Theme.dividerWidth
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    color: Theme.outlineVariant
+                DDivider {
+                    inset: Theme.spacingS
                     opacity: 0.3
                 }
 

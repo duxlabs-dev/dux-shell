@@ -4,6 +4,7 @@ import QtQuick
 import QtQuick.Templates as T
 import qs.Common
 import qs.Services
+import qs.Widgets
 import qs.DCommon.Widgets
 
 T.Control {
@@ -172,8 +173,7 @@ T.Control {
             x: root.paddingH
             width: parent.width - root.paddingH * 2
             active: root.paintBackground && SettingsMetrics.continuousGroups && root.dividerBefore
-            sourceComponent: Rectangle {
-                height: Theme.dividerWidth
+            sourceComponent: DDivider {
                 color: SettingsMetrics.groupDividerColor
             }
         }
