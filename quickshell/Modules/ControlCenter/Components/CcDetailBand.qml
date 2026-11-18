@@ -82,9 +82,14 @@ FocusScope {
         }
     }
 
+    function _collapseIfEmpty() {
+        if (pageEmpty && section !== "")
+            collapseRequested();
+    }
+
     onPageEmptyChanged: {
         if (pageEmpty && section !== "")
-            Qt.callLater(collapseRequested);
+            Qt.callLater(_collapseIfEmpty);
     }
 
     function finishClose() {
@@ -139,6 +144,7 @@ FocusScope {
                 finishClose();
             return;
         }
+        pageLoader.sourceComponent = null;
         shownSection = section;
         pageLoader.sourceComponent = _componentFor(section);
         (pageItem ?? root).forceActiveFocus();
