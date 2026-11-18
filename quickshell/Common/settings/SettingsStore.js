@@ -799,6 +799,11 @@ function migrateToVersion(obj, targetVersion) {
         settings.configVersion = 45;
     }
 
+    if (currentVersion < 46 && targetVersion >= 46) {
+        migrateDesktopSystemMonitor(settings);
+        settings.configVersion = 46;
+    }
+
     return settings;
 }
 
@@ -813,6 +818,33 @@ function migrateMotionDuration(settings) {
     }
     const stepMs = [250, 375, 500, 750, 1000];
     settings.motionDuration = stepMs.reduce((nearest, ms, step) => Math.abs(ms - duration) < Math.abs(stepMs[nearest] - duration) ? step : nearest, 0);
+}
+
+// Migration: can be removed after a few releases. v46: system monitor widgets move to a metric list.
+var SYSTEM_MONITOR_LEGACY_KEYS = ["showCpu", "showCpuGraph", "showCpuTemp", "showGpuTemp", "gpuPciId", "showMemory", "showMemoryGraph", "showNetwork", "showNetworkGraph", "showDisk", "layoutMode"];
+
+function migrateDesktopSystemMonitor(settings) {
+    for (const listKey of ["desktopWidgetInstances", "lockScreenWidgetInstances", "greeterWidgetInstances"]) {
+        for (const inst of Array.isArray(settings[listKey]) ? settings[listKey] : []) {
+            if (!inst || inst.widgetType !== "systemMonitor")
+                continue;
+            const old = inst.config && typeof inst.config === "object" && !Array.isArray(inst.config) ? inst.config : {};
+            if (Array.isArray(old.metrics))
+                continue;
+            const metrics = [
+                { device: "cpu", vals: old.showCpuTemp !== false ? ["usage", "temp"] : ["usage"], graph: old.showCpuGraph !== false, on: old.showCpu !== false },
+                { device: "memory", vals: ["used"], graph: old.showMemoryGraph !== false, on: old.showMemory !== false },
+                { device: "net", vals: ["down", "up"], graph: old.showNetworkGraph !== false, on: old.showNetwork !== false },
+                { device: "disk", vals: ["read", "write"], graph: true, on: old.showDisk !== false }
+            ];
+            if (typeof old.gpuPciId === "string" && old.gpuPciId)
+                metrics.push({ device: "gpu:" + old.gpuPciId, vals: ["temp"], graph: false, on: old.showGpuTemp === true });
+            const config = Object.assign({}, old, { metrics: metrics, layout: old.layoutMode === "list" ? "list" : "tiles", style: "icon" });
+            for (const key of SYSTEM_MONITOR_LEGACY_KEYS)
+                delete config[key];
+            inst.config = config;
+        }
+    }
 }
 
 // v44: new installs enable the dock with smart auto-hide; existing configs that omitted them keep both off

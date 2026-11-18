@@ -17,7 +17,10 @@ function service() {
         DMSService: { sendRequest: (method, params, callback) => requests.push({ method, params, callback }) },
         log: { warn() {} },
         statsUpdated() {},
-        historyStore: null
+        historyStore: null,
+        DriveService: { drives: [] },
+        Drives: { usedSpace: () => null },
+        SysmonDevices: { isWholeDisk: () => false, deviceKey: (t, i) => t + ":" + i }
     });
     const methods = ["initializeDiskMounts", "hasModule", "parseData", "releaseUnusedData", "recordHistory"];
     const found = [];

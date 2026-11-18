@@ -16,11 +16,17 @@ Item {
     property real maximum: 0
     property int historyLength: 0
     property bool compact: false
+    property bool grid: !compact
+    property color gridColor: Theme.outlineLight
+    property bool curved: false
+    property real fillOpacity: Theme.tonalTintAlpha
+    property real lineWidth: compact ? Theme.outlineWidth : Theme.outlineWidthFocused
+    property real insetBottom: lineWidth
 
     implicitHeight: compact ? Theme.iconButtonSize : Theme.listItemHeight * 3
 
     Repeater {
-        model: root.compact ? 0 : 3
+        model: root.grid ? 3 : 0
 
         Rectangle {
             required property int index
@@ -28,7 +34,7 @@ Item {
             width: root.width
             height: Theme.outlineWidth
             y: Math.round((root.height - height) * (index + 1) / 4)
-            color: Theme.outlineLight
+            color: root.gridColor
         }
     }
 
@@ -41,9 +47,10 @@ Item {
         secondaryLineColor: "transparent"
         maximum: root.maximum
         historyLength: root.historyLength
-        curved: false
-        fillOpacity: Theme.tonalTintAlpha
-        lineWidth: root.compact ? Theme.outlineWidth : Theme.outlineWidthFocused
+        curved: root.curved
+        fillOpacity: root.fillOpacity
+        lineWidth: root.lineWidth
+        insetBottom: root.insetBottom
     }
 
     // The sparkline can't dash its second series, so it is drawn here from the same path and range.

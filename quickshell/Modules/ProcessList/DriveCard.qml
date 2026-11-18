@@ -8,7 +8,7 @@ import qs.Services
 import qs.Widgets
 import qs.DCommon.Widgets
 import qs.Modules.Settings.Widgets
-import "Drives.js" as Drives
+import "../../Services/Drives.js" as Drives
 import "../../Common/Format.js" as Format
 import "../../Services/SysmonDevices.js" as Devices
 

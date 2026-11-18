@@ -9,11 +9,14 @@ Column {
     property var instanceData: null
     property bool showAppearance: true
     property bool showPlacement: true
+    property bool backgroundOption: false
     readonly property var cfg: instanceData?.config ?? {}
     readonly property string listKey: SettingsData.widgetInstanceListKey(instanceId)
     readonly property bool lockScreenInstance: listKey !== "desktopWidgetInstances"
     readonly property bool greeterInstance: listKey === "greeterWidgetInstances"
     default property alias rows: optionsCard.content
+    property alias optionsTitle: optionsCard.title
+    property alias cards: extraCards.data
 
     function updateConfig(key, value) {
         const updates = {};
@@ -28,11 +31,36 @@ Column {
         id: optionsCard
     }
 
+    Column {
+        id: extraCards
+        width: parent.width
+        spacing: Theme.spacingL
+        visible: children.length > 0
+    }
+
     SettingsCard {
         title: I18n.tr("Appearance")
         visible: root.showAppearance
 
+        SettingsButtonGroupRow {
+            visible: root.backgroundOption
+            text: I18n.tr("Background", "desktop widget background style")
+            model: [I18n.tr("Card", "desktop widget background option"), I18n.tr("Tiles", "system monitor layout and background option"), I18n.tr("None", "desktop widget background option")]
+            values: ["card", "tiles", "none"]
+            value: root.cfg.background
+            fallbackValue: "card"
+            onValueSelected: value => root.updateConfig("background", value)
+        }
+
+        SettingsToggleRow {
+            visible: root.backgroundOption && root.cfg.background === "none"
+            text: I18n.tr("Shadow", "desktop widget text halo when there is no background")
+            checked: root.cfg.textShadow ?? true
+            onToggled: checked => root.updateConfig("textShadow", checked)
+        }
+
         SettingsSliderRow {
+            visible: !root.backgroundOption || root.cfg.background !== "none"
             text: I18n.tr("Opacity")
             minimum: 0
             maximum: 100

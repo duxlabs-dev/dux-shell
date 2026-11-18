@@ -6,7 +6,7 @@ import qs.Common
 import qs.Services
 import qs.DCommon.Widgets
 import qs.Modules.Settings.Widgets
-import "Drives.js" as Drives
+import "../../Services/Drives.js" as Drives
 
 Item {
     id: root

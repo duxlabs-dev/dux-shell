@@ -5,6 +5,7 @@ import QtQuick
 import Quickshell
 import qs.Common
 import "../Common/settings/SettingsSpec.js" as Spec
+import "SysmonCatalog.js" as SysmonCatalog
 
 Singleton {
     id: root
@@ -141,28 +142,12 @@ Singleton {
     }
 
     function getDefaultSystemMonitorConfig() {
-        return {
-            showHeader: true,
+        return Object.assign(SysmonCatalog.defaultDesktopConfig(), {
             transparency: 0.8,
             colorMode: "primary",
             customColor: "#ffffff",
-            showCpu: true,
-            showCpuGraph: true,
-            showCpuTemp: true,
-            showGpuTemp: false,
-            gpuPciId: "",
-            showMemory: true,
-            showMemoryGraph: true,
-            showNetwork: true,
-            showNetworkGraph: true,
-            showDisk: true,
-            showTopProcesses: false,
-            topProcessCount: 3,
-            topProcessSortBy: "cpu",
-            layoutMode: "auto",
-            graphInterval: 60,
             displayPreferences: ["all"]
-        };
+        });
     }
 
     function registerWidget(widgetDef) {

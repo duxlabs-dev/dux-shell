@@ -9,7 +9,7 @@ import qs.Services
 import qs.DCommon.Widgets
 import qs.Modules.Settings.Widgets
 import "SystemInfo.js" as SystemInfo
-import "Drives.js" as Drives
+import "../../Services/Drives.js" as Drives
 import "../../Services/SysmonDevices.js" as Devices
 
 Item {

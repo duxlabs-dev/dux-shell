@@ -1,5 +1,5 @@
 .pragma library
-.import "../../Common/Format.js" as Format
+.import "../Common/Format.js" as Format
 
 const MIN_STRIP_WEIGHT = 0.04;
 const HOURS_AS_DAYS = 48;
@@ -131,6 +131,51 @@ function mountPercent(mounts, mountPoint) {
         }
     }
     return null;
+}
+
+function mountUsage(drives, mounts, mountPoint) {
+    const ratio = mountPercent(mounts, mountPoint);
+    if (ratio === null)
+        return null;
+    let total = null;
+    for (const d of drives || []) {
+        const p = (d.partitions || []).find(p => p.mountPoint === mountPoint);
+        if (p && p.size > 0) {
+            total = p.size;
+            break;
+        }
+    }
+    return {
+        percent: ratio * 100,
+        used: total === null ? null : total * ratio,
+        total: total
+    };
+}
+
+// {percent, used, total} in bytes (null when unknown), weighted by partition size; null when nothing is known.
+// Without a device or mount it covers every drive, or the "/" mount while no drive data is loaded.
+function usedSpace(drives, mounts, deviceName, mountPoint) {
+    if (mountPoint)
+        return mountUsage(drives, mounts, mountPoint);
+    const list = deviceName ? [driveFor(deviceName, drives)].filter(d => d) : drives || [];
+    let total = 0;
+    let used = 0;
+    for (const d of list) {
+        for (const p of d.partitions || []) {
+            const ratio = p.swap || p.fsType === "swap" || !(p.size > 0) ? null : mountPercent(mounts, p.mountPoint);
+            if (ratio === null)
+                continue;
+            total += p.size;
+            used += p.size * ratio;
+        }
+    }
+    if (total > 0)
+        return {
+            percent: used / total * 100,
+            used: used,
+            total: total
+        };
+    return deviceName ? null : mountUsage(drives, mounts, "/");
 }
 
 // Weights sum to 1 and none is below MIN_STRIP_WEIGHT.
