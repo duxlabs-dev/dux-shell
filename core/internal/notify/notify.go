@@ -247,7 +247,21 @@ func handleAction(action, filePath string) {
 		openPath(filePath)
 	case "folder":
 		openPath(filepath.Dir(filePath))
+	case "ocr":
+		runOCR(filePath)
 	}
+}
+
+func runOCR(path string) {
+	exe, err := os.Executable()
+	if err != nil {
+		return
+	}
+	cmd := exec.Command(exe, "screenshot", "ocr-file", path)
+	cmd.SysProcAttr = &syscall.SysProcAttr{
+		Setsid: true,
+	}
+	cmd.Start()
 }
 
 func openPath(path string) {

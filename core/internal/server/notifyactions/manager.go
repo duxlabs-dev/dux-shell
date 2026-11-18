@@ -1,6 +1,7 @@
 package notifyactions
 
 import (
+	"os"
 	"os/exec"
 	"path/filepath"
 	"sync"
@@ -134,6 +135,12 @@ func (m *Manager) handleAction(sig *dbus.Signal) {
 		return
 	}
 	path := w.path
+	if action == "ocr" {
+		if exe, err := os.Executable(); err == nil {
+			run([]string{exe, "screenshot", "ocr-file", path})
+		}
+		return
+	}
 	if action == "folder" {
 		path = filepath.Dir(path)
 	}
