@@ -459,7 +459,7 @@ Item {
         width: isImage ? 80 : Math.min(220, ghostText.implicitWidth + Theme.spacingM * 2)
         height: isImage ? 80 : 40
         radius: Theme.cornerRadiusL
-        color: Theme.surfaceContainerHigh
+        color: Theme.chipSurface
         border.width: Theme.outlineWidth
         border.color: Theme.primary
         clip: true

@@ -871,7 +871,7 @@ Column {
                 settingKey: "hostSurfaceColor"
                 resetKeys: ["hostSurfaceColor", "hostSurfaceCustomColor"]
                 text: I18n.tr("Host")
-                defaultColor: Theme.roleColor("s")
+                defaultColor: Theme.surfaceLadder.host
                 currentMode: SettingsData.hostSurfaceColor
                 customColor: SettingsData.hostSurfaceCustomColor
                 onModeSelected: mode => SettingsData.set("hostSurfaceColor", mode)
@@ -884,7 +884,7 @@ Column {
                 settingKey: "cardSurfaceColor"
                 resetKeys: ["cardSurfaceColor", "cardSurfaceCustomColor"]
                 text: I18n.tr("Cards")
-                defaultColor: Theme.roleColor("sc")
+                defaultColor: Theme.surfaceLadder.card
                 currentMode: SettingsData.cardSurfaceColor
                 customColor: SettingsData.cardSurfaceCustomColor
                 onModeSelected: mode => SettingsData.set("cardSurfaceColor", mode)
@@ -897,7 +897,7 @@ Column {
                 settingKey: "chipSurfaceColor"
                 resetKeys: ["chipSurfaceColor", "chipSurfaceCustomColor"]
                 text: I18n.tr("Chip", "surface role")
-                defaultColor: Theme.roleColor("sch")
+                defaultColor: Theme.surfaceLadder.chip
                 currentMode: SettingsData.chipSurfaceColor
                 customColor: SettingsData.chipSurfaceCustomColor
                 onModeSelected: mode => SettingsData.set("chipSurfaceColor", mode)
@@ -910,7 +910,7 @@ Column {
                 settingKey: "chipSurfaceNestedColor"
                 resetKeys: ["chipSurfaceNestedColor", "chipSurfaceNestedCustomColor"]
                 text: I18n.tr("Nested chip", "surface role")
-                defaultColor: Theme.roleColor("schh")
+                defaultColor: Theme.surfaceLadder.nested
                 currentMode: SettingsData.chipSurfaceNestedColor
                 customColor: SettingsData.chipSurfaceNestedCustomColor
                 onModeSelected: mode => SettingsData.set("chipSurfaceNestedColor", mode)

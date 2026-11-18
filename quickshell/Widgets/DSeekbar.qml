@@ -316,7 +316,7 @@ Item {
                 id: flatBar
 
                 property real lineWidth: root.showHandle ? root.waveLineWidth : 3
-                property color trackColor: root.showHandle ? root.shownTrack : Theme.withAlpha(Theme.surfaceVariant, 0.40)
+                property color trackColor: root.showHandle ? root.shownTrack : Theme.onSurface_12
                 property color fillColor: root.shownAccent
                 property color playheadColor: root.shownAccent
                 property color actualProgressColor: Theme.onSurface_38

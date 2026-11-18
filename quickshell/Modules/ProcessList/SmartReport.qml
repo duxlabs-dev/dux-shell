@@ -108,6 +108,7 @@ Column {
         SettingsGroup {
             id: group
             required property var modelData
+            slotColor: Theme.chipSurface
             width: parent.width
             customPaddingV: 0
             customPaddingH: 0

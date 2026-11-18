@@ -316,6 +316,14 @@ DFloatingWindow {
         }
 
         Rectangle {
+            x: sidebar.x
+            width: sidebar.width
+            height: parent.height
+            color: SettingsMetrics.sidebarColor
+            visible: sidebar.visible && color.a > 0
+        }
+
+        Rectangle {
             id: contentBackdrop
 
             x: contentPane.x

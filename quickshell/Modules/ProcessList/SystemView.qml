@@ -312,12 +312,12 @@ Item {
 
                         Rows {
                             rows: root.aboutRows.slice(0, 5)
-                            slotColor: Theme.surfaceContainer
+                            slotColor: ProcessListMetrics.cardInsetColor
                         }
 
                         Rows {
                             rows: root.aboutRows.slice(5)
-                            slotColor: Theme.surfaceContainer
+                            slotColor: ProcessListMetrics.cardInsetColor
                         }
                     }
                 }
@@ -506,7 +506,7 @@ Item {
                     width: Math.min(Theme.fontSizeSmall * 10, sensor.width / 4)
                     height: Theme.spacingS
                     radius: height / 2
-                    color: Theme.surfaceContainerHighest
+                    color: Theme.chipSurfaceNested
                     opacity: sensor.modelData.ratio == null ? 0 : 1
 
                     Rectangle {

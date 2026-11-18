@@ -126,7 +126,7 @@ DListItem {
                 anchors.fill: appIcon
                 visible: !appIcon.visible
                 radius: Theme.cornerRadiusXS
-                color: Theme.surfaceContainerHighest
+                color: Theme.chipSurfaceNested
 
                 StyledText {
                     anchors.centerIn: parent

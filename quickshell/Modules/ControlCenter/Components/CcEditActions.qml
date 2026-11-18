@@ -157,7 +157,7 @@ Item {
                     iconName: "close"
                     iconSize: CcMetrics.iconBoxIconSize
                     iconColor: Theme.onSurface
-                    backgroundColor: Theme.chipSurface
+                    backgroundColor: Theme.hostChipSurface
                     tooltipText: I18n.tr("Discard")
                     onClicked: root.cancelRequested()
                 }

@@ -69,10 +69,12 @@ Singleton {
     readonly property real previewTileMinWidth: 140
     readonly property real emptyStateHeight: 100
     readonly property real noteMaxHeight: 160
-    readonly property color paneColor: Theme.floatingWindowNestedSurface
-    readonly property color rowColor: Theme.foregroundColor(Theme.chipSurface, true)
+    // On light surfaces the rows are the white cards, so the pane stays at the host tone, the sidebar recesses under it and controls step down to chips
+    readonly property color sidebarColor: Theme.lightSurfaces ? Theme.foregroundColor(Theme.hostRecessSurface, true) : "transparent"
+    readonly property color paneColor: Theme.lightSurfaces ? "transparent" : Theme.floatingWindowNestedSurface
+    readonly property color rowColor: Theme.foregroundColor(Theme.hostChipSurface, true)
     readonly property color sidebarRowColor: rowColor
-    readonly property color controlSurface: Theme.chipSurfaceNested
+    readonly property color controlSurface: Theme.lightSurfaces ? Theme.chipSurface : Theme.chipSurfaceNested
     readonly property color controlColor: Theme.foregroundColor(controlSurface, true)
     readonly property color rowHighlightColor: Theme.withAlpha(Theme.primary, highlightBlend)
     readonly property color selectedRowColor: Theme.selectedContainer

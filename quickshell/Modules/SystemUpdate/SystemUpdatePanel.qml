@@ -153,7 +153,7 @@ FocusScope {
                 buttonSize: Theme.buttonHeightXS
                 iconSize: Theme.iconSizeSmall
                 iconColor: Theme.surfaceText
-                backgroundColor: Theme.foregroundColor(Theme.chipSurface)
+                backgroundColor: Theme.foregroundColor(Theme.hostChipSurface)
                 busy: SystemUpdateService.isChecking
                 enabled: !busy && !SystemUpdateService.isUpgrading
                 onClicked: SystemUpdateService.checkForUpdates()
@@ -346,7 +346,7 @@ FocusScope {
             visible: updaterPanel.showIgnored
             text: I18n.tr("Ignored (%1)").arg(updaterPanel.ignoredNames.length)
             iconName: updaterPanel.ignoredExpanded ? "expand_less" : "expand_more"
-            backgroundColor: Theme.foregroundColor(Theme.chipSurface)
+            backgroundColor: Theme.foregroundColor(Theme.hostChipSurface)
             textColor: Theme.onSurface
             maximumWidth: parent.width
             wrapText: true

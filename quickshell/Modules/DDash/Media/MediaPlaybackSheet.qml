@@ -72,7 +72,7 @@ FocusScope {
     }
     readonly property Item focusTarget: focusTargets[0] ?? null
     // The list's edge fade reads this to blend into the sheet instead of a darker ancestor.
-    readonly property color surfaceColor: Theme.surfaceContainer
+    readonly property color surfaceColor: Theme.cardSurface
 
     visible: shown
     enabled: opened
@@ -242,7 +242,7 @@ FocusScope {
             variant: "tonal"
             round: false
             iconName: I18n.isRtl ? "arrow_forward" : "arrow_back"
-            containerColor: Theme.surfaceContainerHighest
+            containerColor: Theme.chipSurfaceNested
             contentColor: Theme.onSurfaceVariant
             tooltipText: I18n.tr("Back")
             Keys.onTabPressed: root.cycleFocus(false)
@@ -290,7 +290,7 @@ FocusScope {
             SettingsGroup {
                 width: parent.width
                 visible: root.shownPanel === "players" && root.players.length > 0
-                slotColor: Theme.surfaceContainerHigh
+                slotColor: Theme.chipSurface
                 customPaddingH: Theme.spacingL
                 customPaddingV: Theme.spacingM
 
@@ -338,7 +338,7 @@ FocusScope {
             SettingsGroup {
                 width: parent.width
                 visible: root.shownPanel === "devices" && root.sinks.length > 0
-                slotColor: Theme.surfaceContainerHigh
+                slotColor: Theme.chipSurface
                 customPaddingH: Theme.spacingL
                 customPaddingV: Theme.spacingM
 
@@ -375,7 +375,7 @@ FocusScope {
                                 label: deviceRow.title
                                 contentColor: deviceRow.titleColor
                                 rowColor: deviceRow.rowColor
-                                insetColor: Theme.surfaceContainerHighest
+                                insetColor: Theme.chipSurfaceNested
                             }
                         }
                     }
@@ -385,7 +385,7 @@ FocusScope {
             SettingsGroup {
                 width: parent.width
                 visible: root.lyricsChoices.length > 0
-                slotColor: Theme.surfaceContainerHigh
+                slotColor: Theme.chipSurface
                 customPaddingH: Theme.spacingL
                 customPaddingV: Theme.spacingM
 
@@ -455,7 +455,7 @@ FocusScope {
 
         paddingH: Theme.spacingL
         paddingV: Theme.spacingM
-        rowColor: Theme.surfaceContainerHigh
+        rowColor: Theme.chipSurface
         selectedRowColor: MediaAccentService.artAccent ? MediaAccentService.accentContainer : Theme.selectedContainer
         selectedContentColor: MediaAccentService.artAccent ? MediaAccentService.onAccentContainer : Theme.onSelectedContainer
         iconColor: active ? (MediaAccentService.artAccent ? MediaAccentService.onAccentContainer : Theme.accentOnSelectedContainer) : MediaAccentService.accent

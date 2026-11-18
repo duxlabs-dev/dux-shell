@@ -115,7 +115,7 @@ Item {
             Rectangle {
                 anchors.fill: parent
                 radius: Theme.cornerRadius
-                color: pressed ? Theme.withAlpha(Theme.surfaceContainerHigh, 0.5) : hovered ? Theme.withAlpha(Theme.surfaceVariant, 0.3) : Theme.withAlpha(Theme.surfaceContainer, 0.1)
+                color: pressed ? Theme.withAlpha(Theme.surfaceText, Theme.stateLayerDrag) : hovered ? Theme.surfaceHover : Theme.surfaceLight
                 border.color: Theme.withAlpha(Theme.outline, 0.3)
                 border.width: 1
             }

@@ -124,7 +124,7 @@ DevicePane {
         width: parent.width
         height: Math.max(root.chartCardHeight, threadGrid.implicitHeight + Theme.spacingL * 2)
         radius: Theme.cornerRadiusL
-        color: Theme.surfaceContainerLow
+        color: ProcessListMetrics.cardColor
 
         Grid {
             id: threadGrid
@@ -153,7 +153,7 @@ DevicePane {
                     width: threadGrid.cellWidth
                     height: threadGrid.cellHeight
                     radius: Theme.cornerRadiusS
-                    color: Theme.surfaceContainer
+                    color: ProcessListMetrics.cardInsetColor
                     clip: true
 
                     MetricChart {

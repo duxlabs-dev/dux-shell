@@ -69,7 +69,7 @@ Rectangle {
 
     implicitHeight: body.implicitHeight + pad * 2
     radius: Theme.cornerRadiusL
-    color: Theme.surfaceContainerLow
+    color: ProcessListMetrics.cardColor
 
     function rowLabel(id) {
         switch (id) {
@@ -165,6 +165,7 @@ Rectangle {
 
         SettingsGroup {
             Layout.fillWidth: true
+            slotColor: Theme.chipSurface
             customPaddingV: 0
             customPaddingH: Theme.spacingL
 
@@ -324,7 +325,7 @@ Rectangle {
                 Layout.fillWidth: true
                 Layout.horizontalStretchFactor: 3
                 Layout.alignment: Qt.AlignTop
-                cardColor: Theme.surfaceContainer
+                cardColor: ProcessListMetrics.cardInsetColor
                 chartHeight: Math.max(Theme.listItemHeight * 1.5, stats.height - Theme.spacingL * 2 - Theme.spacingS * 2 - Theme.fontSizeSmall * 3)
                 label: I18n.tr("Disk read", "disk read rate")
                 valueText: root.rates?.readRate != null ? Format.formatRate(root.rates.readRate, 1) : "—"
@@ -339,6 +340,7 @@ Rectangle {
 
             SettingsGroup {
                 id: stats
+                slotColor: Theme.chipSurface
                 Layout.fillWidth: true
                 Layout.horizontalStretchFactor: 2
                 Layout.maximumWidth: Theme.fontSizeMedium * 25
@@ -363,6 +365,7 @@ Rectangle {
 
         SettingsGroup {
             visible: root.expanded && root.filesystems.length > 0
+            slotColor: Theme.chipSurface
             Layout.fillWidth: true
             customPaddingV: 0
             customPaddingH: Theme.spacingL
@@ -408,7 +411,7 @@ Rectangle {
                         Layout.preferredWidth: Theme.fontSizeMedium * 10
                         Layout.preferredHeight: Theme.spacingS
                         radius: height / 2
-                        color: Theme.surfaceContainerHighest
+                        color: Theme.chipSurfaceNested
                         opacity: fsRow.modelData.usedRatio != null ? 1 : 0
 
                         Rectangle {
@@ -501,7 +504,7 @@ Rectangle {
         implicitWidth: pillRow.implicitWidth + Theme.spacingM * 2
         implicitHeight: Theme.buttonHeightXS
         radius: height / 2
-        color: Theme.surfaceContainerHighest
+        color: Theme.chipSurfaceNested
 
         Row {
             id: pillRow

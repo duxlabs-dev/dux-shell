@@ -10,6 +10,9 @@ import "ProcessIcons.js" as ProcessIcons
 
 Singleton {
     readonly property real rowHeight: Theme.buttonHeightXS + Theme.spacingXS
+    // Dark sets these a step under the lifted performance pane. Light surfaces have no pane fill, so they are plain cards.
+    readonly property color cardColor: Theme.lightSurfaces ? Theme.cardSurface : Theme.surfaceContainerLow
+    readonly property color cardInsetColor: Theme.lightSurfaces ? Theme.chipSurface : Theme.surfaceContainer
     readonly property real headerHeight: Theme.buttonHeightXS + Theme.spacingXS
     readonly property real appIconSize: Theme.iconSizeMedium
     readonly property real expanderWidth: Theme.spacingM

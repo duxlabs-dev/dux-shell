@@ -129,7 +129,7 @@ Item {
                                 Layout.preferredWidth: Theme.fontSizeMedium * 10
                                 Layout.preferredHeight: Theme.spacingS
                                 radius: height / 2
-                                color: Theme.surfaceContainerHighest
+                                color: Theme.chipSurfaceNested
 
                                 Rectangle {
                                     width: parent.width * Math.min(1, mountRow.usedRatio)

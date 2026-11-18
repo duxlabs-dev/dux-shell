@@ -46,7 +46,7 @@ Item {
                 width: Math.max(0, stripRow.width - Theme.spacingXS * (stripRow.strip.length - 1)) * modelData.weight
                 height: stripRow.height
                 radius: Theme.cornerRadiusS
-                color: Theme.surfaceContainerHighest
+                color: Theme.chipSurfaceNested
 
                 Rectangle {
                     visible: seg.modelData.usedRatio !== null

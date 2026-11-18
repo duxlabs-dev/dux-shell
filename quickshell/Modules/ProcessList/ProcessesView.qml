@@ -564,7 +564,7 @@ Rectangle {
                 Layout.bottomMargin: Theme.spacingM
                 implicitHeight: header.implicitHeight
                 radius: Theme.cornerRadiusS
-                color: Theme.surfaceContainerHigh
+                color: Theme.chipSurface
 
                 RowLayout {
                     id: header

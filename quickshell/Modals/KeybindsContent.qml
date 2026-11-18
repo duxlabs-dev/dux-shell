@@ -659,7 +659,7 @@ FocusScope {
 
                             DBadge {
                                 text: content.dataModel.totalCount.toString()
-                                color: allTab.isSelected ? Theme.primary : Theme.surfaceVariant
+                                color: allTab.isSelected ? Theme.primary : Theme.chipSurfaceNested
                                 textColor: allTab.isSelected ? Theme.onPrimary : Theme.surfaceVariantText
                                 Layout.alignment: Qt.AlignVCenter
 
@@ -721,7 +721,7 @@ FocusScope {
 
                                 DBadge {
                                     text: (catTab.catInfo?.count || 0).toString()
-                                    color: catTab.isSelected ? Theme.primary : Theme.surfaceVariant
+                                    color: catTab.isSelected ? Theme.primary : Theme.chipSurfaceNested
                                     textColor: catTab.isSelected ? Theme.onPrimary : Theme.surfaceVariantText
                                     Layout.alignment: Qt.AlignVCenter
 
