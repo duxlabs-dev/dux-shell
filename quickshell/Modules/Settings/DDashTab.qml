@@ -17,7 +17,25 @@ FocusScope {
     focus: true
 
     readonly property var tabs: DashRegistry.tabEntries
-    readonly property var optionEntryIds: DashRegistry.entries.filter(e => (e.options?.length ?? 0) > 0).map(e => e.id)
+    readonly property var optionCards: DashRegistry.entries.filter(e => (e.options?.length ?? 0) > 0).reduce((all, e) => {
+        const copies = e.card?.allowMultiple === true ? DashRegistry.placed.filter(c => c.id === e.id) : [];
+        if (copies.length === 0)
+            return all.concat([{
+                    "id": e.id,
+                    "instanceId": "",
+                    "number": 1,
+                    "key": e.id
+                }]);
+        return all.concat(copies.map((c, i) => {
+            const instanceId = typeof c.instanceId === "string" ? c.instanceId : "";
+            return {
+                "id": e.id,
+                "instanceId": instanceId,
+                "number": i + 1,
+                "key": e.id + ":" + instanceId
+            };
+        }));
+    }, [])
 
     function showDashPluginBrowser() {
         dashPluginBrowserLoader.active = true;
@@ -188,20 +206,25 @@ FocusScope {
         }
 
         Repeater {
-            // value-diffed ids keep a card alive across option changes, a rebuilt card collapses
+            // keyed models keep a card alive across option changes, a rebuilt card collapses
             model: ScriptModel {
-                values: root.optionEntryIds
+                values: root.optionCards
+                objectProp: "key"
             }
 
             SettingsCard {
                 id: optionCard
 
-                required property string modelData
-                readonly property var entry: DashRegistry.entries.find(e => e.id === modelData) ?? null
+                required property var modelData
+                readonly property string entryId: modelData.id
+                readonly property string instanceId: modelData.instanceId
+                readonly property string keySuffix: modelData.number > 1 ? "#" + modelData.number : ""
+                readonly property var entry: DashRegistry.entries.find(e => e.id === entryId) ?? null
                 readonly property var options: entry?.options ?? []
+                readonly property string numberedTitle: modelData.number > 1 ? I18n.tr("%1 %2", "dash card name followed by its copy number, e.g. Clock 2").arg(entry?.text ?? "").arg(modelData.number) : (entry?.text ?? "")
 
-                title: entry?.text ?? ""
-                settingKey: "dashOptions:" + modelData
+                title: numberedTitle
+                settingKey: "dashOptions:" + entryId + keySuffix
                 tab: "dank_dash"
                 collapsible: true
                 expanded: false
@@ -213,9 +236,9 @@ FocusScope {
                         required property int index
 
                         spec: optionCard.options[index] ?? ({})
-                        value: DashRegistry.option(optionCard.modelData, spec.key)
-                        settingKey: "dashOptions:" + optionCard.modelData + ":" + spec.key
-                        onCommitted: next => DashRegistry.setOption(optionCard.modelData, spec.key, next)
+                        value: DashRegistry.option(optionCard.entryId, spec.key, optionCard.instanceId)
+                        settingKey: "dashOptions:" + optionCard.entryId + optionCard.keySuffix + ":" + spec.key
+                        onCommitted: next => DashRegistry.setOption(optionCard.entryId, spec.key, next, optionCard.instanceId)
                     }
                 }
             }

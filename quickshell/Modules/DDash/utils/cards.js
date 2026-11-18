@@ -4,11 +4,14 @@ function stored() {
 
 function addCard(id, w, h) {
     const cards = stored();
-    cards.push({
+    const card = {
         "id": id,
         "w": w,
         "h": h
-    });
+    };
+    if (DashRegistry.entry(id)?.card?.allowMultiple && cards.some(c => c.id === id))
+        card.instanceId = Date.now().toString(36) + Math.random().toString(36).substring(2);
+    cards.push(card);
     SettingsData.set("dashCards", cards);
 }
 

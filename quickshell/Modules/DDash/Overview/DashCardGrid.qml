@@ -24,14 +24,14 @@ DEditableGrid {
     signal cardFocusChanged(string id)
 
     signal cardClicked(string cardId)
-    signal optionsRequested(string cardId)
+    signal optionsRequested(string cardId, string instanceId)
     signal navFocusRequested(bool backwards)
     signal detailRequested(var eventData)
     signal editorRequested(var eventData, var initialDate)
 
     readonly property real columnWidth: (width - DashMetrics.gridGap * (DashMetrics.gridColumns - 1)) / DashMetrics.gridColumns
     readonly property int usedColumns: slotLayout.slots.reduce((used, slot) => slot ? Math.max(used, slot.col + slot.cols) : used, 0)
-    readonly property var addableEntries: DashRegistry.unplaced.map(entry => ({
+    readonly property var addableEntries: DashRegistry.addableCards.map(entry => ({
                 "entry": entry,
                 "size": GridUtils.fitNewCard(sourceItems, DashMetrics.gridColumns, rowBudget, entry.id, DashRegistry.defaultSize(entry.id), DashRegistry.minSize(entry.id), DashRegistry.isCardAvailable)
             })).filter(candidate => candidate.size !== null)
@@ -96,7 +96,7 @@ DEditableGrid {
     function cardItemFor(id) {
         for (let i = 0; i < slotRepeater.count; i++) {
             const slot = slotRepeater.itemAt(i);
-            if (slot && slot.cardId === id)
+            if (slot && slot.focusKey === id)
                 return slot.cardItem;
         }
         return null;
@@ -126,7 +126,7 @@ DEditableGrid {
     function slotFor(id) {
         for (let i = 0; i < slotRepeater.count; i++) {
             const slot = slotRepeater.itemAt(i);
-            if (slot?.cardId === id)
+            if (slot?.focusKey === id)
                 return slot;
         }
         return null;
@@ -157,7 +157,7 @@ DEditableGrid {
     function focusPreferred(reason) {
         const wanted = slotFor(preferredFocusId) ?? slotFor("calendar");
         if (wanted?.loading) {
-            pendingFocusId = wanted.cardId;
+            pendingFocusId = wanted.focusKey;
             pendingFocusReason = reason;
             return true;
         }
@@ -170,7 +170,7 @@ DEditableGrid {
     }
 
     function slotLoaded(slot) {
-        if (slot.cardId !== pendingFocusId)
+        if (slot.focusKey !== pendingFocusId)
             return;
         pendingFocusId = "";
         if (editMode)
@@ -188,7 +188,7 @@ DEditableGrid {
     }
 
     function noteSlotFocus(slot) {
-        cardFocusChanged(slot.cardId);
+        cardFocusChanged(slot.focusKey);
         const changed = flashSlot !== null && flashSlot !== slot;
         const keyboard = _focusReason === Qt.TabFocusReason || _focusReason === Qt.BacktabFocusReason;
         flashSlot = slot;

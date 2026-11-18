@@ -10,6 +10,7 @@ CcSheetDialog {
     id: root
 
     property string entryId: ""
+    property string instanceId: ""
     property bool tabScope: false
 
     readonly property var entry: DashRegistry.entry(entryId)
@@ -20,8 +21,9 @@ CcSheetDialog {
         })
     readonly property var specs: DashRegistry.sheetOptionSpecs(entryId, tabScope)
 
-    function presentFor(id) {
+    function presentFor(id, instance = "") {
         entryId = id;
+        instanceId = instance;
         present();
     }
 
@@ -42,8 +44,8 @@ CcSheetDialog {
                 required property var modelData
 
                 spec: modelData
-                value: DashRegistry.option(root.entryId, modelData.key)
-                onCommitted: next => DashRegistry.setOption(root.entryId, modelData.key, next)
+                value: DashRegistry.option(root.entryId, modelData.key, root.instanceId)
+                onCommitted: next => DashRegistry.setOption(root.entryId, modelData.key, next, root.instanceId)
             }
         }
     }
@@ -66,7 +68,7 @@ CcSheetDialog {
         iconName: "restart_alt"
         buttonHeight: Theme.buttonHeightXS
         variant: "text"
-        enabled: DashRegistry.hasStoredOptions(root.entryId)
-        onClicked: DashRegistry.resetOptions(root.entryId)
+        enabled: DashRegistry.hasStoredOptions(root.entryId, root.instanceId)
+        onClicked: DashRegistry.resetOptions(root.entryId, root.instanceId)
     }
 }
