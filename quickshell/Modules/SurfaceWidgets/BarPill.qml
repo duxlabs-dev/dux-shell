@@ -42,7 +42,7 @@ Item {
     property color contentColor: defaultContentColor
     readonly property real dpr: parentScreen ? CompositorService.getScreenScale(parentScreen) : 1
     readonly property real horizontalPadding: Theme.snap((barConfig?.widgetPadding ?? SettingsData.barWidgetPaddingDefault) * (widgetThickness / 30), dpr)
-    readonly property real contentThickness: widgetThickness - horizontalPadding * 2
+    readonly property real contentThickness: Math.max(0, widgetThickness - horizontalPadding * 2)
     readonly property real visualWidth: Theme.snap(isVerticalOrientation ? widgetThickness : (contentLoader.item ? (contentLoader.item.implicitWidth + horizontalPadding * 2) : 0), dpr)
     readonly property real visualHeight: Theme.snap(isVerticalOrientation ? (contentLoader.item ? (contentLoader.item.implicitHeight + horizontalPadding * 2) : 0) : widgetThickness, dpr)
     readonly property alias visualContent: visualContent
