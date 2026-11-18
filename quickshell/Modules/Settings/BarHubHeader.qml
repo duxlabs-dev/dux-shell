@@ -91,115 +91,120 @@ Column {
     width: parent?.width ?? 0
     spacing: Theme.spacingL
 
-    SettingsCard {
-        iconName: "dashboard"
-        title: I18n.tr("Bars", "plural noun, the shell bars or panels, settings title")
-        settingKey: "barConfigurations"
-        tags: ["bar", "configuration", "add", "remove", "enable", "multiple", "name"]
-        headerActions: DButton {
-            text: I18n.tr("Add")
-            iconName: "add"
-            buttonHeight: Theme.buttonHeightXS
-            visible: SettingsData.edgeBarConfigCount < 4
-            onClicked: root.createNewBar()
-        }
-
-        Repeater {
-            model: SettingsData.barConfigs.filter(config => !SettingsData.isDotBarConfig(config))
-
-            delegate: SettingsInstanceRow {
-                required property var modelData
-
-                title: root.barTitle(modelData)
-                summary: root.barSummary(modelData)
-                selected: bar.selectedBarId === modelData.id
-                checked: modelData.enabled ?? false
-                deletable: root.canDeleteBar(modelData)
-                onClicked: bar.select(modelData.id)
-                onToggled: checked => {
-                    bar.select(modelData.id);
-                    root.setBarEnabled(modelData.id, checked);
-                }
-                onDeleteRequested: root.deleteBar(modelData.id)
+    SettingsDeferred {
+        SettingsCard {
+            iconName: "dashboard"
+            title: I18n.tr("Bars", "plural noun, the shell bars or panels, settings title")
+            settingKey: "barConfigurations"
+            tags: ["bar", "configuration", "add", "remove", "enable", "multiple", "name"]
+            headerActions: DButton {
+                text: I18n.tr("Add")
+                iconName: "add"
+                buttonHeight: Theme.buttonHeightXS
+                visible: SettingsData.edgeBarConfigCount < 4
+                onClicked: root.createNewBar()
             }
-        }
 
-        SettingsNavRow {
-            iconName: "keyboard_command_key"
-            title: I18n.tr("Keyboard shortcuts")
-            hint: I18n.tr("With no bar, Dot or dock launcher on, shortcuts are the only way back to settings", "bars card hint shown when every bar, the Dot and every dock launcher button are off")
-            visible: !root.dotEnabled && !SettingsData.barConfigs.some(config => config.enabled && !SettingsData.isDotBarConfig(config)) && !SettingsData.dockConfigs.some(dock => dock.enabled && dock.launcherEnabled)
-            onClicked: keyboard => root.parentModal?.navigateTo("keybinds", keyboard)
+            Repeater {
+                model: SettingsData.barConfigs.filter(config => !SettingsData.isDotBarConfig(config))
+
+                delegate: SettingsInstanceRow {
+                    required property var modelData
+
+                    title: root.barTitle(modelData)
+                    summary: root.barSummary(modelData)
+                    selected: bar.selectedBarId === modelData.id
+                    checked: modelData.enabled ?? false
+                    deletable: root.canDeleteBar(modelData)
+                    onClicked: bar.select(modelData.id)
+                    onToggled: checked => {
+                        bar.select(modelData.id);
+                        root.setBarEnabled(modelData.id, checked);
+                    }
+                    onDeleteRequested: root.deleteBar(modelData.id)
+                }
+            }
+
+            SettingsNavRow {
+                iconName: "keyboard_command_key"
+                title: I18n.tr("Keyboard shortcuts")
+                hint: I18n.tr("With no bar, Dot or dock launcher on, shortcuts are the only way back to settings", "bars card hint shown when every bar, the Dot and every dock launcher button are off")
+                visible: !root.dotEnabled && !SettingsData.barConfigs.some(config => config.enabled && !SettingsData.isDotBarConfig(config)) && !SettingsData.dockConfigs.some(dock => dock.enabled && dock.launcherEnabled)
+                onClicked: keyboard => root.parentModal?.navigateTo("keybinds", keyboard)
+            }
         }
     }
 
-    SettingsCard {
-        iconName: bar.selectedBarIsIsland ? "view_in_ar" : "toolbar"
-        title: bar.selectedBarName
-        settingKey: "barLayout"
-        tags: ["layout", "standard", "frame", "island", "mode", "bar", "name", "rename"]
-        visible: !!bar.selectedBarConfig
+    SettingsDeferred {
+        when: !!bar.selectedBarConfig
 
-        SettingsRow {
-            title: I18n.tr("Name")
-            subtitle: root.editingBarId ? "" : bar.selectedBarName
+        SettingsCard {
+            iconName: bar.selectedBarIsIsland ? "view_in_ar" : "toolbar"
+            title: bar.selectedBarName
+            settingKey: "barLayout"
+            tags: ["layout", "standard", "frame", "island", "mode", "bar", "name", "rename"]
 
-            DActionButton {
-                iconName: root.editingBarId ? "check" : "edit"
-                Accessible.name: root.editingBarId ? I18n.tr("Save") : I18n.tr("Rename")
-                onClicked: {
-                    if (root.editingBarId) {
-                        root.finishRename(root.renameDraft);
-                        return;
+            SettingsRow {
+                title: I18n.tr("Name")
+                subtitle: root.editingBarId ? "" : bar.selectedBarName
+
+                DActionButton {
+                    iconName: root.editingBarId ? "check" : "edit"
+                    Accessible.name: root.editingBarId ? I18n.tr("Save") : I18n.tr("Rename")
+                    onClicked: {
+                        if (root.editingBarId) {
+                            root.finishRename(root.renameDraft);
+                            return;
+                        }
+                        root.renameDraft = bar.selectedBarName;
+                        root.editingBarId = bar.selectedBarId;
                     }
-                    root.renameDraft = bar.selectedBarName;
-                    root.editingBarId = bar.selectedBarId;
                 }
-            }
-            DActionButton {
-                visible: root.editingBarId !== ""
-                iconName: "close"
-                Accessible.name: I18n.tr("Cancel")
-                onClicked: root.editingBarId = ""
-            }
+                DActionButton {
+                    visible: root.editingBarId !== ""
+                    iconName: "close"
+                    Accessible.name: I18n.tr("Cancel")
+                    onClicked: root.editingBarId = ""
+                }
 
-            body: Loader {
-                width: parent.width
-                active: root.editingBarId !== ""
-                visible: active
-                sourceComponent: DTextField {
-                    id: renameField
+                body: Loader {
                     width: parent.width
-                    outlined: true
-                    labelText: I18n.tr("Name")
-                    text: root.renameDraft
-                    onTextEdited: root.renameDraft = renameField.text
-                    onAccepted: root.finishRename(renameField.text)
-                    Keys.onEscapePressed: root.editingBarId = ""
-                    Component.onCompleted: {
-                        renameField.forceActiveFocus();
-                        renameField.selectAll();
+                    active: root.editingBarId !== ""
+                    visible: active
+                    sourceComponent: DTextField {
+                        id: renameField
+                        width: parent.width
+                        outlined: true
+                        labelText: I18n.tr("Name")
+                        text: root.renameDraft
+                        onTextEdited: root.renameDraft = renameField.text
+                        onAccepted: root.finishRename(renameField.text)
+                        Keys.onEscapePressed: root.editingBarId = ""
+                        Component.onCompleted: {
+                            renameField.forceActiveFocus();
+                            renameField.selectAll();
+                        }
                     }
                 }
             }
-        }
 
-        SettingsRow {
-            title: I18n.tr("Layout", "noun, settings section title for arrangement options")
+            SettingsRow {
+                title: I18n.tr("Layout", "noun, settings section title for arrangement options")
 
-            body: SettingsLayoutPicker {}
-        }
+                body: SettingsLayoutPicker {}
+            }
 
-        Repeater {
-            model: root.barPages
+            Repeater {
+                model: root.barPages
 
-            delegate: SettingsNavRow {
-                required property var modelData
+                delegate: SettingsNavRow {
+                    required property var modelData
 
-                iconName: modelData.icon
-                title: modelData.text
-                hint: modelData.hint ?? ""
-                onClicked: keyboard => root.parentModal?.navigateTo(modelData.id, keyboard)
+                    iconName: modelData.icon
+                    title: modelData.text
+                    hint: modelData.hint ?? ""
+                    onClicked: keyboard => root.parentModal?.navigateTo(modelData.id, keyboard)
+                }
             }
         }
     }

@@ -12,126 +12,132 @@ Item {
     }
 
     SettingsPage {
-        SettingsCard {
-            width: parent.width
-            visible: dock.hasConfig
-            iconName: "photo_size_select_large"
-            title: I18n.tr("Size")
-            settingKey: "dockSizing"
-            tags: ["dock", "size", "icon", "spacing", "padding", "margin", "thickness"]
+        SettingsDeferred {
+            when: dock.hasConfig
 
-            SettingsSliderRow {
-                settingKey: "dockIconSize"
-                tags: ["dock", "icon", "size", "scale"]
-                resetStore: dock
-                resetKeys: ["iconSize"]
-                text: I18n.tr("Icon size")
-                value: dock.config?.iconSize ?? SettingsData.dockConfigDefaults().iconSize
-                minimum: 24
-                maximum: 96
-                unit: "px"
-                onSliderValueChanged: value => dock.setOption("iconSize", value)
-            }
+            SettingsCard {
+                width: parent.width
+                iconName: "photo_size_select_large"
+                title: I18n.tr("Size")
+                settingKey: "dockSizing"
+                tags: ["dock", "size", "icon", "spacing", "padding", "margin", "thickness"]
 
-            SettingsSliderRow {
-                settingKey: "dockItemSpacing"
-                tags: ["dock", "spacing", "icon", "widget", "gap"]
-                resetStore: dock
-                resetKeys: ["itemSpacing"]
-                text: I18n.tr("Spacing", "slider label, gap between dock items")
-                value: dock.config?.itemSpacing ?? SettingsData.dockConfigDefaults().itemSpacing
-                minimum: 0
-                maximum: 32
-                unit: "px"
-                onSliderValueChanged: value => dock.setOption("itemSpacing", value)
-            }
+                SettingsSliderRow {
+                    settingKey: "dockIconSize"
+                    tags: ["dock", "icon", "size", "scale"]
+                    resetStore: dock
+                    resetKeys: ["iconSize"]
+                    text: I18n.tr("Icon size")
+                    value: dock.config?.iconSize ?? SettingsData.dockConfigDefaults().iconSize
+                    minimum: 24
+                    maximum: 96
+                    unit: "px"
+                    onSliderValueChanged: value => dock.setOption("iconSize", value)
+                }
 
-            SettingsSliderRow {
-                settingKey: "dockSpacing"
-                tags: ["dock", "spacing", "padding"]
-                resetStore: dock
-                resetKeys: ["spacing"]
-                text: I18n.tr("Padding", "noun, spacing setting label")
-                value: dock.config?.spacing ?? SettingsData.dockConfigDefaults().spacing
-                minimum: 0
-                maximum: 32
-                unit: "px"
-                onSliderValueChanged: value => dock.setOption("spacing", value)
-            }
+                SettingsSliderRow {
+                    settingKey: "dockItemSpacing"
+                    tags: ["dock", "spacing", "icon", "widget", "gap"]
+                    resetStore: dock
+                    resetKeys: ["itemSpacing"]
+                    text: I18n.tr("Spacing", "slider label, gap between dock items")
+                    value: dock.config?.itemSpacing ?? SettingsData.dockConfigDefaults().itemSpacing
+                    minimum: 0
+                    maximum: 32
+                    unit: "px"
+                    onSliderValueChanged: value => dock.setOption("itemSpacing", value)
+                }
 
-            SettingsSliderRow {
-                settingKey: "dockMargin"
-                tags: ["dock", "margin", "edge", "gap"]
-                resetStore: dock
-                resetKeys: ["margin"]
-                text: I18n.tr("Margin", "slider label, gap between dock and screen edge")
-                visible: !dock.connectedFrameModeActive
-                value: dock.config?.margin ?? 8
-                minimum: 0
-                maximum: 100
-                unit: "px"
-                onSliderValueChanged: value => dock.setOption("margin", value)
+                SettingsSliderRow {
+                    settingKey: "dockSpacing"
+                    tags: ["dock", "spacing", "padding"]
+                    resetStore: dock
+                    resetKeys: ["spacing"]
+                    text: I18n.tr("Padding", "noun, spacing setting label")
+                    value: dock.config?.spacing ?? SettingsData.dockConfigDefaults().spacing
+                    minimum: 0
+                    maximum: 32
+                    unit: "px"
+                    onSliderValueChanged: value => dock.setOption("spacing", value)
+                }
+
+                SettingsSliderRow {
+                    settingKey: "dockMargin"
+                    tags: ["dock", "margin", "edge", "gap"]
+                    resetStore: dock
+                    resetKeys: ["margin"]
+                    text: I18n.tr("Margin", "slider label, gap between dock and screen edge")
+                    visible: !dock.connectedFrameModeActive
+                    value: dock.config?.margin ?? 8
+                    minimum: 0
+                    maximum: 100
+                    unit: "px"
+                    onSliderValueChanged: value => dock.setOption("margin", value)
+                }
             }
         }
 
-        SettingsToggleCard {
-            width: parent.width
-            visible: dock.hasConfig
-            iconName: "zoom_in"
-            settingKey: "dockMagnification"
-            tags: ["dock", "zoom", "magnification", "hover", "scale", "fisheye"]
-            title: I18n.tr("Magnification", "dock setting: enlarge icons near the cursor")
-            checked: dock.config?.magnification ?? false
-            onToggled: checked => dock.setOption("magnification", checked)
+        SettingsDeferred {
+            when: dock.hasConfig
 
-            SettingsSliderRow {
-                settingKey: "dockMagnificationScale"
-                tags: ["dock", "zoom", "magnification", "scale"]
-                resetStore: dock
-                resetKeys: ["magnificationScale"]
-                text: I18n.tr("Scale")
-                value: dock.config?.magnificationScale ?? 130
-                minimum: 105
-                maximum: 160
-                step: 5
-                unit: "%"
-                onSliderValueChanged: value => dock.setOption("magnificationScale", value)
-            }
+            SettingsToggleCard {
+                width: parent.width
+                iconName: "zoom_in"
+                settingKey: "dockMagnification"
+                tags: ["dock", "zoom", "magnification", "hover", "scale", "fisheye"]
+                title: I18n.tr("Magnification", "dock setting: enlarge icons near the cursor")
+                checked: dock.config?.magnification ?? false
+                onToggled: checked => dock.setOption("magnification", checked)
 
-            SettingsDropdownRow {
-                settingKey: "dockMagnificationProfile"
-                tags: ["dock", "zoom", "magnification", "animation", "profile", "style", "curve"]
-                resetStore: dock
-                resetKeys: ["magnificationProfile"]
-                text: I18n.tr("Animation style", "dock setting: magnification curve profile")
-                currentValue: {
-                    const profile = dock.config?.magnificationProfile ?? "parabolic";
-                    switch (profile) {
-                    case "cosine":
-                        return I18n.tr("Cosine", "magnification animation profile");
-                    case "gaussian":
-                        return I18n.tr("Gaussian", "magnification animation profile");
-                    default:
-                        return I18n.tr("Parabolic", "magnification animation profile");
+                SettingsSliderRow {
+                    settingKey: "dockMagnificationScale"
+                    tags: ["dock", "zoom", "magnification", "scale"]
+                    resetStore: dock
+                    resetKeys: ["magnificationScale"]
+                    text: I18n.tr("Scale")
+                    value: dock.config?.magnificationScale ?? 130
+                    minimum: 105
+                    maximum: 160
+                    step: 5
+                    unit: "%"
+                    onSliderValueChanged: value => dock.setOption("magnificationScale", value)
+                }
+
+                SettingsDropdownRow {
+                    settingKey: "dockMagnificationProfile"
+                    tags: ["dock", "zoom", "magnification", "animation", "profile", "style", "curve"]
+                    resetStore: dock
+                    resetKeys: ["magnificationProfile"]
+                    text: I18n.tr("Animation style", "dock setting: magnification curve profile")
+                    currentValue: {
+                        const profile = dock.config?.magnificationProfile ?? "parabolic";
+                        switch (profile) {
+                        case "cosine":
+                            return I18n.tr("Cosine", "magnification animation profile");
+                        case "gaussian":
+                            return I18n.tr("Gaussian", "magnification animation profile");
+                        default:
+                            return I18n.tr("Parabolic", "magnification animation profile");
+                        }
+                    }
+                    options: [I18n.tr("Parabolic", "magnification animation profile"), I18n.tr("Cosine", "magnification animation profile"), I18n.tr("Gaussian", "magnification animation profile")]
+                    onValueChanged: value => {
+                        if (value === I18n.tr("Cosine", "magnification animation profile"))
+                            dock.setOption("magnificationProfile", "cosine");
+                        else if (value === I18n.tr("Gaussian", "magnification animation profile"))
+                            dock.setOption("magnificationProfile", "gaussian");
+                        else
+                            dock.setOption("magnificationProfile", "parabolic");
                     }
                 }
-                options: [I18n.tr("Parabolic", "magnification animation profile"), I18n.tr("Cosine", "magnification animation profile"), I18n.tr("Gaussian", "magnification animation profile")]
-                onValueChanged: value => {
-                    if (value === I18n.tr("Cosine", "magnification animation profile"))
-                        dock.setOption("magnificationProfile", "cosine");
-                    else if (value === I18n.tr("Gaussian", "magnification animation profile"))
-                        dock.setOption("magnificationProfile", "gaussian");
-                    else
-                        dock.setOption("magnificationProfile", "parabolic");
-                }
-            }
 
-            SettingsToggleRow {
-                settingKey: "dockMagnificationExpand"
-                tags: ["dock", "zoom", "magnification", "expand", "displace", "shift"]
-                text: I18n.tr("Push neighboring icons", "dock setting: shift adjacent icons and expand dock to avoid overlap")
-                checked: dock.config?.magnificationExpand ?? false
-                onToggled: checked => dock.setOption("magnificationExpand", checked)
+                SettingsToggleRow {
+                    settingKey: "dockMagnificationExpand"
+                    tags: ["dock", "zoom", "magnification", "expand", "displace", "shift"]
+                    text: I18n.tr("Push neighboring icons", "dock setting: shift adjacent icons and expand dock to avoid overlap")
+                    checked: dock.config?.magnificationExpand ?? false
+                    onToggled: checked => dock.setOption("magnificationExpand", checked)
+                }
             }
         }
 

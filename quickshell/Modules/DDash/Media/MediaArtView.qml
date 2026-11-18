@@ -26,7 +26,8 @@ Item {
         if (lyricsReady && lyricsOpen)
             lyricsHeld = true;
     }
-    readonly property bool animationsEnabled: !SettingsData.reduceMotion && Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
+    readonly property bool animationsEnabled: !Theme.reduceMotion
+    readonly property bool swapAnimated: animationsEnabled && !root.player.lyricsRestoring
 
     MediaArtSurface {
         id: surface
@@ -42,7 +43,7 @@ Item {
         scale: root.lyricsShown ? DashMetrics.mediaArtLyricsScale : 1
 
         Behavior on opacity {
-            enabled: root.animationsEnabled
+            enabled: root.swapAnimated
             NumberAnimation {
                 duration: Theme.expressiveDurations.expressiveEffects
                 easing.type: Easing.BezierSpline
@@ -51,7 +52,7 @@ Item {
         }
 
         Behavior on scale {
-            enabled: root.animationsEnabled
+            enabled: root.swapAnimated
             NumberAnimation {
                 duration: Theme.expressiveDurations.expressiveDefaultSpatial
                 easing.type: Easing.BezierSpline
@@ -83,6 +84,7 @@ Item {
     Loader {
         anchors.fill: parent
         active: root.lyricsOpen
+        opacity: root.lyricsOpen ? 1 : 0
         onLoaded: {
             if (root.player.ownsFocus())
                 item.forceActiveFocus(Qt.PopupFocusReason);
@@ -92,6 +94,15 @@ Item {
             player: root.player
             radius: 0
             backgroundColor: "transparent"
+        }
+
+        Behavior on opacity {
+            enabled: root.swapAnimated
+            NumberAnimation {
+                duration: Theme.expressiveDurations.expressiveEffects
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: Theme.expressiveCurves.expressiveEffects
+            }
         }
     }
 

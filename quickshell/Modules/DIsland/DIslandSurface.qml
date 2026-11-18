@@ -435,15 +435,17 @@ Item {
 
         Behavior on color {
             ColorAnimation {
-                duration: root.reducedMotion ? 0 : Theme.shortDuration
-                easing.type: Easing.OutCubic
+                duration: root.reducedMotion ? 0 : Theme.expressiveDurations.expressiveFastEffects
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
             }
         }
 
         Behavior on border.color {
             ColorAnimation {
-                duration: root.reducedMotion ? 0 : Theme.shortDuration
-                easing.type: Easing.OutCubic
+                duration: root.reducedMotion ? 0 : Theme.expressiveDurations.expressiveFastEffects
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
             }
         }
 

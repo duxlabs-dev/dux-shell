@@ -8,6 +8,7 @@ QtObject {
 
     property bool enabled: true
     property bool reducedMotion: false
+    readonly property bool snaps: reducedMotion || DC.Style.motionOff
     property bool running: false
     property real stiffness: 220
     property real damping: 23
@@ -30,7 +31,7 @@ QtObject {
     }
 
     function retarget(rect) {
-        if (!enabled || reducedMotion) {
+        if (!enabled || snaps) {
             snapTo(rect);
             return;
         }
@@ -51,7 +52,7 @@ QtObject {
     }
 
     function advance(rawFrameTime) {
-        if (!enabled || !running || reducedMotion)
+        if (!enabled || !running || snaps)
             return;
         if (rawFrameTime <= 0)
             return;
@@ -79,8 +80,8 @@ QtObject {
         value = next;
     }
 
-    onReducedMotionChanged: {
-        if (reducedMotion)
+    onSnapsChanged: {
+        if (snaps)
             snapTo(target);
     }
 
@@ -90,7 +91,7 @@ QtObject {
     }
 
     property FrameAnimation driver: FrameAnimation {
-        running: root.enabled && root.running && !root.reducedMotion
+        running: root.enabled && root.running && !root.snaps
         onTriggered: root.advance(frameTime)
     }
 }

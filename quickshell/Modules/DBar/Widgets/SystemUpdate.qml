@@ -24,22 +24,25 @@ BasePill {
 
     Behavior on width {
         NumberAnimation {
-            duration: Theme.shortDuration
-            easing.type: Theme.standardEasing
+            duration: Theme.expressiveDurations.expressiveDefaultSpatial
+            easing.type: Easing.BezierSpline
+            easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
         }
     }
 
     Behavior on height {
         NumberAnimation {
-            duration: Theme.shortDuration
-            easing.type: Theme.standardEasing
+            duration: Theme.expressiveDurations.expressiveDefaultSpatial
+            easing.type: Easing.BezierSpline
+            easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
         }
     }
 
     Behavior on opacity {
         NumberAnimation {
-            duration: Theme.shortDuration
-            easing.type: Theme.standardEasing
+            duration: Theme.expressiveDurations.expressiveFastEffects
+            easing.type: Easing.BezierSpline
+            easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
         }
     }
 
@@ -79,9 +82,9 @@ BasePill {
                     id: rotationAnimation
                     from: 0
                     to: 360
-                    duration: Theme.expressiveDurations.extraLarge
+                    duration: Theme.extraLongDuration
                     loops: Animation.Infinite
-                    running: root.isChecking && root.surfaceLive
+                    running: root.isChecking && root.surfaceLive && !Theme.motionOff
 
                     onRunningChanged: {
                         if (!running)
@@ -134,9 +137,9 @@ BasePill {
                         id: rotationAnimationHorizontal
                         from: 0
                         to: 360
-                        duration: Theme.expressiveDurations.extraLarge
+                        duration: Theme.extraLongDuration
                         loops: Animation.Infinite
-                        running: root.isChecking && root.surfaceLive
+                        running: root.isChecking && root.surfaceLive && !Theme.motionOff
 
                         onRunningChanged: {
                             if (!running)

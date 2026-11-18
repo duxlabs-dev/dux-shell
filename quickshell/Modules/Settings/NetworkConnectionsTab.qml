@@ -199,23 +199,25 @@ Item {
         id: page
 
         // Static so the search extractor sees a literal settingKey; it stays visible so search can land here.
-        SettingsCard {
-            title: root.groups.length > 0 ? root.groupTitle(root.groups[0].group) : ""
-            settingKey: "networkConnections"
-            tags: ["connections", "profiles", "ipv4", "ipv6", "dns", "static ip", "gateway", "routes", "mac", "mtu", "metered", "firewall", "zone", "802.1x", "wired", "wifi", "vlan", "bond", "bridge", "ports", "pppoe", "dsl", "apn", "mobile broadband", "bluetooth"]
+        SettingsDeferred {
+            SettingsCard {
+                title: root.groups.length > 0 ? root.groupTitle(root.groups[0].group) : ""
+                settingKey: "networkConnections"
+                tags: ["connections", "profiles", "ipv4", "ipv6", "dns", "static ip", "gateway", "routes", "mac", "mtu", "metered", "firewall", "zone", "802.1x", "wired", "wifi", "vlan", "bond", "bridge", "ports", "pppoe", "dsl", "apn", "mobile broadband", "bluetooth"]
 
-            SettingsRow {
-                visible: root.loaded && root.groups.length === 0
-                title: I18n.tr("No profiles")
-            }
+                SettingsRow {
+                    visible: root.loaded && root.groups.length === 0
+                    title: I18n.tr("No profiles")
+                }
 
-            Repeater {
-                model: root.groups.length > 0 ? root.groups[0].profiles : []
+                Repeater {
+                    model: root.groups.length > 0 ? root.groups[0].profiles : []
 
-                delegate: ProfileRow {
-                    required property var modelData
-                    profile: modelData
-                    group: root.groups[0].group
+                    delegate: ProfileRow {
+                        required property var modelData
+                        profile: modelData
+                        group: root.groups[0].group
+                    }
                 }
             }
         }

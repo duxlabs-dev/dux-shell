@@ -78,7 +78,7 @@ Rectangle {
     }
 
     Behavior on scale {
-        enabled: !SettingsData.reduceMotion
+        enabled: !Theme.reduceMotion
         NumberAnimation {
             duration: Theme.expressiveDurations.expressiveFastSpatial
             easing.type: Easing.BezierSpline

@@ -1088,8 +1088,8 @@ FocusScope {
 
                         required property int index
                         readonly property bool holdsBand: index === root.bandPage
-                        // Waits for the restored page, so reopening on a later page never builds the first.
-                        readonly property bool shown: root.ready && pager.pageShown(index)
+                        // Waits for the restored page, so reopening on a later page never builds the first, and for the pager to size it.
+                        readonly property bool shown: root.ready && width > 0 && pager.pageShown(index)
 
                         onShownChanged: {
                             if (shown)

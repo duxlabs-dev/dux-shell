@@ -13,8 +13,6 @@ DModal {
     useOverlayLayer: true
     animationType: "fade"
     animationDuration: LockMetrics.effectsDuration
-    animationEnterCurve: Theme.expressiveCurves.expressiveEffects
-    animationExitCurve: Theme.expressiveCurves.expressiveEffects
 
     property rect parentBounds: Qt.rect(0, 0, 0, 0)
     property var parentScreen: null

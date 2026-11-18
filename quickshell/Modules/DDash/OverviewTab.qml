@@ -27,6 +27,7 @@ FocusScope {
     readonly property int usedColumns: grid.usedColumns
     readonly property bool cardResizing: grid.sizePreview !== null
     readonly property bool cardInteracting: grid.interacting
+    readonly property bool loading: grid.loading
     readonly property bool sheetShown: (detailSheet.item?.shown ?? false) || (editorSheet.item?.shown ?? false) || (optionsSheet.item?.shown ?? false)
     readonly property bool addMenuOpen: addMenu.item?.open ?? false
     readonly property bool blocksTabNavigation: grid.blocksTabNavigation || sheetShown || addMenuOpen

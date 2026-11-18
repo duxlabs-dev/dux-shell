@@ -61,40 +61,42 @@ Item {
     Component.onCompleted: refreshAuthDetection()
 
     SettingsPage {
-        SettingsCard {
-            width: parent.width
-            iconName: "fingerprint"
-            settingKey: "greeterAuth"
+        SettingsDeferred {
+            SettingsCard {
+                width: parent.width
+                iconName: "fingerprint"
+                settingKey: "greeterAuth"
 
-            SettingsToggleRow {
-                settingKey: "greeterPamExternallyManaged"
-                tags: ["greeter", "pam", "managed", "external", "greetd", "auth"]
-                text: I18n.tr("Use system PAM authentication", "system PAM policy toggle")
-                description: I18n.tr("DMS removes its managed block from %1 and stops write services", "greeter system PAM toggle description, %1 is a PAM config path").arg("/etc/pam.d/greetd")
-                checked: SettingsData.greeterPamExternallyManaged
-                onToggled: checked => SettingsData.set("greeterPamExternallyManaged", checked)
-            }
+                SettingsToggleRow {
+                    settingKey: "greeterPamExternallyManaged"
+                    tags: ["greeter", "pam", "managed", "external", "greetd", "auth"]
+                    text: I18n.tr("Use system PAM authentication", "system PAM policy toggle")
+                    description: I18n.tr("DMS removes its managed block from %1 and stops write services", "greeter system PAM toggle description, %1 is a PAM config path").arg("/etc/pam.d/greetd")
+                    checked: SettingsData.greeterPamExternallyManaged
+                    onToggled: checked => SettingsData.set("greeterPamExternallyManaged", checked)
+                }
 
-            SettingsToggleRow {
-                settingKey: "greeterEnableFprint"
-                tags: ["greeter", "fingerprint", "fprintd", "login", "auth"]
-                text: I18n.tr("Fingerprint at login")
-                description: root.greeterFingerprintDescription()
-                descriptionColor: (SettingsData.greeterFingerprintReason === "ready" || SettingsData.greeterFingerprintReason === "configured_externally") ? Theme.surfaceVariantText : Theme.warning
-                checked: SettingsData.greeterEnableFprint
-                enabled: root.greeterFprintToggleAvailable && !SettingsData.greeterPamExternallyManaged
-                onToggled: checked => SettingsData.set("greeterEnableFprint", checked)
-            }
+                SettingsToggleRow {
+                    settingKey: "greeterEnableFprint"
+                    tags: ["greeter", "fingerprint", "fprintd", "login", "auth"]
+                    text: I18n.tr("Fingerprint at login")
+                    description: root.greeterFingerprintDescription()
+                    descriptionColor: (SettingsData.greeterFingerprintReason === "ready" || SettingsData.greeterFingerprintReason === "configured_externally") ? Theme.surfaceVariantText : Theme.warning
+                    checked: SettingsData.greeterEnableFprint
+                    enabled: root.greeterFprintToggleAvailable && !SettingsData.greeterPamExternallyManaged
+                    onToggled: checked => SettingsData.set("greeterEnableFprint", checked)
+                }
 
-            SettingsToggleRow {
-                settingKey: "greeterEnableU2f"
-                tags: ["greeter", "u2f", "security", "key", "login", "auth"]
-                text: I18n.tr("Security key at login")
-                description: root.greeterU2fDescription()
-                descriptionColor: (SettingsData.greeterU2fReason === "ready" || SettingsData.greeterU2fReason === "configured_externally") ? Theme.surfaceVariantText : Theme.warning
-                checked: SettingsData.greeterEnableU2f
-                enabled: root.greeterU2fToggleAvailable && !SettingsData.greeterPamExternallyManaged
-                onToggled: checked => SettingsData.set("greeterEnableU2f", checked)
+                SettingsToggleRow {
+                    settingKey: "greeterEnableU2f"
+                    tags: ["greeter", "u2f", "security", "key", "login", "auth"]
+                    text: I18n.tr("Security key at login")
+                    description: root.greeterU2fDescription()
+                    descriptionColor: (SettingsData.greeterU2fReason === "ready" || SettingsData.greeterU2fReason === "configured_externally") ? Theme.surfaceVariantText : Theme.warning
+                    checked: SettingsData.greeterEnableU2f
+                    enabled: root.greeterU2fToggleAvailable && !SettingsData.greeterPamExternallyManaged
+                    onToggled: checked => SettingsData.set("greeterEnableU2f", checked)
+                }
             }
         }
 

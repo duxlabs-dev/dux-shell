@@ -96,10 +96,9 @@ Item {
 
     RectSpringMotion {
         id: indicatorSpring
-        enabled: !Theme.springMotionDisabled
-        reducedMotion: SettingsData.reduceMotion
-        stiffness: Theme.springPreset("fast", Theme.expressiveDurations.expressiveFastSpatial).stiffness
-        damping: Theme.springPreset("fast", Theme.expressiveDurations.expressiveFastSpatial).damping
+        reducedMotion: Theme.reduceMotion
+        stiffness: Theme.springPreset("fastSpatial").stiffness
+        damping: Theme.springPreset("fastSpatial").damping
     }
 
     Rectangle {

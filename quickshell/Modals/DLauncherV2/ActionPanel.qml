@@ -133,8 +133,9 @@ Rectangle {
     Behavior on height {
         NumberAnimation {
             id: heightAnimation
-            duration: Theme.shortDuration
-            easing.type: Theme.standardEasing
+            duration: Theme.expressiveDurations.expressiveDefaultSpatial
+            easing.type: Easing.BezierSpline
+            easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
         }
     }
 

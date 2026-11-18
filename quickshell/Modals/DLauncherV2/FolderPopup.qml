@@ -42,7 +42,7 @@ Item {
     readonly property string liveName: controller?.activeFolder?.name ?? ""
     readonly property bool renamePending: controller?.folderRenamePending ?? false
     readonly property int selectedIndex: controller?.folderSelectedIndex ?? -1
-    readonly property bool animate: animationsEnabled && Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None && !SettingsData.reduceMotion
+    readonly property bool animate: animationsEnabled && !Theme.reduceMotion
     readonly property bool transitioning: enterPending || enterAnimation.running || exitAnimation.running
 
     readonly property real padding: Theme.spacingL

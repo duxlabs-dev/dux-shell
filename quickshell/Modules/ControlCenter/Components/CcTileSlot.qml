@@ -42,9 +42,9 @@ DEditableGridSlot {
     Behavior on overflowProgress {
         enabled: CcMetrics.animationsEnabled
         NumberAnimation {
-            duration: Theme.expressiveDurations.expressiveDefaultSpatial
+            duration: Theme.expressiveDurations.expressiveSlowEffects
             easing.type: Easing.BezierSpline
-            easing.bezierCurve: Theme.expressiveCurves.emphasizedAccel
+            easing.bezierCurve: Theme.expressiveCurves.expressiveSlowEffects
         }
     }
 
@@ -61,9 +61,9 @@ DEditableGridSlot {
     Behavior on swallowProgress {
         enabled: CcMetrics.animationsEnabled
         NumberAnimation {
-            duration: Theme.expressiveDurations.expressiveFastSpatial
+            duration: Theme.expressiveDurations.expressiveSlowEffects
             easing.type: Easing.BezierSpline
-            easing.bezierCurve: Theme.expressiveCurves.standard
+            easing.bezierCurve: Theme.expressiveCurves.expressiveSlowEffects
         }
     }
 

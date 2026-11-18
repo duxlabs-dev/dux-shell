@@ -27,7 +27,7 @@ SettingsCard {
         text: I18n.tr("Spring", "animation setting label, spring physics bounciness, not the season")
         model: [I18n.tr("Smooth", "adjective, spring animation option with no bounce"), I18n.tr("Balanced"), I18n.tr("Playful", "adjective, spring animation option with the most bounce")]
         currentIndex: root.springPresetIndex
-        enabled: !SettingsData.reduceMotion
+        enabled: !Theme.reduceMotion
         onSelectionChanged: (index, selected) => {
             if (!selected || index === root.springPresetIndex)
                 return;
@@ -49,7 +49,7 @@ SettingsCard {
         maximum: 1200
         step: 10
         value: Math.round(root.store.setting("islandSpringStiffness"))
-        enabled: !SettingsData.reduceMotion
+        enabled: !Theme.reduceMotion
         onSliderDragFinished: finalValue => root.store.apply("islandSpringStiffness", finalValue)
     }
 
@@ -64,7 +64,7 @@ SettingsCard {
         maximum: 100
         step: 1
         value: Math.round(root.store.setting("islandSpringDamping"))
-        enabled: !SettingsData.reduceMotion
+        enabled: !Theme.reduceMotion
         onSliderDragFinished: finalValue => root.store.apply("islandSpringDamping", finalValue)
     }
 
@@ -80,7 +80,7 @@ SettingsCard {
         unit: ""
         decimals: 2
         value: Math.round(root.store.setting("islandSpringMass") * 100)
-        enabled: !SettingsData.reduceMotion
+        enabled: !Theme.reduceMotion
         onSliderDragFinished: finalValue => root.store.apply("islandSpringMass", finalValue / 100)
     }
 }

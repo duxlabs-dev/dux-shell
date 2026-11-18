@@ -18,11 +18,10 @@ Item {
     property real contentOriginY: 0
     property real contentScale: 0
 
-    readonly property var geometrySpringParams: Theme.springPreset("expressive", Theme.variantDuration(Theme.expressiveDurations.expressiveDefaultSpatial, overviewOpen))
+    readonly property var geometrySpringParams: Theme.springPreset("defaultSpatial")
 
     SpringMotion {
         id: xSpring
-        reducedMotion: Theme.springMotionDisabled
         positionEpsilon: 0.05
         velocityEpsilon: 0.05
         stiffness: root.geometrySpringParams.stiffness
@@ -32,7 +31,6 @@ Item {
 
     SpringMotion {
         id: ySpring
-        reducedMotion: Theme.springMotionDisabled
         positionEpsilon: 0.05
         velocityEpsilon: 0.05
         stiffness: root.geometrySpringParams.stiffness
@@ -42,7 +40,6 @@ Item {
 
     SpringMotion {
         id: widthSpring
-        reducedMotion: Theme.springMotionDisabled
         positionEpsilon: 0.05
         velocityEpsilon: 0.05
         stiffness: root.geometrySpringParams.stiffness
@@ -52,7 +49,6 @@ Item {
 
     SpringMotion {
         id: heightSpring
-        reducedMotion: Theme.springMotionDisabled
         positionEpsilon: 0.05
         velocityEpsilon: 0.05
         stiffness: root.geometrySpringParams.stiffness
@@ -138,7 +134,6 @@ Item {
 
                     SpringMotion {
                         id: iconWidthSpring
-                        reducedMotion: Theme.springMotionDisabled
                         positionEpsilon: 0.05
                         velocityEpsilon: 0.05
                         stiffness: root.geometrySpringParams.stiffness
@@ -148,7 +143,6 @@ Item {
 
                     SpringMotion {
                         id: iconHeightSpring
-                        reducedMotion: Theme.springMotionDisabled
                         positionEpsilon: 0.05
                         velocityEpsilon: 0.05
                         stiffness: root.geometrySpringParams.stiffness

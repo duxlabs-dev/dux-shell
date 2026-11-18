@@ -38,318 +38,327 @@ Item {
     SettingsPage {
         id: mainColumn
 
-        SettingsCard {
-            iconName: "border_outer"
-            title: I18n.tr("Frame")
-            settingKey: "frameBorder"
-            collapsible: true
-            visible: SettingsData.frameEnabled
+        SettingsDeferred {
+            when: SettingsData.frameEnabled
 
-            SettingsSliderRow {
-                settingKey: "frameRounding"
-                tags: ["frame", "border", "rounding", "radius", "corner"]
-                text: I18n.tr("Radius", "corner radius slider label")
-                unit: "px"
-                minimum: 0
-                maximum: 100
-                step: 1
-                value: SettingsData.frameRounding
-                onSliderDragFinished: v => SettingsData.set("frameRounding", v)
-            }
+            SettingsCard {
+                iconName: "border_outer"
+                title: I18n.tr("Frame")
+                settingKey: "frameBorder"
+                collapsible: true
 
-            SettingsSliderRow {
-                settingKey: "frameThickness"
-                tags: ["frame", "border", "thickness", "size", "width"]
-                text: I18n.tr("Thickness")
-                unit: "px"
-                minimum: 2
-                maximum: 100
-                step: 1
-                value: SettingsData.frameThickness
-                onSliderDragFinished: v => SettingsData.set("frameThickness", v)
-            }
+                SettingsSliderRow {
+                    settingKey: "frameRounding"
+                    tags: ["frame", "border", "rounding", "radius", "corner"]
+                    text: I18n.tr("Radius", "corner radius slider label")
+                    unit: "px"
+                    minimum: 0
+                    maximum: 100
+                    step: 1
+                    value: SettingsData.frameRounding
+                    onSliderDragFinished: v => SettingsData.set("frameRounding", v)
+                }
 
-            SettingsSliderRow {
-                settingKey: "frameBarSize"
-                tags: ["frame", "bar", "thickness", "size", "height", "width"]
-                text: I18n.tr("Bar size")
-                unit: "px"
-                minimum: 24
-                maximum: 100
-                step: 1
-                value: SettingsData.frameBarSize
-                onSliderDragFinished: v => SettingsData.set("frameBarSize", v)
-            }
+                SettingsSliderRow {
+                    settingKey: "frameThickness"
+                    tags: ["frame", "border", "thickness", "size", "width"]
+                    text: I18n.tr("Thickness")
+                    unit: "px"
+                    minimum: 2
+                    maximum: 100
+                    step: 1
+                    value: SettingsData.frameThickness
+                    onSliderDragFinished: v => SettingsData.set("frameThickness", v)
+                }
 
-            SettingsSliderRow {
-                settingKey: "frameBarInsetPadding"
-                tags: ["frame", "bar", "edge", "inset", "padding", "corner", "end"]
-                text: I18n.tr("Bar inset padding")
-                description: I18n.tr("Gap between the bar ends and the outermost widgets", "bar inset padding slider description")
-                minimumLabel: I18n.tr("Edge to edge", "slider minimum label, bar touches the screen edges")
-                unit: "px"
-                minimum: 0
-                maximum: 100
-                step: 1
-                value: root.frameInsetPaddingDisplay
-                onSliderDragFinished: v => SettingsData.set("frameBarInsetPadding", v)
-            }
+                SettingsSliderRow {
+                    settingKey: "frameBarSize"
+                    tags: ["frame", "bar", "thickness", "size", "height", "width"]
+                    text: I18n.tr("Bar size")
+                    unit: "px"
+                    minimum: 24
+                    maximum: 100
+                    step: 1
+                    value: SettingsData.frameBarSize
+                    onSliderDragFinished: v => SettingsData.set("frameBarSize", v)
+                }
 
-            SettingsToggleRow {
-                id: frameBlurToggle
-                settingKey: "frameBlurEnabled"
-                tags: ["frame", "blur", "background", "glass", "transparency", "frosted"]
-                text: I18n.tr("Blur")
-                checked: SettingsData.frameBlurEnabled
-                onToggled: checked => SettingsData.set("frameBlurEnabled", checked)
-                enabled: BlurService.available && SettingsData.blurEnabled
-                visible: BlurService.available
-            }
+                SettingsSliderRow {
+                    settingKey: "frameBarInsetPadding"
+                    tags: ["frame", "bar", "edge", "inset", "padding", "corner", "end"]
+                    text: I18n.tr("Bar inset padding")
+                    description: I18n.tr("Gap between the bar ends and the outermost widgets", "bar inset padding slider description")
+                    minimumLabel: I18n.tr("Edge to edge", "slider minimum label, bar touches the screen edges")
+                    unit: "px"
+                    minimum: 0
+                    maximum: 100
+                    step: 1
+                    value: root.frameInsetPaddingDisplay
+                    onSliderDragFinished: v => SettingsData.set("frameBarInsetPadding", v)
+                }
 
-            SettingsControlledBy {
-                visible: BlurService.available && !SettingsData.blurEnabled
-                target: "surfaces"
-                parentModal: root.parentModal
-                section: "blurEnabled"
-                settingLabel: I18n.tr("Background blur")
-            }
+                SettingsToggleRow {
+                    id: frameBlurToggle
+                    settingKey: "frameBlurEnabled"
+                    tags: ["frame", "blur", "background", "glass", "transparency", "frosted"]
+                    text: I18n.tr("Blur")
+                    checked: SettingsData.frameBlurEnabled
+                    onToggled: checked => SettingsData.set("frameBlurEnabled", checked)
+                    enabled: BlurService.available && SettingsData.blurEnabled
+                    visible: BlurService.available
+                }
 
-            SurfaceColorRow {
-                settingKey: "frameSurfaceColor"
-                tags: ["frame", "background", "color", "surface"]
-                visible: !!root.frameBar
-                text: I18n.tr("Background")
-                defaultColor: Theme.hostSurface
-                currentMode: root.frameBar?.surfaceColor ?? "default"
-                customColor: root.frameBar?.surfaceCustomColor ?? SettingsData.barConfigDefault("surfaceCustomColor")
-                pickerTitle: I18n.tr("Background")
-                modified: (root.frameBar?.surfaceColor ?? "default") !== "default"
-                resetByKeys: false
-                onResetRequested: root.updateFrameBar({
-                    surfaceColor: "default",
-                    surfaceCustomColor: SettingsData.barConfigDefault("surfaceCustomColor")
-                })
-                onModeSelected: mode => root.updateFrameBar({
-                        surfaceColor: mode
+                SettingsControlledBy {
+                    visible: BlurService.available && !SettingsData.blurEnabled
+                    target: "surfaces"
+                    parentModal: root.parentModal
+                    section: "blurEnabled"
+                    settingLabel: I18n.tr("Background blur")
+                }
+
+                SurfaceColorRow {
+                    settingKey: "frameSurfaceColor"
+                    tags: ["frame", "background", "color", "surface"]
+                    visible: !!root.frameBar
+                    text: I18n.tr("Background")
+                    defaultColor: Theme.hostSurface
+                    currentMode: root.frameBar?.surfaceColor ?? "default"
+                    customColor: root.frameBar?.surfaceCustomColor ?? SettingsData.barConfigDefault("surfaceCustomColor")
+                    pickerTitle: I18n.tr("Background")
+                    modified: (root.frameBar?.surfaceColor ?? "default") !== "default"
+                    resetByKeys: false
+                    onResetRequested: root.updateFrameBar({
+                        surfaceColor: "default",
+                        surfaceCustomColor: SettingsData.barConfigDefault("surfaceCustomColor")
                     })
-                onCustomColorSelected: selectedColor => root.updateFrameBar({
-                        surfaceCustomColor: selectedColor.toString()
-                    })
-            }
+                    onModeSelected: mode => root.updateFrameBar({
+                            surfaceColor: mode
+                        })
+                    onCustomColorSelected: selectedColor => root.updateFrameBar({
+                            surfaceCustomColor: selectedColor.toString()
+                        })
+                }
 
-            SettingsToggleSliderRow {
-                settingKey: "frameSurfaceOpacity"
-                tags: ["frame", "opacity", "transparency", "override", "interface", "style"]
-                visible: !!root.frameBar
-                text: I18n.tr("Opacity")
-                description: I18n.tr("Override")
-                checked: root.frameBarOverridden
-                value: Math.round((root.frameBar?.transparency ?? 1) * 100)
-                minimum: 0
-                maximum: 100
-                modified: root.frameBarOverridden
-                valueModified: (root.frameBar?.transparency ?? 1) !== 1
-                onResetRequested: root.updateFrameBar({
-                    followInterfaceStyle: true,
-                    transparency: 1
-                })
-                onValueResetRequested: root.updateFrameBar({
-                    transparency: 1
-                })
-                onToggled: checked => root.updateFrameBar({
-                        followInterfaceStyle: !checked
+                SettingsToggleSliderRow {
+                    settingKey: "frameSurfaceOpacity"
+                    tags: ["frame", "opacity", "transparency", "override", "interface", "style"]
+                    visible: !!root.frameBar
+                    text: I18n.tr("Opacity")
+                    description: I18n.tr("Override")
+                    checked: root.frameBarOverridden
+                    value: Math.round((root.frameBar?.transparency ?? 1) * 100)
+                    minimum: 0
+                    maximum: 100
+                    modified: root.frameBarOverridden
+                    valueModified: (root.frameBar?.transparency ?? 1) !== 1
+                    onResetRequested: root.updateFrameBar({
+                        followInterfaceStyle: true,
+                        transparency: 1
                     })
-                onSliderDragFinished: finalValue => root.updateFrameBar({
-                        transparency: finalValue / 100
+                    onValueResetRequested: root.updateFrameBar({
+                        transparency: 1
                     })
+                    onToggled: checked => root.updateFrameBar({
+                            followInterfaceStyle: !checked
+                        })
+                    onSliderDragFinished: finalValue => root.updateFrameBar({
+                            transparency: finalValue / 100
+                        })
+                }
             }
         }
 
-        SettingsCard {
-            iconName: "rounded_corner"
-            title: I18n.tr("Surface")
-            settingKey: "barCorners"
-            tags: ["background", "opacity", "corners", "rounded", "goth", "shadow", "palette", "contrast"]
-            visible: (bar.selectedBarConfig?.enabled ?? false) && !bar.selectedBarFrameStyled
+        SettingsDeferred {
+            when: (bar.selectedBarConfig?.enabled ?? false) && !bar.selectedBarFrameStyled
 
-            SettingsButtonGroupRow {
-                settingKey: "islandPalette"
-                tags: ["island", "appearance", "palette", "surface", "bright", "dim"]
-                visible: bar.selectedBarIsIsland
-                resetStore: bar
-                resetKeys: ["islandPalette"]
-                text: I18n.tr("Palette", "island settings: surface tone choice")
-                model: [I18n.tr("Default", "island settings: default surface tone"), I18n.tr("Bright", "island settings: bright surface tone"), I18n.tr("Dim", "island settings: dim surface tone")]
-                values: root.paletteValues
-                value: bar.islandSetting("islandPalette")
-                fallbackValue: "default"
-                onValueSelected: value => bar.apply("islandPalette", value)
-            }
+            SettingsCard {
+                iconName: "rounded_corner"
+                title: I18n.tr("Surface")
+                settingKey: "barCorners"
+                tags: ["background", "opacity", "corners", "rounded", "goth", "shadow", "palette", "contrast"]
 
-            SettingsToggleRow {
-                settingKey: "islandHighContrast"
-                tags: ["island", "appearance", "contrast", "accessibility", "outline"]
-                visible: bar.selectedBarIsIsland
-                text: I18n.tr("High contrast", "island settings: high contrast toggle")
-                checked: bar.islandSetting("islandHighContrast")
-                onToggled: checked => bar.apply("islandHighContrast", checked)
-            }
-
-            SurfaceColorRow {
-                settingKey: "barSurfaceColor"
-                tags: ["background", "color", "surface", "bar", "material"]
-                resetStore: bar
-                resetKeys: ["surfaceColor", "surfaceCustomColor"]
-                text: I18n.tr("Background")
-                defaultColor: Theme.hostSurface
-                currentMode: bar.selectedBarConfig?.surfaceColor ?? "default"
-                customColor: bar.selectedBarConfig?.surfaceCustomColor ?? SettingsData.barConfigDefault("surfaceCustomColor")
-                pickerTitle: I18n.tr("Background")
-                onModeSelected: mode => bar.apply("surfaceColor", mode)
-                onCustomColorSelected: selectedColor => bar.apply("surfaceCustomColor", selectedColor.toString())
-            }
-
-            SettingsControlledBy {
-                visible: !bar.islandOwnsSelectedBarTop
-                target: "surfaces"
-                parentModal: root.parentModal
-                section: "surfaceOpacity_bar_" + bar.selectedBarId
-                settingLabel: I18n.tr("Opacity")
-            }
-
-            SettingsButtonGroupRow {
-                settingKey: "barCornerStyle"
-                tags: ["rounded", "attached", "square", "corners", "edge", "screen", "flush"]
-                text: I18n.tr("Corner style")
-                visible: !bar.selectedBarFrameSanitized && !bar.islandOwnsSelectedBarTop
-                resetStore: bar
-                resetKeys: ["squareCorners", "attachToScreenEdge"]
-                model: [I18n.tr("Rounded", "bar corner style option"), I18n.tr("Flush", "bar corner style option"), I18n.tr("Square", "bar corner style option")]
-                currentIndex: {
-                    if (bar.selectedBarConfig?.squareCorners ?? false)
-                        return 2;
-                    if (bar.selectedBarConfig?.attachToScreenEdge ?? false)
-                        return 1;
-                    return 0;
+                SettingsButtonGroupRow {
+                    settingKey: "islandPalette"
+                    tags: ["island", "appearance", "palette", "surface", "bright", "dim"]
+                    visible: bar.selectedBarIsIsland
+                    resetStore: bar
+                    resetKeys: ["islandPalette"]
+                    text: I18n.tr("Palette", "island settings: surface tone choice")
+                    model: [I18n.tr("Default", "island settings: default surface tone"), I18n.tr("Bright", "island settings: bright surface tone"), I18n.tr("Dim", "island settings: dim surface tone")]
+                    values: root.paletteValues
+                    value: bar.islandSetting("islandPalette")
+                    fallbackValue: "default"
+                    onValueSelected: value => bar.apply("islandPalette", value)
                 }
-                onSelectionChanged: (index, selected) => {
-                    if (!selected)
-                        return;
-                    SettingsData.updateBarConfig(bar.selectedBarId, {
-                        squareCorners: index === 2,
-                        attachToScreenEdge: index === 1
-                    });
+
+                SettingsToggleRow {
+                    settingKey: "islandHighContrast"
+                    tags: ["island", "appearance", "contrast", "accessibility", "outline"]
+                    visible: bar.selectedBarIsIsland
+                    text: I18n.tr("High contrast", "island settings: high contrast toggle")
+                    checked: bar.islandSetting("islandHighContrast")
+                    onToggled: checked => bar.apply("islandHighContrast", checked)
                 }
-            }
 
-            SettingsToggleRow {
-                settingKey: "barGothCorners"
-                tags: ["goth", "corners", "concave", "cutout"]
-                text: I18n.tr("Goth corners")
-                description: I18n.tr("Adds concave curves where the bar meets the screen edge", "bar goth corners toggle description")
-                visible: !bar.selectedBarFrameSanitized && !bar.islandOwnsSelectedBarTop
-                checked: bar.selectedBarConfig?.gothCornersEnabled ?? false
-                onToggled: checked => SettingsData.updateBarConfig(bar.selectedBarId, {
-                        gothCornersEnabled: checked
-                    })
-            }
+                SurfaceColorRow {
+                    settingKey: "barSurfaceColor"
+                    tags: ["background", "color", "surface", "bar", "material"]
+                    resetStore: bar
+                    resetKeys: ["surfaceColor", "surfaceCustomColor"]
+                    text: I18n.tr("Background")
+                    defaultColor: Theme.hostSurface
+                    currentMode: bar.selectedBarConfig?.surfaceColor ?? "default"
+                    customColor: bar.selectedBarConfig?.surfaceCustomColor ?? SettingsData.barConfigDefault("surfaceCustomColor")
+                    pickerTitle: I18n.tr("Background")
+                    onModeSelected: mode => bar.apply("surfaceColor", mode)
+                    onCustomColorSelected: selectedColor => bar.apply("surfaceCustomColor", selectedColor.toString())
+                }
 
-            SettingsToggleSliderRow {
-                resetStore: bar
-                text: I18n.tr("Custom radius")
-                tags: ["goth", "corners", "radius"]
-                visible: (bar.selectedBarConfig?.gothCornersEnabled ?? false) && !bar.selectedBarFrameSanitized && !bar.islandOwnsSelectedBarTop
-                valueKeys: ["gothCornerRadiusValue"]
-                checked: bar.selectedBarConfig?.gothCornerRadiusOverride ?? false
-                unit: "px"
-                value: bar.selectedBarConfig?.gothCornerRadiusValue ?? 12
-                minimum: 0
-                maximum: 64
-                onToggled: checked => SettingsData.updateBarConfig(bar.selectedBarId, {
-                        gothCornerRadiusOverride: checked
-                    })
-                onSliderDragFinished: finalValue => SettingsData.updateBarConfig(bar.selectedBarId, {
-                        gothCornerRadiusValue: finalValue
-                    })
-            }
+                SettingsControlledBy {
+                    visible: !bar.islandOwnsSelectedBarTop
+                    target: "surfaces"
+                    parentModal: root.parentModal
+                    section: "surfaceOpacity_bar_" + bar.selectedBarId
+                    settingLabel: I18n.tr("Opacity")
+                }
 
-            SettingsToggleRow {
-                settingKey: "connectedPopouts"
-                tags: ["connected", "popout", "popup", "gaps"]
-                text: I18n.tr("Connected popouts", "bar settings: popouts join the bar or satellite background")
-                visible: !bar.selectedBarFrameSanitized && !bar.islandOwnsSelectedBarTop
-                enabled: SettingsData.barCanConnectPopouts(bar.selectedBarConfig)
-                checked: bar.selectedBarConfig?.connectedPopouts ?? false
-                onToggled: checked => SettingsData.updateBarConfig(bar.selectedBarId, {
-                        connectedPopouts: checked
-                    })
-            }
+                SettingsButtonGroupRow {
+                    settingKey: "barCornerStyle"
+                    tags: ["rounded", "attached", "square", "corners", "edge", "screen", "flush"]
+                    text: I18n.tr("Corner style")
+                    visible: !bar.selectedBarFrameSanitized && !bar.islandOwnsSelectedBarTop
+                    resetStore: bar
+                    resetKeys: ["squareCorners", "attachToScreenEdge"]
+                    model: [I18n.tr("Rounded", "bar corner style option"), I18n.tr("Flush", "bar corner style option"), I18n.tr("Square", "bar corner style option")]
+                    currentIndex: {
+                        if (bar.selectedBarConfig?.squareCorners ?? false)
+                            return 2;
+                        if (bar.selectedBarConfig?.attachToScreenEdge ?? false)
+                            return 1;
+                        return 0;
+                    }
+                    onSelectionChanged: (index, selected) => {
+                        if (!selected)
+                            return;
+                        SettingsData.updateBarConfig(bar.selectedBarId, {
+                            squareCorners: index === 2,
+                            attachToScreenEdge: index === 1
+                        });
+                    }
+                }
 
-            SettingsControlledBy {
-                visible: !bar.selectedBarFrameSanitized && !bar.islandOwnsSelectedBarTop
-                target: "shadows"
-                parentModal: root.parentModal
-                section: "barShadow"
-                settingLabel: I18n.tr("Shadow", "bar shadow settings card")
-            }
+                SettingsToggleRow {
+                    settingKey: "barGothCorners"
+                    tags: ["goth", "corners", "concave", "cutout"]
+                    text: I18n.tr("Goth corners")
+                    description: I18n.tr("Adds concave curves where the bar meets the screen edge", "bar goth corners toggle description")
+                    visible: !bar.selectedBarFrameSanitized && !bar.islandOwnsSelectedBarTop
+                    checked: bar.selectedBarConfig?.gothCornersEnabled ?? false
+                    onToggled: checked => SettingsData.updateBarConfig(bar.selectedBarId, {
+                            gothCornersEnabled: checked
+                        })
+                }
 
-            SettingsControlledBy {
-                visible: bar.selectedBarFrameSanitized && !bar.selectedBarFrameStyled && !bar.islandOwnsSelectedBarTop
-                parentModal: root.parentModal
-                section: "frameBorder"
-                settingLabel: [I18n.tr("Corner style"), I18n.tr("Border", "noun, settings toggle card title for an outline around a surface"), I18n.tr("Shadow", "bar shadow settings card")].join(" · ")
-                reason: I18n.tr("Disabled by Frame Mode")
+                SettingsToggleSliderRow {
+                    resetStore: bar
+                    text: I18n.tr("Custom radius")
+                    tags: ["goth", "corners", "radius"]
+                    visible: (bar.selectedBarConfig?.gothCornersEnabled ?? false) && !bar.selectedBarFrameSanitized && !bar.islandOwnsSelectedBarTop
+                    valueKeys: ["gothCornerRadiusValue"]
+                    checked: bar.selectedBarConfig?.gothCornerRadiusOverride ?? false
+                    unit: "px"
+                    value: bar.selectedBarConfig?.gothCornerRadiusValue ?? 12
+                    minimum: 0
+                    maximum: 64
+                    onToggled: checked => SettingsData.updateBarConfig(bar.selectedBarId, {
+                            gothCornerRadiusOverride: checked
+                        })
+                    onSliderDragFinished: finalValue => SettingsData.updateBarConfig(bar.selectedBarId, {
+                            gothCornerRadiusValue: finalValue
+                        })
+                }
+
+                SettingsToggleRow {
+                    settingKey: "connectedPopouts"
+                    tags: ["connected", "popout", "popup", "gaps"]
+                    text: I18n.tr("Connected popouts", "bar settings: popouts join the bar or satellite background")
+                    visible: !bar.selectedBarFrameSanitized && !bar.islandOwnsSelectedBarTop
+                    enabled: SettingsData.barCanConnectPopouts(bar.selectedBarConfig)
+                    checked: bar.selectedBarConfig?.connectedPopouts ?? false
+                    onToggled: checked => SettingsData.updateBarConfig(bar.selectedBarId, {
+                            connectedPopouts: checked
+                        })
+                }
+
+                SettingsControlledBy {
+                    visible: !bar.selectedBarFrameSanitized && !bar.islandOwnsSelectedBarTop
+                    target: "shadows"
+                    parentModal: root.parentModal
+                    section: "barShadow"
+                    settingLabel: I18n.tr("Shadow", "bar shadow settings card")
+                }
+
+                SettingsControlledBy {
+                    visible: bar.selectedBarFrameSanitized && !bar.selectedBarFrameStyled && !bar.islandOwnsSelectedBarTop
+                    parentModal: root.parentModal
+                    section: "frameBorder"
+                    settingLabel: [I18n.tr("Corner style"), I18n.tr("Border", "noun, settings toggle card title for an outline around a surface"), I18n.tr("Shadow", "bar shadow settings card")].join(" · ")
+                    reason: I18n.tr("Disabled by Frame Mode")
+                }
             }
         }
 
-        SettingsToggleCard {
-            settingKey: "barBorder"
-            iconName: "border_style"
-            title: I18n.tr("Border", "noun, settings toggle card title for an outline around a surface")
-            visible: (bar.selectedBarConfig?.enabled ?? false) && !bar.selectedBarFrameSanitized && !bar.islandOwnsSelectedBarTop
-            checked: bar.selectedBarConfig?.borderEnabled ?? false
-            onToggled: checked => SettingsData.updateBarConfig(bar.selectedBarId, {
-                    borderEnabled: checked
-                })
+        SettingsDeferred {
+            when: (bar.selectedBarConfig?.enabled ?? false) && !bar.selectedBarFrameSanitized && !bar.islandOwnsSelectedBarTop
 
-            SettingsButtonGroupRow {
-                text: I18n.tr("Color")
-                resetStore: bar
-                resetKeys: ["borderColor"]
-                model: root.outlineColorLabels
-                currentIndex: Math.max(0, root.outlineColors.indexOf(bar.selectedBarConfig?.borderColor || "surfaceText"))
-                onSelectionChanged: (index, selected) => {
-                    if (!selected)
-                        return;
-                    SettingsData.updateBarConfig(bar.selectedBarId, {
-                        borderColor: root.outlineColors[index]
-                    });
+            SettingsToggleCard {
+                settingKey: "barBorder"
+                iconName: "border_style"
+                title: I18n.tr("Border", "noun, settings toggle card title for an outline around a surface")
+                checked: bar.selectedBarConfig?.borderEnabled ?? false
+                onToggled: checked => SettingsData.updateBarConfig(bar.selectedBarId, {
+                        borderEnabled: checked
+                    })
+
+                SettingsButtonGroupRow {
+                    text: I18n.tr("Color")
+                    resetStore: bar
+                    resetKeys: ["borderColor"]
+                    model: root.outlineColorLabels
+                    currentIndex: Math.max(0, root.outlineColors.indexOf(bar.selectedBarConfig?.borderColor || "surfaceText"))
+                    onSelectionChanged: (index, selected) => {
+                        if (!selected)
+                            return;
+                        SettingsData.updateBarConfig(bar.selectedBarId, {
+                            borderColor: root.outlineColors[index]
+                        });
+                    }
                 }
-            }
 
-            SettingsSliderRow {
-                text: I18n.tr("Opacity")
-                resetStore: bar
-                resetKeys: ["borderOpacity"]
-                value: (bar.selectedBarConfig?.borderOpacity ?? 1.0) * 100
-                minimum: 0
-                maximum: 100
-                onSliderDragFinished: finalValue => SettingsData.updateBarConfig(bar.selectedBarId, {
-                        borderOpacity: finalValue / 100
-                    })
-            }
+                SettingsSliderRow {
+                    text: I18n.tr("Opacity")
+                    resetStore: bar
+                    resetKeys: ["borderOpacity"]
+                    value: (bar.selectedBarConfig?.borderOpacity ?? 1.0) * 100
+                    minimum: 0
+                    maximum: 100
+                    onSliderDragFinished: finalValue => SettingsData.updateBarConfig(bar.selectedBarId, {
+                            borderOpacity: finalValue / 100
+                        })
+                }
 
-            SettingsSliderRow {
-                text: I18n.tr("Thickness")
-                resetStore: bar
-                resetKeys: ["borderThickness"]
-                value: bar.selectedBarConfig?.borderThickness ?? 1
-                minimum: 1
-                maximum: 10
-                unit: "px"
-                onSliderDragFinished: finalValue => SettingsData.updateBarConfig(bar.selectedBarId, {
-                        borderThickness: finalValue
-                    })
+                SettingsSliderRow {
+                    text: I18n.tr("Thickness")
+                    resetStore: bar
+                    resetKeys: ["borderThickness"]
+                    value: bar.selectedBarConfig?.borderThickness ?? 1
+                    minimum: 1
+                    maximum: 10
+                    unit: "px"
+                    onSliderDragFinished: finalValue => SettingsData.updateBarConfig(bar.selectedBarId, {
+                            borderThickness: finalValue
+                        })
+                }
             }
         }
 

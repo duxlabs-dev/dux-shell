@@ -92,159 +92,166 @@ Item {
     SettingsPage {
         id: mainColumn
 
-        SettingsCard {
-            width: parent.width
-            iconName: "search"
-            title: I18n.tr("Default action")
-            settingKey: "launcherStyle"
+        SettingsDeferred {
+            SettingsCard {
+                width: parent.width
+                iconName: "search"
+                title: I18n.tr("Default action")
+                settingKey: "launcherStyle"
 
-            SettingsButtonGroupRow {
-                readonly property bool islandOffered: SettingsData.dankIslandEnabled || SettingsData.launcherStyle === "island"
-                readonly property bool spotlightOffered: !SettingsData.connectedFrameModeActive
+                SettingsButtonGroupRow {
+                    readonly property bool islandOffered: SettingsData.dankIslandEnabled || SettingsData.launcherStyle === "island"
+                    readonly property bool spotlightOffered: !SettingsData.connectedFrameModeActive
 
-                settingKey: "launcherStyleSelector"
-                tags: ["launcher", "style", "default", "spotlight", "full", "minimal", "island", "dankisland"]
-                resetKeys: ["launcherStyle"]
-                text: I18n.tr("Opens", "verb, row label, which launcher style the shortcut opens")
-                model: [I18n.tr("Full", "adjective, full size launcher style option")].concat(spotlightOffered ? [I18n.tr("Spotlight", "launcher style option, small centered search bar")] : []).concat(islandOffered ? [I18n.tr("Island")] : [])
-                values: ["full"].concat(spotlightOffered ? ["spotlight"] : []).concat(islandOffered ? ["island"] : [])
-                value: SettingsData.launcherStyle
-                fallbackValue: "full"
-                onValueSelected: value => SettingsData.set("launcherStyle", value)
-            }
+                    settingKey: "launcherStyleSelector"
+                    tags: ["launcher", "style", "default", "spotlight", "full", "minimal", "island", "dankisland"]
+                    resetKeys: ["launcherStyle"]
+                    text: I18n.tr("Opens", "verb, row label, which launcher style the shortcut opens")
+                    model: [I18n.tr("Full", "adjective, full size launcher style option")].concat(spotlightOffered ? [I18n.tr("Spotlight", "launcher style option, small centered search bar")] : []).concat(islandOffered ? [I18n.tr("Island")] : [])
+                    values: ["full"].concat(spotlightOffered ? ["spotlight"] : []).concat(islandOffered ? ["island"] : [])
+                    value: SettingsData.launcherStyle
+                    fallbackValue: "full"
+                    onValueSelected: value => SettingsData.set("launcherStyle", value)
+                }
 
-            SettingsRow {
-                iconName: "keyboard"
-                title: I18n.tr("Shortcut", "noun, keyboard shortcut row in launcher settings")
-                subtitle: root.keybindsAvailable ? "" : I18n.tr("Bind the %1 IPC action in your compositor config.", "launcher shortcut hint, %1 is the ipc target name").arg("spotlight")
-                trailingBadge: root.keysLabel(root.defaultLauncherAction)
-                trailingBadgeColor: Theme.primary
-                showChevron: root.keybindsAvailable
-                clickable: root.keybindsAvailable
-                onClicked: root.openKeybindsSearch(root.defaultLauncherKeybindSearch)
-            }
-        }
-
-        SettingsCard {
-            width: parent.width
-            iconName: "overview_key"
-            title: I18n.tr("Overview")
-            settingKey: "launcherNiriOverview"
-            tags: ["launcher", "niri", "overview", "overlay"]
-            visible: CompositorService.isNiri
-
-            SettingsToggleRow {
-                settingKey: "niriOverviewOverlayEnabled"
-                tags: ["launcher", "niri", "overview", "overlay", "enable"]
-                text: I18n.tr("Overlay")
-                description: I18n.tr("Typing in the overview opens the launcher")
-                checked: SettingsData.niriOverviewOverlayEnabled
-                onToggled: checked => SettingsData.set("niriOverviewOverlayEnabled", checked)
-            }
-
-            SettingsButtonGroupRow {
-                visible: SettingsData.niriOverviewOverlayEnabled
-                settingKey: "niriOverviewLauncherStyle"
-                tags: ["launcher", "niri", "overview", "overlay", "style", "spotlight", "full"]
-                text: I18n.tr("Opens")
-                model: [I18n.tr("Full"), I18n.tr("Spotlight")]
-                currentIndex: SettingsData.niriOverviewLauncherStyle === "spotlight" ? 1 : 0
-                onSelectionChanged: (index, selected) => {
-                    if (!selected)
-                        return;
-                    SettingsData.set("niriOverviewLauncherStyle", index === 1 ? "spotlight" : "full");
+                SettingsRow {
+                    iconName: "keyboard"
+                    title: I18n.tr("Shortcut", "noun, keyboard shortcut row in launcher settings")
+                    subtitle: root.keybindsAvailable ? "" : I18n.tr("Bind the %1 IPC action in your compositor config.", "launcher shortcut hint, %1 is the ipc target name").arg("spotlight")
+                    trailingBadge: root.keysLabel(root.defaultLauncherAction)
+                    trailingBadgeColor: Theme.primary
+                    showChevron: root.keybindsAvailable
+                    clickable: root.keybindsAvailable
+                    onClicked: root.openKeybindsSearch(root.defaultLauncherKeybindSearch)
                 }
             }
         }
 
-        SettingsCard {
-            width: parent.width
-            iconName: "tune"
-            title: I18n.tr("Appearance")
-            settingKey: "dankLauncherV2Appearance"
-            tags: ["launcher", "size", "grid", "columns", "footer", "badges", "darken"]
+        SettingsDeferred {
+            when: CompositorService.isNiri
 
-            SettingsButtonGroupRow {
-                readonly property var sizes: ["micro", "compact", "medium", "large"]
+            SettingsCard {
+                width: parent.width
+                iconName: "overview_key"
+                title: I18n.tr("Overview")
+                settingKey: "launcherNiriOverview"
+                tags: ["launcher", "niri", "overview", "overlay"]
 
-                enabled: !root.spotlightIgnoresSize
-                settingKey: "dankLauncherV2Size"
-                tags: ["launcher", "size", "micro", "compact", "medium", "large"]
-                text: I18n.tr("Size")
-                model: ["1", "2", "3", "4"]
-                currentIndex: {
-                    const index = sizes.indexOf(SettingsData.dankLauncherV2Size);
-                    return index >= 0 ? index : 2;
+                SettingsToggleRow {
+                    settingKey: "niriOverviewOverlayEnabled"
+                    tags: ["launcher", "niri", "overview", "overlay", "enable"]
+                    text: I18n.tr("Overlay")
+                    description: I18n.tr("Typing in the overview opens the launcher")
+                    checked: SettingsData.niriOverviewOverlayEnabled
+                    onToggled: checked => SettingsData.set("niriOverviewOverlayEnabled", checked)
                 }
-                onSelectionChanged: (index, selected) => {
-                    if (!selected)
-                        return;
-                    SettingsData.set("dankLauncherV2Size", sizes[index]);
+
+                SettingsButtonGroupRow {
+                    visible: SettingsData.niriOverviewOverlayEnabled
+                    settingKey: "niriOverviewLauncherStyle"
+                    tags: ["launcher", "niri", "overview", "overlay", "style", "spotlight", "full"]
+                    text: I18n.tr("Opens")
+                    model: [I18n.tr("Full"), I18n.tr("Spotlight")]
+                    currentIndex: SettingsData.niriOverviewLauncherStyle === "spotlight" ? 1 : 0
+                    onSelectionChanged: (index, selected) => {
+                        if (!selected)
+                            return;
+                        SettingsData.set("niriOverviewLauncherStyle", index === 1 ? "spotlight" : "full");
+                    }
                 }
             }
+        }
 
-            SettingsSliderRow {
-                settingKey: "appLauncherGridColumns"
-                tags: ["launcher", "grid", "columns", "layout"]
-                text: I18n.tr("Grid columns")
-                unit: ""
-                minimum: 2
-                maximum: 8
-                value: SettingsData.appLauncherGridColumns
-                onSliderValueChanged: newValue => SettingsData.set("appLauncherGridColumns", newValue)
-            }
+        SettingsDeferred {
+            SettingsCard {
+                width: parent.width
+                iconName: "tune"
+                title: I18n.tr("Appearance")
+                settingKey: "dankLauncherV2Appearance"
+                tags: ["launcher", "size", "grid", "columns", "footer", "badges", "darken"]
 
-            SettingsSliderRow {
-                settingKey: "appLauncherIconColumns"
-                tags: ["launcher", "icons", "columns", "layout"]
-                text: I18n.tr("Icon columns")
-                unit: ""
-                minimum: 2
-                maximum: 8
-                value: SettingsData.appLauncherIconColumns
-                onSliderValueChanged: newValue => SettingsData.set("appLauncherIconColumns", newValue)
-            }
+                SettingsButtonGroupRow {
+                    readonly property var sizes: ["micro", "compact", "medium", "large"]
 
-            SettingsToggleRow {
-                settingKey: "dankLauncherV2ShowFooter"
-                tags: ["launcher", "footer", "hints", "shortcuts", "modes", "filters"]
-                text: I18n.tr("Show footer")
-                checked: SettingsData.dankLauncherV2ShowFooter
-                enabled: SettingsData.dankLauncherV2Size !== "micro" && (!root.fullLauncherUnused || root.niriOverviewUsesFull)
-                onToggled: checked => SettingsData.set("dankLauncherV2ShowFooter", checked)
-            }
+                    enabled: !root.spotlightIgnoresSize
+                    settingKey: "dankLauncherV2Size"
+                    tags: ["launcher", "size", "micro", "compact", "medium", "large"]
+                    text: I18n.tr("Size")
+                    model: ["1", "2", "3", "4"]
+                    currentIndex: {
+                        const index = sizes.indexOf(SettingsData.dankLauncherV2Size);
+                        return index >= 0 ? index : 2;
+                    }
+                    onSelectionChanged: (index, selected) => {
+                        if (!selected)
+                            return;
+                        SettingsData.set("dankLauncherV2Size", sizes[index]);
+                    }
+                }
 
-            SettingsToggleRow {
-                settingKey: "dankLauncherV2ShowSourceBadges"
-                tags: ["launcher", "appearance", "badge", "source", "flatpak", "snap", "appimage", "nix"]
-                text: I18n.tr("Show package source badges")
-                checked: SettingsData.dankLauncherV2ShowSourceBadges
-                onToggled: checked => SettingsData.set("dankLauncherV2ShowSourceBadges", checked)
-            }
+                SettingsSliderRow {
+                    settingKey: "appLauncherGridColumns"
+                    tags: ["launcher", "grid", "columns", "layout"]
+                    text: I18n.tr("Grid columns")
+                    unit: ""
+                    minimum: 2
+                    maximum: 8
+                    value: SettingsData.appLauncherGridColumns
+                    onSliderValueChanged: newValue => SettingsData.set("appLauncherGridColumns", newValue)
+                }
 
-            SettingsToggleRow {
-                settingKey: "dankLauncherV2ShowAppIcons"
-                tags: ["launcher", "appearance", "icon", "app", "hide"]
-                text: I18n.tr("Show app icons", "Toggle icons in launcher list and grid results")
-                checked: SettingsData.dankLauncherV2ShowAppIcons
-                onToggled: checked => SettingsData.set("dankLauncherV2ShowAppIcons", checked)
-            }
+                SettingsSliderRow {
+                    settingKey: "appLauncherIconColumns"
+                    tags: ["launcher", "icons", "columns", "layout"]
+                    text: I18n.tr("Icon columns")
+                    unit: ""
+                    minimum: 2
+                    maximum: 8
+                    value: SettingsData.appLauncherIconColumns
+                    onSliderValueChanged: newValue => SettingsData.set("appLauncherIconColumns", newValue)
+                }
 
-            SettingsControlledBy {
-                visible: SettingsData.frameEnabled
-                parentModal: root.parentModal
-                section: "frameBorder"
-                settingLabel: I18n.tr("Darken modal background")
-                reason: I18n.tr("Disabled by Frame Mode")
-            }
+                SettingsToggleRow {
+                    settingKey: "dankLauncherV2ShowFooter"
+                    tags: ["launcher", "footer", "hints", "shortcuts", "modes", "filters"]
+                    text: I18n.tr("Show footer")
+                    checked: SettingsData.dankLauncherV2ShowFooter
+                    enabled: SettingsData.dankLauncherV2Size !== "micro" && (!root.fullLauncherUnused || root.niriOverviewUsesFull)
+                    onToggled: checked => SettingsData.set("dankLauncherV2ShowFooter", checked)
+                }
 
-            SettingsToggleRow {
-                enabled: !SettingsData.frameEnabled
-                settingKey: "modalDarkenBackground"
-                tags: ["modal", "darken", "background", "overlay", "launcher"]
-                text: I18n.tr("Darken modal background")
-                checked: SettingsData.modalDarkenBackground
-                onToggled: checked => SettingsData.set("modalDarkenBackground", checked)
+                SettingsToggleRow {
+                    settingKey: "dankLauncherV2ShowSourceBadges"
+                    tags: ["launcher", "appearance", "badge", "source", "flatpak", "snap", "appimage", "nix"]
+                    text: I18n.tr("Show package source badges")
+                    checked: SettingsData.dankLauncherV2ShowSourceBadges
+                    onToggled: checked => SettingsData.set("dankLauncherV2ShowSourceBadges", checked)
+                }
+
+                SettingsToggleRow {
+                    settingKey: "dankLauncherV2ShowAppIcons"
+                    tags: ["launcher", "appearance", "icon", "app", "hide"]
+                    text: I18n.tr("Show app icons", "Toggle icons in launcher list and grid results")
+                    checked: SettingsData.dankLauncherV2ShowAppIcons
+                    onToggled: checked => SettingsData.set("dankLauncherV2ShowAppIcons", checked)
+                }
+
+                SettingsControlledBy {
+                    visible: SettingsData.frameEnabled
+                    parentModal: root.parentModal
+                    section: "frameBorder"
+                    settingLabel: I18n.tr("Darken modal background")
+                    reason: I18n.tr("Disabled by Frame Mode")
+                }
+
+                SettingsToggleRow {
+                    enabled: !SettingsData.frameEnabled
+                    settingKey: "modalDarkenBackground"
+                    tags: ["modal", "darken", "background", "overlay", "launcher"]
+                    text: I18n.tr("Darken modal background")
+                    checked: SettingsData.modalDarkenBackground
+                    onToggled: checked => SettingsData.set("modalDarkenBackground", checked)
+                }
             }
         }
 

@@ -25,8 +25,6 @@ Item {
     property int animationDuration: Theme.modalAnimationDuration
     property real animationScaleCollapsed: Theme.popupEnterScale
     property real animationOffset: Theme.spacingL
-    property list<real> animationEnterCurve: Theme.expressiveCurves.expressiveDefaultSpatial
-    property list<real> animationExitCurve: Theme.expressiveCurves.emphasized
     property color backgroundColor: Theme.floatingWindowSurface
     property color borderColor: Theme.outlineVariant
     property real borderWidth: 0

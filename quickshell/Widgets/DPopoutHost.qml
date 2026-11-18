@@ -42,8 +42,6 @@ Item {
     readonly property rect sideBodyRect: sideBlurItem ? Qt.rect(sideBlurItem.x, sideBlurItem.y, sideBlurItem.width, sideBlurItem.height) : Qt.rect(0, 0, 0, 0)
     property real popupWidth: popoutHandle.popupWidth
     property real popupHeight: popoutHandle.popupHeight
-    property list<real> resizeCurve: popoutHandle.resizeCurve
-    property int resizeDuration: popoutHandle.resizeDuration
     property bool resizeMotion: popoutHandle.resizeMotion
     property bool resizing: popoutHandle.resizing
     property real bottomOverflow: popoutHandle.bottomOverflow
@@ -65,8 +63,6 @@ Item {
     property int animationDuration: popoutHandle.animationDuration
     property real animationScaleCollapsed: popoutHandle.animationScaleCollapsed
     property real animationOffset: popoutHandle.animationOffset
-    property list<real> animationEnterCurve: popoutHandle.animationEnterCurve
-    property list<real> animationExitCurve: popoutHandle.animationExitCurve
     property bool suspendShadowWhileResizing: popoutHandle.suspendShadowWhileResizing
     property bool shouldBeVisible: false
     property bool _presentPending: false
@@ -627,7 +623,7 @@ Item {
             instantClose();
             return;
         }
-        if (!connected && _fluidMotionActive && (SettingsData.reduceMotion || animationDuration <= 0)) {
+        if (!connected && _fluidMotionActive && (Theme.reduceMotion || animationDuration <= 0)) {
             instantClose();
             return;
         }
@@ -846,7 +842,7 @@ Item {
     OpacityMotion {
         id: contentFade
         enabled: root.animationsEnabled && root._fadeWithOpacity
-        duration: root._supersededClose && !root.shouldBeVisible ? Theme.shorterDuration : root.animationDuration
+        duration: root._supersededClose && !root.shouldBeVisible ? Theme.expressiveDurations.expressiveFastEffects : root.animationDuration
         target: root.shouldBeVisible ? 1 : 0
         onRunningChanged: root._finishContentFade()
         onValueChanged: root._finishContentFade()
@@ -860,7 +856,7 @@ Item {
     }
 
     readonly property bool _standardMotion: !connected && !root.directionalRevealActive && !Theme.isDepthEffect && !_fluidMotionActive
-    readonly property var _geometrySpringParams: Theme.springPreset(_standardMotion ? "fastSpatial" : "defaultSpatial", _standardMotion ? root.animationDuration * 2 : root.animationDuration)
+    readonly property var _geometrySpringParams: Theme.springPreset(_standardMotion ? "fastSpatial" : "defaultSpatial")
 
     readonly property real renderedAlignedX: alignedXFor(renderedAlignedWidth)
     property real renderedAlignedY: alignedY
@@ -868,13 +864,13 @@ Item {
     property real renderedAlignedHeight: alignedHeight
     // Snap rendered geometry while the entrance morph runs so it doesn't ride a second animation.
     readonly property bool _settlingToOpen: shouldBeVisible && (morph.running || travelSpring.running)
-    readonly property bool _geometryMotion: animationsEnabled && !SettingsData.reduceMotion && resizeDuration > 0 && root.attached && shouldBeVisible && !_settlingToOpen && !resizing
+    readonly property bool _geometryMotion: animationsEnabled && !Theme.reduceMotion && root.attached && shouldBeVisible && !_settlingToOpen && !resizing
     property bool _bodyBatch: false
-    readonly property var _resizeSpringParams: Theme.springPreset("defaultSpatial", root.resizeDuration)
+    readonly property var _resizeSpringParams: Theme.springPreset("defaultSpatial")
 
     RectSpringMotion {
         id: bodySpring
-        reducedMotion: SettingsData.reduceMotion || root.resizeDuration <= 0
+        reducedMotion: Theme.reduceMotion
         stiffness: root._resizeSpringParams.stiffness
         damping: root._resizeSpringParams.damping
         positionEpsilon: 0.25 / root.dpr
@@ -961,11 +957,11 @@ Item {
     RectSpringMotion {
         id: travelSpring
         enabled: root.morphTravelEnabled && root.animationsEnabled
-        reducedMotion: root.animationDuration <= 0 || SettingsData.reduceMotion
+        reducedMotion: root.animationDuration <= 0 || Theme.reduceMotion
         positionEpsilon: 0.25 / root.dpr
         velocityEpsilon: positionEpsilon * damping / Math.max(0.001, 2 * mass)
-        stiffness: Theme.springPreset(root._travelSpringPreset, root.animationDuration).stiffness
-        damping: Theme.springPreset(root._travelSpringPreset, root.animationDuration).damping
+        stiffness: Theme.springPreset(root._travelSpringPreset).stiffness
+        damping: Theme.springPreset(root._travelSpringPreset).damping
         onValueChanged: root._syncPopoutBody()
         onRunningChanged: root._finishMorphTravel()
     }

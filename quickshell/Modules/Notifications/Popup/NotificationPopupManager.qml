@@ -94,7 +94,7 @@ DIdleSurface {
         }
     }
     readonly property real popupSpacing: notificationConnectedMode ? 0 : Theme.groupedListGap
-    readonly property int motionStagger: NotificationMetrics.animationsEnabled ? Theme.notificationStackStaggerDuration : 0
+    readonly property int motionStagger: NotificationMetrics.animationsEnabled ? NotificationMetrics.stackStaggerDuration : 0
     property var popupWindows: []
     property var destroyingWindows: new Set()
     property var pendingDestroys: []

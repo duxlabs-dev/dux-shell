@@ -21,8 +21,7 @@ Item {
     property real osdHeight: Theme.osdHeight
     property color surfaceColor: Theme.hostSurface
     property real surfaceRadius: Theme.fullRadius(alignedWidth, alignedHeight)
-    property int animationDuration: Theme.mediumDuration
-    property var animationEasing: Theme.emphasizedEasing
+    property int animationDuration: Theme.expressiveDurations.expressiveEffects
     property Component sheet: null
     property real sheetWidth: 0
     property bool expanded: false
@@ -165,8 +164,8 @@ Item {
     }
 
     readonly property real dpr: CompositorService.getScreenScale(screen)
-    readonly property real screenWidth: screen.width
-    readonly property real screenHeight: screen.height
+    readonly property real screenWidth: screen?.width ?? 0
+    readonly property real screenHeight: screen?.height ?? 0
     readonly property real shadowBuffer: Theme.elevationRenderPadding(Theme.elevationLevel2, Theme.elevationLightDirection, Theme.spacingXS, Theme.spacingS, Theme.spacingL)
     readonly property real alignedWidth: Theme.px(osdWidth, dpr)
     readonly property real alignedHeight: Theme.px(osdHeight, dpr)
@@ -274,7 +273,7 @@ Item {
     readonly property real frameX: Math.max(0, Theme.snap(alignedX - shadowBuffer, dpr))
     readonly property real frameY: Math.max(0, Theme.snap(alignedY - shadowBuffer, dpr))
 
-    readonly property var scaleSpringParams: Theme.springPreset("default", animationDuration)
+    readonly property var scaleSpringParams: Theme.springPreset("fastSpatial")
 
     SpringMotion {
         id: osdScaleSpring
@@ -376,7 +375,8 @@ Item {
             Behavior on opacity {
                 NumberAnimation {
                     duration: root.animationDuration
-                    easing.type: root.animationEasing
+                    easing.type: Easing.BezierSpline
+                    easing.bezierCurve: Theme.expressiveCurves.expressiveEffects
                 }
             }
         }

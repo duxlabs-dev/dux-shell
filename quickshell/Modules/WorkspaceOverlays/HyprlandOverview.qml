@@ -97,9 +97,9 @@ Scope {
 
                     Behavior on opacity {
                         NumberAnimation {
-                            duration: Theme.variantDuration(Theme.expressiveDurations.expressiveDefaultSpatial, overviewScope.overviewOpen)
+                            duration: Theme.expressiveDurations.expressiveEffects
                             easing.type: Easing.BezierSpline
-                            easing.bezierCurve: overviewScope.overviewOpen ? Theme.variantModalEnterCurve : Theme.variantModalExitCurve
+                            easing.bezierCurve: Theme.expressiveCurves.expressiveEffects
                         }
                     }
 
@@ -129,7 +129,7 @@ Scope {
                         height: childrenRect.height
                         transformOrigin: Item.Center
 
-                        readonly property var morphSpringParams: Theme.springPreset("expressive", Theme.variantDuration(Theme.expressiveDurations.expressiveDefaultSpatial, overviewScope.overviewOpen))
+                        readonly property var morphSpringParams: Theme.springPreset("defaultSpatial")
                         readonly property real collapsedX: {
                             if (Theme.isDepthEffect)
                                 return Theme.effectAnimOffset * 0.25;
@@ -145,7 +145,6 @@ Scope {
 
                         SpringMotion {
                             id: morph
-                            reducedMotion: Theme.springMotionDisabled
                             positionEpsilon: 0.001
                             velocityEpsilon: 0.001
                             stiffness: contentContainer.morphSpringParams.stiffness
@@ -169,9 +168,9 @@ Scope {
 
                         Behavior on opacity {
                             NumberAnimation {
-                                duration: Theme.variantDuration(Theme.expressiveDurations.expressiveDefaultSpatial, overviewScope.overviewOpen)
+                                duration: Theme.expressiveDurations.expressiveEffects
                                 easing.type: Easing.BezierSpline
-                                easing.bezierCurve: overviewScope.overviewOpen ? Theme.variantModalEnterCurve : Theme.variantModalExitCurve
+                                easing.bezierCurve: Theme.expressiveCurves.expressiveEffects
                             }
                         }
 

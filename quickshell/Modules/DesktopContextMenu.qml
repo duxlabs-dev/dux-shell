@@ -275,7 +275,7 @@ DContextMenu {
 
                         Behavior on scale {
                             NumberAnimation {
-                                duration: SettingsData.reduceMotion ? 0 : Theme.expressiveDurations.expressiveFastSpatial
+                                duration: Theme.reduceMotion ? 0 : Theme.expressiveDurations.expressiveFastSpatial
                                 easing.type: Easing.BezierSpline
                                 easing.bezierCurve: Theme.expressiveCurves.expressiveFastSpatial
                             }

@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Layouts
 import Quickshell
 import Quickshell.Services.SystemTray
 import qs.Common
@@ -338,16 +337,18 @@ BasePill {
         Transition {
             NumberAnimation {
                 properties: "width,height"
-                duration: Theme.shortDuration
-                easing.type: Theme.standardEasing
+                duration: Theme.expressiveDurations.expressiveDefaultSpatial
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
             }
         }
     ]
 
     Behavior on opacity {
         NumberAnimation {
-            duration: Theme.shortDuration
-            easing.type: Theme.standardEasing
+            duration: Theme.expressiveDurations.expressiveFastEffects
+            easing.type: Easing.BezierSpline
+            easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
         }
     }
 
@@ -576,16 +577,18 @@ BasePill {
             Behavior on width {
                 enabled: !root.isVerticalOrientation
                 NumberAnimation {
-                    duration: Theme.shortDuration
-                    easing.type: Theme.standardEasing
+                    duration: Theme.expressiveDurations.expressiveDefaultSpatial
+                    easing.type: Easing.BezierSpline
+                    easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
                 }
             }
 
             Behavior on height {
                 enabled: root.isVerticalOrientation
                 NumberAnimation {
-                    duration: Theme.shortDuration
-                    easing.type: Theme.standardEasing
+                    duration: Theme.expressiveDurations.expressiveDefaultSpatial
+                    easing.type: Easing.BezierSpline
+                    easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
                 }
             }
 
@@ -602,8 +605,9 @@ BasePill {
 
                 Behavior on opacity {
                     NumberAnimation {
-                        duration: Theme.shortDuration
-                        easing.type: Theme.standardEasing
+                        duration: Theme.expressiveDurations.expressiveFastEffects
+                        easing.type: Easing.BezierSpline
+                        easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
                     }
                 }
 
@@ -670,15 +674,17 @@ BasePill {
                 Behavior on x {
                     enabled: !root.suppressShiftAnimation
                     NumberAnimation {
-                        duration: 150
-                        easing.type: Easing.OutCubic
+                        duration: Theme.expressiveDurations.expressiveFastSpatial
+                        easing.type: Easing.BezierSpline
+                        easing.bezierCurve: Theme.expressiveCurves.expressiveFastSpatial
                     }
                 }
                 Behavior on y {
                     enabled: !root.suppressShiftAnimation
                     NumberAnimation {
-                        duration: 150
-                        easing.type: Easing.OutCubic
+                        duration: Theme.expressiveDurations.expressiveFastSpatial
+                        easing.type: Easing.BezierSpline
+                        easing.bezierCurve: Theme.expressiveCurves.expressiveFastSpatial
                     }
                 }
             }

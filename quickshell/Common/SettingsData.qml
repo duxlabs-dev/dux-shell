@@ -24,7 +24,7 @@ Singleton {
     id: root
     readonly property var log: Log.scoped("SettingsData")
 
-    readonly property int settingsConfigVersion: 44
+    readonly property int settingsConfigVersion: 45
 
     enum Position {
         Top,
@@ -35,14 +35,6 @@ Singleton {
         BottomCenter,
         LeftCenter,
         RightCenter
-    }
-
-    enum AnimationSpeed {
-        None,
-        Short,
-        Medium,
-        Long,
-        Custom
     }
 
     enum AnimationEffect {
@@ -325,13 +317,9 @@ Singleton {
     property bool showAmPm: Spec.SPEC.showAmPm.def
     property bool useFahrenheit: Spec.SPEC.useFahrenheit.def
     property string windSpeedUnit: Spec.SPEC.windSpeedUnit.def
-    property int animationDuration: Spec.SPEC.animationDuration.def
-    property bool syncComponentAnimationSpeeds: Spec.SPEC.syncComponentAnimationSpeeds.def
-    onSyncComponentAnimationSpeedsChanged: saveSettings()
+    property int motionDuration: Spec.SPEC.motionDuration.def
     property bool qmlCacheEnabled: Spec.SPEC.qmlCacheEnabled.def
     property bool renderControlEnabled: Spec.SPEC.renderControlEnabled.def
-    property int popoutAnimationDuration: Spec.SPEC.popoutAnimationDuration.def
-    property int modalAnimationDuration: Spec.SPEC.modalAnimationDuration.def
     property bool reduceMotion: Spec.SPEC.reduceMotion.def
     onReduceMotionChanged: saveSettings()
     property int springBounce: Spec.SPEC.springBounce.def
@@ -910,7 +898,6 @@ Singleton {
     property bool notificationShowTimeoutBar: Spec.SPEC.notificationShowTimeoutBar.def
     property bool notificationDedupeEnabled: Spec.SPEC.notificationDedupeEnabled.def
     property int notificationPopupPosition: SettingsData.Position.Top
-    property int notificationAnimationDuration: Spec.SPEC.notificationAnimationDuration.def
     property bool notificationHistoryEnabled: Spec.SPEC.notificationHistoryEnabled.def
     property string notificationLeadingShortcut: Spec.SPEC.notificationLeadingShortcut.def
     property string notificationTrailingShortcut: Spec.SPEC.notificationTrailingShortcut.def

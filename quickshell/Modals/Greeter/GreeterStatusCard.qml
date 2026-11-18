@@ -23,14 +23,17 @@ Rectangle {
 
     Behavior on scale {
         NumberAnimation {
-            duration: Theme.shortDuration
-            easing.type: Theme.emphasizedEasing
+            duration: Theme.expressiveDurations.expressiveFastSpatial
+            easing.type: Easing.BezierSpline
+            easing.bezierCurve: Theme.expressiveCurves.expressiveFastSpatial
         }
     }
 
     Behavior on border.width {
         NumberAnimation {
-            duration: Theme.shortDuration
+            duration: Theme.expressiveDurations.expressiveFastEffects
+            easing.type: Easing.BezierSpline
+            easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
         }
     }
 

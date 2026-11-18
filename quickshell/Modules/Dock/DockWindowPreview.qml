@@ -120,7 +120,9 @@ PanelWindow {
         opacity: root.revealed ? 1 : 0
         Behavior on opacity {
             NumberAnimation {
-                duration: Theme.shorterDuration
+                duration: Theme.expressiveDurations.expressiveFastEffects
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
             }
         }
 
@@ -258,7 +260,9 @@ PanelWindow {
                                     target: placeholder
                                     property: "opacity"
                                     to: 1
-                                    duration: Theme.shortDuration
+                                    duration: Theme.expressiveDurations.expressiveFastEffects
+                                    easing.type: Easing.BezierSpline
+                                    easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
                                 }
                             }
                         }

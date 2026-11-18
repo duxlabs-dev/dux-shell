@@ -105,7 +105,7 @@ Rectangle {
         enabled: root.animateHeight && NotificationMetrics.animationsEnabled
         NumberAnimation {
             id: heightAnimation
-            duration: root.descriptionExpanded ? Theme.notificationInlineExpandDuration : Theme.notificationInlineCollapseDuration
+            duration: NotificationMetrics.expandDuration
             easing.type: Easing.BezierSpline
             easing.bezierCurve: NotificationMetrics.expandCurve
         }
@@ -240,8 +240,9 @@ Rectangle {
                     Behavior on opacity {
                         enabled: NotificationMetrics.animationsEnabled
                         NumberAnimation {
-                            duration: Theme.shortDuration
-                            easing.type: Theme.standardEasing
+                            duration: Theme.expressiveDurations.expressiveFastEffects
+                            easing.type: Easing.BezierSpline
+                            easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
                         }
                     }
 

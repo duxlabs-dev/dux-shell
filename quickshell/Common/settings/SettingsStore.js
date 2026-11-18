@@ -794,7 +794,25 @@ function migrateToVersion(obj, targetVersion) {
         settings.configVersion = 44;
     }
 
+    if (currentVersion < 45 && targetVersion >= 45) {
+        migrateMotionDuration(settings);
+        settings.configVersion = 45;
+    }
+
     return settings;
+}
+
+// v45: millisecond animation durations became steps of the M3 Expressive spec, -1 is off and 0..4 are 250/375/500/750/1000 ms
+function migrateMotionDuration(settings) {
+    const duration = typeof settings.animationDuration === "number" ? settings.animationDuration : 250;
+    for (const key of ["animationDuration", "syncComponentAnimationSpeeds", "popoutAnimationDuration", "modalAnimationDuration", "notificationAnimationDuration"])
+        delete settings[key];
+    if (duration <= 0) {
+        settings.motionDuration = -1;
+        return;
+    }
+    const stepMs = [250, 375, 500, 750, 1000];
+    settings.motionDuration = stepMs.reduce((nearest, ms, step) => Math.abs(ms - duration) < Math.abs(stepMs[nearest] - duration) ? step : nearest, 0);
 }
 
 // v44: new installs enable the dock with smart auto-hide; existing configs that omitted them keep both off

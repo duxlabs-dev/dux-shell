@@ -50,16 +50,18 @@ BasePill {
         Transition {
             NumberAnimation {
                 properties: "width,height"
-                duration: Theme.shortDuration
-                easing.type: Theme.standardEasing
+                duration: Theme.expressiveDurations.expressiveDefaultSpatial
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
             }
         }
     ]
 
     Behavior on opacity {
         NumberAnimation {
-            duration: Theme.shortDuration
-            easing.type: Theme.standardEasing
+            duration: Theme.expressiveDurations.expressiveFastEffects
+            easing.type: Easing.BezierSpline
+            easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
         }
     }
 
@@ -246,8 +248,9 @@ BasePill {
             enabled: hasActivePrivacy && root.visible
 
             NumberAnimation {
-                duration: Theme.shortDuration
-                easing.type: Theme.standardEasing
+                duration: Theme.expressiveDurations.expressiveFastEffects
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
             }
         }
     }

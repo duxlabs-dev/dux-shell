@@ -37,9 +37,9 @@ Column {
         clip: true
 
         Behavior on height {
-            enabled: root.userToggled && Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
+            enabled: root.userToggled
             NumberAnimation {
-                duration: SettingsMetrics.transitionDuration
+                duration: SettingsMetrics.expandDuration
                 easing.type: Easing.BezierSpline
                 easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
                 onRunningChanged: {
@@ -113,9 +113,8 @@ Column {
                 rotation: root.expanded ? 180 : 0
 
                 Behavior on rotation {
-                    enabled: Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
                     NumberAnimation {
-                        duration: Theme.expressiveDurations.expressiveFastSpatial
+                        duration: Theme.expressiveDurations.expressiveDefaultSpatial
                         easing.type: Easing.BezierSpline
                         easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
                     }

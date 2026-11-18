@@ -48,7 +48,6 @@ DListItem {
 
     // Opening one strip closes another; animating both shows where the selection went.
     Behavior on height {
-        enabled: Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
         NumberAnimation {
             id: heightSlide
             duration: Theme.expressiveDurations.expressiveDefaultSpatial
@@ -249,7 +248,6 @@ DListItem {
         opacity: root.isExpanded ? 1 : 0
 
         Behavior on opacity {
-            enabled: Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
             NumberAnimation {
                 duration: Theme.expressiveDurations.expressiveDefaultSpatial
                 easing.type: Easing.BezierSpline

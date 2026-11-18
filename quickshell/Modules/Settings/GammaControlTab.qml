@@ -69,89 +69,94 @@ Item {
     SettingsPage {
         id: mainColumn
 
-        SettingsCard {
-            visible: NightModeService.gammaAdjustAvailable
+        SettingsDeferred {
+            when: NightModeService.gammaAdjustAvailable
 
-            SettingsSliderRow {
-                settingKey: "displayGamma"
-                resetStore: SessionData
-                resetKeys: ["displayGamma"]
-                tags: ["gamma", "display", "panel", "washed out", "brightness"]
-                text: I18n.tr("Gamma")
-                minimum: 50
-                maximum: 200
-                step: 5
-                unit: ""
-                decimals: 2
-                value: Math.round(SessionData.displayGamma * 100)
-                onSliderValueChanged: newValue => NightModeService.setDisplayGamma(newValue / 100)
-            }
+            SettingsCard {
 
-            SettingsSliderRow {
-                settingKey: "displayContrast"
-                resetStore: SessionData
-                resetKeys: ["displayContrast"]
-                tags: ["contrast", "display", "panel", "washed out"]
-                text: I18n.tr("Contrast")
-                minimum: 50
-                maximum: 200
-                step: 5
-                value: Math.round(SessionData.displayContrast * 100)
-                onSliderValueChanged: newValue => NightModeService.setDisplayContrast(newValue / 100)
+                SettingsSliderRow {
+                    settingKey: "displayGamma"
+                    resetStore: SessionData
+                    resetKeys: ["displayGamma"]
+                    tags: ["gamma", "display", "panel", "washed out", "brightness"]
+                    text: I18n.tr("Gamma")
+                    minimum: 50
+                    maximum: 200
+                    step: 5
+                    unit: ""
+                    decimals: 2
+                    value: Math.round(SessionData.displayGamma * 100)
+                    onSliderValueChanged: newValue => NightModeService.setDisplayGamma(newValue / 100)
+                }
+
+                SettingsSliderRow {
+                    settingKey: "displayContrast"
+                    resetStore: SessionData
+                    resetKeys: ["displayContrast"]
+                    tags: ["contrast", "display", "panel", "washed out"]
+                    text: I18n.tr("Contrast")
+                    minimum: 50
+                    maximum: 200
+                    step: 5
+                    value: Math.round(SessionData.displayContrast * 100)
+                    onSliderValueChanged: newValue => NightModeService.setDisplayContrast(newValue / 100)
+                }
             }
         }
 
-        SettingsCard {
-            SettingsToggleRow {
-                text: I18n.tr("Night mode")
-                description: NightModeService.gammaControlAvailable ? "" : I18n.tr("Gamma control not available. Requires DMS API v6+.")
-                checked: NightModeService.nightModeEnabled
-                enabled: NightModeService.gammaControlAvailable
-                onToggled: NightModeService.toggleNightMode()
-            }
-
-            SettingsSliderRow {
-                settingKey: "nightModeTemperature"
-                resetStore: SessionData
-                resetKeys: ["nightModeTemperature"]
-                tags: ["gamma", "night", "temperature", "kelvin", "warm", "color", "blue light"]
-                visible: NightModeService.gammaControlAvailable
-                text: SessionData.nightModeAutoEnabled ? I18n.tr("Night temperature") : I18n.tr("Color Temperature", "Color Temperature")
-                minimum: 1000
-                maximum: 6000
-                step: 100
-                unit: "K"
-                value: SessionData.nightModeTemperature
-                onSliderValueChanged: newValue => {
-                    SessionData.setNightModeTemperature(newValue);
-                    if (SessionData.nightModeHighTemperature < newValue)
-                        SessionData.setNightModeHighTemperature(newValue);
+        SettingsDeferred {
+            SettingsCard {
+                SettingsToggleRow {
+                    text: I18n.tr("Night mode")
+                    description: NightModeService.gammaControlAvailable ? "" : I18n.tr("Gamma control not available. Requires DMS API v6+.")
+                    checked: NightModeService.nightModeEnabled
+                    enabled: NightModeService.gammaControlAvailable
+                    onToggled: NightModeService.toggleNightMode()
                 }
-            }
 
-            SettingsSliderRow {
-                settingKey: "nightModeHighTemperature"
-                resetStore: SessionData
-                resetKeys: ["nightModeHighTemperature"]
-                tags: ["gamma", "day", "temperature", "kelvin", "color"]
-                visible: NightModeService.gammaControlAvailable && SessionData.nightModeAutoEnabled
-                text: I18n.tr("Day temperature")
-                minimum: SessionData.nightModeTemperature
-                maximum: 10000
-                step: 100
-                unit: "K"
-                value: Math.max(SessionData.nightModeHighTemperature, SessionData.nightModeTemperature)
-                onSliderValueChanged: newValue => SessionData.setNightModeHighTemperature(newValue)
-            }
+                SettingsSliderRow {
+                    settingKey: "nightModeTemperature"
+                    resetStore: SessionData
+                    resetKeys: ["nightModeTemperature"]
+                    tags: ["gamma", "night", "temperature", "kelvin", "warm", "color", "blue light"]
+                    visible: NightModeService.gammaControlAvailable
+                    text: SessionData.nightModeAutoEnabled ? I18n.tr("Night temperature") : I18n.tr("Color Temperature", "Color Temperature")
+                    minimum: 1000
+                    maximum: 6000
+                    step: 100
+                    unit: "K"
+                    value: SessionData.nightModeTemperature
+                    onSliderValueChanged: newValue => {
+                        SessionData.setNightModeTemperature(newValue);
+                        if (SessionData.nightModeHighTemperature < newValue)
+                            SessionData.setNightModeHighTemperature(newValue);
+                    }
+                }
 
-            SettingsToggleRow {
-                text: I18n.tr("Automatic control")
-                checked: SessionData.nightModeAutoEnabled
-                visible: NightModeService.gammaControlAvailable
-                onToggled: checked => {
-                    if (checked !== NightModeService.nightModeEnabled)
-                        NightModeService.toggleNightMode();
-                    SessionData.setNightModeAutoEnabled(checked);
+                SettingsSliderRow {
+                    settingKey: "nightModeHighTemperature"
+                    resetStore: SessionData
+                    resetKeys: ["nightModeHighTemperature"]
+                    tags: ["gamma", "day", "temperature", "kelvin", "color"]
+                    visible: NightModeService.gammaControlAvailable && SessionData.nightModeAutoEnabled
+                    text: I18n.tr("Day temperature")
+                    minimum: SessionData.nightModeTemperature
+                    maximum: 10000
+                    step: 100
+                    unit: "K"
+                    value: Math.max(SessionData.nightModeHighTemperature, SessionData.nightModeTemperature)
+                    onSliderValueChanged: newValue => SessionData.setNightModeHighTemperature(newValue)
+                }
+
+                SettingsToggleRow {
+                    text: I18n.tr("Automatic control")
+                    checked: SessionData.nightModeAutoEnabled
+                    visible: NightModeService.gammaControlAvailable
+                    onToggled: checked => {
+                        if (checked !== NightModeService.nightModeEnabled)
+                            NightModeService.toggleNightMode();
+                        SessionData.setNightModeAutoEnabled(checked);
+                    }
                 }
             }
         }

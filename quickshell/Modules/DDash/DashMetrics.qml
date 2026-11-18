@@ -168,7 +168,7 @@ Singleton {
 
     readonly property real meterBarThickness: Theme.spacingM
     readonly property real overviewPlayWidth: 64
-    readonly property int meterDuration: fadeDuration
+    readonly property int meterDuration: Theme.expressiveDurations.expressiveSlowEffects
     readonly property real cpuWarnPercent: 60
     readonly property real cpuCriticalPercent: 80
     readonly property real tempWarnDegrees: 69

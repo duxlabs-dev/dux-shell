@@ -8,7 +8,7 @@ Item {
     default property alias content: row.data
     property bool shown: true
     readonly property real reservedHeight: shown && !inline ? row.implicitHeight + Theme.spacingL : 0
-    readonly property var scaleSpring: Theme.springPreset("fast", Theme.expressiveDurations.expressiveFastSpatial)
+    readonly property var scaleSpring: Theme.springPreset("fastSpatial")
     readonly property real shadowPadding: Theme.elevationRenderPadding(Theme.elevationLevel3, Theme.elevationLightDirection, Theme.spacingXS, Theme.spacingS, Theme.spacingL)
 
     property bool inline: false
@@ -45,7 +45,6 @@ Item {
 
     SpringMotion {
         id: scaleMotion
-        enabled: !Theme.springMotionDisabled
         stiffness: root.scaleSpring.stiffness
         damping: root.scaleSpring.damping
     }
@@ -71,7 +70,6 @@ Item {
         }
 
         Behavior on opacity {
-            enabled: Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
             NumberAnimation {
                 duration: Theme.expressiveDurations.expressiveFastEffects
                 easing.type: Easing.BezierSpline

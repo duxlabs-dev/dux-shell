@@ -40,9 +40,9 @@ ClippingRectangle {
     readonly property bool shaped: spinShape !== null
     readonly property real sway: spinShape?.sway ?? 0
     readonly property int spinDuration: spinShape?.duration ?? DashMetrics.mediaArtRotationDuration
-    readonly property bool animationsEnabled: !SettingsData.reduceMotion && Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
+    readonly property bool animationsEnabled: !Theme.reduceMotion
     readonly property bool spinning: shaped && playing && visible && !suspended && animationsEnabled && live
-    readonly property var morphSpring: Theme.springPreset("fast", Theme.expressiveDurations.expressiveFastSpatial)
+    readonly property var morphSpring: Theme.springPreset("fastSpatial")
     // Off-centre terms of the Material path are left out so the spin does not wobble.
     readonly property vector4d shapeTerms: {
         if (!shaped || spinShape.disc)
@@ -97,7 +97,6 @@ ClippingRectangle {
 
     SpringMotion {
         id: morphMotion
-        enabled: !Theme.springMotionDisabled
         stiffness: root.morphSpring.stiffness
         damping: root.morphSpring.damping
         Component.onCompleted: snapTo(root.playing ? 1 : 0)

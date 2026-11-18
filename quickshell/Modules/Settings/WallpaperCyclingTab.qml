@@ -142,148 +142,150 @@ Item {
     }
 
     SettingsPage {
-        SettingsCard {
-            tab: "wallpaper"
-            tags: ["cycling", "automatic", "rotate", "slideshow", "folder", "interval", "random", "shuffle", "time", "daily"]
-            settingKey: "wallpaperCycling"
-
-            SettingsDropdownRow {
+        SettingsDeferred {
+            SettingsCard {
                 tab: "wallpaper"
-                tags: ["monitor", "display", "screen"]
-                visible: root.perMonitor
-                text: I18n.tr("Display")
-                currentValue: root.displayNameForScreen(root.selectedScreen)
-                options: root.screenNames()
-                onValueChanged: value => SettingsUiState.selectedWallpaperScreen = root.screenForDisplayName(value)
-            }
+                tags: ["cycling", "automatic", "rotate", "slideshow", "folder", "interval", "random", "shuffle", "time", "daily"]
+                settingKey: "wallpaperCycling"
 
-            SettingsRow {
-                title: root.canCycle ? root.currentWallpaper.split("/").pop() : I18n.tr("No wallpaper selected")
-                subtitle: root.wallpaperFolder
-                enabled: root.canCycle
-
-                DActionButton {
-                    buttonSize: Theme.iconButtonSize
-                    iconName: "skip_previous"
-                    iconSize: Theme.iconSizeMedium
-                    iconColor: Theme.surfaceText
-                    backgroundColor: SettingsMetrics.controlSurface
-                    enabled: root.canCycle
-                    Accessible.name: I18n.tr("Previous")
-                    anchors.verticalCenter: parent.verticalCenter
-                    onClicked: root.cycle(true)
+                SettingsDropdownRow {
+                    tab: "wallpaper"
+                    tags: ["monitor", "display", "screen"]
+                    visible: root.perMonitor
+                    text: I18n.tr("Display")
+                    currentValue: root.displayNameForScreen(root.selectedScreen)
+                    options: root.screenNames()
+                    onValueChanged: value => SettingsUiState.selectedWallpaperScreen = root.screenForDisplayName(value)
                 }
 
-                DActionButton {
-                    buttonSize: Theme.iconButtonSize
-                    iconName: "skip_next"
-                    iconSize: Theme.iconSizeMedium
-                    iconColor: Theme.surfaceText
-                    backgroundColor: SettingsMetrics.controlSurface
+                SettingsRow {
+                    title: root.canCycle ? root.currentWallpaper.split("/").pop() : I18n.tr("No wallpaper selected")
+                    subtitle: root.wallpaperFolder
                     enabled: root.canCycle
-                    Accessible.name: I18n.tr("Next")
-                    anchors.verticalCenter: parent.verticalCenter
-                    onClicked: root.cycle(false)
-                }
-            }
 
-            SettingsToggleRow {
-                tab: "wallpaper"
-                tags: ["cycling", "automatic", "rotate", "slideshow"]
-                settingKey: "wallpaperCyclingEnabled"
-                text: I18n.tr("Automatic cycling")
-                checked: root.enabled
-                onToggled: toggled => root.setEnabled(toggled)
-            }
+                    DActionButton {
+                        buttonSize: Theme.iconButtonSize
+                        iconName: "skip_previous"
+                        iconSize: Theme.iconSizeMedium
+                        iconColor: Theme.surfaceText
+                        backgroundColor: SettingsMetrics.controlSurface
+                        enabled: root.canCycle
+                        Accessible.name: I18n.tr("Previous")
+                        anchors.verticalCenter: parent.verticalCenter
+                        onClicked: root.cycle(true)
+                    }
 
-            SettingsRow {
-                tab: "wallpaper"
-                tags: ["cycling", "folder", "directory"]
-                settingKey: "wallpaperCyclingFolder"
-                title: I18n.tr("Folder")
-                subtitle: root.folderPath || I18n.tr("Use desktop wallpaper")
-
-                DButton {
-                    text: I18n.tr("Browse")
-                    horizontalPadding: Theme.spacingL
-                    anchors.verticalCenter: parent.verticalCenter
-                    onClicked: {
-                        folderBrowserLoader.active = true;
-                        if (folderBrowserLoader.item)
-                            folderBrowserLoader.item.open();
+                    DActionButton {
+                        buttonSize: Theme.iconButtonSize
+                        iconName: "skip_next"
+                        iconSize: Theme.iconSizeMedium
+                        iconColor: Theme.surfaceText
+                        backgroundColor: SettingsMetrics.controlSurface
+                        enabled: root.canCycle
+                        Accessible.name: I18n.tr("Next")
+                        anchors.verticalCenter: parent.verticalCenter
+                        onClicked: root.cycle(false)
                     }
                 }
-            }
 
-            SettingsToggleRow {
-                tab: "wallpaper"
-                tags: ["cycling", "subfolders", "recursive", "directories", "folders"]
-                settingKey: "wallpaperCyclingRecursive"
-                text: I18n.tr("Include subfolders")
-                checked: root.recursive
-                onToggled: toggled => root.setRecursive(toggled)
-            }
-
-            SettingsToggleRow {
-                tab: "wallpaper"
-                tags: ["cycling", "automatic", "random", "shuffle"]
-                settingKey: "wallpaperCyclingRandom"
-                text: I18n.tr("Random order")
-                checked: root.random
-                onToggled: toggled => root.setRandom(toggled)
-            }
-
-            SettingsToggleRow {
-                tab: "wallpaper"
-                tags: ["cycling", "video", "live", "end"]
-                settingKey: "wallpaperCyclingVideoEnd"
-                text: I18n.tr("Advance when a video ends", "wallpaper cycling toggle")
-                description: I18n.tr("Video wallpapers play once, then the next wallpaper is shown", "wallpaper cycling toggle description")
-                checked: root.videoEnd
-                onToggled: toggled => root.setVideoEnd(toggled)
-            }
-
-            SettingsButtonGroupRow {
-                tab: "wallpaper"
-                tags: ["cycling", "mode", "interval", "time", "daily"]
-                settingKey: "wallpaperCyclingMode"
-                text: I18n.tr("Mode", "noun, setting label, e.g. wallpaper cycling mode, wifi mode, display mode")
-                model: [I18n.tr("Interval", "wallpaper cycling mode tab"), I18n.tr("Time", "wallpaper cycling mode tab")]
-                currentIndex: root.mode === "time" ? 1 : 0
-                onSelectionChanged: (index, selected) => {
-                    if (!selected)
-                        return;
-                    root.setMode(index === 1 ? "time" : "interval");
+                SettingsToggleRow {
+                    tab: "wallpaper"
+                    tags: ["cycling", "automatic", "rotate", "slideshow"]
+                    settingKey: "wallpaperCyclingEnabled"
+                    text: I18n.tr("Automatic cycling")
+                    checked: root.enabled
+                    onToggled: toggled => root.setEnabled(toggled)
                 }
-            }
 
-            SettingsDropdownRow {
-                tab: "wallpaper"
-                tags: ["interval", "cycling", "time", "frequency"]
-                settingKey: "wallpaperCyclingInterval"
-                visible: root.mode !== "time"
-                text: I18n.tr("Interval")
-                options: root.intervalOptions
-                currentValue: {
-                    const index = root.intervalValues.indexOf(root.interval);
-                    return index >= 0 ? root.intervalOptions[index] : I18n.duration(300);
-                }
-                onValueChanged: value => {
-                    const index = root.intervalOptions.indexOf(value);
-                    if (index >= 0)
-                        root.setInterval(root.intervalValues[index]);
-                }
-            }
+                SettingsRow {
+                    tab: "wallpaper"
+                    tags: ["cycling", "folder", "directory"]
+                    settingKey: "wallpaperCyclingFolder"
+                    title: I18n.tr("Folder")
+                    subtitle: root.folderPath || I18n.tr("Use desktop wallpaper")
 
-            SettingsTimeRow {
-                dialogHost: root.parentModal?.dialogHostFor(root) ?? null
-                visible: root.mode === "time"
-                showEnd: false
-                is24Hour: SettingsData.use24HourClock
-                startTitle: I18n.tr("Daily", "adverb, wallpaper changes every day at a set time", true)
-                startHour: root.timeHour
-                startMinute: root.timeMinute
-                onStartChanged: (hour, minute) => root.setTime(hour, minute)
+                    DButton {
+                        text: I18n.tr("Browse")
+                        horizontalPadding: Theme.spacingL
+                        anchors.verticalCenter: parent.verticalCenter
+                        onClicked: {
+                            folderBrowserLoader.active = true;
+                            if (folderBrowserLoader.item)
+                                folderBrowserLoader.item.open();
+                        }
+                    }
+                }
+
+                SettingsToggleRow {
+                    tab: "wallpaper"
+                    tags: ["cycling", "subfolders", "recursive", "directories", "folders"]
+                    settingKey: "wallpaperCyclingRecursive"
+                    text: I18n.tr("Include subfolders")
+                    checked: root.recursive
+                    onToggled: toggled => root.setRecursive(toggled)
+                }
+
+                SettingsToggleRow {
+                    tab: "wallpaper"
+                    tags: ["cycling", "automatic", "random", "shuffle"]
+                    settingKey: "wallpaperCyclingRandom"
+                    text: I18n.tr("Random order")
+                    checked: root.random
+                    onToggled: toggled => root.setRandom(toggled)
+                }
+
+                SettingsToggleRow {
+                    tab: "wallpaper"
+                    tags: ["cycling", "video", "live", "end"]
+                    settingKey: "wallpaperCyclingVideoEnd"
+                    text: I18n.tr("Advance when a video ends", "wallpaper cycling toggle")
+                    description: I18n.tr("Video wallpapers play once, then the next wallpaper is shown", "wallpaper cycling toggle description")
+                    checked: root.videoEnd
+                    onToggled: toggled => root.setVideoEnd(toggled)
+                }
+
+                SettingsButtonGroupRow {
+                    tab: "wallpaper"
+                    tags: ["cycling", "mode", "interval", "time", "daily"]
+                    settingKey: "wallpaperCyclingMode"
+                    text: I18n.tr("Mode", "noun, setting label, e.g. wallpaper cycling mode, wifi mode, display mode")
+                    model: [I18n.tr("Interval", "wallpaper cycling mode tab"), I18n.tr("Time", "wallpaper cycling mode tab")]
+                    currentIndex: root.mode === "time" ? 1 : 0
+                    onSelectionChanged: (index, selected) => {
+                        if (!selected)
+                            return;
+                        root.setMode(index === 1 ? "time" : "interval");
+                    }
+                }
+
+                SettingsDropdownRow {
+                    tab: "wallpaper"
+                    tags: ["interval", "cycling", "time", "frequency"]
+                    settingKey: "wallpaperCyclingInterval"
+                    visible: root.mode !== "time"
+                    text: I18n.tr("Interval")
+                    options: root.intervalOptions
+                    currentValue: {
+                        const index = root.intervalValues.indexOf(root.interval);
+                        return index >= 0 ? root.intervalOptions[index] : I18n.duration(300);
+                    }
+                    onValueChanged: value => {
+                        const index = root.intervalOptions.indexOf(value);
+                        if (index >= 0)
+                            root.setInterval(root.intervalValues[index]);
+                    }
+                }
+
+                SettingsTimeRow {
+                    dialogHost: root.parentModal?.dialogHostFor(root) ?? null
+                    visible: root.mode === "time"
+                    showEnd: false
+                    is24Hour: SettingsData.use24HourClock
+                    startTitle: I18n.tr("Daily", "adverb, wallpaper changes every day at a set time", true)
+                    startHour: root.timeHour
+                    startMinute: root.timeMinute
+                    onStartChanged: (hour, minute) => root.setTime(hour, minute)
+                }
             }
         }
     }

@@ -74,113 +74,60 @@ done
     SettingsPage {
         id: mainColumn
 
-        SettingsCard {
-            width: parent.width
-            title: I18n.tr("Status")
-            settingKey: "batteryStatusCard"
-            tags: ["battery", "status", "charge", "health"]
+        SettingsDeferred {
+            SettingsCard {
+                width: parent.width
+                title: I18n.tr("Status")
+                settingKey: "batteryStatusCard"
+                tags: ["battery", "status", "charge", "health"]
 
-            SettingsRow {
-                body: Column {
-                    width: parent.width
-                    spacing: Theme.spacingM
-
-                    Row {
+                SettingsRow {
+                    body: Column {
                         width: parent.width
                         spacing: Theme.spacingM
 
-                        DIcon {
-                            name: BatteryService.getBatteryIcon()
-                            size: Theme.iconSizeLarge
-                            color: root.batteryStatusColor
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
+                        Row {
+                            width: parent.width
+                            spacing: Theme.spacingM
 
-                        Column {
-                            spacing: Theme.spacingXS
-                            width: parent.width - Theme.iconSizeLarge - Theme.spacingM
-                            anchors.verticalCenter: parent.verticalCenter
-
-                            Row {
-                                spacing: Theme.spacingS
-                                width: parent.width
-
-                                StyledText {
-                                    text: BatteryService.batteryAvailable ? `${BatteryService.displayBatteryLevelText}%` : ""
-                                    font.pixelSize: Theme.fontSizeXLarge
-                                    font.weight: Theme.fontWeightMedium
-                                    color: root.batteryStatusColor
-                                }
-
-                                StyledText {
-                                    text: BatteryService.batteryStatus
-                                    font.pixelSize: Theme.fontSizeLarge
-                                    font.weight: Theme.fontWeightMedium
-                                    color: Theme.surfaceText
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    elide: Text.ElideRight
-                                    width: Math.max(0, parent.width - 100)
-                                }
+                            DIcon {
+                                name: BatteryService.getBatteryIcon()
+                                size: Theme.iconSizeLarge
+                                color: root.batteryStatusColor
+                                anchors.verticalCenter: parent.verticalCenter
                             }
-
-                            StyledText {
-                                text: BatteryService.isPluggedIn ? I18n.tr("AC adapter (plugged in)") : I18n.tr("Battery power")
-                                font.pixelSize: Theme.fontSizeSmall
-                                color: Theme.surfaceTextMedium
-                                width: parent.width
-                                elide: Text.ElideRight
-                            }
-                        }
-                    }
-
-                    Item {
-                        width: parent.width
-                        height: Theme.spacingXS
-
-                        Rectangle {
-                            anchors.fill: parent
-                            radius: Theme.fullRadius(width, height)
-                            color: Theme.withAlpha(root.batteryStatusColor, Theme.tonalTintAlpha)
-                        }
-
-                        Rectangle {
-                            anchors.left: parent.left
-                            width: parent.width * Math.max(0, Math.min(1, BatteryService.displayBatteryLevel / 100))
-                            height: parent.height
-                            radius: Theme.fullRadius(width, height)
-                            color: root.batteryStatusColor
-                            visible: BatteryService.batteryAvailable
-                        }
-                    }
-
-                    Row {
-                        width: parent.width
-                        spacing: Theme.spacingM
-
-                        Item {
-                            width: (parent.width - Theme.spacingM) / 2
-                            height: timeColumn.implicitHeight
 
                             Column {
-                                id: timeColumn
-                                width: parent.width
-                                spacing: Theme.spacingXXS
+                                spacing: Theme.spacingXS
+                                width: parent.width - Theme.iconSizeLarge - Theme.spacingM
+                                anchors.verticalCenter: parent.verticalCenter
 
-                                StyledText {
-                                    text: I18n.tr("Estimated time")
-                                    font.pixelSize: Theme.fontSizeSmall
-                                    color: Theme.surfaceTextMedium
-                                }
+                                Row {
+                                    spacing: Theme.spacingS
+                                    width: parent.width
 
-                                StyledText {
-                                    text: {
-                                        const remaining = BatteryService.formatTimeRemaining();
-                                        const estimated = BatteryService.formatEstimatedTime();
-                                        return estimated ? `${remaining} (${estimated})` : remaining;
+                                    StyledText {
+                                        text: BatteryService.batteryAvailable ? `${BatteryService.displayBatteryLevelText}%` : ""
+                                        font.pixelSize: Theme.fontSizeXLarge
+                                        font.weight: Theme.fontWeightMedium
+                                        color: root.batteryStatusColor
                                     }
-                                    font.pixelSize: Theme.fontSizeMedium
-                                    font.weight: Theme.fontWeightMedium
-                                    color: Theme.surfaceText
+
+                                    StyledText {
+                                        text: BatteryService.batteryStatus
+                                        font.pixelSize: Theme.fontSizeLarge
+                                        font.weight: Theme.fontWeightMedium
+                                        color: Theme.surfaceText
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        elide: Text.ElideRight
+                                        width: Math.max(0, parent.width - 100)
+                                    }
+                                }
+
+                                StyledText {
+                                    text: BatteryService.isPluggedIn ? I18n.tr("AC adapter (plugged in)") : I18n.tr("Battery power")
+                                    font.pixelSize: Theme.fontSizeSmall
+                                    color: Theme.surfaceTextMedium
                                     width: parent.width
                                     elide: Text.ElideRight
                                 }
@@ -188,27 +135,82 @@ done
                         }
 
                         Item {
-                            width: (parent.width - Theme.spacingM) / 2
-                            height: healthColumn.implicitHeight
+                            width: parent.width
+                            height: Theme.spacingXS
 
-                            Column {
-                                id: healthColumn
-                                width: parent.width
-                                spacing: Theme.spacingXXS
+                            Rectangle {
+                                anchors.fill: parent
+                                radius: Theme.fullRadius(width, height)
+                                color: Theme.withAlpha(root.batteryStatusColor, Theme.tonalTintAlpha)
+                            }
 
-                                StyledText {
-                                    text: I18n.tr("Health", "noun, battery health percentage label")
-                                    font.pixelSize: Theme.fontSizeSmall
-                                    color: Theme.surfaceTextMedium
-                                }
+                            Rectangle {
+                                anchors.left: parent.left
+                                width: parent.width * Math.max(0, Math.min(1, BatteryService.displayBatteryLevel / 100))
+                                height: parent.height
+                                radius: Theme.fullRadius(width, height)
+                                color: root.batteryStatusColor
+                                visible: BatteryService.batteryAvailable
+                            }
+                        }
 
-                                StyledText {
-                                    text: BatteryService.batteryHealth
-                                    font.pixelSize: Theme.fontSizeMedium
-                                    font.weight: Theme.fontWeightMedium
-                                    color: Theme.surfaceText
+                        Row {
+                            width: parent.width
+                            spacing: Theme.spacingM
+
+                            Item {
+                                width: (parent.width - Theme.spacingM) / 2
+                                height: timeColumn.implicitHeight
+
+                                Column {
+                                    id: timeColumn
                                     width: parent.width
-                                    elide: Text.ElideRight
+                                    spacing: Theme.spacingXXS
+
+                                    StyledText {
+                                        text: I18n.tr("Estimated time")
+                                        font.pixelSize: Theme.fontSizeSmall
+                                        color: Theme.surfaceTextMedium
+                                    }
+
+                                    StyledText {
+                                        text: {
+                                            const remaining = BatteryService.formatTimeRemaining();
+                                            const estimated = BatteryService.formatEstimatedTime();
+                                            return estimated ? `${remaining} (${estimated})` : remaining;
+                                        }
+                                        font.pixelSize: Theme.fontSizeMedium
+                                        font.weight: Theme.fontWeightMedium
+                                        color: Theme.surfaceText
+                                        width: parent.width
+                                        elide: Text.ElideRight
+                                    }
+                                }
+                            }
+
+                            Item {
+                                width: (parent.width - Theme.spacingM) / 2
+                                height: healthColumn.implicitHeight
+
+                                Column {
+                                    id: healthColumn
+                                    width: parent.width
+                                    spacing: Theme.spacingXXS
+
+                                    StyledText {
+                                        text: I18n.tr("Health", "noun, battery health percentage label")
+                                        font.pixelSize: Theme.fontSizeSmall
+                                        color: Theme.surfaceTextMedium
+                                    }
+
+                                    StyledText {
+                                        text: BatteryService.batteryHealth
+                                        font.pixelSize: Theme.fontSizeMedium
+                                        font.weight: Theme.fontWeightMedium
+                                        color: Theme.surfaceText
+                                        width: parent.width
+                                        elide: Text.ElideRight
+                                    }
                                 }
                             }
                         }
@@ -217,22 +219,25 @@ done
             }
         }
 
-        SettingsCard {
-            width: parent.width
-            iconName: "show_chart"
-            title: I18n.tr("History")
-            settingKey: "batteryHistory"
-            tags: ["battery", "history", "graph", "charge"]
-            visible: BatteryService.batteryAvailable && history.samples.filter(sample => sample[2] !== 0).length > 1
+        SettingsDeferred {
+            when: BatteryService.batteryAvailable && history.samples.filter(sample => sample[2] !== 0).length > 1
 
-            BatteryHistoryChart {
-                height: implicitHeight
-                color: "transparent"
-                pad: 0
-                samples: history.samples
-                rangeStart: history.rangeStart
-                rangeEnd: history.rangeEnd
-                deviceName: !BatteryService.usePreferred && BatteryService.batteries.length > 1 ? history.device?.model || history.device?.nativePath || "" : ""
+            SettingsCard {
+                width: parent.width
+                iconName: "show_chart"
+                title: I18n.tr("History")
+                settingKey: "batteryHistory"
+                tags: ["battery", "history", "graph", "charge"]
+
+                BatteryHistoryChart {
+                    height: implicitHeight
+                    color: "transparent"
+                    pad: 0
+                    samples: history.samples
+                    rangeStart: history.rangeStart
+                    rangeEnd: history.rangeEnd
+                    deviceName: !BatteryService.usePreferred && BatteryService.batteries.length > 1 ? history.device?.model || history.device?.nativePath || "" : ""
+                }
             }
         }
 

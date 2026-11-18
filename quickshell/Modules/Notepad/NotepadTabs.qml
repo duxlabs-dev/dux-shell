@@ -119,8 +119,9 @@ Column {
                             Behavior on x {
                                 enabled: !root.suppressShiftAnimation
                                 NumberAnimation {
-                                    duration: 150
-                                    easing.type: Easing.OutCubic
+                                    duration: Theme.expressiveDurations.expressiveFastSpatial
+                                    easing.type: Easing.BezierSpline
+                                    easing.bezierCurve: Theme.expressiveCurves.expressiveFastSpatial
                                 }
                             }
                         }
@@ -252,8 +253,9 @@ Column {
 
                                 Behavior on color {
                                     ColorAnimation {
-                                        duration: Theme.shortDuration
-                                        easing.type: Theme.standardEasing
+                                        duration: Theme.expressiveDurations.expressiveFastEffects
+                                        easing.type: Easing.BezierSpline
+                                        easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
                                     }
                                 }
                             }

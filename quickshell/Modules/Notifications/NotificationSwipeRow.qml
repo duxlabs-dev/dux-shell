@@ -125,7 +125,7 @@ Item {
         id: dismissAnimation
         target: motion
         property: "value"
-        duration: NotificationMetrics.animationsEnabled ? Theme.notificationExitDuration : 0
+        duration: NotificationMetrics.animationsEnabled ? NotificationMetrics.dismissDuration : 0
         easing.type: Easing.BezierSpline
         easing.bezierCurve: NotificationMetrics.dismissCurve
         onFinished: root.dismissed()

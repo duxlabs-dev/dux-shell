@@ -792,10 +792,11 @@ Item {
     readonly property real surfaceSpacing: Math.max(effectiveSpacing, renderedSpacing)
 
     Behavior on renderedSpacing {
-        enabled: (barWindow.hostWindow?.visible ?? false) && !SettingsData.reduceMotion
+        enabled: (barWindow.hostWindow?.visible ?? false) && !Theme.reduceMotion
         NumberAnimation {
-            duration: Theme.shortDuration
-            easing.type: Easing.OutCubic
+            duration: Theme.expressiveDurations.expressiveDefaultSpatial
+            easing.type: Easing.BezierSpline
+            easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
         }
     }
 
@@ -822,21 +823,23 @@ Item {
     property real fittedTrailingPad: fitToWidgets ? Math.max(0, topBarContent.fittedTrailingPad) : 0
     readonly property int lengthPaddingStartPx: Theme.px(fitToWidgets ? fittedLeadingPad : effectiveBarLengthPadding, _dpr)
     readonly property int lengthPaddingEndPx: Theme.px(fitToWidgets ? fittedTrailingPad : effectiveBarLengthPadding, _dpr)
-    readonly property bool fitAnimated: fitToWidgets && _fitSettled && (hostWindow?.visible ?? false) && !SettingsData.reduceMotion
+    readonly property bool fitAnimated: fitToWidgets && _fitSettled && (hostWindow?.visible ?? false) && !Theme.reduceMotion
 
     Behavior on fittedLeadingPad {
         enabled: barWindow.fitAnimated
         NumberAnimation {
-            duration: Theme.shortDuration
-            easing.type: Easing.OutCubic
+            duration: Theme.expressiveDurations.expressiveDefaultSpatial
+            easing.type: Easing.BezierSpline
+            easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
         }
     }
 
     Behavior on fittedTrailingPad {
         enabled: barWindow.fitAnimated
         NumberAnimation {
-            duration: Theme.shortDuration
-            easing.type: Easing.OutCubic
+            duration: Theme.expressiveDurations.expressiveDefaultSpatial
+            easing.type: Easing.BezierSpline
+            easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
         }
     }
 
@@ -1312,18 +1315,20 @@ Item {
                     onYChanged: barWindow.refreshBlurRegion()
 
                     Behavior on x {
-                        enabled: !SettingsData.reduceMotion
+                        enabled: !Theme.reduceMotion
                         NumberAnimation {
-                            duration: Theme.shortDuration
-                            easing.type: Easing.OutCubic
+                            duration: Theme.expressiveDurations.expressiveFastSpatial
+                            easing.type: Easing.BezierSpline
+                            easing.bezierCurve: Theme.expressiveCurves.expressiveFastSpatial
                         }
                     }
 
                     Behavior on y {
-                        enabled: !SettingsData.reduceMotion
+                        enabled: !Theme.reduceMotion
                         NumberAnimation {
-                            duration: Theme.shortDuration
-                            easing.type: Easing.OutCubic
+                            duration: Theme.expressiveDurations.expressiveFastSpatial
+                            easing.type: Easing.BezierSpline
+                            easing.bezierCurve: Theme.expressiveCurves.expressiveFastSpatial
                         }
                     }
                 }

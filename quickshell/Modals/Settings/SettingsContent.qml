@@ -25,7 +25,7 @@ FocusScope {
     readonly property bool isCompactMode: parentModal?.isCompactMode ?? false
     readonly property bool menuHidden: isCompactMode && !(parentModal?.menuVisible ?? true)
     readonly property bool showBack: (parentModal?.canGoBack ?? false) || isPluginPage || menuHidden
-    readonly property bool animationsEnabled: !SettingsData.reduceMotion && Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
+    readonly property bool animationsEnabled: !Theme.reduceMotion
     // Mouse navigation lands parked; only keyboard navigation highlights a control on the page
     property bool keyboardNavigation: true
 
@@ -233,19 +233,28 @@ FocusScope {
     property var _cache: ({})
     property var _cacheOrder: []
     property var _doomed: []
-    property int _warmUp: 0
 
     function _cacheable(page) {
         return !SettingsTabs.isPluginPage(page) && !SettingsTabs.page(page)?.titleFrom;
     }
 
-    // Pages are built before their stack operation starts, so the transition never shares frames with a build
+    // Pages are children of the stack view from the start, parked past its clip while they are prepared: there
+    // they are laid out and drawn once out of sight, and reparenting one later would walk its whole tree
     function _takePage(page, index) {
+        if (_ahead?.page === page) {
+            const host = _ahead;
+            _ahead = null;
+            host.pathIndex = index;
+            return host;
+        }
         const cached = _cache[page];
         if (!cached) {
-            const host = pageComponent.createObject(pageCache, {
+            const host = pageComponent.createObject(pageStack, {
+                x: pageStack.width,
                 page,
-                pathIndex: index
+                pathIndex: index,
+                width: pageStack.width,
+                height: pageStack.height
             });
             host.load();
             return host;
@@ -253,13 +262,16 @@ FocusScope {
         delete _cache[page];
         _cacheOrder = _cacheOrder.filter(id => id !== page);
         cached.pathIndex = index;
+        cached.x = pageStack.width;
+        cached.visible = true;
+        cached.width = pageStack.width;
+        cached.height = pageStack.height;
         cached.resetScroll();
         return cached;
     }
 
     function _release(host) {
-        host.parent = pageCache;
-        host.fresh = false;
+        host.visible = false;
         if (!sessionVisible || !_cacheable(host.page) || _cache[host.page]) {
             _doom(host);
             return;
@@ -274,19 +286,43 @@ FocusScope {
         _cacheOrder = order;
     }
 
-    // Tearing a page down takes long enough to cost a frame, so it waits for the transition to end
+    // Tearing a page down costs frames, so it happens a card at a time while nothing else is going on
     function _doom(host) {
         _doomed = _doomed.concat([host]);
-        _reap();
+        if (!sessionVisible)
+            _reap();
+    }
+
+    Timer {
+        interval: SettingsMetrics.pageTeardownInterval
+        repeat: true
+        running: root.sessionVisible && root._doomed.length > 0 && !pageStack.busy && root._staged === null && !root._syncRequested
+        onTriggered: root._reap()
     }
 
     function _reap() {
-        if (_doomed.length === 0 || (sessionVisible && (pageStack.busy || slideMotion.running)))
+        if (_doomed.length === 0)
             return;
-        const doomed = _doomed;
-        _doomed = [];
-        for (const host of doomed)
-            host.destroy();
+        if (!sessionVisible) {
+            const doomed = _doomed;
+            _doomed = [];
+            for (const host of doomed)
+                host.destroy();
+            return;
+        }
+        const doomed = _doomed.slice();
+        if (!doomed[0].scroller?.unbuildCard?.())
+            doomed.shift().destroy();
+        _doomed = doomed;
+    }
+
+    // StackView leaves an item with an explicit size alone
+    function _fitPages() {
+        for (let i = 0; i < pageStack.depth; i++) {
+            const host = pageStack.get(i, StackView.DontLoad);
+            host.width = pageStack.width;
+            host.height = pageStack.height;
+        }
     }
 
     function _dropCache() {
@@ -296,19 +332,15 @@ FocusScope {
         _cacheOrder = [];
     }
 
-    function _sidebarOrder(page) {
-        const top = SettingsTabs.parentOf(page) || page;
-        return SettingsTabs.structure.findIndex(entry => entry.id === top);
-    }
-
-    // A navigation that lands mid-transition cuts in rather than queueing behind it
     function _operation(transition) {
-        const animate = animationsEnabled && pageStack.depth > 0 && !pageStack.busy && (parentModal?.visible ?? false);
+        const animate = animationsEnabled && pageStack.depth > 0 && (parentModal?.visible ?? false);
         return animate ? transition : StackView.Immediate;
     }
 
     function _syncPages() {
+        _discardStaged();
         if (!sessionVisible) {
+            _shelve();
             pageStack.clear(StackView.Immediate);
             _dropCache();
             return;
@@ -321,112 +353,184 @@ FocusScope {
         if (shared === pagePath.length) {
             if (shared === pageStack.depth)
                 return;
-            _warmUp = 0;
-            const operation = _operation(StackView.PopTransition);
-            _slideIn(operation, -pageStack.pageOffset, 0);
-            pageStack.pop(pageStack.get(shared - 1), operation);
+            pageStack.currentItem.holdPose();
+            _slideFrom = -pageStack.slideDistance;
+            pageStack.pop(pageStack.get(shared - 1), _operation(StackView.PopTransition));
             return;
         }
+        if (_ahead && !pagePath.includes(_ahead.page))
+            _shelve();
         const pages = [];
-        _warmUp = 0;
         for (let index = shared; index < pagePath.length; index++) {
             const page = _takePage(pagePath[index], index);
             // StackView only transitions the top of a multi-item push; pages beneath stay painted until hidden here
             page.visible = index === pagePath.length - 1;
             pages.push(page);
         }
-        if (pages[pages.length - 1].fresh)
-            _warmUp = SettingsMetrics.pageWarmUpDuration;
-        if (shared < pageStack.depth) {
-            const operation = _operation(StackView.ReplaceTransition);
-            const direction = _sidebarOrder(pagePath[shared]) < _sidebarOrder(pageStack.get(shared).page) ? -1 : 1;
-            _slideIn(operation, 0, direction * SettingsMetrics.pageSlideOffset);
-            pageStack.replace(pageStack.get(shared), pages, operation);
-        } else {
-            const operation = _operation(StackView.PushTransition);
-            _slideIn(operation, pageStack.pageOffset, 0);
-            pageStack.push(pages, operation);
+        _staged = {
+            "pages": pages,
+            "shared": shared
+        };
+    }
+
+    // A transition started in the turn that prepared its page is charged that work on its first tick and skips ahead
+    property var _staged: null
+
+    // A page the pointer rests on is built ahead into the cache, so the click that follows finds it ready
+    property string _anticipated: ""
+    property var _ahead: null
+
+    function anticipate(pageId) {
+        _anticipated = SettingsTabs.resolvePage(pageId);
+        anticipation.restart();
+    }
+
+    function _aheadable(page) {
+        return page && page !== currentPage && !_cache[page] && _cacheable(page);
+    }
+
+    // The page under the pointer first, then, while the cache has room, the sidebar neighbours of the current one
+    function _nextAhead() {
+        if (_aheadable(_anticipated))
+            return _anticipated;
+        if (_cacheOrder.length >= SettingsMetrics.pageCacheLimit)
+            return "";
+        const ids = SettingsTabs.structure.filter(entry => !entry.separator && SettingsTabs.isVisible(entry)).map(entry => SettingsTabs.resolvePage(entry.id));
+        const at = ids.indexOf(pagePath[0]);
+        for (let distance = 1; distance < ids.length; distance++) {
+            if (_aheadable(ids[at + distance]))
+                return ids[at + distance];
+            if (_aheadable(ids[at - distance]))
+                return ids[at - distance];
         }
-        for (const page of pages)
-            page.building = false;
+        return "";
     }
 
-    onPagePathChanged: Qt.callLater(_syncPages)
-    onSessionVisibleChanged: Qt.callLater(_syncPages)
-
-    // The leaving page is gone before the next one shows, so two translucent pages never blend
-    component PageExit: Transition {
-        id: exit
-
-        property int warmUp: 0
-
-        SequentialAnimation {
-            PauseAnimation {
-                duration: exit.warmUp
-            }
-
-            NumberAnimation {
-                property: "opacity"
-                to: 0
-                duration: SettingsMetrics.pageExitDuration
-                easing.type: Easing.BezierSpline
-                easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
-            }
-        }
-    }
-
-    component PageEnter: Transition {
-        id: enter
-
-        property int warmUp: 0
-
-        signal revealed
-
-        SequentialAnimation {
-            // Qt skips painting at opacity 0, so a new page would lay out and paint for the first time mid-fade
-            PropertyAction {
-                property: "opacity"
-                value: SettingsMetrics.pagePrepaintOpacity
-            }
-
-            PauseAnimation {
-                duration: enter.warmUp + SettingsMetrics.pageExitDuration
-            }
-
-            ScriptAction {
-                script: enter.revealed()
-            }
-
-            NumberAnimation {
-                property: "opacity"
-                to: 1
-                duration: SettingsMetrics.pageEnterFadeDuration
-                easing.type: Easing.BezierSpline
-                easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
-            }
-        }
-    }
-
-    readonly property var _slideSpring: Theme.springPreset("defaultSpatial", Theme.expressiveDurations.expressiveFastSpatial)
-    property point _slideFrom: Qt.point(0, 0)
-
-    SpringMotion {
-        id: slideMotion
-        enabled: !Theme.springMotionDisabled
-        stiffness: root._slideSpring.stiffness
-        damping: root._slideSpring.damping
-        onRunningChanged: root._reap()
-    }
-
-    function _slideIn(operation, x, y) {
-        if (operation === StackView.Immediate) {
-            slideMotion.snapTo(1);
+    function _buildAhead() {
+        if (!sessionVisible)
+            return;
+        if (_ahead || _staged || _syncRequested || pageStack.busy) {
+            anticipation.restart();
             return;
         }
-        _slideFrom = Qt.point(x, y);
-        slideMotion.snapTo(0);
+        const page = _nextAhead();
+        if (!page)
+            return;
+        _ahead = _takePage(page, 0);
+        if (_ahead.firstScreenReady)
+            _shelve();
     }
 
+    function _shelve() {
+        if (!_ahead)
+            return;
+        const host = _ahead;
+        _ahead = null;
+        _release(host);
+        anticipation.restart();
+    }
+
+    Timer {
+        id: anticipation
+        interval: SettingsMetrics.pageAnticipationDelay
+        onTriggered: root._buildAhead()
+    }
+
+    function _discardStaged() {
+        if (!_staged)
+            return;
+        const pages = _staged.pages;
+        _staged = null;
+        for (const page of pages)
+            _release(page);
+    }
+
+    function _commitStaged() {
+        if (!_staged)
+            return;
+        const pages = _staged.pages;
+        const shared = _staged.shared;
+        _staged = null;
+        pageStack.currentItem?.holdPose();
+        for (const page of pages)
+            page.x = 0;
+        if (shared < pageStack.depth) {
+            _slideFrom = 0;
+            pageStack.replace(pageStack.get(shared), pages, _operation(StackView.ReplaceTransition));
+        } else {
+            _slideFrom = pageStack.slideDistance;
+            pageStack.push(pages, _operation(StackView.PushTransition));
+        }
+    }
+
+    // Each step waits for a frame: the click is answered before the page is prepared, and the prepared page
+    // has been drawn once, out of sight, before its transition starts
+    property bool _syncRequested: false
+    property int _framesWaited: 0
+
+    function _requestSync() {
+        if (!sessionVisible) {
+            Qt.callLater(_syncPages);
+            return;
+        }
+        _syncRequested = true;
+        _framesWaited = 0;
+    }
+
+    FrameAnimation {
+        running: root._syncRequested || root._staged !== null
+        onTriggered: {
+            if (root._syncRequested) {
+                if (root._framesWaited++ < 1)
+                    return;
+                root._syncRequested = false;
+                root._framesWaited = 0;
+                Qt.callLater(root._syncPages);
+                return;
+            }
+            if (!root._staged)
+                return;
+            const pages = root._staged.pages;
+            if (!pages[pages.length - 1].firstScreenReady) {
+                root._framesWaited = 0;
+                return;
+            }
+            if (root._framesWaited++ < 1)
+                return;
+            root._commitStaged();
+        }
+    }
+
+    onPagePathChanged: _requestSync()
+    onSessionVisibleChanged: _requestSync()
+
+    // One eased progress drives both pages: the leaving one is gone before the arriving one shows
+    component PageMotion: Transition {
+        id: motion
+
+        SequentialAnimation {
+            PropertyAction {
+                property: "opacity"
+                value: 1
+            }
+
+            PropertyAction {
+                property: "transitionProgress"
+                value: 0
+            }
+
+            NumberAnimation {
+                property: "transitionProgress"
+                to: 1
+                duration: SettingsMetrics.pageTransitionDuration
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: SettingsMetrics.pageTransitionCurve
+            }
+        }
+    }
+
+    property real _slideFrom: 0
+    readonly property bool _fadeThrough: _slideFrom === 0
     function _scrollerOf(item) {
         if (typeof item.flick === "function")
             return item;
@@ -461,7 +565,7 @@ FocusScope {
             property int pathIndex: 0
             readonly property bool pageActive: root.sessionVisible && page === root.currentPage && pageStack.currentItem === host
             // Deferred cards wait for this, so their builds never share frames with the transition
-            readonly property bool pageSettled: pageActive && !pageStack.busy && !slideMotion.running
+            readonly property bool pageSettled: pageActive && !pageStack.busy && root._staged === null
             readonly property alias item: loader.item
             readonly property alias dialogLayer: dialogLayer
             readonly property int status: loader.status
@@ -474,22 +578,34 @@ FocusScope {
             readonly property bool canGoBack: pathIndex > 0 || (parentId !== "" && (SettingsTabs.isPluginPage(page) || SettingsTabs.visibleLeaves(parentId).length > 1 || !!SettingsTabs.page(parentId)?.hubHeader))
             property Item rememberedFocus: null
             property Item scroller: null
-            // Controls built disabled animate their colors once enabled, so a page stays enabled while it is built
-            property bool building: true
-            // Never shown yet, so its first layout and paint are still owed
-            property bool fresh: true
+            readonly property bool firstScreenReady: scroller?.firstScreenBuilt ?? true
+            onFirstScreenReadyChanged: {
+                if (firstScreenReady && root._ahead === host)
+                    root._shelve();
+            }
 
             width: pageStack.width
             height: pageStack.height
-            enabled: pageActive || building
+
+            // StackView writes opacity on the pages it manages, so the transition animates this and the stage reads it
+            property real transitionProgress: 1
+            readonly property bool entering: pageStack.currentItem === host
+            // A navigation can land while this page is still arriving; it then leaves from where it had got to
+            property real heldOpacity: 1
+            property real heldX: 0
+            property real heldScale: 1
+
+            function holdPose() {
+                heldOpacity = stage.opacity;
+                heldX = stage.slideX;
+                heldScale = stage.scale;
+            }
 
             StackView.onRemoved: root._release(host)
-            // An immediate operation skips the nested enter animation, so the final pose is written here
-            StackView.onActivated: opacity = 1
-
-            transform: Translate {
-                x: pageStack.currentItem === host ? root._slideFrom.x * (1 - slideMotion.value) : 0
-                y: pageStack.currentItem === host ? root._slideFrom.y * (1 - slideMotion.value) : 0
+            // An immediate operation skips the transition, so the final pose is written here
+            StackView.onActivated: {
+                opacity = 1;
+                transitionProgress = 1;
             }
 
             function load() {
@@ -503,110 +619,143 @@ FocusScope {
                     scroller.contentY = scroller.originY;
             }
 
-            MouseArea {
-                width: parent.width
-                height: pageHeader.height
-                enabled: root.windowDragControls !== null
-                onPressed: root.windowDragControls.tryStartMove()
-                onDoubleClicked: root.windowDragControls.tryToggleMaximize()
-            }
-
             Item {
-                id: pageHeader
-                width: Math.min(host.item?.contentMaxWidth ?? SettingsMetrics.contentMaxWidth, parent.width - SettingsMetrics.panePadding * 2)
-                anchors.horizontalCenter: parent.horizontalCenter
-                height: Math.max(SettingsMetrics.pageHeaderHeight, pageHeading.implicitHeight + Theme.spacingS * 2)
+                id: stage
 
-                Item {
-                    id: backSlot
+                // A curve that overshoots must not carry the page past its resting pose
+                readonly property real progress: Math.max(0, Math.min(1, host.transitionProgress))
+                readonly property real fadeIn: Math.max(0, (progress - SettingsMetrics.pageFadeThreshold) / (1 - SettingsMetrics.pageFadeThreshold))
+                readonly property real fadeOut: Math.max(0, 1 - progress / SettingsMetrics.pageFadeThreshold)
 
-                    readonly property real glyphInset: (Theme.iconButtonSize - Theme.iconSize) / 2
+                readonly property real pixelRatio: Window.window?.devicePixelRatio ?? Screen.devicePixelRatio
+                readonly property real slideX: host.entering ? root._slideFrom * (1 - progress) : host.heldX - root._slideFrom * progress
+                readonly property real enterScale: root._fadeThrough ? SettingsMetrics.pageEnterScale + (1 - SettingsMetrics.pageEnterScale) * progress : 1
 
-                    anchors.left: parent.left
-                    anchors.leftMargin: host.showBack ? -glyphInset : 0
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: host.showBack ? Theme.iconButtonSize + Theme.spacingM - glyphInset : 0
-                    height: Theme.iconButtonSize
-
-                    DActionButton {
-                        buttonSize: Theme.iconButtonSize
-                        iconName: I18n.isRtl ? "arrow_forward" : "arrow_back"
-                        Accessible.name: I18n.tr("Back")
-                        iconSize: Theme.iconSize
-                        iconColor: Theme.surfaceText
-                        visible: host.showBack
-                        onClicked: root.goBack()
-                    }
+                anchors.fill: parent
+                opacity: host.entering ? fadeIn : host.heldOpacity * fadeOut
+                scale: host.entering ? enterScale : host.heldScale
+                // Glyphs sit on whole pixels: scaled live they shake in their rows, so a scaled page is drawn as one image
+                layer.enabled: progress < 1 && scale !== 1
+                layer.smooth: true
+                // Same reason, the slide moves by whole pixels
+                transform: Translate {
+                    x: Theme.px(stage.slideX, stage.pixelRatio)
                 }
 
-                Flow {
-                    id: pageHeading
-                    anchors.left: backSlot.right
-                    anchors.right: parent.right
-                    anchors.rightMargin: Math.max(0, root.windowButtonsReserve - (host.width - pageHeader.width) / 2)
-                    anchors.verticalCenter: parent.verticalCenter
-                    spacing: Theme.spacingS
-                    visible: host.pageTitle !== ""
+                MouseArea {
+                    width: parent.width
+                    height: pageHeader.height
+                    enabled: root.windowDragControls !== null
+                    onPressed: root.windowDragControls.tryStartMove()
+                    onDoubleClicked: root.windowDragControls.tryToggleMaximize()
+                }
 
-                    StyledText {
-                        width: Math.min(implicitWidth, pageHeading.width)
-                        wrapMode: Text.WordWrap
-                        text: host.crumbTitle
-                        font.pixelSize: Theme.fontSizeXXLarge
-                        color: Theme.surfaceVariantText
-                        visible: host.crumbTitle !== ""
+                Item {
+                    id: pageHeader
+                    width: Math.min(host.item?.contentMaxWidth ?? SettingsMetrics.contentMaxWidth, parent.width - SettingsMetrics.panePadding * 2)
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    height: Math.max(SettingsMetrics.pageHeaderHeight, pageHeading.implicitHeight + Theme.spacingS * 2)
 
-                        StateLayer {
-                            anchors.margins: -Theme.spacingXS
-                            cornerRadius: Theme.cornerRadiusS
-                            stateColor: Theme.surfaceText
+                    Item {
+                        id: backSlot
+
+                        readonly property real glyphInset: (Theme.iconButtonSize - Theme.iconSize) / 2
+
+                        anchors.left: parent.left
+                        anchors.leftMargin: host.showBack ? -glyphInset : 0
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: host.showBack ? Theme.iconButtonSize + Theme.spacingM - glyphInset : 0
+                        height: Theme.iconButtonSize
+
+                        DActionButton {
+                            buttonSize: Theme.iconButtonSize
+                            iconName: I18n.isRtl ? "arrow_forward" : "arrow_back"
+                            Accessible.name: I18n.tr("Back")
+                            iconSize: Theme.iconSize
+                            iconColor: Theme.surfaceText
+                            visible: host.showBack
                             onClicked: root.goBack()
                         }
                     }
 
-                    DIcon {
-                        height: pageTitleLabel.implicitHeight / Math.max(1, pageTitleLabel.lineCount)
-                        name: "chevron_right"
-                        size: Theme.iconSize
-                        color: Theme.surfaceVariantText
-                        rotation: I18n.isRtl ? 180 : 0
-                        visible: host.crumbTitle !== ""
-                    }
+                    Flow {
+                        id: pageHeading
+                        anchors.left: backSlot.right
+                        anchors.right: parent.right
+                        anchors.rightMargin: Math.max(0, root.windowButtonsReserve - (host.width - pageHeader.width) / 2)
+                        anchors.verticalCenter: parent.verticalCenter
+                        spacing: Theme.spacingS
+                        visible: host.pageTitle !== ""
 
-                    StyledText {
-                        id: pageTitleLabel
-                        width: Math.min(implicitWidth, pageHeading.width)
-                        wrapMode: Text.WordWrap
-                        text: host.pageTitle
-                        font.pixelSize: Theme.fontSizeXXLarge
-                        color: Theme.surfaceText
+                        StyledText {
+                            width: Math.min(implicitWidth, pageHeading.width)
+                            wrapMode: Text.WordWrap
+                            text: host.crumbTitle
+                            font.pixelSize: Theme.fontSizeXXLarge
+                            color: Theme.surfaceVariantText
+                            visible: host.crumbTitle !== ""
+
+                            StateLayer {
+                                anchors.margins: -Theme.spacingXS
+                                cornerRadius: Theme.cornerRadiusS
+                                stateColor: Theme.surfaceText
+                                onClicked: root.goBack()
+                            }
+                        }
+
+                        DIcon {
+                            height: pageTitleLabel.implicitHeight / Math.max(1, pageTitleLabel.lineCount)
+                            name: "chevron_right"
+                            size: Theme.iconSize
+                            color: Theme.surfaceVariantText
+                            rotation: I18n.isRtl ? 180 : 0
+                            visible: host.crumbTitle !== ""
+                        }
+
+                        StyledText {
+                            id: pageTitleLabel
+                            width: Math.min(implicitWidth, pageHeading.width)
+                            wrapMode: Text.WordWrap
+                            text: host.pageTitle
+                            font.pixelSize: Theme.fontSizeXXLarge
+                            color: Theme.surfaceText
+                        }
+                    }
+                }
+
+                Loader {
+                    id: loader
+
+                    anchors.top: pageHeader.bottom
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.bottom: parent.bottom
+                    anchors.leftMargin: SettingsMetrics.panePadding
+                    anchors.rightMargin: SettingsMetrics.panePadding
+
+                    onLoaded: {
+                        if (item.pageActive !== undefined)
+                            item.pageActive = Qt.binding(() => host.pageActive);
+                        if (item.pageSettled !== undefined)
+                            item.pageSettled = Qt.binding(() => host.pageSettled);
+                        const scroller = root._scrollerOf(item);
+                        host.scroller = scroller;
+                        if (scroller)
+                            scrollerTap.createObject(scroller, {
+                                "parent": scroller
+                            });
+                        root._focusPage();
                     }
                 }
             }
 
-            Loader {
-                id: loader
-
-                anchors.top: pageHeader.bottom
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.bottom: parent.bottom
-                anchors.leftMargin: SettingsMetrics.panePadding
-                anchors.rightMargin: SettingsMetrics.panePadding
-
-                onLoaded: {
-                    if (item.pageActive !== undefined)
-                        item.pageActive = Qt.binding(() => host.pageActive);
-                    if (item.pageSettled !== undefined)
-                        item.pageSettled = Qt.binding(() => host.pageSettled);
-                    const scroller = root._scrollerOf(item);
-                    host.scroller = scroller;
-                    if (scroller)
-                        scrollerTap.createObject(scroller, {
-                            "parent": scroller
-                        });
-                    root._focusPage();
-                }
+            // Disabling a page walks every control in it, so one on its way in or out is shielded from the pointer
+            MouseArea {
+                anchors.fill: parent
+                visible: !host.pageActive
+                acceptedButtons: Qt.AllButtons
+                hoverEnabled: true
+                onWheel: wheel => wheel.accepted = true
             }
 
             Item {
@@ -734,33 +883,20 @@ FocusScope {
         anchors.fill: parent
         clip: true
 
-        readonly property real pageOffset: I18n.isRtl ? -SettingsMetrics.pageSlideOffset : SettingsMetrics.pageSlideOffset
+        readonly property real slideDistance: I18n.isRtl ? -SettingsMetrics.pageSlideDistance : SettingsMetrics.pageSlideDistance
 
-        // The slide starts as the page fades in, so its travel is seen
-        pushEnter: PageEnter {
-            warmUp: root._warmUp
-            onRevealed: slideMotion.retarget(1)
-        }
-        pushExit: PageExit {
-            warmUp: root._warmUp
-        }
-        popEnter: PageEnter {
-            onRevealed: slideMotion.retarget(1)
-        }
-        popExit: PageExit {}
-        replaceEnter: PageEnter {
-            warmUp: root._warmUp
-            onRevealed: slideMotion.retarget(1)
-        }
-        replaceExit: PageExit {
-            warmUp: root._warmUp
-        }
+        pushEnter: PageMotion {}
+        pushExit: PageMotion {}
+        popEnter: PageMotion {}
+        popExit: PageMotion {}
+        replaceEnter: PageMotion {}
+        replaceExit: PageMotion {}
 
-        onBusyChanged: root._reap()
-    }
-
-    Item {
-        id: pageCache
-        visible: false
+        onWidthChanged: root._fitPages()
+        onHeightChanged: root._fitPages()
+        onBusyChanged: {
+            if (!busy)
+                anticipation.restart();
+        }
     }
 }

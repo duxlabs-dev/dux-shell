@@ -119,13 +119,16 @@ BasePill {
 
                 Behavior on color {
                     ColorAnimation {
-                        duration: 150
+                        duration: Theme.expressiveDurations.expressiveFastEffects
+                        easing.type: Easing.BezierSpline
+                        easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
                     }
                 }
                 Behavior on scale {
                     NumberAnimation {
-                        duration: 200
-                        easing.type: Easing.OutBack
+                        duration: Theme.expressiveDurations.expressiveFastSpatial
+                        easing.type: Easing.BezierSpline
+                        easing.bezierCurve: Theme.expressiveCurves.expressiveFastSpatial
                     }
                 }
             }

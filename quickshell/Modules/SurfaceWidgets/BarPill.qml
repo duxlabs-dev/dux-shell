@@ -70,7 +70,7 @@ Item {
     readonly property bool pressed: mouseArea.pressed || (pressSource?.pressed ?? false)
     property real pressProgress: pressed && enableBackgroundHover ? 1 : 0
     readonly property real blurRadius: segmentRole === "solo" ? outerRadius : innerRadius
-    readonly property bool radiusMotion: !SettingsData.reduceMotion && !Theme.springMotionDisabled
+    readonly property bool radiusMotion: !Theme.reduceMotion
     readonly property real outlineThickness: (barConfig?.widgetOutlineEnabled ?? false) ? (barConfig?.widgetOutlineThickness ?? Theme.outlineWidth) : 0
     readonly property color outlineColor: {
         if (outlineThickness <= 0)

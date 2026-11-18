@@ -63,7 +63,9 @@ FocusScope {
 
         Behavior on opacity {
             NumberAnimation {
-                duration: 200
+                duration: Theme.expressiveDurations.expressiveEffects
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: Theme.expressiveCurves.expressiveEffects
             }
         }
     }

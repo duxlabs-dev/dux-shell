@@ -9,7 +9,7 @@ Item {
 
     property string path: ""
     property bool selected: false
-    readonly property bool animationsEnabled: !SettingsData.reduceMotion && Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
+    readonly property bool animationsEnabled: !Theme.reduceMotion
 
     signal clicked
 

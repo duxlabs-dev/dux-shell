@@ -254,257 +254,261 @@ Item {
             }
         }
 
-        SettingsCard {
-            id: availableWifiCard
+        SettingsDeferred {
+            when: NetworkService.wifiEnabled && !NetworkService.wifiToggling
 
-            readonly property var sortedNetworks: WifiConnectionActions.sortNetworks(NetworkService.wifiNetworks, NetworkService.currentWifiSSID, root.getPinnedWifiNetworks(), network => !!network.saved && (network.signal || 0) > 0 ? 0 : 1)
+            SettingsCard {
+                id: availableWifiCard
 
-            width: parent.width
-            title: I18n.tr("Available networks")
-            iconName: "wifi"
-            settingKey: "networkAvailableWifi"
-            tags: ["wifi", "wi-fi", "wireless", "network", "scan", "hidden", "connect"]
-            visible: NetworkService.wifiEnabled && !NetworkService.wifiToggling
+                readonly property var sortedNetworks: WifiConnectionActions.sortNetworks(NetworkService.wifiNetworks, NetworkService.currentWifiSSID, root.getPinnedWifiNetworks(), network => !!network.saved && (network.signal || 0) > 0 ? 0 : 1)
 
-            function openEapFileBrowser() {
-                eapFileBrowserLoader.active = true;
-                if (eapFileBrowserLoader.item)
-                    eapFileBrowserLoader.item.open();
-            }
+                width: parent.width
+                title: I18n.tr("Available networks")
+                iconName: "wifi"
+                settingKey: "networkAvailableWifi"
+                tags: ["wifi", "wi-fi", "wireless", "network", "scan", "hidden", "connect"]
 
-            function importEapConfig(path) {
-                NetworkService.parseEapConfig(path, r => {
-                    if (r.error || !r.result) {
-                        ToastService.showError(I18n.tr("Failed to import profile", "toast title when importing a WiFi profile file fails"), r.error || "");
-                        return;
-                    }
-                    networkWifiTab.openConnectPage("import", "", r.result, path.split("/").pop());
-                });
-            }
-
-            property var eapFileBrowserLoader: LazyLoader {
-                active: false
-
-                FileBrowserModal {
-                    browserTitle: I18n.tr("Import", "verb, button that imports a vpn profile file")
-                    bucket: "eapconfig"
-                    filters: ["*.eap-config", "*"]
-                    onAccepted: paths => availableWifiCard.importEapConfig(paths[0])
+                function openEapFileBrowser() {
+                    eapFileBrowserLoader.active = true;
+                    if (eapFileBrowserLoader.item)
+                        eapFileBrowserLoader.item.open();
                 }
-            }
 
-            headerActions: [
-                StyledText {
-                    text: availableWifiCard.sortedNetworks.length
-                    font.pixelSize: Theme.fontSizeSmall
-                    color: Theme.surfaceVariantText
-                    anchors.verticalCenter: parent.verticalCenter
-                },
-                DActionButton {
-                    iconName: "wifi_find"
-                    tooltipText: I18n.tr("Connect to Hidden Network")
-                    buttonSize: Theme.buttonHeightXS
-                    visible: NetworkService.backend === "networkmanager"
-                    onClicked: networkWifiTab.openConnectPage("hidden", "", null, "")
-                },
-                DActionButton {
-                    iconName: "upload_file"
-                    tooltipText: I18n.tr("Import", "verb, button that imports a vpn profile file")
-                    buttonSize: Theme.buttonHeightXS
-                    visible: NetworkService.connectionEditorSupported
-                    onClicked: availableWifiCard.openEapFileBrowser()
-                },
-                DRefreshButton {
-                    tooltipText: I18n.tr("Scan")
-                    buttonSize: Theme.buttonHeightXS
-                    busy: NetworkService.isScanning
-                    onClicked: NetworkService.scanWifi()
+                function importEapConfig(path) {
+                    NetworkService.parseEapConfig(path, r => {
+                        if (r.error || !r.result) {
+                            ToastService.showError(I18n.tr("Failed to import profile", "toast title when importing a WiFi profile file fails"), r.error || "");
+                            return;
+                        }
+                        networkWifiTab.openConnectPage("import", "", r.result, path.split("/").pop());
+                    });
                 }
-            ]
 
-            SettingsRow {
-                visible: NetworkService.isScanning && !NetworkService.wifiScannedOnce && (NetworkService.wifiNetworks?.length ?? 0) === 0
-                body: Column {
-                    width: parent.width
-                    spacing: Theme.spacingS
+                property var eapFileBrowserLoader: LazyLoader {
+                    active: false
 
-                    DLoadingIndicator {
-                        anchors.horizontalCenter: parent.horizontalCenter
+                    FileBrowserModal {
+                        browserTitle: I18n.tr("Import", "verb, button that imports a vpn profile file")
+                        bucket: "eapconfig"
+                        filters: ["*.eap-config", "*"]
+                        onAccepted: paths => availableWifiCard.importEapConfig(paths[0])
                     }
+                }
 
+                headerActions: [
                     StyledText {
-                        text: I18n.tr("Scanning...")
+                        text: availableWifiCard.sortedNetworks.length
                         font.pixelSize: Theme.fontSizeSmall
                         color: Theme.surfaceVariantText
-                        anchors.horizontalCenter: parent.horizontalCenter
+                        anchors.verticalCenter: parent.verticalCenter
+                    },
+                    DActionButton {
+                        iconName: "wifi_find"
+                        tooltipText: I18n.tr("Connect to Hidden Network")
+                        buttonSize: Theme.buttonHeightXS
+                        visible: NetworkService.backend === "networkmanager"
+                        onClicked: networkWifiTab.openConnectPage("hidden", "", null, "")
+                    },
+                    DActionButton {
+                        iconName: "upload_file"
+                        tooltipText: I18n.tr("Import", "verb, button that imports a vpn profile file")
+                        buttonSize: Theme.buttonHeightXS
+                        visible: NetworkService.connectionEditorSupported
+                        onClicked: availableWifiCard.openEapFileBrowser()
+                    },
+                    DRefreshButton {
+                        tooltipText: I18n.tr("Scan")
+                        buttonSize: Theme.buttonHeightXS
+                        busy: NetworkService.isScanning
+                        onClicked: NetworkService.scanWifi()
+                    }
+                ]
+
+                SettingsRow {
+                    visible: NetworkService.isScanning && !NetworkService.wifiScannedOnce && (NetworkService.wifiNetworks?.length ?? 0) === 0
+                    body: Column {
+                        width: parent.width
+                        spacing: Theme.spacingS
+
+                        DLoadingIndicator {
+                            anchors.horizontalCenter: parent.horizontalCenter
+                        }
+
+                        StyledText {
+                            text: I18n.tr("Scanning...")
+                            font.pixelSize: Theme.fontSizeSmall
+                            color: Theme.surfaceVariantText
+                            anchors.horizontalCenter: parent.horizontalCenter
+                        }
                     }
                 }
-            }
 
-            Repeater {
-                model: ScriptModel {
-                    objectProp: "ssid"
-                    values: availableWifiCard.sortedNetworks
-                }
-
-                delegate: Column {
-                    id: wifiNetworkDelegate
-                    required property var modelData
-                    required property int index
-
-                    readonly property bool isConnected: modelData.ssid === NetworkService.currentWifiSSID
-                    readonly property bool isConnecting: NetworkService.isWifiConnecting && NetworkService.connectingSSID === modelData.ssid
-                    readonly property bool isPinned: root.getPinnedWifiNetworks().includes(modelData.ssid)
-                    readonly property bool isExpanded: root.expandedWifiSsid === modelData.ssid
-
-                    width: parent?.width ?? 0
-                    spacing: SettingsMetrics.groupGap
-                    SettingsRow {
-                        id: wifiNetworkRow
-                        title: wifiNetworkDelegate.modelData.ssid || I18n.tr("Unknown")
-                        active: wifiNetworkDelegate.isConnected
-                        subtitle: {
-                            const parts = [wifiNetworkDelegate.isConnecting ? I18n.tr("Connecting...") : (wifiNetworkDelegate.isConnected ? I18n.tr("Connected") : (wifiNetworkDelegate.modelData.secured ? I18n.tr("Secured", "adjective, wifi network requires a password, opposite of open") : I18n.tr("Open", "network security type", true)))];
-                            if (wifiNetworkDelegate.modelData.saved)
-                                parts.push(I18n.tr("Saved", "wifi network status, network has a saved profile", true));
-                            if (wifiNetworkDelegate.modelData.hidden || false)
-                                parts.push(I18n.tr("Hidden", "adjective, wifi network with hidden name"));
-                            parts.push(wifiNetworkDelegate.modelData.signal + "%");
-                            return parts.join(" • ");
-                        }
-                        subtitleColor: wifiNetworkDelegate.isConnecting ? Theme.warning : supportingContentColor
-                        clickable: !NetworkService.isWifiConnecting || wifiNetworkDelegate.isConnected
-                        onClicked: {
-                            WifiConnectionActions.connectToNetwork(wifiNetworkDelegate.modelData, {
-                                connected: wifiNetworkDelegate.isConnected,
-                                disconnectWhenConnected: true,
-                                promptCredentials: ssid => networkWifiTab.openConnectPage("password", ssid, null, "")
-                            });
-                        }
-
-                        leading: [
-                            DSpinner {
-                                size: Theme.iconSizeMedium
-                                strokeWidth: 2
-                                color: Theme.warning
-                                running: wifiNetworkDelegate.isConnecting
-                                visible: wifiNetworkDelegate.isConnecting
-                                anchors.verticalCenter: parent.verticalCenter
-                            },
-                            DIcon {
-                                visible: !wifiNetworkDelegate.isConnecting
-                                name: {
-                                    const s = wifiNetworkDelegate.modelData.signal || 0;
-                                    if (s >= 50)
-                                        return "wifi";
-                                    if (s >= 25)
-                                        return "wifi_2_bar";
-                                    return "wifi_1_bar";
-                                }
-                                size: Theme.iconSizeMedium
-                                color: wifiNetworkRow.contentColor
-                                anchors.verticalCenter: parent.verticalCenter
-                            }
-                        ]
-
-                        DActionButton {
-                            iconName: wifiNetworkDelegate.isExpanded ? "expand_less" : "expand_more"
-                            Accessible.name: wifiNetworkDelegate.isExpanded ? I18n.tr("Collapse") : I18n.tr("Expand")
-                            iconSize: Theme.iconSizeSmall
-                            visible: wifiNetworkDelegate.isConnected || wifiNetworkDelegate.modelData.saved
-                            onClicked: {
-                                if (wifiNetworkDelegate.isExpanded) {
-                                    root.expandedWifiSsid = "";
-                                } else {
-                                    root.expandedWifiSsid = wifiNetworkDelegate.modelData.ssid;
-                                    NetworkService.fetchNetworkInfo(wifiNetworkDelegate.modelData.ssid);
-                                }
-                            }
-                        }
-
-                        DActionButton {
-                            iconName: "edit"
-                            tooltipText: I18n.tr("Edit")
-                            visible: NetworkService.connectionEditorSupported && wifiNetworkDelegate.modelData.saved
-                            onClicked: networkWifiTab.configureWifiProfile(wifiNetworkDelegate.modelData.ssid)
-                        }
-
-                        DActionButton {
-                            iconName: "qr_code"
-                            tooltipText: I18n.tr("Show QR Code")
-                            visible: wifiNetworkDelegate.modelData.secured && wifiNetworkDelegate.modelData.saved && !(wifiNetworkDelegate.modelData.enterprise || false)
-                            onClicked: {
-                                wifiDialogs.openQRCode(wifiNetworkDelegate.modelData.ssid);
-                            }
-                        }
-
-                        DActionButton {
-                            iconName: "push_pin"
-                            Accessible.name: wifiNetworkDelegate.isPinned ? I18n.tr("Unpin") : I18n.tr("Pin", "verb, keep an item pinned in place")
-                            iconColor: wifiNetworkDelegate.isPinned ? Theme.primary : Theme.surfaceVariantText
-                            onClicked: {
-                                root.toggleWifiPin(wifiNetworkDelegate.modelData.ssid);
-                            }
-                        }
-
-                        DActionButton {
-                            iconName: "delete"
-                            tooltipText: I18n.tr("Forget", "verb, remove a saved wifi network, button")
-                            iconColor: Theme.error
-                            visible: wifiNetworkDelegate.modelData.saved || wifiNetworkDelegate.isConnected
-                            onClicked: {
-                                root.showForgetNetworkConfirm(wifiNetworkDelegate.modelData.ssid);
-                            }
-                        }
+                Repeater {
+                    model: ScriptModel {
+                        objectProp: "ssid"
+                        values: availableWifiCard.sortedNetworks
                     }
 
-                    SettingsRow {
-                        visible: wifiNetworkDelegate.isExpanded
-                        body: Column {
-                            width: parent.width
-                            spacing: Theme.spacingS
+                    delegate: Column {
+                        id: wifiNetworkDelegate
+                        required property var modelData
+                        required property int index
 
-                            Item {
-                                width: parent.width
-                                height: NetworkService.networkInfoLoading ? 40 : 0
-                                visible: NetworkService.networkInfoLoading
+                        readonly property bool isConnected: modelData.ssid === NetworkService.currentWifiSSID
+                        readonly property bool isConnecting: NetworkService.isWifiConnecting && NetworkService.connectingSSID === modelData.ssid
+                        readonly property bool isPinned: root.getPinnedWifiNetworks().includes(modelData.ssid)
+                        readonly property bool isExpanded: root.expandedWifiSsid === modelData.ssid
 
+                        width: parent?.width ?? 0
+                        spacing: SettingsMetrics.groupGap
+                        SettingsRow {
+                            id: wifiNetworkRow
+                            title: wifiNetworkDelegate.modelData.ssid || I18n.tr("Unknown")
+                            active: wifiNetworkDelegate.isConnected
+                            subtitle: {
+                                const parts = [wifiNetworkDelegate.isConnecting ? I18n.tr("Connecting...") : (wifiNetworkDelegate.isConnected ? I18n.tr("Connected") : (wifiNetworkDelegate.modelData.secured ? I18n.tr("Secured", "adjective, wifi network requires a password, opposite of open") : I18n.tr("Open", "network security type", true)))];
+                                if (wifiNetworkDelegate.modelData.saved)
+                                    parts.push(I18n.tr("Saved", "wifi network status, network has a saved profile", true));
+                                if (wifiNetworkDelegate.modelData.hidden || false)
+                                    parts.push(I18n.tr("Hidden", "adjective, wifi network with hidden name"));
+                                parts.push(wifiNetworkDelegate.modelData.signal + "%");
+                                return parts.join(" • ");
+                            }
+                            subtitleColor: wifiNetworkDelegate.isConnecting ? Theme.warning : supportingContentColor
+                            clickable: !NetworkService.isWifiConnecting || wifiNetworkDelegate.isConnected
+                            onClicked: {
+                                WifiConnectionActions.connectToNetwork(wifiNetworkDelegate.modelData, {
+                                    connected: wifiNetworkDelegate.isConnected,
+                                    disconnectWhenConnected: true,
+                                    promptCredentials: ssid => networkWifiTab.openConnectPage("password", ssid, null, "")
+                                });
+                            }
+
+                            leading: [
                                 DSpinner {
-                                    anchors.centerIn: parent
                                     size: Theme.iconSizeMedium
+                                    strokeWidth: 2
+                                    color: Theme.warning
+                                    running: wifiNetworkDelegate.isConnecting
+                                    visible: wifiNetworkDelegate.isConnecting
+                                    anchors.verticalCenter: parent.verticalCenter
+                                },
+                                DIcon {
+                                    visible: !wifiNetworkDelegate.isConnecting
+                                    name: {
+                                        const s = wifiNetworkDelegate.modelData.signal || 0;
+                                        if (s >= 50)
+                                            return "wifi";
+                                        if (s >= 25)
+                                            return "wifi_2_bar";
+                                        return "wifi_1_bar";
+                                    }
+                                    size: Theme.iconSizeMedium
+                                    color: wifiNetworkRow.contentColor
+                                    anchors.verticalCenter: parent.verticalCenter
+                                }
+                            ]
+
+                            DActionButton {
+                                iconName: wifiNetworkDelegate.isExpanded ? "expand_less" : "expand_more"
+                                Accessible.name: wifiNetworkDelegate.isExpanded ? I18n.tr("Collapse") : I18n.tr("Expand")
+                                iconSize: Theme.iconSizeSmall
+                                visible: wifiNetworkDelegate.isConnected || wifiNetworkDelegate.modelData.saved
+                                onClicked: {
+                                    if (wifiNetworkDelegate.isExpanded) {
+                                        root.expandedWifiSsid = "";
+                                    } else {
+                                        root.expandedWifiSsid = wifiNetworkDelegate.modelData.ssid;
+                                        NetworkService.fetchNetworkInfo(wifiNetworkDelegate.modelData.ssid);
+                                    }
                                 }
                             }
 
-                            Flow {
+                            DActionButton {
+                                iconName: "edit"
+                                tooltipText: I18n.tr("Edit")
+                                visible: NetworkService.connectionEditorSupported && wifiNetworkDelegate.modelData.saved
+                                onClicked: networkWifiTab.configureWifiProfile(wifiNetworkDelegate.modelData.ssid)
+                            }
+
+                            DActionButton {
+                                iconName: "qr_code"
+                                tooltipText: I18n.tr("Show QR Code")
+                                visible: wifiNetworkDelegate.modelData.secured && wifiNetworkDelegate.modelData.saved && !(wifiNetworkDelegate.modelData.enterprise || false)
+                                onClicked: {
+                                    wifiDialogs.openQRCode(wifiNetworkDelegate.modelData.ssid);
+                                }
+                            }
+
+                            DActionButton {
+                                iconName: "push_pin"
+                                Accessible.name: wifiNetworkDelegate.isPinned ? I18n.tr("Unpin") : I18n.tr("Pin", "verb, keep an item pinned in place")
+                                iconColor: wifiNetworkDelegate.isPinned ? Theme.primary : Theme.surfaceVariantText
+                                onClicked: {
+                                    root.toggleWifiPin(wifiNetworkDelegate.modelData.ssid);
+                                }
+                            }
+
+                            DActionButton {
+                                iconName: "delete"
+                                tooltipText: I18n.tr("Forget", "verb, remove a saved wifi network, button")
+                                iconColor: Theme.error
+                                visible: wifiNetworkDelegate.modelData.saved || wifiNetworkDelegate.isConnected
+                                onClicked: {
+                                    root.showForgetNetworkConfirm(wifiNetworkDelegate.modelData.ssid);
+                                }
+                            }
+                        }
+
+                        SettingsRow {
+                            visible: wifiNetworkDelegate.isExpanded
+                            body: Column {
                                 width: parent.width
-                                spacing: Theme.spacingXS
-                                visible: !NetworkService.networkInfoLoading
+                                spacing: Theme.spacingS
 
-                                Repeater {
-                                    model: wifiNetworkDelegate.isExpanded ? networkWifiTab.wifiDetailFields(wifiNetworkDelegate.modelData) : []
+                                Item {
+                                    width: parent.width
+                                    height: NetworkService.networkInfoLoading ? 40 : 0
+                                    visible: NetworkService.networkInfoLoading
 
-                                    delegate: DDetailChip {
-                                        required property var modelData
+                                    DSpinner {
+                                        anchors.centerIn: parent
+                                        size: Theme.iconSizeMedium
+                                    }
+                                }
 
-                                        label: modelData.label
-                                        value: modelData.value
+                                Flow {
+                                    width: parent.width
+                                    spacing: Theme.spacingXS
+                                    visible: !NetworkService.networkInfoLoading
+
+                                    Repeater {
+                                        model: wifiNetworkDelegate.isExpanded ? networkWifiTab.wifiDetailFields(wifiNetworkDelegate.modelData) : []
+
+                                        delegate: DDetailChip {
+                                            required property var modelData
+
+                                            label: modelData.label
+                                            value: modelData.value
+                                        }
                                     }
                                 }
                             }
                         }
-                    }
 
-                    SettingsToggleRow {
-                        visible: wifiNetworkDelegate.isExpanded && (wifiNetworkDelegate.modelData.saved || wifiNetworkDelegate.isConnected) && DMSService.apiVersion > 13
-                        text: I18n.tr("Autoconnect", "toggle, connect to this wifi or vpn automatically")
-                        checked: wifiNetworkDelegate.modelData.autoconnect || false
-                        onToggled: checked => {
-                            NetworkService.setWifiAutoconnect(wifiNetworkDelegate.modelData.ssid, checked);
+                        SettingsToggleRow {
+                            visible: wifiNetworkDelegate.isExpanded && (wifiNetworkDelegate.modelData.saved || wifiNetworkDelegate.isConnected) && DMSService.apiVersion > 13
+                            text: I18n.tr("Autoconnect", "toggle, connect to this wifi or vpn automatically")
+                            checked: wifiNetworkDelegate.modelData.autoconnect || false
+                            onToggled: checked => {
+                                NetworkService.setWifiAutoconnect(wifiNetworkDelegate.modelData.ssid, checked);
+                            }
                         }
                     }
                 }
             }
         }
+
         SettingsCard {
             id: savedWifiCard
 

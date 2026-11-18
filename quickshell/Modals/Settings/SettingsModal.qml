@@ -443,6 +443,7 @@ DFloatingWindow {
                     visible: !settingsModal.isCompactMode || settingsModal.menuVisible
                     currentPage: settingsModal.currentPage
                     activeCategoryId: settingsModal.activeCategoryId
+                    onPageAnticipated: pageId => content.anticipate(pageId)
                     onPageRequested: pageId => {
                         settingsModal.setPage(pageId);
                         if (settingsModal.isCompactMode)
@@ -465,11 +466,11 @@ DFloatingWindow {
                     height: body.height
 
                     Behavior on x {
-                        enabled: settingsModal.isCompactMode && !SettingsData.reduceMotion && Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
+                        enabled: settingsModal.isCompactMode && !Theme.reduceMotion
                         NumberAnimation {
-                            duration: SettingsMetrics.transitionDuration
+                            duration: Theme.expressiveDurations.expressiveDefaultSpatial
                             easing.type: Easing.BezierSpline
-                            easing.bezierCurve: Theme.expressiveCurves.standard
+                            easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
                         }
                     }
 

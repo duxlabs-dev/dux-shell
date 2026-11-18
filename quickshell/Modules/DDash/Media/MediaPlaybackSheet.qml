@@ -22,7 +22,7 @@ FocusScope {
     readonly property string requestedPanel: root.player.panel
     readonly property bool opened: root.player.live && panels.includes(requestedPanel)
     readonly property bool shown: opened || progress > 0
-    readonly property bool animationsEnabled: !SettingsData.reduceMotion && Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
+    readonly property bool animationsEnabled: !Theme.reduceMotion
     // Material's shared axis: the controls slide out and fade first, then the sheet slides in from the
     // other side and fades in, so the two never show at once. Closing plays it backwards.
     readonly property real progress: motion.value
@@ -31,7 +31,7 @@ FocusScope {
     readonly property real controlsShift: -slideDistance * progress
     readonly property real pageOpacity: Math.max(0, Math.min(1, (progress - DashMetrics.mediaSheetFadeThreshold) / (1 - DashMetrics.mediaSheetFadeThreshold)))
     readonly property real pageShift: slideDistance * (1 - progress)
-    readonly property var spring: Theme.springPreset("default", Theme.expressiveDurations.expressiveDefaultSpatial)
+    readonly property var spring: Theme.springPreset("defaultSpatial")
     readonly property var sinks: shown && shownPanel === "devices" ? AudioService.getAvailableSinks() : []
     readonly property var players: shown && shownPanel === "players" ? root.player.selectablePlayers() : []
     readonly property var lyrics: LyricsService.controller
@@ -215,7 +215,6 @@ FocusScope {
 
     SpringMotion {
         id: motion
-        enabled: !Theme.springMotionDisabled
         reducedMotion: !root.animationsEnabled
         stiffness: root.spring.stiffness
         damping: root.spring.damping

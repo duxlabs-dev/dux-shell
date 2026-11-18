@@ -25,30 +25,6 @@
     "description": "Critical notifications still pop up"
   },
   {
-    "section": "notificationAnimationDuration",
-    "label": "Animation duration",
-    "tabIndex": -1,
-    "category": "Notifications",
-    "keywords": [
-      "alert",
-      "alerts",
-      "animate",
-      "animation",
-      "animations",
-      "duration",
-      "messages",
-      "motion",
-      "notif",
-      "notification",
-      "notifications",
-      "notifs",
-      "speed",
-      "toast",
-      "transition"
-    ],
-    "page": "notifications"
-  },
-  {
     "section": "notificationAppearance",
     "label": "Appearance",
     "tabIndex": -1,
@@ -9257,21 +9233,6 @@
     "description": "Version, links, diagnostics"
   },
   {
-    "section": "motionAdvanced",
-    "label": "Advanced",
-    "tabIndex": 14,
-    "category": "Motion",
-    "keywords": [
-      "advanced",
-      "animation",
-      "duration",
-      "modal",
-      "motion",
-      "popout",
-      "sync"
-    ]
-  },
-  {
     "section": "compositorAnimationsLink",
     "label": "Compositor animations",
     "tabIndex": 14,
@@ -9294,28 +9255,21 @@
     "conditionKey": "animationsCapable"
   },
   {
-    "section": "animationDuration",
+    "section": "motionDuration",
     "label": "Duration",
     "tabIndex": 14,
     "category": "Motion",
     "keywords": [
       "animation",
+      "disable",
       "duration",
+      "fast",
+      "longer",
       "motion",
-      "speed"
-    ]
-  },
-  {
-    "section": "modalAnimationDuration",
-    "label": "Modals",
-    "tabIndex": 14,
-    "category": "Motion",
-    "keywords": [
-      "animation",
-      "duration",
-      "modal",
-      "modals",
-      "motion",
+      "none",
+      "off",
+      "shorter",
+      "slow",
       "speed"
     ]
   },
@@ -9351,20 +9305,6 @@
       "physics",
       "slide",
       "spring"
-    ]
-  },
-  {
-    "section": "popoutAnimationDuration",
-    "label": "Popouts",
-    "tabIndex": 14,
-    "category": "Motion",
-    "keywords": [
-      "animation",
-      "duration",
-      "motion",
-      "popout",
-      "popouts",
-      "speed"
     ]
   },
   {
@@ -9432,28 +9372,6 @@
       "physics",
       "spring"
     ]
-  },
-  {
-    "section": "syncComponentAnimationSpeeds",
-    "label": "Sync popouts and modals",
-    "tabIndex": 14,
-    "category": "Motion",
-    "keywords": [
-      "animate",
-      "animation",
-      "animations",
-      "duration",
-      "global",
-      "main",
-      "modal",
-      "modals",
-      "motion",
-      "popout",
-      "popouts",
-      "sync",
-      "transition"
-    ],
-    "description": "Popouts and modals use the main animation duration"
   },
   {
     "section": "soundLogin",

@@ -65,9 +65,9 @@ SettingsRow {
     ]
 
     Behavior on y {
-        enabled: root.reorderList.animateLayout && !root.dragging && !SettingsData.reduceMotion && Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
+        enabled: root.reorderList.animateLayout && !root.dragging && !Theme.reduceMotion
         NumberAnimation {
-            duration: Theme.expressiveDurations.expressiveDefaultSpatial
+            duration: Theme.expressiveDurations.expressiveFastSpatial
             easing.type: Easing.BezierSpline
             easing.bezierCurve: Theme.expressiveCurves.expressiveFastSpatial
         }

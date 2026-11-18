@@ -45,35 +45,37 @@ Item {
             text: root.outdated ? I18n.tr("DMS server is outdated (API v%1, expected v%2)", "error toast, %1 is current api version, %2 is required version").arg(DMSService.apiVersion).arg(WallpaperLibraryService.requiredApiVersion) : I18n.tr("%1 not available", "%1 is a folder name").arg("DMS")
         }
 
-        SettingsCard {
-            tab: "wallpaper"
-            tags: ["folders", "directories", "library"]
-            settingKey: "wallpaperFolderList"
-            title: I18n.tr("Folders", "wallpaper folders card title")
+        SettingsDeferred {
+            SettingsCard {
+                tab: "wallpaper"
+                tags: ["folders", "directories", "library"]
+                settingKey: "wallpaperFolderList"
+                title: I18n.tr("Folders", "wallpaper folders card title")
 
-            Repeater {
-                // Count model: toggling a folder replaces the array and must not rebuild the focused row
-                model: root.folderCount
+                Repeater {
+                    // Count model: toggling a folder replaces the array and must not rebuild the focused row
+                    model: root.folderCount
 
-                SettingsSplitRow {
-                    id: folderRow
+                    SettingsSplitRow {
+                        id: folderRow
 
-                    required property int index
-                    readonly property var folder: WallpaperLibraryService.folders[index] ?? ({
-                            "path": ""
-                        })
-                    readonly property bool unavailable: WallpaperLibraryService.missing.includes(folder.path)
-                    readonly property string name: WallpaperLibraryService.folderName(folder.path)
+                        required property int index
+                        readonly property var folder: WallpaperLibraryService.folders[index] ?? ({
+                                "path": ""
+                            })
+                        readonly property bool unavailable: WallpaperLibraryService.missing.includes(folder.path)
+                        readonly property string name: WallpaperLibraryService.folderName(folder.path)
 
-                    title: name
-                    subtitle: unavailable ? I18n.tr("%1 not available", "%1 is a folder name").arg(name) : folder.path
-                    subtitleColor: unavailable ? Theme.warning : supportingContentColor
-                    iconName: unavailable ? "folder_off" : folder.hidden ? "visibility_off" : "folder"
-                    checked: !folder.hidden
-                    onToggled: toggled => WallpaperLibraryService.setFolderHidden(folder.path, !toggled)
-                    onNavigated: keyboard => {
-                        SettingsUiState.selectedWallpaperFolder = folder.path;
-                        root.parentModal?.navigateTo("wallpaper_folder", keyboard);
+                        title: name
+                        subtitle: unavailable ? I18n.tr("%1 not available", "%1 is a folder name").arg(name) : folder.path
+                        subtitleColor: unavailable ? Theme.warning : supportingContentColor
+                        iconName: unavailable ? "folder_off" : folder.hidden ? "visibility_off" : "folder"
+                        checked: !folder.hidden
+                        onToggled: toggled => WallpaperLibraryService.setFolderHidden(folder.path, !toggled)
+                        onNavigated: keyboard => {
+                            SettingsUiState.selectedWallpaperFolder = folder.path;
+                            root.parentModal?.navigateTo("wallpaper_folder", keyboard);
+                        }
                     }
                 }
             }

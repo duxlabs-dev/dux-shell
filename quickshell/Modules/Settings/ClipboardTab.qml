@@ -264,214 +264,222 @@ Item {
             text: !DMSService.isConnected ? I18n.tr("DMS service is not connected. Clipboard settings are unavailable.") : I18n.tr("Failed to load clipboard configuration.")
         }
 
-        SettingsCard {
-            tab: "clipboard"
-            tags: ["clipboard", "history", "limit"]
-            title: I18n.tr("History")
-            iconName: "history"
-            visible: configLoaded
+        SettingsDeferred {
+            when: configLoaded
 
-            SettingsToggleRow {
+            SettingsCard {
                 tab: "clipboard"
-                tags: ["clipboard", "history", "enable", "disable", "disk", "persistence"]
-                settingKey: "disabled"
-                text: I18n.tr("Enabled")
-                checked: root.historyEnabled
-                enabled: !root.saving
-                onToggled: checked => root.saveConfig("disabled", !checked)
-            }
+                tags: ["clipboard", "history", "limit"]
+                title: I18n.tr("History")
+                iconName: "history"
 
-            SettingsDropdownRow {
-                id: maxHistoryDropdown
-                enabled: root.historyEnabled
-                tab: "clipboard"
-                tags: ["clipboard", "history", "max", "limit"]
-                settingKey: "maxHistory"
-                text: I18n.tr("Maximum entries")
-                options: root.maxHistoryOptions.map(opt => opt.text)
-
-                Component.onCompleted: {
-                    currentValue = root.getMaxHistoryText(root.config.maxHistory ?? 100);
+                SettingsToggleRow {
+                    tab: "clipboard"
+                    tags: ["clipboard", "history", "enable", "disable", "disk", "persistence"]
+                    settingKey: "disabled"
+                    text: I18n.tr("Enabled")
+                    checked: root.historyEnabled
+                    enabled: !root.saving
+                    onToggled: checked => root.saveConfig("disabled", !checked)
                 }
 
-                onValueChanged: value => {
-                    for (let opt of root.maxHistoryOptions) {
-                        if (opt.text === value) {
-                            root.saveConfig("maxHistory", opt.value);
-                            return;
+                SettingsDropdownRow {
+                    id: maxHistoryDropdown
+                    enabled: root.historyEnabled
+                    tab: "clipboard"
+                    tags: ["clipboard", "history", "max", "limit"]
+                    settingKey: "maxHistory"
+                    text: I18n.tr("Maximum entries")
+                    options: root.maxHistoryOptions.map(opt => opt.text)
+
+                    Component.onCompleted: {
+                        currentValue = root.getMaxHistoryText(root.config.maxHistory ?? 100);
+                    }
+
+                    onValueChanged: value => {
+                        for (let opt of root.maxHistoryOptions) {
+                            if (opt.text === value) {
+                                root.saveConfig("maxHistory", opt.value);
+                                return;
+                            }
+                        }
+                    }
+
+                    Connections {
+                        target: root
+                        function onConfigChanged() {
+                            maxHistoryDropdown.currentValue = root.getMaxHistoryText(root.config.maxHistory ?? 100);
                         }
                     }
                 }
 
-                Connections {
-                    target: root
-                    function onConfigChanged() {
-                        maxHistoryDropdown.currentValue = root.getMaxHistoryText(root.config.maxHistory ?? 100);
+                SettingsDropdownRow {
+                    id: maxEntrySizeDropdown
+                    enabled: root.historyEnabled
+                    tab: "clipboard"
+                    tags: ["clipboard", "entry", "size", "limit"]
+                    settingKey: "maxEntrySize"
+                    text: I18n.tr("Maximum entry size")
+                    options: root.maxEntrySizeOptions.map(opt => opt.text)
+
+                    Component.onCompleted: {
+                        currentValue = root.getMaxEntrySizeText(root.config.maxEntrySize ?? 5242880);
                     }
-                }
-            }
 
-            SettingsDropdownRow {
-                id: maxEntrySizeDropdown
-                enabled: root.historyEnabled
-                tab: "clipboard"
-                tags: ["clipboard", "entry", "size", "limit"]
-                settingKey: "maxEntrySize"
-                text: I18n.tr("Maximum entry size")
-                options: root.maxEntrySizeOptions.map(opt => opt.text)
+                    onValueChanged: value => {
+                        for (let opt of root.maxEntrySizeOptions) {
+                            if (opt.text === value) {
+                                root.saveConfig("maxEntrySize", opt.value);
+                                return;
+                            }
+                        }
+                    }
 
-                Component.onCompleted: {
-                    currentValue = root.getMaxEntrySizeText(root.config.maxEntrySize ?? 5242880);
-                }
-
-                onValueChanged: value => {
-                    for (let opt of root.maxEntrySizeOptions) {
-                        if (opt.text === value) {
-                            root.saveConfig("maxEntrySize", opt.value);
-                            return;
+                    Connections {
+                        target: root
+                        function onConfigChanged() {
+                            maxEntrySizeDropdown.currentValue = root.getMaxEntrySizeText(root.config.maxEntrySize ?? 5242880);
                         }
                     }
                 }
 
-                Connections {
-                    target: root
-                    function onConfigChanged() {
-                        maxEntrySizeDropdown.currentValue = root.getMaxEntrySizeText(root.config.maxEntrySize ?? 5242880);
+                SettingsDropdownRow {
+                    id: autoClearDaysDropdown
+                    enabled: root.historyEnabled
+                    tab: "clipboard"
+                    tags: ["clipboard", "auto", "clear", "days"]
+                    settingKey: "autoClearDays"
+                    text: I18n.tr("Auto-clear after")
+                    options: root.autoClearOptions.map(opt => opt.text)
+
+                    Component.onCompleted: {
+                        currentValue = root.getAutoClearText(root.config.autoClearDays ?? 0);
                     }
-                }
-            }
 
-            SettingsDropdownRow {
-                id: autoClearDaysDropdown
-                enabled: root.historyEnabled
-                tab: "clipboard"
-                tags: ["clipboard", "auto", "clear", "days"]
-                settingKey: "autoClearDays"
-                text: I18n.tr("Auto-clear after")
-                options: root.autoClearOptions.map(opt => opt.text)
+                    onValueChanged: value => {
+                        for (let opt of root.autoClearOptions) {
+                            if (opt.text === value) {
+                                root.saveConfig("autoClearDays", opt.value);
+                                return;
+                            }
+                        }
+                    }
 
-                Component.onCompleted: {
-                    currentValue = root.getAutoClearText(root.config.autoClearDays ?? 0);
-                }
-
-                onValueChanged: value => {
-                    for (let opt of root.autoClearOptions) {
-                        if (opt.text === value) {
-                            root.saveConfig("autoClearDays", opt.value);
-                            return;
+                    Connections {
+                        target: root
+                        function onConfigChanged() {
+                            autoClearDaysDropdown.currentValue = root.getAutoClearText(root.config.autoClearDays ?? 0);
                         }
                     }
                 }
 
-                Connections {
-                    target: root
-                    function onConfigChanged() {
-                        autoClearDaysDropdown.currentValue = root.getAutoClearText(root.config.autoClearDays ?? 0);
-                    }
-                }
-            }
+                SettingsDropdownRow {
+                    id: maxPinnedDropdown
+                    enabled: root.historyEnabled
+                    tab: "clipboard"
+                    tags: ["clipboard", "pinned", "max", "limit"]
+                    settingKey: "maxPinned"
+                    text: I18n.tr("Maximum pinned entries")
+                    options: root.maxPinnedOptions.map(opt => opt.text)
 
-            SettingsDropdownRow {
-                id: maxPinnedDropdown
-                enabled: root.historyEnabled
-                tab: "clipboard"
-                tags: ["clipboard", "pinned", "max", "limit"]
-                settingKey: "maxPinned"
-                text: I18n.tr("Maximum pinned entries")
-                options: root.maxPinnedOptions.map(opt => opt.text)
-
-                function updateValue() {
-                    if (root.configLoaded) {
-                        currentValue = root.getMaxPinnedText(root.config.maxPinned ?? 25);
-                    }
-                }
-
-                Component.onCompleted: {
-                    updateValue();
-                }
-
-                onValueChanged: value => {
-                    for (let opt of root.maxPinnedOptions) {
-                        if (opt.text === value) {
-                            root.saveConfig("maxPinned", opt.value);
-                            return;
-                        }
-                    }
-                }
-
-                Connections {
-                    target: root
-                    function onConfigLoadedChanged() {
+                    function updateValue() {
                         if (root.configLoaded) {
+                            currentValue = root.getMaxPinnedText(root.config.maxPinned ?? 25);
+                        }
+                    }
+
+                    Component.onCompleted: {
+                        updateValue();
+                    }
+
+                    onValueChanged: value => {
+                        for (let opt of root.maxPinnedOptions) {
+                            if (opt.text === value) {
+                                root.saveConfig("maxPinned", opt.value);
+                                return;
+                            }
+                        }
+                    }
+
+                    Connections {
+                        target: root
+                        function onConfigLoadedChanged() {
+                            if (root.configLoaded) {
+                                maxPinnedDropdown.updateValue();
+                            }
+                        }
+                        function onConfigChanged() {
                             maxPinnedDropdown.updateValue();
                         }
                     }
-                    function onConfigChanged() {
-                        maxPinnedDropdown.updateValue();
+                }
+
+                SettingsToggleRow {
+                    tab: "clipboard"
+                    tags: ["clipboard", "clear", "startup"]
+                    settingKey: "clearAtStartup"
+                    text: I18n.tr("Clear at startup")
+                    checked: root.config.clearAtStartup ?? false
+                    enabled: root.historyEnabled
+                    onToggled: checked => root.saveConfig("clearAtStartup", checked)
+                }
+            }
+        }
+
+        SettingsDeferred {
+            when: configLoaded
+
+            SettingsCard {
+                tab: "clipboard"
+                tags: ["clipboard", "behavior"]
+                title: I18n.tr("Behavior")
+                iconName: "settings"
+
+                SettingsToggleRow {
+                    tab: "clipboard"
+                    tags: ["clipboard", "click", "paste", "behavior"]
+                    settingKey: "clipboardClickToPaste"
+                    text: I18n.tr("Click to paste")
+                    checked: SettingsData.clipboardClickToPaste
+                    onToggled: checked => SettingsData.set("clipboardClickToPaste", checked)
+                }
+
+                SettingsToggleRow {
+                    tab: "clipboard"
+                    tags: ["clipboard", "enter", "paste", "behavior"]
+                    settingKey: "clipboardEnterToPaste"
+                    text: I18n.tr("Enter to paste")
+                    checked: SettingsData.clipboardEnterToPaste
+                    onToggled: checked => SettingsData.set("clipboardEnterToPaste", checked)
+                }
+            }
+        }
+
+        SettingsDeferred {
+            SettingsCard {
+                tab: "clipboard"
+                tags: ["clipboard", "appearance", "size", "modal"]
+                settingKey: "clipboardAppearance"
+                title: I18n.tr("Appearance")
+                iconName: "tune"
+
+                SettingsButtonGroupRow {
+                    readonly property var sizes: ["micro", "compact", "medium", "large"]
+
+                    tab: "clipboard"
+                    tags: ["clipboard", "size", "micro", "compact", "medium", "large"]
+                    settingKey: "clipboardSize"
+                    text: I18n.tr("Size")
+                    model: ["1", "2", "3", "4"]
+                    currentIndex: {
+                        const index = sizes.indexOf(SettingsData.clipboardSize);
+                        return index >= 0 ? index : 1;
                     }
-                }
-            }
-
-            SettingsToggleRow {
-                tab: "clipboard"
-                tags: ["clipboard", "clear", "startup"]
-                settingKey: "clearAtStartup"
-                text: I18n.tr("Clear at startup")
-                checked: root.config.clearAtStartup ?? false
-                enabled: root.historyEnabled
-                onToggled: checked => root.saveConfig("clearAtStartup", checked)
-            }
-        }
-
-        SettingsCard {
-            tab: "clipboard"
-            tags: ["clipboard", "behavior"]
-            title: I18n.tr("Behavior")
-            iconName: "settings"
-            visible: configLoaded
-
-            SettingsToggleRow {
-                tab: "clipboard"
-                tags: ["clipboard", "click", "paste", "behavior"]
-                settingKey: "clipboardClickToPaste"
-                text: I18n.tr("Click to paste")
-                checked: SettingsData.clipboardClickToPaste
-                onToggled: checked => SettingsData.set("clipboardClickToPaste", checked)
-            }
-
-            SettingsToggleRow {
-                tab: "clipboard"
-                tags: ["clipboard", "enter", "paste", "behavior"]
-                settingKey: "clipboardEnterToPaste"
-                text: I18n.tr("Enter to paste")
-                checked: SettingsData.clipboardEnterToPaste
-                onToggled: checked => SettingsData.set("clipboardEnterToPaste", checked)
-            }
-        }
-
-        SettingsCard {
-            tab: "clipboard"
-            tags: ["clipboard", "appearance", "size", "modal"]
-            settingKey: "clipboardAppearance"
-            title: I18n.tr("Appearance")
-            iconName: "tune"
-
-            SettingsButtonGroupRow {
-                readonly property var sizes: ["micro", "compact", "medium", "large"]
-
-                tab: "clipboard"
-                tags: ["clipboard", "size", "micro", "compact", "medium", "large"]
-                settingKey: "clipboardSize"
-                text: I18n.tr("Size")
-                model: ["1", "2", "3", "4"]
-                currentIndex: {
-                    const index = sizes.indexOf(SettingsData.clipboardSize);
-                    return index >= 0 ? index : 1;
-                }
-                onSelectionChanged: (index, selected) => {
-                    if (!selected)
-                        return;
-                    SettingsData.set("clipboardSize", sizes[index]);
+                    onSelectionChanged: (index, selected) => {
+                        if (!selected)
+                            return;
+                        SettingsData.set("clipboardSize", sizes[index]);
+                    }
                 }
             }
         }

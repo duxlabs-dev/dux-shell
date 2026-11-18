@@ -50,6 +50,10 @@ FocusScope {
                     hint: modelData.hint ?? ""
                     trailingBadge: modelData.kind === "plugin" && PluginService.loadedPlugins[modelData.pluginId] === undefined ? I18n.tr("Disabled") : ""
                     onClicked: keyboard => root.parentModal?.navigateTo(modelData.id, keyboard)
+                    onHeaderHoveredChanged: {
+                        if (headerHovered)
+                            root.pageHost?.anticipate(modelData.id);
+                    }
                 }
             }
         }
@@ -68,6 +72,10 @@ FocusScope {
                     title: modelData.hubFooter
                     hint: modelData.hint ?? ""
                     onClicked: keyboard => root.parentModal?.navigateTo(modelData.id, keyboard)
+                    onHeaderHoveredChanged: {
+                        if (headerHovered)
+                            root.pageHost?.anticipate(modelData.id);
+                    }
                 }
             }
         }

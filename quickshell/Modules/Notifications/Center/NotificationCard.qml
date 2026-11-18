@@ -97,7 +97,7 @@ Item {
         enabled: root._laidOut && root.animateExpansion && NotificationMetrics.animationsEnabled
         NumberAnimation {
             id: heightAnimation
-            duration: root.expanded ? Theme.notificationExpandDuration : Theme.notificationCollapseDuration
+            duration: NotificationMetrics.expandDuration
             easing.type: Easing.BezierSpline
             easing.bezierCurve: NotificationMetrics.expandCurve
         }
@@ -263,7 +263,7 @@ Item {
                             target: row
                             property: "height"
                             to: 0
-                            duration: NotificationMetrics.animationsEnabled ? Theme.notificationExpandDuration : 0
+                            duration: NotificationMetrics.animationsEnabled ? NotificationMetrics.expandDuration : 0
                             easing.type: Easing.BezierSpline
                             easing.bezierCurve: NotificationMetrics.expandCurve
                         }

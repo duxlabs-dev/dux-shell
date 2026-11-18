@@ -162,195 +162,203 @@ Item {
     }
 
     SettingsPage {
-        SettingsCard {
-            iconName: "hub"
-            settingKey: "networkTailscale"
-            tags: ["tailscale", "vpn", "tailnet", "exit node", "magicdns", "ssh", "subnet", "account", "login"]
+        SettingsDeferred {
+            SettingsCard {
+                iconName: "hub"
+                settingKey: "networkTailscale"
+                tags: ["tailscale", "vpn", "tailnet", "exit node", "magicdns", "ssh", "subnet", "account", "login"]
 
-            SettingsRow {
-                visible: !TailscaleService.available || networkTailscaleTab.backendState === "Unreachable"
-                subtitle: I18n.tr("Tailscale not available", "Warning when Tailscale service is not running")
-            }
-
-            SettingsNoteRow {
-                visible: TailscaleService.available && networkTailscaleTab.profilesLoaded && !networkTailscaleTab.canOperate
-                text: I18n.tr("Operator permission needed", "Tailscale settings note, followed by a grant button and a terminal command")
-            }
-
-            SettingsRow {
-                visible: TailscaleService.available && networkTailscaleTab.profilesLoaded && !networkTailscaleTab.canOperate
-                body: Row {
-                    width: parent.width
-                    spacing: Theme.spacingS
-
-                    StyledText {
-                        width: parent.width - copyCommandButton.width - grantButton.width - parent.spacing * 2
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: networkTailscaleTab.operatorCommand
-                        isMonospace: true
-                        font.pixelSize: Theme.fontSizeSmall
-                        color: Theme.surfaceText
-                        wrapMode: Text.Wrap
-                    }
-
-                    DActionButton {
-                        id: copyCommandButton
-                        anchors.verticalCenter: parent.verticalCenter
-                        buttonSize: Theme.iconButtonSize
-                        iconName: "content_copy"
-                        iconColor: Theme.surfaceText
-                        tooltipText: I18n.tr("Copy")
-                        Accessible.name: I18n.tr("Copy")
-                        onClicked: networkTailscaleTab.copyText(networkTailscaleTab.operatorCommand)
-                    }
-
-                    DButton {
-                        id: grantButton
-                        anchors.verticalCenter: parent.verticalCenter
-                        visible: TailscaleService.grantAvailable
-                        width: visible ? implicitWidth : 0
-                        text: I18n.tr("Grant permission", "Tailscale: button to grant operator permission")
-                        iconName: "admin_panel_settings"
-                        busy: networkTailscaleTab.granting
-                        enabled: !networkTailscaleTab.granting
-                        onClicked: networkTailscaleTab.grant()
-                    }
+                SettingsRow {
+                    visible: !TailscaleService.available || networkTailscaleTab.backendState === "Unreachable"
+                    subtitle: I18n.tr("Tailscale not available", "Warning when Tailscale service is not running")
                 }
-            }
 
-            SettingsToggleRow {
-                visible: TailscaleService.available
-                enabled: networkTailscaleTab.writable && networkTailscaleTab.backendState !== "NeedsLogin"
-                text: I18n.tr("Status", "Tailscale connection switch title")
-                description: networkTailscaleTab.statusText
-                checked: TailscaleService.connected
-                onToggled: checked => {
-                    if (checked)
-                        TailscaleService.connectTailscale(null);
-                    else
-                        TailscaleService.disconnectTailscale(null);
-                }
-            }
-
-            PeerRow {
-                visible: TailscaleService.available && (TailscaleService.selfNode?.id ?? "") !== ""
-                peer: TailscaleService.selfNode
-                onCopyRequested: text => networkTailscaleTab.copyText(text)
-            }
-        }
-
-        SettingsCard {
-            visible: networkTailscaleTab.showAccounts
-            title: I18n.tr("Accounts")
-
-            Repeater {
-                model: ScriptModel {
-                    objectProp: "id"
-                    values: TailscaleService.profiles
+                SettingsNoteRow {
+                    visible: TailscaleService.available && networkTailscaleTab.profilesLoaded && !networkTailscaleTab.canOperate
+                    text: I18n.tr("Operator permission needed", "Tailscale settings note, followed by a grant button and a terminal command")
                 }
 
                 SettingsRow {
-                    id: accountRow
+                    visible: TailscaleService.available && networkTailscaleTab.profilesLoaded && !networkTailscaleTab.canOperate
+                    body: Row {
+                        width: parent.width
+                        spacing: Theme.spacingS
 
-                    required property var modelData
-                    readonly property string profileId: modelData.id
-                    readonly property bool isCurrent: profileId === TailscaleService.currentProfile
+                        StyledText {
+                            width: parent.width - copyCommandButton.width - grantButton.width - parent.spacing * 2
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: networkTailscaleTab.operatorCommand
+                            isMonospace: true
+                            font.pixelSize: Theme.fontSizeSmall
+                            color: Theme.surfaceText
+                            wrapMode: Text.Wrap
+                        }
 
-                    title: modelData.name
-                    subtitle: modelData.tailnet ?? ""
-                    iconName: isCurrent ? "radio_button_checked" : "radio_button_unchecked"
-                    iconColor: isCurrent ? Theme.primary : Theme.surfaceVariantText
-                    clickable: true
-                    enabled: networkTailscaleTab.writable
-                    Accessible.role: Accessible.RadioButton
-                    Accessible.checkable: true
-                    Accessible.checked: isCurrent
-                    onClicked: {
-                        if (!isCurrent)
-                            networkTailscaleTab.runOn(profileId, done => TailscaleService.switchProfile(profileId, done));
-                    }
+                        DActionButton {
+                            id: copyCommandButton
+                            anchors.verticalCenter: parent.verticalCenter
+                            buttonSize: Theme.iconButtonSize
+                            iconName: "content_copy"
+                            iconColor: Theme.surfaceText
+                            tooltipText: I18n.tr("Copy")
+                            Accessible.name: I18n.tr("Copy")
+                            onClicked: networkTailscaleTab.copyText(networkTailscaleTab.operatorCommand)
+                        }
 
-                    DSpinner {
-                        anchors.verticalCenter: parent.verticalCenter
-                        visible: networkTailscaleTab.busyId === accountRow.profileId
-                        size: Theme.iconSizeMedium
-                        strokeWidth: 2
-                    }
-
-                    DActionButton {
-                        visible: accountRow.isCurrent && networkTailscaleTab.backendState !== "NeedsLogin"
-                        buttonSize: Theme.iconButtonSize
-                        iconName: "logout"
-                        iconColor: Theme.surfaceText
-                        tooltipText: I18n.tr("Log out")
-                        Accessible.name: tooltipText
-                        onClicked: networkTailscaleTab.runOn(accountRow.profileId, done => TailscaleService.logout(done))
-                    }
-
-                    SettingsDeleteButton {
-                        visible: !accountRow.isCurrent
-                        buttonSize: Theme.iconButtonSize
-                        iconName: confirming ? "warning" : "person_remove"
-                        tooltipText: confirming ? I18n.tr("Confirm") : I18n.tr("Remove")
-                        Accessible.name: tooltipText
-                        onDeleteRequested: networkTailscaleTab.runOn(accountRow.profileId, done => TailscaleService.removeProfile(accountRow.profileId, done))
+                        DButton {
+                            id: grantButton
+                            anchors.verticalCenter: parent.verticalCenter
+                            visible: TailscaleService.grantAvailable
+                            width: visible ? implicitWidth : 0
+                            text: I18n.tr("Grant permission", "Tailscale: button to grant operator permission")
+                            iconName: "admin_panel_settings"
+                            busy: networkTailscaleTab.granting
+                            enabled: !networkTailscaleTab.granting
+                            onClicked: networkTailscaleTab.grant()
+                        }
                     }
                 }
-            }
 
-            SettingsNavRow {
-                iconName: "person_add"
-                title: I18n.tr("Add account", "Tailscale: add another account")
-                enabled: networkTailscaleTab.writable && networkTailscaleTab.busyId === ""
-                onClicked: keyboard => networkTailscaleTab.parentModal?.navigateTo("network_tailscale_add", keyboard)
+                SettingsToggleRow {
+                    visible: TailscaleService.available
+                    enabled: networkTailscaleTab.writable && networkTailscaleTab.backendState !== "NeedsLogin"
+                    text: I18n.tr("Status", "Tailscale connection switch title")
+                    description: networkTailscaleTab.statusText
+                    checked: TailscaleService.connected
+                    onToggled: checked => {
+                        if (checked)
+                            TailscaleService.connectTailscale(null);
+                        else
+                            TailscaleService.disconnectTailscale(null);
+                    }
+                }
+
+                PeerRow {
+                    visible: TailscaleService.available && (TailscaleService.selfNode?.id ?? "") !== ""
+                    peer: TailscaleService.selfNode
+                    onCopyRequested: text => networkTailscaleTab.copyText(text)
+                }
             }
         }
 
-        SettingsCard {
-            visible: TailscaleService.available
-            title: I18n.tr("Exit node")
+        SettingsDeferred {
+            when: networkTailscaleTab.showAccounts
 
-            SettingsDropdownRow {
-                id: exitNodeRow
-                enabled: networkTailscaleTab.writable
-                text: I18n.tr("Exit node")
-                options: networkTailscaleTab.exitNodeChoices.map(c => c.label)
-                currentValue: {
-                    const current = TailscaleService.currentExitNode;
-                    if (!current)
-                        return networkTailscaleTab.noneLabel;
-                    return networkTailscaleTab.exitNodeChoices.find(c => c.id === current.id)?.label ?? current.hostname;
+            SettingsCard {
+                title: I18n.tr("Accounts")
+
+                Repeater {
+                    model: ScriptModel {
+                        objectProp: "id"
+                        values: TailscaleService.profiles
+                    }
+
+                    SettingsRow {
+                        id: accountRow
+
+                        required property var modelData
+                        readonly property string profileId: modelData.id
+                        readonly property bool isCurrent: profileId === TailscaleService.currentProfile
+
+                        title: modelData.name
+                        subtitle: modelData.tailnet ?? ""
+                        iconName: isCurrent ? "radio_button_checked" : "radio_button_unchecked"
+                        iconColor: isCurrent ? Theme.primary : Theme.surfaceVariantText
+                        clickable: true
+                        enabled: networkTailscaleTab.writable
+                        Accessible.role: Accessible.RadioButton
+                        Accessible.checkable: true
+                        Accessible.checked: isCurrent
+                        onClicked: {
+                            if (!isCurrent)
+                                networkTailscaleTab.runOn(profileId, done => TailscaleService.switchProfile(profileId, done));
+                        }
+
+                        DSpinner {
+                            anchors.verticalCenter: parent.verticalCenter
+                            visible: networkTailscaleTab.busyId === accountRow.profileId
+                            size: Theme.iconSizeMedium
+                            strokeWidth: 2
+                        }
+
+                        DActionButton {
+                            visible: accountRow.isCurrent && networkTailscaleTab.backendState !== "NeedsLogin"
+                            buttonSize: Theme.iconButtonSize
+                            iconName: "logout"
+                            iconColor: Theme.surfaceText
+                            tooltipText: I18n.tr("Log out")
+                            Accessible.name: tooltipText
+                            onClicked: networkTailscaleTab.runOn(accountRow.profileId, done => TailscaleService.logout(done))
+                        }
+
+                        SettingsDeleteButton {
+                            visible: !accountRow.isCurrent
+                            buttonSize: Theme.iconButtonSize
+                            iconName: confirming ? "warning" : "person_remove"
+                            tooltipText: confirming ? I18n.tr("Confirm") : I18n.tr("Remove")
+                            Accessible.name: tooltipText
+                            onDeleteRequested: networkTailscaleTab.runOn(accountRow.profileId, done => TailscaleService.removeProfile(accountRow.profileId, done))
+                        }
+                    }
                 }
-                onValueChanged: value => {
-                    const choice = networkTailscaleTab.exitNodeChoices.find(c => c.label === value);
-                    if (!choice)
-                        return;
-                    const resyncOnError = response => {
-                        if (response.error)
-                            exitNodeRow.resync();
-                    };
-                    if (choice.id === "")
-                        TailscaleService.clearExitNode(resyncOnError);
-                    else
-                        TailscaleService.setExitNode(choice.id, resyncOnError);
+
+                SettingsNavRow {
+                    iconName: "person_add"
+                    title: I18n.tr("Add account", "Tailscale: add another account")
+                    enabled: networkTailscaleTab.writable && networkTailscaleTab.busyId === ""
+                    onClicked: keyboard => networkTailscaleTab.parentModal?.navigateTo("network_tailscale_add", keyboard)
                 }
             }
+        }
 
-            SettingsToggleRow {
-                enabled: networkTailscaleTab.writable
-                text: I18n.tr("Allow LAN access")
-                description: I18n.tr("Reach local network devices while using an exit node")
-                checked: TailscaleService.exitNodeAllowLanAccess
-                onToggled: value => TailscaleService.setAllowLanAccess(value, null)
-            }
+        SettingsDeferred {
+            when: TailscaleService.available
 
-            SettingsToggleRow {
-                enabled: networkTailscaleTab.writable
-                text: I18n.tr("Run as exit node", "Tailscale setting")
-                checked: TailscaleService.prefs.advertiseExitNode === true
-                onToggled: value => TailscaleService.setPrefs({
-                        "advertiseExitNode": value
-                    })
+            SettingsCard {
+                title: I18n.tr("Exit node")
+
+                SettingsDropdownRow {
+                    id: exitNodeRow
+                    enabled: networkTailscaleTab.writable
+                    text: I18n.tr("Exit node")
+                    options: networkTailscaleTab.exitNodeChoices.map(c => c.label)
+                    currentValue: {
+                        const current = TailscaleService.currentExitNode;
+                        if (!current)
+                            return networkTailscaleTab.noneLabel;
+                        return networkTailscaleTab.exitNodeChoices.find(c => c.id === current.id)?.label ?? current.hostname;
+                    }
+                    onValueChanged: value => {
+                        const choice = networkTailscaleTab.exitNodeChoices.find(c => c.label === value);
+                        if (!choice)
+                            return;
+                        const resyncOnError = response => {
+                            if (response.error)
+                                exitNodeRow.resync();
+                        };
+                        if (choice.id === "")
+                            TailscaleService.clearExitNode(resyncOnError);
+                        else
+                            TailscaleService.setExitNode(choice.id, resyncOnError);
+                    }
+                }
+
+                SettingsToggleRow {
+                    enabled: networkTailscaleTab.writable
+                    text: I18n.tr("Allow LAN access")
+                    description: I18n.tr("Reach local network devices while using an exit node")
+                    checked: TailscaleService.exitNodeAllowLanAccess
+                    onToggled: value => TailscaleService.setAllowLanAccess(value, null)
+                }
+
+                SettingsToggleRow {
+                    enabled: networkTailscaleTab.writable
+                    text: I18n.tr("Run as exit node", "Tailscale setting")
+                    checked: TailscaleService.prefs.advertiseExitNode === true
+                    onToggled: value => TailscaleService.setPrefs({
+                            "advertiseExitNode": value
+                        })
+                }
             }
         }
 
@@ -425,23 +433,26 @@ Item {
             }
         }
 
-        SettingsCard {
-            visible: TailscaleService.available
-            title: I18n.tr("Devices")
+        SettingsDeferred {
+            when: TailscaleService.available
 
-            SettingsRow {
-                visible: TailscaleService.allPeersList.length === 0
-                subtitle: I18n.tr("No peers found")
-            }
+            SettingsCard {
+                title: I18n.tr("Devices")
 
-            Repeater {
-                model: TailscaleService.allPeersList
+                SettingsRow {
+                    visible: TailscaleService.allPeersList.length === 0
+                    subtitle: I18n.tr("No peers found")
+                }
 
-                PeerRow {
-                    required property var modelData
+                Repeater {
+                    model: TailscaleService.allPeersList
 
-                    peer: modelData
-                    onCopyRequested: text => networkTailscaleTab.copyText(text)
+                    PeerRow {
+                        required property var modelData
+
+                        peer: modelData
+                        onCopyRequested: text => networkTailscaleTab.copyText(text)
+                    }
                 }
             }
         }

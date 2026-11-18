@@ -165,8 +165,9 @@ Item {
 
             Behavior on sweep {
                 NumberAnimation {
-                    duration: Theme.mediumDuration
-                    easing.type: Theme.standardEasing
+                    duration: Theme.expressiveDurations.expressiveSlowEffects
+                    easing.type: Easing.BezierSpline
+                    easing.bezierCurve: Theme.expressiveCurves.expressiveSlowEffects
                 }
             }
 
@@ -355,16 +356,18 @@ Item {
             Behavior on width {
                 enabled: !root.vertical
                 NumberAnimation {
-                    duration: Theme.mediumDuration
-                    easing.type: Theme.standardEasing
+                    duration: Theme.expressiveDurations.expressiveSlowEffects
+                    easing.type: Easing.BezierSpline
+                    easing.bezierCurve: Theme.expressiveCurves.expressiveSlowEffects
                 }
             }
 
             Behavior on height {
                 enabled: root.vertical
                 NumberAnimation {
-                    duration: Theme.mediumDuration
-                    easing.type: Theme.standardEasing
+                    duration: Theme.expressiveDurations.expressiveSlowEffects
+                    easing.type: Easing.BezierSpline
+                    easing.bezierCurve: Theme.expressiveCurves.expressiveSlowEffects
                 }
             }
         }

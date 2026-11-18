@@ -65,60 +65,65 @@ Item {
             }
         }
 
-        SettingsCard {
-            width: parent.width
-            visible: root.available && SettingsData.wellbeingEnabled
-            iconName: "apps"
-            title: I18n.tr("Most used apps", "screen time card title, apps ranked by time")
-            settingKey: "wellbeingApps"
-            tab: "wellbeing"
-            tags: ["wellbeing", "screen time", "apps", "usage"]
+        SettingsDeferred {
+            when: root.available && SettingsData.wellbeingEnabled
 
-            AppUsageList {
-                height: implicitHeight
-                color: "transparent"
-                pad: 0
-                showTitle: false
-                fillHeight: false
-                days: root.days
-                firstDayOfWeek: root.firstDayOfWeek
-                anchor: root.anchor
-                selectedDate: chart.selectedDate
-                onSelectionCleared: chart.selectedDate = ""
-                today: root.today
-                onLimitRequested: appId => root.toggleLimit(appId)
+            SettingsCard {
+                width: parent.width
+                iconName: "apps"
+                title: I18n.tr("Most used apps", "screen time card title, apps ranked by time")
+                settingKey: "wellbeingApps"
+                tab: "wellbeing"
+                tags: ["wellbeing", "screen time", "apps", "usage"]
+
+                AppUsageList {
+                    height: implicitHeight
+                    color: "transparent"
+                    pad: 0
+                    showTitle: false
+                    fillHeight: false
+                    days: root.days
+                    firstDayOfWeek: root.firstDayOfWeek
+                    anchor: root.anchor
+                    selectedDate: chart.selectedDate
+                    onSelectionCleared: chart.selectedDate = ""
+                    today: root.today
+                    onLimitRequested: appId => root.toggleLimit(appId)
+                }
             }
         }
 
-        SettingsCard {
-            width: parent.width
-            iconName: "digital_wellbeing"
-            title: I18n.tr("Screen time", "dashboard card and settings card title, time spent in apps")
-            settingKey: "wellbeing"
-            tab: "wellbeing"
-            tags: ["wellbeing", "screen time", "usage", "limit"]
-
-            SettingsToggleRow {
-                settingKey: "wellbeingEnabled"
+        SettingsDeferred {
+            SettingsCard {
+                width: parent.width
+                iconName: "digital_wellbeing"
+                title: I18n.tr("Screen time", "dashboard card and settings card title, time spent in apps")
+                settingKey: "wellbeing"
                 tab: "wellbeing"
-                tags: ["wellbeing", "screen time", "tracking"]
-                text: I18n.tr("Track screen time", "digital wellbeing main toggle")
-                description: I18n.tr("Counts time in the focused app while the session is active. Stays on this device.", "track screen time toggle description")
-                checked: SettingsData.wellbeingEnabled
-                onToggled: checked => SettingsData.set("wellbeingEnabled", checked)
-            }
+                tags: ["wellbeing", "screen time", "usage", "limit"]
 
-            SettingsRow {
-                settingKey: "wellbeingDailyLimit"
-                tab: "wellbeing"
-                tags: ["wellbeing", "screen time", "limit", "daily"]
-                title: I18n.tr("Daily limit", "screen time limit per day, total or for one app")
-                subtitle: SettingsData.wellbeingDailyLimit > 0 ? I18n.tr("Notifies when today's screen time passes the limit", "daily screen time limit description") : I18n.tr("Off")
+                SettingsToggleRow {
+                    settingKey: "wellbeingEnabled"
+                    tab: "wellbeing"
+                    tags: ["wellbeing", "screen time", "tracking"]
+                    text: I18n.tr("Track screen time", "digital wellbeing main toggle")
+                    description: I18n.tr("Counts time in the focused app while the session is active. Stays on this device.", "track screen time toggle description")
+                    checked: SettingsData.wellbeingEnabled
+                    onToggled: checked => SettingsData.set("wellbeingEnabled", checked)
+                }
 
-                DurationSteppers {
-                    anchors.verticalCenter: parent.verticalCenter
-                    minutes: SettingsData.wellbeingDailyLimit
-                    onCommitted: next => SettingsData.set("wellbeingDailyLimit", next)
+                SettingsRow {
+                    settingKey: "wellbeingDailyLimit"
+                    tab: "wellbeing"
+                    tags: ["wellbeing", "screen time", "limit", "daily"]
+                    title: I18n.tr("Daily limit", "screen time limit per day, total or for one app")
+                    subtitle: SettingsData.wellbeingDailyLimit > 0 ? I18n.tr("Notifies when today's screen time passes the limit", "daily screen time limit description") : I18n.tr("Off")
+
+                    DurationSteppers {
+                        anchors.verticalCenter: parent.verticalCenter
+                        minutes: SettingsData.wellbeingDailyLimit
+                        onCommitted: next => SettingsData.set("wellbeingDailyLimit", next)
+                    }
                 }
             }
         }

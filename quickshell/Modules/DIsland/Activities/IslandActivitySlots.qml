@@ -38,7 +38,10 @@ Item {
             const index = indexOf(key);
             const payload = JSON.stringify(entry);
             if (index < 0) {
-                slotModel.append({entryKey: key, payload: payload});
+                slotModel.append({
+                    entryKey: key,
+                    payload: payload
+                });
                 if (slotModel.count - 1 !== i)
                     slotModel.move(slotModel.count - 1, i, 1);
             } else {
@@ -100,14 +103,16 @@ Item {
                 height: root.controller.compactFaceThickness
                 Behavior on x {
                     NumberAnimation {
-                        duration: SettingsData.reduceMotion ? 0 : Theme.shortDuration
-                        easing.type: Easing.OutCubic
+                        duration: Theme.reduceMotion ? 0 : Theme.expressiveDurations.expressiveFastSpatial
+                        easing.type: Easing.BezierSpline
+                        easing.bezierCurve: Theme.expressiveCurves.expressiveFastSpatial
                     }
                 }
                 Behavior on y {
                     NumberAnimation {
-                        duration: SettingsData.reduceMotion ? 0 : Theme.shortDuration
-                        easing.type: Easing.OutCubic
+                        duration: Theme.reduceMotion ? 0 : Theme.expressiveDurations.expressiveFastSpatial
+                        easing.type: Easing.BezierSpline
+                        easing.bezierCurve: Theme.expressiveCurves.expressiveFastSpatial
                     }
                 }
 

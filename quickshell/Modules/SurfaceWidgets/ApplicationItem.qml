@@ -90,15 +90,17 @@ Item {
 
     Behavior on opacity {
         NumberAnimation {
-            duration: Theme.shortDuration
-            easing.type: Easing.OutCubic
+            duration: Theme.expressiveDurations.expressiveFastEffects
+            easing.type: Easing.BezierSpline
+            easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
         }
     }
 
     Behavior on scale {
         NumberAnimation {
-            duration: Theme.shortDuration
-            easing.type: Easing.OutCubic
+            duration: Theme.expressiveDurations.expressiveFastSpatial
+            easing.type: Easing.BezierSpline
+            easing.bezierCurve: Theme.expressiveCurves.expressiveFastSpatial
         }
     }
 
@@ -122,7 +124,7 @@ Item {
         return 0;
     }
 
-    readonly property var shiftSpringParams: Theme.springPreset("fast", 150)
+    readonly property var shiftSpringParams: Theme.springPreset("fastSpatial")
 
     SpringMotion {
         id: shiftSpring

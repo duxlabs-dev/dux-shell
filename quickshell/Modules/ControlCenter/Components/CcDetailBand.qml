@@ -76,9 +76,9 @@ FocusScope {
         enabled: CcMetrics.animationsEnabled
         NumberAnimation {
             id: heightAnimation
-            duration: CcMetrics.transitionDuration
+            duration: Theme.expressiveDurations.expressiveDefaultSpatial
             easing.type: Easing.BezierSpline
-            easing.bezierCurve: Theme.expressiveCurves.standard
+            easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
         }
     }
 

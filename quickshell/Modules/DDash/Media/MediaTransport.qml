@@ -16,7 +16,7 @@ RowLayout {
 
     readonly property var focusTargets: [previousButton, playButton, nextButton]
     readonly property bool hasControls: !!presentation
-    readonly property var pressSpring: Theme.springPreset("fast", Theme.expressiveDurations.expressiveFastSpatial)
+    readonly property var pressSpring: Theme.springPreset("fastSpatial")
 
     spacing: Theme.spacingS
     implicitHeight: root.buttonSize
@@ -75,7 +75,7 @@ RowLayout {
 
         SpringMotion {
             id: widthSpring
-            enabled: root.visible && root.player.live && !Theme.springMotionDisabled
+            enabled: root.visible && root.player.live
             stiffness: root.pressSpring.stiffness
             damping: root.pressSpring.damping
             Component.onCompleted: snapTo(button.targetWeight)

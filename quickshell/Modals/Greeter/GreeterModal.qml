@@ -223,7 +223,6 @@ DFloatingWindow {
                         anchors.verticalCenter: parent.verticalCenter
 
                         Behavior on width {
-                            enabled: Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
                             NumberAnimation {
                                 duration: Theme.expressiveDurations.expressiveFastSpatial
                                 easing.type: Easing.BezierSpline
@@ -232,7 +231,6 @@ DFloatingWindow {
                         }
 
                         Behavior on color {
-                            enabled: Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
                             ColorAnimation {
                                 duration: Theme.expressiveDurations.expressiveEffects
                                 easing.type: Easing.BezierSpline

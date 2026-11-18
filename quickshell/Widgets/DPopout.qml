@@ -19,10 +19,6 @@ Item {
     property int animationDuration: Theme.popoutAnimationDuration
     property real animationScaleCollapsed: Theme.effectScaleCollapsed
     property real animationOffset: Theme.effectAnimOffset
-    property list<real> animationEnterCurve: Theme.variantPopoutEnterCurve
-    property list<real> animationExitCurve: Theme.variantPopoutExitCurve
-    property list<real> resizeCurve: Theme.variantPopoutResizeCurve
-    property int resizeDuration: animationDuration
     property bool resizeMotion: false
     property bool resizing: false
     // Content hung outside the surface, kept on screen, blurred and clickable.

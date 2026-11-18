@@ -161,51 +161,60 @@ FocusScope {
     SettingsPage {
         id: flickable
 
-        SettingsCard {
-            settingKey: "pluginHeader"
-            visible: root.pluginData !== null
+        SettingsDeferred {
+            when: root.pluginData !== null
 
-            SettingsToggleRow {
-                iconName: root.pluginData?.icon || "extension"
-                text: root.pluginName
-                enabled: !root.operationPending
-                checked: root.isLoaded
-                onToggled: checked => root.setEnabled(checked)
-            }
+            SettingsCard {
+                settingKey: "pluginHeader"
 
-            SettingsRow {
-                iconName: "error"
-                title: I18n.tr("Requires DMS %1", "plugin incompatibility notice, %1 is the required DMS version").arg(root.requiresDms)
-                subtitleColor: Theme.error
-                visible: !root.meetsRequirements
-            }
+                SettingsToggleRow {
+                    iconName: root.pluginData?.icon || "extension"
+                    text: root.pluginName
+                    enabled: !root.operationPending
+                    checked: root.isLoaded
+                    onToggled: checked => root.setEnabled(checked)
+                }
 
-            SettingsRow {
-                visible: root.actionError !== ""
-                subtitle: root.actionError
-                subtitleColor: Theme.error
-            }
-        }
+                SettingsRow {
+                    iconName: "error"
+                    title: I18n.tr("Requires DMS %1", "plugin incompatibility notice, %1 is the required DMS version").arg(root.requiresDms)
+                    subtitleColor: Theme.error
+                    visible: !root.meetsRequirements
+                }
 
-        SettingsCard {
-            settingKey: "pluginMissing"
-            visible: root.pluginData === null
-
-            SettingsRow {
-                iconName: "error"
-                title: I18n.tr("Plugin not found: %1", "plugin settings page error, %1 is the plugin id").arg(root.pluginId)
+                SettingsRow {
+                    visible: root.actionError !== ""
+                    subtitle: root.actionError
+                    subtitleColor: Theme.error
+                }
             }
         }
 
-        SettingsCard {
-            settingKey: "pluginDesktopWidgets"
-            visible: root.pluginData !== null && root.isDesktopPlugin
+        SettingsDeferred {
+            when: root.pluginData === null
 
-            SettingsNavRow {
-                iconName: "widgets"
-                title: I18n.tr("Desktop widgets")
-                hint: I18n.tr("Desktop widget plugins are configured per widget instance")
-                onClicked: keyboard => root.parentModal?.navigateTo("desktop_widgets", keyboard)
+            SettingsCard {
+                settingKey: "pluginMissing"
+
+                SettingsRow {
+                    iconName: "error"
+                    title: I18n.tr("Plugin not found: %1", "plugin settings page error, %1 is the plugin id").arg(root.pluginId)
+                }
+            }
+        }
+
+        SettingsDeferred {
+            when: root.pluginData !== null && root.isDesktopPlugin
+
+            SettingsCard {
+                settingKey: "pluginDesktopWidgets"
+
+                SettingsNavRow {
+                    iconName: "widgets"
+                    title: I18n.tr("Desktop widgets")
+                    hint: I18n.tr("Desktop widget plugins are configured per widget instance")
+                    onClicked: keyboard => root.parentModal?.navigateTo("desktop_widgets", keyboard)
+                }
             }
         }
 
@@ -229,74 +238,77 @@ FocusScope {
             }
         }
 
-        SettingsCard {
-            title: I18n.tr("Plugin details", "plugin metadata and maintenance")
-            settingKey: "pluginDetails"
-            visible: root.pluginData !== null
-            collapsible: true
-            expanded: false
+        SettingsDeferred {
+            when: root.pluginData !== null
 
-            SettingsRow {
-                title: [root.pluginData?.version, root.pluginData?.author].filter(Boolean).join(" · ")
-            }
-            SettingsRow {
-                subtitle: root.pluginData?.description || ""
-                visible: subtitle !== ""
-            }
+            SettingsCard {
+                title: I18n.tr("Plugin details", "plugin metadata and maintenance")
+                settingKey: "pluginDetails"
+                collapsible: true
+                expanded: false
 
-            SettingsLinkRow {
-                iconName: "code"
-                title: I18n.tr("Plugin Source Code", "plugin settings page, plugin details")
-                subtitle: I18n.tr("Opens %1", "plugin settings page, plugin details, %1 is the link to the plugin source code").arg(root.pluginRepo)
-                visible: root.pluginRepo !== ""
-                url: root.pluginRepo
-            }
+                SettingsRow {
+                    title: [root.pluginData?.version, root.pluginData?.author].filter(Boolean).join(" · ")
+                }
+                SettingsRow {
+                    subtitle: root.pluginData?.description || ""
+                    visible: subtitle !== ""
+                }
 
-            SettingsRow {
-                visible: root.permissions.length > 0
-                body: Flow {
-                    width: parent.width
-                    spacing: Theme.spacingXS
+                SettingsLinkRow {
+                    iconName: "code"
+                    title: I18n.tr("Plugin Source Code", "plugin settings page, plugin details")
+                    subtitle: I18n.tr("Opens %1", "plugin settings page, plugin details, %1 is the link to the plugin source code").arg(root.pluginRepo)
+                    visible: root.pluginRepo !== ""
+                    url: root.pluginRepo
+                }
 
-                    Repeater {
-                        model: root.permissions
+                SettingsRow {
+                    visible: root.permissions.length > 0
+                    body: Flow {
+                        width: parent.width
+                        spacing: Theme.spacingXS
 
-                        DBadge {
-                            required property string modelData
+                        Repeater {
+                            model: root.permissions
 
-                            text: modelData
-                            color: Theme.primaryHover
-                            textColor: Theme.primary
+                            DBadge {
+                                required property string modelData
+
+                                text: modelData
+                                color: Theme.primaryHover
+                                textColor: Theme.primary
+                            }
                         }
                     }
                 }
-            }
 
-            SettingsRow {
-                iconName: "download"
-                title: I18n.tr("Update plugin")
-                clickable: true
-                visible: DMSService.dmsAvailable && root.isLoaded && root.hasUpdate && !root.isSystemPlugin
-                enabled: !root.operationPending
-                onClicked: root.requestUpdate()
-            }
+                SettingsRow {
+                    iconName: "download"
+                    title: I18n.tr("Update plugin")
+                    clickable: true
+                    visible: DMSService.dmsAvailable && root.isLoaded && root.hasUpdate && !root.isSystemPlugin
+                    enabled: !root.operationPending
+                    onClicked: root.requestUpdate()
+                }
 
-            SettingsRow {
-                iconName: "refresh"
-                title: I18n.tr("Reload plugin")
-                clickable: true
-                visible: root.isLoaded
-                enabled: !root.isReloading && !root.operationPending
-                onClicked: root.reload()
-            }
+                SettingsRow {
+                    iconName: "refresh"
+                    title: I18n.tr("Reload plugin")
+                    clickable: true
+                    visible: root.isLoaded
+                    enabled: !root.isReloading && !root.operationPending
+                    onClicked: root.reload()
+                }
 
-            SettingsRow {
-                iconName: "delete"
-                title: I18n.tr("Uninstall plugin")
-                clickable: true
-                visible: DMSService.dmsAvailable && !root.isSystemPlugin
-                enabled: !root.operationPending
-                onClicked: root.requestUninstall()
+                SettingsRow {
+                    iconName: "delete"
+                    title: I18n.tr("Uninstall plugin")
+                    clickable: true
+                    visible: DMSService.dmsAvailable && !root.isSystemPlugin
+                    enabled: !root.operationPending
+                    onClicked: root.requestUninstall()
+                }
             }
         }
     }

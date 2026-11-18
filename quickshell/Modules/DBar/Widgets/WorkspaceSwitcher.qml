@@ -383,7 +383,7 @@ BasePill {
                     return 0;
                 }
 
-                readonly property var shiftSpringParams: Theme.springPreset("fast", 150)
+                readonly property var shiftSpringParams: Theme.springPreset("fastSpatial")
 
                 SpringMotion {
                     id: shiftXSpring
@@ -855,7 +855,7 @@ BasePill {
                 readonly property color outlineColor: dragHandler.dragging ? Theme.primary : (isUrgent ? urgentColor : (isDropTarget ? Theme.primary : Theme.withAlpha(Theme.primary, 0)))
 
                 Behavior on width {
-                    enabled: !SettingsData.reduceMotion
+                    enabled: !Theme.reduceMotion
                     NumberAnimation {
                         duration: Theme.expressiveDurations.expressiveFastSpatial
                         easing.type: Easing.BezierSpline
@@ -864,7 +864,7 @@ BasePill {
                 }
 
                 Behavior on height {
-                    enabled: !SettingsData.reduceMotion
+                    enabled: !Theme.reduceMotion
                     NumberAnimation {
                         duration: Theme.expressiveDurations.expressiveFastSpatial
                         easing.type: Easing.BezierSpline
@@ -893,7 +893,7 @@ BasePill {
                     border.color: (delegateRoot.focusedBorderEnabledForMonitor && isActive && !isPlaceholder) ? focusedBorderColor : Theme.withAlpha(focusedBorderColor, 0)
 
                     Behavior on width {
-                        enabled: !SettingsData.reduceMotion
+                        enabled: !Theme.reduceMotion
                         NumberAnimation {
                             duration: Theme.expressiveDurations.expressiveFastSpatial
                             easing.type: Easing.BezierSpline
@@ -902,7 +902,7 @@ BasePill {
                     }
 
                     Behavior on height {
-                        enabled: !SettingsData.reduceMotion
+                        enabled: !Theme.reduceMotion
                         NumberAnimation {
                             duration: Theme.expressiveDurations.expressiveFastSpatial
                             easing.type: Easing.BezierSpline
@@ -911,7 +911,7 @@ BasePill {
                     }
 
                     Behavior on border.width {
-                        enabled: !SettingsData.reduceMotion
+                        enabled: !Theme.reduceMotion
                         NumberAnimation {
                             duration: Theme.expressiveDurations.expressiveFastSpatial
                             easing.type: Easing.BezierSpline
@@ -920,7 +920,7 @@ BasePill {
                     }
 
                     Behavior on border.color {
-                        enabled: !SettingsData.reduceMotion
+                        enabled: !Theme.reduceMotion
                         ColorAnimation {
                             duration: Theme.expressiveDurations.expressiveEffects
                             easing.type: Easing.BezierSpline
@@ -964,7 +964,7 @@ BasePill {
                     }
 
                     Behavior on opacity {
-                        enabled: !SettingsData.reduceMotion
+                        enabled: !Theme.reduceMotion
                         NumberAnimation {
                             duration: Theme.expressiveDurations.expressiveEffects
                             easing.type: Easing.BezierSpline
@@ -973,7 +973,7 @@ BasePill {
                     }
 
                     Behavior on width {
-                        enabled: !SettingsData.reduceMotion
+                        enabled: !Theme.reduceMotion
                         NumberAnimation {
                             duration: Theme.expressiveDurations.expressiveFastSpatial
                             easing.type: Easing.BezierSpline
@@ -982,7 +982,7 @@ BasePill {
                     }
 
                     Behavior on height {
-                        enabled: !SettingsData.reduceMotion
+                        enabled: !Theme.reduceMotion
                         NumberAnimation {
                             duration: Theme.expressiveDurations.expressiveFastSpatial
                             easing.type: Easing.BezierSpline
@@ -991,7 +991,7 @@ BasePill {
                     }
 
                     Behavior on border.width {
-                        enabled: !SettingsData.reduceMotion
+                        enabled: !Theme.reduceMotion
                         NumberAnimation {
                             duration: Theme.expressiveDurations.expressiveFastSpatial
                             easing.type: Easing.BezierSpline
@@ -1000,7 +1000,7 @@ BasePill {
                     }
 
                     Behavior on border.color {
-                        enabled: !SettingsData.reduceMotion
+                        enabled: !Theme.reduceMotion
                         ColorAnimation {
                             duration: Theme.expressiveDurations.expressiveEffects
                             easing.type: Easing.BezierSpline

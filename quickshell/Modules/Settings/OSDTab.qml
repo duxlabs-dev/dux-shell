@@ -62,28 +62,30 @@ Item {
     SettingsPage {
         id: mainColumn
 
-        SettingsCard {
-            width: parent.width
-            settingKey: "osd"
+        SettingsDeferred {
+            SettingsCard {
+                width: parent.width
+                settingKey: "osd"
 
-            SettingsRow {
-                settingKey: "osdPosition"
-                title: I18n.tr("Position")
-                subtitle: ScreenPositions.label(SettingsData.osdPosition)
-                clickable: true
-                onClicked: root.pickPosition("", "")
+                SettingsRow {
+                    settingKey: "osdPosition"
+                    title: I18n.tr("Position")
+                    subtitle: ScreenPositions.label(SettingsData.osdPosition)
+                    clickable: true
+                    onClicked: root.pickPosition("", "")
 
-                SettingsPreviewBox {
-                    anchors.verticalCenter: parent.verticalCenter
-                    symbol: ScreenPositions.icon(SettingsData.osdPosition)
+                    SettingsPreviewBox {
+                        anchors.verticalCenter: parent.verticalCenter
+                        symbol: ScreenPositions.icon(SettingsData.osdPosition)
+                    }
                 }
-            }
 
-            SettingsToggleRow {
-                settingKey: "osdAlwaysShowValue"
-                text: I18n.tr("Always show percentage")
-                checked: SettingsData.osdAlwaysShowValue
-                onToggled: checked => SettingsData.set("osdAlwaysShowValue", checked)
+                SettingsToggleRow {
+                    settingKey: "osdAlwaysShowValue"
+                    text: I18n.tr("Always show percentage")
+                    checked: SettingsData.osdAlwaysShowValue
+                    onToggled: checked => SettingsData.set("osdAlwaysShowValue", checked)
+                }
             }
         }
 

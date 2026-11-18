@@ -21,6 +21,8 @@ Item {
     readonly property bool lyricsEnabled: (options?.lyrics ?? MediaOptions.defaults.lyrics) && DMSService.capabilities.includes("lyrics")
     readonly property bool smoothLyrics: options?.smoothLyrics ?? MediaOptions.defaults.smoothLyrics
     property bool lyricsOpen: false
+    // Up while the tab brings its lyrics back, so the art view takes them without the toggle transition.
+    property bool lyricsRestoring: false
     property Item lyricsFocusTarget: null
     property Item lyricsOpener: null
     property Item lyricsSourceButton: null
@@ -184,8 +186,11 @@ Item {
     }
 
     function restoreLyrics() {
-        if (live && lyricsEnabled && CacheData.mediaLyricsOpen)
-            lyricsOpen = true;
+        if (!live || !lyricsEnabled || !CacheData.mediaLyricsOpen)
+            return;
+        lyricsRestoring = true;
+        lyricsOpen = true;
+        lyricsRestoring = false;
     }
 
     // A plain Item's activeFocus stays false while a child holds focus.

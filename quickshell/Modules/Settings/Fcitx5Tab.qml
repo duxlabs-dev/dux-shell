@@ -326,107 +326,113 @@ Item {
             text: I18n.tr("Update DMS to configure fcitx5 from here", "Tip displayed when dms core is too old for fcitx5")
         }
 
-        SettingsCard {
-            width: parent.width
-            visible: root.editable
-            tags: ["fcitx5", "input method", "group"]
-            title: I18n.tr("Groups")
-            settingKey: "fcitx5Groups"
-            iconName: "folder"
+        SettingsDeferred {
+            when: root.editable
 
-            headerActions: DButton {
-                text: I18n.tr("Add")
-                iconName: "add"
-                buttonHeight: Theme.buttonHeightXS
-                onClicked: root.addGroup()
-            }
+            SettingsCard {
+                width: parent.width
+                tags: ["fcitx5", "input method", "group"]
+                title: I18n.tr("Groups")
+                settingKey: "fcitx5Groups"
+                iconName: "folder"
 
-            Repeater {
-                model: root.groupNames
+                headerActions: DButton {
+                    text: I18n.tr("Add")
+                    iconName: "add"
+                    buttonHeight: Theme.buttonHeightXS
+                    onClicked: root.addGroup()
+                }
 
-                delegate: SettingsInstanceRow {
-                    required property string modelData
+                Repeater {
+                    model: root.groupNames
 
-                    title: modelData
-                    summary: root.activeGroup === modelData ? I18n.tr("Active") : ""
-                    selected: root.selectedGroup === modelData
-                    toggleVisible: false
-                    deletable: root.groupNames.length > 1
-                    onClicked: {
-                        root.selectedGroup = modelData;
-                        root.loadGroup(modelData);
-                    }
-                    onDeleteRequested: root.groupRequest("removeGroup", modelData)
+                    delegate: SettingsInstanceRow {
+                        required property string modelData
 
-                    DActionButton {
-                        anchors.verticalCenter: parent.verticalCenter
-                        iconName: "edit"
-                        tooltipText: I18n.tr("Rename")
+                        title: modelData
+                        summary: root.activeGroup === modelData ? I18n.tr("Active") : ""
+                        selected: root.selectedGroup === modelData
+                        toggleVisible: false
+                        deletable: root.groupNames.length > 1
                         onClicked: {
-                            root.renameTarget = modelData;
-                            renameDialog.show(modelData);
+                            root.selectedGroup = modelData;
+                            root.loadGroup(modelData);
+                        }
+                        onDeleteRequested: root.groupRequest("removeGroup", modelData)
+
+                        DActionButton {
+                            anchors.verticalCenter: parent.verticalCenter
+                            iconName: "edit"
+                            tooltipText: I18n.tr("Rename")
+                            onClicked: {
+                                root.renameTarget = modelData;
+                                renameDialog.show(modelData);
+                            }
                         }
                     }
                 }
             }
         }
 
-        SettingsCard {
-            width: parent.width
-            visible: root.editable
-            tags: ["fcitx5", "input method", "ime", "layout", "language"]
-            title: root.selectedGroup
-            settingKey: "fcitx5InputMethods"
-            iconName: "language"
+        SettingsDeferred {
+            when: root.editable
 
-            headerActions: DButton {
-                text: I18n.tr("Add")
-                iconName: "add"
-                buttonHeight: Theme.buttonHeightXS
-                onClicked: root.showPicker()
-            }
+            SettingsCard {
+                width: parent.width
+                tags: ["fcitx5", "input method", "ime", "layout", "language"]
+                title: root.selectedGroup
+                settingKey: "fcitx5InputMethods"
+                iconName: "language"
 
-            SettingsReorderList {
-                id: imList
+                headerActions: DButton {
+                    text: I18n.tr("Add")
+                    iconName: "add"
+                    buttonHeight: Theme.buttonHeightXS
+                    onClicked: root.showPicker()
+                }
 
-                model: root.items
-                onReordered: indices => root.saveItems(Fcitx5Schema.applyOrder(root.items, indices))
+                SettingsReorderList {
+                    id: imList
 
-                delegate: SettingsReorderRow {
-                    id: imRow
+                    model: root.items
+                    onReordered: indices => root.saveItems(Fcitx5Schema.applyOrder(root.items, indices))
 
-                    required property var modelData
-                    readonly property bool hasLayout: !Fcitx5Schema.isKeyboardIM(modelData.name) && (root.layoutChoices?.values.length ?? 0) > 0
+                    delegate: SettingsReorderRow {
+                        id: imRow
 
-                    reorderList: imList
-                    title: root.imName(modelData.name)
-                    subtitle: root.catalog[modelData.name]?.nativeName ?? ""
+                        required property var modelData
+                        readonly property bool hasLayout: !Fcitx5Schema.isKeyboardIM(modelData.name) && (root.layoutChoices?.values.length ?? 0) > 0
 
-                    DDropdown {
-                        // DDropdown assigns currentValue on selection, which would drop a binding on it.
-                        readonly property string syncedValue: Fcitx5Schema.layoutKey(imRow.modelData.layout)
+                        reorderList: imList
+                        title: root.imName(modelData.name)
+                        subtitle: root.catalog[modelData.name]?.nativeName ?? ""
 
-                        onSyncedValueChanged: currentValue = syncedValue
-                        anchors.verticalCenter: parent.verticalCenter
-                        visible: imRow.hasLayout
-                        backgroundColor: SettingsMetrics.controlSurface
-                        enableFuzzySearch: true
-                        options: root.layoutChoices?.labels ?? []
-                        optionValues: root.layoutChoices?.values ?? []
-                        Accessible.name: I18n.tr("Keyboard layout")
-                        onValueChanged: value => root.saveItems(root.items.map((item, i) => i === imRow.index ? {
-                                    "name": item.name,
-                                    "layout": Fcitx5Schema.layoutFromKey(value)
-                                } : item))
-                    }
+                        DDropdown {
+                            // DDropdown assigns currentValue on selection, which would drop a binding on it.
+                            readonly property string syncedValue: Fcitx5Schema.layoutKey(imRow.modelData.layout)
 
-                    DActionButton {
-                        anchors.verticalCenter: parent.verticalCenter
-                        iconName: "close"
-                        iconColor: Theme.error
-                        enabled: root.items.length > 1
-                        tooltipText: I18n.tr("Remove")
-                        onClicked: root.saveItems(root.items.filter((_, i) => i !== imRow.index))
+                            onSyncedValueChanged: currentValue = syncedValue
+                            anchors.verticalCenter: parent.verticalCenter
+                            visible: imRow.hasLayout
+                            backgroundColor: SettingsMetrics.controlSurface
+                            enableFuzzySearch: true
+                            options: root.layoutChoices?.labels ?? []
+                            optionValues: root.layoutChoices?.values ?? []
+                            Accessible.name: I18n.tr("Keyboard layout")
+                            onValueChanged: value => root.saveItems(root.items.map((item, i) => i === imRow.index ? {
+                                        "name": item.name,
+                                        "layout": Fcitx5Schema.layoutFromKey(value)
+                                    } : item))
+                        }
+
+                        DActionButton {
+                            anchors.verticalCenter: parent.verticalCenter
+                            iconName: "close"
+                            iconColor: Theme.error
+                            enabled: root.items.length > 1
+                            tooltipText: I18n.tr("Remove")
+                            onClicked: root.saveItems(root.items.filter((_, i) => i !== imRow.index))
+                        }
                     }
                 }
             }

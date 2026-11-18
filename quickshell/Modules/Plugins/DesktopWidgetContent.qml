@@ -94,8 +94,9 @@ Loader {
         property: "opacity"
         from: 0
         to: 1
-        duration: Theme.mediumDuration
-        easing.type: Theme.standardEasing
+        duration: Theme.expressiveDurations.expressiveSlowEffects
+        easing.type: Easing.BezierSpline
+        easing.bezierCurve: Theme.expressiveCurves.expressiveSlowEffects
     }
 
     QtObject {

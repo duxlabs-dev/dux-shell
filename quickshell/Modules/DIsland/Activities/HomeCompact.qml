@@ -720,15 +720,17 @@ Item {
                         Behavior on x {
                             enabled: !root.suppressTrayShiftAnimation && !group.vertical
                             NumberAnimation {
-                                duration: Theme.shortDuration
-                                easing.type: Easing.OutCubic
+                                duration: Theme.expressiveDurations.expressiveFastSpatial
+                                easing.type: Easing.BezierSpline
+                                easing.bezierCurve: Theme.expressiveCurves.expressiveFastSpatial
                             }
                         }
                         Behavior on y {
                             enabled: !root.suppressTrayShiftAnimation && group.vertical
                             NumberAnimation {
-                                duration: Theme.shortDuration
-                                easing.type: Easing.OutCubic
+                                duration: Theme.expressiveDurations.expressiveFastSpatial
+                                easing.type: Easing.BezierSpline
+                                easing.bezierCurve: Theme.expressiveCurves.expressiveFastSpatial
                             }
                         }
                     }
@@ -746,9 +748,7 @@ Item {
                             id: trayHighlightBg
                             anchors.fill: parent
                             radius: Theme.fullRadius(width, height)
-                            color: trayMouseArea.pressed
-                                ? Theme.withAlpha(Theme.surfaceText, Theme.stateLayerPressed)
-                                : (trayItemRoot.hovered ? Theme.surfaceTextHover : "transparent")
+                            color: trayMouseArea.pressed ? Theme.withAlpha(Theme.surfaceText, Theme.stateLayerPressed) : (trayItemRoot.hovered ? Theme.surfaceTextHover : "transparent")
                             border.width: dragHandler.dragging ? Theme.outlineWidthFocused : 0
                             border.color: Theme.primary
                             opacity: dragHandler.dragging ? 0.8 : 1.0
@@ -899,9 +899,7 @@ Item {
                 Rectangle {
                     anchors.fill: parent
                     radius: Theme.fullRadius(width, height)
-                    color: caretArea.pressed
-                        ? Theme.withAlpha(Theme.surfaceText, Theme.stateLayerPressed)
-                        : (caretRoot.hovered ? Theme.surfaceTextHover : "transparent")
+                    color: caretArea.pressed ? Theme.withAlpha(Theme.surfaceText, Theme.stateLayerPressed) : (caretRoot.hovered ? Theme.surfaceTextHover : "transparent")
                 }
 
                 DIcon {

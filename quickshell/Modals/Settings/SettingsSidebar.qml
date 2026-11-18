@@ -19,6 +19,7 @@ Item {
     property real topInset: 0
 
     signal pageRequested(string pageId)
+    signal pageAnticipated(string pageId)
 
     property bool searchActive: searchField.text.length > 0
     property bool searchFocused: false
@@ -464,8 +465,14 @@ Item {
                                     }
                                     readonly property bool isHighlighted: root.keyboardHighlightId === modelData.id
                                     onIsHighlightedChanged: {
-                                        if (isHighlighted)
-                                            Qt.callLater(root.ensureRowVisible, categoryRow);
+                                        if (!isHighlighted)
+                                            return;
+                                        root.pageAnticipated(modelData.id);
+                                        Qt.callLater(root.ensureRowVisible, categoryRow);
+                                    }
+                                    onHoveredChanged: {
+                                        if (hovered)
+                                            root.pageAnticipated(modelData.id);
                                     }
 
                                     width: groupColumn.width

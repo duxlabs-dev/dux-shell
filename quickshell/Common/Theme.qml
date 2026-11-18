@@ -978,25 +978,32 @@ Singleton {
         };
     }
 
-    readonly property int currentAnimationBaseDuration: typeof SettingsData !== "undefined" ? SettingsData.animationDuration : 250
-    readonly property int currentAnimationSpeed: currentAnimationBaseDuration > 0 ? SettingsData.AnimationSpeed.Custom : SettingsData.AnimationSpeed.None
+    readonly property var motionDurationScales: [0.5, 0.75, 1, 1.5, 2]
+    readonly property bool motionOff: typeof SettingsData !== "undefined" && SettingsData.motionDuration < 0
+    readonly property bool reduceMotion: motionOff || (typeof SettingsData !== "undefined" && SettingsData.reduceMotion)
+    readonly property real motionScale: {
+        if (typeof SettingsData === "undefined")
+            return 1;
+        if (motionOff)
+            return 0;
+        return motionDurationScales[SettingsData.motionDuration] ?? 1;
+    }
+    readonly property real springScale: motionOff ? 1 : motionScale
 
-    readonly property int shorterDuration: Math.round(currentAnimationBaseDuration * 0.2)
-    readonly property int shortDuration: Math.round(currentAnimationBaseDuration * 0.3)
-    readonly property bool snapListModelChanges: shortDuration <= 0
-    readonly property int mediumDuration: Math.round(currentAnimationBaseDuration * 0.6)
-    readonly property int longDuration: currentAnimationBaseDuration
-    readonly property int extraLongDuration: currentAnimationBaseDuration * 2
+    function motionMs(specMs) {
+        return Math.round(specMs * motionScale);
+    }
+
+    readonly property int shorterDuration: motionMs(100)
+    readonly property int shortDuration: motionMs(150)
+    readonly property int mediumDuration: motionMs(300)
+    readonly property int longDuration: motionMs(500)
+    readonly property int extraLongDuration: motionMs(1000)
+    // !TODO: plugin compat, shell motion uses expressiveCurves with expressiveDurations
     readonly property int standardEasing: Easing.OutCubic
     readonly property int emphasizedEasing: Easing.OutQuart
 
     readonly property var expressiveCurves: {
-        "emphasized": [0.05, 0, 2 / 15, 0.06, 1 / 6, 0.4, 5 / 24, 0.82, 0.25, 1, 1, 1],
-        "emphasizedAccel": [0.3, 0, 0.8, 0.15, 1, 1],
-        "emphasizedDecel": [0.05, 0.7, 0.1, 1, 1, 1],
-        "standard": [0.2, 0, 0, 1, 1, 1],
-        "standardAccel": [0.3, 0, 1, 1, 1, 1],
-        "standardDecel": [0, 0, 0, 1, 1, 1],
         "expressiveFastSpatial": [0.42, 1.67, 0.21, 0.9, 1, 1],
         "expressiveDefaultSpatial": [0.38, 1.21, 0.22, 1, 1, 1],
         "expressiveSlowSpatial": [0.39, 1.29, 0.35, 0.98, 1, 1],
@@ -1005,20 +1012,6 @@ Singleton {
         "expressiveSlowEffects": [0.34, 0.88, 0.34, 1, 1, 1]
     }
 
-    // Theme is the canonical access point for animation variant state. The
-    // aliases below forward to AnimVariants.qml so consumers don't need two
-    // imports. ~200 call sites read through Theme.variantEnterCurve /
-    // Theme.isConnectedEffect / etc. — do NOT migrate to AnimVariants directly.
-    readonly property list<real> variantEnterCurve: AnimVariants.variantEnterCurve
-    readonly property list<real> variantExitCurve: AnimVariants.variantExitCurve
-    readonly property list<real> variantModalEnterCurve: AnimVariants.variantModalEnterCurve
-    readonly property list<real> variantModalExitCurve: AnimVariants.variantModalExitCurve
-    readonly property list<real> variantPopoutEnterCurve: AnimVariants.variantPopoutEnterCurve
-    readonly property list<real> variantPopoutExitCurve: AnimVariants.variantPopoutExitCurve
-    readonly property list<real> variantPopoutResizeCurve: AnimVariants.variantPopoutResizeCurve
-    readonly property real variantEnterDurationFactor: AnimVariants.variantEnterDurationFactor
-    readonly property real variantExitDurationFactor: AnimVariants.variantExitDurationFactor
-    readonly property real variantOpacityDurationScale: AnimVariants.variantOpacityDurationScale
     readonly property bool isDirectionalEffect: AnimVariants.isDirectionalEffect
     readonly property bool isFluidEffect: AnimVariants.isFluidEffect
     readonly property bool isDepthEffect: AnimVariants.isDepthEffect
@@ -1038,9 +1031,6 @@ Singleton {
     readonly property bool connectedSurfaceBlurEnabled: (typeof SettingsData === "undefined") ? true : (!isConnectedEffect || SettingsData.frameBlurEnabled)
     readonly property real effectScaleCollapsed: AnimVariants.effectScaleCollapsed
     readonly property real effectAnimOffset: AnimVariants.effectAnimOffset
-    function variantDuration(baseDuration, entering) {
-        return AnimVariants.variantDuration(baseDuration, entering);
-    }
     function variantExitCleanupPadding() {
         return AnimVariants.variantExitCleanupPadding();
     }
@@ -1048,98 +1038,50 @@ Singleton {
         return AnimVariants.variantCloseInterval(baseDuration);
     }
 
-    readonly property var expressiveDurations: {
-        if (typeof SettingsData === "undefined") {
-            return {
-                "fast": 200,
-                "normal": 400,
-                "large": 600,
-                "extraLarge": 1000,
-                "expressiveFastSpatial": 350,
-                "expressiveDefaultSpatial": 500,
-                "expressiveSlowSpatial": 650,
-                "expressiveFastEffects": 150,
-                "expressiveEffects": 200,
-                "expressiveSlowEffects": 300
-            };
-        }
-
-        const baseDuration = currentAnimationBaseDuration;
-        return {
-            "fast": baseDuration * 0.4,
-            "normal": baseDuration * 0.8,
-            "large": baseDuration * 1.2,
-            "extraLarge": baseDuration * 2.0,
-            "expressiveFastSpatial": baseDuration * 0.7,
-            "expressiveDefaultSpatial": baseDuration,
-            "expressiveSlowSpatial": baseDuration * 1.3,
-            "expressiveFastEffects": baseDuration * 0.3,
-            "expressiveEffects": baseDuration * 0.4,
-            "expressiveSlowEffects": baseDuration * 0.6
-        };
-    }
+    readonly property var expressiveDurations: ({
+            "expressiveFastSpatial": motionMs(350),
+            "expressiveDefaultSpatial": motionMs(500),
+            "expressiveSlowSpatial": motionMs(650),
+            "expressiveFastEffects": motionMs(150),
+            "expressiveEffects": motionMs(200),
+            "expressiveSlowEffects": motionMs(300)
+        })
 
     readonly property real morphLayerEpsilon: 0.002
 
-    readonly property var springSpecs: {
-        "expressive": [560, 37],
-        "fast": [220, 23],
-        "default": [300, 24],
-        "fastSpatial": [800, 2 * 0.6 * Math.sqrt(800)],
-        "defaultSpatial": [380, 2 * 0.8 * Math.sqrt(380)],
-        "slowSpatial": [200, 2 * 0.8 * Math.sqrt(200)],
-        "fastEffects": [3800, 2 * Math.sqrt(3800)],
-        "defaultEffects": [1600, 2 * Math.sqrt(1600)],
-        "slowEffects": [800, 2 * Math.sqrt(800)]
-    }
+    readonly property var springSpecs: ({
+            "fastSpatial": [800, 2 * 0.6 * Math.sqrt(800)],
+            "defaultSpatial": [380, 2 * 0.8 * Math.sqrt(380)],
+            "slowSpatial": [200, 2 * 0.8 * Math.sqrt(200)],
+            "fastEffects": [3800, 2 * Math.sqrt(3800)],
+            "defaultEffects": [1600, 2 * Math.sqrt(1600)],
+            "slowEffects": [800, 2 * Math.sqrt(800)]
+        })
 
-    // Damping multipliers for the user-facing spring bounce setting:
-    // crisp settles without overshoot, playful adds visible bounce.
     readonly property var springDampingScales: [1.22, 1.0, 0.82]
+    readonly property real spatialSpringDampingScale: {
+        if (typeof SettingsData === "undefined")
+            return 1;
+        return springDampingScales[SettingsData.springBounce] ?? 1;
+    }
 
     // Must stay under the 16px shadow motion padding every fluid surface reserves.
     readonly property var fluidOvershootLimits: [0, 4, 10]
     readonly property real fluidOvershootLimit: {
-        if (typeof SettingsData === "undefined" || springMotionDisabled)
+        if (typeof SettingsData === "undefined")
             return 0;
-        return fluidOvershootLimits[Math.round(SettingsData.springBounce)] ?? 4;
+        return fluidOvershootLimits[SettingsData.springBounce] ?? 4;
     }
 
-    function tunedSpring(spec, baseDuration, bouncy = true) {
-        const f = Math.max(0.05, baseDuration / 500);
-        const bounce = bouncy && typeof SettingsData !== "undefined" && SettingsData.springBounce >= 0 && SettingsData.springBounce < springDampingScales.length ? springDampingScales[Math.round(SettingsData.springBounce)] : 1;
+    function springPreset(name) {
+        const spec = springSpecs[name];
+        const dampingScale = name.endsWith("Spatial") ? spatialSpringDampingScale : 1;
         return {
-            "stiffness": spec[0] / (f * f),
-            "damping": spec[1] / f * bounce,
+            "stiffness": spec[0] / (springScale * springScale),
+            "damping": spec[1] / springScale * dampingScale,
             "mass": 1
         };
     }
-
-    function springPreset(name, baseDuration) {
-        return tunedSpring(springSpecs[name] ?? springSpecs["default"], baseDuration, !String(name).endsWith("Effects"));
-    }
-
-    readonly property bool springMotionDisabled: currentAnimationBaseDuration <= 0
-
-    readonly property int notificationAnimationBaseDuration: typeof SettingsData !== "undefined" ? SettingsData.notificationAnimationDuration : 200
-
-    readonly property int notificationEnterDuration: Math.round(notificationAnimationBaseDuration * 0.875)
-    readonly property int notificationExitDuration: Math.round(notificationAnimationBaseDuration * 0.75)
-    readonly property int notificationStackShiftDuration: notificationAnimationBaseDuration
-    readonly property int notificationStackStaggerDuration: Math.round(notificationAnimationBaseDuration * 0.5)
-
-    readonly property int notificationExpandDuration: {
-        const base = notificationAnimationBaseDuration;
-        return base === 0 ? 0 : Math.round(base * 1.0);
-    }
-
-    readonly property int notificationCollapseDuration: {
-        const base = notificationAnimationBaseDuration;
-        return base === 0 ? 0 : Math.round(base * 0.85);
-    }
-
-    readonly property int notificationInlineExpandDuration: Math.round(notificationAnimationBaseDuration * 0.925)
-    readonly property int notificationInlineCollapseDuration: Math.round(notificationAnimationBaseDuration * 0.75)
 
     readonly property real notificationExpandedIconSizeNormal: avatarSize
     readonly property real notificationExpandedIconSizeCompact: avatarSize
@@ -1154,21 +1096,8 @@ Singleton {
     readonly property real stateLayerPressed: 0.1
     readonly property real stateLayerDrag: 0.16
 
-    readonly property int popoutAnimationDuration: {
-        if (typeof SettingsData === "undefined")
-            return 150;
-        if (SettingsData.syncComponentAnimationSpeeds)
-            return Math.min(currentAnimationBaseDuration, 1000);
-        return SettingsData.popoutAnimationDuration;
-    }
-
-    readonly property int modalAnimationDuration: {
-        if (typeof SettingsData === "undefined")
-            return 150;
-        if (SettingsData.syncComponentAnimationSpeeds)
-            return Math.min(currentAnimationBaseDuration, 1000);
-        return SettingsData.modalAnimationDuration;
-    }
+    readonly property int popoutAnimationDuration: expressiveDurations.expressiveEffects
+    readonly property int modalAnimationDuration: expressiveDurations.expressiveEffects
 
     readonly property real radiusStrength: typeof SettingsData !== "undefined" ? SettingsData.radiusStrength : 50
     readonly property real fixedRadius: typeof SettingsData !== "undefined" && SettingsData.radiusMode === "fixed" ? SettingsData.fixedRadius : -1

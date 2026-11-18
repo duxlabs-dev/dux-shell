@@ -74,9 +74,9 @@ Item {
             clip: true
 
             Behavior on height {
-                enabled: root.userToggled && Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
+                enabled: root.userToggled
                 NumberAnimation {
-                    duration: SettingsMetrics.transitionDuration
+                    duration: SettingsMetrics.expandDuration
                     easing.type: Easing.BezierSpline
                     easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
                     onRunningChanged: {

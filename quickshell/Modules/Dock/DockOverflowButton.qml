@@ -27,7 +27,9 @@ Item {
 
         Behavior on color {
             ColorAnimation {
-                duration: Theme.shortDuration
+                duration: Theme.expressiveDurations.expressiveFastEffects
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
             }
         }
 
@@ -41,8 +43,9 @@ Item {
 
             Behavior on rotation {
                 NumberAnimation {
-                    duration: Theme.shortDuration
-                    easing.type: Easing.OutCubic
+                    duration: Theme.expressiveDurations.expressiveFastSpatial
+                    easing.type: Easing.BezierSpline
+                    easing.bezierCurve: Theme.expressiveCurves.expressiveFastSpatial
                 }
             }
         }

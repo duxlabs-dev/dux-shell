@@ -38,7 +38,7 @@ DIdleSurface {
 
     Timer {
         id: closeTimer
-        interval: Theme.mediumDuration + 50
+        interval: Theme.expressiveDurations.expressiveSlowEffects + 50
     }
 
     screen: modelData
@@ -435,8 +435,9 @@ DIdleSurface {
 
         Behavior on opacity {
             NumberAnimation {
-                duration: Theme.mediumDuration
-                easing.type: Theme.emphasizedEasing
+                duration: Theme.expressiveDurations.expressiveSlowEffects
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: Theme.expressiveCurves.expressiveSlowEffects
             }
         }
 

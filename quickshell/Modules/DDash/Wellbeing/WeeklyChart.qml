@@ -106,7 +106,7 @@ DCard {
 
         target: pager
         property: "contentX"
-        duration: Theme.expressiveDurations.expressiveDefaultSpatial
+        duration: atEdge ? Theme.expressiveDurations.expressiveEffects : Theme.expressiveDurations.expressiveDefaultSpatial
         easing.type: Easing.BezierSpline
         easing.bezierCurve: atEdge ? Theme.expressiveCurves.expressiveEffects : Theme.expressiveCurves.expressiveDefaultSpatial
     }
@@ -290,9 +290,9 @@ DCard {
                                 Behavior on height {
                                     enabled: DashMetrics.animationsEnabled
                                     NumberAnimation {
-                                        duration: DashMetrics.meterDuration
+                                        duration: Theme.expressiveDurations.expressiveSlowEffects
                                         easing.type: Easing.BezierSpline
-                                        easing.bezierCurve: Theme.expressiveCurves.standard
+                                        easing.bezierCurve: Theme.expressiveCurves.expressiveSlowEffects
                                     }
                                 }
                             }

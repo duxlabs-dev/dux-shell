@@ -48,141 +48,145 @@ Item {
     SettingsPage {
         id: mainColumn
 
-        SettingsCard {
-            width: parent.width
-            iconName: "schedule"
-            title: I18n.tr("Idle", "noun, settings card title for idle timeout settings")
-            settingKey: "idleSettings"
+        SettingsDeferred {
+            SettingsCard {
+                width: parent.width
+                iconName: "schedule"
+                title: I18n.tr("Idle", "noun, settings card title for idle timeout settings")
+                settingKey: "idleSettings"
 
-            SettingsButtonGroupRow {
-                text: I18n.tr("Power source")
-                visible: BatteryService.batteryAvailable
-                model: [I18n.tr("AC power"), I18n.tr("Battery")]
-                currentIndex: root.onAc ? 0 : 1
-                checkEnabled: false
-                onSelectionChanged: (index, selected) => {
-                    if (!selected)
-                        return;
-                    root.onAc = index === 0;
+                SettingsButtonGroupRow {
+                    text: I18n.tr("Power source")
+                    visible: BatteryService.batteryAvailable
+                    model: [I18n.tr("AC power"), I18n.tr("Battery")]
+                    currentIndex: root.onAc ? 0 : 1
+                    checkEnabled: false
+                    onSelectionChanged: (index, selected) => {
+                        if (!selected)
+                            return;
+                        root.onAc = index === 0;
+                    }
                 }
-            }
 
-            SettingsDropdownRow {
-                settingKey: "lockTimeout"
-                tags: ["lock", "timeout", "idle", "automatic", "security"]
-                text: I18n.tr("Automatically lock after")
-                description: SettingsData.isManaged(root.sourceKey("LockTimeout")) ? root.managedNote : ""
-                enabled: !SettingsData.isManaged(root.sourceKey("LockTimeout"))
-                resetKeys: [root.sourceKey("LockTimeout")]
-                options: root.timeoutOptions
-                currentValue: root.timeoutText(root.sourceKey("LockTimeout"))
-                onValueChanged: value => root.setTimeoutFromText(root.sourceKey("LockTimeout"), value)
-            }
-
-            SettingsDropdownRow {
-                settingKey: "monitorTimeout"
-                tags: ["monitor", "display", "screen", "timeout", "off", "idle"]
-                text: I18n.tr("Turn off displays after")
-                resetKeys: [root.sourceKey("MonitorTimeout")]
-                options: root.timeoutOptions
-                currentValue: root.timeoutText(root.sourceKey("MonitorTimeout"))
-                onValueChanged: value => root.setTimeoutFromText(root.sourceKey("MonitorTimeout"), value)
-            }
-
-            SettingsDropdownRow {
-                settingKey: "postLockMonitorTimeout"
-                tags: ["monitor", "display", "screen", "timeout", "off", "lock", "after", "post"]
-                text: I18n.tr("Turn off displays after lock")
-                resetKeys: [root.sourceKey("PostLockMonitorTimeout")]
-                options: root.timeoutOptions
-                currentValue: root.timeoutText(root.sourceKey("PostLockMonitorTimeout"))
-                onValueChanged: value => root.setTimeoutFromText(root.sourceKey("PostLockMonitorTimeout"), value)
-            }
-
-            SettingsDropdownRow {
-                settingKey: "suspendTimeout"
-                tags: ["suspend", "sleep", "timeout", "idle", "system"]
-                text: I18n.tr("Suspend system after")
-                resetKeys: [root.sourceKey("SuspendTimeout")]
-                options: root.timeoutOptions
-                currentValue: root.timeoutText(root.sourceKey("SuspendTimeout"))
-                onValueChanged: value => root.setTimeoutFromText(root.sourceKey("SuspendTimeout"), value)
-            }
-
-            SettingsDropdownRow {
-                settingKey: "suspendBehavior"
-                tags: ["suspend", "hibernate", "sleep", "behavior"]
-                visible: SessionService.hibernateSupported
-                text: I18n.tr("Suspend behavior")
-                resetKeys: [root.sourceKey("SuspendBehavior")]
-                options: [I18n.tr("Suspend"), I18n.tr("Hibernate"), I18n.tr("Suspend then hibernate")]
-                currentValue: options[SettingsData[root.sourceKey("SuspendBehavior")]] ?? options[0]
-                onValueChanged: value => {
-                    const index = options.indexOf(value);
-                    if (index < 0)
-                        return;
-                    SettingsData.set(root.sourceKey("SuspendBehavior"), index);
+                SettingsDropdownRow {
+                    settingKey: "lockTimeout"
+                    tags: ["lock", "timeout", "idle", "automatic", "security"]
+                    text: I18n.tr("Automatically lock after")
+                    description: SettingsData.isManaged(root.sourceKey("LockTimeout")) ? root.managedNote : ""
+                    enabled: !SettingsData.isManaged(root.sourceKey("LockTimeout"))
+                    resetKeys: [root.sourceKey("LockTimeout")]
+                    options: root.timeoutOptions
+                    currentValue: root.timeoutText(root.sourceKey("LockTimeout"))
+                    onValueChanged: value => root.setTimeoutFromText(root.sourceKey("LockTimeout"), value)
                 }
-            }
 
-            SettingsToggleRow {
-                settingKey: "lockBeforeSuspend"
-                tags: ["lock", "suspend", "hibernate", "sleep", "security"]
-                text: I18n.tr("Lock before suspend")
-                description: SettingsData.isManaged("lockBeforeSuspend") ? root.managedNote : ""
-                enabled: !SettingsData.isManaged("lockBeforeSuspend")
-                checked: SettingsData.lockBeforeSuspend
-                visible: SessionService.loginctlAvailable && SettingsData.loginctlLockIntegration
-                onToggled: checked => SettingsData.set("lockBeforeSuspend", checked)
+                SettingsDropdownRow {
+                    settingKey: "monitorTimeout"
+                    tags: ["monitor", "display", "screen", "timeout", "off", "idle"]
+                    text: I18n.tr("Turn off displays after")
+                    resetKeys: [root.sourceKey("MonitorTimeout")]
+                    options: root.timeoutOptions
+                    currentValue: root.timeoutText(root.sourceKey("MonitorTimeout"))
+                    onValueChanged: value => root.setTimeoutFromText(root.sourceKey("MonitorTimeout"), value)
+                }
+
+                SettingsDropdownRow {
+                    settingKey: "postLockMonitorTimeout"
+                    tags: ["monitor", "display", "screen", "timeout", "off", "lock", "after", "post"]
+                    text: I18n.tr("Turn off displays after lock")
+                    resetKeys: [root.sourceKey("PostLockMonitorTimeout")]
+                    options: root.timeoutOptions
+                    currentValue: root.timeoutText(root.sourceKey("PostLockMonitorTimeout"))
+                    onValueChanged: value => root.setTimeoutFromText(root.sourceKey("PostLockMonitorTimeout"), value)
+                }
+
+                SettingsDropdownRow {
+                    settingKey: "suspendTimeout"
+                    tags: ["suspend", "sleep", "timeout", "idle", "system"]
+                    text: I18n.tr("Suspend system after")
+                    resetKeys: [root.sourceKey("SuspendTimeout")]
+                    options: root.timeoutOptions
+                    currentValue: root.timeoutText(root.sourceKey("SuspendTimeout"))
+                    onValueChanged: value => root.setTimeoutFromText(root.sourceKey("SuspendTimeout"), value)
+                }
+
+                SettingsDropdownRow {
+                    settingKey: "suspendBehavior"
+                    tags: ["suspend", "hibernate", "sleep", "behavior"]
+                    visible: SessionService.hibernateSupported
+                    text: I18n.tr("Suspend behavior")
+                    resetKeys: [root.sourceKey("SuspendBehavior")]
+                    options: [I18n.tr("Suspend"), I18n.tr("Hibernate"), I18n.tr("Suspend then hibernate")]
+                    currentValue: options[SettingsData[root.sourceKey("SuspendBehavior")]] ?? options[0]
+                    onValueChanged: value => {
+                        const index = options.indexOf(value);
+                        if (index < 0)
+                            return;
+                        SettingsData.set(root.sourceKey("SuspendBehavior"), index);
+                    }
+                }
+
+                SettingsToggleRow {
+                    settingKey: "lockBeforeSuspend"
+                    tags: ["lock", "suspend", "hibernate", "sleep", "security"]
+                    text: I18n.tr("Lock before suspend")
+                    description: SettingsData.isManaged("lockBeforeSuspend") ? root.managedNote : ""
+                    enabled: !SettingsData.isManaged("lockBeforeSuspend")
+                    checked: SettingsData.lockBeforeSuspend
+                    visible: SessionService.loginctlAvailable && SettingsData.loginctlLockIntegration
+                    onToggled: checked => SettingsData.set("lockBeforeSuspend", checked)
+                }
             }
         }
 
-        SettingsCard {
-            width: parent.width
-            iconName: "gradient"
-            title: I18n.tr("Fade")
-            settingKey: "idleFade"
-            tags: ["fade", "grace", "period", "lock", "dpms", "display"]
+        SettingsDeferred {
+            SettingsCard {
+                width: parent.width
+                iconName: "gradient"
+                title: I18n.tr("Fade")
+                settingKey: "idleFade"
+                tags: ["fade", "grace", "period", "lock", "dpms", "display"]
 
-            SettingsToggleRow {
-                settingKey: "fadeToLockEnabled"
-                tags: ["fade", "lock", "screen", "idle", "grace period"]
-                text: I18n.tr("Fade to lock screen")
-                description: SettingsData.isManaged("fadeToLockEnabled") ? root.managedNote : I18n.tr("Fades the screen out first. Input during the fade cancels it", "idle fade toggle description")
-                enabled: !SettingsData.isManaged("fadeToLockEnabled")
-                checked: SettingsData.fadeToLockEnabled
-                onToggled: checked => SettingsData.set("fadeToLockEnabled", checked)
-            }
+                SettingsToggleRow {
+                    settingKey: "fadeToLockEnabled"
+                    tags: ["fade", "lock", "screen", "idle", "grace period"]
+                    text: I18n.tr("Fade to lock screen")
+                    description: SettingsData.isManaged("fadeToLockEnabled") ? root.managedNote : I18n.tr("Fades the screen out first. Input during the fade cancels it", "idle fade toggle description")
+                    enabled: !SettingsData.isManaged("fadeToLockEnabled")
+                    checked: SettingsData.fadeToLockEnabled
+                    onToggled: checked => SettingsData.set("fadeToLockEnabled", checked)
+                }
 
-            SettingsDropdownRow {
-                settingKey: "fadeToLockGracePeriod"
-                tags: ["fade", "grace", "period", "timeout", "lock"]
-                text: I18n.tr("Lock fade grace period")
-                description: SettingsData.isManaged("fadeToLockGracePeriod") ? root.managedNote : ""
-                enabled: !SettingsData.isManaged("fadeToLockGracePeriod")
-                visible: SettingsData.fadeToLockEnabled
-                options: root.gracePeriodOptions
-                currentValue: root.gracePeriodText("fadeToLockGracePeriod")
-                onValueChanged: value => root.setGracePeriodFromText("fadeToLockGracePeriod", value)
-            }
+                SettingsDropdownRow {
+                    settingKey: "fadeToLockGracePeriod"
+                    tags: ["fade", "grace", "period", "timeout", "lock"]
+                    text: I18n.tr("Lock fade grace period")
+                    description: SettingsData.isManaged("fadeToLockGracePeriod") ? root.managedNote : ""
+                    enabled: !SettingsData.isManaged("fadeToLockGracePeriod")
+                    visible: SettingsData.fadeToLockEnabled
+                    options: root.gracePeriodOptions
+                    currentValue: root.gracePeriodText("fadeToLockGracePeriod")
+                    onValueChanged: value => root.setGracePeriodFromText("fadeToLockGracePeriod", value)
+                }
 
-            SettingsToggleRow {
-                settingKey: "fadeToDpmsEnabled"
-                tags: ["fade", "dpms", "monitor", "screen", "idle", "grace period"]
-                text: I18n.tr("Fade to display off")
-                description: I18n.tr("Fades the screen out first. Input during the fade cancels it", "idle fade toggle description")
-                checked: SettingsData.fadeToDpmsEnabled
-                onToggled: checked => SettingsData.set("fadeToDpmsEnabled", checked)
-            }
+                SettingsToggleRow {
+                    settingKey: "fadeToDpmsEnabled"
+                    tags: ["fade", "dpms", "monitor", "screen", "idle", "grace period"]
+                    text: I18n.tr("Fade to display off")
+                    description: I18n.tr("Fades the screen out first. Input during the fade cancels it", "idle fade toggle description")
+                    checked: SettingsData.fadeToDpmsEnabled
+                    onToggled: checked => SettingsData.set("fadeToDpmsEnabled", checked)
+                }
 
-            SettingsDropdownRow {
-                settingKey: "fadeToDpmsGracePeriod"
-                tags: ["fade", "grace", "period", "timeout", "dpms", "monitor"]
-                text: I18n.tr("Display fade grace period")
-                visible: SettingsData.fadeToDpmsEnabled
-                options: root.gracePeriodOptions
-                currentValue: root.gracePeriodText("fadeToDpmsGracePeriod")
-                onValueChanged: value => root.setGracePeriodFromText("fadeToDpmsGracePeriod", value)
+                SettingsDropdownRow {
+                    settingKey: "fadeToDpmsGracePeriod"
+                    tags: ["fade", "grace", "period", "timeout", "dpms", "monitor"]
+                    text: I18n.tr("Display fade grace period")
+                    visible: SettingsData.fadeToDpmsEnabled
+                    options: root.gracePeriodOptions
+                    currentValue: root.gracePeriodText("fadeToDpmsGracePeriod")
+                    onValueChanged: value => root.setGracePeriodFromText("fadeToDpmsGracePeriod", value)
+                }
             }
         }
 

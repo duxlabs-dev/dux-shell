@@ -557,7 +557,9 @@ Item {
                                     color: pct > 0.8 ? Theme.error : (pct > 0.6 ? Theme.warning : root.accentColor)
                                     Behavior on width {
                                         NumberAnimation {
-                                            duration: 150
+                                            duration: Theme.expressiveDurations.expressiveDefaultSpatial
+                                            easing.type: Easing.BezierSpline
+                                            easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
                                         }
                                     }
                                 }

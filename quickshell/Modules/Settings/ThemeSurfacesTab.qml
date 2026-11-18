@@ -76,221 +76,225 @@ Column {
         PopoutService.colorPickerModal.show();
     }
 
-    SettingsCard {
-        tab: "theme"
-        title: I18n.tr("Appearance")
-        settingKey: "surfaceAppearance"
-
-        SettingsButtonGroupRow {
+    SettingsDeferred {
+        SettingsCard {
             tab: "theme"
-            tags: ["style", "classic", "expressive", "pill", "round", "shape", "morph", "corners", "buttons"]
-            settingKey: "interfaceStyle"
-            text: I18n.tr("Style")
-            model: [I18n.tr("Expressive"), I18n.tr("Classic", "interface style option with one corner radius on controls and no shape change on press")]
-            values: ["expressive", "classic"]
-            value: SettingsData.interfaceStyle
-            fallbackValue: "expressive"
-            onValueSelected: value => SettingsData.set("interfaceStyle", value)
-        }
+            title: I18n.tr("Appearance")
+            settingKey: "surfaceAppearance"
 
-        SettingsButtonGroupRow {
-            tab: "theme"
-            tags: ["density", "compact", "dense", "spacious", "comfortable", "spacing", "padding", "rows", "menus", "control center", "bar", "dock", "island", "frame", "size"]
-            settingKey: "density"
-            text: I18n.tr("Interface density", "interface density setting label")
-            model: [I18n.tr("Spacious", "interface density option with the most room between items"), I18n.tr("Comfortable", "interface density option with the default spacing"), I18n.tr("Compact", "interface density option fitting the most items on screen"), I18n.tr("Dense", "interface density option denser than compact for small text and tight rows")]
-            values: ["spacious", "comfortable", "compact", "dense"]
-            value: SettingsData.density
-            fallbackValue: "comfortable"
-            onValueSelected: value => SettingsData.set("density", value)
-        }
+            SettingsButtonGroupRow {
+                tab: "theme"
+                tags: ["style", "classic", "expressive", "pill", "round", "shape", "morph", "corners", "buttons"]
+                settingKey: "interfaceStyle"
+                text: I18n.tr("Style")
+                model: [I18n.tr("Expressive"), I18n.tr("Classic", "interface style option with one corner radius on controls and no shape change on press")]
+                values: ["expressive", "classic"]
+                value: SettingsData.interfaceStyle
+                fallbackValue: "expressive"
+                onValueSelected: value => SettingsData.set("interfaceStyle", value)
+            }
 
-        SettingsSliderRow {
-            tab: "theme"
-            tags: ["classic", "divider", "dividers", "lines", "rows", "sections", "sidebar", "outline"]
-            settingKey: "sectionDividerOpacity"
-            visible: SettingsData.interfaceStyle === "classic"
-            text: I18n.tr("Section dividers", "classic interface style: strength of the lines between rows of a settings section")
-            minimumLabel: I18n.tr("Off")
-            minimum: 0
-            maximum: 40
-            step: 1
-            value: Math.round((SettingsData.sectionDividerOpacity ?? 0) * 100)
-            onSliderValueChanged: newValue => SettingsData.set("sectionDividerOpacity", newValue / 100)
+            SettingsButtonGroupRow {
+                tab: "theme"
+                tags: ["density", "compact", "dense", "spacious", "comfortable", "spacing", "padding", "rows", "menus", "control center", "bar", "dock", "island", "frame", "size"]
+                settingKey: "density"
+                text: I18n.tr("Interface density", "interface density setting label")
+                model: [I18n.tr("Spacious", "interface density option with the most room between items"), I18n.tr("Comfortable", "interface density option with the default spacing"), I18n.tr("Compact", "interface density option fitting the most items on screen"), I18n.tr("Dense", "interface density option denser than compact for small text and tight rows")]
+                values: ["spacious", "comfortable", "compact", "dense"]
+                value: SettingsData.density
+                fallbackValue: "comfortable"
+                onValueSelected: value => SettingsData.set("density", value)
+            }
+
+            SettingsSliderRow {
+                tab: "theme"
+                tags: ["classic", "divider", "dividers", "lines", "rows", "sections", "sidebar", "outline"]
+                settingKey: "sectionDividerOpacity"
+                visible: SettingsData.interfaceStyle === "classic"
+                text: I18n.tr("Section dividers", "classic interface style: strength of the lines between rows of a settings section")
+                minimumLabel: I18n.tr("Off")
+                minimum: 0
+                maximum: 40
+                step: 1
+                value: Math.round((SettingsData.sectionDividerOpacity ?? 0) * 100)
+                onSliderValueChanged: newValue => SettingsData.set("sectionDividerOpacity", newValue / 100)
+            }
         }
     }
 
-    SettingsCard {
-        tab: "theme"
-        tags: ["surface", "popup", "transparency", "opacity", "modal", "corner", "radius", "blur", "background", "glass", "frosted", "shadow", "elevation", "foreground", "layers"]
-        title: I18n.tr("Surfaces", "plural noun, settings title, shell surfaces like popouts and modals")
-        settingKey: "surfaceStyling"
-
-        SettingsSliderRow {
+    SettingsDeferred {
+        SettingsCard {
             tab: "theme"
-            tags: ["surface", "popup", "transparency", "opacity", "modal"]
-            settingKey: "popupTransparency"
-            text: I18n.tr("Opacity")
-            value: Math.round(SettingsData.popupTransparency * 100)
-            minimum: 0
-            maximum: 100
-            onSliderValueChanged: newValue => SettingsData.set("popupTransparency", newValue / 100)
-        }
+            tags: ["surface", "popup", "transparency", "opacity", "modal", "corner", "radius", "blur", "background", "glass", "frosted", "shadow", "elevation", "foreground", "layers"]
+            title: I18n.tr("Surfaces", "plural noun, settings title, shell surfaces like popouts and modals")
+            settingKey: "surfaceStyling"
 
-        SettingsToggleSliderRow {
-            tab: "theme"
-            tags: ["foreground", "layers", "opacity", "transparency", "contrast", "cards", "surface", "blur", "glass", "frosted"]
-            settingKey: "blurForegroundLayers"
-            valueKeys: ["foregroundLayerTransparency"]
-            text: I18n.tr("Foreground layers")
-            checked: SettingsData.blurForegroundLayers ?? true
-            value: Math.round((SettingsData.foregroundLayerTransparency ?? 1.0) * 100)
-            minimum: 0
-            maximum: 100
-            onToggled: checked => SettingsData.set("blurForegroundLayers", checked)
-            onSliderValueChanged: newValue => SettingsData.set("foregroundLayerTransparency", newValue / 100)
-        }
+            SettingsSliderRow {
+                tab: "theme"
+                tags: ["surface", "popup", "transparency", "opacity", "modal"]
+                settingKey: "popupTransparency"
+                text: I18n.tr("Opacity")
+                value: Math.round(SettingsData.popupTransparency * 100)
+                minimum: 0
+                maximum: 100
+                onSliderValueChanged: newValue => SettingsData.set("popupTransparency", newValue / 100)
+            }
 
-        SettingsToggleSliderRow {
-            tab: "theme"
-            tags: ["foreground", "layers", "outline", "border", "opacity", "cards", "pills", "widgets", "notifications", "control center"]
-            settingKey: "blurLayerOutline"
-            text: I18n.tr("Layer outline")
-            description: I18n.tr("Faint edge on cards, pills and widgets", "surface layer outline toggle description")
-            checked: root.layerOutlineEnabled
-            value: Math.round((SettingsData.blurLayerOutlineOpacity ?? 0) * 100)
-            minimum: 1
-            maximum: 40
-            onToggled: checked => SettingsData.set("blurLayerOutlineOpacity", checked ? 0.12 : 0)
-            onSliderValueChanged: newValue => SettingsData.set("blurLayerOutlineOpacity", newValue / 100)
-        }
+            SettingsToggleSliderRow {
+                tab: "theme"
+                tags: ["foreground", "layers", "opacity", "transparency", "contrast", "cards", "surface", "blur", "glass", "frosted"]
+                settingKey: "blurForegroundLayers"
+                valueKeys: ["foregroundLayerTransparency"]
+                text: I18n.tr("Foreground layers")
+                checked: SettingsData.blurForegroundLayers ?? true
+                value: Math.round((SettingsData.foregroundLayerTransparency ?? 1.0) * 100)
+                minimum: 0
+                maximum: 100
+                onToggled: checked => SettingsData.set("blurForegroundLayers", checked)
+                onSliderValueChanged: newValue => SettingsData.set("foregroundLayerTransparency", newValue / 100)
+            }
 
-        SettingsToggleSliderRow {
-            tab: "theme"
-            tags: ["surface", "popup", "modal", "border", "outline", "edge", "color", "opacity"]
-            settingKey: "blurBorderEnabled"
-            accessoryKeys: ["blurBorderColor", "blurBorderCustomColor"]
-            valueKeys: ["blurBorderOpacity"]
-            text: I18n.tr("Border")
-            description: I18n.tr("Edge around popups and modals", "surface border toggle description")
-            checked: root.borderEnabled
-            value: Math.round((SettingsData.blurBorderOpacity ?? 0.35) * 100)
-            minimum: 0
-            maximum: 100
-            onToggled: checked => SettingsData.set("blurBorderEnabled", checked)
-            onSliderValueChanged: newValue => SettingsData.set("blurBorderOpacity", newValue / 100)
+            SettingsToggleSliderRow {
+                tab: "theme"
+                tags: ["foreground", "layers", "outline", "border", "opacity", "cards", "pills", "widgets", "notifications", "control center"]
+                settingKey: "blurLayerOutline"
+                text: I18n.tr("Layer outline")
+                description: I18n.tr("Faint edge on cards, pills and widgets", "surface layer outline toggle description")
+                checked: root.layerOutlineEnabled
+                value: Math.round((SettingsData.blurLayerOutlineOpacity ?? 0) * 100)
+                minimum: 1
+                maximum: 40
+                onToggled: checked => SettingsData.set("blurLayerOutlineOpacity", checked ? 0.12 : 0)
+                onSliderValueChanged: newValue => SettingsData.set("blurLayerOutlineOpacity", newValue / 100)
+            }
 
-            accessory: DDropdown {
-                id: borderColorMenu
-                visible: root.borderEnabled
-                anchors.verticalCenter: parent.verticalCenter
-                text: I18n.tr("Border color")
-                showLabel: false
-                downKeyOpens: false
-                triggerHeight: Theme.switchTrackHeight
-                alignPopupRight: !I18n.isRtl
-                options: [I18n.tr("Outline", "surface border color"), I18n.tr("Primary", "surface border color"), I18n.tr("Secondary", "surface border color"), I18n.tr("Text Color", "surface border color"), I18n.tr("Custom", "surface border color")]
-                optionColorMap: ({
-                        [I18n.tr("Outline", "surface border color")]: Theme.outline,
-                        [I18n.tr("Primary", "surface border color")]: Theme.primary,
-                        [I18n.tr("Secondary", "surface border color")]: Theme.secondary,
-                        [I18n.tr("Text Color", "surface border color")]: Theme.surfaceText,
-                        [I18n.tr("Custom", "surface border color")]: SettingsData.blurBorderCustomColor ?? "#ffffff"
-                    })
-                currentValue: {
-                    switch (SettingsData.blurBorderColor) {
-                    case "primary":
-                        return I18n.tr("Primary", "surface border color");
-                    case "secondary":
-                        return I18n.tr("Secondary", "surface border color");
-                    case "surfaceText":
-                        return I18n.tr("Text Color", "surface border color");
-                    case "custom":
-                        return I18n.tr("Custom", "surface border color");
-                    default:
-                        return I18n.tr("Outline", "surface border color");
+            SettingsToggleSliderRow {
+                tab: "theme"
+                tags: ["surface", "popup", "modal", "border", "outline", "edge", "color", "opacity"]
+                settingKey: "blurBorderEnabled"
+                accessoryKeys: ["blurBorderColor", "blurBorderCustomColor"]
+                valueKeys: ["blurBorderOpacity"]
+                text: I18n.tr("Border")
+                description: I18n.tr("Edge around popups and modals", "surface border toggle description")
+                checked: root.borderEnabled
+                value: Math.round((SettingsData.blurBorderOpacity ?? 0.35) * 100)
+                minimum: 0
+                maximum: 100
+                onToggled: checked => SettingsData.set("blurBorderEnabled", checked)
+                onSliderValueChanged: newValue => SettingsData.set("blurBorderOpacity", newValue / 100)
+
+                accessory: DDropdown {
+                    id: borderColorMenu
+                    visible: root.borderEnabled
+                    anchors.verticalCenter: parent.verticalCenter
+                    text: I18n.tr("Border color")
+                    showLabel: false
+                    downKeyOpens: false
+                    triggerHeight: Theme.switchTrackHeight
+                    alignPopupRight: !I18n.isRtl
+                    options: [I18n.tr("Outline", "surface border color"), I18n.tr("Primary", "surface border color"), I18n.tr("Secondary", "surface border color"), I18n.tr("Text Color", "surface border color"), I18n.tr("Custom", "surface border color")]
+                    optionColorMap: ({
+                            [I18n.tr("Outline", "surface border color")]: Theme.outline,
+                            [I18n.tr("Primary", "surface border color")]: Theme.primary,
+                            [I18n.tr("Secondary", "surface border color")]: Theme.secondary,
+                            [I18n.tr("Text Color", "surface border color")]: Theme.surfaceText,
+                            [I18n.tr("Custom", "surface border color")]: SettingsData.blurBorderCustomColor ?? "#ffffff"
+                        })
+                    currentValue: {
+                        switch (SettingsData.blurBorderColor) {
+                        case "primary":
+                            return I18n.tr("Primary", "surface border color");
+                        case "secondary":
+                            return I18n.tr("Secondary", "surface border color");
+                        case "surfaceText":
+                            return I18n.tr("Text Color", "surface border color");
+                        case "custom":
+                            return I18n.tr("Custom", "surface border color");
+                        default:
+                            return I18n.tr("Outline", "surface border color");
+                        }
+                    }
+                    onValueChanged: value => {
+                        switch (value) {
+                        case I18n.tr("Primary", "surface border color"):
+                            SettingsData.set("blurBorderColor", "primary");
+                            return;
+                        case I18n.tr("Secondary", "surface border color"):
+                            SettingsData.set("blurBorderColor", "secondary");
+                            return;
+                        case I18n.tr("Text Color", "surface border color"):
+                            SettingsData.set("blurBorderColor", "surfaceText");
+                            return;
+                        case I18n.tr("Custom", "surface border color"):
+                            SettingsData.set("blurBorderColor", "custom");
+                            root.openSurfaceBorderColorPicker();
+                            return;
+                        }
+                        SettingsData.set("blurBorderColor", "outline");
                     }
                 }
-                onValueChanged: value => {
-                    switch (value) {
-                    case I18n.tr("Primary", "surface border color"):
-                        SettingsData.set("blurBorderColor", "primary");
+            }
+
+            SettingsControlledBy {
+                visible: SettingsData.connectedFrameModeActive && root.borderEnabled
+                parentModal: root.parentModal
+                section: "frameBorder"
+                settingLabel: I18n.tr("Border")
+                reason: I18n.tr("Managed by Frame in Connected Mode")
+            }
+
+            SettingsToggleSliderRow {
+                tab: "theme"
+                tags: ["blur", "background", "transparency", "glass", "frosted", "strength", "radius", "size", "passes", "reach"]
+                settingKey: "blurEnabled"
+                valueKeys: ["blurStrength"]
+                text: I18n.tr("Background blur")
+                visible: BlurService.available
+                sliderVisible: BlurService.strengthConfigurable
+                checked: SettingsData.blurEnabled ?? false
+                value: BlurService.strength
+                minimum: 16
+                maximum: 160
+                unit: "px"
+                onToggled: checked => {
+                    SettingsData.set("blurEnabled", checked);
+                    if (!checked || SettingsData.blurBorderSeeded)
                         return;
-                    case I18n.tr("Secondary", "surface border color"):
-                        SettingsData.set("blurBorderColor", "secondary");
-                        return;
-                    case I18n.tr("Text Color", "surface border color"):
-                        SettingsData.set("blurBorderColor", "surfaceText");
-                        return;
-                    case I18n.tr("Custom", "surface border color"):
-                        SettingsData.set("blurBorderColor", "custom");
-                        root.openSurfaceBorderColorPicker();
-                        return;
-                    }
-                    SettingsData.set("blurBorderColor", "outline");
+                    SettingsData.set("blurBorderSeeded", true);
+                    SettingsData.set("blurBorderEnabled", true);
+                    SettingsSearchService.navigateToSection("blurBorderEnabled");
                 }
+                onSliderValueChanged: newValue => SettingsData.set("blurStrength", newValue)
             }
-        }
 
-        SettingsControlledBy {
-            visible: SettingsData.connectedFrameModeActive && root.borderEnabled
-            parentModal: root.parentModal
-            section: "frameBorder"
-            settingLabel: I18n.tr("Border")
-            reason: I18n.tr("Managed by Frame in Connected Mode")
-        }
-
-        SettingsToggleSliderRow {
-            tab: "theme"
-            tags: ["blur", "background", "transparency", "glass", "frosted", "strength", "radius", "size", "passes", "reach"]
-            settingKey: "blurEnabled"
-            valueKeys: ["blurStrength"]
-            text: I18n.tr("Background blur")
-            visible: BlurService.available
-            sliderVisible: BlurService.strengthConfigurable
-            checked: SettingsData.blurEnabled ?? false
-            value: BlurService.strength
-            minimum: 16
-            maximum: 160
-            unit: "px"
-            onToggled: checked => {
-                SettingsData.set("blurEnabled", checked);
-                if (!checked || SettingsData.blurBorderSeeded)
-                    return;
-                SettingsData.set("blurBorderSeeded", true);
-                SettingsData.set("blurBorderEnabled", true);
-                SettingsSearchService.navigateToSection("blurBorderEnabled");
+            SettingsNoteRow {
+                visible: BlurService.probed && !BlurService.available
+                noteIconName: "info"
+                tint: Theme.surfaceVariantText
+                tintBackground: Theme.surfaceVariantAlpha
+                text: I18n.tr("Your compositor does not support ext-background blur")
             }
-            onSliderValueChanged: newValue => SettingsData.set("blurStrength", newValue)
-        }
 
-        SettingsNoteRow {
-            visible: BlurService.probed && !BlurService.available
-            noteIconName: "info"
-            tint: Theme.surfaceVariantText
-            tintBackground: Theme.surfaceVariantAlpha
-            text: I18n.tr("Your compositor does not support ext-background blur")
-        }
+            SettingsNavRow {
+                tab: "theme"
+                tags: ["blur", "xray", "compositor", "layout"]
+                settingKey: "blurXrayLink"
+                visible: BlurService.available && (CompositorService.isNiri || CompositorService.isHyprland)
+                title: I18n.tr("Xray options are in Compositor → Layout")
+                onClicked: keyboard => root.parentModal?.navigateTo("compositor_layout", keyboard)
+            }
 
-        SettingsNavRow {
-            tab: "theme"
-            tags: ["blur", "xray", "compositor", "layout"]
-            settingKey: "blurXrayLink"
-            visible: BlurService.available && (CompositorService.isNiri || CompositorService.isHyprland)
-            title: I18n.tr("Xray options are in Compositor → Layout")
-            onClicked: keyboard => root.parentModal?.navigateTo("compositor_layout", keyboard)
-        }
-
-        SettingsSplitRow {
-            tab: "theme"
-            tags: ["elevation", "shadow", "lift", "m3", "material"]
-            settingKey: "m3ElevationLink"
-            title: I18n.tr("Shadows")
-            subtitle: SettingsTabs.page("surface_shadows")?.hint ?? ""
-            resetKeys: ["m3ElevationEnabled"]
-            checked: SettingsData.m3ElevationEnabled ?? true
-            onNavigated: keyboard => root.parentModal?.navigateTo("surface_shadows", keyboard)
-            onToggled: checked => SettingsData.set("m3ElevationEnabled", checked)
+            SettingsSplitRow {
+                tab: "theme"
+                tags: ["elevation", "shadow", "lift", "m3", "material"]
+                settingKey: "m3ElevationLink"
+                title: I18n.tr("Shadows")
+                subtitle: SettingsTabs.page("surface_shadows")?.hint ?? ""
+                resetKeys: ["m3ElevationEnabled"]
+                checked: SettingsData.m3ElevationEnabled ?? true
+                onNavigated: keyboard => root.parentModal?.navigateTo("surface_shadows", keyboard)
+                onToggled: checked => SettingsData.set("m3ElevationEnabled", checked)
+            }
         }
     }
 

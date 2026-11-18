@@ -543,9 +543,9 @@ Item {
         compactBackground: root.embedded && root.setting("islandWidgetBackground") === true && !(root.barConfig?.noBackground ?? false)
         compactBackgroundColor: BarMetrics.widgetFill(root.barConfig)
         opacity: root.freeOpacity
-        reducedMotion: SettingsData.reduceMotion || SettingsData.animationDuration <= 0
-        springStiffness: Math.max(root.springStiffnessRange[0], Math.min(root.springStiffnessRange[1], root.setting("islandSpringStiffness")))
-        springDamping: Math.max(root.springDampingRange[0], Math.min(root.springDampingRange[1], root.setting("islandSpringDamping")))
+        reducedMotion: Theme.reduceMotion
+        springStiffness: Math.max(root.springStiffnessRange[0], Math.min(root.springStiffnessRange[1], root.setting("islandSpringStiffness"))) / (Theme.springScale * Theme.springScale)
+        springDamping: Math.max(root.springDampingRange[0], Math.min(root.springDampingRange[1], root.setting("islandSpringDamping"))) / Theme.springScale
         springMass: Math.max(root.springMassRange[0], Math.min(root.springMassRange[1], root.setting("islandSpringMass")))
         palette: root.setting("islandPalette")
         highContrast: !root.embedded && root.setting("islandHighContrast")
@@ -555,8 +555,9 @@ Item {
 
         Behavior on opacity {
             NumberAnimation {
-                duration: surface.reducedMotion ? 0 : Theme.mediumDuration
-                easing.type: Easing.OutCubic
+                duration: surface.reducedMotion ? 0 : Theme.expressiveDurations.expressiveSlowEffects
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: Theme.expressiveCurves.expressiveSlowEffects
             }
         }
     }

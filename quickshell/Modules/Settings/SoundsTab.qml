@@ -51,89 +51,92 @@ Item {
     SettingsPage {
         id: mainColumn
 
-        SettingsCard {
-            tab: "sounds"
-            tags: ["sound", "audio", "notification", "volume"]
-            settingKey: "systemSounds"
-            visible: !MultimediaService.unavailable
+        SettingsDeferred {
+            when: !MultimediaService.unavailable
 
-            SettingsToggleRow {
+            SettingsCard {
                 tab: "sounds"
-                tags: ["sound", "enable", "system"]
-                settingKey: "soundsEnabled"
-                text: I18n.tr("System sounds")
-                checked: SettingsData.soundsEnabled
-                onToggled: checked => SettingsData.set("soundsEnabled", checked)
-            }
+                tags: ["sound", "audio", "notification", "volume"]
+                settingKey: "systemSounds"
 
-            SettingsDropdownRow {
-                readonly property string builtIn: I18n.tr("Built-in", "sound theme option, the sounds bundled with the shell")
-
-                enabled: SettingsData.soundsEnabled
-                visible: AudioService.soundThemeSupported
-                tab: "sounds"
-                tags: ["sound", "theme", "system", "gsettings", "select"]
-                settingKey: "soundTheme"
-                text: I18n.tr("Sound theme", "sounds settings dropdown label, which set of system sounds to use")
-                options: {
-                    const themes = AudioService.availableSoundThemes;
-                    const current = AudioService.currentSoundTheme;
-                    const unlisted = current && !themes.includes(current) ? [current] : [];
-                    return [builtIn].concat(unlisted, themes);
+                SettingsToggleRow {
+                    tab: "sounds"
+                    tags: ["sound", "enable", "system"]
+                    settingKey: "soundsEnabled"
+                    text: I18n.tr("System sounds")
+                    checked: SettingsData.soundsEnabled
+                    onToggled: checked => SettingsData.set("soundsEnabled", checked)
                 }
-                currentValue: SettingsData.useSystemSoundTheme && AudioService.currentSoundTheme ? AudioService.currentSoundTheme : builtIn
-                onValueChanged: value => AudioService.selectSoundTheme(value === builtIn ? "" : value)
-            }
 
-            SettingsToggleRow {
-                enabled: SettingsData.soundsEnabled
-                tab: "sounds"
-                tags: ["sound", "login", "startup", "boot"]
-                settingKey: "soundLogin"
-                text: I18n.tr("Login", "noun, system sounds toggle, sound played on login")
-                checked: SettingsData.soundLogin
-                onToggled: checked => SettingsData.set("soundLogin", checked)
-            }
+                SettingsDropdownRow {
+                    readonly property string builtIn: I18n.tr("Built-in", "sound theme option, the sounds bundled with the shell")
 
-            SettingsToggleRow {
-                enabled: SettingsData.soundsEnabled
-                tab: "sounds"
-                tags: ["sound", "notification", "new"]
-                settingKey: "soundNewNotification"
-                text: I18n.tr("New notification")
-                checked: SettingsData.soundNewNotification
-                onToggled: checked => SettingsData.set("soundNewNotification", checked)
-            }
+                    enabled: SettingsData.soundsEnabled
+                    visible: AudioService.soundThemeSupported
+                    tab: "sounds"
+                    tags: ["sound", "theme", "system", "gsettings", "select"]
+                    settingKey: "soundTheme"
+                    text: I18n.tr("Sound theme", "sounds settings dropdown label, which set of system sounds to use")
+                    options: {
+                        const themes = AudioService.availableSoundThemes;
+                        const current = AudioService.currentSoundTheme;
+                        const unlisted = current && !themes.includes(current) ? [current] : [];
+                        return [builtIn].concat(unlisted, themes);
+                    }
+                    currentValue: SettingsData.useSystemSoundTheme && AudioService.currentSoundTheme ? AudioService.currentSoundTheme : builtIn
+                    onValueChanged: value => AudioService.selectSoundTheme(value === builtIn ? "" : value)
+                }
 
-            SettingsToggleRow {
-                enabled: SettingsData.soundsEnabled
-                tab: "sounds"
-                tags: ["sound", "volume", "changed"]
-                settingKey: "soundVolumeChanged"
-                text: I18n.tr("Volume changed")
-                checked: SettingsData.soundVolumeChanged
-                onToggled: checked => SettingsData.set("soundVolumeChanged", checked)
-            }
+                SettingsToggleRow {
+                    enabled: SettingsData.soundsEnabled
+                    tab: "sounds"
+                    tags: ["sound", "login", "startup", "boot"]
+                    settingKey: "soundLogin"
+                    text: I18n.tr("Login", "noun, system sounds toggle, sound played on login")
+                    checked: SettingsData.soundLogin
+                    onToggled: checked => SettingsData.set("soundLogin", checked)
+                }
 
-            SettingsToggleRow {
-                enabled: (SettingsData.soundsEnabled) && (BatteryService.batteryAvailable)
-                tab: "sounds"
-                tags: ["sound", "power", "plugged", "cable", "charger"]
-                settingKey: "soundPluggedIn"
-                visible: BatteryService.batteryAvailable
-                text: I18n.tr("Plugged in")
-                checked: SettingsData.soundPluggedIn
-                onToggled: checked => SettingsData.set("soundPluggedIn", checked)
-            }
+                SettingsToggleRow {
+                    enabled: SettingsData.soundsEnabled
+                    tab: "sounds"
+                    tags: ["sound", "notification", "new"]
+                    settingKey: "soundNewNotification"
+                    text: I18n.tr("New notification")
+                    checked: SettingsData.soundNewNotification
+                    onToggled: checked => SettingsData.set("soundNewNotification", checked)
+                }
 
-            SettingsToggleRow {
-                enabled: SettingsData.soundsEnabled
-                tab: "sounds"
-                tags: ["sound", "media", "playback", "mute", "mpris", "music"]
-                settingKey: "muteSoundsWhenMediaPlaying"
-                text: I18n.tr("Mute during media playback")
-                checked: SettingsData.muteSoundsWhenMediaPlaying
-                onToggled: checked => SettingsData.set("muteSoundsWhenMediaPlaying", checked)
+                SettingsToggleRow {
+                    enabled: SettingsData.soundsEnabled
+                    tab: "sounds"
+                    tags: ["sound", "volume", "changed"]
+                    settingKey: "soundVolumeChanged"
+                    text: I18n.tr("Volume changed")
+                    checked: SettingsData.soundVolumeChanged
+                    onToggled: checked => SettingsData.set("soundVolumeChanged", checked)
+                }
+
+                SettingsToggleRow {
+                    enabled: (SettingsData.soundsEnabled) && (BatteryService.batteryAvailable)
+                    tab: "sounds"
+                    tags: ["sound", "power", "plugged", "cable", "charger"]
+                    settingKey: "soundPluggedIn"
+                    visible: BatteryService.batteryAvailable
+                    text: I18n.tr("Plugged in")
+                    checked: SettingsData.soundPluggedIn
+                    onToggled: checked => SettingsData.set("soundPluggedIn", checked)
+                }
+
+                SettingsToggleRow {
+                    enabled: SettingsData.soundsEnabled
+                    tab: "sounds"
+                    tags: ["sound", "media", "playback", "mute", "mpris", "music"]
+                    settingKey: "muteSoundsWhenMediaPlaying"
+                    text: I18n.tr("Mute during media playback")
+                    checked: SettingsData.muteSoundsWhenMediaPlaying
+                    onToggled: checked => SettingsData.set("muteSoundsWhenMediaPlaying", checked)
+                }
             }
         }
 

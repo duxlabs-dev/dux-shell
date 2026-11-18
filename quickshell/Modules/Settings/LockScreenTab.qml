@@ -306,118 +306,122 @@ Item {
     SettingsPage {
         id: mainColumn
 
-        SettingsCard {
-            width: parent.width
-            iconName: "widgets"
-            title: I18n.tr("Widgets")
-            settingKey: "lockScreenWidgets"
-            tags: ["lock", "screen", "widgets", "clock", "plugins"]
+        SettingsDeferred {
+            SettingsCard {
+                width: parent.width
+                iconName: "widgets"
+                title: I18n.tr("Widgets")
+                settingKey: "lockScreenWidgets"
+                tags: ["lock", "screen", "widgets", "clock", "plugins"]
 
-            SettingsReorderList {
-                id: lockWidgetList
+                SettingsReorderList {
+                    id: lockWidgetList
 
-                model: SettingsData.lockScreenWidgetInstances || []
+                    model: SettingsData.lockScreenWidgetInstances || []
 
-                delegate: DesktopWidgetInstanceCard {
-                    required property var modelData
+                    delegate: DesktopWidgetInstanceCard {
+                        required property var modelData
 
-                    reorderList: lockWidgetList
-                    reorderEnabled: false
-                    instanceData: modelData
-                    fixed: modelData.widgetType === "lockAuth"
+                        reorderList: lockWidgetList
+                        reorderEnabled: false
+                        instanceData: modelData
+                        fixed: modelData.widgetType === "lockAuth"
 
-                    onConfigureRequested: {
-                        SettingsUiState.selectedDesktopWidgetId = instanceId;
-                        SettingsUiState.selectedWidgetTitle = widgetName;
-                        root.parentModal?.navigateTo("desktop_widget");
-                    }
-                    onDuplicateRequested: SettingsData.duplicateDesktopWidgetInstance(instanceId)
-                    onDeleteRequested: {
-                        SettingsData.removeDesktopWidgetInstance(instanceId);
-                        ToastService.showInfo(I18n.tr("Widget removed"));
+                        onConfigureRequested: {
+                            SettingsUiState.selectedDesktopWidgetId = instanceId;
+                            SettingsUiState.selectedWidgetTitle = widgetName;
+                            root.parentModal?.navigateTo("desktop_widget");
+                        }
+                        onDuplicateRequested: SettingsData.duplicateDesktopWidgetInstance(instanceId)
+                        onDeleteRequested: {
+                            SettingsData.removeDesktopWidgetInstance(instanceId);
+                            ToastService.showInfo(I18n.tr("Widget removed"));
+                        }
                     }
                 }
-            }
 
-            SettingsRow {
-                iconName: "restart_alt"
-                title: I18n.tr("Reset to default")
-                clickable: true
-                onClicked: SettingsData.resetLockScreenWidgets()
+                SettingsRow {
+                    iconName: "restart_alt"
+                    title: I18n.tr("Reset to default")
+                    clickable: true
+                    onClicked: SettingsData.resetLockScreenWidgets()
+                }
             }
         }
 
-        SettingsCard {
-            width: parent.width
-            iconName: "palette"
-            title: I18n.tr("Appearance")
-            settingKey: "lockAppearance"
+        SettingsDeferred {
+            SettingsCard {
+                width: parent.width
+                iconName: "palette"
+                title: I18n.tr("Appearance")
+                settingKey: "lockAppearance"
 
-            SettingsFontDropdownRow {
-                settingKey: "lockScreenFontFamily"
-                tags: ["lock", "screen", "font", "typography"]
-                text: I18n.tr("Font")
-                currentFont: SettingsData.lockScreenFontFamily || ""
-                onFontSelected: family => SettingsData.set("lockScreenFontFamily", family)
-            }
+                SettingsFontDropdownRow {
+                    settingKey: "lockScreenFontFamily"
+                    tags: ["lock", "screen", "font", "typography"]
+                    text: I18n.tr("Font")
+                    currentFont: SettingsData.lockScreenFontFamily || ""
+                    onFontSelected: family => SettingsData.set("lockScreenFontFamily", family)
+                }
 
-            SettingsRow {
-                settingKey: "lockScreenWallpaperPath"
-                tags: ["lock", "screen", "wallpaper", "background", "image"]
-                title: I18n.tr("Background")
-                resetKeys: ["lockScreenWallpaperPath"]
-                body: SettingsWallpaperThumb {
-                    id: lockThumb
+                SettingsRow {
+                    settingKey: "lockScreenWallpaperPath"
+                    tags: ["lock", "screen", "wallpaper", "background", "image"]
+                    title: I18n.tr("Background")
+                    resetKeys: ["lockScreenWallpaperPath"]
+                    body: SettingsWallpaperThumb {
+                        id: lockThumb
 
-                    readonly property var previewScreen: Quickshell.screens[0] ?? null
+                        readonly property var previewScreen: Quickshell.screens[0] ?? null
 
-                    width: (parent.width - Theme.spacingL) / 2
-                    height: previewScreen ? width * previewScreen.height / previewScreen.width : width * SettingsMetrics.wallpaperThumbRatio
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    placeholderIcon: "lock"
-                    allowColor: false
-                    showFileName: false
-                    showMaterial: SettingsData.lockScreenWallpaperPath === ""
-                    materialComposition: SessionData.getMonitorMaterialWallpaper(previewScreen?.name ?? "")
-                    path: SettingsData.lockScreenWallpaperPath || SessionData.getMonitorWallpaperImage(previewScreen?.name ?? "") || ""
-                    clearable: SettingsData.lockScreenWallpaperPath !== ""
-                    fillModeName: SettingsData.lockScreenWallpaperFillMode || (SettingsData.lockScreenWallpaperPath !== "" ? "Fill" : SessionData.getMonitorWallpaperFillMode(previewScreen?.name ?? ""))
-                    blur: Theme.lockScreenBlur
-                    blurMax: previewScreen ? Theme.lockScreenBlurMax * width / previewScreen.width : 0
-                    activateIcon: "edit"
-                    activateText: I18n.tr("Edit widgets")
-                    onActivated: SessionService.lockEditorRequested()
-                    onBrowse: {
-                        wallpaperBrowserLoader.active = true;
-                        if (wallpaperBrowserLoader.item)
-                            wallpaperBrowserLoader.item.open();
-                    }
-                    onClear: SettingsData.set("lockScreenWallpaperPath", "")
+                        width: (parent.width - Theme.spacingL) / 2
+                        height: previewScreen ? width * previewScreen.height / previewScreen.width : width * SettingsMetrics.wallpaperThumbRatio
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        placeholderIcon: "lock"
+                        allowColor: false
+                        showFileName: false
+                        showMaterial: SettingsData.lockScreenWallpaperPath === ""
+                        materialComposition: SessionData.getMonitorMaterialWallpaper(previewScreen?.name ?? "")
+                        path: SettingsData.lockScreenWallpaperPath || SessionData.getMonitorWallpaperImage(previewScreen?.name ?? "") || ""
+                        clearable: SettingsData.lockScreenWallpaperPath !== ""
+                        fillModeName: SettingsData.lockScreenWallpaperFillMode || (SettingsData.lockScreenWallpaperPath !== "" ? "Fill" : SessionData.getMonitorWallpaperFillMode(previewScreen?.name ?? ""))
+                        blur: Theme.lockScreenBlur
+                        blurMax: previewScreen ? Theme.lockScreenBlurMax * width / previewScreen.width : 0
+                        activateIcon: "edit"
+                        activateText: I18n.tr("Edit widgets")
+                        onActivated: SessionService.lockEditorRequested()
+                        onBrowse: {
+                            wallpaperBrowserLoader.active = true;
+                            if (wallpaperBrowserLoader.item)
+                                wallpaperBrowserLoader.item.open();
+                        }
+                        onClear: SettingsData.set("lockScreenWallpaperPath", "")
 
-                    LockScreenMinimap {
-                        anchors.fill: parent
-                        screen: lockThumb.previewScreen
-                        active: lockThumb.visible && root.pageSettled && (root.parentModal?.shouldBeVisible ?? true)
+                        LockScreenMinimap {
+                            anchors.fill: parent
+                            screen: lockThumb.previewScreen
+                            active: lockThumb.visible && root.pageSettled && (root.parentModal?.shouldBeVisible ?? true)
+                        }
                     }
                 }
-            }
 
-            SettingsDropdownRow {
-                readonly property var fillModes: ["Stretch", "Fit", "Fill", "Tile", "TileVertically", "TileHorizontally", "Pad"]
-                readonly property var fillModeLabels: fillModes.map(mode => I18n.tr(mode, "wallpaper fill mode"))
+                SettingsDropdownRow {
+                    readonly property var fillModes: ["Stretch", "Fit", "Fill", "Tile", "TileVertically", "TileHorizontally", "Pad"]
+                    readonly property var fillModeLabels: fillModes.map(mode => I18n.tr(mode, "wallpaper fill mode"))
 
-                settingKey: "lockScreenWallpaperFillMode"
-                tags: ["lock", "screen", "wallpaper", "background", "fill"]
-                text: I18n.tr("Wallpaper fill mode")
-                options: fillModeLabels
-                currentValue: {
-                    const idx = fillModes.indexOf(SettingsData.lockScreenWallpaperFillMode || "Fill");
-                    return fillModeLabels[idx >= 0 ? idx : fillModes.indexOf("Fill")];
-                }
-                onValueChanged: value => {
-                    const idx = fillModeLabels.indexOf(value);
-                    if (idx >= 0)
-                        SettingsData.set("lockScreenWallpaperFillMode", fillModes[idx]);
+                    settingKey: "lockScreenWallpaperFillMode"
+                    tags: ["lock", "screen", "wallpaper", "background", "fill"]
+                    text: I18n.tr("Wallpaper fill mode")
+                    options: fillModeLabels
+                    currentValue: {
+                        const idx = fillModes.indexOf(SettingsData.lockScreenWallpaperFillMode || "Fill");
+                        return fillModeLabels[idx >= 0 ? idx : fillModes.indexOf("Fill")];
+                    }
+                    onValueChanged: value => {
+                        const idx = fillModeLabels.indexOf(value);
+                        if (idx >= 0)
+                            SettingsData.set("lockScreenWallpaperFillMode", fillModes[idx]);
+                    }
                 }
             }
         }

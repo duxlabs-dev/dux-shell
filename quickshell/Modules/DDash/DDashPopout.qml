@@ -15,8 +15,6 @@ DPopout {
     layerNamespace: "dms:dash"
     contentHandlesKeys: true
     closesWithSource: false
-    resizeCurve: Theme.expressiveCurves.standard
-    resizeDuration: Theme.expressiveDurations.expressiveFastSpatial
     resizeMotion: true
     resizing: contentLoader.item?.panelResizing ?? false
     inputMargin: editGutter * 2
@@ -557,7 +555,7 @@ DPopout {
                         readonly property real currentHostImplicitHeight: currentHost?.implicitHeight ?? 0
                         readonly property real targetHeight: root.activeTabId === "" ? emptyContent.implicitHeight : currentSettled && currentHost.isCurrent ? DashMetrics.panelHeightFor(root.activeTabId, currentHostImplicitHeight) : -1
                         readonly property real bodyHeight: root.activeTabId === "" ? emptyContent.implicitHeight : Math.max(settledHeight, currentHostImplicitHeight)
-                        readonly property bool ready: targetHeight >= 0 && settledHeight === targetHeight
+                        readonly property bool ready: targetHeight >= 0 && settledHeight === targetHeight && !(currentItem?.loading ?? false)
                         readonly property real availableHeight: root.screen ? root.screen.height - mainContainer.horizontalChromeHeight - DashMetrics.contentPadding * 2 - Theme.barHeight - Theme.spacingL * 2 : contentHeight
                         readonly property int rowBudget: DashMetrics.rowCapFor(availableHeight)
                         // Growing a panel not hung from a top bar moves the grid under a held card, which retargets the drop.

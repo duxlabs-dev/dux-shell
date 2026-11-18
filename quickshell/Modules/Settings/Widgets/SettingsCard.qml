@@ -68,9 +68,9 @@ Column {
         clip: root.collapsible
 
         Behavior on height {
-            enabled: root.userToggledCollapse && Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
+            enabled: root.userToggledCollapse
             NumberAnimation {
-                duration: SettingsMetrics.transitionDuration
+                duration: SettingsMetrics.expandDuration
                 easing.type: Easing.BezierSpline
                 easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
                 onRunningChanged: {

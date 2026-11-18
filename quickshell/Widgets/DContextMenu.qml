@@ -391,7 +391,7 @@ Item {
 
                 Behavior on openScale {
                     NumberAnimation {
-                        duration: SettingsData.reduceMotion ? 0 : Theme.expressiveDurations.expressiveFastSpatial
+                        duration: Theme.reduceMotion ? 0 : Theme.expressiveDurations.expressiveDefaultSpatial
                         easing.type: Easing.BezierSpline
                         easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
                     }
@@ -400,9 +400,9 @@ Item {
                 Behavior on height {
                     enabled: root.openState
                     NumberAnimation {
-                        duration: SettingsData.reduceMotion ? 0 : Theme.expressiveDurations.expressiveFastSpatial
+                        duration: Theme.reduceMotion ? 0 : Theme.expressiveDurations.expressiveDefaultSpatial
                         easing.type: Easing.BezierSpline
-                        easing.bezierCurve: Theme.expressiveCurves.emphasizedDecel
+                        easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
                     }
                 }
 
@@ -411,8 +411,9 @@ Item {
                     enabled: menuContainer.opacity > 0
                     NumberAnimation {
                         id: closeFade
-                        duration: SettingsData.reduceMotion ? 0 : Theme.shortDuration
-                        easing.type: Theme.emphasizedEasing
+                        duration: Theme.reduceMotion ? 0 : Theme.expressiveDurations.expressiveFastEffects
+                        easing.type: Easing.BezierSpline
+                        easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
                         onRunningChanged: {
                             if (!running && !root.openState)
                                 root.renderActive = false;

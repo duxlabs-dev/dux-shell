@@ -126,36 +126,38 @@ Item {
     SettingsPage {
         id: mainColumn
 
-        SettingsCard {
-            title: I18n.tr("Available displays (%1)", "display widgets settings heading, %1 is the monitor count").arg(Quickshell.screens.length)
+        SettingsDeferred {
+            SettingsCard {
+                title: I18n.tr("Available displays (%1)", "display widgets settings heading, %1 is the monitor count").arg(Quickshell.screens.length)
 
-            SettingsButtonGroupRow {
-                id: displayModeGroup
-                readonly property bool modelMode: SettingsData.displayNameMode === "model"
-                text: I18n.tr("Name format")
-                model: [I18n.tr("Name"), I18n.tr("Model")]
-                currentIndex: modelMode ? 1 : 0
-                onModelModeChanged: currentIndex = modelMode ? 1 : 0
-                onSelectionChanged: (index, selected) => {
-                    if (!selected)
-                        return;
-                    SettingsData.displayNameMode = index === 1 ? "model" : "system";
-                    SettingsData.saveSettings();
+                SettingsButtonGroupRow {
+                    id: displayModeGroup
+                    readonly property bool modelMode: SettingsData.displayNameMode === "model"
+                    text: I18n.tr("Name format")
+                    model: [I18n.tr("Name"), I18n.tr("Model")]
+                    currentIndex: modelMode ? 1 : 0
+                    onModelModeChanged: currentIndex = modelMode ? 1 : 0
+                    onSelectionChanged: (index, selected) => {
+                        if (!selected)
+                            return;
+                        SettingsData.displayNameMode = index === 1 ? "model" : "system";
+                        SettingsData.saveSettings();
+                    }
                 }
-            }
 
-            Repeater {
-                model: Quickshell.screens
+                Repeater {
+                    model: Quickshell.screens
 
-                SettingsRow {
-                    required property var modelData
-                    readonly property var currentMode: WlrOutputService.wlrOutputAvailable ? WlrOutputService.getOutput(modelData.name)?.currentMode : null
+                    SettingsRow {
+                        required property var modelData
+                        readonly property var currentMode: WlrOutputService.wlrOutputAvailable ? WlrOutputService.getOutput(modelData.name)?.currentMode : null
 
-                    iconName: "desktop_windows"
-                    title: SettingsData.getScreenDisplayName(modelData)
-                    subtitle: {
-                        const size = currentMode ? currentMode.width + "×" + currentMode.height + "@" + Math.round(currentMode.refresh / 1000) + "Hz" : modelData.width + "×" + modelData.height;
-                        return size + " · " + (SettingsData.displayNameMode === "system" ? (modelData.model || I18n.tr("Unknown Model")) : modelData.name);
+                        iconName: "desktop_windows"
+                        title: SettingsData.getScreenDisplayName(modelData)
+                        subtitle: {
+                            const size = currentMode ? currentMode.width + "×" + currentMode.height + "@" + Math.round(currentMode.refresh / 1000) + "Hz" : modelData.width + "×" + modelData.height;
+                            return size + " · " + (SettingsData.displayNameMode === "system" ? (modelData.model || I18n.tr("Unknown Model")) : modelData.name);
+                        }
                     }
                 }
             }

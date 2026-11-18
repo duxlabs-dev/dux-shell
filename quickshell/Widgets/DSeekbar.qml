@@ -109,7 +109,7 @@ Item {
     property real handleHeight: isSeeking ? handleDragHeight : handleSize
 
     Behavior on handleWidth {
-        enabled: !SettingsData.reduceMotion && Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
+        enabled: !Theme.reduceMotion
         NumberAnimation {
             duration: Theme.expressiveDurations.expressiveEffects
             easing.type: Easing.BezierSpline
@@ -118,7 +118,7 @@ Item {
     }
 
     Behavior on handleHeight {
-        enabled: !SettingsData.reduceMotion && Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
+        enabled: !Theme.reduceMotion
         NumberAnimation {
             duration: Theme.expressiveDurations.expressiveEffects
             easing.type: Easing.BezierSpline

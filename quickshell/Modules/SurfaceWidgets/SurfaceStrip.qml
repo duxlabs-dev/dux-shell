@@ -174,10 +174,11 @@ FocusScope {
         restoreMode: Binding.RestoreNone
     }
     Behavior on magnificationProgress {
-        enabled: !SettingsData.reduceMotion && Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
+        enabled: !Theme.reduceMotion
         NumberAnimation {
-            duration: root.hoverActive ? Theme.shorterDuration : Theme.shortDuration
-            easing.type: root.hoverActive ? Easing.OutCubic : Easing.InCubic
+            duration: Theme.expressiveDurations.expressiveFastEffects
+            easing.type: Easing.BezierSpline
+            easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
         }
     }
     readonly property var sizes: {
@@ -330,7 +331,7 @@ FocusScope {
                 readonly property bool dragging: root.draggingIndex === index
                 readonly property string unitId: DockConfig.unitOf(modelData)
                 readonly property bool unitDragging: root.draggingUnit === unitId
-                readonly property bool animatesShift: root.dragActive && !dragging && !unitDragging && !SettingsData.reduceMotion && Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
+                readonly property bool animatesShift: root.dragActive && !dragging && !unitDragging && !Theme.reduceMotion
                 readonly property real layoutPosition: unitDragging ? root.positionAt(index) + root.dragOffset : (root.previewPositions[index] ?? 0)
                 readonly property real targetScale: {
                     if (!root.magnificationEnabled || root.magnificationProgress <= 0.001 || slot.flexible)

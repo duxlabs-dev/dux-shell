@@ -198,7 +198,7 @@ DListView {
 
     Timer {
         id: expansionEnsureVisibleTimer
-        interval: Math.max(Theme.notificationExpandDuration, Theme.notificationInlineExpandDuration)
+        interval: NotificationMetrics.expandDuration
         repeat: false
         onTriggered: {
             if (keyboardController && keyboardController.keyboardNavigationActive && !autoScrollDisabled) {

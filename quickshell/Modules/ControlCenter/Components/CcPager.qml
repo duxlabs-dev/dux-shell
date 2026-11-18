@@ -207,7 +207,7 @@ Item {
     SpringMotion {
         id: motion
 
-        readonly property var spring: Theme.springPreset("defaultSpatial", Theme.currentAnimationBaseDuration)
+        readonly property var spring: Theme.springPreset("defaultSpatial")
 
         enabled: CcMetrics.animationsEnabled
         stiffness: spring.stiffness

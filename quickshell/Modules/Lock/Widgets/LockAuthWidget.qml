@@ -264,7 +264,7 @@ Item {
                         to: 0
                         duration: Theme.expressiveDurations.expressiveSlowEffects
                         easing.type: Easing.BezierSpline
-                        easing.bezierCurve: Theme.expressiveCurves.expressiveEffects
+                        easing.bezierCurve: Theme.expressiveCurves.expressiveSlowEffects
                     }
                 }
             }
@@ -498,7 +498,7 @@ Item {
                                 target: morphContainer
                                 property: "scale"
                                 to: 1
-                                duration: LockMetrics.shakeDuration
+                                duration: LockMetrics.settleDuration
                                 easing.type: Easing.BezierSpline
                                 easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
                             }

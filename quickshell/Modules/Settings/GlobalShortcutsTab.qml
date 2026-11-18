@@ -46,11 +46,14 @@ Item {
     }
 
     SettingsPage {
-        SettingsCard {
-            visible: GlobalShortcutsService.apps.length === 0
+        SettingsDeferred {
+            when: GlobalShortcutsService.apps.length === 0
 
-            SettingsRow {
-                subtitle: I18n.tr("Apps that register global shortcuts appear here.", "global shortcuts settings page empty state")
+            SettingsCard {
+
+                SettingsRow {
+                    subtitle: I18n.tr("Apps that register global shortcuts appear here.", "global shortcuts settings page empty state")
+                }
             }
         }
 

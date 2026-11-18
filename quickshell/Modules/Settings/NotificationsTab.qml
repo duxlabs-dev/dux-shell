@@ -93,162 +93,166 @@ Column {
             SettingsData.set(key, option.value);
     }
 
-    SettingsCard {
-        iconName: "notifications"
-        title: I18n.tr("Popups", "notification settings card title, popup notifications")
-        settingKey: "notificationPopups"
+    SettingsDeferred {
+        SettingsCard {
+            iconName: "notifications"
+            title: I18n.tr("Popups", "notification settings card title, popup notifications")
+            settingKey: "notificationPopups"
 
-        headerActions: DButton {
-            text: I18n.tr("Preview")
-            buttonHeight: Theme.buttonHeightXS
-            onClicked: NotificationService.sendTestNotifications()
-        }
+            headerActions: DButton {
+                text: I18n.tr("Preview")
+                buttonHeight: Theme.buttonHeightXS
+                onClicked: NotificationService.sendTestNotifications()
+            }
 
-        SettingsDropdownRow {
-            settingKey: "notificationPopupPosition"
-            tags: ["notification", "popup", "position", "screen", "location"]
-            text: I18n.tr("Position")
-            currentValue: {
-                if (SettingsData.notificationPopupPosition === -1)
-                    return I18n.tr("Top Center", "screen position option");
-                switch (SettingsData.notificationPopupPosition) {
-                case SettingsData.Position.Top:
-                    return I18n.tr("Top Right", "screen position option");
-                case SettingsData.Position.Bottom:
-                    return I18n.tr("Bottom Left", "screen position option");
-                case SettingsData.Position.Left:
-                    return I18n.tr("Top Left", "screen position option");
-                case SettingsData.Position.Right:
-                    return I18n.tr("Bottom Right", "screen position option");
-                case SettingsData.Position.BottomCenter:
-                    return I18n.tr("Bottom Center", "screen position option");
-                default:
-                    return I18n.tr("Top Right", "screen position option");
+            SettingsDropdownRow {
+                settingKey: "notificationPopupPosition"
+                tags: ["notification", "popup", "position", "screen", "location"]
+                text: I18n.tr("Position")
+                currentValue: {
+                    if (SettingsData.notificationPopupPosition === -1)
+                        return I18n.tr("Top Center", "screen position option");
+                    switch (SettingsData.notificationPopupPosition) {
+                    case SettingsData.Position.Top:
+                        return I18n.tr("Top Right", "screen position option");
+                    case SettingsData.Position.Bottom:
+                        return I18n.tr("Bottom Left", "screen position option");
+                    case SettingsData.Position.Left:
+                        return I18n.tr("Top Left", "screen position option");
+                    case SettingsData.Position.Right:
+                        return I18n.tr("Bottom Right", "screen position option");
+                    case SettingsData.Position.BottomCenter:
+                        return I18n.tr("Bottom Center", "screen position option");
+                    default:
+                        return I18n.tr("Top Right", "screen position option");
+                    }
+                }
+                options: [I18n.tr("Top Right", "screen position option"), I18n.tr("Top Left", "screen position option"), I18n.tr("Top Center", "screen position option"), I18n.tr("Bottom Center", "screen position option"), I18n.tr("Bottom Right", "screen position option"), I18n.tr("Bottom Left", "screen position option")]
+                onValueChanged: value => {
+                    switch (value) {
+                    case I18n.tr("Top Right", "screen position option"):
+                        SettingsData.set("notificationPopupPosition", SettingsData.Position.Top);
+                        break;
+                    case I18n.tr("Top Left", "screen position option"):
+                        SettingsData.set("notificationPopupPosition", SettingsData.Position.Left);
+                        break;
+                    case I18n.tr("Top Center", "screen position option"):
+                        SettingsData.set("notificationPopupPosition", -1);
+                        break;
+                    case I18n.tr("Bottom Center", "screen position option"):
+                        SettingsData.set("notificationPopupPosition", SettingsData.Position.BottomCenter);
+                        break;
+                    case I18n.tr("Bottom Right", "screen position option"):
+                        SettingsData.set("notificationPopupPosition", SettingsData.Position.Right);
+                        break;
+                    case I18n.tr("Bottom Left", "screen position option"):
+                        SettingsData.set("notificationPopupPosition", SettingsData.Position.Bottom);
+                        break;
+                    }
+                    NotificationService.sendTestNotifications();
                 }
             }
-            options: [I18n.tr("Top Right", "screen position option"), I18n.tr("Top Left", "screen position option"), I18n.tr("Top Center", "screen position option"), I18n.tr("Bottom Center", "screen position option"), I18n.tr("Bottom Right", "screen position option"), I18n.tr("Bottom Left", "screen position option")]
-            onValueChanged: value => {
-                switch (value) {
-                case I18n.tr("Top Right", "screen position option"):
-                    SettingsData.set("notificationPopupPosition", SettingsData.Position.Top);
-                    break;
-                case I18n.tr("Top Left", "screen position option"):
-                    SettingsData.set("notificationPopupPosition", SettingsData.Position.Left);
-                    break;
-                case I18n.tr("Top Center", "screen position option"):
-                    SettingsData.set("notificationPopupPosition", -1);
-                    break;
-                case I18n.tr("Bottom Center", "screen position option"):
-                    SettingsData.set("notificationPopupPosition", SettingsData.Position.BottomCenter);
-                    break;
-                case I18n.tr("Bottom Right", "screen position option"):
-                    SettingsData.set("notificationPopupPosition", SettingsData.Position.Right);
-                    break;
-                case I18n.tr("Bottom Left", "screen position option"):
-                    SettingsData.set("notificationPopupPosition", SettingsData.Position.Bottom);
-                    break;
-                }
-                NotificationService.sendTestNotifications();
+
+            SettingsToggleRow {
+                settingKey: "notificationPopupAvoidPopouts"
+                tags: ["notification", "popup", "popout", "overlap", "position"]
+                text: I18n.tr("Avoid open popouts", "notification setting")
+                description: I18n.tr("Move notification popups below an open bar popout instead of covering it", "notification setting description")
+                checked: SettingsData.notificationPopupAvoidPopouts
+                onToggled: checked => SettingsData.set("notificationPopupAvoidPopouts", checked)
             }
-        }
 
-        SettingsToggleRow {
-            settingKey: "notificationPopupAvoidPopouts"
-            tags: ["notification", "popup", "popout", "overlap", "position"]
-            text: I18n.tr("Avoid open popouts", "notification setting")
-            description: I18n.tr("Move notification popups below an open bar popout instead of covering it", "notification setting description")
-            checked: SettingsData.notificationPopupAvoidPopouts
-            onToggled: checked => SettingsData.set("notificationPopupAvoidPopouts", checked)
-        }
+            SettingsToggleRow {
+                settingKey: "notificationFocusedMonitor"
+                tags: ["notification", "popup", "focused", "monitor", "display", "screen", "active"]
+                text: I18n.tr("Focused display only")
+                checked: SettingsData.notificationFocusedMonitor
+                onToggled: checked => SettingsData.set("notificationFocusedMonitor", checked)
+            }
 
-        SettingsToggleRow {
-            settingKey: "notificationFocusedMonitor"
-            tags: ["notification", "popup", "focused", "monitor", "display", "screen", "active"]
-            text: I18n.tr("Focused display only")
-            checked: SettingsData.notificationFocusedMonitor
-            onToggled: checked => SettingsData.set("notificationFocusedMonitor", checked)
-        }
+            SettingsToggleRow {
+                settingKey: "notificationOverlayEnabled"
+                tags: ["notification", "overlay", "fullscreen", "priority"]
+                text: I18n.tr("Over fullscreen")
+                enabled: !root.frameForcesOverlay
+                checked: root.frameForcesOverlay || SettingsData.notificationOverlayEnabled
+                onToggled: checked => SettingsData.set("notificationOverlayEnabled", checked)
+            }
 
-        SettingsToggleRow {
-            settingKey: "notificationOverlayEnabled"
-            tags: ["notification", "overlay", "fullscreen", "priority"]
-            text: I18n.tr("Over fullscreen")
-            enabled: !root.frameForcesOverlay
-            checked: root.frameForcesOverlay || SettingsData.notificationOverlayEnabled
-            onToggled: checked => SettingsData.set("notificationOverlayEnabled", checked)
-        }
+            SettingsToggleRow {
+                settingKey: "notificationCompactMode"
+                tags: ["notification", "compact", "size", "display", "mode"]
+                text: I18n.tr("Compact")
+                checked: SettingsData.notificationCompactMode
+                onToggled: checked => SettingsData.set("notificationCompactMode", checked)
+            }
 
-        SettingsToggleRow {
-            settingKey: "notificationCompactMode"
-            tags: ["notification", "compact", "size", "display", "mode"]
-            text: I18n.tr("Compact")
-            checked: SettingsData.notificationCompactMode
-            onToggled: checked => SettingsData.set("notificationCompactMode", checked)
-        }
+            SettingsToggleRow {
+                settingKey: "notificationDedupeEnabled"
+                tags: ["notification", "duplicate", "dedupe", "stack", "coalesce", "repeat"]
+                text: I18n.tr("Suppress duplicates")
+                checked: SettingsData.notificationDedupeEnabled
+                onToggled: checked => SettingsData.set("notificationDedupeEnabled", checked)
+            }
 
-        SettingsToggleRow {
-            settingKey: "notificationDedupeEnabled"
-            tags: ["notification", "duplicate", "dedupe", "stack", "coalesce", "repeat"]
-            text: I18n.tr("Suppress duplicates")
-            checked: SettingsData.notificationDedupeEnabled
-            onToggled: checked => SettingsData.set("notificationDedupeEnabled", checked)
-        }
-
-        SettingsToggleRow {
-            settingKey: "notificationPopupBodyInvokesAction"
-            tags: ["notification", "popup", "click", "body", "action", "invoke", "expand", "open"]
-            text: I18n.tr("Body click runs default action")
-            checked: SettingsData.notificationPopupBodyInvokesAction
-            onToggled: checked => SettingsData.set("notificationPopupBodyInvokesAction", checked)
+            SettingsToggleRow {
+                settingKey: "notificationPopupBodyInvokesAction"
+                tags: ["notification", "popup", "click", "body", "action", "invoke", "expand", "open"]
+                text: I18n.tr("Body click runs default action")
+                checked: SettingsData.notificationPopupBodyInvokesAction
+                onToggled: checked => SettingsData.set("notificationPopupBodyInvokesAction", checked)
+            }
         }
     }
 
-    SettingsCard {
-        title: I18n.tr("Timeouts", "notification settings card title, popup dismiss times per urgency")
-        settingKey: "notificationTimeouts"
-        tags: ["notification", "timeout", "duration", "expire", "priority"]
+    SettingsDeferred {
+        SettingsCard {
+            title: I18n.tr("Timeouts", "notification settings card title, popup dismiss times per urgency")
+            settingKey: "notificationTimeouts"
+            tags: ["notification", "timeout", "duration", "expire", "priority"]
 
-        SettingsDropdownRow {
-            settingKey: "notificationTimeoutLow"
-            tags: ["notification", "timeout", "low", "priority", "duration"]
-            text: I18n.tr("Low")
-            currentValue: root.getTimeoutText(SettingsData.notificationTimeoutLow)
-            options: root.timeoutOptions.map(opt => opt.text)
-            onValueChanged: value => root.applyTimeout("notificationTimeoutLow", value)
-        }
+            SettingsDropdownRow {
+                settingKey: "notificationTimeoutLow"
+                tags: ["notification", "timeout", "low", "priority", "duration"]
+                text: I18n.tr("Low")
+                currentValue: root.getTimeoutText(SettingsData.notificationTimeoutLow)
+                options: root.timeoutOptions.map(opt => opt.text)
+                onValueChanged: value => root.applyTimeout("notificationTimeoutLow", value)
+            }
 
-        SettingsDropdownRow {
-            settingKey: "notificationTimeoutNormal"
-            tags: ["notification", "timeout", "normal", "priority", "duration"]
-            text: I18n.tr("Normal")
-            currentValue: root.getTimeoutText(SettingsData.notificationTimeoutNormal)
-            options: root.timeoutOptions.map(opt => opt.text)
-            onValueChanged: value => root.applyTimeout("notificationTimeoutNormal", value)
-        }
+            SettingsDropdownRow {
+                settingKey: "notificationTimeoutNormal"
+                tags: ["notification", "timeout", "normal", "priority", "duration"]
+                text: I18n.tr("Normal")
+                currentValue: root.getTimeoutText(SettingsData.notificationTimeoutNormal)
+                options: root.timeoutOptions.map(opt => opt.text)
+                onValueChanged: value => root.applyTimeout("notificationTimeoutNormal", value)
+            }
 
-        SettingsDropdownRow {
-            settingKey: "notificationTimeoutCritical"
-            tags: ["notification", "timeout", "critical", "priority", "duration"]
-            text: I18n.tr("Critical", "adjective, critical notification urgency row label")
-            currentValue: root.getTimeoutText(SettingsData.notificationTimeoutCritical)
-            options: root.timeoutOptions.map(opt => opt.text)
-            onValueChanged: value => root.applyTimeout("notificationTimeoutCritical", value)
-        }
+            SettingsDropdownRow {
+                settingKey: "notificationTimeoutCritical"
+                tags: ["notification", "timeout", "critical", "priority", "duration"]
+                text: I18n.tr("Critical", "adjective, critical notification urgency row label")
+                currentValue: root.getTimeoutText(SettingsData.notificationTimeoutCritical)
+                options: root.timeoutOptions.map(opt => opt.text)
+                onValueChanged: value => root.applyTimeout("notificationTimeoutCritical", value)
+            }
 
-        SettingsToggleRow {
-            settingKey: "notificationIgnoreAppTimeout"
-            tags: ["notification", "timeout", "expire", "app", "override", "duration"]
-            text: I18n.tr("Ignore app-requested timeout")
-            checked: SettingsData.notificationIgnoreAppTimeout
-            onToggled: checked => SettingsData.set("notificationIgnoreAppTimeout", checked)
-        }
+            SettingsToggleRow {
+                settingKey: "notificationIgnoreAppTimeout"
+                tags: ["notification", "timeout", "expire", "app", "override", "duration"]
+                text: I18n.tr("Ignore app-requested timeout")
+                checked: SettingsData.notificationIgnoreAppTimeout
+                onToggled: checked => SettingsData.set("notificationIgnoreAppTimeout", checked)
+            }
 
-        SettingsToggleRow {
-            settingKey: "notificationShowTimeoutBar"
-            tags: ["notification", "timeout", "progress", "bar", "timer", "countdown"]
-            text: I18n.tr("Timeout progress bar")
-            checked: SettingsData.notificationShowTimeoutBar
-            onToggled: checked => SettingsData.set("notificationShowTimeoutBar", checked)
+            SettingsToggleRow {
+                settingKey: "notificationShowTimeoutBar"
+                tags: ["notification", "timeout", "progress", "bar", "timer", "countdown"]
+                text: I18n.tr("Timeout progress bar")
+                checked: SettingsData.notificationShowTimeoutBar
+                onToggled: checked => SettingsData.set("notificationShowTimeoutBar", checked)
+            }
         }
     }
 
@@ -467,18 +471,6 @@ Column {
                 text: I18n.tr("Foreground layers")
                 checked: SettingsData.notificationForegroundLayers ?? true
                 onToggled: checked => SettingsData.set("notificationForegroundLayers", checked)
-            }
-
-            SettingsSliderRow {
-                settingKey: "notificationAnimationDuration"
-                tags: ["notification", "animation", "duration", "speed"]
-                text: I18n.tr("Animation duration")
-                minimumLabel: I18n.tr("Off")
-                minimum: 0
-                maximum: 800
-                value: SettingsData.notificationAnimationDuration
-                unit: "ms"
-                onSliderValueChanged: newValue => SettingsData.set("notificationAnimationDuration", newValue)
             }
         }
     }

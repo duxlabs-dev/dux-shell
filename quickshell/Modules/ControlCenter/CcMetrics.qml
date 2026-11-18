@@ -190,7 +190,7 @@ Singleton {
     readonly property int pageCarryHoldMs: 600
     readonly property var addHintDashPattern: [3, 2]
 
-    readonly property bool animationsEnabled: !SettingsData.reduceMotion && Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
+    readonly property bool animationsEnabled: !Theme.reduceMotion
 
     // The 1.6 detail heights: a detail never shows less than it did there, whatever the grid leaves free.
     function detailHeightFloor(section, pluginHeight) {

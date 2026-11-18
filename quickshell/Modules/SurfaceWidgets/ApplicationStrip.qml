@@ -148,16 +148,18 @@ Item {
         Behavior on width {
             enabled: !root._switchingPosition
             NumberAnimation {
-                duration: Theme.shortDuration
-                easing.type: Easing.OutCubic
+                duration: Theme.expressiveDurations.expressiveDefaultSpatial
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
             }
         }
 
         Behavior on height {
             enabled: !root._switchingPosition
             NumberAnimation {
-                duration: Theme.shortDuration
-                easing.type: Easing.OutCubic
+                duration: Theme.expressiveDurations.expressiveDefaultSpatial
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
             }
         }
         anchors.centerIn: parent

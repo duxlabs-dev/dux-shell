@@ -988,7 +988,7 @@ Item {
                 NumberAnimation on scale {
                     from: 1
                     to: LauncherMetrics.dragLiftScale
-                    duration: SettingsData.reduceMotion ? 0 : Theme.expressiveDurations.expressiveFastSpatial
+                    duration: Theme.reduceMotion ? 0 : Theme.expressiveDurations.expressiveFastSpatial
                     easing.type: Easing.BezierSpline
                     easing.bezierCurve: Theme.expressiveCurves.expressiveFastSpatial
                 }

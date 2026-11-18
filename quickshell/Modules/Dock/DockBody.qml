@@ -178,7 +178,6 @@ FocusScope {
     readonly property bool motionRunning: surfaceMotion.running || slideXSpring.running || slideYSpring.running
     VectorSpringMotion {
         id: surfaceMotion
-        reducedMotion: Theme.springMotionDisabled
         enabled: dock.visible
         stiffness: dock.slideSpringParams.stiffness
         damping: dock.slideSpringParams.damping
@@ -345,7 +344,7 @@ FocusScope {
         onTriggered: dock._syncDockChromeState()
     }
 
-    readonly property var slideSpringParams: dock.usesConnectedFrameChrome ? Theme.springPreset("default", Theme.variantDuration(Theme.popoutAnimationDuration, dock.reveal)) : Theme.springPreset("fast", Theme.shortDuration)
+    readonly property var slideSpringParams: Theme.springPreset(dock.usesConnectedFrameChrome ? "defaultSpatial" : "fastSpatial")
 
     SpringMotion {
         id: slideXSpring
@@ -649,8 +648,9 @@ FocusScope {
 
         Behavior on opacity {
             NumberAnimation {
-                duration: Theme.shortDuration
-                easing.type: Easing.OutCubic
+                duration: Theme.expressiveDurations.expressiveFastEffects
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
             }
         }
 
@@ -708,16 +708,18 @@ FocusScope {
             Behavior on height {
                 enabled: !dock._switchingPosition
                 NumberAnimation {
-                    duration: Theme.shortDuration
-                    easing.type: Easing.OutCubic
+                    duration: Theme.expressiveDurations.expressiveDefaultSpatial
+                    easing.type: Easing.BezierSpline
+                    easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
                 }
             }
 
             Behavior on width {
                 enabled: !dock._switchingPosition
                 NumberAnimation {
-                    duration: Theme.shortDuration
-                    easing.type: Easing.OutCubic
+                    duration: Theme.expressiveDurations.expressiveDefaultSpatial
+                    easing.type: Easing.BezierSpline
+                    easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
                 }
             }
 
@@ -911,8 +913,9 @@ FocusScope {
 
         Behavior on opacity {
             NumberAnimation {
-                duration: Theme.shortDuration
-                easing.type: Easing.OutCubic
+                duration: Theme.expressiveDurations.expressiveFastEffects
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
             }
         }
     }

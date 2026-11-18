@@ -26,7 +26,7 @@ DIconButton {
             return 1 + Theme.buttonGroupExpandRatio;
         return squeezed ? 1 - Theme.buttonGroupExpandRatio : 1;
     }
-    readonly property var pressSpring: Theme.springPreset("fast", Theme.expressiveDurations.expressiveFastSpatial)
+    readonly property var pressSpring: Theme.springPreset("fastSpatial")
 
     signal editRequested
 
@@ -99,7 +99,7 @@ DIconButton {
 
     SpringMotion {
         id: widthSpring
-        enabled: root.live && root.visible && !Theme.springMotionDisabled
+        enabled: root.live && root.visible
         stiffness: root.pressSpring.stiffness
         damping: root.pressSpring.damping
         Component.onCompleted: snapTo(root.targetScale)

@@ -309,13 +309,12 @@ Scope {
                             Qt.callLater(niriOverviewScope.resetState);
                     }
 
-                    readonly property var scaleSpringParams: Theme.springPreset("fast", Theme.expressiveDurations.fast)
-                    readonly property var slideSpringParams: Theme.springPreset("default", Theme.popoutAnimationDuration)
+                    readonly property var scaleSpringParams: Theme.springPreset("fastSpatial")
+                    readonly property var slideSpringParams: Theme.springPreset("defaultSpatial")
 
                     SpringMotion {
                         id: scaleMorph
                         enabled: !Theme.isConnectedEffect
-                        reducedMotion: Theme.expressiveDurations.fast <= 0
                         positionEpsilon: 0.001
                         velocityEpsilon: 0.001
                         stiffness: spotlightContainer.scaleSpringParams.stiffness
@@ -328,7 +327,6 @@ Scope {
                     SpringMotion {
                         id: slideMorph
                         enabled: Theme.isConnectedEffect
-                        reducedMotion: Theme.popoutAnimationDuration <= 0
                         positionEpsilon: 0.05
                         velocityEpsilon: 0.05
                         stiffness: spotlightContainer.slideSpringParams.stiffness
@@ -348,9 +346,9 @@ Scope {
                     Behavior on opacity {
                         enabled: !Theme.isConnectedEffect
                         NumberAnimation {
-                            duration: Theme.expressiveDurations.fast
+                            duration: Theme.expressiveDurations.expressiveEffects
                             easing.type: Easing.BezierSpline
-                            easing.bezierCurve: overlayWindow.spotlightShown ? Theme.expressiveCurves.expressiveFastSpatial : Theme.expressiveCurves.standardAccel
+                            easing.bezierCurve: Theme.expressiveCurves.expressiveEffects
                         }
                     }
 

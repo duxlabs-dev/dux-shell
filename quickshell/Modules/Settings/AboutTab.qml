@@ -120,112 +120,118 @@ Item {
             }
         }
 
-        SettingsCard {
-            SettingsRow {
-                body: StyledText {
-                    text: I18n.tr('DMS is a modern, highly customizable desktop shell that looks great out of the box, without sacrificing the freedom to make it your own.<br/><br/>Built with %1 and %2, it brings together panels, widgets, system controls, and more into a cohesive desktop experience.', 'about page blurb, %1 is a Quickshell link, %2 is a Go link').arg(`<a href="https://quickshell.org" style="text-decoration:none; color:${Theme.primary};">Quickshell</a>`).arg(`<a href="https://go.dev" style="text-decoration:none; color:${Theme.primary};">Go</a>`)
-                    textFormat: Text.RichText
-                    font.pixelSize: Theme.fontSizeMedium
-                    linkColor: Theme.primary
-                    onLinkActivated: url => Qt.openUrlExternally(url)
-                    color: Theme.surfaceVariantText
-                    width: parent.width
-                    wrapMode: Text.WordWrap
+        SettingsDeferred {
+            SettingsCard {
+                SettingsRow {
+                    body: StyledText {
+                        text: I18n.tr('DMS is a modern, highly customizable desktop shell that looks great out of the box, without sacrificing the freedom to make it your own.<br/><br/>Built with %1 and %2, it brings together panels, widgets, system controls, and more into a cohesive desktop experience.', 'about page blurb, %1 is a Quickshell link, %2 is a Go link').arg(`<a href="https://quickshell.org" style="text-decoration:none; color:${Theme.primary};">Quickshell</a>`).arg(`<a href="https://go.dev" style="text-decoration:none; color:${Theme.primary};">Go</a>`)
+                        textFormat: Text.RichText
+                        font.pixelSize: Theme.fontSizeMedium
+                        linkColor: Theme.primary
+                        onLinkActivated: url => Qt.openUrlExternally(url)
+                        color: Theme.surfaceVariantText
+                        width: parent.width
+                        wrapMode: Text.WordWrap
 
-                    HoverHandler {
-                        cursorShape: parent.hoveredLink ? Qt.PointingHandCursor : Qt.ArrowCursor
+                        HoverHandler {
+                            cursorShape: parent.hoveredLink ? Qt.PointingHandCursor : Qt.ArrowCursor
+                        }
                     }
                 }
             }
         }
 
-        SettingsCard {
-            SettingsLinkRow {
-                iconName: "menu_book"
-                title: I18n.tr("Docs")
-                subtitle: root.host(Site.docs)
-                url: Site.docs
-            }
+        SettingsDeferred {
+            SettingsCard {
+                SettingsLinkRow {
+                    iconName: "menu_book"
+                    title: I18n.tr("Docs")
+                    subtitle: root.host(Site.docs)
+                    url: Site.docs
+                }
 
-            SettingsLinkRow {
-                iconName: "extension"
-                title: I18n.tr("Plugins")
-                subtitle: root.host(Site.plugins)
-                url: Site.plugins
-            }
+                SettingsLinkRow {
+                    iconName: "extension"
+                    title: I18n.tr("Plugins")
+                    subtitle: root.host(Site.plugins)
+                    url: Site.plugins
+                }
 
-            SettingsLinkRow {
-                iconName: "code"
-                title: "GitHub"
-                subtitle: root.host(root.githubUrl)
-                url: root.githubUrl
+                SettingsLinkRow {
+                    iconName: "code"
+                    title: "GitHub"
+                    subtitle: root.host(root.githubUrl)
+                    url: root.githubUrl
+                }
             }
         }
 
-        SettingsCard {
-            title: I18n.tr("Community", "about page card title, chat and community links")
+        SettingsDeferred {
+            SettingsCard {
+                title: I18n.tr("Community", "about page card title, chat and community links")
 
-            SettingsLinkRow {
-                visible: root.compositor.url !== ""
-                title: root.compositor.label
-                subtitle: root.host(root.compositor.url)
-                url: root.compositor.url
-                leading: LogoImage {
-                    source: root.assetsDir + root.compositor.logo
-                }
-            }
-
-            SettingsLinkRow {
-                title: "niri/dux Discord"
-                subtitle: root.host(root.discordUrl)
-                url: root.discordUrl
-                leading: LogoImage {
-                    source: root.assetsDir + "discord.svg"
-                }
-            }
-
-            SettingsLinkRow {
-                visible: (root.compositor.discordUrl ?? "") !== ""
-                title: root.compositor.discordLabel ?? ""
-                subtitle: root.host(root.compositor.discordUrl ?? "")
-                url: root.compositor.discordUrl ?? ""
-                leading: LogoImage {
-                    source: root.assetsDir + "discord.svg"
-                }
-            }
-
-            SettingsLinkRow {
-                visible: (root.compositor.matrixUrl ?? "") !== ""
-                title: I18n.tr("niri Matrix chat")
-                subtitle: "matrix.org"
-                url: root.compositor.matrixUrl ?? ""
-                leading: LogoImage {
-                    source: root.assetsDir + "matrix-logo-white.svg"
-                    sourceSize: Qt.size(28, 18)
-                    layer.enabled: true
-                    layer.effect: MultiEffect {
-                        colorization: 1
-                        colorizationColor: Theme.surfaceText
+                SettingsLinkRow {
+                    visible: root.compositor.url !== ""
+                    title: root.compositor.label
+                    subtitle: root.host(root.compositor.url)
+                    url: root.compositor.url
+                    leading: LogoImage {
+                        source: root.assetsDir + root.compositor.logo
                     }
                 }
-            }
 
-            SettingsLinkRow {
-                visible: (root.compositor.redditUrl ?? "") !== ""
-                title: I18n.tr("r/niri subreddit")
-                subtitle: root.host(root.compositor.redditUrl ?? "")
-                url: root.compositor.redditUrl ?? ""
-                leading: LogoImage {
-                    source: root.assetsDir + "reddit.svg"
+                SettingsLinkRow {
+                    title: "niri/dux Discord"
+                    subtitle: root.host(root.discordUrl)
+                    url: root.discordUrl
+                    leading: LogoImage {
+                        source: root.assetsDir + "discord.svg"
+                    }
                 }
-            }
 
-            SettingsLinkRow {
-                visible: (root.compositor.ircUrl ?? "") !== ""
-                iconName: "forum"
-                title: I18n.tr("LabWC IRC channel")
-                subtitle: "libera.chat"
-                url: root.compositor.ircUrl ?? ""
+                SettingsLinkRow {
+                    visible: (root.compositor.discordUrl ?? "") !== ""
+                    title: root.compositor.discordLabel ?? ""
+                    subtitle: root.host(root.compositor.discordUrl ?? "")
+                    url: root.compositor.discordUrl ?? ""
+                    leading: LogoImage {
+                        source: root.assetsDir + "discord.svg"
+                    }
+                }
+
+                SettingsLinkRow {
+                    visible: (root.compositor.matrixUrl ?? "") !== ""
+                    title: I18n.tr("niri Matrix chat")
+                    subtitle: "matrix.org"
+                    url: root.compositor.matrixUrl ?? ""
+                    leading: LogoImage {
+                        source: root.assetsDir + "matrix-logo-white.svg"
+                        sourceSize: Qt.size(28, 18)
+                        layer.enabled: true
+                        layer.effect: MultiEffect {
+                            colorization: 1
+                            colorizationColor: Theme.surfaceText
+                        }
+                    }
+                }
+
+                SettingsLinkRow {
+                    visible: (root.compositor.redditUrl ?? "") !== ""
+                    title: I18n.tr("r/niri subreddit")
+                    subtitle: root.host(root.compositor.redditUrl ?? "")
+                    url: root.compositor.redditUrl ?? ""
+                    leading: LogoImage {
+                        source: root.assetsDir + "reddit.svg"
+                    }
+                }
+
+                SettingsLinkRow {
+                    visible: (root.compositor.ircUrl ?? "") !== ""
+                    iconName: "forum"
+                    title: I18n.tr("LabWC IRC channel")
+                    subtitle: "libera.chat"
+                    url: root.compositor.ircUrl ?? ""
+                }
             }
         }
 

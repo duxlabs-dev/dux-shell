@@ -63,8 +63,6 @@ Item {
     property int animationDuration: modalHandle.animationDuration
     property real animationScaleCollapsed: modalHandle.animationScaleCollapsed
     property real animationOffset: modalHandle.animationOffset
-    property list<real> animationEnterCurve: modalHandle.animationEnterCurve
-    property list<real> animationExitCurve: modalHandle.animationExitCurve
     property color backgroundColor: modalHandle.backgroundColor
     property color borderColor: modalHandle.borderColor
     property real borderWidth: modalHandle.borderWidth
@@ -306,7 +304,7 @@ Item {
     }
 
     function close() {
-        if (_presentPending || (_fluidMotionActive && (SettingsData.reduceMotion || animationDuration <= 0))) {
+        if (_presentPending || (_fluidMotionActive && (Theme.reduceMotion || animationDuration <= 0))) {
             instantClose();
             return;
         }
@@ -690,8 +688,8 @@ Item {
                     reducedMotion: root.animationDuration <= 0
                     positionEpsilon: Math.max(0.001, 0.25 / root.dpr / modalContainer.morphTravelPx)
                     velocityEpsilon: positionEpsilon * damping / Math.max(0.001, 2 * mass)
-                    stiffness: Theme.springPreset("defaultSpatial", root.animationDuration).stiffness
-                    damping: Theme.springPreset("defaultSpatial", root.animationDuration).damping
+                    stiffness: Theme.springPreset("defaultSpatial").stiffness
+                    damping: Theme.springPreset("defaultSpatial").damping
 
                     Component.onCompleted: snapTo(root.shouldBeVisible ? 1 : 0)
                 }

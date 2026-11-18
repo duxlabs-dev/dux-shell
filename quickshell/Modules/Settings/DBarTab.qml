@@ -57,284 +57,293 @@ Item {
     SettingsPage {
         id: mainColumn
 
-        SettingsCard {
-            iconName: "vertical_align_center"
-            title: I18n.tr("Position")
-            settingKey: "barPosition"
-            visible: bar.selectedBarConfig?.enabled
+        SettingsDeferred {
+            when: bar.selectedBarConfig?.enabled
 
-            SettingsRow {
-                iconName: "info"
-                iconColor: Theme.surfaceVariantText
-                visible: bar.islandShadowedScreenCount > 0
-                title: I18n.tr("%1 position", "bar info row title, %1 is the bar edge name").arg(bar.positionLabel(bar.selectedBarConfig?.position ?? SettingsData.Position.Top))
-                subtitle: I18n.tr("The Island holds this edge on a display this bar covers, so the bar stays hidden there")
-            }
+            SettingsCard {
+                iconName: "vertical_align_center"
+                title: I18n.tr("Position")
+                settingKey: "barPosition"
 
-            SettingsButtonGroupRow {
-                settingKey: "islandFreeOrientation"
-                tags: ["island", "free", "orientation", "horizontal", "vertical"]
-                visible: dankBarTab.selectedIslandFree
-                text: I18n.tr("Orientation", "island settings: horizontal or vertical row for a free island")
-                model: [I18n.tr("Horizontal", "island settings: free island orientation"), I18n.tr("Vertical", "island settings: free island orientation")]
-                currentIndex: SettingsData.islandVertical(bar.selectedBarConfig) ? 1 : 0
-                onSelectionChanged: (index, selected) => {
-                    if (!selected)
-                        return;
-                    SettingsData.updateBarConfig(bar.selectedBarId, {
-                        position: index === 1 ? SettingsData.Position.Left : SettingsData.Position.Top
-                    });
+                SettingsRow {
+                    iconName: "info"
+                    iconColor: Theme.surfaceVariantText
+                    visible: bar.islandShadowedScreenCount > 0
+                    title: I18n.tr("%1 position", "bar info row title, %1 is the bar edge name").arg(bar.positionLabel(bar.selectedBarConfig?.position ?? SettingsData.Position.Top))
+                    subtitle: I18n.tr("The Island holds this edge on a display this bar covers, so the bar stays hidden there")
                 }
-            }
 
-            SettingsLayoutPicker {
-                edgePlacement: true
-                visible: !dankBarTab.selectedIslandFree
-                choices: [SettingsData.Position.Top, SettingsData.Position.Bottom, SettingsData.Position.Left, SettingsData.Position.Right].map(position => ({
-                            key: String(position),
-                            label: bar.positionLabel(position),
-                            enabled: bar.positionChoices.includes(position)
-                        }))
-                selectedKey: String(bar.selectedBarConfig?.position ?? SettingsData.Position.Top)
-                onSelected: key => {
-                    SettingsData.updateBarConfig(bar.selectedBarId, {
-                        position: Number(key)
-                    });
-                    bar.notifyHorizontalBarChange();
+                SettingsButtonGroupRow {
+                    settingKey: "islandFreeOrientation"
+                    tags: ["island", "free", "orientation", "horizontal", "vertical"]
+                    visible: dankBarTab.selectedIslandFree
+                    text: I18n.tr("Orientation", "island settings: horizontal or vertical row for a free island")
+                    model: [I18n.tr("Horizontal", "island settings: free island orientation"), I18n.tr("Vertical", "island settings: free island orientation")]
+                    currentIndex: SettingsData.islandVertical(bar.selectedBarConfig) ? 1 : 0
+                    onSelectionChanged: (index, selected) => {
+                        if (!selected)
+                            return;
+                        SettingsData.updateBarConfig(bar.selectedBarId, {
+                            position: index === 1 ? SettingsData.Position.Left : SettingsData.Position.Top
+                        });
+                    }
                 }
-            }
 
-            SettingsButtonGroupRow {
-                settingKey: "islandPlacement"
-                tags: ["island", "placement", "docked", "overlay", "floating", "float", "free", "anywhere", "edge", "drag", "exclusive", "reserve"]
-                visible: bar.selectedBarIsIsland
-                resetStore: bar
-                resetKeys: ["islandFloating", "islandPlacement"]
-                text: I18n.tr("Placement", "island settings: docked, overlay or floating placement row")
-                model: [I18n.tr("Docked", "island settings: island reserves its edge strip"), I18n.tr("Overlay", "island settings: island floats over windows along its edge without reserving space"), I18n.tr("Floating", "island settings: island can be dragged anywhere on the display")]
-                currentIndex: dankBarTab.placementIndex
-                onSelectionChanged: (index, selected) => {
-                    if (!selected)
-                        return;
-                    const patch = {
-                        islandFloating: index > 0
-                    };
-                    if (index > 0)
-                        patch.islandPlacement = index === 2 ? "free" : "edge";
-                    SettingsData.updateBarConfig(bar.selectedBarId, patch);
-                    bar.notifyHorizontalBarChange();
+                SettingsLayoutPicker {
+                    edgePlacement: true
+                    visible: !dankBarTab.selectedIslandFree
+                    choices: [SettingsData.Position.Top, SettingsData.Position.Bottom, SettingsData.Position.Left, SettingsData.Position.Right].map(position => ({
+                                key: String(position),
+                                label: bar.positionLabel(position),
+                                enabled: bar.positionChoices.includes(position)
+                            }))
+                    selectedKey: String(bar.selectedBarConfig?.position ?? SettingsData.Position.Top)
+                    onSelected: key => {
+                        SettingsData.updateBarConfig(bar.selectedBarId, {
+                            position: Number(key)
+                        });
+                        bar.notifyHorizontalBarChange();
+                    }
                 }
-            }
 
-            SettingsRow {
-                settingKey: "islandNotch"
-                tags: ["island", "notch", "pill", "shape", "style", "flush", "attached", "edge", "corners", "macbook"]
-                title: I18n.tr("Style")
-                visible: dankBarTab.selectedIslandDocked
-                resetStore: bar
-                resetKeys: ["islandNotch"]
-
-                body: SettingsLayoutPicker {
-                    islandShape: true
-                    choices: [
-                        {
-                            key: "pill",
-                            label: I18n.tr("Pill")
-                        },
-                        {
-                            key: "notch",
-                            label: I18n.tr("Notch", "island style option, the island is fused to the screen edge like a notch")
-                        }
-                    ]
-                    selectedKey: bar.islandSetting("islandNotch") ? "notch" : "pill"
-                    onSelected: key => bar.apply("islandNotch", key === "notch")
+                SettingsButtonGroupRow {
+                    settingKey: "islandPlacement"
+                    tags: ["island", "placement", "docked", "overlay", "floating", "float", "free", "anywhere", "edge", "drag", "exclusive", "reserve"]
+                    visible: bar.selectedBarIsIsland
+                    resetStore: bar
+                    resetKeys: ["islandFloating", "islandPlacement"]
+                    text: I18n.tr("Placement", "island settings: docked, overlay or floating placement row")
+                    model: [I18n.tr("Docked", "island settings: island reserves its edge strip"), I18n.tr("Overlay", "island settings: island floats over windows along its edge without reserving space"), I18n.tr("Floating", "island settings: island can be dragged anywhere on the display")]
+                    currentIndex: dankBarTab.placementIndex
+                    onSelectionChanged: (index, selected) => {
+                        if (!selected)
+                            return;
+                        const patch = {
+                            islandFloating: index > 0
+                        };
+                        if (index > 0)
+                            patch.islandPlacement = index === 2 ? "free" : "edge";
+                        SettingsData.updateBarConfig(bar.selectedBarId, patch);
+                        bar.notifyHorizontalBarChange();
+                    }
                 }
-            }
 
-            SettingsRow {
-                visible: dankBarTab.selectedIslandFree
-                body: StyledText {
-                    width: parent.width
-                    text: I18n.tr("Drag to move, click to open activities", "island settings: free placement hint")
-                    color: Theme.surfaceVariantText
-                    font.pixelSize: Theme.fontSizeSmall
-                    wrapMode: Text.WordWrap
+                SettingsRow {
+                    settingKey: "islandNotch"
+                    tags: ["island", "notch", "pill", "shape", "style", "flush", "attached", "edge", "corners", "macbook"]
+                    title: I18n.tr("Style")
+                    visible: dankBarTab.selectedIslandDocked
+                    resetStore: bar
+                    resetKeys: ["islandNotch"]
+
+                    body: SettingsLayoutPicker {
+                        islandShape: true
+                        choices: [
+                            {
+                                key: "pill",
+                                label: I18n.tr("Pill")
+                            },
+                            {
+                                key: "notch",
+                                label: I18n.tr("Notch", "island style option, the island is fused to the screen edge like a notch")
+                            }
+                        ]
+                        selectedKey: bar.islandSetting("islandNotch") ? "notch" : "pill"
+                        onSelected: key => bar.apply("islandNotch", key === "notch")
+                    }
                 }
-            }
 
-            SettingsSliderRow {
-                settingKey: "islandFreeEdgeMargin"
-                tags: ["island", "free", "edge", "margin", "gap"]
-                visible: dankBarTab.selectedIslandFree
-                resetStore: bar
-                resetKeys: ["islandFreeEdgeMargin"]
-                text: I18n.tr("Edge margin", "island settings: gap kept from the display edge")
-                unit: "px"
-                minimum: 0
-                maximum: 64
-                step: 1
-                value: bar.islandSetting("islandFreeEdgeMargin")
-                onSliderDragFinished: value => bar.apply("islandFreeEdgeMargin", value)
-            }
+                SettingsRow {
+                    visible: dankBarTab.selectedIslandFree
+                    body: StyledText {
+                        width: parent.width
+                        text: I18n.tr("Drag to move, click to open activities", "island settings: free placement hint")
+                        color: Theme.surfaceVariantText
+                        font.pixelSize: Theme.fontSizeSmall
+                        wrapMode: Text.WordWrap
+                    }
+                }
 
-            SettingsSliderRow {
-                settingKey: "islandOuterGap"
-                tags: ["island", "placement", "gap", "top", "margin"]
-                visible: dankBarTab.selectedIslandDocked && !bar.islandSetting("islandNotch")
-                resetStore: bar
-                resetKeys: ["islandOuterGap"]
-                text: I18n.tr("Outer gap", "island settings: gap between screen edge and island")
-                unit: "px"
-                minimum: 0
-                maximum: 48
-                step: 1
-                value: bar.islandSetting("islandOuterGap")
-                onSliderDragFinished: value => bar.apply("islandOuterGap", value)
-            }
+                SettingsSliderRow {
+                    settingKey: "islandFreeEdgeMargin"
+                    tags: ["island", "free", "edge", "margin", "gap"]
+                    visible: dankBarTab.selectedIslandFree
+                    resetStore: bar
+                    resetKeys: ["islandFreeEdgeMargin"]
+                    text: I18n.tr("Edge margin", "island settings: gap kept from the display edge")
+                    unit: "px"
+                    minimum: 0
+                    maximum: 64
+                    step: 1
+                    value: bar.islandSetting("islandFreeEdgeMargin")
+                    onSliderDragFinished: value => bar.apply("islandFreeEdgeMargin", value)
+                }
 
-            SettingsSliderRow {
-                settingKey: "islandAlongOffset"
-                tags: ["island", "placement", "horizontal", "vertical", "offset", "center"]
-                visible: dankBarTab.selectedIslandDocked
-                resetStore: bar
-                resetKeys: ["islandAlongOffset"]
-                text: bar.selectedBarIsVertical ? I18n.tr("Vertical offset", "island settings: vertical offset slider") : I18n.tr("Horizontal offset", "island settings: horizontal offset slider")
-                unit: "px"
-                minimum: -600
-                maximum: 600
-                step: 1
-                value: bar.islandSetting("islandAlongOffset")
-                onSliderDragFinished: value => bar.apply("islandAlongOffset", value)
-            }
+                SettingsSliderRow {
+                    settingKey: "islandOuterGap"
+                    tags: ["island", "placement", "gap", "top", "margin"]
+                    visible: dankBarTab.selectedIslandDocked && !bar.islandSetting("islandNotch")
+                    resetStore: bar
+                    resetKeys: ["islandOuterGap"]
+                    text: I18n.tr("Outer gap", "island settings: gap between screen edge and island")
+                    unit: "px"
+                    minimum: 0
+                    maximum: 48
+                    step: 1
+                    value: bar.islandSetting("islandOuterGap")
+                    onSliderDragFinished: value => bar.apply("islandOuterGap", value)
+                }
 
-            SettingsSliderRow {
-                settingKey: "islandReserveThickness"
-                tags: ["island", "placement", "reservation", "exclusive", "height", "width", "thickness"]
-                visible: dankBarTab.selectedIslandDocked
-                resetStore: bar
-                resetKeys: ["islandReserveThickness"]
-                text: bar.selectedBarIsVertical ? I18n.tr("Reserved width", "island settings: reserved strip width slider") : I18n.tr("Reserved height", "island settings: reserved strip height slider")
-                unit: "px"
-                minimum: 24
-                maximum: 128
-                step: 1
-                value: bar.islandSetting("islandReserveThickness")
-                enabled: !bar.islandSetting("islandFloating")
-                onSliderDragFinished: value => bar.apply("islandReserveThickness", value)
+                SettingsSliderRow {
+                    settingKey: "islandAlongOffset"
+                    tags: ["island", "placement", "horizontal", "vertical", "offset", "center"]
+                    visible: dankBarTab.selectedIslandDocked
+                    resetStore: bar
+                    resetKeys: ["islandAlongOffset"]
+                    text: bar.selectedBarIsVertical ? I18n.tr("Vertical offset", "island settings: vertical offset slider") : I18n.tr("Horizontal offset", "island settings: horizontal offset slider")
+                    unit: "px"
+                    minimum: -600
+                    maximum: 600
+                    step: 1
+                    value: bar.islandSetting("islandAlongOffset")
+                    onSliderDragFinished: value => bar.apply("islandAlongOffset", value)
+                }
+
+                SettingsSliderRow {
+                    settingKey: "islandReserveThickness"
+                    tags: ["island", "placement", "reservation", "exclusive", "height", "width", "thickness"]
+                    visible: dankBarTab.selectedIslandDocked
+                    resetStore: bar
+                    resetKeys: ["islandReserveThickness"]
+                    text: bar.selectedBarIsVertical ? I18n.tr("Reserved width", "island settings: reserved strip width slider") : I18n.tr("Reserved height", "island settings: reserved strip height slider")
+                    unit: "px"
+                    minimum: 24
+                    maximum: 128
+                    step: 1
+                    value: bar.islandSetting("islandReserveThickness")
+                    enabled: !bar.islandSetting("islandFloating")
+                    onSliderDragFinished: value => bar.apply("islandReserveThickness", value)
+                }
             }
         }
 
-        SettingsCard {
-            iconName: "display_settings"
-            title: I18n.tr("Displays")
-            settingKey: "barDisplay"
-            collapsible: true
-            expanded: true
-            visible: bar.selectedBarConfig?.enabled
+        SettingsDeferred {
+            when: bar.selectedBarConfig?.enabled
 
-            SettingsDisplayPicker {
-                displayPreferences: bar.selectedBarConfig?.screenPreferences || ["all"]
-                emptyMeansAll: false
-                allowEmpty: true
-                showLastDisplay: true
-                showOnLastDisplay: bar.selectedBarConfig?.showOnLastDisplay ?? true
-                allowHideOnLastDisplay: true
-                hideOnLastDisplay: bar.selectedBarConfig?.hideOnLastDisplay ?? false
-                preferencesHandler: prefs => dankBarTab.setBarScreenPreferences(bar.selectedBarId, prefs)
-                onLastDisplayToggled: checked => dankBarTab.setBarShowOnLastDisplay(bar.selectedBarId, checked)
-                onHideOnLastDisplayToggled: checked => dankBarTab.setBarHideOnLastDisplay(bar.selectedBarId, checked)
+            SettingsCard {
+                iconName: "display_settings"
+                title: I18n.tr("Displays")
+                settingKey: "barDisplay"
+                collapsible: true
+                expanded: true
+
+                SettingsDisplayPicker {
+                    displayPreferences: bar.selectedBarConfig?.screenPreferences || ["all"]
+                    emptyMeansAll: false
+                    allowEmpty: true
+                    showLastDisplay: true
+                    showOnLastDisplay: bar.selectedBarConfig?.showOnLastDisplay ?? true
+                    allowHideOnLastDisplay: true
+                    hideOnLastDisplay: bar.selectedBarConfig?.hideOnLastDisplay ?? false
+                    preferencesHandler: prefs => dankBarTab.setBarScreenPreferences(bar.selectedBarId, prefs)
+                    onLastDisplayToggled: checked => dankBarTab.setBarShowOnLastDisplay(bar.selectedBarId, checked)
+                    onHideOnLastDisplayToggled: checked => dankBarTab.setBarHideOnLastDisplay(bar.selectedBarId, checked)
+                }
             }
         }
 
-        SettingsCard {
-            iconName: "visibility"
-            title: I18n.tr("Visibility", "settings card title for bar or dock show and hide behavior")
-            settingKey: "barVisibility"
-            collapsible: true
-            expanded: false
-            visible: (bar.selectedBarConfig?.enabled ?? false) && (!bar.selectedBarIsIsland || dankBarTab.selectedIslandOverlay)
+        SettingsDeferred {
+            when: (bar.selectedBarConfig?.enabled ?? false) && (!bar.selectedBarIsIsland || dankBarTab.selectedIslandOverlay)
 
-            SettingsRow {
-                iconName: "info"
-                iconColor: Theme.surfaceVariantText
-                visible: bar.islandShadowsSelectedBar
-                title: I18n.tr("Bar visibility")
-                subtitle: I18n.tr("The Island holds this edge on a display this bar covers, so the bar stays hidden there")
-            }
+            SettingsCard {
+                iconName: "visibility"
+                title: I18n.tr("Visibility", "settings card title for bar or dock show and hide behavior")
+                settingKey: "barVisibility"
+                collapsible: true
+                expanded: false
 
-            SettingsToggleSliderRow {
-                resetStore: bar
-                settingKey: "barAutoHide"
-                tags: ["autohide", "auto-hide", "reveal", "intellihide", "delay", "hide"]
-                visible: !bar.islandShadowsSelectedBar && (!bar.selectedBarIsIsland || dankBarTab.selectedIslandOverlay)
-                text: I18n.tr("Auto-hide", "toggle to automatically hide the bar or dock")
-                valueKeys: ["autoHideDelay"]
-                checked: bar.selectedBarConfig?.autoHide ?? false
-                value: bar.selectedBarConfig?.autoHideDelay ?? 250
-                minimum: 0
-                maximum: 2000
-                unit: "ms"
-                onToggled: toggled => {
-                    SettingsData.updateBarConfig(bar.selectedBarId, {
-                        autoHide: toggled
-                    });
-                    bar.notifyHorizontalBarChange();
+                SettingsRow {
+                    iconName: "info"
+                    iconColor: Theme.surfaceVariantText
+                    visible: bar.islandShadowsSelectedBar
+                    title: I18n.tr("Bar visibility")
+                    subtitle: I18n.tr("The Island holds this edge on a display this bar covers, so the bar stays hidden there")
                 }
-                onSliderDragFinished: newValue => SettingsData.updateBarConfig(bar.selectedBarId, {
-                        autoHideDelay: newValue
-                    })
-            }
 
-            SettingsToggleRow {
-                settingKey: "barAutoHideStrict"
-                visible: (bar.selectedBarConfig?.autoHide ?? false) && !bar.islandShadowsSelectedBar && (!bar.selectedBarIsIsland || dankBarTab.selectedIslandOverlay)
-                tags: ["autohide", "strict", "popout"]
-                text: I18n.tr("Strict auto-hide", "Dank bar setting: hide the bar when the pointer leaves even if a menu or bar popover is still open")
-                description: I18n.tr("Hides even while a bar popout or menu is open", "bar strict auto-hide toggle description")
-                checked: bar.selectedBarConfig?.autoHideStrict ?? false
-                onToggled: toggled => {
-                    SettingsData.updateBarConfig(bar.selectedBarId, {
-                        autoHideStrict: toggled
-                    });
-                    bar.notifyHorizontalBarChange();
+                SettingsToggleSliderRow {
+                    resetStore: bar
+                    settingKey: "barAutoHide"
+                    tags: ["autohide", "auto-hide", "reveal", "intellihide", "delay", "hide"]
+                    visible: !bar.islandShadowsSelectedBar && (!bar.selectedBarIsIsland || dankBarTab.selectedIslandOverlay)
+                    text: I18n.tr("Auto-hide", "toggle to automatically hide the bar or dock")
+                    valueKeys: ["autoHideDelay"]
+                    checked: bar.selectedBarConfig?.autoHide ?? false
+                    value: bar.selectedBarConfig?.autoHideDelay ?? 250
+                    minimum: 0
+                    maximum: 2000
+                    unit: "ms"
+                    onToggled: toggled => {
+                        SettingsData.updateBarConfig(bar.selectedBarId, {
+                            autoHide: toggled
+                        });
+                        bar.notifyHorizontalBarChange();
+                    }
+                    onSliderDragFinished: newValue => SettingsData.updateBarConfig(bar.selectedBarId, {
+                            autoHideDelay: newValue
+                        })
                 }
-            }
 
-            SettingsToggleRow {
-                settingKey: "barHideWhenWindowsOpen"
-                tags: ["hide", "windows", "empty", "workspace"]
-                visible: (bar.selectedBarConfig?.autoHide ?? false) && !bar.islandShadowsSelectedBar && (!bar.selectedBarIsIsland || dankBarTab.selectedIslandOverlay) && CompositorService.supportsBarAutoHideReveal
-                text: I18n.tr("Hide when windows open")
-                description: I18n.tr("Stays visible while the workspace has no windows", "bar hide when windows open toggle description")
-                checked: bar.selectedBarConfig?.showOnWindowsOpen ?? false
-                onToggled: toggled => SettingsData.updateBarConfig(bar.selectedBarId, {
-                        showOnWindowsOpen: toggled
-                    })
-            }
+                SettingsToggleRow {
+                    settingKey: "barAutoHideStrict"
+                    visible: (bar.selectedBarConfig?.autoHide ?? false) && !bar.islandShadowsSelectedBar && (!bar.selectedBarIsIsland || dankBarTab.selectedIslandOverlay)
+                    tags: ["autohide", "strict", "popout"]
+                    text: I18n.tr("Strict auto-hide", "Dank bar setting: hide the bar when the pointer leaves even if a menu or bar popover is still open")
+                    description: I18n.tr("Hides even while a bar popout or menu is open", "bar strict auto-hide toggle description")
+                    checked: bar.selectedBarConfig?.autoHideStrict ?? false
+                    onToggled: toggled => {
+                        SettingsData.updateBarConfig(bar.selectedBarId, {
+                            autoHideStrict: toggled
+                        });
+                        bar.notifyHorizontalBarChange();
+                    }
+                }
 
-            SettingsToggleRow {
-                settingKey: "barOpenOnOverview"
-                tags: ["bar", "overview", "niri", "show"]
-                visible: CompositorService.supportsNativeOverview && !bar.islandOwnsSelectedBarTop && !bar.selectedBarFrameStyled
-                text: I18n.tr("Show on overview")
-                checked: bar.selectedBarConfig?.openOnOverview ?? false
-                onToggled: toggled => SettingsData.updateBarConfig(bar.selectedBarId, {
-                        openOnOverview: toggled
-                    })
-            }
+                SettingsToggleRow {
+                    settingKey: "barHideWhenWindowsOpen"
+                    tags: ["hide", "windows", "empty", "workspace"]
+                    visible: (bar.selectedBarConfig?.autoHide ?? false) && !bar.islandShadowsSelectedBar && (!bar.selectedBarIsIsland || dankBarTab.selectedIslandOverlay) && CompositorService.supportsBarAutoHideReveal
+                    text: I18n.tr("Hide when windows open")
+                    description: I18n.tr("Stays visible while the workspace has no windows", "bar hide when windows open toggle description")
+                    checked: bar.selectedBarConfig?.showOnWindowsOpen ?? false
+                    onToggled: toggled => SettingsData.updateBarConfig(bar.selectedBarId, {
+                            showOnWindowsOpen: toggled
+                        })
+                }
 
-            SettingsToggleRow {
-                settingKey: "barManualVisibility"
-                tags: ["manual", "show", "hide", "ipc", "toggle"]
-                visible: !bar.islandOwnsSelectedBarTop
-                text: I18n.tr("Manual show/hide")
-                description: I18n.tr("Off keeps the bar hidden until turned back on or shown over IPC", "bar manual visibility toggle description")
-                checked: bar.selectedBarConfig?.visible ?? true
-                onToggled: toggled => {
-                    SettingsData.updateBarConfig(bar.selectedBarId, {
-                        visible: toggled
-                    });
-                    bar.notifyHorizontalBarChange();
+                SettingsToggleRow {
+                    settingKey: "barOpenOnOverview"
+                    tags: ["bar", "overview", "niri", "show"]
+                    visible: CompositorService.supportsNativeOverview && !bar.islandOwnsSelectedBarTop && !bar.selectedBarFrameStyled
+                    text: I18n.tr("Show on overview")
+                    checked: bar.selectedBarConfig?.openOnOverview ?? false
+                    onToggled: toggled => SettingsData.updateBarConfig(bar.selectedBarId, {
+                            openOnOverview: toggled
+                        })
+                }
+
+                SettingsToggleRow {
+                    settingKey: "barManualVisibility"
+                    tags: ["manual", "show", "hide", "ipc", "toggle"]
+                    visible: !bar.islandOwnsSelectedBarTop
+                    text: I18n.tr("Manual show/hide")
+                    description: I18n.tr("Off keeps the bar hidden until turned back on or shown over IPC", "bar manual visibility toggle description")
+                    checked: bar.selectedBarConfig?.visible ?? true
+                    onToggled: toggled => {
+                        SettingsData.updateBarConfig(bar.selectedBarId, {
+                            visible: toggled
+                        });
+                        bar.notifyHorizontalBarChange();
+                    }
                 }
             }
         }

@@ -258,98 +258,104 @@ Item {
     SettingsPage {
         id: mainColumn
 
-        SettingsCard {
-            width: parent.width
-            iconName: "info"
-            title: I18n.tr("Status")
-            settingKey: "greeterStatus"
-            tags: ["greeter", "login", "sync", "status", "link"]
+        SettingsDeferred {
+            SettingsCard {
+                width: parent.width
+                iconName: "info"
+                title: I18n.tr("Status")
+                settingKey: "greeterStatus"
+                tags: ["greeter", "login", "sync", "status", "link"]
 
-            SettingsRow {
-                iconName: root.greeterStateIcon
-                iconColor: root.greeterStateWarn ? Theme.warning : Theme.primary
-                title: root.greeterStateTitle
-                subtitle: root.greeterStateSubtitle
+                SettingsRow {
+                    iconName: root.greeterStateIcon
+                    iconColor: root.greeterStateWarn ? Theme.warning : Theme.primary
+                    title: root.greeterStateTitle
+                    subtitle: root.greeterStateSubtitle
 
-                DButton {
-                    visible: root.greeterStateAction !== ""
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: root.greeterStateAction
-                    busy: root.greeterSyncRunning
-                    enabled: !root.busy
-                    onClicked: root.runStateAction()
+                    DButton {
+                        visible: root.greeterStateAction !== ""
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: root.greeterStateAction
+                        busy: root.greeterSyncRunning
+                        enabled: !root.busy
+                        onClicked: root.runStateAction()
+                    }
                 }
-            }
 
-            SettingsNoteRow {
-                visible: root.greeterStatusOutput !== ""
-                noteIconName: ""
-                monospace: true
-                maxHeight: SettingsMetrics.noteMaxHeight
-                text: root.greeterStatusOutput
-                tint: root.greeterStatusRunning ? Theme.surfaceVariantText : Theme.surfaceText
-                tintBackground: SettingsMetrics.controlColor
+                SettingsNoteRow {
+                    visible: root.greeterStatusOutput !== ""
+                    noteIconName: ""
+                    monospace: true
+                    maxHeight: SettingsMetrics.noteMaxHeight
+                    text: root.greeterStatusOutput
+                    tint: root.greeterStatusRunning ? Theme.surfaceVariantText : Theme.surfaceText
+                    tintBackground: SettingsMetrics.controlColor
+                }
             }
         }
 
-        SettingsCard {
-            SettingsNavRow {
-                settingKey: "greeterAuth"
-                tags: ["greeter", "login", "authentication", "pam", "fingerprint", "security", "key"]
-                title: I18n.tr("Authentication")
-                iconName: "fingerprint"
-                onClicked: keyboard => root.parentModal?.navigateTo("greeter_auth", keyboard)
+        SettingsDeferred {
+            SettingsCard {
+                SettingsNavRow {
+                    settingKey: "greeterAuth"
+                    tags: ["greeter", "login", "authentication", "pam", "fingerprint", "security", "key"]
+                    title: I18n.tr("Authentication")
+                    iconName: "fingerprint"
+                    onClicked: keyboard => root.parentModal?.navigateTo("greeter_auth", keyboard)
+                }
             }
         }
 
-        SettingsCard {
-            width: parent.width
-            iconName: "widgets"
-            title: I18n.tr("Widgets")
-            settingKey: "greeterWidgets"
-            tags: ["greeter", "login", "widgets", "clock", "session", "layout"]
+        SettingsDeferred {
+            SettingsCard {
+                width: parent.width
+                iconName: "widgets"
+                title: I18n.tr("Widgets")
+                settingKey: "greeterWidgets"
+                tags: ["greeter", "login", "widgets", "clock", "session", "layout"]
 
-            SettingsToggleRow {
-                settingKey: "greeterFollowLockScreen"
-                tags: ["greeter", "login", "lock", "widgets", "layout", "follow"]
-                text: I18n.tr("Follow lock screen", "greeter widgets toggle")
-                description: I18n.tr("The login screen shows the lock screen widgets it supports and its own session picker. Turn off to arrange it separately.", "greeter widgets toggle")
-                checked: SettingsData.greeterFollowLockScreen
-                onToggled: checked => SettingsData.setGreeterFollowLockScreen(checked)
-            }
+                SettingsToggleRow {
+                    settingKey: "greeterFollowLockScreen"
+                    tags: ["greeter", "login", "lock", "widgets", "layout", "follow"]
+                    text: I18n.tr("Follow lock screen", "greeter widgets toggle")
+                    description: I18n.tr("The login screen shows the lock screen widgets it supports and its own session picker. Turn off to arrange it separately.", "greeter widgets toggle")
+                    checked: SettingsData.greeterFollowLockScreen
+                    onToggled: checked => SettingsData.setGreeterFollowLockScreen(checked)
+                }
 
-            SettingsReorderList {
-                id: greeterWidgetList
+                SettingsReorderList {
+                    id: greeterWidgetList
 
-                model: SettingsData.greeterWidgetInstances || []
+                    model: SettingsData.greeterWidgetInstances || []
 
-                delegate: DesktopWidgetInstanceCard {
-                    required property var modelData
+                    delegate: DesktopWidgetInstanceCard {
+                        required property var modelData
 
-                    reorderList: greeterWidgetList
-                    reorderEnabled: false
-                    instanceData: modelData
-                    fixed: SettingsData.greeterFollowLockScreen || modelData.widgetType === "lockAuth" || modelData.widgetType === "greeterSession"
+                        reorderList: greeterWidgetList
+                        reorderEnabled: false
+                        instanceData: modelData
+                        fixed: SettingsData.greeterFollowLockScreen || modelData.widgetType === "lockAuth" || modelData.widgetType === "greeterSession"
 
-                    onConfigureRequested: {
-                        SettingsUiState.selectedDesktopWidgetId = instanceId;
-                        SettingsUiState.selectedWidgetTitle = widgetName;
-                        root.parentModal?.navigateTo("desktop_widget");
-                    }
-                    onDuplicateRequested: SettingsData.duplicateDesktopWidgetInstance(instanceId)
-                    onDeleteRequested: {
-                        SettingsData.removeDesktopWidgetInstance(instanceId);
-                        ToastService.showInfo(I18n.tr("Widget removed"));
+                        onConfigureRequested: {
+                            SettingsUiState.selectedDesktopWidgetId = instanceId;
+                            SettingsUiState.selectedWidgetTitle = widgetName;
+                            root.parentModal?.navigateTo("desktop_widget");
+                        }
+                        onDuplicateRequested: SettingsData.duplicateDesktopWidgetInstance(instanceId)
+                        onDeleteRequested: {
+                            SettingsData.removeDesktopWidgetInstance(instanceId);
+                            ToastService.showInfo(I18n.tr("Widget removed"));
+                        }
                     }
                 }
-            }
 
-            SettingsRow {
-                iconName: "restart_alt"
-                title: I18n.tr("Reset to default")
-                visible: !SettingsData.greeterFollowLockScreen
-                clickable: true
-                onClicked: SettingsData.resetGreeterWidgets()
+                SettingsRow {
+                    iconName: "restart_alt"
+                    title: I18n.tr("Reset to default")
+                    visible: !SettingsData.greeterFollowLockScreen
+                    clickable: true
+                    onClicked: SettingsData.resetGreeterWidgets()
+                }
             }
         }
 

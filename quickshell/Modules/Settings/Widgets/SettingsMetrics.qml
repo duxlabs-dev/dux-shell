@@ -77,13 +77,22 @@ Singleton {
     readonly property color rowHighlightColor: Theme.withAlpha(Theme.primary, highlightBlend)
     readonly property color selectedRowColor: Theme.selectedContainer
     readonly property int transitionDuration: Theme.expressiveDurations.expressiveFastSpatial
+    readonly property int expandDuration: Theme.expressiveDurations.expressiveDefaultSpatial
     readonly property int fadeDuration: Theme.expressiveDurations.expressiveEffects
-    readonly property int pageExitDuration: Theme.expressiveDurations.expressiveFastEffects / 2
-    readonly property int pageEnterFadeDuration: Theme.expressiveDurations.expressiveFastEffects
-    readonly property real pageSlideOffset: Theme.spacingXL * 2
-    readonly property int pageWarmUpDuration: 50
-    readonly property real pagePrepaintOpacity: 0.01
+    // M3 transitions stay on the legacy emphasized easing: MaterialFadeThrough and MaterialSharedAxis in material-components-android
+    readonly property int pageTransitionDuration: Theme.motionMs(450)
+    readonly property var pageTransitionCurve: [0.05, 0, 0.133333, 0.06, 0.166666, 0.4, 0.208333, 0.82, 0.25, 1, 1, 1]
+    readonly property real pageFadeThreshold: 0.35
+    readonly property real pageEnterScale: 0.92
+    readonly property real pageSlideDistance: 30
     readonly property int pageCacheLimit: 6
+    // A hub's header cards sit in a loader and a column below the page's own column
+    readonly property int deferredCardSearchDepth: 3
+    readonly property int pageBuildSlice: 4
+    // Cards past the first screen handed to the incubator at once; it still builds them one after another
+    readonly property int pageIncubationDepth: 3
+    readonly property int pageAnticipationDelay: 90
+    readonly property int pageTeardownInterval: 50
     readonly property int pageSpinnerDelay: 500
     readonly property real fieldWidthXS: Theme.iconButtonSize * 1.5
     readonly property real fieldWidthS: Theme.iconButtonSize * 2

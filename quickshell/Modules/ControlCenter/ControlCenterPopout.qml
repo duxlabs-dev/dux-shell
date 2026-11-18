@@ -8,8 +8,6 @@ DPopout {
     id: root
 
     layerNamespace: "dms:control-center"
-    resizeCurve: Theme.expressiveCurves.standard
-    resizeDuration: CcMetrics.transitionDuration
     resizeMotion: true
     resizing: contentLoader.item?.panelResizing ?? false
     // Hangs above wherever a strip below would push the panel off its resting spot (bottom bar, low side-bar trigger).

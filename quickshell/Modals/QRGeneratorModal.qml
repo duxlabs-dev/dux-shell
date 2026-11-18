@@ -196,8 +196,9 @@ DModal {
 
                     Behavior on opacity {
                         NumberAnimation {
-                            duration: 80
-                            easing.type: Easing.OutCubic
+                            duration: Theme.expressiveDurations.expressiveFastEffects
+                            easing.type: Easing.BezierSpline
+                            easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
                         }
                     }
 

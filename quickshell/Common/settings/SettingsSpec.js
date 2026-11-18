@@ -528,20 +528,11 @@ var LOCAL_SPEC = {
     windSpeedUnit: {
         def: "kmh"
     },
-    syncComponentAnimationSpeeds: {
-        def: true
-    },
     qmlCacheEnabled: {
         def: true
     },
     renderControlEnabled: {
         def: true
-    },
-    popoutAnimationDuration: {
-        def: 150
-    },
-    modalAnimationDuration: {
-        def: 150
     },
     reduceMotion: {
         def: false
@@ -1484,9 +1475,6 @@ var LOCAL_SPEC = {
     },
     notificationPopupPosition: {
         def: 0
-    },
-    notificationAnimationDuration: {
-        def: 200
     },
     notificationHistoryEnabled: {
         def: true

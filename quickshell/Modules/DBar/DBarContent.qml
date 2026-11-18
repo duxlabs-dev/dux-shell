@@ -246,34 +246,38 @@ Item {
     }
 
     Behavior on anchors.leftMargin {
-        enabled: _animateFrameInsets && _usesFrameBarChrome && !SettingsData.reduceMotion
+        enabled: _animateFrameInsets && _usesFrameBarChrome && !Theme.reduceMotion
         NumberAnimation {
-            duration: Theme.shortDuration
-            easing.type: Easing.OutCubic
+            duration: Theme.expressiveDurations.expressiveDefaultSpatial
+            easing.type: Easing.BezierSpline
+            easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
         }
     }
 
     Behavior on anchors.rightMargin {
-        enabled: _animateFrameInsets && _usesFrameBarChrome && !SettingsData.reduceMotion
+        enabled: _animateFrameInsets && _usesFrameBarChrome && !Theme.reduceMotion
         NumberAnimation {
-            duration: Theme.shortDuration
-            easing.type: Easing.OutCubic
+            duration: Theme.expressiveDurations.expressiveDefaultSpatial
+            easing.type: Easing.BezierSpline
+            easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
         }
     }
 
     Behavior on anchors.topMargin {
-        enabled: _animateFrameInsets && _usesFrameBarChrome && !SettingsData.reduceMotion
+        enabled: _animateFrameInsets && _usesFrameBarChrome && !Theme.reduceMotion
         NumberAnimation {
-            duration: Theme.shortDuration
-            easing.type: Easing.OutCubic
+            duration: Theme.expressiveDurations.expressiveDefaultSpatial
+            easing.type: Easing.BezierSpline
+            easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
         }
     }
 
     Behavior on anchors.bottomMargin {
-        enabled: _animateFrameInsets && _usesFrameBarChrome && !SettingsData.reduceMotion
+        enabled: _animateFrameInsets && _usesFrameBarChrome && !Theme.reduceMotion
         NumberAnimation {
-            duration: Theme.shortDuration
-            easing.type: Easing.OutCubic
+            duration: Theme.expressiveDurations.expressiveDefaultSpatial
+            easing.type: Easing.BezierSpline
+            easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
         }
     }
 

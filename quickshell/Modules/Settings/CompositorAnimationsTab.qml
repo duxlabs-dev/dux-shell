@@ -140,39 +140,41 @@ Item {
             note: I18n.tr("DMS will then manage %1 animations and override animation settings in your config.", "animations include setup warning, %1 is the compositor name").arg(root.compositorName)
         }
 
-        SettingsCard {
-            width: parent.width
-            tags: ["niri", "hyprland", "mango", "animations", "motion", "spring", "material", "expressive", "preset", "style", "slowdown", "speed"]
-            title: I18n.tr("Animations")
-            settingKey: "compositorAnimations"
-            iconName: "animation"
+        SettingsDeferred {
+            SettingsCard {
+                width: parent.width
+                tags: ["niri", "hyprland", "mango", "animations", "motion", "spring", "material", "expressive", "preset", "style", "slowdown", "speed"]
+                title: I18n.tr("Animations")
+                settingKey: "compositorAnimations"
+                iconName: "animation"
 
-            SettingsButtonGroupRow {
-                tags: ["animations", "preset", "style", "material", "expressive", "stock", "custom", "window", "workspace"]
-                settingKey: "compositorAnimationPreset"
-                text: I18n.tr("Style")
-                description: root.styleDescription
-                model: root.presetLabels
-                values: CompositorAnimations.PRESETS
-                value: root.preset
-                fallbackValue: "dms"
-                modified: !SettingsData.isDefault(root.resetKeys)
-                resetByKeys: false
-                onResetRequested: root.resetAll()
-                onValueSelected: value => root.selectPreset(value)
-            }
+                SettingsButtonGroupRow {
+                    tags: ["animations", "preset", "style", "material", "expressive", "stock", "custom", "window", "workspace"]
+                    settingKey: "compositorAnimationPreset"
+                    text: I18n.tr("Style")
+                    description: root.styleDescription
+                    model: root.presetLabels
+                    values: CompositorAnimations.PRESETS
+                    value: root.preset
+                    fallbackValue: "dms"
+                    modified: !SettingsData.isDefault(root.resetKeys)
+                    resetByKeys: false
+                    onResetRequested: root.resetAll()
+                    onValueSelected: value => root.selectPreset(value)
+                }
 
-            SettingsSliderRow {
-                tags: ["animations", "slowdown", "speed", "duration", "motion"]
-                settingKey: "compositorAnimationSlowdown"
-                text: I18n.tr("Slowdown", "animation slider, global duration multiplier")
-                value: Math.round(SettingsData.compositorAnimationSlowdown * 10)
-                unit: "×"
-                decimals: 1
-                minimum: Math.round(CompositorAnimations.SLOWDOWN_MIN * 10)
-                maximum: Math.round(CompositorAnimations.SLOWDOWN_MAX * 10)
-                step: 1
-                onSliderDragFinished: finalValue => SettingsData.set("compositorAnimationSlowdown", finalValue / 10)
+                SettingsSliderRow {
+                    tags: ["animations", "slowdown", "speed", "duration", "motion"]
+                    settingKey: "compositorAnimationSlowdown"
+                    text: I18n.tr("Slowdown", "animation slider, global duration multiplier")
+                    value: Math.round(SettingsData.compositorAnimationSlowdown * 10)
+                    unit: "×"
+                    decimals: 1
+                    minimum: Math.round(CompositorAnimations.SLOWDOWN_MIN * 10)
+                    maximum: Math.round(CompositorAnimations.SLOWDOWN_MAX * 10)
+                    step: 1
+                    onSliderDragFinished: finalValue => SettingsData.set("compositorAnimationSlowdown", finalValue / 10)
+                }
             }
         }
 

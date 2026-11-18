@@ -207,7 +207,6 @@ T.Control {
                 bottomRightRadius: height < root.height ? 0 : root.bottomRightRadius
 
                 Behavior on opacity {
-                    enabled: Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
                     NumberAnimation {
                         duration: SettingsMetrics.fadeDuration
                         easing.type: Easing.BezierSpline
@@ -368,7 +367,6 @@ T.Control {
                             enabled: root.enabled
 
                             Behavior on color {
-                                enabled: Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
                                 ColorAnimation {
                                     duration: SettingsMetrics.fadeDuration
                                     easing.type: Easing.BezierSpline

@@ -233,447 +233,453 @@ Column {
         ToastService.showError(I18n.tr("Missing Environment Variables", "qt theme env error title"), I18n.tr("Set one of these environment variables, then restart the shell:\n%1\n\nOnly %2 requires %3 to be installed.", "qt theme env error body, %1 is a list of variable assignments, %2 and %3 are package names").arg(["QT_QPA_PLATFORMTHEME=gtk3", "QT_QPA_PLATFORMTHEME=qt6ct", "QT_QPA_PLATFORMTHEME=qtengine"].join("\n")).arg("qt6ct").arg("qt6ct-kde"));
     }
 
-    SettingsCard {
-        tab: "wallpaper"
-        tags: ["background", "image", "picture", "light", "dark", "mode", "theme", "color", "palette"]
-        settingKey: "wallpaper"
-        SettingsDropdownRow {
+    SettingsDeferred {
+        SettingsCard {
             tab: "wallpaper"
-            tags: ["monitor", "display", "screen"]
-            settingKey: "selectedMonitor"
-            visible: root.perMonitor
-            text: I18n.tr("Display")
-            currentValue: root.displayNameForScreen(root.selectedScreen)
-            options: root.screenNames()
-            onValueChanged: value => SettingsUiState.selectedWallpaperScreen = root.screenForDisplayName(value)
-        }
-
-        SettingsRow {
-            settingKey: "colorMode"
-            tags: ["light", "dark", "mode", "theme", "color", "palette"]
-            paddingH: SettingsMetrics.heroPadding
-            paddingV: SettingsMetrics.heroPadding
-            body: Flow {
-                id: hero
-
-                readonly property bool stacked: width < SettingsMetrics.wallpaperHeroStackWidth
-                readonly property real thumbWidth: stacked ? width : Math.round(Math.min(width, SettingsMetrics.mediaMaxWidth) * SettingsMetrics.wallpaperHeroSplit)
-
-                width: parent.width
-                spacing: Theme.spacingL
-
-                SettingsWallpaperThumb {
-                    id: thumb
-                    width: hero.thumbWidth
-                    path: root.currentWallpaper
-                    height: width / root.displayAspectRatio
-                    showMaterial: true
-                    materialComposition: SessionData.getMonitorMaterialWallpaper(root.selectedScreen)
-                    onBrowse: root.openBrowser()
-                    onPickColor: root.pickColor()
-                    onClear: root.clearWallpaper()
-                }
-
-                Column {
-                    id: side
-
-                    readonly property real navRowHeight: (thumb.height - modeGroup.height - spacing - navGroup.spacing) / 2
-
-                    width: hero.stacked ? hero.width : hero.width - hero.thumbWidth - hero.spacing
-                    spacing: Theme.spacingM
-
-                    DButtonGroup {
-                        id: modeGroup
-                        arrowKeysSelect: false
-                        width: parent.width
-                        fillWidth: true
-                        checkEnabled: false
-                        model: [
-                            {
-                                "text": I18n.tr("Light", "adjective, wallpaper thumbnail label for light mode"),
-                                "icon": "light_mode"
-                            },
-                            {
-                                "text": I18n.tr("Dark", "adjective, wallpaper thumbnail label for dark mode"),
-                                "icon": "dark_mode"
-                            }
-                        ]
-                        currentIndex: SessionData.isLightMode ? 0 : 1
-                        selectionMode: "single"
-                        onSelectionChanged: (index, selected) => {
-                            if (!selected)
-                                return;
-                            const light = index === 0;
-                            if (light === SessionData.isLightMode)
-                                return;
-                            Theme.screenTransition();
-                            Theme.setLightMode(light);
-                        }
-                    }
-
-                    SettingsGroup {
-                        id: navGroup
-                        width: parent.width
-                        slotColor: SettingsMetrics.controlColor
-
-                        SettingsNavRow {
-                            tab: "wallpaper"
-                            tags: ["light", "dark", "mode", "schedule", "location", "automatic"]
-                            settingKey: "themeScheduleNav"
-                            title: I18n.tr("Dark mode")
-                            hint: root.colorModeStatus
-                            iconName: "schedule"
-                            iconBox: true
-                            height: hero.stacked ? implicitHeight : Math.max(implicitHeight, side.navRowHeight)
-                            paddingH: Theme.spacingM
-                            paddingV: Theme.spacingM
-                            onClicked: keyboard => root.parentModal?.navigateTo("theme_schedule", keyboard)
-                        }
-
-                        SettingsNavRow {
-                            tab: "wallpaper"
-                            tags: ["theme", "color", "palette", "matugen", "dynamic", "custom", "registry"]
-                            settingKey: "themeNav"
-                            title: I18n.tr("Theme & colors")
-                            hint: Theme.currentThemeLabel
-                            height: hero.stacked ? implicitHeight : Math.max(implicitHeight, side.navRowHeight)
-                            paddingH: Theme.spacingM
-                            paddingV: Theme.spacingM
-                            onClicked: keyboard => root.parentModal?.navigateTo("theme", keyboard)
-
-                            leading: DPaletteSwatch {
-                                width: SettingsMetrics.heroLeadingSize
-                                height: width
-                                primaryColor: root.themePalette.primary
-                                secondaryColor: root.themePalette.secondary
-                                tertiaryColor: root.themePalette.tertiary
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    SettingsCard {
-        tab: "wallpaper"
-        tags: ["profile", "setup", "preset", "snapshot", "switch"]
-        title: profileGrid.visible ? I18n.tr("Profiles", "settings page for saved setups of DMS settings") : ""
-        iconName: "style"
-        settingKey: "configProfiles"
-
-        // The first profile is only made on the Profiles page, so browsing here never starts the profile service.
-        ProfileGrid {
-            id: profileGrid
-
-            width: parent?.width ?? 0
-            visible: ConfigProfileService.profiles.length > 1
-            columns: Math.max(2, Math.floor(width / SettingsMetrics.previewTileMinWidth))
-            cellSpacing: Theme.spacingS
-            compact: true
-            targetScreen: root.selectedDisplay
-            parentModal: root.parentModal
-        }
-
-        SettingsNavRow {
-            tab: "wallpaper"
-            iconName: profileGrid.visible ? "" : "style"
-            title: profileGrid.visible ? I18n.tr("Manage profiles", "link row opening the page that creates, edits and deletes config profiles") : I18n.tr("Profiles", "settings page for saved setups of DMS settings")
-            onClicked: keyboard => root.parentModal?.navigateTo("profiles", keyboard)
-        }
-    }
-
-    SettingsCard {
-        tab: "wallpaper"
-        tags: ["background", "image", "picture", "fill", "cycling", "transition", "monitor", "display"]
-        title: I18n.tr("Wallpaper")
-        settingKey: "wallpaperOptions"
-
-        SettingsRow {
-            tab: "wallpaper"
-            settingKey: "materialPresets"
-            tags: ["material", "shape", "preset", "dank", "bloom", "orbit", "garden", "petal", "dune"]
-            visible: root.materialWallpaper
-            title: I18n.tr("Material", "wallpaper type")
-            subtitle: I18n.tr("Shown while no image or color is set", "Material wallpaper presets description")
-            modified: root.materialPreset !== Art.defaultPreset
-            onResetRequested: SessionData.setMaterialWallpaperPreset(root.materialTarget, Art.defaultPreset)
-            body: MaterialWallpaperPresets {
-                preset: root.materialPreset
-                seed: root.materialEntry.seed
-                aspectRatio: root.displayAspectRatio
-                onSelected: preset => SessionData.setMaterialWallpaperPreset(root.materialTarget, preset)
-                onRemoveRequested: (preset, label) => root.confirmRemoveProfile(preset, label)
-                onImportRequested: root.openLayoutBrowser()
+            tags: ["background", "image", "picture", "light", "dark", "mode", "theme", "color", "palette"]
+            settingKey: "wallpaper"
+            SettingsDropdownRow {
+                tab: "wallpaper"
+                tags: ["monitor", "display", "screen"]
+                settingKey: "selectedMonitor"
+                visible: root.perMonitor
+                text: I18n.tr("Display")
+                currentValue: root.displayNameForScreen(root.selectedScreen)
+                options: root.screenNames()
+                onValueChanged: value => SettingsUiState.selectedWallpaperScreen = root.screenForDisplayName(value)
             }
 
-            DButton {
-                visible: Art.hiddenBuiltins(SessionData.materialWallpaperProfiles).length > 0
-                text: I18n.tr("Restore")
-                iconName: "restore"
-                onClicked: SessionData.restoreMaterialWallpaperProfiles()
-            }
+            SettingsRow {
+                settingKey: "colorMode"
+                tags: ["light", "dark", "mode", "theme", "color", "palette"]
+                paddingH: SettingsMetrics.heroPadding
+                paddingV: SettingsMetrics.heroPadding
+                body: Flow {
+                    id: hero
 
-            DButton {
-                text: I18n.tr("Create")
-                iconName: "open_in_new"
-                tooltipText: Site.wallpaperCreator
-                onClicked: Qt.openUrlExternally(Site.wallpaperCreator)
-            }
-        }
+                    readonly property bool stacked: width < SettingsMetrics.wallpaperHeroStackWidth
+                    readonly property real thumbWidth: stacked ? width : Math.round(Math.min(width, SettingsMetrics.mediaMaxWidth) * SettingsMetrics.wallpaperHeroSplit)
 
-        SettingsDropdownRow {
-            id: fillModeRow
-
-            readonly property var fillModes: ["Stretch", "Fit", "Fill", "Scrolling", "Tile", "TileVertically", "TileHorizontally", "Pad"]
-            readonly property var fillModeLabels: [I18n.tr("Stretch", "wallpaper fill mode"), I18n.tr("Fit", "wallpaper fill mode"), I18n.tr("Fill", "wallpaper fill mode"), I18n.tr("Scroll", "wallpaper fill mode"), I18n.tr("Tile", "wallpaper fill mode"), I18n.tr("Tile Vertically", "wallpaper fill mode"), I18n.tr("Tile Horizontally", "wallpaper fill mode"), I18n.tr("Pad", "wallpaper fill mode")]
-            // dms picks the animation driver at launch from this setting
-            readonly property bool simpleAnimationDriver: Quickshell.env("QSG_USE_SIMPLE_ANIMATION_DRIVER") === "1"
-            readonly property bool driverMismatch: (SettingsData.wallpaperFillMode === "Scrolling") !== simpleAnimationDriver
-
-            tab: "wallpaper"
-            tags: ["background", "fill", "fit", "stretch", "tile", "scale"]
-            settingKey: "wallpaperFillMode"
-            resetKeys: root.perMonitor ? [] : ["wallpaperFillMode"]
-            text: I18n.tr("Fill mode")
-            description: driverMismatch ? I18n.tr("Requires restart") : ""
-            visible: root.wallpaperIsImage
-            dropdownWidth: 190
-            options: fillModeLabels
-            optionIcons: ["aspect_ratio", "fit_screen", "zoom_out_map", "swipe", "grid_view", "view_agenda", "view_column", "padding"]
-            currentValue: {
-                SessionData.monitorWallpaperFillModes;
-                const mode = root.perMonitor ? SessionData.getMonitorWallpaperFillMode(root.selectedScreen) : SettingsData.wallpaperFillMode;
-                const idx = fillModes.indexOf(mode);
-                return idx >= 0 ? fillModeLabels[idx] : "";
-            }
-            onValueChanged: value => {
-                const idx = fillModeLabels.indexOf(value);
-                if (idx < 0)
-                    return;
-                if (root.perMonitor) {
-                    SessionData.setMonitorWallpaperFillMode(root.selectedScreen, fillModes[idx]);
-                    return;
-                }
-                SettingsData.set("wallpaperFillMode", fillModes[idx]);
-            }
-        }
-
-        ColorDropdownRow {
-            tab: "wallpaper"
-            tags: ["background", "color", "fill", "fit", "custom"]
-            settingKey: "wallpaperBackgroundColorMode"
-            resetKeys: ["wallpaperBackgroundColorMode", "wallpaperBackgroundCustomColor"]
-            text: I18n.tr("Background color")
-            visible: root.wallpaperIsImage
-            dropdownWidth: 220
-            options: [
-                {
-                    "value": "black",
-                    "previewColor": SettingsData.wallpaperBackgroundColorFor("black"),
-                    "label": I18n.tr("Black", "wallpaper background color option")
-                },
-                {
-                    "value": "white",
-                    "previewColor": SettingsData.wallpaperBackgroundColorFor("white"),
-                    "label": I18n.tr("White", "wallpaper background color option")
-                },
-                {
-                    "value": "primary",
-                    "previewColor": SettingsData.wallpaperBackgroundColorFor("primary"),
-                    "label": I18n.tr("Primary")
-                },
-                {
-                    "value": "surface",
-                    "previewColor": SettingsData.wallpaperBackgroundColorFor("surface"),
-                    "label": I18n.tr("Surface Container")
-                },
-                {
-                    "value": "custom",
-                    "label": I18n.tr("Custom")
-                }
-            ]
-            currentMode: SettingsData.wallpaperBackgroundColorMode
-            customColor: SettingsData.wallpaperBackgroundCustomColor || "#000000"
-            pickerTitle: I18n.tr("Background color")
-            onModeSelected: mode => SettingsData.set("wallpaperBackgroundColorMode", mode)
-            onCustomColorSelected: selectedColor => SettingsData.set("wallpaperBackgroundCustomColor", selectedColor.toString())
-        }
-
-        SettingsToggleRow {
-            tab: "wallpaper"
-            tags: ["per-mode", "light", "dark", "theme"]
-            settingKey: "perModeWallpaper"
-            text: I18n.tr("Separate light and dark")
-            checked: SessionData.perModeWallpaper
-            onToggled: toggled => SessionData.setPerModeWallpaper(toggled)
-        }
-
-        SettingsToggleRow {
-            tab: "wallpaper"
-            tags: ["per-monitor", "multi-monitor", "display", "monitor"]
-            settingKey: "perMonitorWallpaper"
-            text: I18n.tr("Separate per display")
-            checked: SessionData.perMonitorWallpaper
-            onToggled: toggled => SessionData.setPerMonitorWallpaper(toggled)
-        }
-
-        SettingsRow {
-            visible: root.perMonitor
-            title: I18n.tr("Use default wallpaper", "inherit the global wallpaper on this display")
-            DButton {
-                text: I18n.tr("Reset")
-                onClicked: SessionData.setMonitorWallpaper(root.selectedScreen, "")
-            }
-        }
-
-        SettingsDropdownRow {
-            tab: "wallpaper"
-            tags: ["matugen", "target", "monitor", "theming", "dynamic", "colors"]
-            settingKey: "matugenTargetMonitor"
-            visible: root.perMonitor
-            text: I18n.tr("Matugen source display")
-            description: I18n.tr("Theme colors come from this display's wallpaper", "matugen source display dropdown description")
-            currentValue: {
-                if (!SettingsData.matugenTargetMonitor)
-                    return root.displayNameForScreen(root.firstScreenName()) + " (" + I18n.tr("Default") + ")";
-                return root.displayNameForScreen(SettingsData.matugenTargetMonitor);
-            }
-            options: root.screenNames()
-            onValueChanged: value => {
-                const screen = root.screenForDisplayName(value);
-                if (screen)
-                    SettingsData.setMatugenTargetMonitor(screen);
-            }
-        }
-
-        SettingsSplitRow {
-            tab: "wallpaper"
-            tags: ["cycling", "automatic", "rotate", "slideshow", "folder", "interval"]
-            settingKey: "wallpaperCyclingEnabled"
-            visible: (SessionData.wallpaperPath !== "" || root.perMonitor) && !root.perMode
-            title: I18n.tr("Automatic cycling")
-            subtitle: SettingsTabs.page("wallpaper_cycling")?.hint ?? ""
-            checked: root.cyclingEnabled
-            onNavigated: keyboard => root.parentModal?.navigateTo("wallpaper_cycling", keyboard)
-            onToggled: toggled => {
-                if (root.perMonitor) {
-                    SessionData.setMonitorCyclingEnabled(root.selectedScreen, toggled);
-                    return;
-                }
-                SessionData.setWallpaperCyclingEnabled(toggled);
-            }
-        }
-
-        SettingsDropdownRow {
-            tab: "wallpaper"
-            tags: ["transition", "effect", "animation", "change"]
-            settingKey: "wallpaperTransition"
-            resetStore: SessionData
-            resetKeys: ["wallpaperTransition"]
-            text: I18n.tr("Transition", "noun, wallpaper change animation setting label")
-
-            function getTransitionLabel(t) {
-                switch (t) {
-                case "random":
-                    return I18n.tr("Random", "wallpaper transition option");
-                case "none":
-                    return I18n.tr("None", "wallpaper transition option");
-                case "fade":
-                    return I18n.tr("Fade", "wallpaper transition option");
-                case "wipe":
-                    return I18n.tr("Wipe", "wallpaper transition option");
-                case "disc":
-                    return I18n.tr("Disc", "wallpaper transition option");
-                case "stripes":
-                    return I18n.tr("Stripes", "wallpaper transition option");
-                case "iris bloom":
-                    return I18n.tr("Iris Bloom", "wallpaper transition option");
-                case "pixelate":
-                    return I18n.tr("Pixelate", "wallpaper transition option");
-                case "portal":
-                    return I18n.tr("Portal", "wallpaper transition option");
-                default:
-                    return t.charAt(0).toUpperCase() + t.slice(1);
-                }
-            }
-
-            currentValue: getTransitionLabel(SessionData.wallpaperTransition)
-            options: [I18n.tr("Random", "wallpaper transition option")].concat(SessionData.availableWallpaperTransitions.map(t => getTransitionLabel(t)))
-            onValueChanged: value => {
-                const transitionMap = {};
-                transitionMap[I18n.tr("Random", "wallpaper transition option")] = "random";
-                SessionData.availableWallpaperTransitions.forEach(t => {
-                    transitionMap[getTransitionLabel(t)] = t;
-                });
-                SessionData.setWallpaperTransition(transitionMap[value] || value.toLowerCase());
-            }
-        }
-
-        SettingsRow {
-            visible: SessionData.wallpaperTransition === "random"
-            body: Column {
-                width: parent.width
-                spacing: Theme.spacingS
-
-                StyledText {
-                    text: I18n.tr("Include transitions")
-                    font.pixelSize: Theme.fontSizeMedium
-                    font.weight: Theme.fontWeightMedium
-                    color: Theme.surfaceText
-                }
-
-                DFilterChips {
                     width: parent.width
-                    multiSelect: true
-                    model: SessionData.availableWallpaperTransitions.filter(t => t !== "none").map(t => ({
-                                "value": t,
-                                "label": t.replace(/\b\w/g, c => c.toUpperCase())
-                            }))
-                    selectedValues: SessionData.includedTransitions
-                    onSelectionToggled: (index, selected) => {
-                        const transition = model[index].value;
-                        let included = SessionData.includedTransitions.slice();
-                        if (selected && !included.includes(transition))
-                            included.push(transition);
-                        else if (!selected)
-                            included = included.filter(t => t !== transition);
-                        SessionData.includedTransitions = included;
+                    spacing: Theme.spacingL
+
+                    SettingsWallpaperThumb {
+                        id: thumb
+                        width: hero.thumbWidth
+                        path: root.currentWallpaper
+                        height: width / root.displayAspectRatio
+                        showMaterial: true
+                        materialComposition: SessionData.getMonitorMaterialWallpaper(root.selectedScreen)
+                        onBrowse: root.openBrowser()
+                        onPickColor: root.pickColor()
+                        onClear: root.clearWallpaper()
+                    }
+
+                    Column {
+                        id: side
+
+                        readonly property real navRowHeight: (thumb.height - modeGroup.height - spacing - navGroup.spacing) / 2
+
+                        width: hero.stacked ? hero.width : hero.width - hero.thumbWidth - hero.spacing
+                        spacing: Theme.spacingM
+
+                        DButtonGroup {
+                            id: modeGroup
+                            arrowKeysSelect: false
+                            width: parent.width
+                            fillWidth: true
+                            checkEnabled: false
+                            model: [
+                                {
+                                    "text": I18n.tr("Light", "adjective, wallpaper thumbnail label for light mode"),
+                                    "icon": "light_mode"
+                                },
+                                {
+                                    "text": I18n.tr("Dark", "adjective, wallpaper thumbnail label for dark mode"),
+                                    "icon": "dark_mode"
+                                }
+                            ]
+                            currentIndex: SessionData.isLightMode ? 0 : 1
+                            selectionMode: "single"
+                            onSelectionChanged: (index, selected) => {
+                                if (!selected)
+                                    return;
+                                const light = index === 0;
+                                if (light === SessionData.isLightMode)
+                                    return;
+                                Theme.screenTransition();
+                                Theme.setLightMode(light);
+                            }
+                        }
+
+                        SettingsGroup {
+                            id: navGroup
+                            width: parent.width
+                            slotColor: SettingsMetrics.controlColor
+
+                            SettingsNavRow {
+                                tab: "wallpaper"
+                                tags: ["light", "dark", "mode", "schedule", "location", "automatic"]
+                                settingKey: "themeScheduleNav"
+                                title: I18n.tr("Dark mode")
+                                hint: root.colorModeStatus
+                                iconName: "schedule"
+                                iconBox: true
+                                height: hero.stacked ? implicitHeight : Math.max(implicitHeight, side.navRowHeight)
+                                paddingH: Theme.spacingM
+                                paddingV: Theme.spacingM
+                                onClicked: keyboard => root.parentModal?.navigateTo("theme_schedule", keyboard)
+                            }
+
+                            SettingsNavRow {
+                                tab: "wallpaper"
+                                tags: ["theme", "color", "palette", "matugen", "dynamic", "custom", "registry"]
+                                settingKey: "themeNav"
+                                title: I18n.tr("Theme & colors")
+                                hint: Theme.currentThemeLabel
+                                height: hero.stacked ? implicitHeight : Math.max(implicitHeight, side.navRowHeight)
+                                paddingH: Theme.spacingM
+                                paddingV: Theme.spacingM
+                                onClicked: keyboard => root.parentModal?.navigateTo("theme", keyboard)
+
+                                leading: DPaletteSwatch {
+                                    width: SettingsMetrics.heroLeadingSize
+                                    height: width
+                                    primaryColor: root.themePalette.primary
+                                    secondaryColor: root.themePalette.secondary
+                                    tertiaryColor: root.themePalette.tertiary
+                                }
+                            }
+                        }
                     }
                 }
             }
         }
+    }
 
-        SettingsToggleRow {
+    SettingsDeferred {
+        SettingsCard {
             tab: "wallpaper"
-            tags: ["blur", "overview", "niri"]
-            settingKey: "blurWallpaperOnOverview"
-            visible: CompositorService.isNiri
-            text: I18n.tr("Blur on overview")
-            checked: SettingsData.blurWallpaperOnOverview
-            onToggled: checked => SettingsData.set("blurWallpaperOnOverview", checked)
-        }
+            tags: ["profile", "setup", "preset", "snapshot", "switch"]
+            title: profileGrid.visible ? I18n.tr("Profiles", "settings page for saved setups of DMS settings") : ""
+            iconName: "style"
+            settingKey: "configProfiles"
 
-        SettingsNavRow {
-            tab: "wallpaper"
-            tags: ["lock", "screen", "background"]
-            iconName: "lock"
-            title: I18n.tr("Lock screen")
-            hint: SettingsData.lockScreenWallpaperPath ? SettingsData.lockScreenWallpaperPath.split("/").pop() : I18n.tr("Use desktop wallpaper")
-            onClicked: keyboard => {
-                SettingsSearchService.navigateToSection("lockScreenWallpaperPath");
-                root.parentModal?.navigateTo("lock_screen", keyboard);
+            // The first profile is only made on the Profiles page, so browsing here never starts the profile service.
+            ProfileGrid {
+                id: profileGrid
+
+                width: parent?.width ?? 0
+                visible: ConfigProfileService.profiles.length > 1
+                columns: Math.max(2, Math.floor(width / SettingsMetrics.previewTileMinWidth))
+                cellSpacing: Theme.spacingS
+                compact: true
+                targetScreen: root.selectedDisplay
+                parentModal: root.parentModal
+            }
+
+            SettingsNavRow {
+                tab: "wallpaper"
+                iconName: profileGrid.visible ? "" : "style"
+                title: profileGrid.visible ? I18n.tr("Manage profiles", "link row opening the page that creates, edits and deletes config profiles") : I18n.tr("Profiles", "settings page for saved setups of DMS settings")
+                onClicked: keyboard => root.parentModal?.navigateTo("profiles", keyboard)
             }
         }
+    }
 
-        SettingsNavRow {
+    SettingsDeferred {
+        SettingsCard {
             tab: "wallpaper"
-            tags: ["folders", "directories", "library"]
-            settingKey: "wallpaperFolders"
-            iconName: "folder"
-            title: I18n.tr("Wallpapers", "wallpaper folders settings row")
-            hint: SettingsTabs.page("wallpaper_folders")?.hint ?? ""
-            onClicked: keyboard => root.parentModal?.navigateTo("wallpaper_folders", keyboard)
+            tags: ["background", "image", "picture", "fill", "cycling", "transition", "monitor", "display"]
+            title: I18n.tr("Wallpaper")
+            settingKey: "wallpaperOptions"
+
+            SettingsRow {
+                tab: "wallpaper"
+                settingKey: "materialPresets"
+                tags: ["material", "shape", "preset", "dank", "bloom", "orbit", "garden", "petal", "dune"]
+                visible: root.materialWallpaper
+                title: I18n.tr("Material", "wallpaper type")
+                subtitle: I18n.tr("Shown while no image or color is set", "Material wallpaper presets description")
+                modified: root.materialPreset !== Art.defaultPreset
+                onResetRequested: SessionData.setMaterialWallpaperPreset(root.materialTarget, Art.defaultPreset)
+                body: MaterialWallpaperPresets {
+                    preset: root.materialPreset
+                    seed: root.materialEntry.seed
+                    aspectRatio: root.displayAspectRatio
+                    onSelected: preset => SessionData.setMaterialWallpaperPreset(root.materialTarget, preset)
+                    onRemoveRequested: (preset, label) => root.confirmRemoveProfile(preset, label)
+                    onImportRequested: root.openLayoutBrowser()
+                }
+
+                DButton {
+                    visible: Art.hiddenBuiltins(SessionData.materialWallpaperProfiles).length > 0
+                    text: I18n.tr("Restore")
+                    iconName: "restore"
+                    onClicked: SessionData.restoreMaterialWallpaperProfiles()
+                }
+
+                DButton {
+                    text: I18n.tr("Create")
+                    iconName: "open_in_new"
+                    tooltipText: Site.wallpaperCreator
+                    onClicked: Qt.openUrlExternally(Site.wallpaperCreator)
+                }
+            }
+
+            SettingsDropdownRow {
+                id: fillModeRow
+
+                readonly property var fillModes: ["Stretch", "Fit", "Fill", "Scrolling", "Tile", "TileVertically", "TileHorizontally", "Pad"]
+                readonly property var fillModeLabels: [I18n.tr("Stretch", "wallpaper fill mode"), I18n.tr("Fit", "wallpaper fill mode"), I18n.tr("Fill", "wallpaper fill mode"), I18n.tr("Scroll", "wallpaper fill mode"), I18n.tr("Tile", "wallpaper fill mode"), I18n.tr("Tile Vertically", "wallpaper fill mode"), I18n.tr("Tile Horizontally", "wallpaper fill mode"), I18n.tr("Pad", "wallpaper fill mode")]
+                // dms picks the animation driver at launch from this setting
+                readonly property bool simpleAnimationDriver: Quickshell.env("QSG_USE_SIMPLE_ANIMATION_DRIVER") === "1"
+                readonly property bool driverMismatch: (SettingsData.wallpaperFillMode === "Scrolling") !== simpleAnimationDriver
+
+                tab: "wallpaper"
+                tags: ["background", "fill", "fit", "stretch", "tile", "scale"]
+                settingKey: "wallpaperFillMode"
+                resetKeys: root.perMonitor ? [] : ["wallpaperFillMode"]
+                text: I18n.tr("Fill mode")
+                description: driverMismatch ? I18n.tr("Requires restart") : ""
+                visible: root.wallpaperIsImage
+                dropdownWidth: 190
+                options: fillModeLabels
+                optionIcons: ["aspect_ratio", "fit_screen", "zoom_out_map", "swipe", "grid_view", "view_agenda", "view_column", "padding"]
+                currentValue: {
+                    SessionData.monitorWallpaperFillModes;
+                    const mode = root.perMonitor ? SessionData.getMonitorWallpaperFillMode(root.selectedScreen) : SettingsData.wallpaperFillMode;
+                    const idx = fillModes.indexOf(mode);
+                    return idx >= 0 ? fillModeLabels[idx] : "";
+                }
+                onValueChanged: value => {
+                    const idx = fillModeLabels.indexOf(value);
+                    if (idx < 0)
+                        return;
+                    if (root.perMonitor) {
+                        SessionData.setMonitorWallpaperFillMode(root.selectedScreen, fillModes[idx]);
+                        return;
+                    }
+                    SettingsData.set("wallpaperFillMode", fillModes[idx]);
+                }
+            }
+
+            ColorDropdownRow {
+                tab: "wallpaper"
+                tags: ["background", "color", "fill", "fit", "custom"]
+                settingKey: "wallpaperBackgroundColorMode"
+                resetKeys: ["wallpaperBackgroundColorMode", "wallpaperBackgroundCustomColor"]
+                text: I18n.tr("Background color")
+                visible: root.wallpaperIsImage
+                dropdownWidth: 220
+                options: [
+                    {
+                        "value": "black",
+                        "previewColor": SettingsData.wallpaperBackgroundColorFor("black"),
+                        "label": I18n.tr("Black", "wallpaper background color option")
+                    },
+                    {
+                        "value": "white",
+                        "previewColor": SettingsData.wallpaperBackgroundColorFor("white"),
+                        "label": I18n.tr("White", "wallpaper background color option")
+                    },
+                    {
+                        "value": "primary",
+                        "previewColor": SettingsData.wallpaperBackgroundColorFor("primary"),
+                        "label": I18n.tr("Primary")
+                    },
+                    {
+                        "value": "surface",
+                        "previewColor": SettingsData.wallpaperBackgroundColorFor("surface"),
+                        "label": I18n.tr("Surface Container")
+                    },
+                    {
+                        "value": "custom",
+                        "label": I18n.tr("Custom")
+                    }
+                ]
+                currentMode: SettingsData.wallpaperBackgroundColorMode
+                customColor: SettingsData.wallpaperBackgroundCustomColor || "#000000"
+                pickerTitle: I18n.tr("Background color")
+                onModeSelected: mode => SettingsData.set("wallpaperBackgroundColorMode", mode)
+                onCustomColorSelected: selectedColor => SettingsData.set("wallpaperBackgroundCustomColor", selectedColor.toString())
+            }
+
+            SettingsToggleRow {
+                tab: "wallpaper"
+                tags: ["per-mode", "light", "dark", "theme"]
+                settingKey: "perModeWallpaper"
+                text: I18n.tr("Separate light and dark")
+                checked: SessionData.perModeWallpaper
+                onToggled: toggled => SessionData.setPerModeWallpaper(toggled)
+            }
+
+            SettingsToggleRow {
+                tab: "wallpaper"
+                tags: ["per-monitor", "multi-monitor", "display", "monitor"]
+                settingKey: "perMonitorWallpaper"
+                text: I18n.tr("Separate per display")
+                checked: SessionData.perMonitorWallpaper
+                onToggled: toggled => SessionData.setPerMonitorWallpaper(toggled)
+            }
+
+            SettingsRow {
+                visible: root.perMonitor
+                title: I18n.tr("Use default wallpaper", "inherit the global wallpaper on this display")
+                DButton {
+                    text: I18n.tr("Reset")
+                    onClicked: SessionData.setMonitorWallpaper(root.selectedScreen, "")
+                }
+            }
+
+            SettingsDropdownRow {
+                tab: "wallpaper"
+                tags: ["matugen", "target", "monitor", "theming", "dynamic", "colors"]
+                settingKey: "matugenTargetMonitor"
+                visible: root.perMonitor
+                text: I18n.tr("Matugen source display")
+                description: I18n.tr("Theme colors come from this display's wallpaper", "matugen source display dropdown description")
+                currentValue: {
+                    if (!SettingsData.matugenTargetMonitor)
+                        return root.displayNameForScreen(root.firstScreenName()) + " (" + I18n.tr("Default") + ")";
+                    return root.displayNameForScreen(SettingsData.matugenTargetMonitor);
+                }
+                options: root.screenNames()
+                onValueChanged: value => {
+                    const screen = root.screenForDisplayName(value);
+                    if (screen)
+                        SettingsData.setMatugenTargetMonitor(screen);
+                }
+            }
+
+            SettingsSplitRow {
+                tab: "wallpaper"
+                tags: ["cycling", "automatic", "rotate", "slideshow", "folder", "interval"]
+                settingKey: "wallpaperCyclingEnabled"
+                visible: (SessionData.wallpaperPath !== "" || root.perMonitor) && !root.perMode
+                title: I18n.tr("Automatic cycling")
+                subtitle: SettingsTabs.page("wallpaper_cycling")?.hint ?? ""
+                checked: root.cyclingEnabled
+                onNavigated: keyboard => root.parentModal?.navigateTo("wallpaper_cycling", keyboard)
+                onToggled: toggled => {
+                    if (root.perMonitor) {
+                        SessionData.setMonitorCyclingEnabled(root.selectedScreen, toggled);
+                        return;
+                    }
+                    SessionData.setWallpaperCyclingEnabled(toggled);
+                }
+            }
+
+            SettingsDropdownRow {
+                tab: "wallpaper"
+                tags: ["transition", "effect", "animation", "change"]
+                settingKey: "wallpaperTransition"
+                resetStore: SessionData
+                resetKeys: ["wallpaperTransition"]
+                text: I18n.tr("Transition", "noun, wallpaper change animation setting label")
+
+                function getTransitionLabel(t) {
+                    switch (t) {
+                    case "random":
+                        return I18n.tr("Random", "wallpaper transition option");
+                    case "none":
+                        return I18n.tr("None", "wallpaper transition option");
+                    case "fade":
+                        return I18n.tr("Fade", "wallpaper transition option");
+                    case "wipe":
+                        return I18n.tr("Wipe", "wallpaper transition option");
+                    case "disc":
+                        return I18n.tr("Disc", "wallpaper transition option");
+                    case "stripes":
+                        return I18n.tr("Stripes", "wallpaper transition option");
+                    case "iris bloom":
+                        return I18n.tr("Iris Bloom", "wallpaper transition option");
+                    case "pixelate":
+                        return I18n.tr("Pixelate", "wallpaper transition option");
+                    case "portal":
+                        return I18n.tr("Portal", "wallpaper transition option");
+                    default:
+                        return t.charAt(0).toUpperCase() + t.slice(1);
+                    }
+                }
+
+                currentValue: getTransitionLabel(SessionData.wallpaperTransition)
+                options: [I18n.tr("Random", "wallpaper transition option")].concat(SessionData.availableWallpaperTransitions.map(t => getTransitionLabel(t)))
+                onValueChanged: value => {
+                    const transitionMap = {};
+                    transitionMap[I18n.tr("Random", "wallpaper transition option")] = "random";
+                    SessionData.availableWallpaperTransitions.forEach(t => {
+                        transitionMap[getTransitionLabel(t)] = t;
+                    });
+                    SessionData.setWallpaperTransition(transitionMap[value] || value.toLowerCase());
+                }
+            }
+
+            SettingsRow {
+                visible: SessionData.wallpaperTransition === "random"
+                body: Column {
+                    width: parent.width
+                    spacing: Theme.spacingS
+
+                    StyledText {
+                        text: I18n.tr("Include transitions")
+                        font.pixelSize: Theme.fontSizeMedium
+                        font.weight: Theme.fontWeightMedium
+                        color: Theme.surfaceText
+                    }
+
+                    DFilterChips {
+                        width: parent.width
+                        multiSelect: true
+                        model: SessionData.availableWallpaperTransitions.filter(t => t !== "none").map(t => ({
+                                    "value": t,
+                                    "label": t.replace(/\b\w/g, c => c.toUpperCase())
+                                }))
+                        selectedValues: SessionData.includedTransitions
+                        onSelectionToggled: (index, selected) => {
+                            const transition = model[index].value;
+                            let included = SessionData.includedTransitions.slice();
+                            if (selected && !included.includes(transition))
+                                included.push(transition);
+                            else if (!selected)
+                                included = included.filter(t => t !== transition);
+                            SessionData.includedTransitions = included;
+                        }
+                    }
+                }
+            }
+
+            SettingsToggleRow {
+                tab: "wallpaper"
+                tags: ["blur", "overview", "niri"]
+                settingKey: "blurWallpaperOnOverview"
+                visible: CompositorService.isNiri
+                text: I18n.tr("Blur on overview")
+                checked: SettingsData.blurWallpaperOnOverview
+                onToggled: checked => SettingsData.set("blurWallpaperOnOverview", checked)
+            }
+
+            SettingsNavRow {
+                tab: "wallpaper"
+                tags: ["lock", "screen", "background"]
+                iconName: "lock"
+                title: I18n.tr("Lock screen")
+                hint: SettingsData.lockScreenWallpaperPath ? SettingsData.lockScreenWallpaperPath.split("/").pop() : I18n.tr("Use desktop wallpaper")
+                onClicked: keyboard => {
+                    SettingsSearchService.navigateToSection("lockScreenWallpaperPath");
+                    root.parentModal?.navigateTo("lock_screen", keyboard);
+                }
+            }
+
+            SettingsNavRow {
+                tab: "wallpaper"
+                tags: ["folders", "directories", "library"]
+                settingKey: "wallpaperFolders"
+                iconName: "folder"
+                title: I18n.tr("Wallpapers", "wallpaper folders settings row")
+                hint: SettingsTabs.page("wallpaper_folders")?.hint ?? ""
+                onClicked: keyboard => root.parentModal?.navigateTo("wallpaper_folders", keyboard)
+            }
         }
     }
 

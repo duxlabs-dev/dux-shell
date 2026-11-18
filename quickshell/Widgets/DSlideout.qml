@@ -64,7 +64,6 @@ PanelWindow {
         if (hoverDismissSuspended)
             return;
         hoverDismissEnabled = false;
-        slideContainer.slideSlowExit = true;
         hide();
     }
 
@@ -222,9 +221,8 @@ PanelWindow {
         anchors.rightMargin: root.alignedEdgeGap
         anchors.leftMargin: root.alignedEdgeGap
 
-        property bool slideSlowExit: false
-        readonly property var slideSpringParams: Theme.springPreset("default", slideSlowExit ? Math.round(Theme.expressiveDurations.expressiveDefaultSpatial) : Theme.expressiveDurations.expressiveDefaultSpatial)
-        readonly property var widthSpringParams: Theme.springPreset("default", Theme.popoutAnimationDuration)
+        readonly property var slideSpringParams: Theme.springPreset("defaultSpatial")
+        readonly property var widthSpringParams: Theme.springPreset("defaultSpatial")
 
         SpringMotion {
             id: slideSpring
@@ -242,14 +240,12 @@ PanelWindow {
                     return;
                 if (!root.isVisible)
                     root.mappedVisible = false;
-                slideContainer.slideSlowExit = false;
             }
         }
 
         SpringMotion {
             id: widthSpring
             enabled: root.expandable
-            reducedMotion: Theme.popoutAnimationDuration <= 0
             positionEpsilon: 0.05
             velocityEpsilon: 0.05
             stiffness: slideContainer.widthSpringParams.stiffness

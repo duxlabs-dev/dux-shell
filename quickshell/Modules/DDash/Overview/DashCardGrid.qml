@@ -103,6 +103,13 @@ DEditableGrid {
     }
 
     readonly property Item lastFocusTarget: lastFocusEntry
+    readonly property bool loading: {
+        for (let i = 0; i < slotRepeater.count; i++) {
+            if (slotRepeater.itemAt(i)?.loading)
+                return true;
+        }
+        return false;
+    }
     readonly property bool blocksTabNavigation: {
         for (let i = 0; i < slotRepeater.count; i++) {
             const slot = slotRepeater.itemAt(i);

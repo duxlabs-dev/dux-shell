@@ -286,23 +286,25 @@ BasePill {
 
             Behavior on opacity {
                 NumberAnimation {
-                    duration: Theme.shortDuration
-                    easing.type: Theme.standardEasing
+                    duration: Theme.expressiveDurations.expressiveFastEffects
+                    easing.type: Easing.BezierSpline
+                    easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
                 }
             }
 
             Behavior on implicitWidth {
                 NumberAnimation {
-                    duration: Theme.mediumDuration
+                    duration: Theme.expressiveDurations.expressiveDefaultSpatial
                     easing.type: Easing.BezierSpline
-                    easing.bezierCurve: Theme.expressiveCurves.emphasizedDecel
+                    easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
                 }
             }
 
             Behavior on implicitHeight {
                 NumberAnimation {
-                    duration: Theme.shortDuration
-                    easing.type: Theme.standardEasing
+                    duration: Theme.expressiveDurations.expressiveDefaultSpatial
+                    easing.type: Easing.BezierSpline
+                    easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
                 }
             }
 
@@ -396,9 +398,9 @@ BasePill {
 
                         Behavior on width {
                             NumberAnimation {
-                                duration: Theme.mediumDuration
+                                duration: Theme.expressiveDurations.expressiveDefaultSpatial
                                 easing.type: Easing.BezierSpline
-                                easing.bezierCurve: Theme.expressiveCurves.emphasizedDecel
+                                easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
                             }
                         }
 

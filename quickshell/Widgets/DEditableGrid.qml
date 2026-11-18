@@ -14,7 +14,6 @@ Item {
     property real minimumHeight: 0
     property real contentPadding: 0
     property real placeholderRadius: Theme.cornerRadiusXL
-    property bool animationsEnabled: Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
     property bool animateLayout: false
     // Slots take layout changes as they come, for a layout that an animation elsewhere already drives frame by frame.
     property bool holdLayout: false
@@ -180,7 +179,9 @@ Item {
         if (!pinnedCells)
             pin();
         if (rowLimit > 0 && changes.h !== undefined)
-            changes = Object.assign({}, changes, { "h": Math.min(changes.h, rowLimit - pinnedCells[index].row) });
+            changes = Object.assign({}, changes, {
+                "h": Math.min(changes.h, rowLimit - pinnedCells[index].row)
+            });
         if (sizePreview?.index === index && JSON.stringify(sizePreview.changes) === JSON.stringify(changes))
             return;
         sizePreview = {
@@ -239,7 +240,6 @@ Item {
         color: Theme.withAlpha(Theme.primary, Theme.stateLayerDrag)
 
         Behavior on x {
-            enabled: root.animationsEnabled
             NumberAnimation {
                 duration: Theme.expressiveDurations.expressiveFastSpatial
                 easing.type: Easing.BezierSpline
@@ -248,7 +248,6 @@ Item {
         }
 
         Behavior on y {
-            enabled: root.animationsEnabled
             NumberAnimation {
                 duration: Theme.expressiveDurations.expressiveFastSpatial
                 easing.type: Easing.BezierSpline

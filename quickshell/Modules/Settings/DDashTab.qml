@@ -54,151 +54,159 @@ FocusScope {
     }
 
     SettingsPage {
-        SettingsCard {
-            title: I18n.tr("Weather")
-
-            SettingsNavRow {
-                tab: "dank_dash"
-                settingKey: "dashWeatherSettings"
+        SettingsDeferred {
+            SettingsCard {
                 title: I18n.tr("Weather")
-                iconName: "partly_cloudy_day"
-                onClicked: keyboard => root.parentModal?.navigateTo("weather", keyboard)
+
+                SettingsNavRow {
+                    tab: "dank_dash"
+                    settingKey: "dashWeatherSettings"
+                    title: I18n.tr("Weather")
+                    iconName: "partly_cloudy_day"
+                    onClicked: keyboard => root.parentModal?.navigateTo("weather", keyboard)
+                }
             }
         }
 
-        SettingsCard {
-            title: I18n.tr("Media player")
-
-            SettingsNavRow {
-                tab: "dank_dash"
-                settingKey: "dashMediaSettings"
+        SettingsDeferred {
+            SettingsCard {
                 title: I18n.tr("Media player")
-                hint: I18n.tr("Lyrics providers", "Lyrics source priority settings")
-                iconName: "music_note"
-                onClicked: keyboard => root.parentModal?.navigateTo("media_player", keyboard)
+
+                SettingsNavRow {
+                    tab: "dank_dash"
+                    settingKey: "dashMediaSettings"
+                    title: I18n.tr("Media player")
+                    hint: I18n.tr("Lyrics providers", "Lyrics source priority settings")
+                    iconName: "music_note"
+                    onClicked: keyboard => root.parentModal?.navigateTo("media_player", keyboard)
+                }
             }
         }
 
-        SettingsCard {
-            title: I18n.tr("Digital wellbeing", "settings page and dashboard tab title, screen time tracking")
-
-            SettingsNavRow {
-                tab: "dank_dash"
-                settingKey: "dashWellbeingSettings"
+        SettingsDeferred {
+            SettingsCard {
                 title: I18n.tr("Digital wellbeing", "settings page and dashboard tab title, screen time tracking")
-                hint: I18n.tr("Screen time and app limits", "settings sidebar hint and dashboard tab description for digital wellbeing")
-                iconName: "digital_wellbeing"
-                onClicked: root.parentModal?.navigateTo("wellbeing")
+
+                SettingsNavRow {
+                    tab: "dank_dash"
+                    settingKey: "dashWellbeingSettings"
+                    title: I18n.tr("Digital wellbeing", "settings page and dashboard tab title, screen time tracking")
+                    hint: I18n.tr("Screen time and app limits", "settings sidebar hint and dashboard tab description for digital wellbeing")
+                    iconName: "digital_wellbeing"
+                    onClicked: root.parentModal?.navigateTo("wellbeing")
+                }
             }
         }
 
-        SettingsCard {
-            title: I18n.tr("Tabs", "noun, card title for dashboard tabs")
-            settingKey: "dashTabs"
-            tab: "dank_dash"
+        SettingsDeferred {
+            SettingsCard {
+                title: I18n.tr("Tabs", "noun, card title for dashboard tabs")
+                settingKey: "dashTabs"
+                tab: "dank_dash"
 
-            headerActions: DActionButton {
-                iconName: "refresh"
-                iconSize: Theme.iconSizeSmall
-                tooltipText: I18n.tr("Reset to default")
-                onClicked: {
-                    SettingsData.resetDashTabs();
-                    SettingsData.resetToDefault(["dashTabPosition", "dashTabsEvenlySpaced"]);
-                }
-            }
-
-            SettingsDropdownRow {
-                text: I18n.tr("Position")
-                readonly property var positions: [
-                    {
-                        value: "auto",
-                        text: I18n.tr("Auto")
-                    },
-                    {
-                        value: "left",
-                        text: I18n.tr("Left")
-                    },
-                    {
-                        value: "right",
-                        text: I18n.tr("Right")
-                    },
-                    {
-                        value: "bottom",
-                        text: I18n.tr("Bottom")
-                    },
-                    {
-                        value: "center",
-                        text: I18n.tr("Center")
+                headerActions: DActionButton {
+                    iconName: "refresh"
+                    iconSize: Theme.iconSizeSmall
+                    tooltipText: I18n.tr("Reset to default")
+                    onClicked: {
+                        SettingsData.resetDashTabs();
+                        SettingsData.resetToDefault(["dashTabPosition", "dashTabsEvenlySpaced"]);
                     }
-                ]
-                settingKey: "dashTabPosition"
-                tab: "dank_dash"
-                tags: ["dashboard", "tabs", "position", "navigation"]
-                currentValue: (positions.find(option => option.value === SettingsData.dashTabPosition) ?? positions[0]).text
-                options: positions.map(option => option.text)
-                onValueChanged: value => {
-                    const option = positions.find(option => option.text === value);
-                    if (option)
-                        SettingsData.set("dashTabPosition", option.value);
                 }
-            }
 
-            SettingsToggleRow {
-                settingKey: "dashTabsEvenlySpaced"
-                tab: "dank_dash"
-                tags: ["dashboard", "tabs", "spacing", "navigation"]
-                text: I18n.tr("Evenly space tabs", "dashboard tab bar toggle")
-                checked: SettingsData.dashTabsEvenlySpaced
-                onToggled: checked => SettingsData.set("dashTabsEvenlySpaced", checked)
-            }
-
-            SettingsReorderList {
-                id: tabList
-
-                model: ScriptModel {
-                    values: root.tabs
-                    objectProp: "id"
-                }
-                onReordered: indices => SettingsData.setDashTabOrder(indices.map(i => root.tabs[i].id))
-
-                delegate: SettingsReorderRow {
-                    id: tabRow
-
-                    required property var modelData
-
-                    reorderList: tabList
-
-                    readonly property bool available: modelData.available !== false
-
-                    iconName: modelData.icon
-                    iconColor: available && modelData.enabled ? Theme.primary : Theme.onSurface_38
-                    titleColor: available ? Theme.surfaceText : Theme.onSurface_38
-                    title: modelData.text
-                    subtitle: available ? modelData.description ?? "" : I18n.tr("Disabled")
-                    clickable: available
-                    onClicked: SettingsData.setDashTabEnabled(modelData.id, !modelData.enabled)
-
-                    Row {
-                        spacing: Theme.spacingXS
-                        anchors.verticalCenter: parent.verticalCenter
-
-                        DActionButton {
-                            anchors.verticalCenter: parent.verticalCenter
-                            objectName: "editDashTab"
-                            iconName: "edit"
-                            tooltipText: I18n.tr("Edit")
-                            Accessible.description: tabRow.modelData.text
-                            visible: !tabRow.modelData.action
-                            enabled: tabRow.available
-                            onClicked: PopoutService.openDankDashEditor(tabRow.modelData.id, root.Window.window?.screen)
+                SettingsDropdownRow {
+                    text: I18n.tr("Position")
+                    readonly property var positions: [
+                        {
+                            value: "auto",
+                            text: I18n.tr("Auto")
+                        },
+                        {
+                            value: "left",
+                            text: I18n.tr("Left")
+                        },
+                        {
+                            value: "right",
+                            text: I18n.tr("Right")
+                        },
+                        {
+                            value: "bottom",
+                            text: I18n.tr("Bottom")
+                        },
+                        {
+                            value: "center",
+                            text: I18n.tr("Center")
                         }
+                    ]
+                    settingKey: "dashTabPosition"
+                    tab: "dank_dash"
+                    tags: ["dashboard", "tabs", "position", "navigation"]
+                    currentValue: (positions.find(option => option.value === SettingsData.dashTabPosition) ?? positions[0]).text
+                    options: positions.map(option => option.text)
+                    onValueChanged: value => {
+                        const option = positions.find(option => option.text === value);
+                        if (option)
+                            SettingsData.set("dashTabPosition", option.value);
+                    }
+                }
 
-                        DToggle {
+                SettingsToggleRow {
+                    settingKey: "dashTabsEvenlySpaced"
+                    tab: "dank_dash"
+                    tags: ["dashboard", "tabs", "spacing", "navigation"]
+                    text: I18n.tr("Evenly space tabs", "dashboard tab bar toggle")
+                    checked: SettingsData.dashTabsEvenlySpaced
+                    onToggled: checked => SettingsData.set("dashTabsEvenlySpaced", checked)
+                }
+
+                SettingsReorderList {
+                    id: tabList
+
+                    model: ScriptModel {
+                        values: root.tabs
+                        objectProp: "id"
+                    }
+                    onReordered: indices => SettingsData.setDashTabOrder(indices.map(i => root.tabs[i].id))
+
+                    delegate: SettingsReorderRow {
+                        id: tabRow
+
+                        required property var modelData
+
+                        reorderList: tabList
+
+                        readonly property bool available: modelData.available !== false
+
+                        iconName: modelData.icon
+                        iconColor: available && modelData.enabled ? Theme.primary : Theme.onSurface_38
+                        titleColor: available ? Theme.surfaceText : Theme.onSurface_38
+                        title: modelData.text
+                        subtitle: available ? modelData.description ?? "" : I18n.tr("Disabled")
+                        clickable: available
+                        onClicked: SettingsData.setDashTabEnabled(modelData.id, !modelData.enabled)
+
+                        Row {
+                            spacing: Theme.spacingXS
                             anchors.verticalCenter: parent.verticalCenter
-                            hideText: true
-                            checked: tabRow.modelData.enabled
-                            enabled: tabRow.available
-                            onToggled: checked => SettingsData.setDashTabEnabled(tabRow.modelData.id, checked)
+
+                            DActionButton {
+                                anchors.verticalCenter: parent.verticalCenter
+                                objectName: "editDashTab"
+                                iconName: "edit"
+                                tooltipText: I18n.tr("Edit")
+                                Accessible.description: tabRow.modelData.text
+                                visible: !tabRow.modelData.action
+                                enabled: tabRow.available
+                                onClicked: PopoutService.openDankDashEditor(tabRow.modelData.id, root.Window.window?.screen)
+                            }
+
+                            DToggle {
+                                anchors.verticalCenter: parent.verticalCenter
+                                hideText: true
+                                checked: tabRow.modelData.enabled
+                                enabled: tabRow.available
+                                onToggled: checked => SettingsData.setDashTabEnabled(tabRow.modelData.id, checked)
+                            }
                         }
                     }
                 }

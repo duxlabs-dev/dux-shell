@@ -45,7 +45,7 @@ BasePill {
     Timer {
         interval: 50
         repeat: true
-        running: battery.critical && battery.surfaceLive && !SettingsData.reduceMotion
+        running: battery.critical && battery.surfaceLive && !Theme.reduceMotion
         onRunningChanged: {
             battery.criticalTick = 0;
             battery.criticalPulse = 0;

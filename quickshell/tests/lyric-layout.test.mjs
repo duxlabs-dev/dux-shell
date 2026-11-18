@@ -36,6 +36,13 @@ test("lyric scrolling sleeps through the hold and stops at the end", () => {
     assert.equal(layout.scrollState(motion, 15, 0).wait, Infinity);
 });
 
+test("a scroll run stops where the slot runs out of text, after the playback time that takes", () => {
+    const motion = { start: 10, end: 20, from: 0, to: 200, hold: 0, speed: 50 };
+    const state = layout.scrollState(motion, 12, 100);
+    assert.equal(state.to, 100);
+    assert.ok(Math.abs(state.left - 3) < 1e-9);
+});
+
 test("a lyric without a finite end traverses once at the fallback speed", () => {
     for (const end of [Infinity, NaN, 10]) {
         const motion = { start: 10, end, from: 0, to: 200, hold: 1, speed: 50 };

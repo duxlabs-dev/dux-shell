@@ -649,13 +649,16 @@ Item {
 
                     Behavior on width {
                         NumberAnimation {
-                            duration: Theme.shortDuration
-                            easing.type: Easing.OutCubic
+                            duration: Theme.expressiveDurations.expressiveDefaultSpatial
+                            easing.type: Easing.BezierSpline
+                            easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
                         }
                     }
                     Behavior on color {
                         ColorAnimation {
-                            duration: Theme.shortDuration
+                            duration: Theme.expressiveDurations.expressiveFastEffects
+                            easing.type: Easing.BezierSpline
+                            easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
                         }
                     }
                 }
@@ -709,13 +712,16 @@ Item {
 
                     Behavior on height {
                         NumberAnimation {
-                            duration: Theme.shortDuration
-                            easing.type: Easing.OutCubic
+                            duration: Theme.expressiveDurations.expressiveDefaultSpatial
+                            easing.type: Easing.BezierSpline
+                            easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
                         }
                     }
                     Behavior on color {
                         ColorAnimation {
-                            duration: Theme.shortDuration
+                            duration: Theme.expressiveDurations.expressiveFastEffects
+                            easing.type: Easing.BezierSpline
+                            easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
                         }
                     }
                 }
