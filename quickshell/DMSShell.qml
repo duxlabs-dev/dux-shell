@@ -35,6 +35,12 @@ Item {
     readonly property var _refreshRateServiceRef: RefreshRateService
 
     property var core: null
+    readonly property bool globalShortcutPromptPending: GlobalShortcutsService.prompts.length > 0
+
+    onGlobalShortcutPromptPendingChanged: {
+        if (globalShortcutPromptPending)
+            globalShortcutsModalLoader.active = true;
+    }
 
     property bool osdSurfacesLoaded: false
     property int pendingOsdResumeReloads: 0
@@ -998,6 +1004,14 @@ Item {
         WorkspaceRenameModal {
             id: workspaceRenameModal
         }
+    }
+
+    LazyLoader {
+        id: globalShortcutsModalLoader
+
+        active: false
+
+        GlobalShortcutsModal {}
     }
 
     LazyLoader {

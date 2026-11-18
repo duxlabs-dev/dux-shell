@@ -297,32 +297,42 @@ Item {
             }
         }
 
-        IslandBehaviorCard {
-            store: dot
-            keyPrefix: "dot"
-            docked: false
-            isDot: true
+        SettingsDeferred {
+            IslandBehaviorCard {
+                store: dot
+                keyPrefix: "dot"
+                docked: false
+                isDot: true
+            }
         }
 
-        IslandAppearanceCard {
-            store: dot
-            keyPrefix: "dot"
+        SettingsDeferred {
+            IslandAppearanceCard {
+                store: dot
+                keyPrefix: "dot"
+            }
         }
 
-        IslandActivitiesCard {
-            store: dot
-            keyPrefix: "dot"
+        SettingsDeferred {
+            IslandActivitiesCard {
+                store: dot
+                keyPrefix: "dot"
+            }
         }
 
-        IslandNotificationsCard {
-            store: dot
-            keyPrefix: "dot"
-            badgeGated: false
+        SettingsDeferred {
+            IslandNotificationsCard {
+                store: dot
+                keyPrefix: "dot"
+                badgeGated: false
+            }
         }
 
-        IslandMotionCard {
-            store: dot
-            keyPrefix: "dot"
+        SettingsDeferred {
+            IslandMotionCard {
+                store: dot
+                keyPrefix: "dot"
+            }
         }
     }
 }

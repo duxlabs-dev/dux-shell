@@ -187,15 +187,23 @@ func GetOutputDir() string {
 		return dir
 	}
 
-	if xdgPics := utils.XDGPicturesDir(); xdgPics != "" {
-		screenshotDir := filepath.Join(xdgPics, "Screenshots")
+	home, _ := os.UserHomeDir()
+	pictures := utils.XDGPicturesDir()
+	// Without user-dirs.dirs, match the ~/Pictures that Qt and the settings page assume.
+	if pictures == "" && home != "" {
+		pictures = filepath.Join(home, "Pictures")
+	}
+	if pictures != "" {
+		screenshotDir := filepath.Join(pictures, "Screenshots")
 		if err := os.MkdirAll(screenshotDir, 0o755); err == nil {
 			return screenshotDir
 		}
-		return xdgPics
+		if info, err := os.Stat(pictures); err == nil && info.IsDir() {
+			return pictures
+		}
 	}
 
-	if home, err := os.UserHomeDir(); err == nil {
+	if home != "" {
 		return home
 	}
 	return "."

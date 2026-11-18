@@ -897,6 +897,6 @@ Item {
 
     ConfirmDialogOverlay {
         id: uninstallThemeConfirm
-        parent: themeColorsTab.parentModal?.modalFocusScope ?? themeColorsTab
+        parent: themeColorsTab.parentModal?.dialogHostFor(themeColorsTab) ?? themeColorsTab
     }
 }

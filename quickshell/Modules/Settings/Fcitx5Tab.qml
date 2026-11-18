@@ -315,7 +315,7 @@ Item {
     SettingsRenameDialog {
         id: renameDialog
 
-        parent: root.parentModal?.modalFocusScope ?? root
+        parent: root.parentModal?.dialogHostFor(root) ?? root
         title: I18n.tr("Rename")
         onAccepted: name => root.renameGroup(root.renameTarget, name)
     }
@@ -432,89 +432,98 @@ Item {
             }
         }
 
-        SettingsCard {
-            width: parent.width
-            visible: root.editable && root.behaviorRows.length > 0
-            tags: ["fcitx5", "input method", "behavior", "preedit", "share", "state"]
-            title: I18n.tr("Behavior")
-            settingKey: "fcitx5Behavior"
-            iconName: "tune"
-            collapsible: true
+        SettingsDeferred {
+            when: root.editable && root.behaviorRows.length > 0
 
-            Repeater {
-                model: root.behaviorRows
+            SettingsCard {
+                width: parent.width
+                tags: ["fcitx5", "input method", "behavior", "preedit", "share", "state"]
+                title: I18n.tr("Behavior")
+                settingKey: "fcitx5Behavior"
+                iconName: "tune"
+                collapsible: true
 
-                delegate: Fcitx5Row {
-                    required property var modelData
+                Repeater {
+                    model: root.behaviorRows
 
-                    row: modelData
-                    value: Fcitx5Schema.getPath(root.globalValue, modelData.path)
-                    onValueEdited: (path, value) => root.saveGlobal(path, value)
-                }
-            }
-        }
+                    delegate: Fcitx5Row {
+                        required property var modelData
 
-        SettingsCard {
-            width: parent.width
-            visible: root.editable && root.hotkeyRows.length > 0
-            tags: ["fcitx5", "input method", "hotkey", "shortcut", "toggle", "switch"]
-            title: I18n.tr("Keyboard shortcuts")
-            settingKey: "fcitx5Hotkeys"
-            iconName: "keyboard_command_key"
-            collapsible: true
-            expanded: false
-
-            Repeater {
-                model: root.hotkeyRows
-
-                delegate: Fcitx5Row {
-                    required property var modelData
-
-                    row: modelData
-                    value: Fcitx5Schema.getPath(root.globalValue, modelData.path)
-                    onValueEdited: (path, value) => root.saveGlobal(path, value)
-                }
-            }
-        }
-
-        SettingsCard {
-            width: parent.width
-            visible: root.editable && addonModel.count > 0
-            tags: ["fcitx5", "input method", "plugin", "addon", "module"]
-            title: I18n.tr("Plugins")
-            settingKey: "fcitx5Plugins"
-            iconName: "extension"
-            collapsible: true
-
-            Repeater {
-                model: addonModel
-
-                delegate: SettingsSplitRow {
-                    required property int index
-                    required property string uniqueName
-                    required property string name
-                    required property string comment
-                    required property int category
-                    required property bool configurable
-                    required property bool addonEnabled
-
-                    iconName: root.addonIcons[category]
-                    iconColor: checked ? Theme.primary : Theme.onSurfaceVariant
-                    title: name
-                    subtitle: comment
-                    navigable: configurable
-                    clickable: true
-                    checked: addonEnabled
-                    onNavigated: keyboard => {
-                        if (!configurable) {
-                            root.setAddonEnabled(index, !checked);
-                            return;
-                        }
-                        SettingsUiState.selectedFcitx5Addon = uniqueName;
-                        SettingsUiState.selectedFcitx5AddonTitle = name;
-                        root.parentModal?.navigateTo("fcitx5_addon", keyboard);
+                        row: modelData
+                        value: Fcitx5Schema.getPath(root.globalValue, modelData.path)
+                        onValueEdited: (path, value) => root.saveGlobal(path, value)
                     }
-                    onToggled: value => root.setAddonEnabled(index, value)
+                }
+            }
+        }
+
+        SettingsDeferred {
+            when: root.editable && root.hotkeyRows.length > 0
+
+            SettingsCard {
+                width: parent.width
+                tags: ["fcitx5", "input method", "hotkey", "shortcut", "toggle", "switch"]
+                title: I18n.tr("Keyboard shortcuts")
+                settingKey: "fcitx5Hotkeys"
+                iconName: "keyboard_command_key"
+                collapsible: true
+                expanded: false
+
+                Repeater {
+                    model: root.hotkeyRows
+
+                    delegate: Fcitx5Row {
+                        required property var modelData
+
+                        row: modelData
+                        value: Fcitx5Schema.getPath(root.globalValue, modelData.path)
+                        onValueEdited: (path, value) => root.saveGlobal(path, value)
+                    }
+                }
+            }
+        }
+
+        SettingsDeferred {
+            when: root.editable && addonModel.count > 0
+
+            SettingsCard {
+                width: parent.width
+                tags: ["fcitx5", "input method", "plugin", "addon", "module"]
+                title: I18n.tr("Plugins")
+                settingKey: "fcitx5Plugins"
+                iconName: "extension"
+                collapsible: true
+
+                Repeater {
+                    model: addonModel
+
+                    delegate: SettingsSplitRow {
+                        required property int index
+                        required property string uniqueName
+                        required property string name
+                        required property string comment
+                        required property int category
+                        required property bool configurable
+                        required property bool addonEnabled
+
+                        iconName: root.addonIcons[category]
+                        iconColor: checked ? Theme.primary : Theme.onSurfaceVariant
+                        title: name
+                        subtitle: comment
+                        navigable: configurable
+                        clickable: true
+                        checked: addonEnabled
+                        onNavigated: keyboard => {
+                            if (!configurable) {
+                                root.setAddonEnabled(index, !checked);
+                                return;
+                            }
+                            SettingsUiState.selectedFcitx5Addon = uniqueName;
+                            SettingsUiState.selectedFcitx5AddonTitle = name;
+                            root.parentModal?.navigateTo("fcitx5_addon", keyboard);
+                        }
+                        onToggled: value => root.setAddonEnabled(index, value)
+                    }
                 }
             }
         }

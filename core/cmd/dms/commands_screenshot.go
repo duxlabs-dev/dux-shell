@@ -10,12 +10,15 @@ import (
 	"os"
 	"path/filepath"
 	"runtime/debug"
+	"strconv"
 	"strings"
 
 	"github.com/duxlabs-dev/dux-shell/core/internal/notify"
 	"github.com/duxlabs-dev/dux-shell/core/internal/qsipc"
 	"github.com/duxlabs-dev/dux-shell/core/internal/screenshot"
+	"github.com/duxlabs-dev/dux-shell/core/internal/utils"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 var (
@@ -197,6 +200,78 @@ func init() {
 	screenshotCmd.AddCommand(ssListCmd)
 
 	screenshotCmd.Run = runScreenshotRegion
+	screenshotCmd.PersistentPreRun = func(cmd *cobra.Command, _ []string) {
+		applyScreenshotSettings(shellSettings(), cmd.Flags())
+	}
+}
+
+type screenshotSettings struct {
+	Dir            *string `json:"screenshotDir"`
+	Format         *string `json:"screenshotFormat"`
+	Quality        *int    `json:"screenshotQuality"`
+	Cursor         *bool   `json:"screenshotCursor"`
+	Clipboard      *bool   `json:"screenshotClipboard"`
+	ClipboardFile  *bool   `json:"screenshotClipboardFile"`
+	SaveFile       *bool   `json:"screenshotSaveFile"`
+	Notify         *bool   `json:"screenshotNotify"`
+	ConfirmRegion  *bool   `json:"screenshotConfirmRegion"`
+	HUD            *string `json:"screenshotHud"`
+	ScrollInterval *int    `json:"screenshotScrollInterval"`
+}
+
+func applyScreenshotSettings(data []byte, flags *pflag.FlagSet) {
+	var s screenshotSettings
+	if len(data) == 0 || json.Unmarshal(data, &s) != nil {
+		return
+	}
+	set := func(name, value string) {
+		if flags.Lookup(name) == nil || flags.Changed(name) {
+			return
+		}
+		_ = flags.Set(name, value)
+	}
+	setBool := func(name string, v *bool, invert bool) {
+		if v == nil {
+			return
+		}
+		set(name, strconv.FormatBool(*v != invert))
+	}
+
+	if s.Dir != nil && *s.Dir != "" {
+		if dir, err := utils.ExpandPath(*s.Dir); err == nil {
+			set("dir", dir)
+		}
+	}
+	if s.Format != nil && *s.Format != "" {
+		set("format", *s.Format)
+	}
+	if s.Quality != nil {
+		set("quality", strconv.Itoa(*s.Quality))
+	}
+	if s.Cursor != nil && *s.Cursor {
+		set("cursor", "on")
+	}
+	if s.HUD != nil && *s.HUD != "" {
+		set("hud", *s.HUD)
+	}
+	if s.ScrollInterval != nil {
+		set("interval", strconv.Itoa(*s.ScrollInterval))
+	}
+	// A bind that turns one output off keeps the other, whatever the settings say.
+	explicitlyOff := func(name string) bool {
+		f := flags.Lookup(name)
+		return f != nil && flags.Changed(name) && f.Value.String() == "true"
+	}
+	noFile, noClipboard := explicitlyOff("no-file"), explicitlyOff("no-clipboard")
+	if !noFile {
+		setBool("no-clipboard", s.Clipboard, true)
+	}
+	if !noClipboard {
+		setBool("no-file", s.SaveFile, true)
+	}
+	setBool("clipboard-file", s.ClipboardFile, false)
+	setBool("no-notify", s.Notify, true)
+	setBool("no-confirm", s.ConfirmRegion, true)
 }
 
 func getScreenshotConfig(mode screenshot.Mode) screenshot.Config {
@@ -405,6 +480,9 @@ func runScreenshot(config screenshot.Config) {
 		}
 
 		filePath = filepath.Join(outputDir, filename)
+		if err := os.MkdirAll(filepath.Dir(filePath), 0o755); err != nil {
+			exitScreenshotError(" creating directory", err)
+		}
 		if err := screenshot.WriteToFileWithFormat(result.Buffer, filePath, config.Format, config.Quality, result.Format, result.CICP); err != nil {
 			exitScreenshotError(" writing file", err)
 		}

@@ -121,6 +121,18 @@ Singleton {
     property string clipboardTypeFilter: Spec.SPEC.clipboardTypeFilter.def
     property var clipboardVisibleEntryActions: Spec.SPEC.clipboardVisibleEntryActions.def
 
+    property string screenshotDir: Spec.SPEC.screenshotDir.def
+    property string screenshotFormat: Spec.SPEC.screenshotFormat.def
+    property int screenshotQuality: Spec.SPEC.screenshotQuality.def
+    property bool screenshotCursor: Spec.SPEC.screenshotCursor.def
+    property bool screenshotClipboard: Spec.SPEC.screenshotClipboard.def
+    property bool screenshotClipboardFile: Spec.SPEC.screenshotClipboardFile.def
+    property bool screenshotSaveFile: Spec.SPEC.screenshotSaveFile.def
+    property bool screenshotNotify: Spec.SPEC.screenshotNotify.def
+    property bool screenshotConfirmRegion: Spec.SPEC.screenshotConfirmRegion.def
+    property string screenshotHud: Spec.SPEC.screenshotHud.def
+    property int screenshotScrollInterval: Spec.SPEC.screenshotScrollInterval.def
+
     property var launcherPluginVisibility: Spec.SPEC.launcherPluginVisibility.def
 
     function getPluginAllowWithoutTrigger(pluginId) {

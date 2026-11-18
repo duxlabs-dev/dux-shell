@@ -207,7 +207,7 @@ FocusScope {
                 expanded: false
 
                 Repeater {
-                    model: optionCard.options.length
+                    model: optionCard.contentWanted ? optionCard.options.length : 0
 
                     DashOptionRow {
                         required property int index

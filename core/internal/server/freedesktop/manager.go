@@ -2,6 +2,7 @@ package freedesktop
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"sync"
@@ -13,13 +14,16 @@ import (
 )
 
 func NewManager() (*Manager, error) {
-	systemConn, err := dbus.SystemBus()
-	if err != nil {
-		return nil, fmt.Errorf("failed to connect to system bus: %w", err)
+	systemConn, systemErr := dbus.SystemBus()
+	sessionConn, sessionErr := dbus.SessionBus()
+	if systemErr != nil && sessionErr != nil {
+		return nil, fmt.Errorf("failed to connect to system or session bus: %w", errors.Join(systemErr, sessionErr))
 	}
-
-	sessionConn, err := dbus.SessionBus()
-	if err != nil {
+	if systemErr != nil {
+		log.Warnf("Accounts service unavailable: %v", systemErr)
+		systemConn = nil
+	}
+	if sessionErr != nil {
 		sessionConn = nil
 	}
 
@@ -43,6 +47,13 @@ func NewManager() (*Manager, error) {
 }
 
 func (m *Manager) initializeAccounts() error {
+	if m.systemConn == nil {
+		m.stateMutex.Lock()
+		m.state.Accounts.Available = false
+		m.stateMutex.Unlock()
+		return fmt.Errorf("no system bus connection")
+	}
+
 	accountsManager := m.systemConn.Object(dbusAccountsDest, dbus.ObjectPath(dbusAccountsPath))
 
 	var userPath dbus.ObjectPath

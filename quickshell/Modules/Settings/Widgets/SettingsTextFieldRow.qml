@@ -9,6 +9,7 @@ SettingsRow {
     property string description: ""
     property alias value: field.text
     property alias labelText: field.labelText
+    property alias alwaysFloatLabel: field.alwaysFloatLabel
     property alias leftIconName: field.leftIconName
     property alias isError: field.isError
     property alias supportingText: field.supportingText

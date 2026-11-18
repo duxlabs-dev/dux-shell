@@ -179,8 +179,8 @@ FocusScope {
     readonly property real pageGridHeight: fixedHeight ? Math.min(availableGridHeight, fixedGridHeight) : availableGridHeight
     readonly property DPanelResizer panelResizer: DPanelResizer {
         popout: root.host
-        pointerItem: panelChrome
-        pointerInset: panelChrome.contentInset
+        pointerItem: panelChromeLoader.item as Item
+        pointerInset: panelChromeLoader.chromeInset
         stepWidth: CcMetrics.columnWidth + CcMetrics.gridGap
         widthFor: columns => CcMetrics.sheetWidthFor(columns) + root.sheetContentWidth - CcMetrics.sheetWidthFor(root.gridColumns)
         currentStep: () => root.gridColumns
@@ -247,11 +247,11 @@ FocusScope {
         portSelectorLoader.item?.dismiss();
     }
     Component.onCompleted: {
-        ready = true;
         WidgetUtils.ensureEditButton();
         syncAudioRef(live);
         pager.goTo(host.currentPage ?? 0, false);
         showSectionPage(false);
+        ready = true;
     }
     Component.onDestruction: syncAudioRef(false)
     onPlacedWidgetIdsChanged: WidgetUtils.ensureEditButton()
@@ -666,7 +666,10 @@ FocusScope {
             "page": pager.currentIndex,
             "col": cell.col,
             "row": cell.row,
-            "room": { "layout": grid.slotLayout, "rowLimit": grid.rowLimit },
+            "room": {
+                "layout": grid.slotLayout,
+                "rowLimit": grid.rowLimit
+            },
             "x": origin.x,
             "y": origin.y,
             "w": cell.w,
@@ -830,41 +833,52 @@ FocusScope {
             forceActiveFocus();
     }
 
-    DGridEditChrome {
-        id: panelChrome
+    Loader {
+        id: panelChromeLoader
 
-        property int resizeSide: 0
+        readonly property real chromeInset: (item as DGridEditChrome)?.contentInset ?? 0
 
         anchors.fill: parent
-        anchors.margins: (root.host.panelChromeInset ?? 0) - contentInset
-        anchors.topMargin: (root.host.panelChromeInset ?? 0) - contentInset - (editActions.visible && editActions.joined && root.stripAbove ? editActions.height : 0)
-        anchors.bottomMargin: (root.host.panelChromeInset ?? 0) - contentInset - (editActions.visible && editActions.joined && !root.stripAbove ? editActions.height : 0)
+        anchors.margins: (root.host.panelChromeInset ?? 0) - chromeInset
+        anchors.topMargin: (root.host.panelChromeInset ?? 0) - chromeInset - (editActions.visible && editActions.joined && root.stripAbove ? editActions.height : 0)
+        anchors.bottomMargin: (root.host.panelChromeInset ?? 0) - chromeInset - (editActions.visible && editActions.joined && !root.stripAbove ? editActions.height : 0)
         z: 1
-        visible: root.host.editMode
-        enabled: detailBand.shownSection === "" && !root.widgetSheetOpen && !root.widgetPopoverOpen
-        edgeResize: root.panelResizing ? resizeSide < 0 : root.panelResizer.sideMovable(-1, root.gridColumns)
-        cornerResize: root.panelResizing ? resizeSide > 0 : root.panelResizer.sideMovable(1, root.gridColumns)
-        horizontalResize: true
-        verticalResize: root.fixedHeight
-        verticalResizeAbove: !(root.host.growsFromTop ?? true)
-        removable: false
-        // Frame-attached corners are square, but the ring keeps the surface radius.
-        cornerRadius: root.surfaceRadius
-        buttonSize: Theme.iconSize
-        iconSize: PopoutMetrics.chromeIconSize
-        handleLength: Theme.buttonHeightM
-        handleThickness: Theme.spacingS
-        resizing: root.panelResizing
-        atDefault: !root.fixedHeight && root.gridColumns === Math.min(CcMetrics.defaultColumns, root.gridColumnCap)
-        sizeText: root.gridColumns + "×" + (root.fixedHeight ? root.fixedRows : root.widgetGrid?.slotLayout.rows ?? 0)
-        onResizeStarted: (px, py, signX) => {
-            resizeSide = signX;
-            root.resizeBase = { "widgets": SettingsData.controlCenterWidgets, "rows": root.panelResizer.currentRows(), "columns": root.gridColumns, "vertical": signX === 0, "state": root.editState };
-            root.panelResizer.begin(px, py, signX);
+        active: root.host.editMode
+
+        sourceComponent: DGridEditChrome {
+            property int resizeSide: 0
+
+            enabled: detailBand.shownSection === "" && !root.widgetSheetOpen && !root.widgetPopoverOpen
+            edgeResize: root.panelResizing ? resizeSide < 0 : root.panelResizer.sideMovable(-1, root.gridColumns)
+            cornerResize: root.panelResizing ? resizeSide > 0 : root.panelResizer.sideMovable(1, root.gridColumns)
+            horizontalResize: true
+            verticalResize: root.fixedHeight
+            verticalResizeAbove: !(root.host.growsFromTop ?? true)
+            removable: false
+            // Frame-attached corners are square, but the ring keeps the surface radius.
+            cornerRadius: root.surfaceRadius
+            buttonSize: Theme.iconSize
+            iconSize: PopoutMetrics.chromeIconSize
+            handleLength: Theme.buttonHeightM
+            handleThickness: Theme.spacingS
+            resizing: root.panelResizing
+            atDefault: !root.fixedHeight && root.gridColumns === Math.min(CcMetrics.defaultColumns, root.gridColumnCap)
+            sizeText: root.gridColumns + "×" + (root.fixedHeight ? root.fixedRows : root.widgetGrid?.slotLayout.rows ?? 0)
+            onResizeStarted: (px, py, signX) => {
+                resizeSide = signX;
+                root.resizeBase = {
+                    "widgets": SettingsData.controlCenterWidgets,
+                    "rows": root.panelResizer.currentRows(),
+                    "columns": root.gridColumns,
+                    "vertical": signX === 0,
+                    "state": root.editState
+                };
+                root.panelResizer.begin(px, py, signX);
+            }
+            onResizeMoved: (px, py) => root.panelResizer.move(px, py)
+            onResizeEnded: root.panelResizer.end()
+            onResizeCanceled: root.panelResizer.cancel()
         }
-        onResizeMoved: (px, py) => root.panelResizer.move(px, py)
-        onResizeEnded: root.panelResizer.end()
-        onResizeCanceled: root.panelResizer.cancel()
     }
 
     WidgetModel {
@@ -948,64 +962,65 @@ FocusScope {
                 }
 
                 // Under the pages: it only ever sits on an empty spot, and the tiles' edit chrome stays on top of it.
-                Rectangle {
-                    id: addHintItem
+                Loader {
+                    active: root.host.editMode
 
-                    readonly property var spot: root.addHint
-                    readonly property point pointer: addHover.point.position
-                    readonly property bool hovered: spot !== null && addHover.hovered && pointer.x >= x && pointer.x < x + width && pointer.y >= y && pointer.y < y + height
-                    readonly property bool pressed: hovered && addTap.pressed
+                    sourceComponent: Rectangle {
+                        id: addHintItem
 
-                    x: spot?.x ?? 0
-                    y: spot?.y ?? 0
-                    width: spot?.w ?? 0
-                    height: spot?.h ?? 0
-                    radius: Math.min(Theme.cornerRadiusXL, Theme.fullRadius(width, height))
-                    color: Theme.withAlpha(Theme.primary, pressed ? Theme.stateLayerPressed : hovered ? Theme.stateLayerHover : 0)
-                    visible: spot !== null
-                    activeFocusOnTab: visible
-                    Accessible.role: Accessible.Button
-                    Accessible.name: I18n.tr("Add a widget here")
-                    Accessible.onPressAction: root.activateAddHint()
+                        readonly property var spot: root.addHint
+                        readonly property point pointer: addHover.point.position
+                        readonly property bool hovered: spot !== null && addHover.hovered && pointer.x >= x && pointer.x < x + width && pointer.y >= y && pointer.y < y + height
+                        readonly property bool pressed: hovered && addTap.pressed
 
-                    Keys.onPressed: event => {
-                        if (event.key !== Qt.Key_Return && event.key !== Qt.Key_Enter && event.key !== Qt.Key_Space)
-                            return;
-                        root.activateAddHint();
-                        event.accepted = true;
-                    }
+                        x: spot?.x ?? 0
+                        y: spot?.y ?? 0
+                        width: spot?.w ?? 0
+                        height: spot?.h ?? 0
+                        radius: Math.min(Theme.cornerRadiusXL, Theme.fullRadius(width, height))
+                        color: Theme.withAlpha(Theme.primary, pressed ? Theme.stateLayerPressed : hovered ? Theme.stateLayerHover : 0)
+                        visible: spot !== null
+                        activeFocusOnTab: visible
+                        Accessible.role: Accessible.Button
+                        Accessible.name: I18n.tr("Add a widget here")
+                        Accessible.onPressAction: root.activateAddHint()
 
-                    onHoveredChanged: {
-                        if (hovered) {
-                            (addHintTooltip.item as DTooltipHost)?.schedule();
-                            return;
+                        Keys.onPressed: event => {
+                            if (event.key !== Qt.Key_Return && event.key !== Qt.Key_Enter && event.key !== Qt.Key_Space)
+                                return;
+                            root.activateAddHint();
+                            event.accepted = true;
                         }
-                        (addHintTooltip.item as DTooltipHost)?.dismiss();
-                    }
 
-                    Loader {
-                        anchors.fill: parent
-                        active: addHintItem.visible
-                        sourceComponent: DashedOutline {
-                            radius: addHintItem.radius
-                            strokeColor: addHintItem.hovered ? Theme.primary : Theme.outlineVariant
+                        onHoveredChanged: {
+                            if (hovered) {
+                                addHintTooltip.schedule();
+                                return;
+                            }
+                            addHintTooltip.dismiss();
                         }
-                    }
 
-                    DIcon {
-                        anchors.centerIn: parent
-                        name: "add"
-                        size: Theme.iconSize
-                        color: Theme.primary
-                    }
+                        Loader {
+                            anchors.fill: parent
+                            active: addHintItem.visible
+                            sourceComponent: DashedOutline {
+                                radius: addHintItem.radius
+                                strokeColor: addHintItem.hovered ? Theme.primary : Theme.outlineVariant
+                            }
+                        }
 
-                    FocusRing {}
+                        DIcon {
+                            anchors.centerIn: parent
+                            name: "add"
+                            size: Theme.iconSize
+                            color: Theme.primary
+                        }
 
-                    Loader {
-                        id: addHintTooltip
+                        FocusRing {}
 
-                        active: root.host.editMode
-                        sourceComponent: DTooltipHost {
+                        DTooltipHost {
+                            id: addHintTooltip
+
                             text: I18n.tr("Add a widget here")
                             target: addHintItem
                             side: "top"
@@ -1072,6 +1087,13 @@ FocusScope {
 
                         required property int index
                         readonly property bool holdsBand: index === root.bandPage
+                        // Waits for the restored page, so reopening on a later page never builds the first.
+                        readonly property bool shown: root.ready && pager.pageShown(index)
+
+                        onShownChanged: {
+                            if (shown)
+                                populated = true;
+                        }
 
                         page: index
                         savedWidgets: root.layoutWidgets
@@ -1084,7 +1106,7 @@ FocusScope {
                         minimumHeight: Math.max(pager.height, contentFlickable.height - CcMetrics.sheetPadding)
                         editMode: root.host.editMode
                         model: widgetModel
-                        live: root.host.shouldBeVisible && pager.pageShown(index)
+                        live: root.host.shouldBeVisible && shown
                         expandedSection: holdsBand ? detailBand.shownSection : ""
                         bandHeight: holdsBand ? detailBand.height : 0
                         bandTargetHeight: holdsBand ? detailBand.targetHeight : 0
@@ -1199,7 +1221,7 @@ FocusScope {
 
             parent: root
             // Under the chrome while it carries the height grip, so the grip's inner edge stays grabbable.
-            z: panelChrome.z + (root.host.editMode && panelChrome.verticalResize ? -0.5 : 1)
+            z: panelChromeLoader.z + (root.host.editMode && root.fixedHeight ? -0.5 : 1)
             x: mainColumn.x
             y: contentFlickable.y + contentFlickable.height
             width: mainColumn.width

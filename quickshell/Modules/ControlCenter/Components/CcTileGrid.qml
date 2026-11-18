@@ -16,6 +16,8 @@ DEditableGrid {
     property var model: null
     property int page: 0
     property bool live: true
+    // Latched the first time the page shows: a page nobody visits builds no tiles.
+    property bool populated: false
     property string screenName: ""
     property Item overflowHost: null
     property real scrollOffset: 0
@@ -200,7 +202,7 @@ DEditableGrid {
     Repeater {
         id: tileRepeater
 
-        model: root.tileModel
+        model: root.populated ? root.tileModel : null
 
         CcTileSlot {
             grid: root

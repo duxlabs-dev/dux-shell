@@ -17,6 +17,7 @@ import (
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/evdev"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/fcitx5"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/freedesktop"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/globalshortcuts"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/location"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/loginctl"
 	serverLyrics "github.com/duxlabs-dev/dux-shell/core/internal/server/lyrics"
@@ -253,6 +254,14 @@ func newRequestMux(readiness *systemd.Readiness) *ipc.Mux {
 			return
 		}
 		wellbeing.HandleRequest(conn, req, wellbeingManager)
+	}))
+
+	mux.HandlePrefix("globalshortcuts.", requestHandler(func(conn *ipc.ConnWriter, req ipc.Request) {
+		if globalShortcutsManager == nil {
+			conn.RespondError(req.ID, "global shortcuts manager not initialized")
+			return
+		}
+		globalshortcuts.HandleRequest(conn, req, globalShortcutsManager)
 	}))
 
 	mux.HandlePrefix("notify.", requestHandler(func(conn *ipc.ConnWriter, req ipc.Request) {

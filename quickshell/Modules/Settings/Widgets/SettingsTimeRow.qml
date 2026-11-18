@@ -23,6 +23,7 @@ Item {
     property int endMinute: 0
     property bool is24Hour: false
     property bool showEnd: true
+    property Item dialogHost: null
 
     signal startChanged(int hour, int minute)
     signal endChanged(int hour, int minute)
@@ -113,7 +114,7 @@ Item {
         active: false
 
         sourceComponent: DTimePicker {
-            parent: root.Window.contentItem
+            parent: root.dialogHost ?? root.Window.contentItem
             is24Hour: root.is24Hour
             onAccepted: (hour, minute) => {
                 if (root._editingStart) {

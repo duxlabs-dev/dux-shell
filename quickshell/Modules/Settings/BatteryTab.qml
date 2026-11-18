@@ -236,230 +236,238 @@ done
             }
         }
 
-        SettingsCard {
-            width: parent.width
-            iconName: "tune"
-            title: I18n.tr("Protection", "battery settings card title for charge limit")
-            settingKey: "batteryProtection"
-            tags: ["battery", "protection", "charge", "limit"]
+        SettingsDeferred {
+            SettingsCard {
+                width: parent.width
+                iconName: "tune"
+                title: I18n.tr("Protection", "battery settings card title for charge limit")
+                settingKey: "batteryProtection"
+                tags: ["battery", "protection", "charge", "limit"]
 
-            SettingsSliderRow {
-                settingKey: "batteryChargeLimit"
-                text: I18n.tr("Charge limit")
-                value: SettingsData.batteryChargeLimit
-                minimum: 50
-                maximum: 100
-                onSliderValueChanged: newValue => SettingsData.set("batteryChargeLimit", newValue)
-            }
-
-            SettingsToggleRow {
-                settingKey: "batteryScaleToChargeLimit"
-                text: I18n.tr("Scale battery level to charge limit", "battery settings: toggle to scale the displayed percentage so the charge limit represents 100%")
-                description: I18n.tr("Scale the displayed battery level to the configured charge limit", "battery settings: explains that the displayed battery percentage is scaled relative to the charge limit")
-                checked: SettingsData.batteryScaleToChargeLimit
-                onToggled: checked => SettingsData.set("batteryScaleToChargeLimit", checked)
-            }
-
-            SettingsToggleRow {
-                settingKey: "batteryScaleAlertThresholds"
-                text: I18n.tr("Scale low and critical alert thresholds", "battery settings: toggle to apply low and critical alert thresholds to the charge-limit-scaled battery percentage")
-                description: I18n.tr("Use the scaled battery level for alert thresholds and percentages", "battery settings: explains that low and critical alerts trigger and report percentages on the scaled battery level")
-                checked: SettingsData.batteryScaleAlertThresholds
-                visible: SettingsData.batteryScaleToChargeLimit
-                onToggled: checked => SettingsData.set("batteryScaleAlertThresholds", checked)
-            }
-
-            SettingsRow {
-                visible: Qt.platform.os === "linux" && BatteryService.batteryAvailable && !root.chargeLimitSupported
-                body: StyledText {
-                    width: parent.width
-                    text: I18n.tr("No writable charge threshold file was found under /sys/class/power_supply.", "battery settings: why the charge limit could not be applied")
-                    wrapMode: Text.WordWrap
-                    color: Theme.surfaceVariantText
-                    font.pixelSize: Theme.fontSizeMedium
+                SettingsSliderRow {
+                    settingKey: "batteryChargeLimit"
+                    text: I18n.tr("Charge limit")
+                    value: SettingsData.batteryChargeLimit
+                    minimum: 50
+                    maximum: 100
+                    onSliderValueChanged: newValue => SettingsData.set("batteryChargeLimit", newValue)
                 }
-            }
 
-            SettingsRow {
-                visible: Qt.platform.os === "linux" && BatteryService.batteryAvailable && root.chargeLimitSupported
-                body: Row {
-                    // charge_control_* live in Linux sysfs; no BSD equivalent
-                    width: parent.width
-                    height: applyButton.height
-                    layoutDirection: I18n.isRtl ? Qt.LeftToRight : Qt.RightToLeft
+                SettingsToggleRow {
+                    settingKey: "batteryScaleToChargeLimit"
+                    text: I18n.tr("Scale battery level to charge limit", "battery settings: toggle to scale the displayed percentage so the charge limit represents 100%")
+                    description: I18n.tr("Scale the displayed battery level to the configured charge limit", "battery settings: explains that the displayed battery percentage is scaled relative to the charge limit")
+                    checked: SettingsData.batteryScaleToChargeLimit
+                    onToggled: checked => SettingsData.set("batteryScaleToChargeLimit", checked)
+                }
 
-                    Item {
-                        width: Theme.spacingM
-                        height: 1
+                SettingsToggleRow {
+                    settingKey: "batteryScaleAlertThresholds"
+                    text: I18n.tr("Scale low and critical alert thresholds", "battery settings: toggle to apply low and critical alert thresholds to the charge-limit-scaled battery percentage")
+                    description: I18n.tr("Use the scaled battery level for alert thresholds and percentages", "battery settings: explains that low and critical alerts trigger and report percentages on the scaled battery level")
+                    checked: SettingsData.batteryScaleAlertThresholds
+                    visible: SettingsData.batteryScaleToChargeLimit
+                    onToggled: checked => SettingsData.set("batteryScaleAlertThresholds", checked)
+                }
+
+                SettingsRow {
+                    visible: Qt.platform.os === "linux" && BatteryService.batteryAvailable && !root.chargeLimitSupported
+                    body: StyledText {
+                        width: parent.width
+                        text: I18n.tr("No writable charge threshold file was found under /sys/class/power_supply.", "battery settings: why the charge limit could not be applied")
+                        wrapMode: Text.WordWrap
+                        color: Theme.surfaceVariantText
+                        font.pixelSize: Theme.fontSizeMedium
                     }
+                }
 
-                    DButton {
-                        id: applyButton
-                        text: I18n.tr("Apply to hardware")
-                        iconName: "lock"
-                        onClicked: {
-                            applyLimitProcess.running = true;
+                SettingsRow {
+                    visible: Qt.platform.os === "linux" && BatteryService.batteryAvailable && root.chargeLimitSupported
+                    body: Row {
+                        // charge_control_* live in Linux sysfs; no BSD equivalent
+                        width: parent.width
+                        height: applyButton.height
+                        layoutDirection: I18n.isRtl ? Qt.LeftToRight : Qt.RightToLeft
+
+                        Item {
+                            width: Theme.spacingM
+                            height: 1
+                        }
+
+                        DButton {
+                            id: applyButton
+                            text: I18n.tr("Apply to hardware")
+                            iconName: "lock"
+                            onClicked: {
+                                applyLimitProcess.running = true;
+                            }
+                        }
+                    }
+                }
+
+                SettingsToggleRow {
+                    settingKey: "batteryNotifyChargeLimit"
+                    text: I18n.tr("Notify when limit is reached")
+                    checked: SettingsData.batteryNotifyChargeLimit
+                    onToggled: checked => SettingsData.set("batteryNotifyChargeLimit", checked)
+                }
+
+                SettingsButtonGroupRow {
+                    settingKey: "batteryChargeLimitNotificationType"
+                    text: I18n.tr("Alert style")
+                    model: [I18n.tr("Toast", "noun, battery alert style option, small popup message"), I18n.tr("Notification")]
+                    visible: SettingsData.batteryNotifyChargeLimit
+                    currentIndex: SettingsData.batteryChargeLimitNotificationType
+                    onSelectionChanged: (index, selected) => {
+                        if (selected) {
+                            SettingsData.set("batteryChargeLimitNotificationType", index);
                         }
                     }
                 }
             }
+        }
 
-            SettingsToggleRow {
-                settingKey: "batteryNotifyChargeLimit"
-                text: I18n.tr("Notify when limit is reached")
-                checked: SettingsData.batteryNotifyChargeLimit
-                onToggled: checked => SettingsData.set("batteryNotifyChargeLimit", checked)
-            }
+        SettingsDeferred {
+            SettingsCard {
+                width: parent.width
+                iconName: "notifications"
+                title: I18n.tr("Alerts", "noun, battery settings card title for low battery alerts")
+                settingKey: "batteryAlerts"
+                tags: ["battery", "alerts", "low", "warning"]
 
-            SettingsButtonGroupRow {
-                settingKey: "batteryChargeLimitNotificationType"
-                text: I18n.tr("Alert style")
-                model: [I18n.tr("Toast", "noun, battery alert style option, small popup message"), I18n.tr("Notification")]
-                visible: SettingsData.batteryNotifyChargeLimit
-                currentIndex: SettingsData.batteryChargeLimitNotificationType
-                onSelectionChanged: (index, selected) => {
-                    if (selected) {
-                        SettingsData.set("batteryChargeLimitNotificationType", index);
+                SettingsSliderRow {
+                    settingKey: "batteryLowThreshold"
+                    text: I18n.tr("Low threshold")
+                    value: SettingsData.batteryLowThreshold
+                    minimum: 5
+                    maximum: 40
+                    onSliderValueChanged: newValue => SettingsData.set("batteryLowThreshold", newValue)
+                }
+
+                SettingsToggleRow {
+                    settingKey: "batteryNotifyLow"
+                    text: I18n.tr("Low notification")
+                    checked: SettingsData.batteryNotifyLow
+                    onToggled: checked => SettingsData.set("batteryNotifyLow", checked)
+                }
+
+                SettingsButtonGroupRow {
+                    settingKey: "batteryLowNotificationType"
+                    text: I18n.tr("Alert style")
+                    model: [I18n.tr("Toast"), I18n.tr("Notification")]
+                    enabled: SettingsData.batteryNotifyLow
+                    currentIndex: SettingsData.batteryLowNotificationType
+                    onSelectionChanged: (index, selected) => {
+                        if (selected) {
+                            SettingsData.set("batteryLowNotificationType", index);
+                        }
                     }
                 }
             }
         }
 
-        SettingsCard {
-            width: parent.width
-            iconName: "notifications"
-            title: I18n.tr("Alerts", "noun, battery settings card title for low battery alerts")
-            settingKey: "batteryAlerts"
-            tags: ["battery", "alerts", "low", "warning"]
+        SettingsDeferred {
+            SettingsCard {
+                width: parent.width
+                iconName: "battery_alert"
+                title: I18n.tr("Critical", "adjective, card title for critical battery level alerts")
+                settingKey: "batteryCriticalAlerts"
+                tags: ["battery", "critical", "alerts"]
 
-            SettingsSliderRow {
-                settingKey: "batteryLowThreshold"
-                text: I18n.tr("Low threshold")
-                value: SettingsData.batteryLowThreshold
-                minimum: 5
-                maximum: 40
-                onSliderValueChanged: newValue => SettingsData.set("batteryLowThreshold", newValue)
-            }
+                SettingsSliderRow {
+                    settingKey: "batteryCriticalThreshold"
+                    text: I18n.tr("Critical threshold")
+                    value: SettingsData.batteryCriticalThreshold
+                    minimum: 1
+                    maximum: 30
+                    onSliderValueChanged: newValue => SettingsData.set("batteryCriticalThreshold", newValue)
+                }
 
-            SettingsToggleRow {
-                settingKey: "batteryNotifyLow"
-                text: I18n.tr("Low notification")
-                checked: SettingsData.batteryNotifyLow
-                onToggled: checked => SettingsData.set("batteryNotifyLow", checked)
-            }
+                SettingsToggleRow {
+                    settingKey: "batteryCriticalAnimation"
+                    tags: ["battery", "critical", "indicator", "animation", "pulse", "blink"]
+                    text: I18n.tr("Pulse animation", "critical battery indicator animation toggle")
+                    checked: SettingsData.batteryCriticalAnimation
+                    onToggled: checked => SettingsData.set("batteryCriticalAnimation", checked)
+                }
 
-            SettingsButtonGroupRow {
-                settingKey: "batteryLowNotificationType"
-                text: I18n.tr("Alert style")
-                model: [I18n.tr("Toast"), I18n.tr("Notification")]
-                enabled: SettingsData.batteryNotifyLow
-                currentIndex: SettingsData.batteryLowNotificationType
-                onSelectionChanged: (index, selected) => {
-                    if (selected) {
-                        SettingsData.set("batteryLowNotificationType", index);
+                SettingsToggleRow {
+                    settingKey: "batteryNotifyCritical"
+                    text: I18n.tr("Critical notification")
+                    checked: SettingsData.batteryNotifyCritical
+                    onToggled: checked => SettingsData.set("batteryNotifyCritical", checked)
+                }
+
+                SettingsButtonGroupRow {
+                    settingKey: "batteryCriticalNotificationType"
+                    text: I18n.tr("Alert style")
+                    model: [I18n.tr("Toast"), I18n.tr("Notification")]
+                    enabled: SettingsData.batteryNotifyCritical
+                    currentIndex: SettingsData.batteryCriticalNotificationType
+                    onSelectionChanged: (index, selected) => {
+                        if (selected) {
+                            SettingsData.set("batteryCriticalNotificationType", index);
+                        }
                     }
                 }
             }
         }
 
-        SettingsCard {
-            width: parent.width
-            iconName: "battery_alert"
-            title: I18n.tr("Critical", "adjective, card title for critical battery level alerts")
-            settingKey: "batteryCriticalAlerts"
-            tags: ["battery", "critical", "alerts"]
+        SettingsDeferred {
+            SettingsCard {
+                width: parent.width
+                iconName: "power"
+                title: I18n.tr("Power profiles")
+                settingKey: "powerProfilesSaving"
 
-            SettingsSliderRow {
-                settingKey: "batteryCriticalThreshold"
-                text: I18n.tr("Critical threshold")
-                value: SettingsData.batteryCriticalThreshold
-                minimum: 1
-                maximum: 30
-                onSliderValueChanged: newValue => SettingsData.set("batteryCriticalThreshold", newValue)
-            }
+                SettingsToggleRow {
+                    settingKey: "batteryAutoPowerSaver"
+                    text: I18n.tr("Auto power saver")
+                    description: I18n.tr("Switches to power saver at the low battery threshold", "battery auto power saver toggle description")
+                    checked: SettingsData.batteryAutoPowerSaver
+                    onToggled: checked => SettingsData.set("batteryAutoPowerSaver", checked)
+                }
 
-            SettingsToggleRow {
-                settingKey: "batteryCriticalAnimation"
-                tags: ["battery", "critical", "indicator", "animation", "pulse", "blink"]
-                text: I18n.tr("Pulse animation", "critical battery indicator animation toggle")
-                checked: SettingsData.batteryCriticalAnimation
-                onToggled: checked => SettingsData.set("batteryCriticalAnimation", checked)
-            }
+                SettingsToggleRow {
+                    settingKey: "lowerDisplayRefreshRateOnBattery"
+                    tags: ["power", "battery", "display", "refresh", "rate", "60hz", "hz", "vrr"]
+                    text: I18n.tr("Lower display refresh rate on battery")
+                    visible: BatteryService.batteryAvailable
+                    checked: SettingsData.lowerDisplayRefreshRateOnBattery
+                    onToggled: checked => SettingsData.set("lowerDisplayRefreshRateOnBattery", checked)
+                }
 
-            SettingsToggleRow {
-                settingKey: "batteryNotifyCritical"
-                text: I18n.tr("Critical notification")
-                checked: SettingsData.batteryNotifyCritical
-                onToggled: checked => SettingsData.set("batteryNotifyCritical", checked)
-            }
-
-            SettingsButtonGroupRow {
-                settingKey: "batteryCriticalNotificationType"
-                text: I18n.tr("Alert style")
-                model: [I18n.tr("Toast"), I18n.tr("Notification")]
-                enabled: SettingsData.batteryNotifyCritical
-                currentIndex: SettingsData.batteryCriticalNotificationType
-                onSelectionChanged: (index, selected) => {
-                    if (selected) {
-                        SettingsData.set("batteryCriticalNotificationType", index);
+                SettingsDropdownRow {
+                    settingKey: "acProfileName"
+                    text: I18n.tr("Profile on AC")
+                    options: [I18n.tr("Don't change"), Theme.getPowerProfileLabel(0), Theme.getPowerProfileLabel(1), Theme.getPowerProfileLabel(2)]
+                    currentValue: {
+                        const val = SettingsData.acProfileName;
+                        const idx = ["", "0", "1", "2"].indexOf(val);
+                        return idx >= 0 ? options[idx] : options[0];
+                    }
+                    onValueChanged: value => {
+                        const idx = options.indexOf(value);
+                        if (idx >= 0) {
+                            SettingsData.set("acProfileName", ["", "0", "1", "2"][idx]);
+                        }
                     }
                 }
-            }
-        }
 
-        SettingsCard {
-            width: parent.width
-            iconName: "power"
-            title: I18n.tr("Power profiles")
-            settingKey: "powerProfilesSaving"
-
-            SettingsToggleRow {
-                settingKey: "batteryAutoPowerSaver"
-                text: I18n.tr("Auto power saver")
-                description: I18n.tr("Switches to power saver at the low battery threshold", "battery auto power saver toggle description")
-                checked: SettingsData.batteryAutoPowerSaver
-                onToggled: checked => SettingsData.set("batteryAutoPowerSaver", checked)
-            }
-
-            SettingsToggleRow {
-                settingKey: "lowerDisplayRefreshRateOnBattery"
-                tags: ["power", "battery", "display", "refresh", "rate", "60hz", "hz", "vrr"]
-                text: I18n.tr("Lower display refresh rate on battery")
-                visible: BatteryService.batteryAvailable
-                checked: SettingsData.lowerDisplayRefreshRateOnBattery
-                onToggled: checked => SettingsData.set("lowerDisplayRefreshRateOnBattery", checked)
-            }
-
-            SettingsDropdownRow {
-                settingKey: "acProfileName"
-                text: I18n.tr("Profile on AC")
-                options: [I18n.tr("Don't change"), Theme.getPowerProfileLabel(0), Theme.getPowerProfileLabel(1), Theme.getPowerProfileLabel(2)]
-                currentValue: {
-                    const val = SettingsData.acProfileName;
-                    const idx = ["", "0", "1", "2"].indexOf(val);
-                    return idx >= 0 ? options[idx] : options[0];
-                }
-                onValueChanged: value => {
-                    const idx = options.indexOf(value);
-                    if (idx >= 0) {
-                        SettingsData.set("acProfileName", ["", "0", "1", "2"][idx]);
+                SettingsDropdownRow {
+                    settingKey: "batteryProfileName"
+                    text: I18n.tr("Profile on battery")
+                    options: [I18n.tr("Don't change"), Theme.getPowerProfileLabel(0), Theme.getPowerProfileLabel(1), Theme.getPowerProfileLabel(2)]
+                    currentValue: {
+                        const val = SettingsData.batteryProfileName;
+                        const idx = ["", "0", "1", "2"].indexOf(val);
+                        return idx >= 0 ? options[idx] : options[0];
                     }
-                }
-            }
-
-            SettingsDropdownRow {
-                settingKey: "batteryProfileName"
-                text: I18n.tr("Profile on battery")
-                options: [I18n.tr("Don't change"), Theme.getPowerProfileLabel(0), Theme.getPowerProfileLabel(1), Theme.getPowerProfileLabel(2)]
-                currentValue: {
-                    const val = SettingsData.batteryProfileName;
-                    const idx = ["", "0", "1", "2"].indexOf(val);
-                    return idx >= 0 ? options[idx] : options[0];
-                }
-                onValueChanged: value => {
-                    const idx = options.indexOf(value);
-                    if (idx >= 0) {
-                        SettingsData.set("batteryProfileName", ["", "0", "1", "2"][idx]);
+                    onValueChanged: value => {
+                        const idx = options.indexOf(value);
+                        if (idx >= 0) {
+                            SettingsData.set("batteryProfileName", ["", "0", "1", "2"][idx]);
+                        }
                     }
                 }
             }

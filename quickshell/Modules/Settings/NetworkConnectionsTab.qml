@@ -107,7 +107,7 @@ Item {
 
     SettingsRenameDialog {
         id: duplicateDialog
-        parent: root.parentModal?.modalFocusScope ?? root
+        parent: root.parentModal?.dialogHostFor(root) ?? root
         title: I18n.tr("Duplicate")
         leftIconName: "content_copy"
         onAccepted: name => {

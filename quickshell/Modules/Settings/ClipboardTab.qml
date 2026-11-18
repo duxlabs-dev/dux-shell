@@ -476,52 +476,55 @@ Item {
             }
         }
 
-        SettingsCard {
-            tab: "clipboard"
-            tags: ["clipboard", "advanced"]
-            title: I18n.tr("Advanced")
-            iconName: "tune"
-            collapsible: true
-            expanded: false
+        SettingsAdvancedSection {
             visible: configLoaded
 
-            SettingsToggleRow {
-                tab: "clipboard"
-                tags: ["clipboard", "filter", "type", "remember", "behavior"]
-                settingKey: "clipboardRememberTypeFilter"
-                text: I18n.tr("Remember type filter")
-                checked: SettingsData.clipboardRememberTypeFilter
-                onToggled: checked => SettingsData.set("clipboardRememberTypeFilter", checked)
-            }
+            SettingsDeferred {
+                SettingsCard {
+                    tab: "clipboard"
+                    tags: ["clipboard", "advanced"]
+                    title: I18n.tr("Advanced")
+                    iconName: "tune"
 
-            SettingsToggleRow {
-                tab: "clipboard"
-                tags: ["clipboard", "fullscreen", "overlay", "layer", "behavior"]
-                settingKey: "clipboardUseOverlayLayer"
-                text: I18n.tr("Use overlay layer")
-                checked: SettingsData.clipboardUseOverlayLayer
-                onToggled: checked => SettingsData.set("clipboardUseOverlayLayer", checked)
-            }
+                    SettingsToggleRow {
+                        tab: "clipboard"
+                        tags: ["clipboard", "filter", "type", "remember", "behavior"]
+                        settingKey: "clipboardRememberTypeFilter"
+                        text: I18n.tr("Remember type filter")
+                        checked: SettingsData.clipboardRememberTypeFilter
+                        onToggled: checked => SettingsData.set("clipboardRememberTypeFilter", checked)
+                    }
 
-            SettingsButtonGroupRow {
-                tab: "clipboard"
-                tags: ["clipboard", "actions", "buttons", "hide", "density", "copy", "paste", "pin", "edit", "delete"]
-                settingKey: "clipboardVisibleEntryActions"
-                resetByKeys: false
-                onResetRequested: {
-                    SettingsData.resetToDefault(["clipboardVisibleEntryActions"]);
-                    currentSelection = root.visibleEntryActionLabels();
+                    SettingsToggleRow {
+                        tab: "clipboard"
+                        tags: ["clipboard", "fullscreen", "overlay", "layer", "behavior"]
+                        settingKey: "clipboardUseOverlayLayer"
+                        text: I18n.tr("Use overlay layer")
+                        checked: SettingsData.clipboardUseOverlayLayer
+                        onToggled: checked => SettingsData.set("clipboardUseOverlayLayer", checked)
+                    }
+
+                    SettingsButtonGroupRow {
+                        tab: "clipboard"
+                        tags: ["clipboard", "actions", "buttons", "hide", "density", "copy", "paste", "pin", "edit", "delete"]
+                        settingKey: "clipboardVisibleEntryActions"
+                        resetByKeys: false
+                        onResetRequested: {
+                            SettingsData.resetToDefault(["clipboardVisibleEntryActions"]);
+                            currentSelection = root.visibleEntryActionLabels();
+                        }
+                        text: I18n.tr("Visible entry actions")
+                        selectionMode: "multi"
+                        model: root.entryActionLabels
+                        currentSelection: root.visibleEntryActionLabels()
+                        checkEnabled: false
+                        buttonHeight: 28
+                        minButtonWidth: 56
+                        buttonPadding: Theme.spacingS
+                        textSize: Theme.fontSizeSmall
+                        onSelectionChanged: (index, selected) => root.setVisibleEntryAction(index, selected)
+                    }
                 }
-                text: I18n.tr("Visible entry actions")
-                selectionMode: "multi"
-                model: root.entryActionLabels
-                currentSelection: root.visibleEntryActionLabels()
-                checkEnabled: false
-                buttonHeight: 28
-                minButtonWidth: 56
-                buttonPadding: Theme.spacingS
-                textSize: Theme.fontSizeSmall
-                onSelectionChanged: (index, selected) => root.setVisibleEntryAction(index, selected)
             }
         }
     }

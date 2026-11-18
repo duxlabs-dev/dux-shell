@@ -2,7 +2,7 @@ import QtQuick
 import qs.Common
 import qs.DCommon.Widgets
 
-// Parent to the modal focus scope so it covers the window; focus returns to the opener on close
+// Parent to the page dialog host so it covers the content column; focus returns to the opener on close
 Loader {
     id: root
 

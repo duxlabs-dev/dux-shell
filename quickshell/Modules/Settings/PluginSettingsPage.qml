@@ -155,7 +155,7 @@ FocusScope {
 
     ConfirmDialogOverlay {
         id: operationConfirm
-        parent: root.parentModal?.modalFocusScope ?? root
+        parent: root.parentModal?.dialogHostFor(root) ?? root
     }
 
     SettingsPage {

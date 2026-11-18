@@ -41,6 +41,7 @@ Item {
     property var customKeyboardFocus: null
     readonly property alias transientSurfaceTracker: _transientSurfaceTracker
     property bool useOverlayLayer: false
+    property bool dragPassthrough: false
 
     signal opened
     signal dialogClosed
@@ -69,7 +70,7 @@ Item {
     DFocusGrab {
         keyboardWindow: root.contentWindow
         peerWindows: root.transientSurfaceTracker?.focusWindows ?? []
-        wanted: KeyboardFocus.wantsGrab(root.shouldBeVisible && root.shouldHaveFocus, root.customKeyboardFocus)
+        wanted: KeyboardFocus.wantsGrab(root.shouldBeVisible && root.shouldHaveFocus && !root.dragPassthrough, root.customKeyboardFocus)
     }
     readonly property var contentWindow: impl.item ? impl.item.contentWindow : null
     readonly property var effectiveScreen: impl.item ? impl.item.effectiveScreen : null
@@ -83,6 +84,7 @@ Item {
     readonly property real alignedHeight: impl.item ? impl.item.alignedHeight : 0
 
     function open() {
+        dragPassthrough = false;
         _maybeResolveBackend();
         if (impl.item)
             impl.item.open();
@@ -101,6 +103,7 @@ Item {
     }
 
     function toggle() {
+        dragPassthrough = false;
         if (impl.item)
             impl.item.toggle();
     }

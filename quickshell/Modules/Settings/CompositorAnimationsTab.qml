@@ -176,55 +176,59 @@ Item {
             }
         }
 
-        SettingsCard {
-            width: parent.width
-            tags: ["animations", "duration", "bounce", "overshoot", "spring", "custom", "window", "workspace", "popup"]
-            title: I18n.tr("Advanced", "adjective, settings section title options")
-            settingKey: "compositorAnimationOverrides"
-            iconName: "tune"
+        SettingsAdvancedSection {
+            SettingsDeferred {
+                SettingsCard {
+                    width: parent.width
+                    tags: ["animations", "duration", "bounce", "overshoot", "spring", "custom", "window", "workspace", "popup"]
+                    title: I18n.tr("Advanced", "adjective, settings section title options")
+                    settingKey: "compositorAnimationOverrides"
+                    iconName: "tune"
 
-            // Hidden with opacity, not visible, so the header keeps its height when it appears
-            headerActions: DActionButton {
-                readonly property bool active: root.isCustom
-                iconName: "restart_alt"
-                tooltipText: I18n.tr("Reset to %1", "animation groups reset button, %1 is the selected style name").arg(root.presetLabels[CompositorAnimations.PRESETS.indexOf(root.preset)])
-                iconColor: Theme.surfaceVariantText
-                opacity: active ? 1 : 0
-                enabled: active
-                Accessible.ignored: !active
-                onClicked: SettingsData.set("compositorAnimationOverrides", {})
-            }
+                    // Hidden with opacity, not visible, so the header keeps its height when it appears
+                    headerActions: DActionButton {
+                        readonly property bool active: root.isCustom
+                        iconName: "restart_alt"
+                        tooltipText: I18n.tr("Reset to %1", "animation groups reset button, %1 is the selected style name").arg(root.presetLabels[CompositorAnimations.PRESETS.indexOf(root.preset)])
+                        iconColor: Theme.surfaceVariantText
+                        opacity: active ? 1 : 0
+                        enabled: active
+                        Accessible.ignored: !active
+                        onClicked: SettingsData.set("compositorAnimationOverrides", {})
+                    }
 
-            GroupRow {
-                group: "open"
-                tags: ["animations", "window", "open", "close", "duration", "bounce"]
-                settingKey: "compositorAnimationOpen"
-                iconName: "open_in_new"
-                title: I18n.tr("Open and close", "animation group, windows opening and closing")
-            }
+                    GroupRow {
+                        group: "open"
+                        tags: ["animations", "window", "open", "close", "duration", "bounce"]
+                        settingKey: "compositorAnimationOpen"
+                        iconName: "open_in_new"
+                        title: I18n.tr("Open and close", "animation group, windows opening and closing")
+                    }
 
-            GroupRow {
-                group: "movement"
-                tags: ["animations", "window", "move", "resize", "column", "scroll", "duration", "bounce", "overshoot"]
-                settingKey: "compositorAnimationMovement"
-                iconName: "open_with"
-                title: I18n.tr("Movement", "animation group, window move, resize and column scrolling")
-            }
+                    GroupRow {
+                        group: "movement"
+                        tags: ["animations", "window", "move", "resize", "column", "scroll", "duration", "bounce", "overshoot"]
+                        settingKey: "compositorAnimationMovement"
+                        iconName: "open_with"
+                        title: I18n.tr("Movement", "animation group, window move, resize and column scrolling")
+                    }
 
-            GroupRow {
-                group: "workspace"
-                tags: ["animations", "workspace", "overview", "switch", "duration", "bounce", "overshoot"]
-                settingKey: "compositorAnimationWorkspace"
-                iconName: "overview"
-                title: I18n.tr("Workspace")
-            }
+                    GroupRow {
+                        group: "workspace"
+                        tags: ["animations", "workspace", "overview", "switch", "duration", "bounce", "overshoot"]
+                        settingKey: "compositorAnimationWorkspace"
+                        iconName: "overview"
+                        title: I18n.tr("Workspace")
+                    }
 
-            GroupRow {
-                group: "popups"
-                tags: ["animations", "popup", "layer", "notification", "screenshot", "fade", "duration", "bounce"]
-                settingKey: "compositorAnimationPopups"
-                iconName: "web_asset"
-                title: I18n.tr("Popups")
+                    GroupRow {
+                        group: "popups"
+                        tags: ["animations", "popup", "layer", "notification", "screenshot", "fade", "duration", "bounce"]
+                        settingKey: "compositorAnimationPopups"
+                        iconName: "web_asset"
+                        title: I18n.tr("Popups")
+                    }
+                }
             }
         }
     }

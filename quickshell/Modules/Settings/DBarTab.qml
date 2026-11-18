@@ -339,418 +339,445 @@ Item {
             }
         }
 
-        IslandBehaviorCard {
-            store: bar.islandStore
-            docked: dankBarTab.selectedIslandDocked
-            visible: dankBarTab.selectedIslandEnabled
+        SettingsDeferred {
+            when: dankBarTab.selectedIslandEnabled
+
+            IslandBehaviorCard {
+                store: bar.islandStore
+                docked: dankBarTab.selectedIslandDocked
+            }
         }
 
-        IslandActivitiesCard {
-            store: bar.islandStore
-            visible: dankBarTab.selectedIslandEnabled
+        SettingsDeferred {
+            when: dankBarTab.selectedIslandEnabled
+
+            IslandActivitiesCard {
+                store: bar.islandStore
+            }
         }
 
-        IslandNotificationsCard {
-            store: bar.islandStore
-            visible: dankBarTab.selectedIslandEnabled
+        SettingsDeferred {
+            when: dankBarTab.selectedIslandEnabled
+
+            IslandNotificationsCard {
+                store: bar.islandStore
+            }
         }
 
-        SettingsCard {
-            iconName: "border_outer"
-            title: I18n.tr("Frame")
-            settingKey: "frameEnabled"
-            tags: ["frame", "mode", "bar", "overview", "connected", "separate", "displays"]
-            visible: SettingsData.frameEnabled
+        SettingsDeferred {
+            when: SettingsData.frameEnabled
 
-            SettingsButtonGroupRow {
-                settingKey: "frameModeSelector"
-                tags: ["frame", "mode", "connected", "separate", "popout", "flush", "float"]
-                resetKeys: ["frameMode"]
-                text: I18n.tr("Surfaces")
-                model: [I18n.tr("Separate", "adjective, frame surfaces mode option, opposite of connected"), I18n.tr("Connected")]
-                currentIndex: SettingsData.frameMode === "connected" ? 1 : 0
-                onSelectionChanged: (index, selected) => {
-                    if (!selected)
-                        return;
-                    switch (index) {
-                    case 1:
-                        SettingsData.set("frameMode", "connected");
-                        break;
-                    default:
-                        SettingsData.set("frameMode", "separate");
-                        break;
+            SettingsCard {
+                iconName: "border_outer"
+                title: I18n.tr("Frame")
+                settingKey: "frameEnabled"
+                tags: ["frame", "mode", "bar", "overview", "connected", "separate", "displays"]
+
+                SettingsButtonGroupRow {
+                    settingKey: "frameModeSelector"
+                    tags: ["frame", "mode", "connected", "separate", "popout", "flush", "float"]
+                    resetKeys: ["frameMode"]
+                    text: I18n.tr("Surfaces")
+                    model: [I18n.tr("Separate", "adjective, frame surfaces mode option, opposite of connected"), I18n.tr("Connected")]
+                    currentIndex: SettingsData.frameMode === "connected" ? 1 : 0
+                    onSelectionChanged: (index, selected) => {
+                        if (!selected)
+                            return;
+                        switch (index) {
+                        case 1:
+                            SettingsData.set("frameMode", "connected");
+                            break;
+                        default:
+                            SettingsData.set("frameMode", "separate");
+                            break;
+                        }
                     }
                 }
-            }
 
-            SettingsToggleRow {
-                settingKey: "frameShowOnOverview"
-                tags: ["frame", "overview", "show", "hide", "niri"]
-                text: I18n.tr("Show on overview")
-                visible: CompositorService.supportsNativeOverview
-                checked: SettingsData.frameShowOnOverview
-                onToggled: checked => SettingsData.set("frameShowOnOverview", checked)
-            }
-
-            SettingsToggleRow {
-                settingKey: "frameCloseGaps"
-                tags: ["frame", "connected", "gap", "edge", "curves", "arcs", "expose", "popout", "notification"]
-                visible: SettingsData.frameMode === "connected"
-                text: I18n.tr("Expose the arcs")
-                checked: !SettingsData.frameCloseGaps
-                onToggled: checked => SettingsData.set("frameCloseGaps", !checked)
-            }
-
-            SettingsButtonGroupRow {
-                settingKey: "frameLauncherEmergeSide"
-                tags: ["frame", "connected", "launcher", "modal", "emerge", "direction", "bottom", "top"]
-                visible: SettingsData.frameMode === "connected"
-                text: I18n.tr("Launcher emerge side")
-                model: [I18n.tr("Bottom"), I18n.tr("Top")]
-                currentIndex: SettingsData.frameLauncherEmergeSide === "top" ? 1 : 0
-                onSelectionChanged: (index, selected) => {
-                    if (!selected)
-                        return;
-                    SettingsData.set("frameLauncherEmergeSide", index === 1 ? "top" : "bottom");
+                SettingsToggleRow {
+                    settingKey: "frameShowOnOverview"
+                    tags: ["frame", "overview", "show", "hide", "niri"]
+                    text: I18n.tr("Show on overview")
+                    visible: CompositorService.supportsNativeOverview
+                    checked: SettingsData.frameShowOnOverview
+                    onToggled: checked => SettingsData.set("frameShowOnOverview", checked)
                 }
-            }
 
-            SettingsToggleRow {
-                settingKey: "frameLauncherArcExtender"
-                tags: ["frame", "connected", "launcher", "arc", "extender", "center"]
-                visible: SettingsData.frameMode === "connected"
-                text: I18n.tr("Arc extender")
-                checked: SettingsData.frameLauncherArcExtender
-                onToggled: checked => SettingsData.set("frameLauncherArcExtender", checked)
-            }
+                SettingsToggleRow {
+                    settingKey: "frameCloseGaps"
+                    tags: ["frame", "connected", "gap", "edge", "curves", "arcs", "expose", "popout", "notification"]
+                    visible: SettingsData.frameMode === "connected"
+                    text: I18n.tr("Expose the arcs")
+                    checked: !SettingsData.frameCloseGaps
+                    onToggled: checked => SettingsData.set("frameCloseGaps", !checked)
+                }
 
-            SettingsToggleRow {
-                settingKey: "frameLauncherEdgeHover"
-                tags: ["frame", "connected", "launcher", "hover", "edge", "reveal"]
-                visible: SettingsData.frameMode === "connected"
-                text: I18n.tr("Edge hover reveal")
-                description: I18n.tr("Pointer at the launcher edge opens it, unless a bar or dock is there", "frame launcher edge hover toggle description")
-                checked: SettingsData.frameLauncherEdgeHover
-                onToggled: checked => SettingsData.set("frameLauncherEdgeHover", checked)
-            }
+                SettingsButtonGroupRow {
+                    settingKey: "frameLauncherEmergeSide"
+                    tags: ["frame", "connected", "launcher", "modal", "emerge", "direction", "bottom", "top"]
+                    visible: SettingsData.frameMode === "connected"
+                    text: I18n.tr("Launcher emerge side")
+                    model: [I18n.tr("Bottom"), I18n.tr("Top")]
+                    currentIndex: SettingsData.frameLauncherEmergeSide === "top" ? 1 : 0
+                    onSelectionChanged: (index, selected) => {
+                        if (!selected)
+                            return;
+                        SettingsData.set("frameLauncherEmergeSide", index === 1 ? "top" : "bottom");
+                    }
+                }
 
-            SettingsDisplayPicker {
-                displayPreferences: SettingsData.frameScreenPreferences
-                preferencesHandler: prefs => SettingsData.set("frameScreenPreferences", prefs)
-            }
-        }
+                SettingsToggleRow {
+                    settingKey: "frameLauncherArcExtender"
+                    tags: ["frame", "connected", "launcher", "arc", "extender", "center"]
+                    visible: SettingsData.frameMode === "connected"
+                    text: I18n.tr("Arc extender")
+                    checked: SettingsData.frameLauncherArcExtender
+                    onToggled: checked => SettingsData.set("frameLauncherArcExtender", checked)
+                }
 
-        SettingsToggleCard {
-            settingKey: "hoverPopouts"
-            tags: ["bar", "hover", "popout", "reveal", "widget", "delay"]
-            iconName: "touch_app"
-            title: I18n.tr("Hover popouts")
-            description: enabled ? "" : root.clickThroughHint
-            visible: bar.selectedBarConfig?.enabled ?? false
-            enabled: !(bar.selectedBarConfig?.clickThrough ?? false)
-            opacity: (bar.selectedBarConfig?.clickThrough ?? false) ? 0.5 : 1.0
-            checked: bar.selectedBarConfig?.hoverPopouts ?? false
-            onToggled: checked => SettingsData.updateBarConfig(bar.selectedBarId, {
-                    hoverPopouts: checked
-                })
+                SettingsToggleRow {
+                    settingKey: "frameLauncherEdgeHover"
+                    tags: ["frame", "connected", "launcher", "hover", "edge", "reveal"]
+                    visible: SettingsData.frameMode === "connected"
+                    text: I18n.tr("Edge hover reveal")
+                    description: I18n.tr("Pointer at the launcher edge opens it, unless a bar or dock is there", "frame launcher edge hover toggle description")
+                    checked: SettingsData.frameLauncherEdgeHover
+                    onToggled: checked => SettingsData.set("frameLauncherEdgeHover", checked)
+                }
 
-            SettingsSliderRow {
-                visible: bar.selectedBarConfig?.hoverPopouts ?? false
-                text: I18n.tr("Open delay")
-                resetStore: bar
-                resetKeys: ["hoverPopoutDelay"]
-                value: bar.selectedBarConfig?.hoverPopoutDelay ?? 150
-                minimum: 0
-                maximum: 1000
-                unit: "ms"
-                onSliderDragFinished: newValue => {
-                    SettingsData.updateBarConfig(bar.selectedBarId, {
-                        hoverPopoutDelay: newValue
-                    });
+                SettingsDisplayPicker {
+                    displayPreferences: SettingsData.frameScreenPreferences
+                    preferencesHandler: prefs => SettingsData.set("frameScreenPreferences", prefs)
                 }
             }
         }
 
-        SettingsToggleCard {
-            id: scrollCard
-            iconName: "mouse"
-            settingKey: "barScrollWheel"
-            tags: ["scroll", "wheel", "workspace", "focus", "window", "axis"]
-            title: I18n.tr("Scroll wheel")
-            visible: (bar.selectedBarConfig?.enabled ?? false) && !bar.selectedBarIsIsland
-            checked: bar.selectedBarConfig?.scrollEnabled ?? true
-            onToggled: checked => SettingsData.updateBarConfig(bar.selectedBarId, {
-                    scrollEnabled: checked
-                })
+        SettingsDeferred {
+            when: bar.selectedBarConfig?.enabled ?? false
 
-            readonly property var behaviors: CompositorService.canStepWindowFocus ? ["none", "workspace", "focusWindow"] : ["none", "workspace"]
-            readonly property var behaviorLabels: CompositorService.canStepWindowFocus ? [I18n.tr("None"), I18n.tr("Workspace"), I18n.tr("Focus window")] : [I18n.tr("None"), I18n.tr("Workspace")]
-
-            SettingsButtonGroupRow {
-                text: I18n.tr("Y axis")
-                resetStore: bar
-                resetKeys: ["scrollYBehavior"]
-                model: scrollCard.behaviorLabels
-                buttonPadding: Theme.spacingS
-                minButtonWidth: 44
-                textSize: Theme.fontSizeSmall
-                currentIndex: Math.max(0, scrollCard.behaviors.indexOf(bar.selectedBarConfig?.scrollYBehavior || "workspace"))
-                onSelectionChanged: (index, selected) => {
-                    if (!selected)
-                        return;
-                    SettingsData.updateBarConfig(bar.selectedBarId, {
-                        scrollYBehavior: scrollCard.behaviors[index]
-                    });
-                }
-            }
-
-            SettingsButtonGroupRow {
-                text: I18n.tr("X axis")
-                resetStore: bar
-                resetKeys: ["scrollXBehavior"]
-                model: scrollCard.behaviorLabels
-                buttonPadding: Theme.spacingS
-                minButtonWidth: 44
-                textSize: Theme.fontSizeSmall
-                currentIndex: Math.max(0, scrollCard.behaviors.indexOf(bar.selectedBarConfig?.scrollXBehavior || "focusWindow"))
-                onSelectionChanged: (index, selected) => {
-                    if (!selected)
-                        return;
-                    SettingsData.updateBarConfig(bar.selectedBarId, {
-                        scrollXBehavior: scrollCard.behaviors[index]
-                    });
-                }
-            }
-        }
-
-        SettingsCard {
-            iconName: "mouse"
-            title: I18n.tr("Click actions")
-            settingKey: "barMouseClickAction"
-            tags: ["bar", "click", "middle", "right", "mouse", "control center", "launcher", "settings"]
-            visible: (bar.selectedBarConfig?.enabled ?? false) && !bar.selectedBarIsIsland
-
-            SettingsToggleRow {
-                text: I18n.tr("Follow mouse")
-                description: I18n.tr("The Control Center opens at the cursor instead of its widget", "bar click action follow mouse description")
-                settingKey: "barClickActionFollowMouse"
-                visible: bar.selectedBarConfig?.middleClickAction === "control-center" || bar.selectedBarConfig?.rightClickAction === "control-center"
-                tags: ["bar", "click", "mouse", "cursor", "position", "anchor", "popout"]
-                checked: bar.selectedBarConfig?.clickActionFollowMouse ?? false
+            SettingsToggleCard {
+                settingKey: "hoverPopouts"
+                tags: ["bar", "hover", "popout", "reveal", "widget", "delay"]
+                iconName: "touch_app"
+                title: I18n.tr("Hover popouts")
+                description: enabled ? "" : dankBarTab.clickThroughHint
+                enabled: !(bar.selectedBarConfig?.clickThrough ?? false)
+                opacity: (bar.selectedBarConfig?.clickThrough ?? false) ? 0.5 : 1.0
+                checked: bar.selectedBarConfig?.hoverPopouts ?? false
                 onToggled: checked => SettingsData.updateBarConfig(bar.selectedBarId, {
-                        clickActionFollowMouse: checked
+                        hoverPopouts: checked
                     })
-            }
 
-            SettingsDropdownRow {
-                text: I18n.tr("Middle click")
-                description: I18n.tr("Choose what middle-clicking empty bar space does")
-                settingKey: "barMiddleClickAction"
-                tags: ["bar", "middle", "click", "mouse", "control center", "launcher", "settings", "close"]
-                resetStore: bar
-                resetKeys: ["middleClickAction"]
-                options: [I18n.tr("None", "bar click action"), I18n.tr("Toggle Control Center", "bar click action"), I18n.tr("Toggle Launcher", "bar click action"), I18n.tr("Close Active Window", "bar click action"), I18n.tr("Toggle Settings", "bar click action"), I18n.tr("Edit widgets")]
-                dropdownWidth: Theme.smallBreakpoint / 2
-                currentValue: {
-                    switch (bar.selectedBarConfig?.middleClickAction ?? "none") {
-                    case "control-center":
-                        return options[1];
-                    case "spotlight":
-                        return options[2];
-                    case "close-window":
-                        return options[3];
-                    case "settings":
-                        return options[4];
-                    case "edit-widgets":
-                        return options[5];
-                    default:
-                        return options[0];
+                SettingsSliderRow {
+                    visible: bar.selectedBarConfig?.hoverPopouts ?? false
+                    text: I18n.tr("Open delay")
+                    resetStore: bar
+                    resetKeys: ["hoverPopoutDelay"]
+                    value: bar.selectedBarConfig?.hoverPopoutDelay ?? 150
+                    minimum: 0
+                    maximum: 1000
+                    unit: "ms"
+                    onSliderDragFinished: newValue => {
+                        SettingsData.updateBarConfig(bar.selectedBarId, {
+                            hoverPopoutDelay: newValue
+                        });
                     }
-                }
-                onValueChanged: value => {
-                    const actions = ["none", "control-center", "spotlight", "close-window", "settings", "edit-widgets"];
-                    SettingsData.updateBarConfig(bar.selectedBarId, {
-                        middleClickAction: actions[options.indexOf(value)] ?? "none"
-                    });
-                }
-            }
-
-            SettingsDropdownRow {
-                text: I18n.tr("Right click")
-                description: I18n.tr("Choose what right-clicking empty bar space does")
-                settingKey: "barRightClickAction"
-                tags: ["bar", "right", "click", "mouse", "control center", "launcher", "settings", "close"]
-                resetStore: bar
-                resetKeys: ["rightClickAction"]
-                options: [I18n.tr("None", "bar click action"), I18n.tr("Toggle Control Center", "bar click action"), I18n.tr("Toggle Launcher", "bar click action"), I18n.tr("Close Active Window", "bar click action"), I18n.tr("Toggle Settings", "bar click action"), I18n.tr("Edit widgets")]
-                dropdownWidth: Theme.smallBreakpoint / 2
-                currentValue: {
-                    switch (bar.selectedBarConfig?.rightClickAction ?? "edit-widgets") {
-                    case "control-center":
-                        return options[1];
-                    case "spotlight":
-                        return options[2];
-                    case "close-window":
-                        return options[3];
-                    case "settings":
-                        return options[4];
-                    case "edit-widgets":
-                        return options[5];
-                    default:
-                        return options[0];
-                    }
-                }
-                onValueChanged: value => {
-                    const actions = ["none", "control-center", "spotlight", "close-window", "settings", "edit-widgets"];
-                    SettingsData.updateBarConfig(bar.selectedBarId, {
-                        rightClickAction: actions[options.indexOf(value)] ?? "none"
-                    });
                 }
             }
         }
 
-        SettingsCard {
-            iconName: "tune"
-            title: I18n.tr("Advanced")
-            settingKey: "barAdvanced"
-            tags: ["bar", "advanced", "overlay", "layer", "click", "through", "maximize", "island", "spring", "motion", "exclusive", "zone", "popup", "gaps"]
-            collapsible: true
-            expanded: false
+        SettingsDeferred {
+            when: (bar.selectedBarConfig?.enabled ?? false) && !bar.selectedBarIsIsland
+
+            SettingsToggleCard {
+                id: scrollCard
+                iconName: "mouse"
+                settingKey: "barScrollWheel"
+                tags: ["scroll", "wheel", "workspace", "focus", "window", "axis"]
+                title: I18n.tr("Scroll wheel")
+                checked: bar.selectedBarConfig?.scrollEnabled ?? true
+                onToggled: checked => SettingsData.updateBarConfig(bar.selectedBarId, {
+                        scrollEnabled: checked
+                    })
+
+                readonly property var behaviors: CompositorService.canStepWindowFocus ? ["none", "workspace", "focusWindow"] : ["none", "workspace"]
+                readonly property var behaviorLabels: CompositorService.canStepWindowFocus ? [I18n.tr("None"), I18n.tr("Workspace"), I18n.tr("Focus window")] : [I18n.tr("None"), I18n.tr("Workspace")]
+
+                SettingsButtonGroupRow {
+                    text: I18n.tr("Y axis")
+                    resetStore: bar
+                    resetKeys: ["scrollYBehavior"]
+                    model: scrollCard.behaviorLabels
+                    buttonPadding: Theme.spacingS
+                    minButtonWidth: 44
+                    textSize: Theme.fontSizeSmall
+                    currentIndex: Math.max(0, scrollCard.behaviors.indexOf(bar.selectedBarConfig?.scrollYBehavior || "workspace"))
+                    onSelectionChanged: (index, selected) => {
+                        if (!selected)
+                            return;
+                        SettingsData.updateBarConfig(bar.selectedBarId, {
+                            scrollYBehavior: scrollCard.behaviors[index]
+                        });
+                    }
+                }
+
+                SettingsButtonGroupRow {
+                    text: I18n.tr("X axis")
+                    resetStore: bar
+                    resetKeys: ["scrollXBehavior"]
+                    model: scrollCard.behaviorLabels
+                    buttonPadding: Theme.spacingS
+                    minButtonWidth: 44
+                    textSize: Theme.fontSizeSmall
+                    currentIndex: Math.max(0, scrollCard.behaviors.indexOf(bar.selectedBarConfig?.scrollXBehavior || "focusWindow"))
+                    onSelectionChanged: (index, selected) => {
+                        if (!selected)
+                            return;
+                        SettingsData.updateBarConfig(bar.selectedBarId, {
+                            scrollXBehavior: scrollCard.behaviors[index]
+                        });
+                    }
+                }
+            }
+        }
+
+        SettingsDeferred {
+            when: (bar.selectedBarConfig?.enabled ?? false) && !bar.selectedBarIsIsland
+
+            SettingsCard {
+                iconName: "mouse"
+                title: I18n.tr("Click actions")
+                settingKey: "barMouseClickAction"
+                tags: ["bar", "click", "middle", "right", "mouse", "control center", "launcher", "settings"]
+
+                SettingsToggleRow {
+                    text: I18n.tr("Follow mouse")
+                    description: I18n.tr("The Control Center opens at the cursor instead of its widget", "bar click action follow mouse description")
+                    settingKey: "barClickActionFollowMouse"
+                    visible: bar.selectedBarConfig?.middleClickAction === "control-center" || bar.selectedBarConfig?.rightClickAction === "control-center"
+                    tags: ["bar", "click", "mouse", "cursor", "position", "anchor", "popout"]
+                    checked: bar.selectedBarConfig?.clickActionFollowMouse ?? false
+                    onToggled: checked => SettingsData.updateBarConfig(bar.selectedBarId, {
+                            clickActionFollowMouse: checked
+                        })
+                }
+
+                SettingsDropdownRow {
+                    text: I18n.tr("Middle click")
+                    description: I18n.tr("Choose what middle-clicking empty bar space does")
+                    settingKey: "barMiddleClickAction"
+                    tags: ["bar", "middle", "click", "mouse", "control center", "launcher", "settings", "close"]
+                    resetStore: bar
+                    resetKeys: ["middleClickAction"]
+                    options: [I18n.tr("None", "bar click action"), I18n.tr("Toggle Control Center", "bar click action"), I18n.tr("Toggle Launcher", "bar click action"), I18n.tr("Close Active Window", "bar click action"), I18n.tr("Toggle Settings", "bar click action"), I18n.tr("Edit widgets")]
+                    dropdownWidth: Theme.smallBreakpoint / 2
+                    currentValue: {
+                        switch (bar.selectedBarConfig?.middleClickAction ?? "none") {
+                        case "control-center":
+                            return options[1];
+                        case "spotlight":
+                            return options[2];
+                        case "close-window":
+                            return options[3];
+                        case "settings":
+                            return options[4];
+                        case "edit-widgets":
+                            return options[5];
+                        default:
+                            return options[0];
+                        }
+                    }
+                    onValueChanged: value => {
+                        const actions = ["none", "control-center", "spotlight", "close-window", "settings", "edit-widgets"];
+                        SettingsData.updateBarConfig(bar.selectedBarId, {
+                            middleClickAction: actions[options.indexOf(value)] ?? "none"
+                        });
+                    }
+                }
+
+                SettingsDropdownRow {
+                    text: I18n.tr("Right click")
+                    description: I18n.tr("Choose what right-clicking empty bar space does")
+                    settingKey: "barRightClickAction"
+                    tags: ["bar", "right", "click", "mouse", "control center", "launcher", "settings", "close"]
+                    resetStore: bar
+                    resetKeys: ["rightClickAction"]
+                    options: [I18n.tr("None", "bar click action"), I18n.tr("Toggle Control Center", "bar click action"), I18n.tr("Toggle Launcher", "bar click action"), I18n.tr("Close Active Window", "bar click action"), I18n.tr("Toggle Settings", "bar click action"), I18n.tr("Edit widgets")]
+                    dropdownWidth: Theme.smallBreakpoint / 2
+                    currentValue: {
+                        switch (bar.selectedBarConfig?.rightClickAction ?? "edit-widgets") {
+                        case "control-center":
+                            return options[1];
+                        case "spotlight":
+                            return options[2];
+                        case "close-window":
+                            return options[3];
+                        case "settings":
+                            return options[4];
+                        case "edit-widgets":
+                            return options[5];
+                        default:
+                            return options[0];
+                        }
+                    }
+                    onValueChanged: value => {
+                        const actions = ["none", "control-center", "spotlight", "close-window", "settings", "edit-widgets"];
+                        SettingsData.updateBarConfig(bar.selectedBarId, {
+                            rightClickAction: actions[options.indexOf(value)] ?? "none"
+                        });
+                    }
+                }
+            }
+        }
+
+        SettingsDeferred {
+            when: dankBarTab.selectedIslandEnabled
+
+            IslandMotionCard {
+                store: bar.islandStore
+            }
+        }
+
+        SettingsAdvancedSection {
             visible: bar.selectedBarConfig?.enabled ?? false
 
-            SettingsToggleRow {
-                settingKey: "barClickThrough"
-                tags: ["clickthrough", "click", "through", "mouse", "input", "mask", "passthrough"]
-                visible: !bar.islandOwnsSelectedBarTop
-                text: I18n.tr("Click through")
-                description: I18n.tr("Clicks on empty bar space reach the windows below", "bar click through toggle description")
-                checked: bar.selectedBarConfig?.clickThrough ?? false
-                onToggled: toggled => SettingsData.updateBarConfig(bar.selectedBarId, {
-                        clickThrough: toggled
-                    })
-            }
+            SettingsDeferred {
+                SettingsCard {
+                    iconName: "tune"
+                    title: I18n.tr("Advanced")
+                    settingKey: "barAdvanced"
+                    tags: ["bar", "advanced", "overlay", "layer", "click", "through", "maximize", "island", "spring", "motion", "exclusive", "zone", "popup", "gaps"]
 
-            SettingsToggleRow {
-                settingKey: "barUseOverlayLayer"
-                tags: ["bar", "fullscreen", "overlay", "layer"]
-                visible: !bar.islandOwnsSelectedBarTop && !(bar.selectedBarFrameStyled && !SettingsData.connectedFrameModeActive)
-                text: I18n.tr("Use overlay layer")
-                checked: bar.selectedBarConfig?.useOverlayLayer ?? false
-                onToggled: toggled => {
-                    SettingsData.updateBarConfig(bar.selectedBarId, {
-                        useOverlayLayer: toggled
-                    });
-                    bar.notifyHorizontalBarChange();
+                    SettingsToggleRow {
+                        settingKey: "barClickThrough"
+                        tags: ["clickthrough", "click", "through", "mouse", "input", "mask", "passthrough"]
+                        visible: !bar.islandOwnsSelectedBarTop
+                        text: I18n.tr("Click through")
+                        description: I18n.tr("Clicks on empty bar space reach the windows below", "bar click through toggle description")
+                        checked: bar.selectedBarConfig?.clickThrough ?? false
+                        onToggled: toggled => SettingsData.updateBarConfig(bar.selectedBarId, {
+                                clickThrough: toggled
+                            })
+                    }
+
+                    SettingsToggleRow {
+                        settingKey: "barUseOverlayLayer"
+                        tags: ["bar", "fullscreen", "overlay", "layer"]
+                        visible: !bar.islandOwnsSelectedBarTop && !(bar.selectedBarFrameStyled && !SettingsData.connectedFrameModeActive)
+                        text: I18n.tr("Use overlay layer")
+                        checked: bar.selectedBarConfig?.useOverlayLayer ?? false
+                        onToggled: toggled => {
+                            SettingsData.updateBarConfig(bar.selectedBarId, {
+                                useOverlayLayer: toggled
+                            });
+                            bar.notifyHorizontalBarChange();
+                        }
+                    }
+
+                    SettingsToggleRow {
+                        settingKey: "barHideOnFullscreen"
+                        resetStore: bar
+                        resetKeys: ["hideOnFullscreen"]
+                        tags: ["bar", "fullscreen", "hide", "visibility"]
+                        visible: CompositorService.isNiri && !bar.islandOwnsSelectedBarTop && (bar.selectedBarConfig?.useOverlayLayer ?? false)
+                        text: I18n.tr("Hide bar on fullscreen", "bar visibility toggle")
+                        description: I18n.tr("Slide the bar away over fullscreen applications. Move the pointer to the screen edge to reveal it.", "bar fullscreen auto-hide description")
+                        checked: bar.selectedBarConfig?.hideOnFullscreen ?? false
+                        onToggled: toggled => SettingsData.updateBarConfig(bar.selectedBarId, {
+                                hideOnFullscreen: toggled
+                            })
+                    }
+
+                    SettingsToggleRow {
+                        settingKey: "islandUseOverlayLayer"
+                        tags: ["island", "fullscreen", "overlay", "layer"]
+                        visible: bar.selectedBarIsIsland && !bar.selectedBarFrameStyled
+                        text: I18n.tr("Use overlay layer")
+                        checked: bar.islandSetting("islandUseOverlayLayer")
+                        onToggled: checked => bar.apply("islandUseOverlayLayer", checked)
+                    }
+
+                    SettingsControlledBy {
+                        visible: bar.selectedBarFrameStyled && (bar.selectedBarIsIsland || (!bar.islandOwnsSelectedBarTop && !SettingsData.connectedFrameModeActive))
+                        parentModal: dankBarTab.parentModal
+                        section: "frameBorder"
+                        settingLabel: I18n.tr("Use overlay layer")
+                        reason: I18n.tr("Disabled by Frame Mode")
+                    }
+
+                    SettingsToggleRow {
+                        settingKey: "barMaximizeDetection"
+                        tags: ["maximize", "gaps", "border", "fullscreen"]
+                        visible: CompositorService.supportsBarAutoHideReveal && !bar.selectedBarFrameStyled
+                        text: I18n.tr("Maximize detection")
+                        description: I18n.tr("Drops bar gaps and rounding while a window is maximized", "bar maximize detection toggle description")
+                        checked: bar.selectedBarConfig?.maximizeDetection ?? true
+                        onToggled: toggled => SettingsData.updateBarConfig(bar.selectedBarId, {
+                                maximizeDetection: toggled
+                            })
+                    }
+
+                    SettingsControlledBy {
+                        visible: CompositorService.supportsBarAutoHideReveal && bar.selectedBarFrameStyled
+                        parentModal: dankBarTab.parentModal
+                        section: "frameBorder"
+                        settingLabel: I18n.tr("Maximize detection")
+                        reason: I18n.tr("Disabled by Frame Mode")
+                    }
+
+                    SettingsSliderRow {
+                        settingKey: "barExclusiveZone"
+                        tags: ["exclusive", "zone", "reserved", "offset"]
+                        visible: !bar.islandOwnsSelectedBarTop && !bar.selectedBarFrameStyled
+                        text: I18n.tr("Exclusive zone offset")
+                        description: I18n.tr("Grows or shrinks the space windows keep clear", "bar and dock exclusive zone offset slider description")
+                        resetStore: bar
+                        resetKeys: ["bottomGap"]
+                        value: bar.selectedBarConfig?.bottomGap ?? 0
+                        minimum: -50
+                        maximum: 50
+                        unit: "px"
+                        onSliderDragFinished: finalValue => SettingsData.updateBarConfig(bar.selectedBarId, {
+                                bottomGap: finalValue
+                            })
+                    }
+
+                    SettingsToggleRow {
+                        text: I18n.tr("Auto popup gaps")
+                        description: I18n.tr("Gap between the bar and its popouts follows edge spacing", "bar auto popup gaps toggle description")
+                        tags: ["popup", "gaps", "auto"]
+                        visible: !dankBarTab.popupGapsZeroed
+                        checked: bar.selectedBarConfig?.popupGapsAuto ?? true
+                        onToggled: checked => SettingsData.updateBarConfig(bar.selectedBarId, {
+                                popupGapsAuto: checked
+                            })
+                    }
+
+                    SettingsSliderRow {
+                        visible: !dankBarTab.popupGapsZeroed && !(bar.selectedBarConfig?.popupGapsAuto ?? true)
+                        text: I18n.tr("Gap size")
+                        tags: ["popup", "gaps", "size"]
+                        resetStore: bar
+                        resetKeys: ["popupGapsManual"]
+                        unit: "px"
+                        value: bar.selectedBarConfig?.popupGapsManual ?? 4
+                        minimum: 0
+                        maximum: 50
+                        onSliderDragFinished: finalValue => SettingsData.updateBarConfig(bar.selectedBarId, {
+                                popupGapsManual: finalValue
+                            })
+                    }
+
+                    SettingsControlledBy {
+                        visible: dankBarTab.popupGapsZeroed
+                        target: dankBarTab.popupGapsFramed ? "" : "appearance"
+                        parentModal: dankBarTab.parentModal
+                        section: dankBarTab.popupGapsFramed ? "frameBorder" : (bar.selectedBarIsIsland ? "islandSatellites" : "barCorners")
+                        settingLabel: I18n.tr("Auto popup gaps")
+                        reason: dankBarTab.popupGapsFramed ? I18n.tr("Disabled by Frame Mode") : I18n.tr("Disabled by Connected popouts", "bar popouts card, Connected popouts is the Appearance toggle name")
+                    }
                 }
             }
-
-            SettingsToggleRow {
-                settingKey: "barHideOnFullscreen"
-                resetStore: bar
-                resetKeys: ["hideOnFullscreen"]
-                tags: ["bar", "fullscreen", "hide", "visibility"]
-                visible: CompositorService.isNiri && !bar.islandOwnsSelectedBarTop && (bar.selectedBarConfig?.useOverlayLayer ?? false)
-                text: I18n.tr("Hide bar on fullscreen", "bar visibility toggle")
-                description: I18n.tr("Slide the bar away over fullscreen applications. Move the pointer to the screen edge to reveal it.", "bar fullscreen auto-hide description")
-                checked: bar.selectedBarConfig?.hideOnFullscreen ?? false
-                onToggled: toggled => SettingsData.updateBarConfig(bar.selectedBarId, {
-                        hideOnFullscreen: toggled
-                    })
-            }
-
-            SettingsToggleRow {
-                settingKey: "islandUseOverlayLayer"
-                tags: ["island", "fullscreen", "overlay", "layer"]
-                visible: bar.selectedBarIsIsland && !bar.selectedBarFrameStyled
-                text: I18n.tr("Use overlay layer")
-                checked: bar.islandSetting("islandUseOverlayLayer")
-                onToggled: checked => bar.apply("islandUseOverlayLayer", checked)
-            }
-
-            SettingsControlledBy {
-                visible: bar.selectedBarFrameStyled && (bar.selectedBarIsIsland || (!bar.islandOwnsSelectedBarTop && !SettingsData.connectedFrameModeActive))
-                parentModal: dankBarTab.parentModal
-                section: "frameBorder"
-                settingLabel: I18n.tr("Use overlay layer")
-                reason: I18n.tr("Disabled by Frame Mode")
-            }
-
-            SettingsToggleRow {
-                settingKey: "barMaximizeDetection"
-                tags: ["maximize", "gaps", "border", "fullscreen"]
-                visible: CompositorService.supportsBarAutoHideReveal && !bar.selectedBarFrameStyled
-                text: I18n.tr("Maximize detection")
-                description: I18n.tr("Drops bar gaps and rounding while a window is maximized", "bar maximize detection toggle description")
-                checked: bar.selectedBarConfig?.maximizeDetection ?? true
-                onToggled: toggled => SettingsData.updateBarConfig(bar.selectedBarId, {
-                        maximizeDetection: toggled
-                    })
-            }
-
-            SettingsControlledBy {
-                visible: CompositorService.supportsBarAutoHideReveal && bar.selectedBarFrameStyled
-                parentModal: dankBarTab.parentModal
-                section: "frameBorder"
-                settingLabel: I18n.tr("Maximize detection")
-                reason: I18n.tr("Disabled by Frame Mode")
-            }
-
-            SettingsSliderRow {
-                settingKey: "barExclusiveZone"
-                tags: ["exclusive", "zone", "reserved", "offset"]
-                visible: !bar.islandOwnsSelectedBarTop && !bar.selectedBarFrameStyled
-                text: I18n.tr("Exclusive zone offset")
-                description: I18n.tr("Grows or shrinks the space windows keep clear", "bar and dock exclusive zone offset slider description")
-                resetStore: bar
-                resetKeys: ["bottomGap"]
-                value: bar.selectedBarConfig?.bottomGap ?? 0
-                minimum: -50
-                maximum: 50
-                unit: "px"
-                onSliderDragFinished: finalValue => SettingsData.updateBarConfig(bar.selectedBarId, {
-                        bottomGap: finalValue
-                    })
-            }
-
-            SettingsToggleRow {
-                text: I18n.tr("Auto popup gaps")
-                description: I18n.tr("Gap between the bar and its popouts follows edge spacing", "bar auto popup gaps toggle description")
-                tags: ["popup", "gaps", "auto"]
-                visible: !dankBarTab.popupGapsZeroed
-                checked: bar.selectedBarConfig?.popupGapsAuto ?? true
-                onToggled: checked => SettingsData.updateBarConfig(bar.selectedBarId, {
-                        popupGapsAuto: checked
-                    })
-            }
-
-            SettingsSliderRow {
-                visible: !dankBarTab.popupGapsZeroed && !(bar.selectedBarConfig?.popupGapsAuto ?? true)
-                text: I18n.tr("Gap size")
-                tags: ["popup", "gaps", "size"]
-                resetStore: bar
-                resetKeys: ["popupGapsManual"]
-                unit: "px"
-                value: bar.selectedBarConfig?.popupGapsManual ?? 4
-                minimum: 0
-                maximum: 50
-                onSliderDragFinished: finalValue => SettingsData.updateBarConfig(bar.selectedBarId, {
-                        popupGapsManual: finalValue
-                    })
-            }
-
-            SettingsControlledBy {
-                visible: dankBarTab.popupGapsZeroed
-                target: dankBarTab.popupGapsFramed ? "" : "appearance"
-                parentModal: dankBarTab.parentModal
-                section: dankBarTab.popupGapsFramed ? "frameBorder" : (bar.selectedBarIsIsland ? "islandSatellites" : "barCorners")
-                settingLabel: I18n.tr("Auto popup gaps")
-                reason: dankBarTab.popupGapsFramed ? I18n.tr("Disabled by Frame Mode") : I18n.tr("Disabled by Connected popouts", "bar popouts card, Connected popouts is the Appearance toggle name")
-            }
-        }
-
-        IslandMotionCard {
-            store: bar.islandStore
-            visible: dankBarTab.selectedIslandEnabled
         }
     }
 }

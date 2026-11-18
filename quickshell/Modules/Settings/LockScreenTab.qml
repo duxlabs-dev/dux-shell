@@ -12,6 +12,8 @@ Item {
     id: root
 
     property var parentModal: null
+    // The preview builds the real lock widgets, so it waits until the page has finished arriving
+    property bool pageSettled: false
 
     readonly property bool lockFprintToggleAvailable: SettingsData.lockFingerprintCanEnable || SettingsData.enableFprint
     readonly property bool lockU2fToggleAvailable: SettingsData.lockU2fCanEnable || SettingsData.enableU2f
@@ -395,7 +397,7 @@ Item {
                     LockScreenMinimap {
                         anchors.fill: parent
                         screen: lockThumb.previewScreen
-                        active: lockThumb.visible && (root.parentModal?.shouldBeVisible ?? true)
+                        active: lockThumb.visible && root.pageSettled && (root.parentModal?.shouldBeVisible ?? true)
                     }
                 }
             }
@@ -420,471 +422,481 @@ Item {
             }
         }
 
-        SettingsCard {
-            width: parent.width
-            iconName: "lock"
-            title: I18n.tr("Behavior")
-            settingKey: "lockBehavior"
-            SettingsToggleRow {
-                settingKey: "lockScreenPowerOffMonitorsOnLock"
-                tags: ["lock", "screen", "monitor", "display", "dpms", "power"]
-                text: I18n.tr("Power off displays on lock")
-                checked: SettingsData.lockScreenPowerOffMonitorsOnLock
-                onToggled: checked => SettingsData.set("lockScreenPowerOffMonitorsOnLock", checked)
-            }
-
-            SettingsToggleRow {
-                settingKey: "lockAtStartup"
-                tags: ["lock", "screen", "startup", "start", "boot", "login", "automatic"]
-                text: I18n.tr("Lock at startup")
-                description: SettingsData.isManaged("lockAtStartup") ? root.managedNote : ""
-                enabled: !SettingsData.isManaged("lockAtStartup")
-                checked: SettingsData.lockAtStartup
-                onToggled: checked => SettingsData.set("lockAtStartup", checked)
-            }
-
-            SettingsToggleRow {
-                settingKey: "lockBeforeSuspend"
-                tags: ["lock", "screen", "suspend", "hibernate", "sleep", "automatic"]
-                text: I18n.tr("Lock before suspend")
-                description: SettingsData.isManaged("lockBeforeSuspend") ? root.managedNote : ""
-                enabled: !SettingsData.isManaged("lockBeforeSuspend")
-                checked: SettingsData.lockBeforeSuspend
-                visible: SessionService.loginctlAvailable && SettingsData.loginctlLockIntegration
-                onToggled: checked => SettingsData.set("lockBeforeSuspend", checked)
-            }
-        }
-
-        SettingsCard {
-            width: parent.width
-            iconName: "movie"
-            title: I18n.tr("Video screensaver")
-            settingKey: "videoScreensaver"
-
-            SettingsRow {
-                visible: !MultimediaService.available
-                body: StyledText {
-                    text: I18n.tr("QtMultimedia is not available - video screensaver requires qt multimedia services")
-                    font.pixelSize: Theme.fontSizeSmall
-                    color: Theme.warning
-                    width: parent.width
-                    wrapMode: Text.WordWrap
-                }
-            }
-
-            SettingsToggleRow {
-                settingKey: "lockScreenVideoEnabled"
-                tags: ["lock", "screen", "video", "screensaver", "animation", "movie"]
-                text: I18n.tr("Play video on lock")
-                enabled: MultimediaService.available
-                checked: SettingsData.lockScreenVideoEnabled
-                onToggled: checked => SettingsData.set("lockScreenVideoEnabled", checked)
-            }
-
-            SettingsTextFieldRow {
-                leftIconName: "folder"
-                visible: SettingsData.lockScreenVideoEnabled && MultimediaService.available
-                text: I18n.tr("Path")
-                resetKeys: ["lockScreenVideoPath"]
-                value: SettingsData.lockScreenVideoPath
-                placeholderText: "/path/to/videos"
-                onValueEdited: value => SettingsData.set("lockScreenVideoPath", value)
-
-                actions: DButton {
-                    text: I18n.tr("Browse")
-                    onClicked: videoBrowserModal.open()
-                }
-            }
-
-            SettingsToggleRow {
-                settingKey: "lockScreenVideoCycling"
-                tags: ["lock", "screen", "video", "screensaver", "cycling", "random", "shuffle"]
-                text: I18n.tr("Automatic cycling")
-                visible: SettingsData.lockScreenVideoEnabled && MultimediaService.available
-                enabled: MultimediaService.available
-                checked: SettingsData.lockScreenVideoCycling
-                onToggled: checked => SettingsData.set("lockScreenVideoCycling", checked)
-            }
-        }
-
-        SettingsCard {
-            width: parent.width
-            iconName: "key"
-            title: I18n.tr("Authentication")
-            settingKey: "lockAuthSource"
-            SettingsToggleRow {
-                settingKey: "lockPamExternallyManaged"
-                tags: ["lock", "screen", "pam", "managed", "external", "authentication", "policy"]
-                text: I18n.tr("Use system PAM authentication", "system PAM policy toggle")
-                checked: SettingsData.lockPamExternallyManaged
-                onToggled: checked => SettingsData.set("lockPamExternallyManaged", checked)
-            }
-
-            SettingsToggleRow {
-                settingKey: "enableFprint"
-                tags: ["lock", "screen", "fingerprint", "authentication", "biometric", "fprint"]
-                text: I18n.tr("Fingerprint", "lock screen fingerprint authentication toggle")
-                description: SettingsData.isManaged("enableFprint") ? root.managedNote : root.lockFprintControlledByPrimary ? I18n.tr("Managed by the primary PAM source", "factor managed by PAM source status") : root.lockFingerprintDescription()
-                descriptionColor: SettingsData.isManaged("enableFprint") || root.lockFprintControlledByPrimary || SettingsData.lockFingerprintReason === "ready" ? Theme.surfaceVariantText : Theme.warning
-                checked: SettingsData.enableFprint || root.primaryPamHasFprint
-                enabled: root.lockFprintToggleAvailable && !root.lockFprintControlledByPrimary && !SettingsData.isManaged("enableFprint")
-                onToggled: checked => SettingsData.set("enableFprint", checked)
-            }
-
-            SettingsToggleRow {
-                settingKey: "enableU2f"
-                tags: ["lock", "screen", "u2f", "yubikey", "security", "key", "fido", "authentication", "hardware"]
-                text: I18n.tr("Security key")
-                description: SettingsData.isManaged("enableU2f") ? root.managedNote : root.lockU2fControlledByPrimary ? I18n.tr("Managed by the primary PAM source", "factor managed by PAM source status") : root.lockU2fDescription()
-                descriptionColor: SettingsData.isManaged("enableU2f") || root.lockU2fControlledByPrimary || SettingsData.lockU2fReason === "ready" ? Theme.surfaceVariantText : Theme.warning
-                checked: SettingsData.enableU2f || root.primaryPamHasU2f
-                enabled: root.lockU2fToggleAvailable && !root.lockU2fControlledByPrimary && !SettingsData.isManaged("enableU2f")
-                onToggled: checked => SettingsData.set("enableU2f", checked)
-            }
-
-            SettingsDropdownRow {
-                settingKey: "u2fMode"
-                tags: ["lock", "screen", "u2f", "yubikey", "security", "key", "mode", "factor", "second"]
-                text: I18n.tr("Security key mode", "lock screen U2F security key mode setting")
-                description: SettingsData.isManaged("u2fMode") ? root.managedNote : I18n.tr("'Alternative' lets the key unlock on its own. 'Second factor' requires password or fingerprint first, then the key.", "lock screen U2F security key mode setting")
-                enabled: !SettingsData.isManaged("u2fMode")
-                visible: SettingsData.enableU2f && !root.lockU2fControlledByPrimary
-                options: [I18n.tr("Alternative (OR)", "U2F mode option: key works as standalone unlock method"), I18n.tr("Second factor (AND)", "U2F mode option: key required after password or fingerprint")]
-                currentValue: SettingsData.u2fMode === "and" ? I18n.tr("Second factor (AND)", "U2F mode option: key required after password or fingerprint") : I18n.tr("Alternative (OR)", "U2F mode option: key works as standalone unlock method")
-                onValueChanged: value => {
-                    if (value === I18n.tr("Second factor (AND)", "U2F mode option: key required after password or fingerprint"))
-                        SettingsData.set("u2fMode", "and");
-                    else
-                        SettingsData.set("u2fMode", "or");
-                }
-            }
-
-            SettingsToggleRow {
-                settingKey: "lockScreenSecurityKeyShortcutEnabled"
-                tags: ["lock", "screen", "u2f", "yubikey", "security", "key", "shortcut", "keybind", "authentication"]
-                text: I18n.tr("Security key shortcut", "lock screen security key shortcut toggle")
-                checked: SettingsData.lockScreenSecurityKeyShortcutEnabled
-                visible: SettingsData.enableU2f && SettingsData.u2fMode === "or" && !root.lockU2fControlledByPrimary
-                onToggled: checked => SettingsData.set("lockScreenSecurityKeyShortcutEnabled", checked)
-            }
-
-            SettingsRow {
-                visible: SettingsData.lockScreenSecurityKeyShortcutEnabled && SettingsData.enableU2f && SettingsData.u2fMode === "or" && !root.lockU2fControlledByPrimary
-                body: Row {
-                    width: parent.width
-                    spacing: Theme.spacingM
-
-                    Column {
-                        width: parent.width - securityKeyCapture.width - parent.spacing
-                        anchors.verticalCenter: parent.verticalCenter
-                        spacing: Theme.spacingXS
-
-                        StyledText {
-                            text: I18n.tr("Key combination", "lock screen security key shortcut key combination setting")
-                            font.pixelSize: Theme.fontSizeMedium
-                            font.weight: Theme.fontWeightMedium
-                            color: Theme.surfaceText
-                            width: parent.width
-                            horizontalAlignment: Text.AlignLeft
-                        }
-
-                        StyledText {
-                            text: securityKeyCapture.captureError !== "" ? securityKeyCapture.captureError : I18n.tr("Press Ctrl+key to set. Esc cancels.", "lock screen security key shortcut key combination capture hint")
-                            font.pixelSize: Theme.fontSizeSmall
-                            color: securityKeyCapture.captureError !== "" ? Theme.warning : Theme.surfaceVariantText
-                            wrapMode: Text.WordWrap
-                            width: parent.width
-                            horizontalAlignment: Text.AlignLeft
-                        }
-                    }
-
-                    DButton {
-                        id: securityKeyCapture
-                        width: 200
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: capturing ? I18n.tr("Press key...", "lock screen security key shortcut key combination capture prompt") : SettingsData.lockScreenSecurityKeyShortcut
-                        backgroundColor: capturing ? Theme.selectedContainer : SettingsMetrics.controlColor
-                        textColor: Theme.surfaceText
-
-                        property bool capturing: false
-                        property string captureError: ""
-                        readonly property var reservedKeys: ["A", "E", "B", "F", "U", "K", "W", "H", "D"]
-
-                        function startCapture() {
-                            captureError = "";
-                            capturing = true;
-                            securityKeyCapture.forceActiveFocus();
-                        }
-
-                        function stopCapture() {
-                            capturing = false;
-                        }
-
-                        onClicked: {
-                            if (capturing)
-                                stopCapture();
-                            else
-                                startCapture();
-                        }
-
-                        Keys.onPressed: event => captureKey(event)
-                        // Specific Tab handlers stop Qt focus traversal while capturing.
-                        Keys.onTabPressed: event => captureKey(event)
-                        Keys.onBacktabPressed: event => captureKey(event)
-
-                        function captureKey(event) {
-                            event.accepted = capturing;
-                            if (!capturing)
-                                return;
-
-                            if (KeyUtils.isModifierKey(event.key))
-                                return;
-
-                            if (event.key === Qt.Key_Escape) {
-                                securityKeyCapture.stopCapture();
-                                return;
-                            }
-
-                            const mods = KeyUtils.modsFromEvent(event.modifiers);
-                            const hasCtrl = mods.includes("Ctrl");
-                            const hasAlt = mods.includes("Alt") || mods.includes("Super");
-                            if (!hasCtrl || hasAlt)
-                                return;
-
-                            const hasShift = mods.includes("Shift");
-                            const key = KeyUtils.xkbKeyFromQtKey(event.key, !!(event.modifiers & Qt.KeypadModifier), hasShift);
-                            if (!key)
-                                return;
-
-                            if (!KeyUtils.qtKeyFromName(key))
-                                return;
-
-                            if (!hasShift && securityKeyCapture.reservedKeys.indexOf(key.toUpperCase()) !== -1) {
-                                securityKeyCapture.captureError = I18n.tr("Ctrl+%1 is used for password editing", "lock screen security key shortcut reserved key warning").arg(key.toUpperCase());
-                                event.accepted = true;
-                                return;
-                            }
-
-                            SettingsData.set("lockScreenSecurityKeyShortcut", KeyUtils.formatToken(mods, key));
-                            securityKeyCapture.captureError = "";
-                            securityKeyCapture.stopCapture();
-                            event.accepted = true;
-                        }
-                    }
-                }
-            }
-        }
-
-        SettingsCard {
-            width: parent.width
-            iconName: "monitor"
-            title: I18n.tr("Displays")
-            settingKey: "lockDisplay"
-            SettingsRow {
-                body: StyledText {
-                    text: I18n.tr("Other displays show a solid color for OLED burn-in protection")
-                    font.pixelSize: Theme.fontSizeSmall
-                    color: Theme.surfaceVariantText
-                    width: parent.width
-                    wrapMode: Text.Wrap
-                }
-            }
-
-            SettingsDisplayPicker {
+        SettingsDeferred {
+            SettingsCard {
                 width: parent.width
-                displayPreferences: SettingsData.screenPreferences?.lockScreen || ["all"]
-                preferencesHandler: prefs => {
-                    var p = SettingsData.screenPreferences || {};
-                    var updated = Object.assign({}, p);
-                    updated["lockScreen"] = prefs;
-                    SettingsData.set("screenPreferences", updated);
-                }
-            }
-
-            SettingsRow {
-                title: I18n.tr("Inactive display color")
-                tags: ["lock", "screen", "inactive", "display", "color", "oled"]
-                resetKeys: ["lockScreenInactiveColor"]
-                visible: {
-                    const prefs = SettingsData.screenPreferences?.lockScreen;
-                    return Array.isArray(prefs) && !prefs.includes("all") && prefs.length > 0;
-                }
-                clickable: true
-                onClicked: {
-                    if (!PopoutService.colorPickerModal)
-                        return;
-                    PopoutService.colorPickerModal.selectedColor = SettingsData.lockScreenInactiveColor;
-                    PopoutService.colorPickerModal.pickerTitle = I18n.tr("Inactive display color");
-                    PopoutService.colorPickerModal.onColorSelectedCallback = function (selectedColor) {
-                        SettingsData.set("lockScreenInactiveColor", selectedColor);
-                    };
-                    PopoutService.colorPickerModal.show();
+                iconName: "lock"
+                title: I18n.tr("Behavior")
+                settingKey: "lockBehavior"
+                SettingsToggleRow {
+                    settingKey: "lockScreenPowerOffMonitorsOnLock"
+                    tags: ["lock", "screen", "monitor", "display", "dpms", "power"]
+                    text: I18n.tr("Power off displays on lock")
+                    checked: SettingsData.lockScreenPowerOffMonitorsOnLock
+                    onToggled: checked => SettingsData.set("lockScreenPowerOffMonitorsOnLock", checked)
                 }
 
-                DColorSwatch {
-                    width: Theme.iconSizeMedium
-                    height: width
-                    swatchColor: SettingsData.lockScreenInactiveColor
-                    anchors.verticalCenter: parent.verticalCenter
+                SettingsToggleRow {
+                    settingKey: "lockAtStartup"
+                    tags: ["lock", "screen", "startup", "start", "boot", "login", "automatic"]
+                    text: I18n.tr("Lock at startup")
+                    description: SettingsData.isManaged("lockAtStartup") ? root.managedNote : ""
+                    enabled: !SettingsData.isManaged("lockAtStartup")
+                    checked: SettingsData.lockAtStartup
+                    onToggled: checked => SettingsData.set("lockAtStartup", checked)
+                }
+
+                SettingsToggleRow {
+                    settingKey: "lockBeforeSuspend"
+                    tags: ["lock", "screen", "suspend", "hibernate", "sleep", "automatic"]
+                    text: I18n.tr("Lock before suspend")
+                    description: SettingsData.isManaged("lockBeforeSuspend") ? root.managedNote : ""
+                    enabled: !SettingsData.isManaged("lockBeforeSuspend")
+                    checked: SettingsData.lockBeforeSuspend
+                    visible: SessionService.loginctlAvailable && SettingsData.loginctlLockIntegration
+                    onToggled: checked => SettingsData.set("lockBeforeSuspend", checked)
                 }
             }
         }
 
-        SettingsCard {
-            width: parent.width
-            iconName: "tune"
-            title: I18n.tr("Advanced")
-            settingKey: "lockScreenAdvanced"
-            tags: ["pam", "authentication", "source", "loginctl", "u2f"]
-            collapsible: true
-            expanded: false
+        SettingsDeferred {
+            SettingsCard {
+                width: parent.width
+                iconName: "movie"
+                title: I18n.tr("Video screensaver")
+                settingKey: "videoScreensaver"
 
-            SettingsRow {
-                body: StyledText {
-                    text: I18n.tr("Authentication changes apply automatically")
-                    font.pixelSize: Theme.fontSizeSmall
-                    color: Theme.surfaceVariantText
+                SettingsRow {
+                    visible: !MultimediaService.available
+                    body: StyledText {
+                        text: I18n.tr("QtMultimedia is not available - video screensaver requires qt multimedia services")
+                        font.pixelSize: Theme.fontSizeSmall
+                        color: Theme.warning
+                        width: parent.width
+                        wrapMode: Text.WordWrap
+                    }
+                }
+
+                SettingsToggleRow {
+                    settingKey: "lockScreenVideoEnabled"
+                    tags: ["lock", "screen", "video", "screensaver", "animation", "movie"]
+                    text: I18n.tr("Play video on lock")
+                    enabled: MultimediaService.available
+                    checked: SettingsData.lockScreenVideoEnabled
+                    onToggled: checked => SettingsData.set("lockScreenVideoEnabled", checked)
+                }
+
+                SettingsTextFieldRow {
+                    leftIconName: "folder"
+                    visible: SettingsData.lockScreenVideoEnabled && MultimediaService.available
+                    text: I18n.tr("Path")
+                    resetKeys: ["lockScreenVideoPath"]
+                    value: SettingsData.lockScreenVideoPath
+                    placeholderText: "/path/to/videos"
+                    onValueEdited: value => SettingsData.set("lockScreenVideoPath", value)
+
+                    actions: DButton {
+                        text: I18n.tr("Browse")
+                        onClicked: videoBrowserModal.open()
+                    }
+                }
+
+                SettingsToggleRow {
+                    settingKey: "lockScreenVideoCycling"
+                    tags: ["lock", "screen", "video", "screensaver", "cycling", "random", "shuffle"]
+                    text: I18n.tr("Automatic cycling")
+                    visible: SettingsData.lockScreenVideoEnabled && MultimediaService.available
+                    enabled: MultimediaService.available
+                    checked: SettingsData.lockScreenVideoCycling
+                    onToggled: checked => SettingsData.set("lockScreenVideoCycling", checked)
+                }
+            }
+        }
+
+        SettingsDeferred {
+            SettingsCard {
+                width: parent.width
+                iconName: "key"
+                title: I18n.tr("Authentication")
+                settingKey: "lockAuthSource"
+                SettingsToggleRow {
+                    settingKey: "lockPamExternallyManaged"
+                    tags: ["lock", "screen", "pam", "managed", "external", "authentication", "policy"]
+                    text: I18n.tr("Use system PAM authentication", "system PAM policy toggle")
+                    checked: SettingsData.lockPamExternallyManaged
+                    onToggled: checked => SettingsData.set("lockPamExternallyManaged", checked)
+                }
+
+                SettingsToggleRow {
+                    settingKey: "enableFprint"
+                    tags: ["lock", "screen", "fingerprint", "authentication", "biometric", "fprint"]
+                    text: I18n.tr("Fingerprint", "lock screen fingerprint authentication toggle")
+                    description: SettingsData.isManaged("enableFprint") ? root.managedNote : root.lockFprintControlledByPrimary ? I18n.tr("Managed by the primary PAM source", "factor managed by PAM source status") : root.lockFingerprintDescription()
+                    descriptionColor: SettingsData.isManaged("enableFprint") || root.lockFprintControlledByPrimary || SettingsData.lockFingerprintReason === "ready" ? Theme.surfaceVariantText : Theme.warning
+                    checked: SettingsData.enableFprint || root.primaryPamHasFprint
+                    enabled: root.lockFprintToggleAvailable && !root.lockFprintControlledByPrimary && !SettingsData.isManaged("enableFprint")
+                    onToggled: checked => SettingsData.set("enableFprint", checked)
+                }
+
+                SettingsToggleRow {
+                    settingKey: "enableU2f"
+                    tags: ["lock", "screen", "u2f", "yubikey", "security", "key", "fido", "authentication", "hardware"]
+                    text: I18n.tr("Security key")
+                    description: SettingsData.isManaged("enableU2f") ? root.managedNote : root.lockU2fControlledByPrimary ? I18n.tr("Managed by the primary PAM source", "factor managed by PAM source status") : root.lockU2fDescription()
+                    descriptionColor: SettingsData.isManaged("enableU2f") || root.lockU2fControlledByPrimary || SettingsData.lockU2fReason === "ready" ? Theme.surfaceVariantText : Theme.warning
+                    checked: SettingsData.enableU2f || root.primaryPamHasU2f
+                    enabled: root.lockU2fToggleAvailable && !root.lockU2fControlledByPrimary && !SettingsData.isManaged("enableU2f")
+                    onToggled: checked => SettingsData.set("enableU2f", checked)
+                }
+
+                SettingsDropdownRow {
+                    settingKey: "u2fMode"
+                    tags: ["lock", "screen", "u2f", "yubikey", "security", "key", "mode", "factor", "second"]
+                    text: I18n.tr("Security key mode", "lock screen U2F security key mode setting")
+                    description: SettingsData.isManaged("u2fMode") ? root.managedNote : I18n.tr("'Alternative' lets the key unlock on its own. 'Second factor' requires password or fingerprint first, then the key.", "lock screen U2F security key mode setting")
+                    enabled: !SettingsData.isManaged("u2fMode")
+                    visible: SettingsData.enableU2f && !root.lockU2fControlledByPrimary
+                    options: [I18n.tr("Alternative (OR)", "U2F mode option: key works as standalone unlock method"), I18n.tr("Second factor (AND)", "U2F mode option: key required after password or fingerprint")]
+                    currentValue: SettingsData.u2fMode === "and" ? I18n.tr("Second factor (AND)", "U2F mode option: key required after password or fingerprint") : I18n.tr("Alternative (OR)", "U2F mode option: key works as standalone unlock method")
+                    onValueChanged: value => {
+                        if (value === I18n.tr("Second factor (AND)", "U2F mode option: key required after password or fingerprint"))
+                            SettingsData.set("u2fMode", "and");
+                        else
+                            SettingsData.set("u2fMode", "or");
+                    }
+                }
+
+                SettingsToggleRow {
+                    settingKey: "lockScreenSecurityKeyShortcutEnabled"
+                    tags: ["lock", "screen", "u2f", "yubikey", "security", "key", "shortcut", "keybind", "authentication"]
+                    text: I18n.tr("Security key shortcut", "lock screen security key shortcut toggle")
+                    checked: SettingsData.lockScreenSecurityKeyShortcutEnabled
+                    visible: SettingsData.enableU2f && SettingsData.u2fMode === "or" && !root.lockU2fControlledByPrimary
+                    onToggled: checked => SettingsData.set("lockScreenSecurityKeyShortcutEnabled", checked)
+                }
+
+                SettingsRow {
+                    visible: SettingsData.lockScreenSecurityKeyShortcutEnabled && SettingsData.enableU2f && SettingsData.u2fMode === "or" && !root.lockU2fControlledByPrimary
+                    body: Row {
+                        width: parent.width
+                        spacing: Theme.spacingM
+
+                        Column {
+                            width: parent.width - securityKeyCapture.width - parent.spacing
+                            anchors.verticalCenter: parent.verticalCenter
+                            spacing: Theme.spacingXS
+
+                            StyledText {
+                                text: I18n.tr("Key combination", "lock screen security key shortcut key combination setting")
+                                font.pixelSize: Theme.fontSizeMedium
+                                font.weight: Theme.fontWeightMedium
+                                color: Theme.surfaceText
+                                width: parent.width
+                                horizontalAlignment: Text.AlignLeft
+                            }
+
+                            StyledText {
+                                text: securityKeyCapture.captureError !== "" ? securityKeyCapture.captureError : I18n.tr("Press Ctrl+key to set. Esc cancels.", "lock screen security key shortcut key combination capture hint")
+                                font.pixelSize: Theme.fontSizeSmall
+                                color: securityKeyCapture.captureError !== "" ? Theme.warning : Theme.surfaceVariantText
+                                wrapMode: Text.WordWrap
+                                width: parent.width
+                                horizontalAlignment: Text.AlignLeft
+                            }
+                        }
+
+                        DButton {
+                            id: securityKeyCapture
+                            width: 200
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: capturing ? I18n.tr("Press key...", "lock screen security key shortcut key combination capture prompt") : SettingsData.lockScreenSecurityKeyShortcut
+                            backgroundColor: capturing ? Theme.selectedContainer : SettingsMetrics.controlColor
+                            textColor: Theme.surfaceText
+
+                            property bool capturing: false
+                            property string captureError: ""
+                            readonly property var reservedKeys: ["A", "E", "B", "F", "U", "K", "W", "H", "D"]
+
+                            function startCapture() {
+                                captureError = "";
+                                capturing = true;
+                                securityKeyCapture.forceActiveFocus();
+                            }
+
+                            function stopCapture() {
+                                capturing = false;
+                            }
+
+                            onClicked: {
+                                if (capturing)
+                                    stopCapture();
+                                else
+                                    startCapture();
+                            }
+
+                            Keys.onPressed: event => captureKey(event)
+                            // Specific Tab handlers stop Qt focus traversal while capturing.
+                            Keys.onTabPressed: event => captureKey(event)
+                            Keys.onBacktabPressed: event => captureKey(event)
+
+                            function captureKey(event) {
+                                event.accepted = capturing;
+                                if (!capturing)
+                                    return;
+
+                                if (KeyUtils.isModifierKey(event.key))
+                                    return;
+
+                                if (event.key === Qt.Key_Escape) {
+                                    securityKeyCapture.stopCapture();
+                                    return;
+                                }
+
+                                const mods = KeyUtils.modsFromEvent(event.modifiers);
+                                const hasCtrl = mods.includes("Ctrl");
+                                const hasAlt = mods.includes("Alt") || mods.includes("Super");
+                                if (!hasCtrl || hasAlt)
+                                    return;
+
+                                const hasShift = mods.includes("Shift");
+                                const key = KeyUtils.xkbKeyFromQtKey(event.key, !!(event.modifiers & Qt.KeypadModifier), hasShift);
+                                if (!key)
+                                    return;
+
+                                if (!KeyUtils.qtKeyFromName(key))
+                                    return;
+
+                                if (!hasShift && securityKeyCapture.reservedKeys.indexOf(key.toUpperCase()) !== -1) {
+                                    securityKeyCapture.captureError = I18n.tr("Ctrl+%1 is used for password editing", "lock screen security key shortcut reserved key warning").arg(key.toUpperCase());
+                                    event.accepted = true;
+                                    return;
+                                }
+
+                                SettingsData.set("lockScreenSecurityKeyShortcut", KeyUtils.formatToken(mods, key));
+                                securityKeyCapture.captureError = "";
+                                securityKeyCapture.stopCapture();
+                                event.accepted = true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        SettingsDeferred {
+            SettingsCard {
+                width: parent.width
+                iconName: "monitor"
+                title: I18n.tr("Displays")
+                settingKey: "lockDisplay"
+                SettingsRow {
+                    body: StyledText {
+                        text: I18n.tr("Other displays show a solid color for OLED burn-in protection")
+                        font.pixelSize: Theme.fontSizeSmall
+                        color: Theme.surfaceVariantText
+                        width: parent.width
+                        wrapMode: Text.Wrap
+                    }
+                }
+
+                SettingsDisplayPicker {
                     width: parent.width
-                    wrapMode: Text.Wrap
+                    displayPreferences: SettingsData.screenPreferences?.lockScreen || ["all"]
+                    preferencesHandler: prefs => {
+                        var p = SettingsData.screenPreferences || {};
+                        var updated = Object.assign({}, p);
+                        updated["lockScreen"] = prefs;
+                        SettingsData.set("screenPreferences", updated);
+                    }
+                }
+
+                SettingsRow {
+                    title: I18n.tr("Inactive display color")
+                    tags: ["lock", "screen", "inactive", "display", "color", "oled"]
+                    resetKeys: ["lockScreenInactiveColor"]
+                    visible: {
+                        const prefs = SettingsData.screenPreferences?.lockScreen;
+                        return Array.isArray(prefs) && !prefs.includes("all") && prefs.length > 0;
+                    }
+                    clickable: true
+                    onClicked: {
+                        if (!PopoutService.colorPickerModal)
+                            return;
+                        PopoutService.colorPickerModal.selectedColor = SettingsData.lockScreenInactiveColor;
+                        PopoutService.colorPickerModal.pickerTitle = I18n.tr("Inactive display color");
+                        PopoutService.colorPickerModal.onColorSelectedCallback = function (selectedColor) {
+                            SettingsData.set("lockScreenInactiveColor", selectedColor);
+                        };
+                        PopoutService.colorPickerModal.show();
+                    }
+
+                    DColorSwatch {
+                        width: Theme.iconSizeMedium
+                        height: width
+                        swatchColor: SettingsData.lockScreenInactiveColor
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
                 }
             }
+        }
 
-            SettingsDropdownRow {
-                settingKey: "lockPamPath"
-                resetKeys: []
-                tags: ["lock", "screen", "pam", "authentication", "source", "service"]
-                text: I18n.tr("Authentication source", "lock screen PAM source setting")
-                description: SettingsData.lockPamPath !== "" ? SettingsData.lockPamPath : I18n.tr("Which PAM service the lock screen uses to authenticate", "lock screen PAM source setting")
-                options: root.authOptions
-                currentValue: root.authCurrentValue
-                onValueChanged: value => {
-                    if (value === root.authAutoLabel) {
-                        root.authShowCustom = false;
-                        root.applyAutoAuthSource();
-                        return;
-                    }
-                    if (value === root.authCustomLabel) {
-                        root.authShowCustom = true;
-                        return;
-                    }
-                    root.authShowCustom = false;
-                    const svc = root.authServices.find(s => root.authServiceLabel(s) === value);
-                    if (svc)
-                        root.validateAndApplyAuthSource(svc.path);
-                }
-            }
-
-            SettingsRow {
-                visible: root.authShowCustom || root.authCurrentValue === root.authCustomLabel
-                body: Row {
+        SettingsAdvancedSection {
+            SettingsDeferred {
+                SettingsCard {
                     width: parent.width
-                    spacing: Theme.spacingS
+                    iconName: "tune"
+                    title: I18n.tr("Advanced")
+                    settingKey: "lockScreenAdvanced"
+                    tags: ["pam", "authentication", "source", "loginctl", "u2f"]
 
-                    DTextField {
-                        id: customPamField
-                        outlined: true
-                        leftIconName: "lock"
-                        labelText: I18n.tr("Path")
-                        width: parent.width - validatePamButton.width - Theme.spacingS
-                        placeholderText: "/etc/pam.d/my-service"
-                        text: SettingsData.lockPamPath
+                    SettingsRow {
+                        body: StyledText {
+                            text: I18n.tr("Authentication changes apply automatically")
+                            font.pixelSize: Theme.fontSizeSmall
+                            color: Theme.surfaceVariantText
+                            width: parent.width
+                            wrapMode: Text.Wrap
+                        }
                     }
 
-                    DButton {
-                        id: validatePamButton
-                        text: I18n.tr("Apply changes")
-                        enabled: !root.authValidateRunning && customPamField.text.trim() !== ""
-                        onClicked: root.validateAndApplyAuthSource(customPamField.text.trim())
-                    }
-                }
-            }
-
-            SettingsNoteRow {
-                visible: root.authValidateMessage !== ""
-                noteIconName: ""
-                monospace: true
-                maxHeight: SettingsMetrics.noteMaxHeight
-                text: root.authValidateMessage
-                tint: !root.authValidateOk ? Theme.error : (root.authValidateWarn ? Theme.warning : Theme.surfaceVariantText)
-                tintBackground: SettingsMetrics.controlColor
-            }
-
-            SettingsDropdownRow {
-                settingKey: "lockU2fPamPath"
-                resetKeys: []
-                tags: ["lock", "screen", "pam", "u2f", "security", "key", "source", "service"]
-                text: I18n.tr("Security key PAM source", "lock screen dedicated U2F PAM source setting")
-                description: SettingsData.lockU2fPamPath !== "" ? SettingsData.lockU2fPamPath : I18n.tr("Auto uses an installed or bundled key-only service.", "lock screen dedicated U2F PAM source setting")
-                visible: !root.lockU2fControlledByPrimary
-                options: [root.authAutoLabel, root.authCustomLabel]
-                currentValue: root.u2fAuthCurrentValue
-                onValueChanged: value => {
-                    if (value === root.authAutoLabel) {
-                        root.u2fShowCustom = false;
-                        root.applyAutoU2fSource();
-                        return;
-                    }
-                    root.u2fShowCustom = true;
-                }
-            }
-
-            SettingsRow {
-                visible: !root.lockU2fControlledByPrimary && (root.u2fShowCustom || root.u2fAuthCurrentValue === root.authCustomLabel)
-                body: Row {
-                    width: parent.width
-                    spacing: Theme.spacingS
-
-                    DTextField {
-                        id: customU2fPamField
-                        outlined: true
-                        leftIconName: "key"
-                        labelText: I18n.tr("Path")
-                        width: parent.width - validateU2fPamButton.width - Theme.spacingS
-                        placeholderText: "/etc/pam.d/dankshell-u2f"
-                        text: SettingsData.lockU2fPamPath
+                    SettingsDropdownRow {
+                        settingKey: "lockPamPath"
+                        resetKeys: []
+                        tags: ["lock", "screen", "pam", "authentication", "source", "service"]
+                        text: I18n.tr("Authentication source", "lock screen PAM source setting")
+                        description: SettingsData.lockPamPath !== "" ? SettingsData.lockPamPath : I18n.tr("Which PAM service the lock screen uses to authenticate", "lock screen PAM source setting")
+                        options: root.authOptions
+                        currentValue: root.authCurrentValue
+                        onValueChanged: value => {
+                            if (value === root.authAutoLabel) {
+                                root.authShowCustom = false;
+                                root.applyAutoAuthSource();
+                                return;
+                            }
+                            if (value === root.authCustomLabel) {
+                                root.authShowCustom = true;
+                                return;
+                            }
+                            root.authShowCustom = false;
+                            const svc = root.authServices.find(s => root.authServiceLabel(s) === value);
+                            if (svc)
+                                root.validateAndApplyAuthSource(svc.path);
+                        }
                     }
 
-                    DButton {
-                        id: validateU2fPamButton
-                        text: I18n.tr("Apply changes")
-                        enabled: !root.u2fValidateRunning && customU2fPamField.text.trim() !== ""
-                        onClicked: root.validateAndApplyU2fSource(customU2fPamField.text.trim())
+                    SettingsRow {
+                        visible: root.authShowCustom || root.authCurrentValue === root.authCustomLabel
+                        body: Row {
+                            width: parent.width
+                            spacing: Theme.spacingS
+
+                            DTextField {
+                                id: customPamField
+                                outlined: true
+                                leftIconName: "lock"
+                                labelText: I18n.tr("Path")
+                                width: parent.width - validatePamButton.width - Theme.spacingS
+                                placeholderText: "/etc/pam.d/my-service"
+                                text: SettingsData.lockPamPath
+                            }
+
+                            DButton {
+                                id: validatePamButton
+                                text: I18n.tr("Apply changes")
+                                enabled: !root.authValidateRunning && customPamField.text.trim() !== ""
+                                onClicked: root.validateAndApplyAuthSource(customPamField.text.trim())
+                            }
+                        }
                     }
-                }
-            }
 
-            SettingsNoteRow {
-                visible: !root.lockU2fControlledByPrimary && root.u2fValidateMessage !== ""
-                noteIconName: ""
-                monospace: true
-                maxHeight: SettingsMetrics.noteMaxHeight
-                text: root.u2fValidateMessage
-                tint: !root.u2fValidateOk ? Theme.error : (root.u2fValidateWarn ? Theme.warning : Theme.surfaceVariantText)
-                tintBackground: SettingsMetrics.controlColor
-            }
+                    SettingsNoteRow {
+                        visible: root.authValidateMessage !== ""
+                        noteIconName: ""
+                        monospace: true
+                        maxHeight: SettingsMetrics.noteMaxHeight
+                        text: root.authValidateMessage
+                        tint: !root.authValidateOk ? Theme.error : (root.authValidateWarn ? Theme.warning : Theme.surfaceVariantText)
+                        tintBackground: SettingsMetrics.controlColor
+                    }
 
-            SettingsRow {
-                visible: !SessionService.loginctlAvailable
-                body: StyledText {
-                    text: I18n.tr("%1 not available - lock integration requires the DMS socket connection", "lock screen warning, %1 is the loginctl binary").arg("loginctl")
-                    font.pixelSize: Theme.fontSizeSmall
-                    color: Theme.warning
-                    width: parent.width
-                    wrapMode: Text.Wrap
-                }
-            }
+                    SettingsDropdownRow {
+                        settingKey: "lockU2fPamPath"
+                        resetKeys: []
+                        tags: ["lock", "screen", "pam", "u2f", "security", "key", "source", "service"]
+                        text: I18n.tr("Security key PAM source", "lock screen dedicated U2F PAM source setting")
+                        description: SettingsData.lockU2fPamPath !== "" ? SettingsData.lockU2fPamPath : I18n.tr("Auto uses an installed or bundled key-only service.", "lock screen dedicated U2F PAM source setting")
+                        visible: !root.lockU2fControlledByPrimary
+                        options: [root.authAutoLabel, root.authCustomLabel]
+                        currentValue: root.u2fAuthCurrentValue
+                        onValueChanged: value => {
+                            if (value === root.authAutoLabel) {
+                                root.u2fShowCustom = false;
+                                root.applyAutoU2fSource();
+                                return;
+                            }
+                            root.u2fShowCustom = true;
+                        }
+                    }
 
-            SettingsToggleRow {
-                settingKey: "loginctlLockIntegration"
-                tags: ["lock", "screen", "loginctl", "dbus", "integration", "external"]
-                text: I18n.tr("loginctl integration")
-                description: SettingsData.isManaged("loginctlLockIntegration") ? root.managedNote : I18n.tr("Disable when using an external lock screen")
-                checked: SessionService.loginctlAvailable && SettingsData.loginctlLockIntegration
-                enabled: SessionService.loginctlAvailable && !SettingsData.isManaged("loginctlLockIntegration")
-                onToggled: checked => {
-                    if (!SessionService.loginctlAvailable)
-                        return;
-                    SettingsData.set("loginctlLockIntegration", checked);
+                    SettingsRow {
+                        visible: !root.lockU2fControlledByPrimary && (root.u2fShowCustom || root.u2fAuthCurrentValue === root.authCustomLabel)
+                        body: Row {
+                            width: parent.width
+                            spacing: Theme.spacingS
+
+                            DTextField {
+                                id: customU2fPamField
+                                outlined: true
+                                leftIconName: "key"
+                                labelText: I18n.tr("Path")
+                                width: parent.width - validateU2fPamButton.width - Theme.spacingS
+                                placeholderText: "/etc/pam.d/dankshell-u2f"
+                                text: SettingsData.lockU2fPamPath
+                            }
+
+                            DButton {
+                                id: validateU2fPamButton
+                                text: I18n.tr("Apply changes")
+                                enabled: !root.u2fValidateRunning && customU2fPamField.text.trim() !== ""
+                                onClicked: root.validateAndApplyU2fSource(customU2fPamField.text.trim())
+                            }
+                        }
+                    }
+
+                    SettingsNoteRow {
+                        visible: !root.lockU2fControlledByPrimary && root.u2fValidateMessage !== ""
+                        noteIconName: ""
+                        monospace: true
+                        maxHeight: SettingsMetrics.noteMaxHeight
+                        text: root.u2fValidateMessage
+                        tint: !root.u2fValidateOk ? Theme.error : (root.u2fValidateWarn ? Theme.warning : Theme.surfaceVariantText)
+                        tintBackground: SettingsMetrics.controlColor
+                    }
+
+                    SettingsRow {
+                        visible: !SessionService.loginctlAvailable
+                        body: StyledText {
+                            text: I18n.tr("%1 not available - lock integration requires the DMS socket connection", "lock screen warning, %1 is the loginctl binary").arg("loginctl")
+                            font.pixelSize: Theme.fontSizeSmall
+                            color: Theme.warning
+                            width: parent.width
+                            wrapMode: Text.Wrap
+                        }
+                    }
+
+                    SettingsToggleRow {
+                        settingKey: "loginctlLockIntegration"
+                        tags: ["lock", "screen", "loginctl", "dbus", "integration", "external"]
+                        text: I18n.tr("loginctl integration")
+                        description: SettingsData.isManaged("loginctlLockIntegration") ? root.managedNote : I18n.tr("Disable when using an external lock screen")
+                        checked: SessionService.loginctlAvailable && SettingsData.loginctlLockIntegration
+                        enabled: SessionService.loginctlAvailable && !SettingsData.isManaged("loginctlLockIntegration")
+                        onToggled: checked => {
+                            if (!SessionService.loginctlAvailable)
+                                return;
+                            SettingsData.set("loginctlLockIntegration", checked);
+                        }
+                    }
                 }
             }
         }

@@ -64,7 +64,7 @@ Item {
 
     readonly property color surfaceColor: {
         if (root.highContrast)
-            return Theme.surfaceContainerHighest;
+            return Theme.highContrastSurface;
         switch (root.palette) {
         case "bright":
             return Theme.surfaceBright;
@@ -95,7 +95,7 @@ Item {
     readonly property color effectiveSurfaceColor: {
         if (root.ownColor)
             return Theme.withAlpha(root.controller.roleFill(root.surfaceRole), root.islandOpacity);
-        return root.embedded ? root.bandColor : root.highContrast ? Theme.surfaceContainerHighest : Theme.withAlpha(root.surfaceColor, root.islandOpacity);
+        return root.embedded ? root.bandColor : root.highContrast ? Theme.highContrastSurface : Theme.withAlpha(root.surfaceColor, root.islandOpacity);
     }
     readonly property real surfaceOpacity: root.effectiveSurfaceColor.a
     readonly property bool shadowEnabled: !root.chromeless && root.surfaceOpacity > 0 && Theme.elevationEnabled && SettingsData.barElevationEnabled

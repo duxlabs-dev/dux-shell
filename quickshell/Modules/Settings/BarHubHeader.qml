@@ -13,7 +13,7 @@ Column {
     property string editingBarId: ""
     property string renameDraft: ""
     readonly property bool dotEnabled: SettingsData.dotBarConfig?.enabled ?? false
-    readonly property var barPages: ["dankbar_settings", "dankbar_appearance"].map(id => SettingsTabs.page(id)).filter(page => page)
+    readonly property var barPages: ["dankbar_settings", "dankbar_appearance", "dankbar_widgets"].map(id => SettingsTabs.page(id)).filter(page => page)
 
     BarSelectionState {
         id: bar

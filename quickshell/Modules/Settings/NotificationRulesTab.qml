@@ -303,7 +303,7 @@ Item {
 
     Loader {
         id: editorLoader
-        parent: root.parentModal?.modalFocusScope ?? root
+        parent: root.parentModal?.dialogHostFor(root) ?? root
         anchors.fill: parent
         z: 100
         active: root.editorMounted

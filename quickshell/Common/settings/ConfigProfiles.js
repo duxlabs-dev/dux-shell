@@ -166,10 +166,13 @@ var SETTINGS_MAP = {
         "muxSessionFilter", "updaterCheckOnStart", "updaterIntervalSeconds", "updaterNotify",
         "updaterPauseOnBattery", "updaterNotifyMinSeconds", "updaterReopenAfterUpgrade", "updaterUpgradeInWindow",
         "clipboardClickToPaste", "clipboardEnterToPaste", "clipboardRememberTypeFilter", "clipboardUseOverlayLayer",
-        "clipboardSize", "clipboardTypeFilter", "clipboardVisibleEntryActions", "powerMenuFirmwareSetup"
+        "clipboardSize", "clipboardTypeFilter", "clipboardVisibleEntryActions", "powerMenuFirmwareSetup",
+        "screenshotFormat", "screenshotQuality", "screenshotCursor", "screenshotClipboard", "screenshotClipboardFile",
+        "screenshotSaveFile", "screenshotNotify", "screenshotConfirmRegion", "screenshotHud",
+        "screenshotScrollInterval"
     ],
     never: [
-        "touchpadPinchSensitivity", "batteryScaleToChargeLimit", "batteryScaleAlertThresholds", "keepAwakeBlocksSleep",
+        "screenshotDir", "touchpadPinchSensitivity", "batteryScaleToChargeLimit", "batteryScaleAlertThresholds", "keepAwakeBlocksSleep",
         "greeterWidgetInstances", "displayNameMode", "greeterRememberLastSession", "greeterRememberLastUser",
         "greeterEnableFprint", "greeterEnableU2f", "dmsWindowsFloatingSeeded", "focusFollowsMouse",
         "mouseAccelProfile", "mouseAccelSpeed", "mouseLeftHanded", "mouseMiddleEmulation", "mouseNaturalScroll",

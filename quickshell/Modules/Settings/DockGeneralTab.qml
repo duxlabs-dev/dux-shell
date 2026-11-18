@@ -108,64 +108,70 @@ Item {
             }
         }
 
-        SettingsCard {
-            width: parent.width
-            visible: dock.hasConfig
-            iconName: "mouse"
-            title: I18n.tr("Mouse behavior", "dock mouse settings card title")
-            settingKey: "dockMouseBehavior"
-            tags: ["dock", "mouse", "middle-click", "close", "launch", "instance"]
+        SettingsDeferred {
+            when: dock.hasConfig
 
-            SettingsButtonGroupRow {
-                settingKey: "dockMiddleClickAction"
-                tags: ["dock", "middle-click", "close", "launch", "instance"]
-                resetStore: dock
-                resetKeys: ["middleClickAction"]
-                text: I18n.tr("Middle-click action", "dock middle-click behavior setting")
-                values: ["close", "launch"]
-                model: [I18n.tr("Close Window", "dock middle-click action option"), I18n.tr("Launch new instance", "dock middle-click action option")]
-                value: dock.config?.middleClickAction ?? "close"
-                fallbackValue: "close"
-                onValueSelected: value => dock.setOption("middleClickAction", value)
+            SettingsCard {
+                width: parent.width
+                iconName: "mouse"
+                title: I18n.tr("Mouse behavior", "dock mouse settings card title")
+                settingKey: "dockMouseBehavior"
+                tags: ["dock", "mouse", "middle-click", "close", "launch", "instance"]
+
+                SettingsButtonGroupRow {
+                    settingKey: "dockMiddleClickAction"
+                    tags: ["dock", "middle-click", "close", "launch", "instance"]
+                    resetStore: dock
+                    resetKeys: ["middleClickAction"]
+                    text: I18n.tr("Middle-click action", "dock middle-click behavior setting")
+                    values: ["close", "launch"]
+                    model: [I18n.tr("Close Window", "dock middle-click action option"), I18n.tr("Launch new instance", "dock middle-click action option")]
+                    value: dock.config?.middleClickAction ?? "close"
+                    fallbackValue: "close"
+                    onValueSelected: value => dock.setOption("middleClickAction", value)
+                }
             }
         }
 
-        SettingsCard {
-            width: parent.width
-            visible: dock.hasConfig && dock.config.enabled
-            iconName: "edit"
-            title: I18n.tr("Edit mode")
-            settingKey: "dockEditMode"
-            tags: ["dock", "edit", "widgets", "right-click", "arrange"]
+        SettingsDeferred {
+            when: dock.hasConfig && dock.config.enabled
 
-            SettingsRow {
-                title: I18n.tr("Arrange dock items", "dock settings row title for entering dock edit mode")
-                subtitle: I18n.tr("Enter edit mode on the dock to rearrange or remove items", "dock settings row description for the edit mode button")
+            SettingsCard {
+                width: parent.width
+                iconName: "edit"
+                title: I18n.tr("Edit mode")
+                settingKey: "dockEditMode"
+                tags: ["dock", "edit", "widgets", "right-click", "arrange"]
 
-                DButton {
-                    text: I18n.tr("Edit widgets")
-                    iconName: "edit"
-                    buttonHeight: Theme.buttonHeightS
-                    onClicked: BarWidgetService.dockEditRequested(dock.selectedDockId)
+                SettingsRow {
+                    title: I18n.tr("Arrange dock items", "dock settings row title for entering dock edit mode")
+                    subtitle: I18n.tr("Enter edit mode on the dock to rearrange or remove items", "dock settings row description for the edit mode button")
+
+                    DButton {
+                        text: I18n.tr("Edit widgets")
+                        iconName: "edit"
+                        buttonHeight: Theme.buttonHeightS
+                        onClicked: BarWidgetService.dockEditRequested(dock.selectedDockId)
+                    }
                 }
-            }
 
-            SettingsToggleRow {
-                settingKey: "dockShowEditWidgetsInContextMenu"
-                resetStore: dock
-                resetKeys: ["showEditWidgetsInContextMenu"]
-                tags: ["dock", "edit", "widgets", "context", "menu"]
-                text: I18n.tr("Show Edit widgets in app context menu", "dock setting to show or hide the Edit widgets action in an app's context menu")
-                checked: dock.config?.showEditWidgetsInContextMenu ?? true
-                onToggled: checked => dock.setOption("showEditWidgetsInContextMenu", checked)
-            }
+                SettingsToggleRow {
+                    settingKey: "dockShowEditWidgetsInContextMenu"
+                    resetStore: dock
+                    resetKeys: ["showEditWidgetsInContextMenu"]
+                    tags: ["dock", "edit", "widgets", "context", "menu"]
+                    text: I18n.tr("Show Edit widgets in app context menu", "dock setting to show or hide the Edit widgets action in an app's context menu")
+                    checked: dock.config?.showEditWidgetsInContextMenu ?? true
+                    onToggled: checked => dock.setOption("showEditWidgetsInContextMenu", checked)
+                }
 
-            SettingsToggleRow {
-                settingKey: "dockEditOnRightClick"
-                tags: ["dock", "edit", "right-click", "context"]
-                text: I18n.tr("Right-click empty space to edit")
-                checked: dock.config?.editOnRightClick ?? false
-                onToggled: checked => dock.setOption("editOnRightClick", checked)
+                SettingsToggleRow {
+                    settingKey: "dockEditOnRightClick"
+                    tags: ["dock", "edit", "right-click", "context"]
+                    text: I18n.tr("Right-click empty space to edit")
+                    checked: dock.config?.editOnRightClick ?? false
+                    onToggled: checked => dock.setOption("editOnRightClick", checked)
+                }
             }
         }
     }

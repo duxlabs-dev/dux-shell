@@ -17,9 +17,11 @@ Item {
     LayoutMirroring.enabled: I18n.isRtl
     LayoutMirroring.childrenInherit: true
 
-    // Settings enables the page once it is presented, after it has parked or moved focus.
-    onEnabledChanged: {
-        if (enabled && !_initialFocusDone) {
+    property bool pageActive: false
+
+    // Settings marks the page active after it has parked or moved focus.
+    onPageActiveChanged: {
+        if (pageActive && !_initialFocusDone) {
             _initialFocusDone = true;
             Qt.callLater(() => Qt.callLater(serverField.focusField));
         }
