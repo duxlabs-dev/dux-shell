@@ -31,6 +31,7 @@ FocusScope {
     signal portSelectorRequested(var node)
 
     property string shownSection: ""
+    property real _heldHeight: 0
     readonly property var pageItem: pageLoader.item
     readonly property bool pluginPage: shownSection.startsWith("plugin_") || shownSection.startsWith("builtin_")
     // A page measures itself a tick after it loads; waiting for that keeps the first target the final one.
@@ -46,7 +47,13 @@ FocusScope {
     // The band's extent includes the gap above and below its card, so they grow and shrink with it.
     readonly property real chromeHeight: CcMetrics.gridGap * 2 + CcMetrics.detailHeaderHeight + CcMetrics.detailDialogPadding * 2
     readonly property real contentCap: Math.max(CcMetrics.detailHeightFloor(shownSection, pageItem?.preferredHeight ?? 0), maximumHeight - chromeHeight)
-    readonly property real targetHeight: section === "" || pageHeight <= 0 ? 0 : chromeHeight + Math.min(pageHeight, contentCap)
+    readonly property real _measuredHeight: section === "" || pageHeight <= 0 ? 0 : chromeHeight + Math.min(pageHeight, contentCap)
+    // Hold the previous band height across section switches until the new page measures itself, so switching tiles animates only the delta.
+    readonly property real targetHeight: section === "" ? 0 : (_measuredHeight > 0 ? _measuredHeight : _heldHeight)
+    on_MeasuredHeightChanged: {
+        if (section !== "" && _measuredHeight > 0)
+            _heldHeight = _measuredHeight;
+    }
     readonly property bool transitioning: heightAnimation.running
     // Only IPC can ask for a plugin section whose tile is not placed, so there is nothing to show.
     readonly property bool pageEmpty: pageItem?.empty === true
@@ -85,6 +92,7 @@ FocusScope {
             return;
         pageLoader.sourceComponent = null;
         shownSection = "";
+        _heldHeight = 0;
         dismissed();
     }
 
