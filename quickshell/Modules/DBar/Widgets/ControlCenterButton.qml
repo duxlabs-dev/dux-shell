@@ -433,7 +433,7 @@ BasePill {
 
     content: Component {
         Item {
-            implicitWidth: root.isVerticalOrientation ? root.contentThickness : controlIndicators.implicitWidth
+            implicitWidth: root.isVerticalOrientation ? Math.max(root.contentThickness, root.vIconSize) : controlIndicators.implicitWidth
             implicitHeight: root.isVerticalOrientation ? controlColumn.implicitHeight : root.contentThickness
 
             Component.onCompleted: {
@@ -653,7 +653,7 @@ BasePill {
                             }
                         }
                         implicitWidth: width
-                        height: root.contentThickness
+                        height: Math.max(root.contentThickness, root.getControlCenterIconSize())
                         visible: modelData.visible
 
                         Component.onCompleted: {
