@@ -257,7 +257,7 @@ QtObject {
             "id": "edit",
             "text": I18n.tr("Edit"),
             "description": I18n.tr("Edit widgets"),
-            "icon": "dashboard_customize",
+            "icon": "dashboard_2_edit",
             "type": "action",
             "category": "system",
             "enabled": true
