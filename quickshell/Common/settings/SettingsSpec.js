@@ -615,6 +615,9 @@ var LOCAL_SPEC = {
     blurWallpaperOnOverview: {
         def: false
     },
+    pauseVideoWallpaperOnBattery: {
+        def: false
+    },
     systemTrayIconTintMode: {
         def: "none"
     },
