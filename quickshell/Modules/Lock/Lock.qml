@@ -5,6 +5,7 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
 import qs.Common
+import qs.DCommon.Session
 import qs.Services
 
 Scope {
@@ -302,7 +303,25 @@ Scope {
                 return screens.length === 0 || screens.includes(screen);
             }
 
+            readonly property bool showBlurredInactive: {
+                if (isActiveScreen || !SettingsData.lockScreenBlurInactiveBackground)
+                    return false;
+                if (SettingsData.lockScreenWallpaperPath !== "")
+                    return true;
+                const wallpaper = SessionData.getMonitorWallpaper(currentScreenName);
+                return !!wallpaper && !wallpaper.startsWith("#");
+            }
+
             color: isActiveScreen ? "transparent" : SettingsData.lockScreenInactiveColor
+
+            Loader {
+                anchors.fill: parent
+                active: lockSurface.showBlurredInactive
+                asynchronous: false
+                sourceComponent: LockScreenBackground {
+                    screenName: lockSurface.currentScreenName
+                }
+            }
 
             LockSurface {
                 anchors.fill: parent
