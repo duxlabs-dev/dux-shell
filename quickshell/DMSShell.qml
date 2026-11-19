@@ -357,7 +357,7 @@ Item {
         id: emptyTrashConfirmLoader
         active: false
         source: "Modals/Common/ConfirmModal.qml"
-        readonly property QtObject loadedModal: item
+        readonly property var loadedModal: item
     }
 
     Connections {
@@ -381,7 +381,7 @@ Item {
         id: uninstallAppConfirmLoader
         active: false
         source: "Modals/Common/ConfirmModal.qml"
-        readonly property QtObject loadedModal: item
+        readonly property var loadedModal: item
     }
 
     Connections {
@@ -482,7 +482,7 @@ Item {
         id: wifiPasswordModalLoader
         active: false
         source: "Modals/WifiPasswordModal.qml"
-        readonly property QtObject loadedModal: item
+        readonly property var loadedModal: item
 
         Component.onCompleted: {
             PopoutService.wifiPasswordModalLoader = wifiPasswordModalLoader;
@@ -528,7 +528,7 @@ Item {
         id: polkitAuthModalLoader
         active: false
         source: "Modals/PolkitAuthModal.qml"
-        readonly property QtObject loadedModal: item
+        readonly property var loadedModal: item
         onItemChanged: {
             if (!item)
                 return;
@@ -720,6 +720,7 @@ Item {
 
         active: false
         source: "Modals/Settings/SettingsModal.qml"
+        readonly property var loadedModal: item
         onItemChanged: wasShown = false
 
         Component.onCompleted: {
@@ -738,7 +739,7 @@ Item {
         target: settingsModalLoader.item
 
         function onVisibleChanged() {
-            if (settingsModalLoader.item.visible) {
+            if (settingsModalLoader.loadedModal.visible) {
                 settingsModalLoader.wasShown = true;
                 return;
             }
@@ -869,14 +870,14 @@ Item {
         id: browserPickerModalLoader
         active: false
         source: "Modals/BrowserPickerModal.qml"
-        readonly property QtObject loadedModal: item
+        readonly property var loadedModal: item
     }
 
     LazyLoader {
         id: filePickerModalLoader
         active: false
         source: "Modals/OpenWithModal.qml"
-        readonly property QtObject loadedModal: item
+        readonly property var loadedModal: item
     }
 
     Connections {
@@ -984,6 +985,7 @@ Item {
 
         active: false
         source: "Modals/ProcessListModal.qml"
+        readonly property var loadedModal: item
 
         Component.onCompleted: PopoutService.processListModalLoader = processListModalLoader
         onItemChanged: {
@@ -997,7 +999,7 @@ Item {
         target: processListModalLoader.item
 
         function onVisibleChanged() {
-            if (processListModalLoader.item.visible) {
+            if (processListModalLoader.loadedModal.visible) {
                 processListModalLoader.wasShown = true;
                 return;
             }
@@ -1013,6 +1015,7 @@ Item {
 
         active: false
         source: "Modals/SystemUpdateModal.qml"
+        readonly property var loadedModal: item
 
         Component.onCompleted: PopoutService.systemUpdateModalLoader = systemUpdateModalLoader
         onItemChanged: {
@@ -1026,7 +1029,7 @@ Item {
         target: systemUpdateModalLoader.item
 
         function onVisibleChanged() {
-            if (systemUpdateModalLoader.item.visible) {
+            if (systemUpdateModalLoader.loadedModal.visible) {
                 systemUpdateModalLoader.wasShown = true;
                 return;
             }
@@ -1040,6 +1043,7 @@ Item {
 
         active: false
         source: "Modules/DBar/Popouts/SystemUpdatePopout.qml"
+        readonly property var loadedPopout: item
 
         Component.onCompleted: {
             PopoutService.systemUpdateLoader = systemUpdateLoader;
@@ -1054,7 +1058,7 @@ Item {
     Connections {
         target: systemUpdateLoader.item
         function onPopoutClosed() {
-            if (systemUpdateLoader.item._reopenAfterUpgrade) {
+            if (systemUpdateLoader.loadedPopout._reopenAfterUpgrade) {
                 return;
             }
             PopoutService.unloadSystemUpdate();
@@ -1224,7 +1228,7 @@ Item {
 
         active: false
         source: "Modals/SwitchUserModal.qml"
-        readonly property QtObject loadedModal: item
+        readonly property var loadedModal: item
 
         Component.onCompleted: PopoutService.switchUserModalLoader = switchUserModalLoader
     }
@@ -1450,9 +1454,9 @@ Item {
     Loader {
         id: greeterLoader
         active: false
-        readonly property QtObject loadedModal: item
+        readonly property var loadedModal: item
         source: "Modals/Greeter/GreeterModal.qml"
-        onLoaded: item.show()
+        onLoaded: loadedModal.show()
 
         Connections {
             target: greeterLoader.item
@@ -1482,9 +1486,9 @@ Item {
     Loader {
         id: changelogLoader
         active: false
-        readonly property QtObject loadedModal: item
+        readonly property var loadedModal: item
         source: "Modals/Changelog/ChangelogModal.qml"
-        onLoaded: item.show()
+        onLoaded: loadedModal.show()
 
         Connections {
             target: changelogLoader.item
