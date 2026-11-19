@@ -34,8 +34,8 @@ DOSD {
         if (!tip)
             return;
         const pos = item.mapToItem(null, 0, 0);
-        const left = pos.x;
-        const top = pos.y;
+        const left = pos.x + (surface?.bandX ?? 0);
+        const top = pos.y + (surface?.bandY ?? 0);
         const gap = Theme.spacingS;
         tip.text = endIconLabel;
         switch (alignY) {
