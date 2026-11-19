@@ -913,6 +913,9 @@ var LOCAL_SPEC = {
     dankLauncherV2ShowAppIcons: {
         def: true
     },
+    dankLauncherV2ShowAppDescriptions: {
+        def: true
+    },
     dankLauncherV2BorderEnabled: {
         def: false
     },
