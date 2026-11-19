@@ -5,6 +5,7 @@ import QtQuick.Layouts
 import qs.Common
 import qs.Widgets
 import qs.DCommon.Widgets
+import qs.DCommon.Common as DCommon
 import qs.Modules.ProcessList
 import qs.Modules.Sysmon
 
@@ -18,61 +19,144 @@ Item {
     property color mutedColor: Theme.surfaceVariantText
     property bool halo: false
     property bool vertical: false
+    property color tileColor: "transparent"
+    property bool tiled: false
+    readonly property real tilePad: !tiled ? 0 : vertical ? Theme.spacingS : Theme.spacingM
     readonly property string idleText: I18n.tr("Idle", "device state")
-    readonly property string reserveText: widestSample(false)
-    readonly property string shortReserveText: widestSample(true)
+    readonly property int count: rows.length
 
-    function widestSample(short) {
-        let best = MonitorMetrics.reserveFor("pct", short);
-        for (const r of rows ?? []) {
-            for (const v of r.values ?? []) {
-                const s = MonitorMetrics.reserveFor(v.kind, short);
-                if (s.length > best.length)
-                    best = s;
-            }
-        }
-        return best;
+    readonly property string readLetter: I18n.tr("R", "system monitor bars: short marker for disk read")
+    readonly property string writeLetter: I18n.tr("W", "system monitor bars: short marker for disk write", true)
+    // Letter markers are translated, so their column fits the wider one.
+    readonly property real markerWidth: Math.max(MonitorMetrics.markerSize, Math.ceil(DCommon.Fonts.textWidth(markerProbe.font, readLetter)), Math.ceil(DCommon.Fonts.textWidth(markerProbe.font, writeLetter)))
+    readonly property real columnWidth: Math.max(shortProbe.reservedWidth, markerWidth, MonitorMetrics.barWidth)
+    readonly property real columnGap: Theme.spacingXS
+    readonly property real lineGap: Theme.spacingS
+    readonly property bool shortValues: vertical || tiled
+    readonly property real lineHeight: Math.max(fullProbe.implicitHeight, MonitorMetrics.markerSize)
+    readonly property real columnHeight: shortProbe.implicitHeight + MonitorMetrics.barThickness + MonitorMetrics.markerSize + Theme.spacingXS * 2
+
+    property int columns: 1
+    readonly property real minGap: Theme.spacingS
+    readonly property real groupWidth: largest("implicitWidth")
+    readonly property real groupHeight: largest("implicitHeight")
+    readonly property real stackLength: {
+        let s = Math.max(0, count - 1) * minGap;
+        for (let i = 0; i < groups.count; i++)
+            s += groups.itemAt(i)?.[vertical ? "implicitWidth" : "implicitHeight"] ?? 0;
+        return s;
+    }
+    readonly property bool wrapped: !vertical && columns > 1
+    readonly property int slots: wrapped ? Math.ceil(count / columns) : count
+    readonly property real mainLength: wrapped ? slots * groupHeight + (slots - 1) * minGap : stackLength
+    readonly property real spare: Math.max(0, (vertical ? width : height) - mainLength)
+    // Framed groups grow to fill the box; bare ones spread out.
+    readonly property real share: tiled ? spare / Math.max(1, slots) : 0
+    readonly property real mainGap: tiled || slots < 2 ? minGap : minGap + spare / (slots - 1)
+
+    function largest(prop) {
+        let v = 0;
+        for (let i = 0; i < groups.count; i++)
+            v = Math.max(v, groups.itemAt(i)?.[prop] ?? 0);
+        return v;
     }
 
-    implicitHeight: layout.implicitHeight
-    implicitWidth: layout.implicitWidth
-
-    component Glyph: Item {
-        id: glyph
-
-        required property BarLine owner
-
-        implicitWidth: Theme.iconSizeSmall
-        implicitHeight: Theme.iconSizeSmall
-
-        DeviceIcon {
-            anchors.centerIn: parent
-            name: glyph.owner.main ? (glyph.owner.row.icon ?? "") : (glyph.owner.entry.icon ?? "")
-            size: Theme.iconSizeSmall
-            color: glyph.owner.asleep ? root.mutedColor : glyph.owner.color
-        }
+    function markerFor(row, entry) {
+        const id = entry?.id ?? "";
+        if (id === "read" || id === "write")
+            return {
+                "icon": "",
+                "text": id === "read" ? readLetter : writeLetter
+            };
+        return {
+            "icon": entry?.icon === row?.icon ? "percent" : (entry?.icon ?? ""),
+            "text": ""
+        };
     }
 
-    component Track: Rectangle {
-        id: track
+    implicitWidth: vertical ? stackLength : columns * groupWidth + (columns - 1) * minGap
+    implicitHeight: vertical ? groupHeight : mainLength
 
+    NumericText {
+        id: shortProbe
+        visible: false
+        text: ""
+        reserveText: MonitorMetrics.widestReserve(root.rows, true)
+        font.pixelSize: Theme.fontSizeSmall
+        font.weight: Theme.fontWeightMedium
+    }
+
+    NumericText {
+        id: fullProbe
+        visible: false
+        text: ""
+        reserveText: MonitorMetrics.widestReserve(root.rows, false)
+        font.pixelSize: Theme.fontSizeSmall
+        font.weight: Theme.fontWeightMedium
+    }
+
+    MonitorText {
+        id: markerProbe
+        visible: false
+        font.pixelSize: Theme.fontSizeXSmall
+        font.weight: Theme.fontWeightMedium
+    }
+
+    MonitorText {
+        id: idleProbe
+        visible: false
+        text: root.idleText
+        font.pixelSize: Theme.fontSizeSmall
+        font.weight: Theme.fontWeightMedium
+    }
+
+    component Track: MonitorTrack {
         required property BarLine owner
-        property bool upright: false
 
-        radius: Theme.fullRadius(width, height)
+        fraction: owner.fraction
+        fillColor: owner.color
+        primary: owner.index === 0
+        vertical: root.vertical
         color: Theme.withAlpha(root.contentColor, Theme.stateLayerFocus)
+    }
 
-        Rectangle {
-            anchors.left: parent.left
-            anchors.bottom: parent.bottom
-            width: parent.upright ? parent.width : parent.width * track.owner.fraction
-            height: parent.upright ? parent.height * track.owner.fraction : parent.height
-            radius: parent.radius
-            color: track.owner.color
+    component Marker: Item {
+        id: marker
 
-            MeterBehavior on width {}
-            MeterBehavior on height {}
+        required property BarLine owner
+        readonly property var mark: root.markerFor(owner.row, owner.entry)
+
+        implicitWidth: root.markerWidth
+        implicitHeight: MonitorMetrics.markerSize
+
+        DIcon {
+            anchors.centerIn: parent
+            visible: marker.mark.icon !== ""
+            name: marker.mark.icon
+            size: MonitorMetrics.markerSize
+            color: root.mutedColor
         }
+
+        MonitorText {
+            anchors.centerIn: parent
+            visible: marker.mark.text !== ""
+            halo: root.halo
+            text: marker.mark.text
+            color: root.mutedColor
+            font.pixelSize: Theme.fontSizeXSmall
+            font.weight: Theme.fontWeightMedium
+        }
+    }
+
+    component Value: NumericText {
+        required property BarLine owner
+
+        style: root.halo ? Text.Outline : Text.Normal
+        styleColor: Theme.surface
+        text: owner.valueText
+        font.pixelSize: Theme.fontSizeSmall
+        font.weight: owner.index === 0 ? Theme.fontWeightMedium : Font.Normal
+        color: owner.asleep || owner.index > 0 ? root.mutedColor : root.contentColor
     }
 
     component BarLine: Item {
@@ -80,106 +164,107 @@ Item {
 
         required property var row
         required property var entry
-        property bool main: false
+        required property int index
 
         readonly property bool asleep: row.asleep === true
         readonly property color color: MonitorMetrics.levelColor(entry?.level, root.accentColor)
         readonly property real fraction: asleep ? 0 : Math.min(Math.max(entry.fraction ?? 0, 0), 1)
-        readonly property real thickness: main ? MonitorMetrics.barThickness : MonitorMetrics.barThicknessExtra
-        readonly property string valueText: asleep ? root.idleText : root.vertical ? (entry.shortText ?? entry.text ?? "—") : (entry.text ?? "—")
-        readonly property color valueColor: asleep || !main ? root.mutedColor : root.contentColor
+        readonly property string valueText: asleep ? root.idleText : root.shortValues ? (entry.shortText ?? entry.text ?? "—") : (entry.text ?? "—")
 
-        implicitWidth: root.vertical ? Math.max(verticalColumn.implicitWidth, thickness) : horizontalRow.implicitWidth
-        implicitHeight: root.vertical ? verticalColumn.implicitHeight : horizontalRow.implicitHeight
+        implicitWidth: root.vertical ? root.columnWidth : horizontalLine.implicitWidth
+        implicitHeight: root.vertical ? root.columnHeight : root.lineHeight
         Accessible.role: Accessible.StaticText
         Accessible.name: (row.name ?? "") + " " + (entry.label ?? "") + " " + valueText
-
-        RowLayout {
-            id: horizontalRow
-            anchors.fill: parent
-            visible: !root.vertical
-            spacing: Theme.spacingM
-
-            Glyph {
-                owner: line
-                Layout.alignment: Qt.AlignVCenter
-            }
-
-            MonitorText {
-                halo: root.halo
-                Layout.alignment: Qt.AlignVCenter
-                Layout.preferredWidth: MonitorMetrics.barNameWidth
-                visible: root.barNames
-                text: line.main ? (line.row.name ?? "") : ""
-                color: root.contentColor
-                font.pixelSize: Theme.fontSizeSmall
-                font.weight: Theme.fontWeightMedium
-                elide: Text.ElideRight
-            }
-
-            Track {
-                owner: line
-                Layout.fillWidth: true
-                Layout.alignment: Qt.AlignVCenter
-                Layout.preferredHeight: line.thickness
-            }
-
-            NumericText {
-                style: root.halo ? Text.Outline : Text.Normal
-                styleColor: Theme.surface
-                Layout.alignment: Qt.AlignVCenter
-                Layout.preferredWidth: reservedWidth
-                text: line.valueText
-                reserveText: root.reserveText
-                font.pixelSize: line.main ? Theme.fontSizeMedium : Theme.fontSizeSmall
-                font.weight: line.main ? Theme.fontWeightMedium : Font.Normal
-                color: line.valueColor
-            }
-        }
 
         ColumnLayout {
             id: verticalColumn
             anchors.fill: parent
             visible: root.vertical
-            spacing: Theme.spacingS
+            spacing: Theme.spacingXS
 
-            NumericText {
-                style: root.halo ? Text.Outline : Text.Normal
-                styleColor: Theme.surface
+            Value {
+                owner: line
                 Layout.alignment: Qt.AlignHCenter
-                Layout.preferredWidth: reservedWidth
-                text: line.valueText
-                reserveText: root.shortReserveText
-                font.pixelSize: line.main ? Theme.fontSizeMedium : Theme.fontSizeSmall
-                font.weight: line.main ? Theme.fontWeightMedium : Font.Normal
-                color: line.valueColor
             }
 
             Track {
                 owner: line
                 Layout.alignment: Qt.AlignHCenter
                 Layout.fillHeight: true
-                Layout.preferredWidth: line.thickness
+                Layout.preferredWidth: MonitorMetrics.barWidth
                 Layout.minimumHeight: MonitorMetrics.barThickness
-                upright: true
             }
 
-            Glyph {
+            Marker {
                 owner: line
                 Layout.alignment: Qt.AlignHCenter
             }
+        }
 
-            MonitorText {
-                halo: root.halo
-                Layout.alignment: Qt.AlignHCenter
-                Layout.maximumWidth: MonitorMetrics.barNameWidth
-                visible: root.barNames
-                text: line.main ? (line.row.name ?? "") : " "
-                color: root.mutedColor
-                font.pixelSize: Theme.fontSizeSmall
-                elide: Text.ElideRight
+        RowLayout {
+            id: horizontalLine
+            anchors.fill: parent
+            visible: !root.vertical
+            spacing: Theme.spacingS
+
+            Marker {
+                owner: line
+                Layout.alignment: Qt.AlignVCenter
+            }
+
+            Track {
+                owner: line
+                Layout.fillWidth: true
+                Layout.minimumWidth: MonitorMetrics.barThickness * 2
+                Layout.alignment: Qt.AlignVCenter
+                Layout.preferredHeight: MonitorMetrics.barWidth
+            }
+
+            Value {
+                owner: line
+                Layout.alignment: Qt.AlignVCenter
+                Layout.preferredWidth: reservedWidth
+                reserveText: root.shortValues ? shortProbe.reserveText : fullProbe.reserveText
+                horizontalAlignment: Text.AlignRight
             }
         }
+    }
+
+    component Bracket: Item {
+        clip: true
+        opacity: MonitorMetrics.bracketOpacity
+
+        Rectangle {
+            readonly property real r: MonitorMetrics.bracketDepth
+
+            x: root.vertical || !I18n.isRtl ? 0 : -r
+            y: root.vertical ? -r : 0
+            width: parent.width + (root.vertical ? 0 : r)
+            height: parent.height + (root.vertical ? r : 0)
+            radius: r
+            color: "transparent"
+            border.width: MonitorMetrics.bracketStroke
+            border.color: root.mutedColor
+        }
+    }
+
+    component GroupIcon: DeviceIcon {
+        required property var row
+
+        name: row.icon ?? ""
+        size: Theme.iconSizeSmall
+        color: root.mutedColor
+    }
+
+    component GroupName: MonitorText {
+        required property var row
+
+        visible: root.barNames
+        halo: root.halo
+        text: row.name ?? ""
+        color: root.mutedColor
+        font.pixelSize: Theme.fontSizeSmall
+        elide: Text.ElideRight
     }
 
     component Group: Item {
@@ -188,82 +273,138 @@ Item {
         required property var row
 
         readonly property var entries: row.asleep ? (row.values ?? []).slice(0, 1) : (row.values ?? [])
+        readonly property real pad: root.tilePad
 
-        implicitWidth: root.vertical ? verticalGroup.implicitWidth : horizontalGroup.implicitWidth
-        implicitHeight: root.vertical ? verticalGroup.implicitHeight : horizontalGroup.implicitHeight
+        implicitWidth: (root.vertical ? verticalGroup.implicitWidth : horizontalGroup.implicitWidth) + pad * 2
+        implicitHeight: (root.vertical ? verticalGroup.implicitHeight : horizontalGroup.implicitHeight) + pad * 2
+
+        Rectangle {
+            anchors.fill: parent
+            visible: root.tiled
+            radius: Theme.cornerRadiusL
+            color: root.tileColor
+        }
 
         ColumnLayout {
-            id: horizontalGroup
+            id: verticalGroup
             anchors.fill: parent
-            visible: !root.vertical
-            spacing: Theme.spacingS
+            anchors.margins: group.pad
+            visible: root.vertical
+            spacing: Theme.spacingXS
 
-            Repeater {
-                model: root.vertical ? 0 : group.entries.length
+            Item {
+                Layout.alignment: Qt.AlignHCenter
+                Layout.fillHeight: true
+                implicitWidth: Math.max(columns.implicitWidth, group.row.asleep ? idleProbe.implicitWidth : 0)
+                implicitHeight: root.columnHeight
 
-                BarLine {
-                    required property int index
+                Row {
+                    id: columns
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    height: parent.height
+                    spacing: root.columnGap
 
-                    Layout.fillWidth: true
-                    row: group.row
-                    entry: group.entries[index] ?? ({})
-                    main: index === 0
+                    Repeater {
+                        model: root.vertical ? group.entries.length : 0
+
+                        BarLine {
+                            height: columns.height
+                            row: group.row
+                            entry: group.entries[index] ?? ({})
+                        }
+                    }
                 }
+            }
+
+            Bracket {
+                visible: !root.tiled
+                Layout.alignment: Qt.AlignHCenter
+                Layout.preferredWidth: columns.implicitWidth - Theme.spacingXXS * 2
+                Layout.preferredHeight: MonitorMetrics.bracketDepth
+            }
+
+            GroupIcon {
+                row: group.row
+                Layout.alignment: Qt.AlignHCenter
+            }
+
+            GroupName {
+                row: group.row
+                Layout.alignment: Qt.AlignHCenter
+                Layout.preferredWidth: Math.min(implicitWidth, MonitorMetrics.barNameWidth)
             }
         }
 
         RowLayout {
-            id: verticalGroup
+            id: horizontalGroup
             anchors.fill: parent
-            visible: root.vertical
+            anchors.margins: group.pad
+            visible: !root.vertical
             spacing: Theme.spacingS
 
-            Repeater {
-                model: root.vertical ? group.entries.length : 0
+            GroupIcon {
+                row: group.row
+                Layout.alignment: Qt.AlignVCenter
+            }
 
-                BarLine {
-                    required property int index
+            GroupName {
+                row: group.row
+                Layout.alignment: Qt.AlignVCenter
+                Layout.preferredWidth: MonitorMetrics.barNameWidth
+                color: root.contentColor
+                font.weight: Theme.fontWeightMedium
+            }
 
+            // At least two lines tall, so a single value's bracket keeps its shape.
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.alignment: Qt.AlignVCenter
+                Layout.preferredHeight: Math.max(lines.implicitHeight, root.lineHeight * 2 + root.lineGap)
+                spacing: Theme.spacingS
+
+                Bracket {
+                    visible: !root.tiled
                     Layout.fillHeight: true
-                    row: group.row
-                    entry: group.entries[index] ?? ({})
-                    main: index === 0
+                    Layout.preferredWidth: MonitorMetrics.bracketDepth
+                }
+
+                ColumnLayout {
+                    id: lines
+                    Layout.fillWidth: true
+                    Layout.alignment: Qt.AlignVCenter
+                    spacing: root.lineGap
+
+                    Repeater {
+                        model: root.vertical ? 0 : group.entries.length
+
+                        BarLine {
+                            Layout.fillWidth: true
+                            row: group.row
+                            entry: group.entries[index] ?? ({})
+                        }
+                    }
                 }
             }
         }
     }
 
-    GridLayout {
-        id: layout
-        anchors.fill: parent
-        rows: root.vertical ? 1 : -1
-        columns: root.vertical ? -1 : 1
-        flow: root.vertical ? GridLayout.LeftToRight : GridLayout.TopToBottom
-        rowSpacing: 0
-        columnSpacing: root.vertical ? Theme.spacingM : 0
+    Grid {
+        anchors.centerIn: parent
+        columns: root.vertical ? Math.max(1, root.count) : Math.max(1, root.columns)
+        rowSpacing: root.vertical ? 0 : root.mainGap
+        columnSpacing: root.vertical ? root.mainGap : root.minGap
 
         Repeater {
-            model: root.rows.length
+            id: groups
 
-            Item {
-                id: slot
+            model: root.count
 
+            Group {
                 required property int index
 
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                Layout.alignment: Qt.AlignVCenter | Qt.AlignHCenter
-                implicitWidth: groupItem.implicitWidth
-                implicitHeight: groupItem.implicitHeight + Theme.spacingL
-
-                Group {
-                    id: groupItem
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: root.vertical ? implicitWidth : parent.width
-                    height: root.vertical ? parent.height : implicitHeight
-                    row: root.rows[slot.index] ?? ({})
-                }
+                width: root.vertical ? implicitWidth + root.share : root.wrapped ? (root.width - (root.columns - 1) * root.minGap) / root.columns : root.width
+                height: root.vertical ? root.height : (root.wrapped ? root.groupHeight : implicitHeight) + root.share
+                row: root.rows[index] ?? ({})
             }
         }
     }

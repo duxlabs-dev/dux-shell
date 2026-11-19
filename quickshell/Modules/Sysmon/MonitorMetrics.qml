@@ -38,8 +38,14 @@ Singleton {
     readonly property real meterThicknessBig: 12
     readonly property real listVisualWidth: 72
     readonly property real listVisualHeight: Theme.buttonHeightXXS
-    readonly property real listRingSize: Theme.iconSizeLarge
     readonly property real barNameWidth: Theme.buttonHeightXS * 2
+    readonly property real barWidth: 10
+    readonly property real cardBarThickness: 6
+    readonly property real markerSize: 14
+    readonly property real bracketDepth: 6
+    readonly property real bracketStroke: 1.5
+    readonly property real bracketOpacity: 0.7
+    readonly property real secondaryFillOpacity: 0.7
     readonly property real scaleFloor: 0.35
     // Bars stand upright once their box is this much taller than wide.
     readonly property real verticalBarsRatio: 1.15
@@ -53,15 +59,34 @@ Singleton {
             "rate": "1000.0 MB/s"
         })
     readonly property var shortValueSamples: ({
-            "pct": "100",
+            "pct": "100%",
             "temp": "100°",
             "clock": "0.0",
             "power": "000 W",
             "rate": "999K"
         })
 
-    function reserveFor(kind, short) {
-        return (short ? shortValueSamples : valueSamples)[kind] ?? "";
+    // Tile extras only pick how many fit, so they plan on two digits; a rare third one runs into the tile's padding.
+    readonly property var extraValueSamples: ({
+            "pct": "99%",
+            "temp": "99°"
+        })
+
+    // The longest sample among the rows' value kinds, so every value column in a widget lines up.
+    function widestReserve(rows, short) {
+        let best = reserveFor("pct", short);
+        for (const r of rows ?? []) {
+            for (const v of r.values ?? []) {
+                const s = reserveFor(v.kind, short);
+                if (s.length > best.length)
+                    best = s;
+            }
+        }
+        return best;
+    }
+
+    function reserveFor(kind, short, extra) {
+        return (extra && short ? extraValueSamples[kind] : undefined) ?? (short ? shortValueSamples : valueSamples)[kind] ?? "";
     }
 
     function levelColor(level, accent) {
