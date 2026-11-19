@@ -13,8 +13,9 @@ DIdleSurface {
     WlrLayershell.namespace: "dms:toast"
     // A full-screen surface is blacked out whole by compositor capture rules matching this namespace.
     compactWhenIdle: true
-    // Horizontal slack keeps the copy tooltips, centered on edge buttons, inside the surface.
-    requestedBounds: Qt.rect(surfaceX - Theme.spacingL, surfaceY, toastWidth + (shadowBuffer + Theme.spacingL) * 2, toastHeight + shadowBuffer * 2)
+    // Covers the level-3 shadow and the copy tooltips centered on edge buttons.
+    readonly property real renderPadding: Theme.elevationRenderPadding(Theme.elevationLevel3, Theme.elevationLightDirection, 6, Theme.spacingS, Theme.spacingL)
+    requestedBounds: Qt.rect(surfaceX + shadowBuffer - renderPadding, surfaceY + shadowBuffer - renderPadding, toastWidth + renderPadding * 2, toastHeight + renderPadding * 2)
 
     property var modelData
     property bool shouldBeVisible: false
