@@ -3,7 +3,6 @@ import Quickshell
 import qs.Common
 import qs.Modules.DBar
 import qs.Modules.Frame
-import qs.Modules.WorkspaceOverlays
 import qs.Services
 
 Item {
@@ -340,8 +339,6 @@ Item {
     LazyLoader {
         id: hyprlandOverviewLoader
         active: CompositorService.isHyprland
-        component: HyprlandOverview {
-            id: hyprlandOverview
-        }
+        source: "Modules/WorkspaceOverlays/HyprlandOverview.qml"
     }
 }

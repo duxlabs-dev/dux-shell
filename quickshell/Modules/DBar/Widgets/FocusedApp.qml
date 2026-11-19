@@ -368,8 +368,13 @@ BasePill {
     Loader {
         id: focusedWindowPopoutLoader
         active: false
-        sourceComponent: FocusedWindowContextMenu {
-            onPopoutClosed: root.updateActiveWindow()
+        source: "FocusedWindowContextMenu.qml"
+    }
+
+    Connections {
+        target: focusedWindowPopoutLoader.item
+        function onPopoutClosed() {
+            root.updateActiveWindow();
         }
     }
 
