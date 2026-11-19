@@ -30,6 +30,18 @@ function controlCenterEditLayout(v) {
     return v === "docked" || v === "sheet" ? v : undefined;
 }
 
+function oneOf(values) {
+    return v => values.indexOf(v) >= 0 ? v : undefined;
+}
+
+function subsetOf(values) {
+    return v => Array.isArray(v) ? v.filter(x => values.indexOf(x) >= 0) : undefined;
+}
+
+var BATTERY_POPOUT_DETAILS = ["health", "temperature", "capacity", "power"];
+var BATTERY_POPOUT_LAYOUTS = ["grid", "compact", "chips", "list"];
+var BATTERY_POPOUT_DEVICE_LAYOUTS = ["grid", "compact", "chips", "list", "bars"];
+
 var LOCAL_SPEC = {
     dockConfigs: {
         def: [DockConfig.create("dock", "Dock")]
@@ -1208,6 +1220,50 @@ var LOCAL_SPEC = {
     batteryLowThreshold: {
         def: 20
     },
+    batteryPopoutColor: {
+        def: "primary",
+        coerce: oneOf(["primary", "theme", "lowcharging", "level"])
+    },
+    batteryPopoutStyle: {
+        def: "line",
+        coerce: oneOf(["line", "ring", "card"])
+    },
+    batteryPopoutBadge: {
+        def: "shape",
+        coerce: oneOf(["shape", "ring"])
+    },
+    batteryPopoutWavy: {
+        def: true
+    },
+    batteryPopoutBattery: {
+        def: true
+    },
+    batteryPopoutDetailsLayout: {
+        def: "compact",
+        coerce: oneOf(BATTERY_POPOUT_LAYOUTS)
+    },
+    batteryPopoutDetails: {
+        def: BATTERY_POPOUT_DETAILS.slice(),
+        coerce: subsetOf(BATTERY_POPOUT_DETAILS)
+    },
+    batteryPopoutPower: {
+        def: true
+    },
+    batteryPopoutPowerPlacement: {
+        def: "card",
+        coerce: oneOf(["card", "overview"])
+    },
+    batteryPopoutPowerStyle: {
+        def: "circle",
+        coerce: oneOf(["circle", "segments", "buttons", "slider"])
+    },
+    batteryPopoutDevices: {
+        def: true
+    },
+    batteryPopoutDevicesLayout: {
+        def: "grid",
+        coerce: oneOf(BATTERY_POPOUT_DEVICE_LAYOUTS)
+    },
     batteryNotifyLow: {
         def: false
     },
@@ -1698,7 +1754,7 @@ var LOCAL_SPEC = {
                 maximizeWidgetIcons: false,
                 maximizeWidgetText: false,
                 widgetPadding: 8,
-                batteryColorMode: "theme",
+                batteryColorMode: "lowcharging",
                 gothCornersEnabled: false,
                 gothCornerRadiusOverride: false,
                 gothCornerRadiusValue: 12,

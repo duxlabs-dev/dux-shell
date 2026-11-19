@@ -169,13 +169,7 @@ Item {
         }
         if (!where)
             return;
-        SettingsUiState.selectedBarId = where.barId;
-        SettingsUiState.selectedWidgetSection = where.section;
-        SettingsUiState.selectedWidgetIndex = where.index;
-        SettingsUiState.selectedDockId = "";
-        SettingsUiState.selectedWidgetTitle = widget?.text ?? widgetId;
-        SettingsUiState.selectedWidgetDescription = widget?.description ?? "";
-        SettingsUiState.selectedWidgetIcon = widget?.icon ?? "widgets";
+        SettingsUiState.selectBarWidget(widgetId, where);
         pageRequested("dankbar_widgets");
         if (BarWidgetCatalog.hasOptions(widgetId))
             parentModal?.navigateTo("bar_widget");

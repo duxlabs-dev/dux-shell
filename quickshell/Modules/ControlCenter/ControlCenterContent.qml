@@ -49,6 +49,7 @@ FocusScope {
     property bool live: Window.window?.visible ?? false
     readonly property bool hostOpen: host.shouldBeVisible ?? false
     property bool audioRefHeld: false
+    property bool batteryRefHeld: false
     property bool ready: false
 
     LayoutMirroring.enabled: I18n.isRtl
@@ -238,7 +239,21 @@ FocusScope {
         AudioService.removeRef();
     }
 
-    onLiveChanged: syncAudioRef(live)
+    function syncBatteryRef(wanted) {
+        if (wanted === batteryRefHeld)
+            return;
+        batteryRefHeld = wanted;
+        if (wanted) {
+            BatteryService.addRef();
+            return;
+        }
+        BatteryService.removeRef();
+    }
+
+    onLiveChanged: {
+        syncAudioRef(live);
+        syncBatteryRef(live);
+    }
     onHostOpenChanged: {
         if (hostOpen)
             return;
@@ -250,11 +265,15 @@ FocusScope {
     Component.onCompleted: {
         WidgetUtils.ensureEditButton();
         syncAudioRef(live);
+        syncBatteryRef(live);
         pager.goTo(host.currentPage ?? 0, false);
         showSectionPage(false);
         ready = true;
     }
-    Component.onDestruction: syncAudioRef(false)
+    Component.onDestruction: {
+        syncAudioRef(false);
+        syncBatteryRef(false);
+    }
     onPlacedWidgetIdsChanged: WidgetUtils.ensureEditButton()
 
     function navigateTo(section) {

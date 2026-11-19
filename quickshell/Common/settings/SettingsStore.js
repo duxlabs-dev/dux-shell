@@ -83,6 +83,57 @@ function migrateBatteryPillStyle(target) {
         target.batteryStyle = "solid";
 }
 
+// Migration: can be removed after a few releases. v47: battery widget styles fold into icon/solid/circle with an own
+// direction, and the plain "theme" color became "lowcharging".
+var BATTERY_STYLE_FOLDS = { solid: "solid", outline: "solid", ring: "circle", duo: "circle" };
+
+function isVerticalPosition(position) {
+    return position === 2 || position === 3;
+}
+
+function migrateBatteryInstance(entry, vertical) {
+    var style = entry.batteryStyle;
+    if (typeof style !== "string" || !Object.prototype.hasOwnProperty.call(BATTERY_STYLE_FOLDS, style))
+        return;
+    if (entry.batteryDirection === undefined)
+        entry.batteryDirection = vertical ? "vertical" : "horizontal";
+    entry.batteryStyle = BATTERY_STYLE_FOLDS[style];
+}
+
+function migrateBatteryWidgetList(widgets, idKeys, vertical) {
+    if (!Array.isArray(widgets))
+        return;
+    for (var w = 0; w < widgets.length; w++) {
+        var entry = widgets[w];
+        if (!entry || typeof entry !== "object")
+            continue;
+        var id = entry[idKeys[0]] ?? entry[idKeys[1]];
+        if (id === "battery")
+            migrateBatteryInstance(entry, vertical);
+    }
+}
+
+function migrateBatteryWidget(settings) {
+    if (Array.isArray(settings.barConfigs)) {
+        for (var b = 0; b < settings.barConfigs.length; b++) {
+            var bar = settings.barConfigs[b];
+            if (!bar || typeof bar !== "object")
+                continue;
+            if (bar.batteryColorMode === "theme")
+                bar.batteryColorMode = "lowcharging";
+            for (var k = 0; k < BAR_WIDGET_LIST_KEYS.length; k++)
+                migrateBatteryWidgetList(bar[BAR_WIDGET_LIST_KEYS[k]], ["id", "widgetId"], isVerticalPosition(bar.position));
+        }
+    }
+    if (Array.isArray(settings.dockConfigs)) {
+        for (var d = 0; d < settings.dockConfigs.length; d++) {
+            var dock = settings.dockConfigs[d];
+            if (dock && typeof dock === "object")
+                migrateBatteryWidgetList(dock.widgets, ["widgetId", "id"], isVerticalPosition(dock.position));
+        }
+    }
+}
+
 function strengthFromWindowRadius(radius) {
     return Shape.strengthFromRadius((radius ?? Shape.corners.l) * Shape.corners.m / Shape.corners.l);
 }
@@ -802,6 +853,11 @@ function migrateToVersion(obj, targetVersion) {
     if (currentVersion < 46 && targetVersion >= 46) {
         migrateDesktopSystemMonitor(settings);
         settings.configVersion = 46;
+    }
+
+    if (currentVersion < 47 && targetVersion >= 47) {
+        migrateBatteryWidget(settings);
+        settings.configVersion = 47;
     }
 
     return settings;

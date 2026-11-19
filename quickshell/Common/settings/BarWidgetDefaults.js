@@ -210,6 +210,9 @@ var DEFAULTS = {
         trayIconSpacing: 0
     },
     battery: {
+        batteryDirection: "vertical",
+        batterySeparator: "gap",
+        batteryDevices: [{ id: "system", on: true }],
         showBatteryPercent: true,
         showBatteryPercentOnlyOnBattery: false,
         showBatteryTime: false,

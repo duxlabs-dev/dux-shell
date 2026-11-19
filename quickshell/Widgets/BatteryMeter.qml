@@ -8,6 +8,7 @@ import qs.Services
 import qs.DCommon.Common
 import qs.DCommon.Widgets
 import qs.Widgets
+import "../DCommon/Common/Contrast.js" as Contrast
 
 Item {
     id: root
@@ -21,14 +22,19 @@ Item {
     property real maxDiameter: 0
     property bool hovered: false
     property color colorOverride: "transparent"
+    // One number in a single readable color over the whole solid body, instead of a second copy clipped to the fill.
+    property bool singleTextColor: false
 
     readonly property bool outlined: root.meterStyle === "outline"
     readonly property bool ring: root.meterStyle === "ring"
     // Duo: an open arc around the network glyph, signal dots in the gap.
     readonly property bool duo: root.meterStyle === "duo"
-    readonly property bool circular: root.ring || root.duo
-    readonly property real arcStart: root.duo ? 150 : -90
-    readonly property real arcSpan: root.duo ? 240 : 360
+    // Arc: the same open arc as duo, without the network face; vertical picks which side the opening is on.
+    readonly property bool arc: root.meterStyle === "arc"
+    readonly property bool circular: root.ring || root.duo || root.arc
+    readonly property bool singleText: root.singleTextColor && !root.outlined && !root.circular
+    readonly property real arcStart: root.duo ? 150 : root.arc ? (root.vertical ? 150 : 60) : -90
+    readonly property real arcSpan: root.duo || root.arc ? 240 : 360
     readonly property real chargeTarget: SettingsData.batteryScaleToChargeLimit ? 100 : Math.max(root.level, Math.min(100, SettingsData.batteryChargeLimit))
     readonly property real unit: root.thickness / 14
     readonly property real level: Math.max(0, Math.min(100, BatteryService.displayBatteryLevel))
@@ -49,10 +55,12 @@ Item {
     readonly property color trackColor: {
         if (root.duo)
             return Theme.withAlpha(root.fillColor, root.hovered ? 0.3 : 0.16);
-        if (root.ring)
+        if (root.ring || root.arc)
             return Theme.withAlpha(root.fillColor, root.hovered ? 0.4 : 0.26);
         if (root.outlined)
             return root.hovered ? Theme.onSurface_12 : "transparent";
+        if (root.singleText)
+            return Theme.withAlpha(root.fillColor, 0.5);
         return root.dimColor;
     }
     readonly property color inkColor: {
@@ -60,6 +68,7 @@ Item {
             return Theme.isLightColor(Theme.surface) ? Theme.surfaceText : Theme.surface;
         return Theme.isLightColor(Theme.surface) ? Theme.surface : Theme.surfaceText;
     }
+    readonly property color singleInkColor: Contrast.readableOn(root.fillColor, [Theme.surface, Theme.surfaceText])
     readonly property int glyphWeight: Theme.fontWeight
     readonly property string numberText: Math.round(root.level).toString()
     readonly property bool boltVisible: root.charging && root.showBolt && !root.duo
@@ -189,7 +198,7 @@ Item {
 
             ShapePath {
                 fillColor: "transparent"
-                strokeColor: root.duo && root.charging ? Theme.withAlpha(root.fillColor, 0.45) : "transparent"
+                strokeColor: (root.duo || root.arc) && root.charging ? Theme.withAlpha(root.fillColor, 0.45) : "transparent"
                 strokeWidth: root.ringStroke
                 capStyle: ShapePath.RoundCap
 
@@ -316,7 +325,7 @@ Item {
         height: root.vertical ? root.capBreadth : root.capSpan
         radius: root.capBreadth / 2
         visible: !root.circular && (root.vertical || !root.boltVisible)
-        color: root.outlined ? root.fillColor : root.dimColor
+        color: root.outlined ? root.fillColor : root.singleText ? root.trackColor : root.dimColor
     }
 
     Rectangle {
@@ -394,7 +403,7 @@ Item {
 
     Glyphs {
         visible: root.numberInside && !root.circular
-        ink: Theme.surfaceText
+        ink: root.singleText ? root.singleInkColor : Theme.surfaceText
     }
 
     Item {
@@ -403,7 +412,7 @@ Item {
         width: fill.width
         height: fill.height
         clip: true
-        visible: root.numberInside && !root.outlined && !root.circular
+        visible: root.numberInside && !root.outlined && !root.circular && !root.singleText
 
         Glyphs {
             x: -parent.x

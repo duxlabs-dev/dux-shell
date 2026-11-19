@@ -139,16 +139,16 @@ SettingsCard {
     // The colour mode is a bar key; a hosted island follows its bar's Appearance page.
     SettingsButtonGroupRow {
         settingKey: root.keyPrefix + "BatteryColorMode"
-        tags: ["island", "battery", "color", "level", "theme", "meter", "accent", "green", "red"]
+        tags: ["island", "battery", "color", "level", "low", "charging", "meter", "green", "red"]
         resetStore: root.store
         resetKeys: ["batteryColorMode"]
         text: I18n.tr("Color")
         visible: root.batteryShown && !root.hosted
-        model: [I18n.tr("Theme", "battery settings: theme accent indicator colors"), I18n.tr("Level", "battery settings: charge level indicator colors")]
-        currentIndex: (root.store.config?.batteryColorMode ?? "theme") === "level" ? 1 : 0
+        model: [I18n.tr("Low and charging", "battery settings: red when low, green while charging"), I18n.tr("Level", "battery settings: charge level indicator colors")]
+        currentIndex: (root.store.config?.batteryColorMode ?? SettingsData.barConfigDefault("batteryColorMode")) === "level" ? 1 : 0
         onSelectionChanged: (index, selected) => {
             if (selected)
-                root.store.apply("batteryColorMode", index === 1 ? "level" : "theme");
+                root.store.apply("batteryColorMode", index === 1 ? "level" : "lowcharging");
         }
     }
 

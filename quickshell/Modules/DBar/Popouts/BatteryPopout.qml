@@ -21,6 +21,7 @@ DPopout {
     content: Component {
         BatteryPopoutContent {
             active: root.shouldBeVisible
+            barId: root.storedBarConfig?.id ?? ""
             onDismissRequested: root.close()
         }
     }

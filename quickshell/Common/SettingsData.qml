@@ -24,7 +24,7 @@ Singleton {
     id: root
     readonly property var log: Log.scoped("SettingsData")
 
-    readonly property int settingsConfigVersion: 46
+    readonly property int settingsConfigVersion: 47
 
     enum Position {
         Top,
@@ -778,6 +778,18 @@ Singleton {
     property int batteryChargeLimitNotificationType: Spec.SPEC.batteryChargeLimitNotificationType.def
     property int batteryLowNotificationType: Spec.SPEC.batteryLowNotificationType.def
     property int batteryCriticalNotificationType: Spec.SPEC.batteryCriticalNotificationType.def
+    property string batteryPopoutColor: Spec.SPEC.batteryPopoutColor.def
+    property string batteryPopoutStyle: Spec.SPEC.batteryPopoutStyle.def
+    property string batteryPopoutBadge: Spec.SPEC.batteryPopoutBadge.def
+    property bool batteryPopoutWavy: Spec.SPEC.batteryPopoutWavy.def
+    property bool batteryPopoutBattery: Spec.SPEC.batteryPopoutBattery.def
+    property string batteryPopoutDetailsLayout: Spec.SPEC.batteryPopoutDetailsLayout.def
+    property var batteryPopoutDetails: Spec.SPEC.batteryPopoutDetails.def
+    property bool batteryPopoutPower: Spec.SPEC.batteryPopoutPower.def
+    property string batteryPopoutPowerPlacement: Spec.SPEC.batteryPopoutPowerPlacement.def
+    property string batteryPopoutPowerStyle: Spec.SPEC.batteryPopoutPowerStyle.def
+    property bool batteryPopoutDevices: Spec.SPEC.batteryPopoutDevices.def
+    property string batteryPopoutDevicesLayout: Spec.SPEC.batteryPopoutDevicesLayout.def
     property bool batteryAutoPowerSaver: Spec.SPEC.batteryAutoPowerSaver.def
     property bool lowerDisplayRefreshRateOnBattery: Spec.SPEC.lowerDisplayRefreshRateOnBattery.def
     property bool lockBeforeSuspend: Spec.SPEC.lockBeforeSuspend.def

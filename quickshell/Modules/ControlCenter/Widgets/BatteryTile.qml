@@ -10,21 +10,35 @@ CcTile {
     property bool live: Window.window?.visible ?? false
     property bool batteryRefHeld: false
     readonly property bool available: BatteryService.batteryAvailable
-    readonly property bool profileMode: !available && PowerProfileWatcher.available
+    readonly property var peripherals: BatteryService.peripheralDevices
+    readonly property bool hasPeripherals: peripherals.length > 0
+    readonly property bool profileMode: !available && !hasPeripherals && PowerProfileWatcher.available
+    // The lowest known reading; sleeping devices report 0 and never count as lowest.
+    readonly property var shownPeripheral: peripherals.reduce((lowest, dev) => {
+        if (dev.unknown)
+            return lowest;
+        return !lowest || dev.percentage < lowest.percentage ? dev : lowest;
+    }, null) ?? peripherals[0] ?? null
     readonly property string meterStyle: widgetData?.batteryStyle ?? "icon"
     readonly property bool levelColors: (widgetData?.batteryColorMode ?? "level") === "level"
     readonly property bool showsMeter: available && meterStyle !== "icon"
     property real meterWidth: 0
 
-    iconName: profileMode ? Theme.getPowerProfileIcon(PowerProfileWatcher.currentProfile) : BatteryService.getBatteryIcon()
+    iconName: {
+        if (profileMode)
+            return Theme.getPowerProfileIcon(PowerProfileWatcher.currentProfile);
+        return !available && shownPeripheral ? shownPeripheral.icon : BatteryService.getBatteryIcon();
+    }
     title: {
         if (profileMode)
             return I18n.tr("Power profile");
-        return available ? I18n.tr("Battery") : I18n.tr("No battery");
+        return available || hasPeripherals ? I18n.tr("Battery") : I18n.tr("No battery");
     }
     subtitle: {
         if (profileMode)
             return Theme.getPowerProfileLabel(PowerProfileWatcher.currentProfile);
+        if (!available && shownPeripheral)
+            return `${shownPeripheral.name} • ` + (shownPeripheral.unknown ? I18n.tr("Unknown", "battery status") : `${shownPeripheral.percentage}%`);
         if (!available)
             return I18n.tr("Not available");
         if (BatteryService.isCharging)

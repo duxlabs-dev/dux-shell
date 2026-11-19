@@ -153,7 +153,7 @@ Item {
                 }
 
                 CcListRow {
-                    visible: root.batteryIndex >= 0
+                    visible: root.batteryIndex >= 0 && BatteryService.batteryAvailable
                     iconName: "battery_std"
                     title: I18n.tr("Battery style")
                     body: DDropdown {
@@ -173,7 +173,7 @@ Item {
                 }
 
                 CcListRow {
-                    visible: root.batteryIndex >= 0 && (SettingsData.controlCenterWidgets[root.batteryIndex]?.batteryStyle ?? "icon") !== "icon"
+                    visible: root.batteryIndex >= 0 && BatteryService.batteryAvailable && (SettingsData.controlCenterWidgets[root.batteryIndex]?.batteryStyle ?? "icon") !== "icon"
                     iconName: "palette"
                     title: I18n.tr("Color")
                     body: DDropdown {
@@ -185,6 +185,17 @@ Item {
                         currentValue: labels[(SettingsData.controlCenterWidgets[root.batteryIndex]?.batteryColorMode ?? "level") === "level" ? 1 : 0]
                         options: labels
                         onValueChanged: value => WidgetUtils.setOption(root.batteryIndex, "batteryColorMode", labels.indexOf(value) === 1 ? "level" : "theme")
+                    }
+                }
+
+                CcListRow {
+                    visible: root.batteryIndex >= 0
+                    iconName: "tune"
+                    title: I18n.tr("Widget settings", "control center battery tile menu: opens the battery bar widget options")
+                    clickable: true
+                    onClicked: {
+                        PopoutService.openBarWidgetSettings("battery");
+                        root.close();
                     }
                 }
 

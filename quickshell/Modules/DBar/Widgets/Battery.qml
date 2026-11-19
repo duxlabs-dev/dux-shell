@@ -1,5 +1,7 @@
 import QtQuick
+import Quickshell
 import qs.Common
+import qs.Modules.DBar
 import qs.Modules.Plugins
 import qs.Services
 import qs.DCommon.Widgets
@@ -24,7 +26,17 @@ BasePill {
     readonly property bool showTimeOnlyOnBattery: SettingsData.widgetOption("battery", widgetData, "showBatteryTimeOnlyOnBattery")
     readonly property string batteryStyle: SettingsData.widgetOption("battery", widgetData, "batteryStyle")
     readonly property bool pillStyle: battery.batteryStyle !== "icon"
-    readonly property bool levelColors: (barConfig?.batteryColorMode ?? "theme") === "level"
+    readonly property string colorMode: barConfig?.batteryColorMode ?? SettingsData.barConfigDefault("batteryColorMode")
+    readonly property string batteryDirection: SettingsData.widgetOption("battery", widgetData, "batteryDirection")
+    readonly property string batterySeparator: SettingsData.widgetOption("battery", widgetData, "batterySeparator")
+    readonly property var batteryDevices: SettingsData.widgetOption("battery", widgetData, "batteryDevices")
+    readonly property var entries: BatteryService.barDeviceEntries(batteryDevices)
+    readonly property var renderEntries: entries.filter(item => item.kind === "system" || item.entry.icon || item.entry.percent)
+    readonly property bool shouldHide: renderEntries.length === 0
+    readonly property bool percentInMeter: batteryStyle === "solid" && batteryDirection === "horizontal" && !isVerticalOrientation
+    // A horizontal solid meter in a vertical bar is shrunk to fit across it; the number then goes below it.
+    readonly property real meterThickness: batteryStyle === "solid" && batteryDirection === "horizontal" && isVerticalOrientation ? Math.min(iconSize, (widgetThickness - horizontalPadding * 2) * BarMetrics.batteryMeterBase / BarMetrics.batteryMeterLength) : iconSize
+    readonly property bool percentVisible: showPercent && BatteryService.hasBatteryReading
     readonly property bool showPowerCharging: SettingsData.widgetOption("battery", widgetData, "showBatteryPowerCharging")
     readonly property bool showPowerDischarging: SettingsData.widgetOption("battery", widgetData, "showBatteryPowerDischarging")
     readonly property bool showPower: BatteryService.isCharging ? showPowerCharging : showPowerDischarging
@@ -95,11 +107,11 @@ BasePill {
 
     readonly property string horizontalDisplayText: {
         const parts = [];
-        if (showPercent) {
+        if (percentVisible) {
             parts.push(`${BatteryService.displayBatteryLevelText}%`);
         }
         if (showTime && batteryTimeText) {
-            parts.push(showPercent ? `(${batteryTimeText})` : batteryTimeText);
+            parts.push(percentVisible ? `(${batteryTimeText})` : batteryTimeText);
         }
         if (batteryPowerText) {
             parts.push(batteryPowerText);
@@ -107,13 +119,13 @@ BasePill {
         return parts.join(" ");
     }
 
-    // Percent stays inside the pill unless the duo glyph occupies it; time and wattage show beside it.
+    // The number sits inside the solid meter when it is horizontal; otherwise it shows beside the glyph with time and wattage.
     readonly property string horizontalSideText: {
         if (!pillStyle) {
             return horizontalDisplayText;
         }
         const parts = [];
-        if (showPercent && batteryStyle === "duo") {
+        if (percentVisible && !percentInMeter) {
             parts.push(`${BatteryService.displayBatteryLevelText}%`);
         }
         if (showTime && batteryTimeText) {
@@ -127,7 +139,7 @@ BasePill {
 
     readonly property string verticalDisplayText: {
         const lines = [];
-        if (showPercent) {
+        if (percentVisible && !(pillStyle && percentInMeter)) {
             lines.push(BatteryService.displayBatteryLevelText);
         }
         if (showTime && batteryTimeText) {
@@ -137,6 +149,17 @@ BasePill {
             lines.push(verticalBatteryPowerText);
         }
         return lines.join("\n");
+    }
+
+    readonly property real iconSize: Theme.barIconSize(barThickness, isVerticalOrientation ? undefined : -4, barConfig?.maximizeWidgetIcons, barConfig?.iconScale)
+    readonly property real textSize: Theme.barTextSize(barThickness, barConfig?.fontScale, barConfig?.maximizeWidgetText)
+    readonly property bool splitActive: batterySeparator === "separate" && !noBackground && renderEntries.length > 1
+    readonly property real entrySpacing: splitActive ? 2 * horizontalPadding + splitGap : BarMetrics.batteryEntryGap
+
+    // Colors follow the real level (not the charge-limit scaled one), like the low state and the alerts do.
+    function entryColor(item, neutral) {
+        const percentage = item.kind === "system" ? BatteryService.batteryLevel : item.percentage;
+        return BatteryService.colorFor(colorMode, percentage, item.charging, neutral);
     }
 
     property real touchpadAccumulator: 0
@@ -158,128 +181,212 @@ BasePill {
 
     signal toggleBatteryPopup
 
-    visible: true
+    width: shouldHide ? 0 : (isVerticalOrientation ? barThickness : visualWidth)
+    height: shouldHide ? 0 : (isVerticalOrientation ? visualHeight : barThickness)
+    visible: !shouldHide
+    opacity: shouldHide ? 0 : 1
+
+    splitJoined: BarMetrics.widgetStyle(barConfig) === "segments"
+    splitGap: splitJoined ? BarMetrics.segmentGap : BarMetrics.pillGap
+    splitBlurPerSegment: true
+
+    Behavior on opacity {
+        NumberAnimation {
+            duration: Theme.expressiveDurations.expressiveFastEffects
+            easing.type: Easing.BezierSpline
+            easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
+        }
+    }
 
     content: Component {
         Item {
-            implicitWidth: battery.isVerticalOrientation ? (battery.widgetThickness - battery.horizontalPadding * 2) : batteryContent.implicitWidth
-            implicitHeight: battery.isVerticalOrientation ? batteryColumn.implicitHeight : (battery.widgetThickness - battery.horizontalPadding * 2)
+            id: contentRoot
 
-            Loader {
-                id: batteryColumn
-                active: battery.isVerticalOrientation
-                anchors.centerIn: parent
-                sourceComponent: Column {
-                    spacing: 1
+            // itemAt() is not observable, so the boundary binding below re-runs when delegates come or go.
+            property int itemsRevision: 0
 
-                    DIcon {
-                        name: BatteryService.getBatteryIcon()
-                        visible: !battery.pillStyle
-                        size: Theme.barIconSize(battery.barThickness, undefined, battery.barConfig?.maximizeWidgetIcons, battery.barConfig?.iconScale)
-                        color: {
-                            if (!BatteryService.batteryAvailable) {
-                                return Theme.widgetIconColor;
-                            }
+            implicitWidth: battery.isVerticalOrientation ? (battery.widgetThickness - battery.horizontalPadding * 2) : layout.implicitWidth
+            implicitHeight: battery.isVerticalOrientation ? layout.implicitHeight : (battery.widgetThickness - battery.horizontalPadding * 2)
 
-                            if (battery.critical) {
-                                return battery.criticalForeground;
-                            }
-
-                            if (battery.levelColors) {
-                                return BatteryService.levelColor;
-                            }
-
-                            if (BatteryService.isLowBattery && !BatteryService.isCharging) {
-                                return Theme.error;
-                            }
-
-                            if (BatteryService.isCharging || BatteryService.isPluggedIn) {
-                                return Theme.primary;
-                            }
-
-                            return Theme.widgetIconColor;
-                        }
-                        anchors.horizontalCenter: parent.horizontalCenter
+            // Boundaries are the centers of the gaps between neighbouring entries, measured from the laid out items so RTL works.
+            Binding {
+                target: battery
+                property: "splitOffsets"
+                value: {
+                    contentRoot.itemsRevision;
+                    if (!battery.splitActive)
+                        return [];
+                    const vertical = battery.isVerticalOrientation;
+                    const origin = battery.horizontalPadding + (vertical ? layout.y : layout.x);
+                    const bounds = [];
+                    for (let i = 0; i + 1 < entryRepeater.count; i++) {
+                        const a = entryRepeater.itemAt(i);
+                        const b = entryRepeater.itemAt(i + 1);
+                        if (!a || !b)
+                            return [];
+                        const aStart = vertical ? a.y : a.x;
+                        const aEnd = aStart + (vertical ? a.height : a.width);
+                        const bStart = vertical ? b.y : b.x;
+                        const bEnd = bStart + (vertical ? b.height : b.width);
+                        bounds.push(origin + (aStart < bStart ? (aEnd + bStart) / 2 : (bEnd + aStart) / 2));
                     }
-
-                    BatteryMeter {
-                        visible: battery.pillStyle
-                        vertical: true
-                        showNumber: false
-                        meterStyle: battery.batteryStyle
-                        levelColors: battery.levelColors
-                        colorOverride: battery.critical ? battery.criticalForeground : "transparent"
-                        maxDiameter: battery.widgetThickness - Theme.spacingXS
-                        thickness: Theme.barIconSize(battery.barThickness, undefined, battery.barConfig?.maximizeWidgetIcons, battery.barConfig?.iconScale)
-                        anchors.horizontalCenter: parent.horizontalCenter
-                    }
-
-                    StyledText {
-                        text: battery.verticalDisplayText
-                        font.pixelSize: Theme.barTextSize(battery.barThickness, battery.barConfig?.fontScale, battery.barConfig?.maximizeWidgetText)
-                        color: battery.contentColor
-                        horizontalAlignment: Text.AlignHCenter
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        visible: BatteryService.batteryAvailable && battery.verticalDisplayText !== ""
-                    }
+                    return bounds.sort((x, y) => x - y);
                 }
             }
 
-            Loader {
-                id: batteryContent
-                active: !battery.isVerticalOrientation
+            Grid {
+                id: layout
                 anchors.centerIn: parent
-                sourceComponent: Row {
-                    spacing: (barConfig?.noBackground ?? false) ? 1 : 2
+                columns: battery.isVerticalOrientation ? 1 : Math.max(1, entryRepeater.count)
+                spacing: battery.entrySpacing
+                horizontalItemAlignment: Grid.AlignHCenter
+                verticalItemAlignment: Grid.AlignVCenter
 
-                    DIcon {
-                        name: BatteryService.getBatteryIcon()
-                        visible: !battery.pillStyle
-                        size: Theme.barIconSize(battery.barThickness, -4, battery.barConfig?.maximizeWidgetIcons, battery.barConfig?.iconScale)
-                        color: {
-                            if (!BatteryService.batteryAvailable) {
-                                return Theme.widgetIconColor;
-                            }
+                Repeater {
+                    id: entryRepeater
+                    model: ScriptModel {
+                        objectProp: "id"
+                        values: battery.renderEntries
+                    }
+                    onItemAdded: contentRoot.itemsRevision++
+                    onItemRemoved: contentRoot.itemsRevision++
 
-                            if (battery.critical) {
-                                return battery.criticalForeground;
-                            }
+                    delegate: Grid {
+                        id: slot
 
-                            if (battery.levelColors) {
-                                return BatteryService.levelColor;
-                            }
-
-                            if (BatteryService.isLowBattery && !BatteryService.isCharging) {
-                                return Theme.error;
-                            }
-
-                            if (BatteryService.isCharging || BatteryService.isPluggedIn) {
-                                return Theme.primary;
-                            }
-
-                            return Theme.widgetIconColor;
+                        required property var modelData
+                        required property int index
+                        readonly property bool isSystem: modelData.kind === "system"
+                        readonly property bool systemMeter: isSystem && battery.pillStyle && BatteryService.batteryAvailable
+                        readonly property bool showSeparator: index > 0 && (battery.batterySeparator === "line" || battery.batterySeparator === "dot")
+                        readonly property string badgeName: isSystem ? "" : (modelData.low ? "priority_high" : (modelData.charging ? "bolt" : ""))
+                        readonly property string systemIconName: {
+                            if (!BatteryService.batteryAvailable)
+                                return "power";
+                            if (modelData.low && !modelData.charging)
+                                return "battery_alert";
+                            return BatteryService.getBatteryIcon();
                         }
-                        anchors.verticalCenter: parent.verticalCenter
-                    }
+                        readonly property string deviceText: {
+                            if (isSystem || !modelData.entry.percent)
+                                return "";
+                            if (modelData.unknown)
+                                return "–";
+                            return battery.isVerticalOrientation ? String(modelData.percentage) : `${modelData.percentage}%`;
+                        }
+                        readonly property color textColor: isSystem && battery.critical ? battery.contentColor : (battery.colorMode === "lowcharging" && modelData.low ? Theme.error : battery.contentColor)
+                        readonly property string shownText: {
+                            if (!isSystem)
+                                return deviceText;
+                            if (!BatteryService.batteryAvailable)
+                                return "";
+                            return battery.isVerticalOrientation ? battery.verticalDisplayText : battery.horizontalSideText;
+                        }
 
-                    BatteryMeter {
-                        visible: battery.pillStyle
-                        showNumber: battery.showPercent
-                        meterStyle: battery.batteryStyle
-                        levelColors: battery.levelColors
-                        colorOverride: battery.critical ? battery.criticalForeground : "transparent"
-                        maxDiameter: battery.widgetThickness - Theme.spacingXS
-                        thickness: Theme.barIconSize(battery.barThickness, -4, battery.barConfig?.maximizeWidgetIcons, battery.barConfig?.iconScale)
-                        fontSize: Theme.barTextSize(battery.barThickness, battery.barConfig?.fontScale, battery.barConfig?.maximizeWidgetText)
-                        anchors.verticalCenter: parent.verticalCenter
-                    }
+                        readonly property int partColumns: Math.max(1, (isSystem || modelData.entry.icon ? 1 : 0) + (shownText !== "" ? 1 : 0))
 
-                    NumericText {
-                        text: battery.horizontalSideText
-                        font.pixelSize: Theme.barTextSize(battery.barThickness, battery.barConfig?.fontScale, battery.barConfig?.maximizeWidgetText)
-                        color: battery.contentColor
-                        anchors.verticalCenter: parent.verticalCenter
-                        visible: BatteryService.batteryAvailable && battery.horizontalSideText !== ""
+                        // A Grid counts spacing for every column, so columns follow what is actually shown.
+                        columns: battery.isVerticalOrientation ? 1 : (showSeparator ? 2 : 1)
+                        spacing: BarMetrics.batteryEntryGap
+                        horizontalItemAlignment: Grid.AlignHCenter
+                        verticalItemAlignment: Grid.AlignVCenter
+
+                        Rectangle {
+                            visible: slot.showSeparator
+                            readonly property bool rule: battery.batterySeparator === "line"
+                            width: rule ? (battery.isVerticalOrientation ? BarMetrics.batteryRuleLength : Theme.dividerWidth) : BarMetrics.batteryDotSize
+                            height: rule ? (battery.isVerticalOrientation ? Theme.dividerWidth : BarMetrics.batteryRuleLength) : BarMetrics.batteryDotSize
+                            radius: rule ? 0 : width / 2
+                            color: Theme.outlineVariant
+                        }
+
+                        Grid {
+                            columns: battery.isVerticalOrientation ? 1 : slot.partColumns
+                            spacing: battery.isVerticalOrientation ? 1 : (battery.noBackground ? 1 : 2)
+                            horizontalItemAlignment: Grid.AlignHCenter
+                            verticalItemAlignment: Grid.AlignVCenter
+
+                            Loader {
+                                active: slot.isSystem && !slot.systemMeter
+                                visible: active
+                                sourceComponent: DIcon {
+                                    name: slot.systemIconName
+                                    rotation: BatteryService.batteryAvailable && battery.batteryDirection === "horizontal" ? 90 : 0
+                                    size: battery.iconSize
+                                    color: battery.critical ? battery.criticalForeground : battery.entryColor(slot.modelData, Theme.widgetIconColor)
+                                }
+                            }
+
+                            Loader {
+                                active: slot.systemMeter
+                                visible: active
+                                sourceComponent: BatteryMeter {
+                                    meterStyle: battery.batteryStyle === "circle" ? "arc" : "solid"
+                                    vertical: battery.batteryDirection === "vertical"
+                                    singleTextColor: true
+                                    showNumber: battery.percentVisible && battery.percentInMeter
+                                    colorOverride: battery.critical ? battery.criticalForeground : battery.entryColor(slot.modelData, Theme.widgetIconColor)
+                                    maxDiameter: battery.widgetThickness - Theme.spacingXS
+                                    thickness: battery.meterThickness
+                                    fontSize: battery.textSize
+                                }
+                            }
+
+                            Loader {
+                                active: !slot.isSystem && slot.modelData.entry.icon
+                                visible: active
+                                sourceComponent: Item {
+                                    implicitWidth: deviceIcon.width + (slot.badgeName !== "" ? BarMetrics.batteryBadgeOverhang : 0)
+                                    implicitHeight: deviceIcon.height
+
+                                    DIcon {
+                                        id: deviceIcon
+                                        name: slot.modelData.iconName
+                                        size: battery.iconSize
+                                        color: battery.entryColor(slot.modelData, Theme.widgetIconColor)
+                                    }
+
+                                    Rectangle {
+                                        visible: slot.badgeName !== ""
+                                        anchors.right: parent.right
+                                        anchors.bottom: parent.bottom
+                                        anchors.bottomMargin: -Theme.spacingXXS
+                                        width: BarMetrics.batteryBadgeSize
+                                        height: width
+                                        radius: width / 2
+                                        color: slot.modelData.low ? Theme.error : Theme.primary
+
+                                        DIcon {
+                                            anchors.centerIn: parent
+                                            name: slot.badgeName
+                                            size: BarMetrics.batteryBadgeIcon
+                                            color: slot.modelData.low ? Theme.onError : Theme.onPrimary
+                                        }
+                                    }
+                                }
+                            }
+
+                            Loader {
+                                active: !battery.isVerticalOrientation && slot.shownText !== ""
+                                visible: active
+                                sourceComponent: NumericText {
+                                    text: slot.shownText
+                                    font.pixelSize: battery.textSize
+                                    color: slot.textColor
+                                }
+                            }
+
+                            Loader {
+                                active: battery.isVerticalOrientation && slot.shownText !== ""
+                                visible: active
+                                sourceComponent: StyledText {
+                                    text: slot.shownText
+                                    font.pixelSize: battery.textSize
+                                    color: slot.textColor
+                                    horizontalAlignment: Text.AlignHCenter
+                                }
+                            }
+                        }
                     }
                 }
             }
