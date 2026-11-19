@@ -11,6 +11,7 @@ Item {
     readonly property bool useHyprlandFocusGrab: CompositorService.useHyprlandFocusGrab
     property string layerNamespace: "dms:modal"
     property Component content: null
+    property url contentSource
     property Item directContent: null
     property real modalWidth: 400
     property real modalHeight: 300

@@ -798,11 +798,17 @@ Item {
                             Loader {
                                 id: contentLoader
 
-                                readonly property bool wanted: root.directContent === null && (root.keepContentLoaded || root.shouldBeVisible || contentWindow.visible)
+                                readonly property bool wanted: root.directContent === null && (root.shouldBeVisible || contentWindow.visible)
 
                                 sourceComponent: root.modalHandle.content
                                 anchors.fill: parent
                                 active: false
+                                Component.onCompleted: {
+                                    if (root.modalHandle.contentSource.toString() !== "")
+                                        setSource(root.modalHandle.contentSource, {
+                                            modal: root.modalHandle
+                                        });
+                                }
                                 asynchronous: false
                                 focus: true
                                 clip: false
@@ -814,6 +820,8 @@ Item {
                                         active = true;
                                         return;
                                     }
+                                    if (root.keepContentLoaded && root.directContent === null)
+                                        return;
                                     Qt.callLater(() => contentLoader.active = contentLoader.wanted);
                                 }
 

@@ -500,18 +500,20 @@ FocusScope {
                     onCanceled: root.cancelDrag()
                     onWheel: wheel => wheel.accepted = false
                 }
-                DActionButton {
-                    visible: root.surfaceContext.editMode && slot.modelData.widgetId !== "application" && (root.participating[slot.index] ?? false)
+                Loader {
+                    active: root.surfaceContext.editMode && slot.modelData.widgetId !== "application" && (root.participating[slot.index] ?? false)
                     z: 2
                     anchors.top: parent.top
                     anchors.right: parent.right
-                    buttonSize: Theme.iconSizeMedium
-                    iconSize: Theme.iconSizeSmall
-                    iconName: "close"
-                    backgroundColor: Theme.errorContainer
-                    iconColor: Theme.onErrorContainer
-                    Accessible.name: I18n.tr("Remove")
-                    onClicked: root.removeRequested(slot.modelData.id)
+                    sourceComponent: DActionButton {
+                        buttonSize: Theme.iconSizeMedium
+                        iconSize: Theme.iconSizeSmall
+                        iconName: "close"
+                        backgroundColor: Theme.errorContainer
+                        iconColor: Theme.onErrorContainer
+                        Accessible.name: I18n.tr("Remove")
+                        onClicked: root.removeRequested(slot.modelData.id)
+                    }
                 }
             }
         }

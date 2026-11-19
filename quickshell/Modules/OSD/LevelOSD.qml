@@ -87,7 +87,7 @@ DOSD {
         iconName: root.iconName
         insetIconName: root.insetIconName
         endIconName: root.endIconName
-        endIconInteractive: root.sheet !== null
+        endIconInteractive: root.hasSheet
         endIconLabel: root.endIconLabel
         iconInteractive: root.iconInteractive
         iconLabel: root.iconLabel
@@ -106,7 +106,7 @@ DOSD {
             root.expand();
         }
         onEndIconHoveredChanged: {
-            if (endIconHovered && root.sheet)
+            if (endIconHovered && root.hasSheet)
                 root.showEndIconTooltip(endIconItem);
             else
                 root.hideEndIconTooltip();

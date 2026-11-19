@@ -14,6 +14,12 @@ Item {
 
     required property var screen
     required property var surface
+
+    onExitFinished: surface._onPopupExitFinished(win)
+    onExitRequested: surface._onPopupExitRequested(win)
+    onSurfaceMapped: surface._pumpMotion()
+    onPopupHeightChanged: surface._onPopupHeightChanged(win)
+    onPopupChromeGeometryChanged: surface._onPopupChromeGeometryChanged(win)
     readonly property alias maskRegion: contentInputMask
     readonly property var blurRegion: blur.effectiveRegion
     readonly property bool wantsOverlay: CompositorService.framePeerSurfacesUseOverlayForScreen(win.screen) || (!!notificationData && (SettingsData.notificationOverlayEnabled || notificationData.urgency === NotificationUrgency.Critical))

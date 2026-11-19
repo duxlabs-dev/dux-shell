@@ -11,7 +11,8 @@ Item {
 
     property var barContent: null
     property var surfaceContext: barContent?.surfaceContext ?? null
-    property var widgetsModel: barContent?.[section + "WidgetsModel"] ?? null
+    property bool live: true
+    property var widgetsModel: live ? (barContent?.[section + "WidgetsModel"] ?? null) : null
     property var components: barContent?.allComponents ?? null
     property bool noBackground: barConfig?.noBackground ?? false
     required property var axis

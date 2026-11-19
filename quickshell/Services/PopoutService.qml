@@ -33,9 +33,11 @@ Singleton {
     property var clipboardHistoryPopoutLoader: null
 
     property var desktopContextMenu: null
+    property var desktopContextMenuLoader: null
     property var settingsModal: null
     property var settingsModalLoader: null
     property var clipboardHistoryModal: null
+    property var clipboardHistoryModalLoader: null
     property var dankLauncherV2Modal: null
     property var dankLauncherV2ModalLoader: null
     property var dankIslandRouter: null
@@ -131,6 +133,23 @@ Singleton {
             "clipboardHistory": () => _unloadPopoutNow("clipboardHistoryPopout", "clipboardHistoryPopoutLoader"),
             "settings": () => unloadSettingsNow()
         })
+
+    property var _prewarmed: ({})
+
+    // A hover lands a few hundred ms before the click, so the surface's types load off the open path.
+    function prewarm(loader) {
+        const source = loader?.source?.toString() ?? "";
+        if (!source || loader.item || _prewarmed[source])
+            return;
+        const url = source.includes("://") ? source : Qt.resolvedUrl("../" + source);
+        _prewarmed[source] = Qt.createComponent(url, Component.Asynchronous);
+    }
+
+    function desktopMenu() {
+        if (desktopContextMenuLoader)
+            desktopContextMenuLoader.active = true;
+        return desktopContextMenu;
+    }
 
     function setPosition(popout, x, y, width, section, screen) {
         if (popout && popout.setTriggerPosition && arguments.length >= 6) {
@@ -673,10 +692,16 @@ Singleton {
         }
     }
 
+    function clipboardModal() {
+        if (clipboardHistoryModalLoader)
+            clipboardHistoryModalLoader.active = true;
+        return clipboardHistoryModal;
+    }
+
     function openClipboardHistory() {
         if (routeToIsland("clipboard", null, false))
             return;
-        clipboardHistoryModal?.show();
+        clipboardModal()?.show();
     }
 
     function closeClipboardHistory() {
@@ -691,7 +716,7 @@ Singleton {
         }
         if (routeToIsland("clipboard", null, true))
             return;
-        clipboardHistoryModal?.toggle();
+        clipboardModal()?.toggle();
     }
 
     function unloadClipboardHistoryPopout() {

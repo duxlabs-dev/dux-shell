@@ -51,7 +51,7 @@ Variants {
             z: 1
             enabled: variants.desktopMenuOnWallpaper
             acceptedButtons: Qt.RightButton
-            onClicked: mouse => PopoutService.desktopContextMenu?.open(wallpaperWindow.screen, mouse.x, mouse.y, false)
+            onClicked: mouse => PopoutService.desktopMenu()?.open(wallpaperWindow.screen, mouse.x, mouse.y, false)
         }
 
         Loader {
@@ -79,7 +79,7 @@ Variants {
                 MouseArea {
                     anchors.fill: parent
                     acceptedButtons: Qt.RightButton
-                    onClicked: mouse => PopoutService.desktopContextMenu?.open(wallpaperWindow.screen, mouse.x, mouse.y, false)
+                    onClicked: mouse => PopoutService.desktopMenu()?.open(wallpaperWindow.screen, mouse.x, mouse.y, false)
                 }
             }
         }

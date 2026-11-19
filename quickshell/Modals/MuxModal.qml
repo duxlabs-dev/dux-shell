@@ -2,7 +2,6 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import QtQuick.Layouts
-import Quickshell.Io
 import Quickshell
 import qs.Common
 import qs.Modals.Common
@@ -134,51 +133,13 @@ DModal {
     keepContentLoaded: true
 
     onBackgroundClicked: hide()
+    onOpened: Qt.callLater(() => muxPanel.searchField?.forceActiveFocus())
 
     Timer {
         interval: Timing.pollFast
         running: muxModal.shouldBeVisible
         repeat: true
         onTriggered: MuxService.refreshSessions()
-    }
-
-    IpcHandler {
-        function open(): string {
-            muxModal.show();
-            return "MUX_OPEN_SUCCESS";
-        }
-
-        function close(): string {
-            muxModal.hide();
-            return "MUX_CLOSE_SUCCESS";
-        }
-
-        function toggle(): string {
-            muxModal.toggle();
-            return "MUX_TOGGLE_SUCCESS";
-        }
-
-        target: "mux"
-    }
-
-    // Backwards compatibility
-    IpcHandler {
-        function open(): string {
-            muxModal.show();
-            return "TMUX_OPEN_SUCCESS";
-        }
-
-        function close(): string {
-            muxModal.hide();
-            return "TMUX_CLOSE_SUCCESS";
-        }
-
-        function toggle(): string {
-            muxModal.toggle();
-            return "TMUX_TOGGLE_SUCCESS";
-        }
-
-        target: "tmux"
     }
 
     InputModal {

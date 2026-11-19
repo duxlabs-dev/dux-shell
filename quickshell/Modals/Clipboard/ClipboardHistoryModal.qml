@@ -125,13 +125,7 @@ DModal {
         }
     }
 
-    content: Component {
-        ClipboardHistoryContent {
-            surfaceHost: clipboardHistoryModal
-            transientSurfaceTracker: clipboardHistoryModal.transientSurfaceTracker
-            clearConfirmDialog: clearConfirmDialog
-            onCloseRequested: clipboardHistoryModal.hide()
-            onInstantCloseRequested: clipboardHistoryModal.instantHide()
-        }
-    }
+    readonly property alias confirmDialog: clearConfirmDialog
+
+    contentSource: Qt.resolvedUrl("ClipboardHistoryModalContent.qml")
 }

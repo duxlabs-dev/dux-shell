@@ -1515,7 +1515,7 @@ Item {
 
     IpcHandler {
         function open(): string {
-            if (!PopoutService.clipboardHistoryModal) {
+            if (!PopoutService.clipboardHistoryModalLoader) {
                 return "CLIPBOARD_NOT_AVAILABLE";
             }
             PopoutService.openClipboardHistory();
@@ -1523,7 +1523,7 @@ Item {
         }
 
         function close(): string {
-            if (!PopoutService.clipboardHistoryModal) {
+            if (!PopoutService.clipboardHistoryModalLoader) {
                 return "CLIPBOARD_NOT_AVAILABLE";
             }
             PopoutService.closeClipboardHistory();
@@ -1531,7 +1531,7 @@ Item {
         }
 
         function toggle(): string {
-            if (!PopoutService.clipboardHistoryModal) {
+            if (!PopoutService.clipboardHistoryModalLoader) {
                 return "CLIPBOARD_NOT_AVAILABLE";
             }
             PopoutService.toggleClipboardHistory();

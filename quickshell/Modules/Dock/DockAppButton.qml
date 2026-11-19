@@ -489,17 +489,22 @@ Item {
             anchors.fill: parent
             scale: root.options?.enlargeOnHover && root.isHovered ? (root.options?.enlargePercentage ?? 125) / 100 : 1
 
-            AppIconRenderer {
+            Loader {
                 id: coreIcon
 
+                readonly property string iconValue: appData && appData.isCoreApp && appData.coreAppData ? (appData.coreAppData.icon || "") : ""
+
                 anchors.centerIn: parent
-                iconSize: actualIconSize
-                iconValue: appData && appData.isCoreApp && appData.coreAppData ? (appData.coreAppData.icon || "") : ""
-                colorOverride: effectiveCoreIconColor
-                brightnessOverride: effectiveCoreIconBrightness
-                contrastOverride: effectiveCoreIconContrast
-                fallbackText: "?"
-                visible: iconValue !== ""
+                active: iconValue !== ""
+                visible: active
+                sourceComponent: AppIconRenderer {
+                    iconSize: actualIconSize
+                    iconValue: coreIcon.iconValue
+                    colorOverride: effectiveCoreIconColor
+                    brightnessOverride: effectiveCoreIconBrightness
+                    contrastOverride: effectiveCoreIconContrast
+                    fallbackText: "?"
+                }
             }
 
             Image {
@@ -524,7 +529,7 @@ Item {
                 mipmap: true
                 smooth: true
                 asynchronous: true
-                visible: status === Image.Ready && !coreIcon.visible
+                visible: status === Image.Ready && !coreIcon.active
                 opacity: root.isMinimized ? 0.4 : 1
                 layer.enabled: appData && Paths.isDmsAppId(appData.appId)
                 layer.smooth: true
@@ -536,45 +541,50 @@ Item {
                 }
             }
 
-            Rectangle {
-                width: actualIconSize
-                height: actualIconSize
+            Loader {
+                readonly property bool missing: !coreIcon.active && iconImg.status !== Image.Ready && !!appData?.appId
                 anchors.centerIn: parent
-                visible: !coreIcon.visible && iconImg.status !== Image.Ready && appData && appData.appId && !Paths.isSteamApp(appData.appId)
-                opacity: root.isMinimized ? 0.4 : 1
-                color: Theme.surfaceLight
-                radius: Theme.cornerRadius
-                border.width: 1
-                border.color: Theme.primarySelected
+                active: missing && !Paths.isSteamApp(appData.appId)
+                sourceComponent: Rectangle {
+                    width: actualIconSize
+                    height: actualIconSize
+                    opacity: root.isMinimized ? 0.4 : 1
+                    color: Theme.surfaceLight
+                    radius: Theme.cornerRadius
+                    border.width: 1
+                    border.color: Theme.primarySelected
 
-                StyledText {
-                    anchors.centerIn: parent
-                    text: {
-                        if (!appData || !appData.appId) {
-                            return "?";
-                        }
+                    StyledText {
+                        anchors.centerIn: parent
+                        text: {
+                            if (!appData || !appData.appId) {
+                                return "?";
+                            }
 
-                        let appName;
-                        if (appData.isCoreApp && appData.coreAppData) {
-                            appName = appData.coreAppData.name || appData.appId;
-                        } else {
-                            appName = Paths.getAppName(appData.appId, cachedDesktopEntry);
+                            let appName;
+                            if (appData.isCoreApp && appData.coreAppData) {
+                                appName = appData.coreAppData.name || appData.appId;
+                            } else {
+                                appName = Paths.getAppName(appData.appId, cachedDesktopEntry);
+                            }
+                            return appName.charAt(0).toUpperCase();
                         }
-                        return appName.charAt(0).toUpperCase();
+                        font.pixelSize: Math.max(8, parent.width * 0.35)
+                        color: Theme.primary
+                        font.weight: Theme.fontWeightMedium
                     }
-                    font.pixelSize: Math.max(8, parent.width * 0.35)
-                    color: Theme.primary
-                    font.weight: Theme.fontWeightMedium
                 }
             }
 
-            DIcon {
+            Loader {
                 anchors.centerIn: parent
-                size: actualIconSize
-                name: "sports_esports"
-                color: Theme.surfaceText
-                visible: !coreIcon.visible && iconImg.status !== Image.Ready && appData && appData.appId && Paths.isSteamApp(appData.appId)
-                opacity: root.isMinimized ? 0.4 : 1
+                active: !coreIcon.active && iconImg.status !== Image.Ready && !!appData?.appId && Paths.isSteamApp(appData.appId)
+                sourceComponent: DIcon {
+                    size: actualIconSize
+                    name: "sports_esports"
+                    color: Theme.surfaceText
+                    opacity: root.isMinimized ? 0.4 : 1
+                }
             }
         }
 

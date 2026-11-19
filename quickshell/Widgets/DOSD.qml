@@ -23,6 +23,8 @@ Item {
     property real surfaceRadius: Theme.fullRadius(alignedWidth, alignedHeight)
     property int animationDuration: Theme.expressiveDurations.expressiveEffects
     property Component sheet: null
+    property url sheetSource
+    readonly property bool hasSheet: sheet !== null || sheetSource.toString() !== ""
     property real sheetWidth: 0
     property bool expanded: false
 
@@ -63,7 +65,7 @@ Item {
     }
 
     function expand() {
-        if (!sheet || !shouldBeVisible || expanded)
+        if (!hasSheet || !shouldBeVisible || expanded)
             return;
         hideTimer.stop();
         expanded = true;

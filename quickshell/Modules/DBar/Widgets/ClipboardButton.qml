@@ -67,7 +67,8 @@ BasePill {
 
     function openContextMenu() {
         const anchor = root.contextMenuAnchor();
-        contextMenu.openFromBar(anchor);
+        contextMenuLoader.active = true;
+        contextMenuLoader.item.openFromBar(anchor);
     }
 
     MouseArea {
@@ -135,22 +136,25 @@ BasePill {
         }
     }
 
-    DContextMenu {
-        id: contextMenu
-        layerNamespace: "dms:clipboard-context-menu"
-        menuItems: [
-            {
-                type: "item",
-                icon: "delete_sweep",
-                text: I18n.tr("Clear All"),
-                action: () => root.clearAllRequested()
-            },
-            {
-                type: "item",
-                icon: "push_pin",
-                text: I18n.tr("Show Saved Items"),
-                action: () => root.showSavedItemsRequested()
-            }
-        ]
+    Loader {
+        id: contextMenuLoader
+        active: false
+        sourceComponent: DContextMenu {
+            layerNamespace: "dms:clipboard-context-menu"
+            menuItems: [
+                {
+                    type: "item",
+                    icon: "delete_sweep",
+                    text: I18n.tr("Clear All"),
+                    action: () => root.clearAllRequested()
+                },
+                {
+                    type: "item",
+                    icon: "push_pin",
+                    text: I18n.tr("Show Saved Items"),
+                    action: () => root.showSavedItemsRequested()
+                }
+            ]
+        }
     }
 }

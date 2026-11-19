@@ -37,6 +37,8 @@ PanelWindow {
     readonly property real surfaceOriginX: slideFromLeft ? frameInsetEdge : Math.max(0, (modelData?.width ?? width) - width - frameInsetEdge)
     readonly property real surfaceOriginY: frameInsetTop
     property Component content: null
+    property url contentSource
+    property var contentProperties: ({})
     property bool contentRequested: false
     property string title: ""
     property alias container: contentContainer
@@ -376,6 +378,10 @@ PanelWindow {
                         anchors.fill: parent
                         active: root.contentRequested
                         sourceComponent: root.content
+                        Component.onCompleted: {
+                            if (root.contentSource.toString() !== "")
+                                setSource(root.contentSource, root.contentProperties);
+                        }
                     }
                 }
             }

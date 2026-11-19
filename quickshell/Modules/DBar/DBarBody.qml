@@ -1571,10 +1571,10 @@ Item {
                 Loader {
                     anchors.fill: parent
                     active: barWindow.editingWidgets
-                    sourceComponent: BarEditor {
-                        body: barWindow
+                    Component.onCompleted: setSource("BarEditor.qml", {
+                        body: barWindow,
                         content: topBarContent
-                    }
+                    })
                 }
             }
         }

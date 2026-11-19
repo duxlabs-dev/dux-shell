@@ -98,7 +98,7 @@ Item {
             anchors.fill: parent
             enabled: CompositorService.desktopContextMenuEnabled
             acceptedButtons: Qt.RightButton
-            onClicked: mouse => PopoutService.desktopContextMenu?.openForWidget(root.screen, geometry.widgetX + mouse.x, geometry.widgetY + mouse.y, root.instanceId)
+            onClicked: mouse => PopoutService.desktopMenu()?.openForWidget(root.screen, geometry.widgetX + mouse.x, geometry.widgetY + mouse.y, root.instanceId)
         }
 
         DesktopWidgetContent {

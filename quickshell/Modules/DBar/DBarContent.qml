@@ -478,6 +478,7 @@ Item {
                 edgeIsScreenEdge: !topBarContent.hasAdjacentLeftBarLive
                 overrideAxisLayout: true
                 forceVerticalLayout: false
+                live: !barWindow.axis.isVertical
                 anchors {
                     left: parent.left
                     leftMargin: topBarContent.leadingSectionOffset
@@ -495,6 +496,7 @@ Item {
                 edgeIsScreenEdge: !topBarContent.hasAdjacentRightBarLive
                 overrideAxisLayout: true
                 forceVerticalLayout: false
+                live: !barWindow.axis.isVertical
                 anchors {
                     right: parent.right
                     rightMargin: topBarContent.trailingSectionOffset
@@ -511,6 +513,7 @@ Item {
                 objectName: "centerSection"
                 overrideAxisLayout: true
                 forceVerticalLayout: false
+                live: !barWindow.axis.isVertical
                 anchors.centerIn: topBarContent.fitToWidgets ? null : parent
                 anchors.verticalCenter: parent.verticalCenter
                 x: topBarContent.fitToWidgets ? -(barWindow.lengthPaddingStartPx + topBarContent._leftMargin) : 0
@@ -532,6 +535,7 @@ Item {
                 edgeIsScreenEdge: !topBarContent.hasAdjacentTopBarLive
                 overrideAxisLayout: true
                 forceVerticalLayout: true
+                live: barWindow.axis.isVertical
                 width: parent.width
                 anchors {
                     top: parent.top
@@ -549,6 +553,7 @@ Item {
                 objectName: "centerSection"
                 overrideAxisLayout: true
                 forceVerticalLayout: true
+                live: barWindow.axis.isVertical
                 width: parent.width
                 height: topBarContent.fitToWidgets ? barWindow.fittedAvailableLength : parent.height
                 anchors.centerIn: topBarContent.fitToWidgets ? null : parent
@@ -565,6 +570,7 @@ Item {
                 edgeIsScreenEdge: !topBarContent.hasAdjacentBottomBarLive
                 overrideAxisLayout: true
                 forceVerticalLayout: true
+                live: barWindow.axis.isVertical
                 width: parent.width
                 height: implicitHeight
                 anchors {

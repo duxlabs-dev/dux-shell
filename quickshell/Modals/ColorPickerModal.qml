@@ -3,7 +3,6 @@ import Quickshell.Io
 import qs.Common
 import qs.Modals.Common
 import qs.Services
-import qs.Modules.ColorPicker
 
 DModal {
     id: root
@@ -106,19 +105,5 @@ DModal {
         target: "color-picker"
     }
 
-    content: Component {
-        ColorPickerContent {
-            anchors.fill: parent
-            pickerTitle: root.pickerTitle
-            initialColor: root.selectedColor
-            showSaveButton: typeof root.onColorSelectedCallback === "function"
-            onColorSelected: color => root.colorSelected(color)
-            onCloseRequested: root.hide()
-            onHideRequested: {
-                root.hideInstant();
-                startScreenPick();
-            }
-            onShowRequested: root.show(root.useOverlayLayer)
-        }
-    }
+    contentSource: Qt.resolvedUrl("ColorPickerModalContent.qml")
 }

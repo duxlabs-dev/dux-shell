@@ -2,7 +2,6 @@ import QtQuick
 import Quickshell
 import qs.Common
 import qs.Modules.DBar
-import qs.Modules.DIsland
 import qs.Modules.Frame
 import qs.Modules.WorkspaceOverlays
 import qs.Services
@@ -99,7 +98,7 @@ Item {
     Loader {
         active: FrameTransitionState.effectiveFrameEnabled && SettingsData.frameLauncherEdgeHover
         asynchronous: false
-        sourceComponent: FrameLauncherHoverZone {}
+        source: "Modules/Frame/FrameLauncherHoverZone.qml"
     }
 
     DeferredAction {

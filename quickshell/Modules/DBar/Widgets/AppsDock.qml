@@ -85,12 +85,36 @@ BasePill {
             Component.onCompleted: root.stripItem = apps
         }
     }
-    DockContextMenu {
-        id: appMenu
-        options: root.appOptions
+    Loader {
+        id: appMenuLoader
+        active: false
+        sourceComponent: DockContextMenu {
+            options: root.appOptions
+        }
     }
-    DockTrashContextMenu {
+    Loader {
+        id: trashMenuLoader
+        active: false
+        sourceComponent: DockTrashContextMenu {
+            options: root.appOptions
+        }
+    }
+    QtObject {
+        id: appMenu
+        readonly property bool visible: appMenuLoader.item?.visible ?? false
+
+        function showForButton(button, data, dockHeight, hidePinOption, entry, dockScreen, parentDockApps) {
+            appMenuLoader.active = true;
+            appMenuLoader.item.showForButton(button, data, dockHeight, hidePinOption, entry, dockScreen, parentDockApps);
+        }
+    }
+    QtObject {
         id: trashMenu
-        options: root.appOptions
+        readonly property bool visible: trashMenuLoader.item?.visible ?? false
+
+        function showForButton(button, dockHeight, dockScreen, parentDockApps) {
+            trashMenuLoader.active = true;
+            trashMenuLoader.item.showForButton(button, dockHeight, dockScreen, parentDockApps);
+        }
     }
 }

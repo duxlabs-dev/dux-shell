@@ -1,9 +1,7 @@
 import QtQuick
 import Quickshell.Io
 import qs.Common
-import qs.DCommon.Widgets
 import qs.Modals.Common
-import qs.Modules.DDash
 import qs.Modules.Notifications
 import qs.Services
 
@@ -120,55 +118,5 @@ DModal {
         target: "notifications"
     }
 
-    content: Component {
-        FocusScope {
-            readonly property alias tab: tab
-
-            anchors.fill: parent
-            LayoutMirroring.enabled: I18n.isRtl
-            LayoutMirroring.childrenInherit: true
-
-            Keys.onPressed: event => {
-                if (event.key === Qt.Key_Left && tab.currentTab > 0) {
-                    tab.currentTab = 0;
-                    event.accepted = true;
-                    return;
-                }
-                if (event.key === Qt.Key_Right && tab.currentTab === 0 && SettingsData.notificationHistoryEnabled) {
-                    tab.currentTab = 1;
-                    event.accepted = true;
-                }
-            }
-
-            Column {
-                anchors.fill: parent
-                anchors.margins: PopoutMetrics.contentPadding
-                spacing: PopoutMetrics.contentGap
-
-                DWindowHeader {
-                    id: header
-                    width: parent.width
-                    controls: null
-                    horizontalPadding: 0
-                    verticalPadding: 0
-                    title: I18n.tr("Notifications")
-                    onCloseRequested: notificationModal.close()
-                }
-
-                NotificationsTab {
-                    id: tab
-                    width: parent.width
-                    height: parent.height - header.height - parent.spacing
-                    live: notificationModal.shouldBeVisible
-                    settingsAction: true
-                    swipeBleed: PopoutMetrics.contentPadding
-                    transientSurfaceTracker: notificationModal.transientSurfaceTracker
-                    onSettingsRequested: {
-                        notificationModal.close();
-                        PopoutService.openSettingsWithTab("notifications", notificationModal, () => notificationModal.open());
-                    }
-                }
-            }
-        }
-    }
+    contentSource: Qt.resolvedUrl("NotificationModalContent.qml")
 }

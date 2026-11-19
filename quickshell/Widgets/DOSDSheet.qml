@@ -219,6 +219,12 @@ Item {
                     width: root.sheetWidth
                     height: root.sheetHeight
                     sourceComponent: root.host.sheet
+                    Component.onCompleted: {
+                        if (root.host.sheetSource.toString() !== "")
+                            setSource(root.host.sheetSource, {
+                                osd: root.host
+                            });
+                    }
                     opacity: FluidGeometry.contentOpacity(root.body, root.sheetRect)
                     visible: opacity > 0
                     focus: true

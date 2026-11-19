@@ -1,6 +1,5 @@
 import QtQuick
 import qs.Common
-import qs.Modules.ControlCenter.Details
 import qs.Services
 
 LevelOSD {
@@ -23,11 +22,7 @@ LevelOSD {
     available: !!audio
     displayText: muted ? I18n.tr("Muted") : ""
 
-    sheet: OsdDetailSheet {
-        AudioInputDetail {
-            anchors.fill: parent
-        }
-    }
+    sheetSource: Qt.resolvedUrl("MicVolumeOsdSheet.qml")
 
     onIconClicked: AudioService.toggleMicMute()
     onLevelRequested: level => {

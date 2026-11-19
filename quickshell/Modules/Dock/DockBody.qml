@@ -6,7 +6,6 @@ import qs.Widgets
 import qs.Modules.SurfaceWidgets
 import qs.Modules.DBar
 import qs.Modules.DBar.Widgets as BarWidgets
-import qs.Modules.ControlCenter.Widgets
 import "../../Common/settings/DockConfig.js" as DockConfig
 
 FocusScope {
@@ -897,24 +896,29 @@ FocusScope {
         }
     }
 
-    DockEditChrome {
-        id: editChrome
-        readonly property real edgeInset: dockGeometry.surfaceThickness + Theme.spacingL
-        title: dock.config.name
-        canAdd: dock.addableWidgets.length > 0
-        x: Math.round(dock.isVertical ? (dock.config.position === SettingsData.Position.Left ? edgeInset : dock.width - width - edgeInset) : (dock.width - width) / 2)
-        y: Math.round(dock.isVertical ? (dock.height - height) / 2 : (dock.config.position === SettingsData.Position.Top ? edgeInset : dock.height - height - edgeInset))
-        opacity: dock.editMode ? 1 : 0
-        visible: opacity > 0
-        onAddRequested: dock.widgetLibraryOpen = true
-        onSettingsRequested: dock.openWidgetSettings()
-        onFinished: dock.editMode = false
+    // Stays loaded until the fade-out ends.
+    Loader {
+        active: dock.editMode || (item?.visible ?? false)
+        sourceComponent: DockEditChrome {
+            readonly property real edgeInset: dockGeometry.surfaceThickness + Theme.spacingL
+            property bool shown: false
+            title: dock.config.name
+            canAdd: dock.addableWidgets.length > 0
+            x: Math.round(dock.isVertical ? (dock.config.position === SettingsData.Position.Left ? edgeInset : dock.width - width - edgeInset) : (dock.width - width) / 2)
+            y: Math.round(dock.isVertical ? (dock.height - height) / 2 : (dock.config.position === SettingsData.Position.Top ? edgeInset : dock.height - height - edgeInset))
+            opacity: shown ? 1 : 0
+            visible: opacity > 0
+            onAddRequested: dock.widgetLibraryOpen = true
+            onSettingsRequested: dock.openWidgetSettings()
+            onFinished: dock.editMode = false
+            Component.onCompleted: shown = Qt.binding(() => dock.editMode)
 
-        Behavior on opacity {
-            NumberAnimation {
-                duration: Theme.expressiveDurations.expressiveFastEffects
-                easing.type: Easing.BezierSpline
-                easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: Theme.expressiveDurations.expressiveFastEffects
+                    easing.type: Easing.BezierSpline
+                    easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
+                }
             }
         }
     }
@@ -941,16 +945,8 @@ FocusScope {
     Loader {
         anchors.centerIn: parent
         active: dock.widgetLibraryOpen
-        sourceComponent: CcWidgetLibrary {
-            width: Math.min(implicitWidth, dock.width - Theme.spacingL * 2)
-            height: Math.min(implicitHeight, dock.height - Theme.spacingL * 2)
-            widgets: dock.addableWidgets
-            Component.onCompleted: reset()
-            onChosen: widgetId => {
-                dock.addWidget(widgetId);
-                dock.closeWidgetLibrary();
-            }
-            onDismissed: dock.closeWidgetLibrary()
-        }
+        Component.onCompleted: setSource("DockWidgetLibrary.qml", {
+            dock: dock
+        })
     }
 }
