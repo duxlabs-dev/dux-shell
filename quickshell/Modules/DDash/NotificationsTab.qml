@@ -258,7 +258,7 @@ FocusScope {
         anchors.right: parent.right
         anchors.bottom: parent.bottom
         spacing: Theme.spacingS
-        height: Theme.iconButtonSize
+        height: NotificationMetrics.footerHeight
 
         NotificationShortcutSlot {
             id: leadingSlot
@@ -277,7 +277,7 @@ FocusScope {
             id: clearButton
             width: Math.max(0, footer.width - leadingSlot.width - trailingSlot.width - footer.spacing * 2)
             text: I18n.tr("Clear All")
-            buttonHeight: Theme.iconButtonSize
+            buttonHeight: NotificationMetrics.footerHeight
             variant: "tonal"
             enabled: root.currentTab === 0 ? NotificationService.notifications.length > 0 : NotificationService.historyList.length > 0
             onClicked: {

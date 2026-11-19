@@ -11,6 +11,8 @@ Singleton {
     readonly property real appIconRadius: Theme.cornerRadiusM
     readonly property var shortcutDashPattern: [2, 2]
     readonly property real shortcutTileWidth: Theme.buttonHeightM + Theme.spacingM
+    readonly property real footerHeight: Theme.minimumTouchTargetSize
+    readonly property real shortcutWidth: footerHeight + Theme.spacingM
     readonly property real iconSpacing: compact ? Theme.spacingS : Theme.spacingM
     readonly property real thumbnailSize: compact ? Theme.buttonHeightXS : Theme.buttonHeightM
     readonly property real imageMaxHeight: Theme.listItemHeight * 4

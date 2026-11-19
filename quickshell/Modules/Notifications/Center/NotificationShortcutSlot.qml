@@ -30,8 +30,8 @@ DIconButton {
 
     signal editRequested
 
-    buttonSize: Theme.iconButtonSize
-    width: buttonSize * widthSpring.value
+    buttonSize: NotificationMetrics.footerHeight
+    width: NotificationMetrics.shortcutWidth * widthSpring.value
     iconSize: Theme.iconSizeMedium
     variant: empty ? "standard" : "tonal"
     checkable: shortcut === "dnd" || shortcut === "history" || shortcut === "hints"
