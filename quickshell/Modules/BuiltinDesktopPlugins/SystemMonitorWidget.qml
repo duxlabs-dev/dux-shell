@@ -63,7 +63,7 @@ Item {
         config: root.config
         active: root.monitoringActive
         accentColor: root.accentColor
-        tileColor: root.background === "none" ? "transparent" : Theme.withAlpha(Theme.cardSurface, root.transparency)
+        tileColor: Theme.withAlpha(Theme.cardSurface, root.transparency)
         halo: root.background === "none" && root.config.textShadow
     }
 }

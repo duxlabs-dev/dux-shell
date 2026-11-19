@@ -22,6 +22,8 @@ Item {
     property color mutedColor: Theme.surfaceVariantText
     property bool halo: false
     property real radius: Theme.cornerRadiusL
+    // Another tile in the same grid row shows extras, so this one keeps their line free to stay level with it.
+    property bool reserveExtras: false
 
     readonly property real pad: Theme.spacingM
     readonly property bool sm: size === "sm"
@@ -40,6 +42,7 @@ Item {
     readonly property var trend: missing || asleep ? ({}) : (row.trend ?? {})
     readonly property bool hasTrend: (trend.values?.length ?? 0) > 1
     readonly property real extrasLineHeight: Math.max(Theme.iconSizeSmall, extrasProbe.implicitHeight)
+    readonly property bool extrasLine: extras.length > 0 || reserveExtras
     readonly property real valueSize: big ? Theme.fontSizeDisplay : compact && solo ? MonitorMetrics.tileValueSizeCompact : Theme.fontSizeXXLarge
 
     LayoutMirroring.enabled: I18n.isRtl
@@ -91,11 +94,12 @@ Item {
         font.weight: Theme.fontWeightMedium
     }
 
-    // Measured on each kind's widest sample, so the choice holds while values change.
+    // Measured on each kind's widest sample, so the choice holds while values change. A missing value only needs its dash.
     function fitExtras(values, available) {
         const font = extrasProbe.font;
         const digit = DCommon.Fonts.widestDigit(font);
-        const widths = short => values.map(v => Theme.iconSizeSmall + Theme.spacingXXS + Math.ceil(DCommon.Fonts.textWidth(font, (MonitorMetrics.reserveFor(v?.kind ?? "", short) || (short ? v?.shortText : "") || v?.text || "—").replace(/\d/g, digit))));
+        const sample = (v, short) => v?.value === null || v?.value === undefined ? "—" : MonitorMetrics.reserveFor(v.kind ?? "", short, true) || (short ? v.shortText : "") || v.text || "—";
+        const widths = short => values.map(v => Theme.iconSizeSmall + Theme.spacingXXS + Math.ceil(DCommon.Fonts.textWidth(font, sample(v, short).replace(/\d/g, digit))));
         const total = list => list.reduce((sum, w) => sum + w, 0) + Theme.spacingS * Math.max(0, list.length - 1);
         if (total(widths(false)) <= available)
             return {
@@ -155,6 +159,7 @@ Item {
     component Header: Item {
         property bool gauge: false
         property bool showBadge: false
+        property bool keepName: false
         property var badgeValues: root.extras
 
         anchors.left: parent.left
@@ -170,6 +175,8 @@ Item {
         }
 
         MonitorText {
+            id: label
+
             halo: root.halo
             anchors.left: glyph.right
             anchors.leftMargin: Theme.spacingS
@@ -191,7 +198,7 @@ Item {
             anchors.right: parent.right
             anchors.verticalCenter: parent.verticalCenter
             values: parent.badgeValues
-            available: parent.width - glyph.width - Theme.spacingS * 2
+            available: parent.width - glyph.width - Theme.spacingS * 2 - (parent.keepName ? Math.ceil(label.implicitWidth) : 0)
             visible: parent.showBadge && fit.count > 0
         }
     }
@@ -350,7 +357,8 @@ Item {
                 id: header
 
                 gauge: root.style === "classic"
-                showBadge: root.wide
+                showBadge: root.wide || (root.solo && !upperExtras.visible)
+                keepName: root.sm
             }
 
             Extras {
@@ -394,7 +402,8 @@ Item {
 
                 anchors.left: parent.left
                 y: value.y + value.height + Theme.spacingXXS
-                visible: stack.valueOnTop && root.extras.length > 0
+                height: root.extrasLineHeight
+                visible: stack.valueOnTop && root.extrasLine
             }
 
             Trend {
@@ -412,7 +421,8 @@ Item {
         }
     }
 
-    // Wide tiles give the first extra its own meter and badge the rest; without room the badge takes all, small tiles drop them.
+    // Wide tiles give the first extra its own meter and badge the rest; without room the badge takes all. Small tiles put
+    // them above the value, or beside the name when that line doesn't fit.
     Component {
         id: meterBody
 
@@ -426,7 +436,8 @@ Item {
             Header {
                 id: header
 
-                showBadge: root.wide
+                showBadge: root.wide || !meter.extrasLine
+                keepName: root.sm
                 badgeValues: meter.extraMeter ? root.extras.slice(1) : root.extras
             }
 
@@ -527,6 +538,10 @@ Item {
         id: ringSmallBody
 
         Item {
+            id: ringSmall
+
+            readonly property bool extrasBelow: root.extrasLine && height - MonitorMetrics.ringSizeSmall - name.height - column.spacing * 2 >= root.extrasLineHeight
+
             Column {
                 id: column
 
@@ -539,7 +554,7 @@ Item {
 
                     anchors.horizontalCenter: parent.horizontalCenter
                     strokeWidth: MonitorMetrics.ringStrokeSmall
-                    room: Math.min(column.width, column.parent.height - name.height - column.spacing - (extrasRow.visible ? extrasRow.height + column.spacing : 0))
+                    room: Math.min(column.width, ringSmall.height - nameRow.height - column.spacing - (extrasRow.visible ? root.extrasLineHeight + column.spacing : 0))
 
                     Column {
                         anchors.centerIn: parent
@@ -561,25 +576,46 @@ Item {
                     }
                 }
 
-                MonitorText {
-                    id: name
-                    halo: root.halo
+                // Extras without a line of their own sit beside the name; a reserved line keeps rings level across the row.
+                Row {
+                    id: nameRow
 
-                    width: parent.width
-                    horizontalAlignment: Text.AlignHCenter
-                    text: root.row.name ?? ""
-                    Accessible.ignored: true
-                    font.pixelSize: Theme.fontSizeSmall
-                    font.weight: Theme.fontWeightMedium
-                    color: root.mutedColor
-                    elide: Text.ElideRight
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    height: Math.max(name.height, root.extrasLine && !ringSmall.extrasBelow ? root.extrasLineHeight : 0)
+                    spacing: Theme.spacingS
+
+                    MonitorText {
+                        id: name
+                        halo: root.halo
+
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: Math.min(Math.ceil(implicitWidth), column.width - (inlineExtras.visible ? inlineExtras.width + nameRow.spacing : 0))
+                        horizontalAlignment: Text.AlignHCenter
+                        text: root.row.name ?? ""
+                        Accessible.ignored: true
+                        font.pixelSize: Theme.fontSizeSmall
+                        font.weight: Theme.fontWeightMedium
+                        color: root.mutedColor
+                        elide: Text.ElideRight
+                    }
+
+                    Extras {
+                        id: inlineExtras
+
+                        anchors.verticalCenter: parent.verticalCenter
+                        available: column.width - Math.ceil(name.implicitWidth) - nameRow.spacing
+                        visible: !ringSmall.extrasBelow && fit.count > 0
+                    }
                 }
 
                 Extras {
                     id: extrasRow
 
                     anchors.horizontalCenter: parent.horizontalCenter
-                    visible: root.extras.length > 0 && column.parent.height - MonitorMetrics.ringSizeSmall - name.height - column.spacing * 2 >= root.extrasLineHeight
+                    // Column skips items of zero width, and a reserved line has no extras of its own.
+                    width: Math.max(1, implicitWidth)
+                    height: root.extrasLineHeight
+                    visible: ringSmall.extrasBelow
                 }
             }
         }
@@ -675,7 +711,9 @@ Item {
 
                     MonitorText {
                         halo: root.halo
+                        width: ring.textWidth
                         anchors.horizontalCenter: parent.horizontalCenter
+                        horizontalAlignment: Text.AlignHCenter
                         text: root.main?.label ?? ""
                         font.pixelSize: Theme.fontSizeSmall
                         color: root.mutedColor
@@ -713,7 +751,8 @@ Item {
 
                 anchors.left: parent.left
                 y: value.y + value.height + Theme.spacingXXS
-                visible: root.sm && root.extras.length > 0
+                height: root.extrasLineHeight
+                visible: root.sm && root.extrasLine
             }
 
             Trend {

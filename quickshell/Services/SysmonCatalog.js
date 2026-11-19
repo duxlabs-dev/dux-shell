@@ -60,7 +60,7 @@ function formatValue(kind, value, opts) {
     const o = opts || {};
     switch (kind) {
     case "pct":
-        return Math.round(value) + (o.short ? "" : "%");
+        return Math.round(value) + "%";
     case "temp":
         return Math.round(value) + "°";
     case "clock":
@@ -116,6 +116,8 @@ function defaultDesktopConfig() {
     return {
         layout: "tiles",
         style: "classic",
+        barStyle: "brackets",
+        listStyle: "rows",
         metrics: [
             {device: "cpu", vals: ["usage", "temp"], graph: true, on: true},
             {device: "memory", vals: ["used"], graph: true, on: true},
@@ -139,12 +141,14 @@ function defaultDesktopConfig() {
 const enums = {
     layout: ["tiles", "list", "bars", "graphs"],
     style: ["classic", "icon", "meter", "ring", "graph"],
+    barStyle: ["brackets", "tiles"],
+    listStyle: ["rows", "tiles"],
     graphInterval: [60, 300, 600, 900, 1800],
     legend: ["off", "inline", "list"],
     barOrientation: ["auto", "horizontal", "vertical"],
     topProcessCount: [3, 5, 10],
     topProcessSortBy: ["cpu", "memory"],
-    background: ["card", "tiles", "none"]
+    background: ["card", "none"]
 };
 const unsafeKeys = ["__proto__", "constructor", "prototype"];
 const bools = ["barNames", "showHeader", "showTopProcesses", "textShadow"];
@@ -154,19 +158,42 @@ function shortCpuName(model) {
     return String(model || "").replace(/\((R|TM)\)/gi, "").replace(/\s+(w\/|with)\s.*$/i, "").replace(/\s+@\s.*$/, "").replace(/\b(\d+-Core|Processor|CPU)\b/gi, "").replace(/\s+/g, " ").trim();
 }
 
-function normalizeConfig(raw, defaults) {
-    const base = defaults || defaultDesktopConfig();
-    const src = raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {};
+// The Tiles background became the Tiles style.
+function upgradeLegacy(src) {
     const out = {};
     Object.keys(src).forEach(k => {
         if (unsafeKeys.indexOf(k) < 0)
             out[k] = src[k];
     });
+    if (out.background === "tiles") {
+        out.background = out.layout === "graphs" ? "card" : "none";
+        out.textShadow = false;
+        if (out.layout === "bars")
+            out.barStyle = "tiles";
+        else if (out.layout === "list")
+            out.listStyle = "tiles";
+    }
+    return out;
+}
+
+function normalizeConfig(raw, defaults) {
+    const base = defaults || defaultDesktopConfig();
+    const src = raw && typeof raw === "object" && !Array.isArray(raw) ? upgradeLegacy(raw) : {};
+    const out = Object.assign({}, src);
     Object.keys(enums).forEach(k => out[k] = enums[k].indexOf(src[k]) >= 0 ? src[k] : base[k]);
     bools.forEach(k => out[k] = typeof src[k] === "boolean" ? src[k] : base[k]);
     out.title = typeof src.title === "string" && src.title.length <= maxSuffix && !hasControl(src.title) ? src.title : base.title;
     out.metrics = listOf(src.metrics) ? normalizeMetrics(src.metrics) : normalizeMetrics(base.metrics);
     return out;
+}
+
+function paintsTiles(config) {
+    return config.layout === "tiles" || (config.layout === "bars" && config.barStyle === "tiles") || (config.layout === "list" && config.listStyle === "tiles");
+}
+
+// Opacity sets the card and the tiles; without either, nothing it changes is painted.
+function usesOpacity(config) {
+    return config.background === "card" || paintsTiles(config);
 }
 
 function modulesFor(metrics, extras) {

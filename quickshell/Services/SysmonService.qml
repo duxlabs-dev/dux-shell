@@ -284,6 +284,18 @@ Singleton {
         return "";
     }
 
+    function shortValueLabel(type, id) {
+        switch (id) {
+        case "temp":
+            return I18n.tr("Temp", "system monitor list card label, short for temperature");
+        case "read":
+            return I18n.tr("Read", "system monitor list card label, short for disk read");
+        case "write":
+            return I18n.tr("Write", "system monitor list card label, short for disk write");
+        }
+        return valueLabel(type, id);
+    }
+
     function valueIcon(type, id) {
         switch (id) {
         case "temp":

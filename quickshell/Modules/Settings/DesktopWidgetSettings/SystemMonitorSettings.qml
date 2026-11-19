@@ -10,26 +10,49 @@ DesktopWidgetInstanceSettings {
     id: root
 
     readonly property var config: SysmonCatalog.normalizeConfig(cfg, SysmonCatalog.defaultDesktopConfig())
-    readonly property bool styled: config.layout === "tiles" || config.layout === "list"
+    readonly property bool styled: config.layout === "tiles"
+    readonly property string styleKey: styled ? "style" : config.layout === "bars" ? "barStyle" : config.layout === "list" ? "listStyle" : ""
+    readonly property var styleChoices: ({
+            "style": {
+                "labels": [I18n.tr("Classic", "system monitor tile style option"), I18n.tr("Icon", "system monitor tile style option"), I18n.tr("Meter", "system monitor tile style option"), I18n.tr("Ring", "system monitor tile style option"), I18n.tr("Graph", "system monitor tile style option")],
+                "values": ["classic", "icon", "meter", "ring", "graph"]
+            },
+            "barStyle": {
+                "labels": [I18n.tr("Brackets", "system monitor bars style option"), I18n.tr("Tiles", "system monitor layout and style option")],
+                "values": ["brackets", "tiles"]
+            },
+            "listStyle": {
+                "labels": [I18n.tr("Rows", "system monitor list style option"), I18n.tr("Tiles", "system monitor layout and style option")],
+                "values": ["rows", "tiles"]
+            }
+        })
 
     optionsTitle: I18n.tr("Layout", "noun, settings section title for arrangement options")
     backgroundOption: true
+    backgroundConfig: config
+    opacityUsed: SysmonCatalog.usesOpacity(config)
+    configFixups: cfg.background === "tiles" ? {
+        "background": config.background,
+        "barStyle": config.barStyle,
+        "listStyle": config.listStyle,
+        "textShadow": config.textShadow
+    } : ({})
 
     SettingsButtonGroupRow {
         text: I18n.tr("Layout", "noun, settings section title for arrangement options")
-        model: [I18n.tr("Tiles", "system monitor layout and background option"), I18n.tr("List", "noun, list view mode option"), I18n.tr("Bars", "system monitor layout option: bar meters, not the shell bars", true), I18n.tr("Graphs", "system monitor layout option")]
+        model: [I18n.tr("Tiles", "system monitor layout and style option"), I18n.tr("List", "noun, list view mode option"), I18n.tr("Bars", "system monitor layout option: bar meters, not the shell bars", true), I18n.tr("Graphs", "system monitor layout option")]
         values: ["tiles", "list", "bars", "graphs"]
         value: root.config.layout
         onValueSelected: value => root.updateConfig("layout", value)
     }
 
     SettingsButtonGroupRow {
-        visible: root.styled
+        visible: root.styleKey !== ""
         text: I18n.tr("Style", "noun, visual style option label for a widget or the dock")
-        model: [I18n.tr("Classic", "system monitor tile style option"), I18n.tr("Icon", "system monitor tile style option"), I18n.tr("Meter", "system monitor tile style option"), I18n.tr("Ring", "system monitor tile style option"), I18n.tr("Graph", "system monitor tile style option")]
-        values: ["classic", "icon", "meter", "ring", "graph"]
-        value: root.config.style
-        onValueSelected: value => root.updateConfig("style", value)
+        model: root.styleChoices[root.styleKey]?.labels ?? []
+        values: root.styleChoices[root.styleKey]?.values ?? []
+        value: root.config[root.styleKey] ?? ""
+        onValueSelected: value => root.updateConfig(root.styleKey, value)
     }
 
     SettingsButtonGroupRow {
@@ -73,7 +96,7 @@ DesktopWidgetInstanceSettings {
 
             SettingsMetricList {
                 metrics: root.config.metrics
-                allowGraph: root.styled && !(root.config.layout === "tiles" && root.config.style === "graph")
+                allowGraph: (root.config.layout === "list" && root.config.listStyle === "rows") || (root.styled && root.config.style !== "graph")
                 onMetricsEdited: metrics => root.updateConfig("metrics", metrics)
             }
 

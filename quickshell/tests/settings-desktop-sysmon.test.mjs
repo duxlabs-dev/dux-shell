@@ -49,3 +49,26 @@ test("lock screen monitors migrate and other widgets are left alone", () => {
     const clock = { id: "c", widgetType: "desktopClock", config: { showCpu: true } };
     assert.deepEqual(JSON.parse(JSON.stringify(migrate(clock))), { showCpu: true });
 });
+
+test("the old Tiles background reads as the Tiles style", () => {
+    const catalog = loadScript(new URL("../Services/SysmonCatalog.js", import.meta.url));
+    const pick = (raw) => {
+        const c = catalog.normalizeConfig(raw);
+        return [c.background, c.barStyle, c.listStyle, c.textShadow];
+    };
+    assert.deepEqual(pick({ layout: "bars", background: "tiles" }), ["none", "tiles", "rows", false]);
+    assert.deepEqual(pick({ layout: "list", background: "tiles", textShadow: true }), ["none", "brackets", "tiles", false]);
+    assert.deepEqual(pick({ background: "tiles" }), ["none", "brackets", "rows", false]);
+    assert.deepEqual(pick({ layout: "graphs", background: "tiles" }), ["card", "brackets", "rows", false]);
+});
+
+test("opacity counts only when a card or tiles are painted", () => {
+    const catalog = loadScript(new URL("../Services/SysmonCatalog.js", import.meta.url));
+    const uses = (raw) => catalog.usesOpacity(catalog.normalizeConfig(raw));
+    assert.equal(uses({ layout: "bars" }), true);
+    assert.equal(uses({ layout: "tiles", background: "none" }), true);
+    assert.equal(uses({ layout: "bars", barStyle: "tiles", background: "none" }), true);
+    assert.equal(uses({ layout: "list", listStyle: "tiles", background: "none" }), true);
+    for (const layout of ["bars", "list", "graphs"])
+        assert.equal(uses({ layout, background: "none" }), false);
+});

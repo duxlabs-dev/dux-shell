@@ -12,7 +12,6 @@ Item {
     id: root
 
     property var row: ({})
-    property string style: "classic"
     property color accentColor: Theme.primary
     property color tileColor: Theme.surfaceContainer
     property color contentColor: Theme.surfaceText
@@ -24,8 +23,6 @@ Item {
     readonly property var main: row.values?.[0] ?? null
     readonly property var extras: row.asleep ? [] : (row.values ?? []).slice(1)
     readonly property bool showTrend: !row.asleep && !!row.graph
-    readonly property bool showMeter: !row.asleep && !row.graph && style === "meter" && main !== null
-    readonly property bool showRing: !row.asleep && !row.graph && style === "ring" && main !== null
     readonly property color levelColor: MonitorMetrics.levelColor(main?.level, accentColor)
     readonly property string valueText: row.asleep ? I18n.tr("Idle", "device state") : (main?.text ?? "—")
 
@@ -136,57 +133,17 @@ Item {
             }
         }
 
-        Item {
-            id: visual
-
+        DSparkline {
             Layout.alignment: Qt.AlignVCenter
             Layout.preferredWidth: MonitorMetrics.listVisualWidth
             Layout.preferredHeight: MonitorMetrics.listVisualHeight
-            visible: root.showTrend || root.showMeter || root.showRing
-
-            DSparkline {
-                anchors.fill: parent
-                visible: root.showTrend
-                values: root.row.trend?.values ?? []
-                secondaryValues: root.row.trend?.secondaryValues ?? []
-                maximum: root.row.trend?.maximum ?? 0
-                lineColor: root.levelColor
-                secondaryLineColor: root.mutedColor
-                fillOpacity: 0
-            }
-
-            Rectangle {
-                anchors.verticalCenter: parent.verticalCenter
-                width: parent.width
-                height: MonitorMetrics.meterThickness
-                visible: root.showMeter
-                radius: Theme.fullRadius(width, height)
-                color: Theme.withAlpha(root.contentColor, Theme.stateLayerFocus)
-
-                Rectangle {
-                    anchors.left: parent.left
-                    width: parent.width * Math.min(Math.max(root.main?.fraction ?? 0, 0), 1)
-                    height: parent.height
-                    radius: parent.radius
-                    color: root.levelColor
-
-                    MeterBehavior on width {}
-                }
-            }
-
-            DRingGauge {
-                anchors.right: parent.right
-                anchors.verticalCenter: parent.verticalCenter
-                width: MonitorMetrics.listRingSize
-                height: width
-                visible: root.showRing
-                value: Math.min(Math.max(root.main?.fraction ?? 0, 0), 1)
-                strokeWidth: Theme.spacingXS
-                ringColor: root.levelColor
-                trackColor: Theme.withAlpha(root.contentColor, Theme.stateLayerFocus)
-                animated: MonitorMetrics.animationsEnabled
-                animationDuration: MonitorMetrics.meterDuration
-            }
+            visible: root.showTrend
+            values: root.row.trend?.values ?? []
+            secondaryValues: root.row.trend?.secondaryValues ?? []
+            maximum: root.row.trend?.maximum ?? 0
+            lineColor: root.levelColor
+            secondaryLineColor: root.mutedColor
+            fillOpacity: 0
         }
 
         NumericText {
