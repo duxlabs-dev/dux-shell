@@ -5,6 +5,7 @@ import qs.Common
 import qs.DCommon.Widgets
 import qs.Modals.DLauncherV2
 import "../../../Common/htmlElide.js" as HtmlElide
+import "../ControllerUtils.js" as ControllerUtils
 
 DListItem {
     id: root
@@ -62,6 +63,8 @@ DListItem {
         return "file://" + raw;
     }
     readonly property bool hasClipboardPreview: item?.type === "clipboard" && !!item?.data?.isImage && String(item?.data?.mimeType ?? "").startsWith("image/")
+    readonly property string filePreviewPath: (item?.type === "file" && !item?.data?.is_dir) ? (item?.data?.path || item?.id || "") : ""
+    readonly property bool hasFilePreview: filePreviewPath.length > 0 && ControllerUtils.isPreviewableMedia(filePreviewPath)
     readonly property bool isFolder: item?.type === "folder"
     readonly property bool showLeadingIcon: isFolder || ((SettingsData.dankLauncherV2ShowAppIcons || item?.type !== "app") && !(item?.type === "dmenu" && item?.data?.nonSelectable && !item?.icon))
     readonly property int folderMemberCount: item?.data?.members?.length ?? 0
@@ -196,7 +199,7 @@ DListItem {
         Image {
             width: LauncherMetrics.previewWidth
             height: LauncherMetrics.previewHeight
-            visible: root.previewSource.length > 0 && !root.hasClipboardPreview
+            visible: root.previewSource.length > 0 && !root.hasClipboardPreview && !root.hasFilePreview
             source: visible ? root.previewSource : ""
             asynchronous: true
             sourceSize.width: width * 2
@@ -213,6 +216,17 @@ DListItem {
             anchors.verticalCenter: parent.verticalCenter
             sourceComponent: ClipboardLauncherPreview {
                 entry: root.item?.data ?? null
+            }
+        }
+
+        Loader {
+            active: root.hasFilePreview
+            visible: active && (item?.previewReady ?? false)
+            width: visible ? LauncherMetrics.previewWidth : 0
+            height: root.iconSize
+            anchors.verticalCenter: parent.verticalCenter
+            sourceComponent: FileLauncherPreview {
+                filePath: root.filePreviewPath
             }
         }
 
