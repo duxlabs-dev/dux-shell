@@ -503,6 +503,7 @@ Singleton {
     property string dankLauncherV2Size: Spec.SPEC.dankLauncherV2Size.def
     property bool dankLauncherV2ShowSourceBadges: Spec.SPEC.dankLauncherV2ShowSourceBadges.def
     property bool dankLauncherV2ShowAppIcons: Spec.SPEC.dankLauncherV2ShowAppIcons.def
+    property bool dankLauncherV2ShowAppDescriptions: Spec.SPEC.dankLauncherV2ShowAppDescriptions.def
     property bool dankLauncherV2BorderEnabled: Spec.SPEC.dankLauncherV2BorderEnabled.def
     property int dankLauncherV2BorderThickness: Spec.SPEC.dankLauncherV2BorderThickness.def
     property string dankLauncherV2BorderColor: Spec.SPEC.dankLauncherV2BorderColor.def

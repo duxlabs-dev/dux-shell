@@ -236,6 +236,14 @@ Item {
                     onToggled: checked => SettingsData.set("dankLauncherV2ShowAppIcons", checked)
                 }
 
+                SettingsToggleRow {
+                    settingKey: "dankLauncherV2ShowAppDescriptions"
+                    tags: ["launcher", "appearance", "description", "subtitle", "app", "hide"]
+                    text: I18n.tr("Show app descriptions", "Toggle descriptions in launcher list results")
+                    checked: SettingsData.dankLauncherV2ShowAppDescriptions
+                    onToggled: checked => SettingsData.set("dankLauncherV2ShowAppDescriptions", checked)
+                }
+
                 SettingsControlledBy {
                     visible: SettingsData.frameEnabled
                     parentModal: root.parentModal

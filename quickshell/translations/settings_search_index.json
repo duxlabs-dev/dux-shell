@@ -8178,6 +8178,29 @@
     "icon": "search"
   },
   {
+    "section": "dankLauncherV2ShowAppDescriptions",
+    "label": "Show app descriptions",
+    "tabIndex": 9,
+    "category": "Launcher",
+    "keywords": [
+      "app",
+      "app drawer",
+      "app menu",
+      "appearance",
+      "applications",
+      "description",
+      "descriptions",
+      "drawer",
+      "hide",
+      "launcher",
+      "menu",
+      "show",
+      "start",
+      "start menu",
+      "subtitle"
+    ]
+  },
+  {
     "section": "dankLauncherV2ShowAppIcons",
     "label": "Show app icons",
     "tabIndex": 9,
