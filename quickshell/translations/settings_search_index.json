@@ -2101,6 +2101,35 @@
     "page": "personalization"
   },
   {
+    "section": "pauseVideoWallpaperOnBattery",
+    "label": "Pause video wallpaper on battery",
+    "tabIndex": -1,
+    "category": "Appearance",
+    "keywords": [
+      "animated",
+      "appearance",
+      "background",
+      "battery",
+      "bg",
+      "charge",
+      "charging",
+      "colors",
+      "colour",
+      "colours",
+      "desktop",
+      "hue",
+      "image",
+      "palette",
+      "pause",
+      "picture",
+      "power",
+      "tint",
+      "video",
+      "wallpaper"
+    ],
+    "page": "personalization"
+  },
+  {
     "section": "shellPerformance",
     "label": "Performance",
     "tabIndex": -1,

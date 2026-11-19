@@ -187,8 +187,9 @@ Variants {
             readonly property bool showsBackdrop: !source || isColorSource || currentWallpaper.status === Image.Error
 
             readonly property bool fullscreenOnScreen: isVideoSource && CompositorService.fullscreenToplevelOnScreen(modelData)
-            // Nothing decodes while the video cannot be seen.
-            readonly property bool videoShouldPlay: isVideoSource && wallpaperWindow.visible && !IdleService.isShellLocked && !IdleService.monitorsOff && !overviewBlurActive && !fullscreenOnScreen
+            readonly property bool pausedOnBattery: SettingsData.pauseVideoWallpaperOnBattery && BatteryService.batteryAvailable && !BatteryService.isPluggedIn
+            // Nothing decodes while the video cannot be seen or while paused on battery.
+            readonly property bool videoShouldPlay: isVideoSource && wallpaperWindow.visible && !IdleService.isShellLocked && !IdleService.monitorsOff && !overviewBlurActive && !fullscreenOnScreen && !pausedOnBattery
             readonly property bool videoRendering: videoLoader.item?.rendering ?? false
 
             function invalidate() {

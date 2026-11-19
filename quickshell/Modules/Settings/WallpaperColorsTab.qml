@@ -659,6 +659,16 @@ Column {
                 onToggled: checked => SettingsData.set("blurWallpaperOnOverview", checked)
             }
 
+            SettingsToggleRow {
+                tab: "wallpaper"
+                tags: ["wallpaper", "video", "animated", "battery", "power", "pause"]
+                settingKey: "pauseVideoWallpaperOnBattery"
+                visible: BatteryService.batteryAvailable
+                text: I18n.tr("Pause video wallpaper on battery", "Settings toggle: stop video wallpaper playback while running on battery power")
+                checked: SettingsData.pauseVideoWallpaperOnBattery
+                onToggled: checked => SettingsData.set("pauseVideoWallpaperOnBattery", checked)
+            }
+
             SettingsNavRow {
                 tab: "wallpaper"
                 tags: ["lock", "screen", "background"]

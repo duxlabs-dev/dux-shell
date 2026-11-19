@@ -379,6 +379,7 @@ Singleton {
     property string wallpaperFillMode: Spec.SPEC.wallpaperFillMode.def
     property bool blurredWallpaperLayer: Spec.SPEC.blurredWallpaperLayer.def
     property bool blurWallpaperOnOverview: Spec.SPEC.blurWallpaperOnOverview.def
+    property bool pauseVideoWallpaperOnBattery: Spec.SPEC.pauseVideoWallpaperOnBattery.def
     property string wallpaperBackgroundColorMode: Spec.SPEC.wallpaperBackgroundColorMode.def
     property string wallpaperBackgroundCustomColor: Spec.SPEC.wallpaperBackgroundCustomColor.def
     readonly property color effectiveWallpaperBackgroundColor: wallpaperBackgroundColorFor(wallpaperBackgroundColorMode)
