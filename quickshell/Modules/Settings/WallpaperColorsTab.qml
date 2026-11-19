@@ -664,7 +664,7 @@ Column {
                 tags: ["wallpaper", "video", "animated", "battery", "power", "pause"]
                 settingKey: "pauseVideoWallpaperOnBattery"
                 visible: BatteryService.batteryAvailable
-                text: I18n.tr("Pause video wallpaper on battery")
+                text: I18n.tr("Pause video wallpaper on battery", "Settings toggle: stop video wallpaper playback while running on battery power")
                 checked: SettingsData.pauseVideoWallpaperOnBattery
                 onToggled: checked => SettingsData.set("pauseVideoWallpaperOnBattery", checked)
             }
