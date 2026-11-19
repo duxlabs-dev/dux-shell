@@ -158,8 +158,8 @@ Item {
         targetWindow: root.surface
         applyToWindow: false
         surfaceColor: Theme.withAlpha(root.surfaceColor, osdContainer.popupSurfaceAlpha)
-        blurX: root.frameX + root.shadowBuffer
-        blurY: root.frameY + root.shadowBuffer
+        blurX: root.frameX + root.shadowBuffer - (root.surface?.bandX ?? 0)
+        blurY: root.frameY + root.shadowBuffer - (root.surface?.bandY ?? 0)
         blurWidth: root.presented ? root.alignedWidth : 0
         blurHeight: root.presented ? root.alignedHeight : 0
         blurRadius: root.surfaceRadius
@@ -274,6 +274,7 @@ Item {
 
     readonly property real frameX: Math.max(0, Theme.snap(alignedX - shadowBuffer, dpr))
     readonly property real frameY: Math.max(0, Theme.snap(alignedY - shadowBuffer, dpr))
+    readonly property rect renderBounds: Qt.rect(frameX, frameY, alignedWidth + shadowBuffer * 2, alignedHeight + shadowBuffer * 2)
 
     readonly property var scaleSpringParams: Theme.springPreset("fastSpatial")
 

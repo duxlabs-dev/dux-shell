@@ -11,6 +11,10 @@ DIdleSurface {
     id: root
 
     WlrLayershell.namespace: "dms:toast"
+    // A full-screen surface is blacked out whole by compositor capture rules matching this namespace.
+    compactWhenIdle: true
+    // Horizontal slack keeps the copy tooltips, centered on edge buttons, inside the surface.
+    requestedBounds: Qt.rect(surfaceX - Theme.spacingL, surfaceY, toastWidth + (shadowBuffer + Theme.spacingL) * 2, toastHeight + shadowBuffer * 2)
 
     property var modelData
     property bool shouldBeVisible: false
@@ -78,8 +82,8 @@ DIdleSurface {
             }
         }
 
-        x: root.surfaceX + root.shadowBuffer
-        y: root.surfaceY + root.shadowBuffer
+        x: root.surfaceX + root.shadowBuffer - root.bandX
+        y: root.surfaceY + root.shadowBuffer - root.bandY
         width: root.toastWidth
         height: root.toastHeight
         readonly property color surfaceColor: {
