@@ -20,6 +20,7 @@ Item {
     property bool halo: false
     property bool vertical: false
     property color tileColor: "transparent"
+    property real tileRadius: Theme.cornerRadiusL
     property bool tiled: false
     readonly property real tilePad: !tiled ? 0 : vertical ? Theme.spacingS : Theme.spacingM
     readonly property string idleText: I18n.tr("Idle", "device state")
@@ -31,16 +32,24 @@ Item {
     readonly property real markerWidth: Math.max(MonitorMetrics.markerSize, Math.ceil(DCommon.Fonts.textWidth(markerProbe.font, readLetter)), Math.ceil(DCommon.Fonts.textWidth(markerProbe.font, writeLetter)))
     readonly property real columnWidth: Math.max(shortProbe.reservedWidth, markerWidth, MonitorMetrics.barWidth)
     readonly property real columnGap: Theme.spacingXS
-    readonly property real lineGap: Theme.spacingS
+    property real availableHeight: Infinity
+    // A single value's group is two lines tall, so its bracket keeps its shape, unless the stack then needs columns.
+    readonly property bool tight: !vertical && stackHeight(2, Theme.spacingS, tilePad, Theme.spacingS) > availableHeight
+    readonly property int minLines: tight ? 1 : 2
+    readonly property real lineGap: tight ? Theme.spacingXS : Theme.spacingS
     readonly property bool shortValues: vertical || tiled
     readonly property real lineHeight: Math.max(fullProbe.implicitHeight, MonitorMetrics.markerSize)
     readonly property real columnHeight: shortProbe.implicitHeight + MonitorMetrics.barThickness + MonitorMetrics.markerSize + Theme.spacingXS * 2
 
     property int columns: 1
-    readonly property real minGap: Theme.spacingS
+    readonly property real minGap: tight && tiled ? Theme.spacingXS : Theme.spacingS
+    readonly property real tilePadY: tight ? Math.min(tilePad, Theme.spacingXS) : tilePad
+    // Bumped as groups arrive from an asynchronous loader.
+    property int builtGroups: 0
     readonly property real groupWidth: largest("implicitWidth")
     readonly property real groupHeight: largest("implicitHeight")
     readonly property real stackLength: {
+        void builtGroups;
         let s = Math.max(0, count - 1) * minGap;
         for (let i = 0; i < groups.count; i++)
             s += groups.itemAt(i)?.[vertical ? "implicitWidth" : "implicitHeight"] ?? 0;
@@ -50,11 +59,20 @@ Item {
     readonly property int slots: wrapped ? Math.ceil(count / columns) : count
     readonly property real mainLength: wrapped ? slots * groupHeight + (slots - 1) * minGap : stackLength
     readonly property real spare: Math.max(0, (vertical ? width : height) - mainLength)
-    // Framed groups grow to fill the box; bare ones spread out.
+    // Framed groups grow to fill the box; bare ones stay packed and centered.
     readonly property real share: tiled ? spare / Math.max(1, slots) : 0
-    readonly property real mainGap: tiled || slots < 2 ? minGap : minGap + spare / (slots - 1)
+
+    function stackHeight(minLines, gap, pad, groupGap) {
+        let s = Math.max(0, count - 1) * groupGap;
+        for (const r of rows) {
+            const n = Math.max(r.asleep ? 1 : (r.values ?? []).length, minLines);
+            s += Math.max(n * lineHeight + (n - 1) * gap, Theme.iconSizeSmall) + pad * 2;
+        }
+        return s;
+    }
 
     function largest(prop) {
+        void builtGroups;
         let v = 0;
         for (let i = 0; i < groups.count; i++)
             v = Math.max(v, groups.itemAt(i)?.[prop] ?? 0);
@@ -156,7 +174,7 @@ Item {
         text: owner.valueText
         font.pixelSize: Theme.fontSizeSmall
         font.weight: owner.index === 0 ? Theme.fontWeightMedium : Font.Normal
-        color: owner.asleep || owner.index > 0 ? root.mutedColor : root.contentColor
+        color: owner.asleep ? root.mutedColor : root.contentColor
     }
 
     component BarLine: Item {
@@ -274,14 +292,15 @@ Item {
 
         readonly property var entries: row.asleep ? (row.values ?? []).slice(0, 1) : (row.values ?? [])
         readonly property real pad: root.tilePad
+        readonly property real padY: root.vertical ? pad : root.tilePadY
 
         implicitWidth: (root.vertical ? verticalGroup.implicitWidth : horizontalGroup.implicitWidth) + pad * 2
-        implicitHeight: (root.vertical ? verticalGroup.implicitHeight : horizontalGroup.implicitHeight) + pad * 2
+        implicitHeight: (root.vertical ? verticalGroup.implicitHeight : horizontalGroup.implicitHeight) + padY * 2
 
         Rectangle {
             anchors.fill: parent
             visible: root.tiled
-            radius: Theme.cornerRadiusL
+            radius: root.tileRadius
             color: root.tileColor
         }
 
@@ -338,7 +357,10 @@ Item {
         RowLayout {
             id: horizontalGroup
             anchors.fill: parent
-            anchors.margins: group.pad
+            anchors.leftMargin: group.pad
+            anchors.rightMargin: group.pad
+            anchors.topMargin: group.padY
+            anchors.bottomMargin: group.padY
             visible: !root.vertical
             spacing: Theme.spacingS
 
@@ -355,11 +377,10 @@ Item {
                 font.weight: Theme.fontWeightMedium
             }
 
-            // At least two lines tall, so a single value's bracket keeps its shape.
             RowLayout {
                 Layout.fillWidth: true
                 Layout.alignment: Qt.AlignVCenter
-                Layout.preferredHeight: Math.max(lines.implicitHeight, root.lineHeight * 2 + root.lineGap)
+                Layout.preferredHeight: Math.max(lines.implicitHeight, root.lineHeight * root.minLines + root.lineGap * (root.minLines - 1))
                 spacing: Theme.spacingS
 
                 Bracket {
@@ -391,13 +412,14 @@ Item {
     Grid {
         anchors.centerIn: parent
         columns: root.vertical ? Math.max(1, root.count) : Math.max(1, root.columns)
-        rowSpacing: root.vertical ? 0 : root.mainGap
-        columnSpacing: root.vertical ? root.mainGap : root.minGap
+        rowSpacing: root.vertical ? 0 : root.minGap
+        columnSpacing: root.minGap
 
         Repeater {
             id: groups
 
             model: root.count
+            onItemAdded: root.builtGroups++
 
             Group {
                 required property int index
