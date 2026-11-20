@@ -2839,10 +2839,15 @@ Item {
         _pluginPhaseForceFirst = false;
     }
 
+    // A row is crossed with Left/Right; Up/Down always leave it, even in linear navigation
+    function _linearNavigation() {
+        return forceLinearNavigation && getCurrentSectionViewMode() !== "row";
+    }
+
     function selectNext() {
         keyboardNavigationActive = true;
         _cancelPendingSelectionReset();
-        var newIndex = forceLinearNavigation ? Nav.findNextNonHeaderIndex(flatModel, selectedFlatIndex + 1) : Nav.calculateNextIndex(flatModel, selectedFlatIndex, null, null, gridColumns, getSectionViewMode, iconColumns);
+        var newIndex = _linearNavigation() ? Nav.findNextNonHeaderIndex(flatModel, selectedFlatIndex + 1) : Nav.calculateNextIndex(flatModel, selectedFlatIndex, null, null, gridColumns, getSectionViewMode, iconColumns);
         if (newIndex === -1)
             newIndex = selectedFlatIndex;
         if (newIndex !== selectedFlatIndex) {
@@ -2854,7 +2859,7 @@ Item {
     function selectPrevious() {
         keyboardNavigationActive = true;
         _cancelPendingSelectionReset();
-        var newIndex = forceLinearNavigation ? Nav.findPrevNonHeaderIndex(flatModel, selectedFlatIndex - 1) : Nav.calculatePrevIndex(flatModel, selectedFlatIndex, null, null, gridColumns, getSectionViewMode, iconColumns);
+        var newIndex = _linearNavigation() ? Nav.findPrevNonHeaderIndex(flatModel, selectedFlatIndex - 1) : Nav.calculatePrevIndex(flatModel, selectedFlatIndex, null, null, gridColumns, getSectionViewMode, iconColumns);
         if (newIndex === -1)
             newIndex = selectedFlatIndex;
         if (newIndex !== selectedFlatIndex) {
