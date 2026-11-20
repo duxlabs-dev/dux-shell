@@ -13,10 +13,11 @@ const screens = [
 const islandDefaults = { islandReserveThickness: 40, islandCompactThickness: 38, islandOuterGap: 4 };
 const bar = (id, position = 0, values = {}) => ({ id, position, enabled: true, ...values });
 
-function resolve(configs, options = {}, screen = screens[0]) {
+function resolve(configs, options = {}, screen = screens[0], pill) {
     return resolver.resolveScreen(configs.map(config => ({
         config, wingSize: config.gothCornersEnabled ? 12 : 0, barThickness: 40, popupThickness: 40, islandThickness: resolver.islandThickness(config, islandDefaults),
-        islandReserve: resolver.islandReserve(config, islandDefaults)
+        islandReserve: resolver.islandReserve(config, islandDefaults),
+        ...(pill === undefined ? {} : { islandPill: pill })
     })), screen, {
         screens, displayNameMode: "name", framePreferences: ["all"], effectiveFrameEnabled: false,
         effectiveConnected: false, frameThickness: 12, frameBarSize: 48, ...options
@@ -268,4 +269,15 @@ test("each bar reports the spacing it floats off its edge by", () => {
 test("a popout on another bar is a different descriptor", () => {
     const body = { kind: "popout", screenName: "DP-1", visible: true, bodyRect: { x: 10, y: 40, width: 300, height: 200 } };
     assert.equal(descriptor.same(descriptor.normalize({ ...body, barId: "a" }), descriptor.normalize({ ...body, barId: "b" })), false);
+});
+
+test("a pill-less island keeps its strip and hosts nothing", () => {
+    const island = bar("i", 0, { island: true });
+    const on = resolve([island]);
+    const off = resolve([island], {}, undefined, false);
+    assert.equal(on.instances[0].hostsIsland, true);
+    assert.equal(off.instances[0].hostsIsland, false);
+    assert.equal(off.instances[0].kind, "island");
+    assert.equal(off.instances[0].rowThickness, on.instances[0].rowThickness);
+    assert.equal(off.edges.top.reservation, on.edges.top.reservation);
 });

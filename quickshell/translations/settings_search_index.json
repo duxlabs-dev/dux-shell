@@ -7277,7 +7277,6 @@
       "left",
       "panel",
       "right",
-      "satellite",
       "satellites",
       "statusbar",
       "taskbar",
@@ -7289,8 +7288,29 @@
     "conditionKey": "islandEnabled"
   },
   {
+    "section": "islandPillEnabled",
+    "label": "Show Pill",
+    "tabIndex": 6,
+    "category": "Appearance",
+    "keywords": [
+      "appearance",
+      "bar",
+      "center",
+      "island",
+      "panel",
+      "pill",
+      "show",
+      "statusbar",
+      "taskbar",
+      "topbar",
+      "widgets"
+    ],
+    "parentLabel": "Bar",
+    "conditionKey": "islandEnabled"
+  },
+  {
     "section": "islandSatellitesEnabled",
-    "label": "Show",
+    "label": "Show Satellite",
     "tabIndex": 6,
     "category": "Appearance",
     "keywords": [
@@ -7301,6 +7321,7 @@
       "panel",
       "right",
       "satellite",
+      "satellites",
       "show",
       "statusbar",
       "taskbar",

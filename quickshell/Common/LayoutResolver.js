@@ -76,6 +76,10 @@ function hostsIslandWidget(config) {
     return false;
 }
 
+function pillVisible(input) {
+    return input.islandPill !== false;
+}
+
 function overviewStandInHost(input, selected) {
     const config = input.config;
     if (isIsland(config) || config.visible !== false || !config.openOnOverview)
@@ -156,7 +160,7 @@ function resolveScreen(inputs, screen, options) {
                 configOrder: inputs.indexOf(input),
                 edge,
                 kind,
-                hostsIsland: kind === "island" || input === hostOwner,
+                hostsIsland: kind === "island" && pillVisible(input) || input === hostOwner,
                 row: selected.indexOf(input),
                 rowThickness: paintedThickness,
                 rowOffset,

@@ -109,7 +109,7 @@ Item {
                 SettingsButtonGroupRow {
                     settingKey: "islandPlacement"
                     tags: ["island", "placement", "docked", "overlay", "floating", "float", "free", "anywhere", "edge", "drag", "exclusive", "reserve"]
-                    visible: bar.selectedBarIsIsland
+                    visible: bar.selectedBarIsIsland && bar.islandSetting("islandPillEnabled") !== false
                     resetStore: bar
                     resetKeys: ["islandFloating", "islandPlacement"]
                     text: I18n.tr("Placement", "island settings: docked, overlay or floating placement row")

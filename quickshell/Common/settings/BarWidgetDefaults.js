@@ -69,6 +69,7 @@ var ISLAND_DEFAULTS = {
     islandHomeStatusContent: "battery",
     islandBatteryStyle: "duo",
     islandSatellitesEnabled: true,
+    islandPillEnabled: true,
     islandSatellitePosition: "edges",
     islandSatelliteGap: 12,
     islandSatelliteBackground: false,
