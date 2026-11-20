@@ -670,6 +670,9 @@ Rectangle {
                     popupWidth: Theme.fontSizeMedium * 10
                     options: ProcessActions.priorities.map(p => p.label)
                     optionValues: ProcessActions.priorities.map(p => String(p.nice))
+                    optionIconMap: Object.assign({}, ...ProcessActions.priorities.filter(p => p.warning).map(p => ({
+                                [String(p.nice)]: "warning"
+                            })))
                     onValueChanged: value => ProcessActions.setPriority(root.live, Number(value))
                 }
             }

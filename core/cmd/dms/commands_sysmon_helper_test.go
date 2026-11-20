@@ -123,11 +123,8 @@ func TestMergedChildren(t *testing.T) {
 	// 12 runs another exe, so its same-exe child 13 is its own row; 14 has no readable exe.
 	parents := map[int]int{11: 10, 12: 10, 13: 12, 14: 10, 15: 11, 30: 1, 16: 14}
 	exes := map[int]string{10: "/bin/bash", 11: "/bin/bash", 12: "/bin/python", 13: "/bin/bash", 15: "/bin/bash", 30: "/bin/bash"}
-	comms := map[int]string{15: "Sleeper"}
 	exe := func(p int) string { return exes[p] }
-	comm := func(p int) string { return comms[p] }
 
-	assert.ElementsMatch(t, []int{11, 15}, mergedChildren(10, parents, exe, comm, nil))
-	assert.Equal(t, []int{11}, mergedChildren(10, parents, exe, comm, []string{"sleeper"}))
-	assert.Nil(t, mergedChildren(14, parents, exe, comm, nil), "empty root exe")
+	assert.ElementsMatch(t, []int{11, 15}, mergedChildren(10, parents, exe))
+	assert.Nil(t, mergedChildren(14, parents, exe), "empty root exe")
 }
