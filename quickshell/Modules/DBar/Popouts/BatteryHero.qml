@@ -40,11 +40,10 @@ Item {
     readonly property string status: root.towardLimit ? I18n.tr("Charging to %1", "battery popout title while charging toward the charge limit, %1 is the limit like 80%").arg(Math.round(root.limit) + "%") : (root.source.status ?? "")
     readonly property string time: root.source.time ?? ""
     readonly property string timeLine: [root.time, root.source.rate ?? ""].filter(part => part !== "").join(" · ")
-    readonly property bool besideFacts: root.factsBeside && !root.compact && root.style === "ring"
 
     readonly property string colorMode: SettingsData.batteryPopoutColor
     readonly property real level: root.unknown ? 0 : Math.max(0, Math.min(100, root.source.level ?? root.source.percentage ?? 0))
-    readonly property color accent: BatteryService.colorFor(root.colorMode, root.level, root.charging, Theme.surfaceText)
+    readonly property color accent: BatteryService.colorFor(root.colorMode, root.level, root.charging, Theme.surfaceText, root.source.pluggedIn ?? false)
     readonly property bool lowTone: (root.colorMode === "primary" || root.colorMode === "lowcharging") && root.accent === Theme.error
     readonly property color badgeFill: root.lowTone ? Theme.errorContainer : root.colorMode === "theme" ? Theme.surfaceContainerHighest : Theme.primaryContainer
     readonly property color badgeInk: root.lowTone ? Theme.onErrorContainer : root.colorMode === "theme" ? Theme.surfaceText : Theme.onPrimaryContainer
@@ -299,77 +298,71 @@ Item {
     }
 
     component FillFace: Item {
-        id: face
+        id: fillFace
 
-        property string mode: "card"
-        property real value: -1
-        property string status
-        property string sub
-        property real numberSize: Theme.fontSizeDisplayLarge
+        property var face: ({})
         property color ink
         property real inset: Theme.spacingM
-        property real reserve: 0
-        property real actionsWidth: 0
 
         Item {
-            visible: face.mode === "card"
+            visible: fillFace.face.mode === "card"
             anchors.fill: parent
-            anchors.margins: face.inset
+            anchors.margins: fillFace.inset
 
             StyledText {
                 anchors.left: parent.left
                 anchors.top: parent.top
-                width: parent.width - face.reserve
-                text: face.status
+                width: parent.width - fillFace.face.reserve
+                text: fillFace.face.status
                 elide: Text.ElideRight
                 font.pixelSize: Theme.fontSizeMedium
                 font.weight: Theme.fontWeightMedium
-                color: face.ink
+                color: fillFace.ink
             }
 
             Column {
                 anchors.left: parent.left
                 anchors.right: parent.right
-                anchors.rightMargin: face.actionsWidth
+                anchors.rightMargin: fillFace.face.actionsWidth
                 anchors.bottom: parent.bottom
 
                 HeroNumber {
-                    value: face.value
-                    pixelSize: face.numberSize
-                    color: face.ink
+                    value: fillFace.face.value
+                    pixelSize: fillFace.face.numberSize
+                    color: fillFace.ink
                 }
 
                 StyledText {
                     width: parent.width
-                    text: face.sub
+                    text: fillFace.face.sub
                     visible: text !== ""
                     elide: Text.ElideRight
                     font.pixelSize: Theme.fontSizeSmall
-                    color: face.ink
+                    color: fillFace.ink
                 }
             }
         }
 
         RowLayout {
-            visible: face.mode === "cardSmall"
+            visible: fillFace.face.mode === "cardSmall"
             anchors.fill: parent
-            anchors.leftMargin: face.inset
-            anchors.rightMargin: Theme.spacingS + face.actionsWidth
+            anchors.leftMargin: fillFace.inset
+            anchors.rightMargin: Theme.spacingS + fillFace.face.actionsWidth
             spacing: Theme.spacingM
 
             HeroNumber {
-                value: face.value
-                pixelSize: face.numberSize
-                color: face.ink
+                value: fillFace.face.value
+                pixelSize: fillFace.face.numberSize
+                color: fillFace.ink
             }
 
             HeroText {
                 Layout.fillWidth: true
                 Layout.alignment: Qt.AlignVCenter
-                status: face.status
-                sub: face.sub
-                statusInk: face.ink
-                subInk: face.ink
+                status: fillFace.face.status
+                sub: fillFace.face.sub
+                statusInk: fillFace.ink
+                subInk: fillFace.ink
             }
         }
     }
@@ -384,7 +377,7 @@ Item {
             case "compact":
                 return lineCompact;
             case "ring":
-                return root.compact ? ringCompact : (root.besideFacts ? ringBeside : ringFull);
+                return root.compact ? ringCompact : (root.factsBeside ? ringBeside : ringFull);
             case "card":
                 return cardLayout;
             default:
@@ -528,27 +521,30 @@ Item {
         id: ringFull
 
         HeroCard {
-            implicitHeight: ringBox.height + (ringFooter.visible ? ringFooter.height + BatteryPopoutMetrics.gap : 0) + pad * 2
+            implicitHeight: ringColumn.implicitHeight + pad * 2
 
-            HeroRing {
-                id: ringBox
-                anchors.horizontalCenter: parent.horizontalCenter
-                width: BatteryPopoutMetrics.heroRing
-                height: width
+            Column {
+                id: ringColumn
+                width: parent.width
+                spacing: BatteryPopoutMetrics.gap
 
-                RingCenter {}
+                HeroRing {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    width: BatteryPopoutMetrics.heroRing
+                    height: width
+
+                    RingCenter {}
+                }
+
+                HeroFooter {
+                    width: parent.width
+                    sourceComponent: root.footer
+                }
             }
 
             HeroActions {
                 anchors.top: parent.top
                 anchors.right: parent.right
-            }
-
-            HeroFooter {
-                id: ringFooter
-                anchors.bottom: parent.bottom
-                width: parent.width
-                sourceComponent: root.footer
             }
         }
     }
@@ -557,69 +553,72 @@ Item {
         id: ringBeside
 
         HeroCard {
-            implicitHeight: besideRow.implicitHeight + (besideFooter.visible ? besideFooter.height + BatteryPopoutMetrics.gap : 0) + pad * 2
+            implicitHeight: ringBesideColumn.implicitHeight + pad * 2
 
-            RowLayout {
-                id: besideRow
+            Column {
+                id: ringBesideColumn
                 width: parent.width
-                spacing: Theme.spacingXL
+                spacing: BatteryPopoutMetrics.gap
 
-                HeroRing {
-                    Layout.preferredWidth: BatteryPopoutMetrics.heroRingBeside
-                    Layout.preferredHeight: BatteryPopoutMetrics.heroRingBeside
+                RowLayout {
+                    width: parent.width
+                    spacing: Theme.spacingXL
 
-                    RingCenter {
-                        numberSize: Theme.fontSizeDisplay
-                        beside: true
+                    HeroRing {
+                        Layout.preferredWidth: BatteryPopoutMetrics.heroRingBeside
+                        Layout.preferredHeight: BatteryPopoutMetrics.heroRingBeside
+
+                        RingCenter {
+                            numberSize: Theme.fontSizeDisplay
+                            beside: true
+                        }
                     }
-                }
 
-                Column {
-                    Layout.fillWidth: true
-                    Layout.alignment: Qt.AlignVCenter
-                    spacing: Theme.spacingS
+                    Column {
+                        Layout.fillWidth: true
+                        Layout.alignment: Qt.AlignVCenter
+                        spacing: Theme.spacingS
 
-                    Repeater {
-                        model: root.facts
+                        Repeater {
+                            model: root.facts
 
-                        Row {
-                            id: fact
+                            Row {
+                                id: fact
 
-                            required property var modelData
+                                required property var modelData
 
-                            width: parent.width
-                            spacing: Theme.spacingS
+                                width: parent.width
+                                spacing: Theme.spacingS
 
-                            DIcon {
-                                anchors.verticalCenter: parent.verticalCenter
-                                name: fact.modelData.icon
-                                size: Theme.iconSizeMedium
-                                color: root.accent
-                            }
+                                DIcon {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    name: fact.modelData.icon
+                                    size: Theme.iconSizeMedium
+                                    color: root.accent
+                                }
 
-                            StyledText {
-                                anchors.verticalCenter: parent.verticalCenter
-                                width: parent.width - Theme.iconSizeMedium - parent.spacing
-                                text: fact.modelData.value
-                                elide: Text.ElideRight
-                                font.pixelSize: Theme.fontSizeMedium
-                                font.weight: Theme.fontWeightMedium
-                                color: Theme.surfaceText
+                                StyledText {
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    width: parent.width - Theme.iconSizeMedium - parent.spacing
+                                    text: fact.modelData.value
+                                    elide: Text.ElideRight
+                                    font.pixelSize: Theme.fontSizeMedium
+                                    font.weight: Theme.fontWeightMedium
+                                    color: Theme.surfaceText
+                                }
                             }
                         }
                     }
+
+                    HeroActions {
+                        Layout.alignment: Qt.AlignTop
+                    }
                 }
 
-                HeroActions {
-                    Layout.alignment: Qt.AlignTop
+                HeroFooter {
+                    width: parent.width
+                    sourceComponent: root.footer
                 }
-            }
-
-            HeroFooter {
-                id: besideFooter
-                anchors.bottom: parent.bottom
-                width: parent.width
-                sourceComponent: root.footer
             }
         }
     }
@@ -628,40 +627,43 @@ Item {
         id: ringCompact
 
         HeroCard {
-            implicitHeight: ringRow.implicitHeight + (ringCompactFooter.visible ? ringCompactFooter.height + BatteryPopoutMetrics.gap : 0) + pad * 2
+            implicitHeight: ringCompactColumn.implicitHeight + pad * 2
 
-            RowLayout {
-                id: ringRow
+            Column {
+                id: ringCompactColumn
                 width: parent.width
-                spacing: Theme.spacingM
+                spacing: BatteryPopoutMetrics.gap
 
-                HeroRing {
-                    Layout.preferredWidth: BatteryPopoutMetrics.heroSmall
-                    Layout.preferredHeight: BatteryPopoutMetrics.heroSmall
+                RowLayout {
+                    width: parent.width
+                    spacing: Theme.spacingM
 
-                    HeroNumber {
-                        anchors.centerIn: parent
-                        value: root.value
-                        pixelSize: Theme.fontSizeLarge
-                        color: root.accent
+                    HeroRing {
+                        Layout.preferredWidth: BatteryPopoutMetrics.heroSmall
+                        Layout.preferredHeight: BatteryPopoutMetrics.heroSmall
+
+                        HeroNumber {
+                            anchors.centerIn: parent
+                            value: root.value
+                            pixelSize: Theme.fontSizeLarge
+                            color: root.accent
+                        }
                     }
+
+                    HeroText {
+                        Layout.fillWidth: true
+                        Layout.alignment: Qt.AlignVCenter
+                        status: root.status
+                        sub: root.timeLine
+                    }
+
+                    HeroActions {}
                 }
 
-                HeroText {
-                    Layout.fillWidth: true
-                    Layout.alignment: Qt.AlignVCenter
-                    status: root.status
-                    sub: root.timeLine
+                HeroFooter {
+                    width: parent.width
+                    sourceComponent: root.footer
                 }
-
-                HeroActions {}
-            }
-
-            HeroFooter {
-                id: ringCompactFooter
-                anchors.bottom: parent.bottom
-                width: parent.width
-                sourceComponent: root.footer
             }
         }
     }
@@ -671,133 +673,125 @@ Item {
 
         HeroCard {
             id: card
-            implicitHeight: cardTrack.height + (cardFooter.visible ? cardFooter.height + BatteryPopoutMetrics.gap : 0) + pad * 2
+            implicitHeight: cardLayoutColumn.implicitHeight + pad * 2
 
-            ClippingRectangle {
-                id: cardTrack
-
-                readonly property real limitX: width * root.limit / 100
-                readonly property string faceMode: root.compact ? "cardSmall" : "card"
-                readonly property color trackTint: Contrast.mix(card.surfaceColor, root.accent, BatteryPopoutMetrics.trackTintAmount)
-                // The text is drawn once per surface: fill ink over the fill, track ink everywhere else.
-                readonly property color fillInk: Contrast.readableOn(root.accent, [Theme.surfaceText, Theme.surface])
-                readonly property color trackInk: Contrast.readableOnAll(root.limited ? [cardTrack.trackTint, root.pastLimit(cardTrack.trackTint)] : [cardTrack.trackTint], [Theme.surfaceText, Theme.surface])
-                readonly property var face: ({
-                        mode: cardTrack.faceMode,
-                        value: root.value,
-                        status: root.status,
-                        sub: root.timeLine,
-                        numberSize: root.compact ? BatteryPopoutMetrics.smallNumberSize : Theme.fontSizeDisplayLarge,
-                        reserve: root.compact ? 0 : cardBadge.width + Theme.spacingS,
-                        actionsWidth: BatteryPopoutMetrics.button + (root.showEdit ? BatteryPopoutMetrics.button + Theme.spacingXXS : 0)
-                    })
-
-                function inkAt(item) {
-                    // Summing x (not mapToItem) keeps the binding live while the layout settles.
-                    let center = item.width / 2;
-                    for (let it = item; it && it !== cardTrack; it = it.parent)
-                        center += it.x;
-                    return center >= fill.x && center <= fill.x + fill.width ? cardTrack.fillInk : cardTrack.trackInk;
-                }
-
+            Column {
+                id: cardLayoutColumn
                 width: parent.width
-                height: BatteryPopoutMetrics.cardFill
-                radius: Theme.cornerRadiusM
-                color: cardTrack.trackTint
+                spacing: BatteryPopoutMetrics.gap
 
-                Behavior on color {
-                    enabled: !Theme.reduceMotion
-                    DColorAnim {}
-                }
+                ClippingRectangle {
+                    id: cardTrack
 
-                Rectangle {
-                    id: fill
-                    anchors.left: parent.left
-                    anchors.top: parent.top
-                    anchors.bottom: parent.bottom
-                    width: parent.width * root.shownValue / 100
-                    color: root.accent
+                    readonly property real limitX: width * root.limit / 100
+                    readonly property string faceMode: root.compact ? "cardSmall" : "card"
+                    readonly property color trackTint: Contrast.mix(card.surfaceColor, root.accent, BatteryPopoutMetrics.trackTintAmount)
+                    // The text is drawn once per surface: fill ink over the fill, track ink everywhere else.
+                    readonly property color fillInk: Contrast.readableOn(root.accent, [Theme.surfaceText, Theme.surface])
+                    readonly property color trackInk: Contrast.readableOnAll(root.limited ? [cardTrack.trackTint, root.pastLimit(cardTrack.trackTint)] : [cardTrack.trackTint], [Theme.surfaceText, Theme.surface])
+                    readonly property var face: ({
+                            mode: cardTrack.faceMode,
+                            value: root.value,
+                            status: root.status,
+                            sub: root.timeLine,
+                            numberSize: root.compact ? BatteryPopoutMetrics.smallNumberSize : Theme.fontSizeDisplayLarge,
+                            reserve: root.compact ? 0 : cardBadge.width + Theme.spacingS,
+                            actionsWidth: BatteryPopoutMetrics.button + (root.showEdit ? BatteryPopoutMetrics.button + Theme.spacingXXS : 0)
+                        })
+
+                    function inkAt(item) {
+                        // Summing x (not mapToItem) keeps the binding live while the layout settles.
+                        let center = item.width / 2;
+                        for (let it = item; it && it !== cardTrack; it = it.parent)
+                            center += it.x;
+                        return center >= fill.x && center <= fill.x + fill.width ? cardTrack.fillInk : cardTrack.trackInk;
+                    }
+
+                    width: parent.width
+                    height: BatteryPopoutMetrics.cardFill
+                    radius: Theme.cornerRadiusM
+                    color: cardTrack.trackTint
 
                     Behavior on color {
                         enabled: !Theme.reduceMotion
                         DColorAnim {}
                     }
-                }
 
-                Rectangle {
-                    visible: root.limited
-                    anchors.left: parent.left
-                    anchors.leftMargin: cardTrack.limitX
-                    anchors.right: parent.right
-                    anchors.top: parent.top
-                    anchors.bottom: parent.bottom
-                    color: Theme.withAlpha(Theme.scrimColor, BatteryPopoutMetrics.pastLimitShade)
-                }
+                    Rectangle {
+                        id: fill
+                        anchors.left: parent.left
+                        anchors.top: parent.top
+                        anchors.bottom: parent.bottom
+                        width: parent.width * root.shownValue / 100
+                        color: root.accent
 
-                FillFace {
-                    anchors.fill: parent
-                    mode: cardTrack.face.mode
-                    value: cardTrack.face.value
-                    status: cardTrack.face.status
-                    sub: cardTrack.face.sub
-                    numberSize: cardTrack.face.numberSize
-                    reserve: cardTrack.face.reserve
-                    actionsWidth: cardTrack.face.actionsWidth
-                    ink: cardTrack.trackInk
-                }
+                        Behavior on color {
+                            enabled: !Theme.reduceMotion
+                            DColorAnim {}
+                        }
+                    }
 
-                Item {
-                    id: fillClip
-                    anchors.fill: fill
-                    clip: true
+                    Rectangle {
+                        visible: root.limited
+                        anchors.left: parent.left
+                        anchors.leftMargin: cardTrack.limitX
+                        anchors.right: parent.right
+                        anchors.top: parent.top
+                        anchors.bottom: parent.bottom
+                        color: Theme.withAlpha(Theme.scrimColor, BatteryPopoutMetrics.pastLimitShade)
+                    }
 
                     FillFace {
-                        x: -fillClip.x
-                        width: cardTrack.width
-                        height: cardTrack.height
-                        mode: cardTrack.face.mode
-                        value: cardTrack.face.value
-                        status: cardTrack.face.status
-                        sub: cardTrack.face.sub
-                        numberSize: cardTrack.face.numberSize
-                        reserve: cardTrack.face.reserve
-                        actionsWidth: cardTrack.face.actionsWidth
-                        ink: cardTrack.fillInk
+                        anchors.fill: parent
+                        face: cardTrack.face
+                        ink: cardTrack.trackInk
+                    }
+
+                    Item {
+                        id: fillClip
+                        anchors.fill: fill
+                        clip: true
+
+                        FillFace {
+                            x: -fillClip.x
+                            width: cardTrack.width
+                            height: cardTrack.height
+                            face: cardTrack.face
+                            ink: cardTrack.fillInk
+                        }
+                    }
+
+                    HeroBadge {
+                        id: cardBadge
+
+                        readonly property color surfaceInk: cardTrack.inkAt(cardBadge)
+
+                        visible: !root.compact
+                        anchors.right: parent.right
+                        anchors.top: parent.top
+                        anchors.margins: Theme.spacingS
+                        kind: root.badgeKind
+                        icon: root.source.icon ?? ""
+                        fill: Contrast.readableOnAll([root.accent, cardTrack.trackTint], [root.badgeFill, cardBadge.surfaceInk], 3)
+                        ink: Contrast.readableOn(cardBadge.fill, [root.badgeInk, Theme.surface, Theme.surfaceText])
+                        value: root.value
+                        ringColor: cardBadge.surfaceInk
+                        ringTrack: Theme.withAlpha(cardBadge.surfaceInk, BatteryPopoutMetrics.ringBadgeTrack)
+                    }
+
+                    HeroActions {
+                        id: cardActions
+                        anchors.right: parent.right
+                        anchors.rightMargin: Theme.spacingS
+                        y: root.compact ? (cardTrack.height - height) / 2 : cardTrack.height - height - Theme.spacingS
+                        inkFor: item => cardTrack.inkAt(item)
                     }
                 }
 
-                HeroBadge {
-                    id: cardBadge
-
-                    readonly property color surfaceInk: cardTrack.inkAt(cardBadge)
-
-                    visible: !root.compact
-                    anchors.right: parent.right
-                    anchors.top: parent.top
-                    anchors.margins: Theme.spacingS
-                    kind: root.badgeKind
-                    icon: root.source.icon ?? ""
-                    fill: Contrast.readableOnAll([root.accent, cardTrack.trackTint], [root.badgeFill, cardBadge.surfaceInk], 3)
-                    ink: Contrast.readableOn(cardBadge.fill, [root.badgeInk, Theme.surface, Theme.surfaceText])
-                    value: root.value
-                    ringColor: cardBadge.surfaceInk
-                    ringTrack: Theme.withAlpha(cardBadge.surfaceInk, BatteryPopoutMetrics.ringBadgeTrack)
+                HeroFooter {
+                    width: parent.width
+                    sourceComponent: root.footer
                 }
-
-                HeroActions {
-                    id: cardActions
-                    anchors.right: parent.right
-                    anchors.rightMargin: Theme.spacingS
-                    y: root.compact ? (cardTrack.height - height) / 2 : cardTrack.height - height - Theme.spacingS
-                    inkFor: item => cardTrack.inkAt(item)
-                }
-            }
-
-            HeroFooter {
-                id: cardFooter
-                anchors.bottom: parent.bottom
-                width: parent.width
-                sourceComponent: root.footer
             }
         }
     }

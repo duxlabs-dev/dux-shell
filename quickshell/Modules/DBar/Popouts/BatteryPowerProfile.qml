@@ -22,14 +22,6 @@ DCard {
     // Off until the first layout has settled, so nothing slides in when the popout opens
     property bool settled: false
     readonly property bool animate: active && settled && !Theme.reduceMotion
-    // The cookie shapes draw into a texture this many times their size, which keeps their edges smooth
-    readonly property int shapeSupersampling: 4
-    readonly property real compactIconSize: Theme.iconSizeSmall + Theme.spacingXS
-
-    // The leaf's vein breaks into dashes when it is filled at icon size
-    function iconFilled(name, selected) {
-        return selected && name !== "eco";
-    }
 
     function choose(index) {
         const profile = profiles[index];
@@ -129,7 +121,7 @@ DCard {
             checkEnabled: false
             selectedColor: Theme.primary
             selectedContentColor: Theme.onPrimary
-            optionIconSize: root.compactIconSize
+            optionIconSize: BatteryPopoutMetrics.compactIconSize
             textSize: buttons ? Theme.fontSizeMedium : Theme.fontSizeSmall
             labelOnlySelected: buttons
             selectedWidthShare: buttons ? BatteryPopoutMetrics.selectedShare : 1
@@ -137,7 +129,7 @@ DCard {
             model: root.profiles.map(profile => ({
                         "text": Theme.getPowerProfileLabel(profile),
                         "icon": Theme.getPowerProfileIcon(profile),
-                        "filled": Theme.getPowerProfileIcon(profile) !== "eco"
+                        "filled": Theme.powerProfileIconFilled(profile)
                     }))
             currentIndex: root.currentIndex
             Accessible.role: Accessible.Grouping
@@ -221,7 +213,7 @@ DCard {
                             layer.enabled: visible
                             layer.smooth: true
                             layer.mipmap: true
-                            layer.textureSize: Qt.size(Math.ceil(width * root.shapeSupersampling), Math.ceil(height * root.shapeSupersampling))
+                            layer.textureSize: Qt.size(Math.ceil(width * BatteryPopoutMetrics.shapeSupersampling), Math.ceil(height * BatteryPopoutMetrics.shapeSupersampling))
 
                             ParallelAnimation {
                                 id: cookiePop
@@ -255,7 +247,7 @@ DCard {
                             name: cell.iconName
                             size: Theme.iconSize
                             color: cell.iconColor
-                            filled: root.iconFilled(cell.iconName, cell.selected)
+                            filled: cell.selected && Theme.powerProfileIconFilled(cell.modelData)
 
                             Behavior on color {
                                 enabled: root.animate
@@ -423,7 +415,7 @@ DCard {
                     layer.enabled: thumb.visible
                     layer.smooth: true
                     layer.mipmap: true
-                    layer.textureSize: Qt.size(Math.ceil(width * root.shapeSupersampling), Math.ceil(height * root.shapeSupersampling))
+                    layer.textureSize: Qt.size(Math.ceil(width * BatteryPopoutMetrics.shapeSupersampling), Math.ceil(height * BatteryPopoutMetrics.shapeSupersampling))
 
                     Behavior on rotation {
                         enabled: root.animate
@@ -441,7 +433,7 @@ DCard {
                     name: thumb.iconName
                     size: Theme.iconSize
                     color: Theme.onPrimary
-                    filled: root.iconFilled(thumb.iconName, true)
+                    filled: Theme.powerProfileIconFilled(root.profiles[slider.current])
                 }
             }
         }

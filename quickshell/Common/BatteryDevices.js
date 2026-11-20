@@ -3,8 +3,6 @@
 
 var SYSTEM_ID = "system";
 
-// Charging or a healthy level is "success"; below twice the low threshold it is
-// "caution". A reading of 0 (unknown) falls into "caution".
 function levelRamp(percentage, charging, lowThreshold, criticalThreshold) {
     if (charging)
         return "success";
@@ -111,7 +109,6 @@ function resolveBarEntries(saved, system, devices) {
     return out;
 }
 
-// One editor row; an entry that was never saved starts switched off.
 function editorRow(id, raw, dev) {
     const entry = normalizeEntry(raw || { id: id, on: false });
     return {

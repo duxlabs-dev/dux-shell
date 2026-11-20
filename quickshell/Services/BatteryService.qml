@@ -399,10 +399,9 @@ Singleton {
         }
     }
 
-    readonly property color levelColor: _rampColor(BatteryDevices.levelRamp(batteryLevel, isCharging, SettingsData.batteryLowThreshold, SettingsData.batteryCriticalThreshold))
-
     // An unknown reading (0) never counts as low or as a level; `neutral` is what the caller draws for plain text and icons.
-    function colorFor(mode, percentage, charging, neutral) {
+    // `pluggedIn` is only passed for the system battery: on AC but not charging it keeps the accent.
+    function colorFor(mode, percentage, charging, neutral, pluggedIn) {
         if (!(percentage > 0))
             return mode === "primary" ? Theme.primary : neutral;
 
@@ -412,7 +411,7 @@ Singleton {
         case "primary":
             return low ? Theme.error : Theme.primary;
         case "lowcharging":
-            return low ? Theme.error : (charging ? Theme.success : neutral);
+            return low ? Theme.error : charging ? Theme.success : pluggedIn ? Theme.primary : neutral;
         case "level":
             return _rampColor(BatteryDevices.levelRamp(percentage, charging, SettingsData.batteryLowThreshold, SettingsData.batteryCriticalThreshold));
         default:

@@ -40,7 +40,13 @@ Item {
     readonly property real arcStart: root.duo ? 150 : root.arc ? (root.vertical ? 150 : 60) : -90
     readonly property real arcSpan: root.duo || root.arc ? 240 : 360
     readonly property real chargeTarget: SettingsData.batteryScaleToChargeLimit ? 100 : Math.max(root.level, Math.min(100, SettingsData.batteryChargeLimit))
-    readonly property real lengthUnits: root.vertical ? 27.25 : 26 + 9 * 8 / 13
+    // Solid body geometry in units of thickness / 14.
+    readonly property real bodyUnits: 25
+    readonly property real capGapUnits: 1
+    readonly property real capBreadthUnits: 1.25
+    readonly property real barBoltUnits: 9
+    readonly property real boltAspect: 8 / 13
+    readonly property real lengthUnits: root.bodyUnits + root.capGapUnits + (root.vertical ? root.capBreadthUnits : root.barBoltUnits * root.boltAspect)
     readonly property real unit: root.maxLength > 0 ? Math.min(root.thickness / 14, root.maxLength / root.lengthUnits) : root.thickness / 14
     readonly property real level: Math.max(0, Math.min(100, BatteryService.displayBatteryLevel))
     readonly property bool charging: BatteryService.batteryAvailable && BatteryService.isCharging
@@ -52,7 +58,7 @@ Item {
             return Theme.onSurface_38;
         if (root.colorMode === "primary")
             return root.lowState ? Theme.error : root.neutralColor;
-        return BatteryService.colorFor(root.colorMode, BatteryService.batteryLevel, root.charging, root.neutralColor);
+        return BatteryService.colorFor(root.colorMode, BatteryService.batteryLevel, root.charging, root.neutralColor, BatteryService.isPluggedIn);
     }
     readonly property color dimColor: Theme.withAlpha(root.fillColor, root.hovered ? 0.6 : 0.48)
     readonly property color trackColor: {
@@ -96,12 +102,12 @@ Item {
     readonly property real ringTextSize: root.textNeed > 0 ? Math.min(root.baseTextSize, root.baseTextSize * root.ringChordWidth / root.textNeed) : root.baseTextSize
     readonly property real textSize: root.circular ? root.ringTextSize : root.baseTextSize
     readonly property real textBaseline: root.height / 2 - digitInk.tightBoundingRect.y - digitInk.tightBoundingRect.height / 2
-    readonly property real boltBadgeSize: Math.round((root.circular ? 12 : 9) * root.unit)
-    readonly property real boltBadgeWidth: Math.round(root.boltBadgeSize * (8 / 13))
-    readonly property real bodyLength: Math.max(Math.round(25 * root.unit), Math.ceil(root.numberInside ? root.textNeed + root.textCanvasLeft + 1.5 * root.unit : 0))
-    readonly property real capGap: Math.max(1, Math.round(root.unit))
+    readonly property real boltBadgeSize: Math.round((root.circular ? 12 : root.barBoltUnits) * root.unit)
+    readonly property real boltBadgeWidth: Math.round(root.boltBadgeSize * root.boltAspect)
+    readonly property real bodyLength: Math.max(Math.round(root.bodyUnits * root.unit), Math.ceil(root.numberInside ? root.textNeed + root.textCanvasLeft + 1.5 * root.unit : 0))
+    readonly property real capGap: Math.max(1, Math.round(root.capGapUnits * root.unit))
     readonly property real capOffset: root.bodyLength + root.capGap
-    readonly property real capBreadth: Math.max(1, Math.round(1.25 * root.unit))
+    readonly property real capBreadth: Math.max(1, Math.round(root.capBreadthUnits * root.unit))
     readonly property real capSpan: Math.round(6 * root.unit)
 
     implicitWidth: root.circular ? root.ringDiameter : root.vertical ? Math.round(14 * root.unit) : root.capOffset + (root.boltVisible ? root.boltBadgeWidth : root.capBreadth)

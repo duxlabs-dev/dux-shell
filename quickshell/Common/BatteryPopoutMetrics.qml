@@ -16,6 +16,12 @@ Singleton {
     readonly property real row: dense ? Theme.buttonHeightS : Theme.buttonHeightM - Theme.spacingXS + Theme.densityStepS
     readonly property real chip: Theme.densityLevel > 0 ? Theme.buttonHeightXS + Theme.spacingXS : dense ? Theme.buttonHeightXXS : Theme.buttonHeightXS
     readonly property real deviceRing: Theme.buttonHeightM + Theme.spacingL + Theme.densityStepM
+    readonly property real compactRing: Theme.buttonHeightXS + Theme.spacingM
+    readonly property real compactGlyph: Theme.iconSizeSmall + Theme.spacingXXS
+    readonly property real gridGlyph: Theme.iconSize - Theme.spacingXXS
+    readonly property real boltCircle: Theme.iconSizeSmall + Theme.spacingS
+    readonly property real numberLift: Theme.spacingM + Theme.spacingXXS
+    readonly property real compactIconSize: Theme.iconSizeSmall + Theme.spacingXS
 
     readonly property real heroSmall: Theme.buttonHeightM + (dense ? 0 : Theme.spacingL)
     readonly property real heroRing: 184 + spaciousStep
@@ -36,6 +42,8 @@ Singleton {
     readonly property real hatchPeriod: 10
     readonly property real statsGap: 40
     readonly property int gridMaxColumns: 4
+    // The cookie shapes draw into a texture this many times their size, which keeps their edges smooth.
+    readonly property int shapeSupersampling: 4
 
     readonly property real barFillMix: 0.45
     readonly property real selectedShare: 3.5

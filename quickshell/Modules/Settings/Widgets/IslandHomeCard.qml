@@ -2,6 +2,7 @@ import QtQuick
 import qs.Common
 import qs.Services
 import qs.DCommon.Widgets
+import "../../../Common/settings/SettingsSpec.js" as Spec
 
 SettingsCard {
     id: root
@@ -145,7 +146,7 @@ SettingsCard {
         text: I18n.tr("Color")
         visible: root.batteryShown && !root.hosted
         model: [I18n.tr("Theme", "battery settings: plain widget colors, like other bar widgets"), I18n.tr("Low and charging", "battery settings: red when low, green while charging"), I18n.tr("Level", "battery settings: charge level indicator colors")]
-        values: ["theme", "lowcharging", "level"]
+        values: Spec.BATTERY_BAR_COLORS
         value: root.store.config?.batteryColorMode ?? SettingsData.barConfigDefault("batteryColorMode")
         fallbackValue: SettingsData.barConfigDefault("batteryColorMode")
         onValueSelected: selected => root.store.apply("batteryColorMode", selected)

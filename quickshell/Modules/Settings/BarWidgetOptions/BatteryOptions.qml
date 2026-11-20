@@ -55,7 +55,7 @@ Column {
             resetStore: root.barStore
             resetKeys: ["batteryColorMode"]
             model: [I18n.tr("Theme", "battery settings: plain widget colors, like other bar widgets"), I18n.tr("Low and charging", "battery settings: red when low, green while charging"), I18n.tr("Level", "battery settings: charge level indicator colors")]
-            values: ["theme", "lowcharging", "level"]
+            values: Spec.BATTERY_BAR_COLORS
             value: root.barConfig?.batteryColorMode ?? SettingsData.barConfigDefault("batteryColorMode")
             fallbackValue: SettingsData.barConfigDefault("batteryColorMode")
             onValueSelected: selected => SettingsData.updateBarConfig(root.page.barId, {

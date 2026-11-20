@@ -21,11 +21,6 @@ Item {
     readonly property string colorMode: SettingsData.batteryPopoutColor
     readonly property bool wavy: SettingsData.batteryPopoutWavy
 
-    readonly property real compactRing: Theme.buttonHeightXS + Theme.spacingM
-    readonly property real compactGlyph: Theme.iconSizeSmall + Theme.spacingXXS
-    readonly property real gridGlyph: Theme.iconSize - Theme.spacingXXS
-    readonly property real boltCircle: Theme.iconSizeSmall + Theme.spacingS
-    readonly property real numberLift: Theme.spacingM + Theme.spacingXXS
     readonly property int fadeDuration: Theme.expressiveDurations.expressiveEffects
     readonly property int collapseDuration: Theme.expressiveDurations.expressiveSlowEffects
 
@@ -68,12 +63,10 @@ Item {
         return device.name + ": " + root.percentText(device) + state;
     }
 
-    // Tiles fill one row up to three devices, two columns beyond; a lone last tile spans the row.
     function tileColumns(count) {
         return count <= 3 ? Math.max(1, count) : 2;
     }
 
-    // With no devices every layout shows the bars container holding the empty state.
     Loader {
         id: body
         width: root.width
@@ -96,8 +89,6 @@ Item {
         iconName: glyph.device.icon
         color: glyph.accent
         badgeName: glyph.badges ? BatteryDevices.badgeFor(glyph.device) : ""
-        badgeColor: glyph.device.low ? Theme.error : glyph.accent
-        badgeInk: glyph.device.low ? Theme.onError : Contrast.readableOn(glyph.accent, [Theme.surface, Theme.surfaceText])
         cutWidth: BatteryPopoutMetrics.badgeCut
     }
 
@@ -186,7 +177,7 @@ Item {
                             device: cell.modelData
                             accent: cell.accent
                             cut: gridCard.color
-                            glyphSize: root.gridGlyph
+                            glyphSize: BatteryPopoutMetrics.gridGlyph
                             startAngle: 135
                             spanAngle: 270
                         }
@@ -194,7 +185,7 @@ Item {
                         StyledText {
                             id: cellLevel
                             x: (parent.width - width) / 2
-                            y: cellRing.height - root.numberLift
+                            y: cellRing.height - BatteryPopoutMetrics.numberLift
                             text: cell.modelData.unknown ? "–" : String(cell.modelData.percentage)
                             font.pixelSize: Theme.fontSizeMedium
                             font.weight: Theme.fontWeightMedium
@@ -267,12 +258,12 @@ Item {
                         LevelRing {
                             id: tileRing
                             anchors.verticalCenter: parent.verticalCenter
-                            width: root.compactRing
+                            width: BatteryPopoutMetrics.compactRing
                             height: width
                             device: tile.modelData
                             accent: tile.accent
                             cut: tile.color
-                            glyphSize: root.compactGlyph
+                            glyphSize: BatteryPopoutMetrics.compactGlyph
                         }
 
                         Column {
@@ -337,7 +328,7 @@ Item {
                         device: chip.modelData
                         accent: chip.accent
                         cutColor: chip.color
-                        size: root.compactGlyph
+                        size: BatteryPopoutMetrics.compactGlyph
                     }
                 }
             }
@@ -650,8 +641,8 @@ Item {
 
                         Rectangle {
                             visible: bar.modelData.charging
-                            Layout.preferredWidth: root.boltCircle
-                            Layout.preferredHeight: root.boltCircle
+                            Layout.preferredWidth: BatteryPopoutMetrics.boltCircle
+                            Layout.preferredHeight: BatteryPopoutMetrics.boltCircle
                             radius: width / 2
                             color: bar.accent
 

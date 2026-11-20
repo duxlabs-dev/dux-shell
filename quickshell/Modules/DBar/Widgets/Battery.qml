@@ -121,7 +121,6 @@ BasePill {
         return parts.join(" ");
     }
 
-    // The number sits inside the solid meter when it is horizontal; otherwise it shows beside the glyph with time and wattage.
     readonly property string horizontalSideText: {
         if (!pillStyle) {
             return horizontalDisplayText;
@@ -161,7 +160,7 @@ BasePill {
     // Colors follow the real level, not the charge-limit scaled one.
     function entryColor(item, neutral) {
         const percentage = item.kind === "system" ? BatteryService.batteryLevel : item.percentage;
-        return BatteryService.colorFor(colorMode, percentage, item.charging, neutral);
+        return BatteryService.colorFor(colorMode, percentage, item.charging, neutral, item.kind === "system" && BatteryService.isPluggedIn);
     }
 
     property real touchpadAccumulator: 0

@@ -10,10 +10,8 @@ Item {
     property real size: Theme.iconSize
     property color color: Theme.surfaceText
     property string badgeName: ""
-    // A charging badge takes the icon's color, a low one the error color.
     property color badgeColor: root.badgeName === "bolt" ? root.color : Theme.error
     property color badgeInk: root.badgeName === "bolt" ? Contrast.readableOn(root.badgeColor, [Theme.surface, Theme.surfaceText]) : Theme.onError
-    // Badge sizes are for a Theme.iconSize icon and scale with it.
     readonly property real badgeScale: root.size / Theme.iconSize
     property real badgeSize: Math.round((Theme.spacingM - Theme.dividerWidth) * root.badgeScale)
     property real badgeGlyph: Math.round((Theme.spacingS + Theme.dividerWidth) * root.badgeScale)

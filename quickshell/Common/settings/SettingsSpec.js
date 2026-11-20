@@ -41,7 +41,8 @@ function subsetOf(values) {
 var BATTERY_POPOUT_DETAILS = ["health", "temperature", "capacity", "power"];
 var BATTERY_POPOUT_LAYOUTS = ["grid", "compact", "chips", "list"];
 var BATTERY_POPOUT_DEVICE_LAYOUTS = ["grid", "compact", "chips", "list", "bars"];
-var BATTERY_POPOUT_COLORS = ["primary", "theme", "lowcharging", "level"];
+var BATTERY_BAR_COLORS = ["theme", "lowcharging", "level"];
+var BATTERY_POPOUT_COLORS = ["primary"].concat(BATTERY_BAR_COLORS);
 var BATTERY_POPOUT_STYLES = ["compact", "line", "ring", "card"];
 var BATTERY_POPOUT_BADGES = ["shape", "ring"];
 var BATTERY_POPOUT_POWER_PLACEMENTS = ["card", "overview"];

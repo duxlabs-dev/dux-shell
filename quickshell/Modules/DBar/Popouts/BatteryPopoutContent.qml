@@ -102,6 +102,7 @@ Item {
                 level: BatteryService.batteryLevel,
                 unknown: unknown,
                 charging: BatteryService.isCharging,
+                pluggedIn: BatteryService.isPluggedIn,
                 limit: root.chargeLimit,
                 icon: unknown ? "battery_unknown" : BatteryService.isCharging ? "bolt" : root.levelLow ? "battery_alert" : BatteryService.getBatteryIcon(),
                 rate: root.powerRate(false)
@@ -330,7 +331,6 @@ Item {
                     text: root.showBattery ? I18n.tr("Battery") : I18n.tr("Power profile")
                 }
 
-                // Compact: power above the details under one label; the card styles put the details first
                 Item {
                     id: group
                     readonly property bool heroCard: root.hasHero && !root.compactStyle

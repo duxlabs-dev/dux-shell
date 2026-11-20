@@ -1709,6 +1709,11 @@ Singleton {
         }
     }
 
+    // The eco leaf's vein breaks into dashes when filled at icon size.
+    function powerProfileIconFilled(profile) {
+        return profile !== 0;
+    }
+
     function getPowerProfileLabel(profile) {
         switch (profile) {
         case 0:

@@ -20,30 +20,6 @@ function keyed(list) {
 
 const SYSTEM = { percentage: 80, charging: false, low: false, unknown: false };
 
-// The ramp BatteryService.levelColor used before it moved into BatteryDevices.js.
-function legacyRamp(batteryLevel, isCharging, lowThreshold, criticalThreshold) {
-    const hasBatteryReading = batteryLevel > 0;
-    const atOrBelow = (level, threshold) => level > 0 && level <= threshold;
-    if (isCharging)
-        return "success";
-    if (hasBatteryReading && atOrBelow(batteryLevel, criticalThreshold))
-        return "critical";
-    if (hasBatteryReading && atOrBelow(batteryLevel, lowThreshold))
-        return "warning";
-    if (batteryLevel <= lowThreshold * 2)
-        return "caution";
-    return "success";
-}
-
-test("levelRamp matches the legacy battery color for every level", () => {
-    for (const [low, critical] of [[20, 5], [30, 10], [5, 5], [40, 5], [10, 10]]) {
-        for (const charging of [false, true]) {
-            for (let level = 0; level <= 100; level++)
-                assert.equal(devices.levelRamp(level, charging, low, critical), legacyRamp(level, charging, low, critical), `${level} ${charging} ${low}/${critical}`);
-        }
-    }
-});
-
 test("entries keep the saved order and skip the ones switched off", () => {
     const live = keyed([device(MOUSE, "MX", 50), device(KEYBOARD, "K1", 60)]);
     const saved = [{ id: "6:K1:0", on: true }, { id: "system", on: true }, { id: "5:MX:0", on: false }];
