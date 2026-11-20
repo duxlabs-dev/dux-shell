@@ -222,9 +222,13 @@ function parseCursorLibrary(text) {
         for (const cursor of JSON.parse(text).cursors) {
             if (cursor && typeof cursor.name === "string") {
                 const pointer = typeof cursor.pointer === "string" && cursor.pointer.startsWith("data:image/png;base64,") ? cursor.pointer : "";
+                const cursorsList = Array.isArray(cursor.cursors)
+                    ? cursor.cursors.filter(item => typeof item === "string" && item.startsWith("data:image/png;base64,"))
+                    : [];
                 cursors[cursor.name] = {
                     removable: cursor.removable === true,
-                    pointer: pointer
+                    pointer: pointer,
+                    cursors: cursorsList.length > 0 ? cursorsList : (pointer ? [pointer] : [])
                 };
             }
         }

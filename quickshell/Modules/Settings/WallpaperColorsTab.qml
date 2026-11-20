@@ -1514,23 +1514,25 @@ Column {
                                 title: cursorRow.modelData
                                 trailingBadge: picked ? I18n.tr("In use", "cursor theme list badge, the theme currently applied") : ""
 
-                                supporting: Item {
-                                    width: Theme.iconSizeLarge
-                                    height: Theme.iconSizeLarge
+                                supporting: Row {
+                                    spacing: Theme.spacingS
 
-                                    DSVGIcon {
-                                        anchors.fill: parent
-                                        source: cursorRow.info?.pointer ?? ""
-                                        size: Theme.iconSizeLarge
-                                        visible: source !== ""
+                                    Repeater {
+                                        model: cursorRow.info?.cursors ?? []
+
+                                        DSVGIcon {
+                                            required property string modelData
+
+                                            source: modelData
+                                            size: Theme.iconSizeLarge
+                                        }
                                     }
 
                                     DIcon {
-                                        anchors.centerIn: parent
                                         name: "arrow_selector_tool"
                                         size: Theme.iconSizeMedium
                                         color: Theme.surfaceVariantText
-                                        visible: !(cursorRow.info?.pointer)
+                                        visible: (cursorRow.info?.cursors?.length ?? 0) === 0
                                     }
                                 }
 
