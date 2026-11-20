@@ -56,7 +56,7 @@ SettingsCard {
         resetStore: root.store
         resetKeys: ["islandCompactColor"]
         text: I18n.tr("Collapsed background", "island activity settings")
-        description: I18n.tr("Theme colour behind the collapsed island", "island activity settings")
+        description: I18n.tr("Theme color behind the collapsed island", "island activity settings")
         optionValues: root.surfaceRoleValues
         options: root.surfaceRoleValues.map(role => root.surfaceRoleLabels[role])
         optionColorMap: root.surfaceRoleColors
@@ -70,7 +70,7 @@ SettingsCard {
         resetStore: root.store
         resetKeys: ["islandExpandedColor"]
         text: I18n.tr("Expanded background", "island activity settings")
-        description: I18n.tr("Theme colour behind the expanded island", "island activity settings")
+        description: I18n.tr("Theme color behind the expanded island", "island activity settings")
         optionValues: root.surfaceRoleValues
         options: root.surfaceRoleValues.map(role => root.surfaceRoleLabels[role])
         optionColorMap: root.surfaceRoleColors

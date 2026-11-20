@@ -158,7 +158,7 @@ Item {
                     })
             },
             {
-                "label": I18n.tr("Network Info"),
+                "label": I18n.tr("Network Information"),
                 "iconName": "info",
                 "action": () => {
                     networkInfoModalLoader.active = true;
@@ -196,7 +196,7 @@ Item {
         const editable = profiles.find(c => c.uuid === uuid) ?? (profiles.length === 1 ? profiles[0] : null);
         return [
             {
-                "label": I18n.tr("Network Info"),
+                "label": I18n.tr("Network Information"),
                 "iconName": "info",
                 "visible": !!adapter.connected && !!uuid,
                 "action": () => root.showWiredInfo(adapter, uuid)
@@ -305,9 +305,9 @@ Item {
                     text: I18n.tr("Wi-Fi", "wireless network, page and section title")
                     description: {
                         if (NetworkService.wifiToggling)
-                            return NetworkService.wifiEnabled ? I18n.tr("Disabling WiFi...") : I18n.tr("Enabling WiFi...");
+                            return NetworkService.wifiEnabled ? I18n.tr("Disabling Wi-Fi...") : I18n.tr("Enabling Wi-Fi...");
                         if (!NetworkService.wifiEnabled)
-                            return I18n.tr("WiFi is off", "network status when the wifi radio is disabled");
+                            return I18n.tr("Wi-Fi is off", "network status when the wifi radio is disabled");
                         return NetworkService.currentWifiSSID || I18n.tr("Not connected", "network status");
                     }
                     checked: NetworkService.wifiEnabled
@@ -349,7 +349,7 @@ Item {
                         if (NetworkService.hotspotEnabled)
                             return NetworkService.hotspotSSID || I18n.tr("Running", "hotspot active status");
                         if (!NetworkService.wifiEnabled)
-                            return I18n.tr("WiFi disabled", "hotspot unavailable status");
+                            return I18n.tr("Wi-Fi disabled", "hotspot unavailable status");
                         return NetworkService.hotspotSSID || I18n.tr("Ready", "hotspot ready status");
                     }
                     subtitleColor: warnsWifiDrop ? Theme.warning : Theme.surfaceVariantText
@@ -393,7 +393,7 @@ Item {
             CcEmptyState {
                 visible: root.wifiMode && NetworkService.wifiToggling
                 spinning: true
-                title: NetworkService.wifiEnabled ? I18n.tr("Disabling WiFi...") : I18n.tr("Enabling WiFi...")
+                title: NetworkService.wifiEnabled ? I18n.tr("Disabling Wi-Fi...") : I18n.tr("Enabling Wi-Fi...")
             }
 
             CcEmptyState {

@@ -668,7 +668,7 @@ Singleton {
     // clock above so bindings calling this refresh every minute. Single home
     // for the translated duration strings; "" once the timestamp passes.
     function formatRuleRemaining(expiresAt) {
-        return Format.formatRemaining(expiresAt - notificationRuleNowMs, "", I18n.tr("%1 min", "timed duration, %1 is a number of minutes"), I18n.tr("%1 h", "timed duration, %1 is a number of hours"), I18n.tr("%1 h %2 m", "timed duration, %1 is a number of hours, %2 is a number of minutes"));
+        return Format.formatRemaining(expiresAt - notificationRuleNowMs, "", I18n.tr("%1m", "timed duration, %1 is a number of minutes"), I18n.tr("%1h", "timed duration, %1 is a number of hours"), I18n.tr("%1h %2m", "timed duration, %1 is a number of hours, %2 is a number of minutes"));
     }
 
     // Deferred: pruning inside the change handler re-enters the binding it came from.

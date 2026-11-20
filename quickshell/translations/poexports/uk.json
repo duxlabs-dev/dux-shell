@@ -119,12 +119,6 @@
   "%1 fixes": {
     "%1 fixes": "%1 виправлення"
   },
-  "%1 h": {
-    "%1 h": "%1 год"
-  },
-  "%1 h %2 m": {
-    "%1 h %2 m": "%1 год %2 хв"
-  },
   "%1 h %2 m left": {
     "%1 h %2 m left": "залишилося %1 год %2 хв"
   },
@@ -250,9 +244,6 @@
   },
   "%1 processes": {
     "%1 processes": "%1 процесів"
-  },
-  "%1 procs": {
-    "%1 procs": "%1 проц."
   },
   "%1 second": {
     "%1 second": "%1 секунда"
@@ -397,9 +388,6 @@
   },
   "AC power": {
     "AC power": "Живлення від мережі"
-  },
-  "API": {
-    "API": "API"
   },
   "AUR helpers are interactive — see the terminal window for prompts. This popout will return to idle when the upgrade exits.": {
     "AUR helpers are interactive — see the terminal window for prompts. This popout will return to idle when the upgrade exits.": "Помічники AUR є інтерактивними — дивіться вікно термінала для запитів. Це спливаюче вікно перейде в режим очікування після завершення оновлення"
@@ -794,9 +782,6 @@
   "Anchor": {
     "Anchor": "Якір"
   },
-  "Animation duration": {
-    "Animation duration": "Тривалість анімації"
-  },
   "Animation style": {
     "Animation style": "Стиль анімації"
   },
@@ -1190,9 +1175,6 @@
   "Avoid open popouts": {
     "Avoid open popouts": ""
   },
-  "BIOS": {
-    "BIOS": "BIOS"
-  },
   "Backend": {
     "Backend": "Бекенд"
   },
@@ -1501,9 +1483,6 @@
   },
   "CPU": {
     "CPU": "ЦП"
-  },
-  "CPU graph": {
-    "CPU graph": "Графік ЦП"
   },
   "CPU temperature": {
     "CPU temperature": "Температура ЦП"
@@ -2495,9 +2474,6 @@
   "DMS will then manage %1 animations and override animation settings in your config.": {
     "DMS will then manage %1 animations and override animation settings in your config.": ""
   },
-  "DNS": {
-    "DNS": ""
-  },
   "Daemon": {
     "Daemon": "Демон"
   },
@@ -2819,9 +2795,6 @@
   "Disabled by Frame Mode": {
     "Disabled by Frame Mode": "Вимкнено режимом рамки"
   },
-  "Disabling WiFi...": {
-    "Disabling WiFi...": "Вимкнення WiFi..."
-  },
   "Disabling auto-login on startup...": {
     "Disabling auto-login on startup...": "Вимкнення автоматичного входу при запуску..."
   },
@@ -2842,9 +2815,6 @@
   },
   "Disconnected": {
     "Disconnected": "Відключено"
-  },
-  "Disconnected from WiFi": {
-    "Disconnected from WiFi": "Відключено від Wi-Fi"
   },
   "Discover community plugins. Review their code before installing, and audit changes before updating.": {
     "Discover community plugins. Review their code before installing, and audit changes before updating.": "Шукайте розширення спільноти. Перевіряйте їхній код перед встановленням і зміни перед оновленням"
@@ -2981,9 +2951,6 @@
   "Does not fit here. Drag to another spot.": {
     "Does not fit here. Drag to another spot.": ""
   },
-  "Domain (optional)": {
-    "Domain (optional)": "Домен (опціонально)"
-  },
   "Dominant": {
     "Dominant": "Домінуючий"
   },
@@ -3076,9 +3043,6 @@
   },
   "Dusk (Astronomical Twilight)": {
     "Dusk (Astronomical Twilight)": "Сутінки (астрономічні сутінки)"
-  },
-  "Dusk (Civil Twighlight)": {
-    "Dusk (Civil Twighlight)": "Сутінки (цивільні сутінки)"
   },
   "Dusk (Nautical Twilight)": {
     "Dusk (Nautical Twilight)": "Сутінки (навігаційні сутінки)"
@@ -3209,9 +3173,6 @@
   "Empty space": {
     "Empty space": ""
   },
-  "Enable Wi-Fi before starting the hotspot.": {
-    "Enable Wi-Fi before starting the hotspot.": "Увімкнути Wi-Fi перед запуском точки доступу"
-  },
   "Enable autoconnect": {
     "Enable autoconnect": "Увімкнути автопідключення"
   },
@@ -3226,9 +3187,6 @@
   },
   "Enabled": {
     "Enabled": "Увімкнено"
-  },
-  "Enabling WiFi...": {
-    "Enabling WiFi...": "Увімкнення WiFi..."
   },
   "Enabling cellular...": {
     "Enabling cellular...": "Увімкнення стільникового зв'язку..."
@@ -3509,9 +3467,6 @@
   "Failed to disconnect VPNs": {
     "Failed to disconnect VPNs": "Не вдалося відключити VPN-з'єднання"
   },
-  "Failed to disconnect WiFi": {
-    "Failed to disconnect WiFi": "Не вдалося відключити Wi-Fi"
-  },
   "Failed to duplicate %1": {
     "Failed to duplicate %1": ""
   },
@@ -3520,9 +3475,6 @@
   },
   "Failed to enable IP location": {
     "Failed to enable IP location": "Не вдалося увімкнути визначення місцепоходження за IP"
-  },
-  "Failed to enable WiFi": {
-    "Failed to enable WiFi": "Не вдалося увімкнути Wi-Fi"
   },
   "Failed to enable job acceptance": {
     "Failed to enable job acceptance": "Не вдалося увімкнути приймання завдань"
@@ -3656,9 +3608,6 @@
   "Failed to save screenshot": {
     "Failed to save screenshot": ""
   },
-  "Failed to send file": {
-    "Failed to send file": ""
-  },
   "Failed to set brightness": {
     "Failed to set brightness": "Не вдалося встановити яскравість"
   },
@@ -3682,9 +3631,6 @@
   },
   "Failed to set profile image": {
     "Failed to set profile image": "Не вдалося встановити зображення профілю"
-  },
-  "Failed to set profile image: %1": {
-    "Failed to set profile image: %1": "Не вдалося встановити зображення профілю: %1"
   },
   "Failed to start connection to %1": {
     "Failed to start connection to %1": "Не вдалося розпочати підключення до %1"
@@ -4013,9 +3959,6 @@
   "Fonts & motion": {
     "Fonts & motion": "Шрифти та рух"
   },
-  "Fonts, scale, animations": {
-    "Fonts, scale, animations": "Шрифти, масштаб, анімації"
-  },
   "For %1": {
     "For %1": "На %1"
   },
@@ -4243,9 +4186,6 @@
   },
   "Get Started": {
     "Get Started": "Почати"
-  },
-  "Git": {
-    "Git": "Git"
   },
   "Global fonts can be configured in Settings → Personalization": {
     "Global fonts can be configured in Settings → Personalization": "Глобальні шрифти можна налаштувати в Налаштування → Персоналізація"
@@ -4643,12 +4583,6 @@
   "IP sharing setup failed. Check that %1 is installed.": {
     "IP sharing setup failed. Check that %1 is installed.": "Налаштування спільного використання IP-адреси не вдалося. Перевірте, чи встановлено %1"
   },
-  "IPv4": {
-    "IPv4": ""
-  },
-  "IPv6": {
-    "IPv6": "IPv6"
-  },
   "ISO date": {
     "ISO date": "ISO дата"
   },
@@ -4844,9 +4778,6 @@
   "Initial title": {
     "Initial title": "Початковий заголовок"
   },
-  "Initialised": {
-    "Initialised": "Ініціалізовано"
-  },
   "Injected palettes": {
     "Injected palettes": "Додані палітри"
   },
@@ -4895,12 +4826,6 @@
   "Install Plugin": {
     "Install Plugin": "Встановити розширення"
   },
-  "Install Theme": {
-    "Install Theme": "Встановити тему"
-  },
-  "Install a theme": {
-    "Install a theme": ""
-  },
   "Install color themes from the DMS theme registry": {
     "Install color themes from the DMS theme registry": "Встановити кольорові теми з реєстру тем DMS"
   },
@@ -4939,9 +4864,6 @@
   },
   "Installed": {
     "Installed": "Встановлено"
-  },
-  "Installed %1": {
-    "Installed %1": ""
   },
   "Installed %1, still running %2": {
     "Installed %1, still running %2": "Встановлено %1, все ще працює %2"
@@ -5552,9 +5474,6 @@
   "MIT License": {
     "MIT License": "Ліцензія MIT"
   },
-  "MTU": {
-    "MTU": "MTU"
-  },
   "Mac": {
     "Mac": ""
   },
@@ -5813,9 +5732,6 @@
   "Memory controller": {
     "Memory controller": "Контролер пам'ятіі"
   },
-  "Memory graph": {
-    "Memory graph": "Графік пам'яті"
-  },
   "Memory usage": {
     "Memory usage": "Використання пам'яті"
   },
@@ -6062,12 +5978,6 @@
   "Mute popups for %1": {
     "Mute popups for %1": "Вимкнути спливаючі вікна для %1"
   },
-  "Mute popups for %1 (1 hour)": {
-    "Mute popups for %1 (1 hour)": "Вимкнути сповіщення на %1 (1 година)"
-  },
-  "Mute popups for %1 (4 hours)": {
-    "Mute popups for %1 (4 hours)": "Вимкнути сповіщення на %1 (4 години)"
-  },
   "Mute, ignore and priority rules per app": {
     "Mute, ignore and priority rules per app": "Правила вимкнення звуку, ігнорування та пріоритету для кожної програми"
   },
@@ -6125,9 +6035,6 @@
   "Network": {
     "Network": "Мережа"
   },
-  "Network Info": {
-    "Network Info": "Деталі про мережу"
-  },
   "Network Information": {
     "Network Information": "Мережева інформація"
   },
@@ -6137,14 +6044,8 @@
   "Network download and upload speed display": {
     "Network download and upload speed display": "Відображення швидкості завантаження та вивантаження мережі"
   },
-  "Network graph": {
-    "Network graph": "Графік мережі"
-  },
   "Network speed monitor": {
     "Network speed monitor": "Монітор швидкості мережі"
-  },
-  "Networks, saved networks, hotspot": {
-    "Networks, saved networks, hotspot": "Мережі, збережені мережі, точка доступу"
   },
   "Neutral": {
     "Neutral": "Нейтральний"
@@ -7439,9 +7340,6 @@
   "Popouts": {
     "Popouts": "Спливаючі вікна"
   },
-  "Popouts and modals use the main animation duration": {
-    "Popouts and modals use the main animation duration": "Спливаючі та модальні вікна використовують основну тривалість анімації"
-  },
   "Popular": {
     "Popular": "Популярні"
   },
@@ -8414,9 +8312,6 @@
   "SE": {
     "SE": "Пд-Сх"
   },
-  "SSID": {
-    "SSID": "SSID"
-  },
   "SW": {
     "SW": "Пд-Зх"
   },
@@ -8737,9 +8632,6 @@
   },
   "Selected image file not found.": {
     "Selected image file not found.": "Вибраний файл зображення не знайдено"
-  },
-  "Sending file to %1...": {
-    "Sending file to %1...": ""
   },
   "Sends the playing artist and album name to Apple": {
     "Sends the playing artist and album name to Apple": "Надсилає ім'я виконавця та альбома в Apple"
@@ -9647,9 +9539,6 @@
   "Sync needs sudo authentication. Opening terminal so you can use password or fingerprint.": {
     "Sync needs sudo authentication. Opening terminal so you can use password or fingerprint.": "Для синхронізації потрібна sudo-автентифікація через. Відкривається термінал, де ви можете ввести пароль, або використайте відбиток пальця"
   },
-  "Sync popouts and modals": {
-    "Sync popouts and modals": "Синхронізувати спливаючі вікна та модальні вікна"
-  },
   "Sync position across displays": {
     "Sync position across displays": "Синхронізувати позицію між дисплеями"
   },
@@ -9715,9 +9604,6 @@
   },
   "Systemd unit": {
     "Systemd unit": "Одиниця systemd"
-  },
-  "TRIM": {
-    "TRIM": "TRIM"
   },
   "Tab": {
     "Tab": "Вкладка"
@@ -9851,9 +9737,6 @@
   "The Island takes its place on this bar": {
     "The Island takes its place on this bar": "Острів займає своє місце на цій панелі"
   },
-  "The WiFi adapter could not start access point mode.": {
-    "The WiFi adapter could not start access point mode.": "WiFi-адаптер не зміг запустити режим точки доступу"
-  },
   "The arrow points in the direction the wind is blowing. The label shows where it comes from.": {
     "The arrow points in the direction the wind is blowing. The label shows where it comes from.": "Стрілка вказує напрямок вітру. Мітка показує, звідки він дме"
   },
@@ -9932,14 +9815,14 @@
   "Theme color": {
     "Theme color": "Колір теми"
   },
+  "Theme color behind the collapsed island": {
+    "Theme color behind the collapsed island": ""
+  },
+  "Theme color behind the expanded island": {
+    "Theme color behind the expanded island": ""
+  },
   "Theme colors come from this display's wallpaper": {
     "Theme colors come from this display's wallpaper": "Кольори теми беруться зі шпалер цього дисплея"
-  },
-  "Theme colour behind the collapsed island": {
-    "Theme colour behind the collapsed island": ""
-  },
-  "Theme colour behind the expanded island": {
-    "Theme colour behind the expanded island": ""
   },
   "Theme extracted to: %1": {
     "Theme extracted to: %1": "Тему експортовано за шляхом: %1"
@@ -9952,9 +9835,6 @@
   },
   "Theme, light and dark, matugen": {
     "Theme, light and dark, matugen": "Тема, світла та темна, matugen"
-  },
-  "Theme, palette, dark mode": {
-    "Theme, palette, dark mode": "Тема, палітра, темний режим"
   },
   "Themed app icons": {
     "Themed app icons": ""
@@ -10360,9 +10240,6 @@
   },
   "Unknown Artist": {
     "Unknown Artist": "Невідомий виконавець"
-  },
-  "Unknown Config": {
-    "Unknown Config": "Невідома конфігурація"
   },
   "Unknown Device": {
     "Unknown Device": "Невідомий пристрій"
@@ -10799,12 +10676,6 @@
   "W": {
     "W": "Вт"
   },
-  "WPA2 password": {
-    "WPA2 password": "Пароль WPA2"
-  },
-  "WWN": {
-    "WWN": "WWN"
-  },
   "Waiting": {
     "Waiting": "Очікування"
   },
@@ -10928,12 +10799,6 @@
   "Wi-Fi and Ethernet connection": {
     "Wi-Fi and Ethernet connection": "З'єднання Wi-Fi та Ethernet"
   },
-  "Wi-Fi is disabled": {
-    "Wi-Fi is disabled": "Wi-Fi вимкнено"
-  },
-  "Wi-Fi is disabled. You can still edit and save hotspot settings, but starting the hotspot requires Wi-Fi to be enabled.": {
-    "Wi-Fi is disabled. You can still edit and save hotspot settings, but starting the hotspot requires Wi-Fi to be enabled.": "Wi-Fi вимкнено. Ви все ще можете редагувати та зберігати налаштування точки доступу, але для її запуску потрібно увімкнути Wi-Fi"
-  },
   "Wi-Fi network": {
     "Wi-Fi network": "Мережа Wi-Fi"
   },
@@ -10942,18 +10807,6 @@
   },
   "Wi-Fi, Ethernet, VPN": {
     "Wi-Fi, Ethernet, VPN": "Wi-Fi, Ethernet, VPN"
-  },
-  "WiFi QR code for %1": {
-    "WiFi QR code for %1": "Wi-Fi QR-код для %1"
-  },
-  "WiFi disabled": {
-    "WiFi disabled": "Wi-Fi вимкнено"
-  },
-  "WiFi enabled": {
-    "WiFi enabled": "Wi-Fi увімкнено"
-  },
-  "WiFi is off": {
-    "WiFi is off": "Wi-Fi вимкнено"
   },
   "Wide (BT2020)": {
     "Wide (BT2020)": "Широкий (BT2020)"
@@ -11135,6 +10988,9 @@
   "Y axis": {
     "Y axis": "Вісь Y"
   },
+  "Year": {
+    "Year": ""
+  },
   "Yellow": {
     "Yellow": "Жовтий"
   },
@@ -11170,9 +11026,6 @@
   },
   "Your hotspot is running.": {
     "Your hotspot is running.": "Ваша точка доступу працює"
-  },
-  "Your hotspot profile is saved and ready to start.": {
-    "Your hotspot profile is saved and ready to start.": "Профіль вашої точки доступу збережений і готовий до запуску"
   },
   "Your keyboard layout puts %1 above the first level, so this bind will never fire. Pick a key the layout types without an extra layer.": {
     "Your keyboard layout puts %1 above the first level, so this bind will never fire. Pick a key the layout types without an extra layer.": "Ваша розкладка клавіатури ставить %1 над першим рівнем, тому ця комбінація ніколи не спрацює. Виберіть клавішу, яку розкладка вводить без додаткового рівня"
@@ -11270,9 +11123,6 @@
   "e.g., scratch, /^tmp_.*/, build": {
     "e.g., scratch, /^tmp_.*/, build": "напр., scratch, /^tmp_.*/, build"
   },
-  "efibootmgr failed": {
-    "efibootmgr failed": "efibootmgr завершився з помилкою"
-  },
   "expires in %1": {
     "expires in %1": "закінчується через %1"
   },
@@ -11291,17 +11141,11 @@
   "keyboard tab key name": {
     "Tab": "Вкладка"
   },
-  "khal": {
-    "khal": "khal"
-  },
   "last seen %1": {
     "last seen %1": "останній раз переглянуто %1"
   },
   "leave empty for default": {
     "leave empty for default": "залиште порожнім для значень за замовчуванням"
-  },
-  "loginctl activate failed (exit %1)": {
-    "loginctl activate failed (exit %1)": "Помилка активації loginctl (вихід %1)"
   },
   "loginctl integration": {
     "loginctl integration": "Інтеграція з loginctl"
@@ -11423,15 +11267,6 @@
   "updated": {
     "updated": "оновлено"
   },
-  "useradd failed (exit %1)": {
-    "useradd failed (exit %1)": "Помилка useradd (вихід %1)"
-  },
-  "userdel failed (exit %1)": {
-    "userdel failed (exit %1)": "Помилка userdel (вихід %1)"
-  },
-  "usermod failed (exit %1)": {
-    "usermod failed (exit %1)": "Помилка usermod (вихід %1)"
-  },
   "verb, clipboard entry action button tooltip": {
     "Preview": "Попередній перегляд"
   },
@@ -11443,35 +11278,5 @@
   },
   "wifi network status, network has a saved profile": {
     "Saved": "Збережено"
-  },
-  "• M - Month (1-12)": {
-    "• M - Month (1-12)": "• M — Місяць (1-12)"
-  },
-  "• MM - Month (01-12)": {
-    "• MM - Month (01-12)": "• MM — Місяць (01-12)"
-  },
-  "• MMM - Month (Jan)": {
-    "• MMM - Month (Jan)": "• MMM — Місяць (Січ)"
-  },
-  "• MMMM - Month (January)": {
-    "• MMMM - Month (January)": "• MMMM — Місяць (Січень)"
-  },
-  "• d - Day (1-31)": {
-    "• d - Day (1-31)": "• d — День (1-31)"
-  },
-  "• dd - Day (01-31)": {
-    "• dd - Day (01-31)": "• dd — День (01-31)"
-  },
-  "• ddd - Day name (Mon)": {
-    "• ddd - Day name (Mon)": "• ddd — Назва дня (Пн)"
-  },
-  "• dddd - Day name (Monday)": {
-    "• dddd - Day name (Monday)": "• dddd — Назва дня (Понеділок)"
-  },
-  "• yy - Year (24)": {
-    "• yy - Year (24)": "• yy — Рік (26)"
-  },
-  "• yyyy - Year (2024)": {
-    "• yyyy - Year (2024)": "• yyyy — Рік (2026)"
   }
 }

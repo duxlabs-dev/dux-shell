@@ -119,12 +119,6 @@
   "%1 fixes": {
     "%1 fixes": "%1 תיקונים"
   },
-  "%1 h": {
-    "%1 h": "%1 שעות"
-  },
-  "%1 h %2 m": {
-    "%1 h %2 m": "%1 שעות ו%2 דקות"
-  },
   "%1 h %2 m left": {
     "%1 h %2 m left": "נותרו %1 שעות ו-%2 דקות"
   },
@@ -250,9 +244,6 @@
   },
   "%1 processes": {
     "%1 processes": "%1 תהליכים"
-  },
-  "%1 procs": {
-    "%1 procs": "%1 תהליכים"
   },
   "%1 second": {
     "%1 second": "שנייה אחת"
@@ -397,9 +388,6 @@
   },
   "AC power": {
     "AC power": "חשמל AC"
-  },
-  "API": {
-    "API": "API"
   },
   "AUR helpers are interactive — see the terminal window for prompts. This popout will return to idle when the upgrade exits.": {
     "AUR helpers are interactive — see the terminal window for prompts. This popout will return to idle when the upgrade exits.": "עוזרי AUR הם אינטראקטיביים - ראה/ראי את חלון המסוף להנחיות. חלון קופץ זה יחזור למצב המתנה כאשר העדכון יסתיים."
@@ -794,9 +782,6 @@
   "Anchor": {
     "Anchor": "עוגן"
   },
-  "Animation duration": {
-    "Animation duration": "משך זמן לאנימציה"
-  },
   "Animation style": {
     "Animation style": "סגנון הנפשה"
   },
@@ -1190,9 +1175,6 @@
   "Avoid open popouts": {
     "Avoid open popouts": ""
   },
-  "BIOS": {
-    "BIOS": "BIOS"
-  },
   "Backend": {
     "Backend": "Backend"
   },
@@ -1501,9 +1483,6 @@
   },
   "CPU": {
     "CPU": "CPU"
-  },
-  "CPU graph": {
-    "CPU graph": "גרף למעבד"
   },
   "CPU temperature": {
     "CPU temperature": "טמפרטורת CPU"
@@ -2495,9 +2474,6 @@
   "DMS will then manage %1 animations and override animation settings in your config.": {
     "DMS will then manage %1 animations and override animation settings in your config.": ""
   },
-  "DNS": {
-    "DNS": ""
-  },
   "Daemon": {
     "Daemon": "Daemon"
   },
@@ -2819,9 +2795,6 @@
   "Disabled by Frame Mode": {
     "Disabled by Frame Mode": "מושבת על ידי מצב מסגרת"
   },
-  "Disabling WiFi...": {
-    "Disabling WiFi...": "משבית WiFi..."
-  },
   "Disabling auto-login on startup...": {
     "Disabling auto-login on startup...": "משבית התחברות אוטומטית בהפעלה..."
   },
@@ -2842,9 +2815,6 @@
   },
   "Disconnected": {
     "Disconnected": "מנותק"
-  },
-  "Disconnected from WiFi": {
-    "Disconnected from WiFi": "החיבור לWiFi התנתק"
   },
   "Discover community plugins. Review their code before installing, and audit changes before updating.": {
     "Discover community plugins. Review their code before installing, and audit changes before updating.": "גלה/י תוספים מהקהילה. בדוק/בדקי את הקוד שלהם לפני ההתקנה, ועבור/עברי על השינויים לפני עדכון."
@@ -2981,9 +2951,6 @@
   "Does not fit here. Drag to another spot.": {
     "Does not fit here. Drag to another spot.": ""
   },
-  "Domain (optional)": {
-    "Domain (optional)": "דומיין (לא חובה)"
-  },
   "Dominant": {
     "Dominant": "דומיננטי"
   },
@@ -3076,9 +3043,6 @@
   },
   "Dusk (Astronomical Twilight)": {
     "Dusk (Astronomical Twilight)": "צאת הכוכבים (דמדומים אסטרונומיים)"
-  },
-  "Dusk (Civil Twighlight)": {
-    "Dusk (Civil Twighlight)": "צאת הכוכבים (דמדומים אזרחיים)"
   },
   "Dusk (Nautical Twilight)": {
     "Dusk (Nautical Twilight)": "צאת הכוכבים (דמדומים ימיים)"
@@ -3209,9 +3173,6 @@
   "Empty space": {
     "Empty space": ""
   },
-  "Enable Wi-Fi before starting the hotspot.": {
-    "Enable Wi-Fi before starting the hotspot.": "הפעל/י את הWiFi לפני הפעלת הנקודה החמה."
-  },
   "Enable autoconnect": {
     "Enable autoconnect": "הפעל/י התחברות אוטומטית"
   },
@@ -3226,9 +3187,6 @@
   },
   "Enabled": {
     "Enabled": "מופעל"
-  },
-  "Enabling WiFi...": {
-    "Enabling WiFi...": "מפעיל WiFi..."
   },
   "Enabling cellular...": {
     "Enabling cellular...": "מפעיל סלולר..."
@@ -3509,9 +3467,6 @@
   "Failed to disconnect VPNs": {
     "Failed to disconnect VPNs": "ניתוק הVPNs נכשל"
   },
-  "Failed to disconnect WiFi": {
-    "Failed to disconnect WiFi": "ניתוק הWiFi נכשל"
-  },
   "Failed to duplicate %1": {
     "Failed to duplicate %1": ""
   },
@@ -3520,9 +3475,6 @@
   },
   "Failed to enable IP location": {
     "Failed to enable IP location": "הפעלת מיקום לפי IP נכשלה"
-  },
-  "Failed to enable WiFi": {
-    "Failed to enable WiFi": "הפעלת הWiFi נכשלה"
   },
   "Failed to enable job acceptance": {
     "Failed to enable job acceptance": "הפעלת קבלת עבודות נכשלה"
@@ -3656,9 +3608,6 @@
   "Failed to save screenshot": {
     "Failed to save screenshot": ""
   },
-  "Failed to send file": {
-    "Failed to send file": ""
-  },
   "Failed to set brightness": {
     "Failed to set brightness": "הגדרת הבהירות נכשלה"
   },
@@ -3682,9 +3631,6 @@
   },
   "Failed to set profile image": {
     "Failed to set profile image": "הגדרת תמונת הפרופיל נכשלה"
-  },
-  "Failed to set profile image: %1": {
-    "Failed to set profile image: %1": "הגדרת תמונת פרופיל נכשלה: %1"
   },
   "Failed to start connection to %1": {
     "Failed to start connection to %1": "התחלת החיבור ל%1 נכשלה"
@@ -4013,9 +3959,6 @@
   "Fonts & motion": {
     "Fonts & motion": "גופנים ותנועה"
   },
-  "Fonts, scale, animations": {
-    "Fonts, scale, animations": "גופנים, קנה מידה והנפשות"
-  },
   "For %1": {
     "For %1": "למשך %1"
   },
@@ -4243,9 +4186,6 @@
   },
   "Get Started": {
     "Get Started": "התחל/י"
-  },
-  "Git": {
-    "Git": "Git"
   },
   "Global fonts can be configured in Settings → Personalization": {
     "Global fonts can be configured in Settings → Personalization": "ניתן להגדיר גופנים גלובליים בהגדרות ← התאמה אישית"
@@ -4643,12 +4583,6 @@
   "IP sharing setup failed. Check that %1 is installed.": {
     "IP sharing setup failed. Check that %1 is installed.": "הגדרת שיתוף IP נכשלה. ודא/י שהחבילה %1 מותקנת."
   },
-  "IPv4": {
-    "IPv4": ""
-  },
-  "IPv6": {
-    "IPv6": "IPv6"
-  },
   "ISO date": {
     "ISO date": "תאריך ISO"
   },
@@ -4844,9 +4778,6 @@
   "Initial title": {
     "Initial title": "כותרת התחלתית"
   },
-  "Initialised": {
-    "Initialised": "אותחל"
-  },
   "Injected palettes": {
     "Injected palettes": "פלטות מוזרקות"
   },
@@ -4895,12 +4826,6 @@
   "Install Plugin": {
     "Install Plugin": "התקן/י תוסף"
   },
-  "Install Theme": {
-    "Install Theme": "התקן/י ערכת נושא"
-  },
-  "Install a theme": {
-    "Install a theme": ""
-  },
   "Install color themes from the DMS theme registry": {
     "Install color themes from the DMS theme registry": "התקן/י ערכות צבעים ממאגר ערכות הנושא של DMS"
   },
@@ -4939,9 +4864,6 @@
   },
   "Installed": {
     "Installed": "מותקן"
-  },
-  "Installed %1": {
-    "Installed %1": ""
   },
   "Installed %1, still running %2": {
     "Installed %1, still running %2": "מותקנת גרסה %1, אך עדיין פועלת גרסה %2"
@@ -5552,9 +5474,6 @@
   "MIT License": {
     "MIT License": "רישיון MIT"
   },
-  "MTU": {
-    "MTU": "MTU"
-  },
   "Mac": {
     "Mac": ""
   },
@@ -5813,9 +5732,6 @@
   "Memory controller": {
     "Memory controller": "בקר זיכרון"
   },
-  "Memory graph": {
-    "Memory graph": "גרף לזיכרון"
-  },
   "Memory usage": {
     "Memory usage": "שימוש בזיכרון"
   },
@@ -6062,12 +5978,6 @@
   "Mute popups for %1": {
     "Mute popups for %1": "השתק/י חלונות קופצים עבור %1"
   },
-  "Mute popups for %1 (1 hour)": {
-    "Mute popups for %1 (1 hour)": "השתק/י חלונות קופצים מ%1 למשך שעה"
-  },
-  "Mute popups for %1 (4 hours)": {
-    "Mute popups for %1 (4 hours)": "השתק/י חלונות קופצים מ%1 למשך 4 שעות"
-  },
   "Mute, ignore and priority rules per app": {
     "Mute, ignore and priority rules per app": "כללי השתקה, התעלמות ועדיפות לכל אפליקציה"
   },
@@ -6125,9 +6035,6 @@
   "Network": {
     "Network": "רשת"
   },
-  "Network Info": {
-    "Network Info": "מידע רשת"
-  },
   "Network Information": {
     "Network Information": "מידע רשת מפורט"
   },
@@ -6137,14 +6044,8 @@
   "Network download and upload speed display": {
     "Network download and upload speed display": "תצוגת מהירות הורדה והעלאה ברשת"
   },
-  "Network graph": {
-    "Network graph": "גרף לרשת"
-  },
   "Network speed monitor": {
     "Network speed monitor": "מנטר מהירות רשת"
-  },
-  "Networks, saved networks, hotspot": {
-    "Networks, saved networks, hotspot": "רשתות, רשתות שמורות ונקודה חמה"
   },
   "Neutral": {
     "Neutral": "נייטרלי"
@@ -7439,9 +7340,6 @@
   "Popouts": {
     "Popouts": "חלונות קופצים"
   },
-  "Popouts and modals use the main animation duration": {
-    "Popouts and modals use the main animation duration": "חלונות קופצים ומודלים משתמשים במשך האנימציה הראשי"
-  },
   "Popular": {
     "Popular": "פופולריים"
   },
@@ -8414,9 +8312,6 @@
   "SE": {
     "SE": "דמז"
   },
-  "SSID": {
-    "SSID": "SSID"
-  },
   "SW": {
     "SW": "דמע"
   },
@@ -8737,9 +8632,6 @@
   },
   "Selected image file not found.": {
     "Selected image file not found.": "קובץ התמונה שנבחר לא נמצא."
-  },
-  "Sending file to %1...": {
-    "Sending file to %1...": ""
   },
   "Sends the playing artist and album name to Apple": {
     "Sends the playing artist and album name to Apple": "שולח את שם האמן והאלבום המתנגנים לApple"
@@ -9647,9 +9539,6 @@
   "Sync needs sudo authentication. Opening terminal so you can use password or fingerprint.": {
     "Sync needs sudo authentication. Opening terminal so you can use password or fingerprint.": "הסנכרון דורש אימות עם sudo. ייפתח מסוף כדי שתוכל/י להשתמש בסיסמה או בטביעת אצבע."
   },
-  "Sync popouts and modals": {
-    "Sync popouts and modals": "סנכרון חלונות קופצים ומודלים"
-  },
   "Sync position across displays": {
     "Sync position across displays": "סנכרון מיקום בין מסכים"
   },
@@ -9715,9 +9604,6 @@
   },
   "Systemd unit": {
     "Systemd unit": "יחידת systemd"
-  },
-  "TRIM": {
-    "TRIM": "TRIM"
   },
   "Tab": {
     "Tab": "Tab"
@@ -9851,9 +9737,6 @@
   "The Island takes its place on this bar": {
     "The Island takes its place on this bar": "הIsland מחליף את המקטע המרכזי בסרגל הזה"
   },
-  "The WiFi adapter could not start access point mode.": {
-    "The WiFi adapter could not start access point mode.": "מתאם הWiFi לא הצליח להפעיל מצב נקודת גישה."
-  },
   "The arrow points in the direction the wind is blowing. The label shows where it comes from.": {
     "The arrow points in the direction the wind is blowing. The label shows where it comes from.": "החץ מצביע לכיוון שאליו הרוח נושבת. התווית מציגה מהיכן היא מגיעה."
   },
@@ -9932,14 +9815,14 @@
   "Theme color": {
     "Theme color": "צבע ערכת הנושא"
   },
+  "Theme color behind the collapsed island": {
+    "Theme color behind the collapsed island": ""
+  },
+  "Theme color behind the expanded island": {
+    "Theme color behind the expanded island": ""
+  },
   "Theme colors come from this display's wallpaper": {
     "Theme colors come from this display's wallpaper": "צבעי ערכת הנושא מגיעים מתמונת הרקע של מסך זה"
-  },
-  "Theme colour behind the collapsed island": {
-    "Theme colour behind the collapsed island": ""
-  },
-  "Theme colour behind the expanded island": {
-    "Theme colour behind the expanded island": ""
   },
   "Theme extracted to: %1": {
     "Theme extracted to: %1": "ערכת הנושא חולצה אל: %1"
@@ -9952,9 +9835,6 @@
   },
   "Theme, light and dark, matugen": {
     "Theme, light and dark, matugen": "ערכת נושא, מצב בהיר וכהה ו-matugen"
-  },
-  "Theme, palette, dark mode": {
-    "Theme, palette, dark mode": "ערכת נושא, פלטה ומצב כהה"
   },
   "Themed app icons": {
     "Themed app icons": ""
@@ -10360,9 +10240,6 @@
   },
   "Unknown Artist": {
     "Unknown Artist": "אמן לא ידוע"
-  },
-  "Unknown Config": {
-    "Unknown Config": "הגדרה לא ידועה"
   },
   "Unknown Device": {
     "Unknown Device": "התקן לא ידוע"
@@ -10799,12 +10676,6 @@
   "W": {
     "W": "רוחב"
   },
-  "WPA2 password": {
-    "WPA2 password": "סיסמת WPA2"
-  },
-  "WWN": {
-    "WWN": "WWN"
-  },
   "Waiting": {
     "Waiting": "ממתין"
   },
@@ -10928,12 +10799,6 @@
   "Wi-Fi and Ethernet connection": {
     "Wi-Fi and Ethernet connection": "חיבור Wi-Fi ו-Ethernet"
   },
-  "Wi-Fi is disabled": {
-    "Wi-Fi is disabled": "חיבור WiFi מושבת"
-  },
-  "Wi-Fi is disabled. You can still edit and save hotspot settings, but starting the hotspot requires Wi-Fi to be enabled.": {
-    "Wi-Fi is disabled. You can still edit and save hotspot settings, but starting the hotspot requires Wi-Fi to be enabled.": "הWiFi מושבת. עדיין ניתן לערוך ולשמור את הגדרות הנקודה החמה, אך הפעלת הנקודה החמה דורשת שהWiFi יהיה פעיל."
-  },
   "Wi-Fi network": {
     "Wi-Fi network": "רשת Wi-Fi"
   },
@@ -10942,18 +10807,6 @@
   },
   "Wi-Fi, Ethernet, VPN": {
     "Wi-Fi, Ethernet, VPN": "Wi-Fi, Ethernet, VPN"
-  },
-  "WiFi QR code for %1": {
-    "WiFi QR code for %1": "קוד QR לרשת הWiFi %1"
-  },
-  "WiFi disabled": {
-    "WiFi disabled": "חיבור WiFi מושבת"
-  },
-  "WiFi enabled": {
-    "WiFi enabled": "חיבור WiFi מופעל"
-  },
-  "WiFi is off": {
-    "WiFi is off": "הWi-Fi כבוי"
   },
   "Wide (BT2020)": {
     "Wide (BT2020)": "רחב (BT2020)"
@@ -11135,6 +10988,9 @@
   "Y axis": {
     "Y axis": "ציר Y"
   },
+  "Year": {
+    "Year": ""
+  },
   "Yellow": {
     "Yellow": "צהוב"
   },
@@ -11170,9 +11026,6 @@
   },
   "Your hotspot is running.": {
     "Your hotspot is running.": "הנקודה החמה שלך פעילה."
-  },
-  "Your hotspot profile is saved and ready to start.": {
-    "Your hotspot profile is saved and ready to start.": "פרופיל הנקודה החמה שלך נשמר ומוכן להפעלה."
   },
   "Your keyboard layout puts %1 above the first level, so this bind will never fire. Pick a key the layout types without an extra layer.": {
     "Your keyboard layout puts %1 above the first level, so this bind will never fire. Pick a key the layout types without an extra layer.": "פריסת המקלדת שלך ממקמת את %1 מעל הרמה הראשונה ולכן קישור מקשים זה לעולם לא יופעל. בחר/י מקש שהפריסה מקלידה ללא שכבה נוספת."
@@ -11270,9 +11123,6 @@
   "e.g., scratch, /^tmp_.*/, build": {
     "e.g., scratch, /^tmp_.*/, build": "לדוגמה, scratch, /^tmp_.*/, build"
   },
-  "efibootmgr failed": {
-    "efibootmgr failed": "הפקודה efibootmgr נכשלה"
-  },
   "expires in %1": {
     "expires in %1": "יפוג בעוד %1"
   },
@@ -11291,17 +11141,11 @@
   "keyboard tab key name": {
     "Tab": "Tab"
   },
-  "khal": {
-    "khal": "khal"
-  },
   "last seen %1": {
     "last seen %1": "נראה/תה לאחרונה %1"
   },
   "leave empty for default": {
     "leave empty for default": "השאר/י ריק לברירת מחדל"
-  },
-  "loginctl activate failed (exit %1)": {
-    "loginctl activate failed (exit %1)": "הפעלת loginctl נכשלה (יציאה %1)"
   },
   "loginctl integration": {
     "loginctl integration": "שילוב עם loginctl"
@@ -11423,15 +11267,6 @@
   "updated": {
     "updated": "עודכן"
   },
-  "useradd failed (exit %1)": {
-    "useradd failed (exit %1)": "הפקודה useradd נכשלה (קוד יציאה %1)"
-  },
-  "userdel failed (exit %1)": {
-    "userdel failed (exit %1)": "הפקודה userdel נכשלה (קוד יציאה %1)"
-  },
-  "usermod failed (exit %1)": {
-    "usermod failed (exit %1)": "הפקודה usermod נכשלה (קוד יציאה %1)"
-  },
   "verb, clipboard entry action button tooltip": {
     "Preview": "תצוגה מקדימה"
   },
@@ -11443,35 +11278,5 @@
   },
   "wifi network status, network has a saved profile": {
     "Saved": "נשמר"
-  },
-  "• M - Month (1-12)": {
-    "• M - Month (1-12)": "• M - חודש (1-12)"
-  },
-  "• MM - Month (01-12)": {
-    "• MM - Month (01-12)": "• MM - חודש (01-12)"
-  },
-  "• MMM - Month (Jan)": {
-    "• MMM - Month (Jan)": "• MMM - חודש (Jan)"
-  },
-  "• MMMM - Month (January)": {
-    "• MMMM - Month (January)": "• MMMM - חודש (January)"
-  },
-  "• d - Day (1-31)": {
-    "• d - Day (1-31)": "• d - יום (1-31)"
-  },
-  "• dd - Day (01-31)": {
-    "• dd - Day (01-31)": "• dd - יום (01-31)"
-  },
-  "• ddd - Day name (Mon)": {
-    "• ddd - Day name (Mon)": "• ddd - שם יום (Mon)"
-  },
-  "• dddd - Day name (Monday)": {
-    "• dddd - Day name (Monday)": "• dddd - שם יום (Monday)"
-  },
-  "• yy - Year (24)": {
-    "• yy - Year (24)": "• yy - שנה (24)"
-  },
-  "• yyyy - Year (2024)": {
-    "• yyyy - Year (2024)": "• yyyy - שנה (2024)"
   }
 }

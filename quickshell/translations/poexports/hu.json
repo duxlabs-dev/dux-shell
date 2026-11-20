@@ -119,12 +119,6 @@
   "%1 fixes": {
     "%1 fixes": "%1 javítás"
   },
-  "%1 h": {
-    "%1 h": "%1 ó"
-  },
-  "%1 h %2 m": {
-    "%1 h %2 m": "%1 ó %2 p"
-  },
   "%1 h %2 m left": {
     "%1 h %2 m left": "%1 ó %2 p van hátra"
   },
@@ -250,9 +244,6 @@
   },
   "%1 processes": {
     "%1 processes": "%1 folyamat"
-  },
-  "%1 procs": {
-    "%1 procs": "%1 folyamat"
   },
   "%1 second": {
     "%1 second": "%1 másodperc"
@@ -397,9 +388,6 @@
   },
   "AC power": {
     "AC power": "Hálózati tápellátás"
-  },
-  "API": {
-    "API": "API"
   },
   "AUR helpers are interactive — see the terminal window for prompts. This popout will return to idle when the upgrade exits.": {
     "AUR helpers are interactive — see the terminal window for prompts. This popout will return to idle when the upgrade exits.": "Az AUR-segédprogramok interaktívak – a kérésekért nézd meg a terminálablakot. Ez a felugró ablak visszatér üresjáratba, amikor a frissítés befejeződik."
@@ -794,9 +782,6 @@
   "Anchor": {
     "Anchor": "Horgony"
   },
-  "Animation duration": {
-    "Animation duration": "Animáció időtartama"
-  },
   "Animation style": {
     "Animation style": "Animációs stílus"
   },
@@ -1190,9 +1175,6 @@
   "Avoid open popouts": {
     "Avoid open popouts": ""
   },
-  "BIOS": {
-    "BIOS": "BIOS"
-  },
   "Backend": {
     "Backend": "Háttérrendszer"
   },
@@ -1501,9 +1483,6 @@
   },
   "CPU": {
     "CPU": "CPU"
-  },
-  "CPU graph": {
-    "CPU graph": "CPU-grafikon"
   },
   "CPU temperature": {
     "CPU temperature": "CPU-hőmérséklet"
@@ -2495,9 +2474,6 @@
   "DMS will then manage %1 animations and override animation settings in your config.": {
     "DMS will then manage %1 animations and override animation settings in your config.": ""
   },
-  "DNS": {
-    "DNS": ""
-  },
   "Daemon": {
     "Daemon": "Démon"
   },
@@ -2819,9 +2795,6 @@
   "Disabled by Frame Mode": {
     "Disabled by Frame Mode": "Keret mód miatt letiltva"
   },
-  "Disabling WiFi...": {
-    "Disabling WiFi...": "Wi-Fi letiltása…"
-  },
   "Disabling auto-login on startup...": {
     "Disabling auto-login on startup...": "Automatikus bejelentkezés letiltása indításkor…"
   },
@@ -2842,9 +2815,6 @@
   },
   "Disconnected": {
     "Disconnected": "Leválasztva"
-  },
-  "Disconnected from WiFi": {
-    "Disconnected from WiFi": "Lecsatlakozva a Wi-Fi-ről"
   },
   "Discover community plugins. Review their code before installing, and audit changes before updating.": {
     "Discover community plugins. Review their code before installing, and audit changes before updating.": "Fedezd fel a közösségi bővítményeket. Telepítés előtt ellenőrizd a kódjukat, és frissítés előtt vizsgáld felül a változtatásokat."
@@ -2981,9 +2951,6 @@
   "Does not fit here. Drag to another spot.": {
     "Does not fit here. Drag to another spot.": ""
   },
-  "Domain (optional)": {
-    "Domain (optional)": "Tartomány (nem kötelező)"
-  },
   "Dominant": {
     "Dominant": "Domináns"
   },
@@ -3076,9 +3043,6 @@
   },
   "Dusk (Astronomical Twilight)": {
     "Dusk (Astronomical Twilight)": "Csillagászati alkony"
-  },
-  "Dusk (Civil Twighlight)": {
-    "Dusk (Civil Twighlight)": "Polgári alkony"
   },
   "Dusk (Nautical Twilight)": {
     "Dusk (Nautical Twilight)": "Tengeri alkony"
@@ -3209,9 +3173,6 @@
   "Empty space": {
     "Empty space": ""
   },
-  "Enable Wi-Fi before starting the hotspot.": {
-    "Enable Wi-Fi before starting the hotspot.": "Engedélyezd a Wi-Fi-t a hotspot indítása előtt."
-  },
   "Enable autoconnect": {
     "Enable autoconnect": "Automatikus csatlakozás engedélyezése"
   },
@@ -3226,9 +3187,6 @@
   },
   "Enabled": {
     "Enabled": "Engedélyezve"
-  },
-  "Enabling WiFi...": {
-    "Enabling WiFi...": "Wi-Fi engedélyezése…"
   },
   "Enabling cellular...": {
     "Enabling cellular...": "Mobilhálózat engedélyezése…"
@@ -3509,9 +3467,6 @@
   "Failed to disconnect VPNs": {
     "Failed to disconnect VPNs": "Nem sikerült lecsatlakoztatni a VPN-eket"
   },
-  "Failed to disconnect WiFi": {
-    "Failed to disconnect WiFi": "Nem sikerült lecsatlakozni a Wi-Fi-ről"
-  },
   "Failed to duplicate %1": {
     "Failed to duplicate %1": ""
   },
@@ -3520,9 +3475,6 @@
   },
   "Failed to enable IP location": {
     "Failed to enable IP location": "Nem sikerült engedélyezni az IP-helymeghatározást"
-  },
-  "Failed to enable WiFi": {
-    "Failed to enable WiFi": "Nem sikerült engedélyezni a Wi-Fi-t"
   },
   "Failed to enable job acceptance": {
     "Failed to enable job acceptance": "Nem sikerült a feladatok elfogadásának engedélyezése"
@@ -3656,9 +3608,6 @@
   "Failed to save screenshot": {
     "Failed to save screenshot": ""
   },
-  "Failed to send file": {
-    "Failed to send file": ""
-  },
   "Failed to set brightness": {
     "Failed to set brightness": "Nem sikerült beállítani a fényerőt"
   },
@@ -3682,9 +3631,6 @@
   },
   "Failed to set profile image": {
     "Failed to set profile image": "Nem sikerült beállítani a profilképet"
-  },
-  "Failed to set profile image: %1": {
-    "Failed to set profile image: %1": "Nem sikerült beállítani a profilképet: %1"
   },
   "Failed to start connection to %1": {
     "Failed to start connection to %1": "Nem sikerült elindítani a csatlakozást ehhez: %1"
@@ -4013,9 +3959,6 @@
   "Fonts & motion": {
     "Fonts & motion": "Betűkészletek és mozgás"
   },
-  "Fonts, scale, animations": {
-    "Fonts, scale, animations": "Betűtípusok, méretezés, animációk"
-  },
   "For %1": {
     "For %1": "Itt: %1"
   },
@@ -4243,9 +4186,6 @@
   },
   "Get Started": {
     "Get Started": "Kezdés"
-  },
-  "Git": {
-    "Git": "Git"
   },
   "Global fonts can be configured in Settings → Personalization": {
     "Global fonts can be configured in Settings → Personalization": "A globális betűkészletek a Beállítások → Személyre szabás menüpontban beállíthatók"
@@ -4643,12 +4583,6 @@
   "IP sharing setup failed. Check that %1 is installed.": {
     "IP sharing setup failed. Check that %1 is installed.": "Az IP-megosztás beállítása sikertelen. Ellenőrizd, hogy a(z) %1 telepítve van-e."
   },
-  "IPv4": {
-    "IPv4": ""
-  },
-  "IPv6": {
-    "IPv6": "IPv6"
-  },
   "ISO date": {
     "ISO date": "ISO-dátum"
   },
@@ -4844,9 +4778,6 @@
   "Initial title": {
     "Initial title": "Kezdeti cím"
   },
-  "Initialised": {
-    "Initialised": "Inicializálva"
-  },
   "Injected palettes": {
     "Injected palettes": "Beillesztett paletták"
   },
@@ -4895,12 +4826,6 @@
   "Install Plugin": {
     "Install Plugin": "Bővítmény telepítése"
   },
-  "Install Theme": {
-    "Install Theme": "Téma telepítése"
-  },
-  "Install a theme": {
-    "Install a theme": ""
-  },
   "Install color themes from the DMS theme registry": {
     "Install color themes from the DMS theme registry": "Színtémák telepítése a DMS-témaregiszterből"
   },
@@ -4939,9 +4864,6 @@
   },
   "Installed": {
     "Installed": "Telepítve"
-  },
-  "Installed %1": {
-    "Installed %1": ""
   },
   "Installed %1, still running %2": {
     "Installed %1, still running %2": "%1 telepítve, még mindig a(z) %2 fut"
@@ -5552,9 +5474,6 @@
   "MIT License": {
     "MIT License": "MIT licenc"
   },
-  "MTU": {
-    "MTU": "MTU"
-  },
   "Mac": {
     "Mac": ""
   },
@@ -5813,9 +5732,6 @@
   "Memory controller": {
     "Memory controller": "Memóriavezérlő"
   },
-  "Memory graph": {
-    "Memory graph": "Memóriagrafikon"
-  },
   "Memory usage": {
     "Memory usage": "Memóriahasználat"
   },
@@ -6062,12 +5978,6 @@
   "Mute popups for %1": {
     "Mute popups for %1": "Felugró ablakok némítása ehhez: %1"
   },
-  "Mute popups for %1 (1 hour)": {
-    "Mute popups for %1 (1 hour)": "Értesítések némítása ennél: %1 (1 óra)"
-  },
-  "Mute popups for %1 (4 hours)": {
-    "Mute popups for %1 (4 hours)": "Értesítések némítása ennél: %1 (4 óra)"
-  },
   "Mute, ignore and priority rules per app": {
     "Mute, ignore and priority rules per app": "Némítási, figyelmen kívül hagyási és prioritási szabályok alkalmazásonként"
   },
@@ -6125,9 +6035,6 @@
   "Network": {
     "Network": "Hálózat"
   },
-  "Network Info": {
-    "Network Info": "Hálózati információ"
-  },
   "Network Information": {
     "Network Information": "Hálózati információ"
   },
@@ -6137,14 +6044,8 @@
   "Network download and upload speed display": {
     "Network download and upload speed display": "Hálózati le- és feltöltési sebesség kijelzése"
   },
-  "Network graph": {
-    "Network graph": "Hálózati grafikon"
-  },
   "Network speed monitor": {
     "Network speed monitor": "Hálózati sebességfigyelő"
-  },
-  "Networks, saved networks, hotspot": {
-    "Networks, saved networks, hotspot": "Hálózatok, elmentett hálózatok, hotspot"
   },
   "Neutral": {
     "Neutral": "Semleges"
@@ -7439,9 +7340,6 @@
   "Popouts": {
     "Popouts": "Felugró ablakok"
   },
-  "Popouts and modals use the main animation duration": {
-    "Popouts and modals use the main animation duration": "A felugró ablakok és a modális ablakok a fő animáció időtartamát veszik alapul"
-  },
   "Popular": {
     "Popular": "Népszerű"
   },
@@ -8414,9 +8312,6 @@
   "SE": {
     "SE": "DK"
   },
-  "SSID": {
-    "SSID": "SSID"
-  },
   "SW": {
     "SW": "DNY"
   },
@@ -8737,9 +8632,6 @@
   },
   "Selected image file not found.": {
     "Selected image file not found.": "A kiválasztott képfájl nem található."
-  },
-  "Sending file to %1...": {
-    "Sending file to %1...": ""
   },
   "Sends the playing artist and album name to Apple": {
     "Sends the playing artist and album name to Apple": "Elküldi a lejátszott előadó és album nevét az Apple-nek"
@@ -9647,9 +9539,6 @@
   "Sync needs sudo authentication. Opening terminal so you can use password or fingerprint.": {
     "Sync needs sudo authentication. Opening terminal so you can use password or fingerprint.": "A szinkronizáláshoz sudo hitelesítés szükséges. Terminál megnyitása a jelszó vagy ujjlenyomat használatához."
   },
-  "Sync popouts and modals": {
-    "Sync popouts and modals": "Felbukkanó és modális ablakok szinkronizálása"
-  },
   "Sync position across displays": {
     "Sync position across displays": "Pozíció szinkronizálása a kijelzők között"
   },
@@ -9715,9 +9604,6 @@
   },
   "Systemd unit": {
     "Systemd unit": "Systemd-egység"
-  },
-  "TRIM": {
-    "TRIM": "TRIM"
   },
   "Tab": {
     "Tab": "Lap"
@@ -9851,9 +9737,6 @@
   "The Island takes its place on this bar": {
     "The Island takes its place on this bar": "A Sziget ezen a sávon kap helyet"
   },
-  "The WiFi adapter could not start access point mode.": {
-    "The WiFi adapter could not start access point mode.": "A Wi-Fi kártya nem tudott hozzáférési pont módba lépni."
-  },
   "The arrow points in the direction the wind is blowing. The label shows where it comes from.": {
     "The arrow points in the direction the wind is blowing. The label shows where it comes from.": "A nyíl abba az irányba mutat, amerre a szél fúj. A címke azt mutatja, honnan fúj."
   },
@@ -9932,14 +9815,14 @@
   "Theme color": {
     "Theme color": "Témaszín"
   },
+  "Theme color behind the collapsed island": {
+    "Theme color behind the collapsed island": ""
+  },
+  "Theme color behind the expanded island": {
+    "Theme color behind the expanded island": ""
+  },
   "Theme colors come from this display's wallpaper": {
     "Theme colors come from this display's wallpaper": "A téma színei a kijelző háttérképéből származnak"
-  },
-  "Theme colour behind the collapsed island": {
-    "Theme colour behind the collapsed island": ""
-  },
-  "Theme colour behind the expanded island": {
-    "Theme colour behind the expanded island": ""
   },
   "Theme extracted to: %1": {
     "Theme extracted to: %1": "Téma exportálva ide: %1"
@@ -9952,9 +9835,6 @@
   },
   "Theme, light and dark, matugen": {
     "Theme, light and dark, matugen": "Téma, világos és sötét, matugen"
-  },
-  "Theme, palette, dark mode": {
-    "Theme, palette, dark mode": "Téma, paletta, sötét mód"
   },
   "Themed app icons": {
     "Themed app icons": ""
@@ -10360,9 +10240,6 @@
   },
   "Unknown Artist": {
     "Unknown Artist": "Ismeretlen előadó"
-  },
-  "Unknown Config": {
-    "Unknown Config": "Ismeretlen konfiguráció"
   },
   "Unknown Device": {
     "Unknown Device": "Ismeretlen eszköz"
@@ -10799,12 +10676,6 @@
   "W": {
     "W": "H"
   },
-  "WPA2 password": {
-    "WPA2 password": "WPA2 jelszó"
-  },
-  "WWN": {
-    "WWN": "WWN"
-  },
   "Waiting": {
     "Waiting": "Várakozás"
   },
@@ -10928,12 +10799,6 @@
   "Wi-Fi and Ethernet connection": {
     "Wi-Fi and Ethernet connection": "Wi-Fi- és Ethernet-kapcsolatok"
   },
-  "Wi-Fi is disabled": {
-    "Wi-Fi is disabled": "Wi-Fi letiltva"
-  },
-  "Wi-Fi is disabled. You can still edit and save hotspot settings, but starting the hotspot requires Wi-Fi to be enabled.": {
-    "Wi-Fi is disabled. You can still edit and save hotspot settings, but starting the hotspot requires Wi-Fi to be enabled.": "A Wi-Fi le van tiltva. Továbbra is szerkesztheted és mentheted a hotspot beállításait, de a hotspot indításához engedélyezni kell a Wi-Fi-t."
-  },
   "Wi-Fi network": {
     "Wi-Fi network": "Wi-Fi hálózat"
   },
@@ -10942,18 +10807,6 @@
   },
   "Wi-Fi, Ethernet, VPN": {
     "Wi-Fi, Ethernet, VPN": "Wi-Fi, Ethernet, VPN"
-  },
-  "WiFi QR code for %1": {
-    "WiFi QR code for %1": "Wi-Fi-QR-kód ehhez: %1"
-  },
-  "WiFi disabled": {
-    "WiFi disabled": "Wi-Fi letiltva"
-  },
-  "WiFi enabled": {
-    "WiFi enabled": "Wi-Fi engedélyezve"
-  },
-  "WiFi is off": {
-    "WiFi is off": "A Wi-Fi ki van kapcsolva"
   },
   "Wide (BT2020)": {
     "Wide (BT2020)": "Széles (BT2020)"
@@ -11135,6 +10988,9 @@
   "Y axis": {
     "Y axis": "Y tengely"
   },
+  "Year": {
+    "Year": ""
+  },
   "Yellow": {
     "Yellow": "Sárga"
   },
@@ -11170,9 +11026,6 @@
   },
   "Your hotspot is running.": {
     "Your hotspot is running.": "A hotspot fut."
-  },
-  "Your hotspot profile is saved and ready to start.": {
-    "Your hotspot profile is saved and ready to start.": "A hotspotprofil mentve és indításra kész."
   },
   "Your keyboard layout puts %1 above the first level, so this bind will never fire. Pick a key the layout types without an extra layer.": {
     "Your keyboard layout puts %1 above the first level, so this bind will never fire. Pick a key the layout types without an extra layer.": "A billentyűzetkiosztása a(z) %1 karaktert az első szint fölé helyezi, így ez a billentyűtársítás soha nem fog aktiválódni. Válassz olyan billentyűt, amelyet a kiosztás extra réteg nélkül gépel be."
@@ -11270,9 +11123,6 @@
   "e.g., scratch, /^tmp_.*/, build": {
     "e.g., scratch, /^tmp_.*/, build": "Például „scratch”, /^tmp_.*/, „build”"
   },
-  "efibootmgr failed": {
-    "efibootmgr failed": "Az efibootmgr sikertelen"
-  },
   "expires in %1": {
     "expires in %1": "lejárata: %1"
   },
@@ -11291,17 +11141,11 @@
   "keyboard tab key name": {
     "Tab": "Lap"
   },
-  "khal": {
-    "khal": "khal"
-  },
   "last seen %1": {
     "last seen %1": "utoljára látva: %1"
   },
   "leave empty for default": {
     "leave empty for default": "hagyd üresen az alapértelmezéshez"
-  },
-  "loginctl activate failed (exit %1)": {
-    "loginctl activate failed (exit %1)": "„loginctl activate” sikertelen (kilépési kód: %1)"
   },
   "loginctl integration": {
     "loginctl integration": "Loginctl-integráció"
@@ -11423,15 +11267,6 @@
   "updated": {
     "updated": "frissítve"
   },
-  "useradd failed (exit %1)": {
-    "useradd failed (exit %1)": "„useradd” sikertelen (kilépési kód: %1)"
-  },
-  "userdel failed (exit %1)": {
-    "userdel failed (exit %1)": "„userdel” sikertelen (kilépési kód: %1)"
-  },
-  "usermod failed (exit %1)": {
-    "usermod failed (exit %1)": "„usermod” sikertelen (kilépési kód: %1)"
-  },
   "verb, clipboard entry action button tooltip": {
     "Preview": "Előnézet"
   },
@@ -11443,35 +11278,5 @@
   },
   "wifi network status, network has a saved profile": {
     "Saved": "Mentve"
-  },
-  "• M - Month (1-12)": {
-    "• M - Month (1-12)": "• M - Hónap (1-12)"
-  },
-  "• MM - Month (01-12)": {
-    "• MM - Month (01-12)": "• MM - Hónap (01-12)"
-  },
-  "• MMM - Month (Jan)": {
-    "• MMM - Month (Jan)": "• MMM - Hónap (Jan)"
-  },
-  "• MMMM - Month (January)": {
-    "• MMMM - Month (January)": "• MMMM - Hónap (Január)"
-  },
-  "• d - Day (1-31)": {
-    "• d - Day (1-31)": "• d - Nap (1-31)"
-  },
-  "• dd - Day (01-31)": {
-    "• dd - Day (01-31)": "• dd - Nap (01-31)"
-  },
-  "• ddd - Day name (Mon)": {
-    "• ddd - Day name (Mon)": "• ddd - Nap neve (H)"
-  },
-  "• dddd - Day name (Monday)": {
-    "• dddd - Day name (Monday)": "• dddd - Nap neve (Hétfő)"
-  },
-  "• yy - Year (24)": {
-    "• yy - Year (24)": "• yy - Év (24)"
-  },
-  "• yyyy - Year (2024)": {
-    "• yyyy - Year (2024)": "• yyyy - Év (2024)"
   }
 }

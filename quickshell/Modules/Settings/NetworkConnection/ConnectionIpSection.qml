@@ -32,7 +32,7 @@ SettingsCard {
 
     readonly property bool valid: isOff || ((!isManual || (hasAddress && addressRow.ok && gatewayRow.ok)) && (!dnsAllowed || dnsRow.ok) && metricRow.ok && routesOk)
 
-    title: family === 6 ? I18n.tr("IPv6", "network IP version") : I18n.tr("IPv4", "network IP version")
+    title: family === 6 ? "IPv6" : "IPv4"
     enabled: !editor.readOnly
 
     function original(key) {
@@ -215,7 +215,7 @@ SettingsCard {
     TextRow {
         id: dnsRow
         visible: root.dnsAllowed
-        text: I18n.tr("DNS", "network IP setting label")
+        text: "DNS"
         source: CE.listText(root.section["dns-data"])
         commit: text => {
             const list = CE.serverListFromText(text, root.family);

@@ -119,12 +119,6 @@
   "%1 fixes": {
     "%1 fixes": ""
   },
-  "%1 h": {
-    "%1 h": ""
-  },
-  "%1 h %2 m": {
-    "%1 h %2 m": ""
-  },
   "%1 h %2 m left": {
     "%1 h %2 m left": "%1 ساعت و %2 دقیقه مانده"
   },
@@ -250,9 +244,6 @@
   },
   "%1 processes": {
     "%1 processes": ""
-  },
-  "%1 procs": {
-    "%1 procs": ""
   },
   "%1 second": {
     "%1 second": ""
@@ -397,9 +388,6 @@
   },
   "AC power": {
     "AC power": ""
-  },
-  "API": {
-    "API": "API"
   },
   "AUR helpers are interactive — see the terminal window for prompts. This popout will return to idle when the upgrade exits.": {
     "AUR helpers are interactive — see the terminal window for prompts. This popout will return to idle when the upgrade exits.": "کمکی‌های AUR تعاملی هستند — برای درخواست‌ها به پنجره ترمینال مراجعه کنید. این پاپ‌آپ هنگامی که ارتقا خارج می‌شود به حالت بیکار بازمی‌گردد."
@@ -794,9 +782,6 @@
   "Anchor": {
     "Anchor": ""
   },
-  "Animation duration": {
-    "Animation duration": ""
-  },
   "Animation style": {
     "Animation style": ""
   },
@@ -1190,9 +1175,6 @@
   "Avoid open popouts": {
     "Avoid open popouts": ""
   },
-  "BIOS": {
-    "BIOS": ""
-  },
   "Backend": {
     "Backend": "بک‌اند"
   },
@@ -1501,9 +1483,6 @@
   },
   "CPU": {
     "CPU": "CPU"
-  },
-  "CPU graph": {
-    "CPU graph": ""
   },
   "CPU temperature": {
     "CPU temperature": ""
@@ -2495,9 +2474,6 @@
   "DMS will then manage %1 animations and override animation settings in your config.": {
     "DMS will then manage %1 animations and override animation settings in your config.": ""
   },
-  "DNS": {
-    "DNS": ""
-  },
   "Daemon": {
     "Daemon": ""
   },
@@ -2819,9 +2795,6 @@
   "Disabled by Frame Mode": {
     "Disabled by Frame Mode": "غیرفعال شده توسط حالت قاب"
   },
-  "Disabling WiFi...": {
-    "Disabling WiFi...": "غیرفعال‌سازی وای‌فای..."
-  },
   "Disabling auto-login on startup...": {
     "Disabling auto-login on startup...": ""
   },
@@ -2842,9 +2815,6 @@
   },
   "Disconnected": {
     "Disconnected": "غیر متصل"
-  },
-  "Disconnected from WiFi": {
-    "Disconnected from WiFi": "اتصال از وای‌فای قطع شد"
   },
   "Discover community plugins. Review their code before installing, and audit changes before updating.": {
     "Discover community plugins. Review their code before installing, and audit changes before updating.": ""
@@ -2981,9 +2951,6 @@
   "Does not fit here. Drag to another spot.": {
     "Does not fit here. Drag to another spot.": ""
   },
-  "Domain (optional)": {
-    "Domain (optional)": "دامنه (اختیاری)"
-  },
   "Dominant": {
     "Dominant": ""
   },
@@ -3076,9 +3043,6 @@
   },
   "Dusk (Astronomical Twilight)": {
     "Dusk (Astronomical Twilight)": "غروب (گرگ و میش نجومی)"
-  },
-  "Dusk (Civil Twighlight)": {
-    "Dusk (Civil Twighlight)": "غروب (گرگ و میش مدنی)"
   },
   "Dusk (Nautical Twilight)": {
     "Dusk (Nautical Twilight)": "غروب (گرگ و میش دریایی)"
@@ -3209,9 +3173,6 @@
   "Empty space": {
     "Empty space": ""
   },
-  "Enable Wi-Fi before starting the hotspot.": {
-    "Enable Wi-Fi before starting the hotspot.": ""
-  },
   "Enable autoconnect": {
     "Enable autoconnect": ""
   },
@@ -3226,9 +3187,6 @@
   },
   "Enabled": {
     "Enabled": "فعال"
-  },
-  "Enabling WiFi...": {
-    "Enabling WiFi...": "فعال‌سازی وای‌فای..."
   },
   "Enabling cellular...": {
     "Enabling cellular...": ""
@@ -3509,9 +3467,6 @@
   "Failed to disconnect VPNs": {
     "Failed to disconnect VPNs": "قطع اتصال از VPN‌ها ناموفق بود"
   },
-  "Failed to disconnect WiFi": {
-    "Failed to disconnect WiFi": "قطع اتصال وای‌فای ناموفق بود"
-  },
   "Failed to duplicate %1": {
     "Failed to duplicate %1": ""
   },
@@ -3520,9 +3475,6 @@
   },
   "Failed to enable IP location": {
     "Failed to enable IP location": "فعال‌کردن موقعیت مکانی IP ناموفق بود"
-  },
-  "Failed to enable WiFi": {
-    "Failed to enable WiFi": "فعال‌کردن وای‌فای ناموفق بود"
   },
   "Failed to enable job acceptance": {
     "Failed to enable job acceptance": "فعال‌سازی پذیرش کارهای چاپ ناموفق بود"
@@ -3656,9 +3608,6 @@
   "Failed to save screenshot": {
     "Failed to save screenshot": ""
   },
-  "Failed to send file": {
-    "Failed to send file": ""
-  },
   "Failed to set brightness": {
     "Failed to set brightness": "تنظیم روشنایی ناموفق بود"
   },
@@ -3682,9 +3631,6 @@
   },
   "Failed to set profile image": {
     "Failed to set profile image": "تنظیم تصویر نمایه ناموفق بود"
-  },
-  "Failed to set profile image: %1": {
-    "Failed to set profile image: %1": "تنظیم تصویر نمایه ناموفق بود: %1"
   },
   "Failed to start connection to %1": {
     "Failed to start connection to %1": "شروع اتصال به %1 ناموفق بود"
@@ -4013,9 +3959,6 @@
   "Fonts & motion": {
     "Fonts & motion": ""
   },
-  "Fonts, scale, animations": {
-    "Fonts, scale, animations": ""
-  },
   "For %1": {
     "For %1": ""
   },
@@ -4243,9 +4186,6 @@
   },
   "Get Started": {
     "Get Started": "شروع کنید"
-  },
-  "Git": {
-    "Git": ""
   },
   "Global fonts can be configured in Settings → Personalization": {
     "Global fonts can be configured in Settings → Personalization": "قلم‌های سراسری می‌توانند در تنظیمات ← شخصی‌سازی، پیکربندی شوند"
@@ -4643,12 +4583,6 @@
   "IP sharing setup failed. Check that %1 is installed.": {
     "IP sharing setup failed. Check that %1 is installed.": ""
   },
-  "IPv4": {
-    "IPv4": ""
-  },
-  "IPv6": {
-    "IPv6": ""
-  },
   "ISO date": {
     "ISO date": ""
   },
@@ -4844,9 +4778,6 @@
   "Initial title": {
     "Initial title": ""
   },
-  "Initialised": {
-    "Initialised": ""
-  },
   "Injected palettes": {
     "Injected palettes": ""
   },
@@ -4895,12 +4826,6 @@
   "Install Plugin": {
     "Install Plugin": "نصب افزونه"
   },
-  "Install Theme": {
-    "Install Theme": "نصب تم"
-  },
-  "Install a theme": {
-    "Install a theme": ""
-  },
   "Install color themes from the DMS theme registry": {
     "Install color themes from the DMS theme registry": "نصب تم رنگ‌ها از مخزن تم DMS"
   },
@@ -4939,9 +4864,6 @@
   },
   "Installed": {
     "Installed": "نصب شده"
-  },
-  "Installed %1": {
-    "Installed %1": ""
   },
   "Installed %1, still running %2": {
     "Installed %1, still running %2": ""
@@ -5552,9 +5474,6 @@
   "MIT License": {
     "MIT License": ""
   },
-  "MTU": {
-    "MTU": ""
-  },
   "Mac": {
     "Mac": ""
   },
@@ -5813,9 +5732,6 @@
   "Memory controller": {
     "Memory controller": ""
   },
-  "Memory graph": {
-    "Memory graph": ""
-  },
   "Memory usage": {
     "Memory usage": ""
   },
@@ -6062,12 +5978,6 @@
   "Mute popups for %1": {
     "Mute popups for %1": "بی‌صدا کردن پاپ‌آپ‌ها را برای %1"
   },
-  "Mute popups for %1 (1 hour)": {
-    "Mute popups for %1 (1 hour)": ""
-  },
-  "Mute popups for %1 (4 hours)": {
-    "Mute popups for %1 (4 hours)": ""
-  },
   "Mute, ignore and priority rules per app": {
     "Mute, ignore and priority rules per app": ""
   },
@@ -6125,9 +6035,6 @@
   "Network": {
     "Network": "شبکه"
   },
-  "Network Info": {
-    "Network Info": "اطلاعات شبکه"
-  },
   "Network Information": {
     "Network Information": "اطلاعات شبکه"
   },
@@ -6137,14 +6044,8 @@
   "Network download and upload speed display": {
     "Network download and upload speed display": "نمایش سرعت بارگیری و بارگذاری شبکه"
   },
-  "Network graph": {
-    "Network graph": ""
-  },
   "Network speed monitor": {
     "Network speed monitor": ""
-  },
-  "Networks, saved networks, hotspot": {
-    "Networks, saved networks, hotspot": ""
   },
   "Neutral": {
     "Neutral": "خنثی"
@@ -7439,9 +7340,6 @@
   "Popouts": {
     "Popouts": "پاپ‌آپ‌ها"
   },
-  "Popouts and modals use the main animation duration": {
-    "Popouts and modals use the main animation duration": ""
-  },
   "Popular": {
     "Popular": ""
   },
@@ -8414,9 +8312,6 @@
   "SE": {
     "SE": ""
   },
-  "SSID": {
-    "SSID": ""
-  },
   "SW": {
     "SW": ""
   },
@@ -8737,9 +8632,6 @@
   },
   "Selected image file not found.": {
     "Selected image file not found.": "فایل تصویر انتخاب شده یافت نشد."
-  },
-  "Sending file to %1...": {
-    "Sending file to %1...": ""
   },
   "Sends the playing artist and album name to Apple": {
     "Sends the playing artist and album name to Apple": ""
@@ -9647,9 +9539,6 @@
   "Sync needs sudo authentication. Opening terminal so you can use password or fingerprint.": {
     "Sync needs sudo authentication. Opening terminal so you can use password or fingerprint.": "همگام‌سازی به احراز هویت sudo نیاز دارد. درحال باز کردن ترمینال تا بتوانید از گذرواژه یا اثرانگشت استفاده کنید."
   },
-  "Sync popouts and modals": {
-    "Sync popouts and modals": ""
-  },
   "Sync position across displays": {
     "Sync position across displays": ""
   },
@@ -9715,9 +9604,6 @@
   },
   "Systemd unit": {
     "Systemd unit": ""
-  },
-  "TRIM": {
-    "TRIM": ""
   },
   "Tab": {
     "Tab": "تب"
@@ -9851,9 +9737,6 @@
   "The Island takes its place on this bar": {
     "The Island takes its place on this bar": ""
   },
-  "The WiFi adapter could not start access point mode.": {
-    "The WiFi adapter could not start access point mode.": ""
-  },
   "The arrow points in the direction the wind is blowing. The label shows where it comes from.": {
     "The arrow points in the direction the wind is blowing. The label shows where it comes from.": ""
   },
@@ -9932,14 +9815,14 @@
   "Theme color": {
     "Theme color": ""
   },
+  "Theme color behind the collapsed island": {
+    "Theme color behind the collapsed island": ""
+  },
+  "Theme color behind the expanded island": {
+    "Theme color behind the expanded island": ""
+  },
   "Theme colors come from this display's wallpaper": {
     "Theme colors come from this display's wallpaper": ""
-  },
-  "Theme colour behind the collapsed island": {
-    "Theme colour behind the collapsed island": ""
-  },
-  "Theme colour behind the expanded island": {
-    "Theme colour behind the expanded island": ""
   },
   "Theme extracted to: %1": {
     "Theme extracted to: %1": ""
@@ -9952,9 +9835,6 @@
   },
   "Theme, light and dark, matugen": {
     "Theme, light and dark, matugen": ""
-  },
-  "Theme, palette, dark mode": {
-    "Theme, palette, dark mode": ""
   },
   "Themed app icons": {
     "Themed app icons": ""
@@ -10360,9 +10240,6 @@
   },
   "Unknown Artist": {
     "Unknown Artist": "هنرمند ناشناس"
-  },
-  "Unknown Config": {
-    "Unknown Config": "پیکربندی ناشناخته"
   },
   "Unknown Device": {
     "Unknown Device": "دستگاه ناشناخته"
@@ -10799,12 +10676,6 @@
   "W": {
     "W": ""
   },
-  "WPA2 password": {
-    "WPA2 password": ""
-  },
-  "WWN": {
-    "WWN": ""
-  },
   "Waiting": {
     "Waiting": ""
   },
@@ -10928,12 +10799,6 @@
   "Wi-Fi and Ethernet connection": {
     "Wi-Fi and Ethernet connection": "اتصالات Wi-Fi و اترنت"
   },
-  "Wi-Fi is disabled": {
-    "Wi-Fi is disabled": ""
-  },
-  "Wi-Fi is disabled. You can still edit and save hotspot settings, but starting the hotspot requires Wi-Fi to be enabled.": {
-    "Wi-Fi is disabled. You can still edit and save hotspot settings, but starting the hotspot requires Wi-Fi to be enabled.": ""
-  },
   "Wi-Fi network": {
     "Wi-Fi network": ""
   },
@@ -10942,18 +10807,6 @@
   },
   "Wi-Fi, Ethernet, VPN": {
     "Wi-Fi, Ethernet, VPN": ""
-  },
-  "WiFi QR code for %1": {
-    "WiFi QR code for %1": ""
-  },
-  "WiFi disabled": {
-    "WiFi disabled": "وای‌فای غیرفعال"
-  },
-  "WiFi enabled": {
-    "WiFi enabled": "وای‌فای فعال"
-  },
-  "WiFi is off": {
-    "WiFi is off": "وای‌فای خاموش است"
   },
   "Wide (BT2020)": {
     "Wide (BT2020)": "عریض (BT2020)"
@@ -11135,6 +10988,9 @@
   "Y axis": {
     "Y axis": ""
   },
+  "Year": {
+    "Year": ""
+  },
   "Yellow": {
     "Yellow": ""
   },
@@ -11170,9 +11026,6 @@
   },
   "Your hotspot is running.": {
     "Your hotspot is running.": ""
-  },
-  "Your hotspot profile is saved and ready to start.": {
-    "Your hotspot profile is saved and ready to start.": "پروفایل هات‌اسپات شما ذخیره شده و آماده شروع است."
   },
   "Your keyboard layout puts %1 above the first level, so this bind will never fire. Pick a key the layout types without an extra layer.": {
     "Your keyboard layout puts %1 above the first level, so this bind will never fire. Pick a key the layout types without an extra layer.": ""
@@ -11270,9 +11123,6 @@
   "e.g., scratch, /^tmp_.*/, build": {
     "e.g., scratch, /^tmp_.*/, build": "مانند، scratch، /^tmp_.*/، build"
   },
-  "efibootmgr failed": {
-    "efibootmgr failed": ""
-  },
   "expires in %1": {
     "expires in %1": ""
   },
@@ -11291,17 +11141,11 @@
   "keyboard tab key name": {
     "Tab": ""
   },
-  "khal": {
-    "khal": ""
-  },
   "last seen %1": {
     "last seen %1": "آخرین بازدید: %1"
   },
   "leave empty for default": {
     "leave empty for default": "برای پیش‌فرض خالی رها کنید"
-  },
-  "loginctl activate failed (exit %1)": {
-    "loginctl activate failed (exit %1)": "فعال‌سازی loginctl ناموفق بود (خروجی %1)"
   },
   "loginctl integration": {
     "loginctl integration": ""
@@ -11423,15 +11267,6 @@
   "updated": {
     "updated": ""
   },
-  "useradd failed (exit %1)": {
-    "useradd failed (exit %1)": "useradd ناموفق بود (خروجی %1)"
-  },
-  "userdel failed (exit %1)": {
-    "userdel failed (exit %1)": "userdel ناموفق بود (خروجی %1)"
-  },
-  "usermod failed (exit %1)": {
-    "usermod failed (exit %1)": "usermod ناموفق بود (خروجی %1)"
-  },
   "verb, clipboard entry action button tooltip": {
     "Preview": ""
   },
@@ -11443,35 +11278,5 @@
   },
   "wifi network status, network has a saved profile": {
     "Saved": ""
-  },
-  "• M - Month (1-12)": {
-    "• M - Month (1-12)": "• M - ماه (1-12)"
-  },
-  "• MM - Month (01-12)": {
-    "• MM - Month (01-12)": "• MM - ماه (01-12)"
-  },
-  "• MMM - Month (Jan)": {
-    "• MMM - Month (Jan)": "• MMM - ماه (Jan)"
-  },
-  "• MMMM - Month (January)": {
-    "• MMMM - Month (January)": "• MMMM - ماه (January)"
-  },
-  "• d - Day (1-31)": {
-    "• d - Day (1-31)": "• d - روز (1-31)"
-  },
-  "• dd - Day (01-31)": {
-    "• dd - Day (01-31)": "• dd - روز (01-31)"
-  },
-  "• ddd - Day name (Mon)": {
-    "• ddd - Day name (Mon)": "• ddd - نام روز (Mon)"
-  },
-  "• dddd - Day name (Monday)": {
-    "• dddd - Day name (Monday)": "• dddd - نام روز (Monday)"
-  },
-  "• yy - Year (24)": {
-    "• yy - Year (24)": "• yy - سال (24)"
-  },
-  "• yyyy - Year (2024)": {
-    "• yyyy - Year (2024)": "• yyyy - سال (2024)"
   }
 }

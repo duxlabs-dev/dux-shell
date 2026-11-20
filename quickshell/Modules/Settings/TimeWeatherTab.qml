@@ -315,67 +315,30 @@ Item {
                             font.weight: Theme.fontWeightMedium
                         }
 
-                        Row {
+                        Grid {
+                            id: formatLegend
+
+                            readonly property string day: I18n.tr("Day", "date format legend, calendar day")
+                            readonly property string month: I18n.tr("Month", "date format legend, calendar month")
+                            readonly property string year: I18n.tr("Year", "date format legend, calendar year")
+                            readonly property string thisYear: new Date().getFullYear().toString()
+                            readonly property var entries: [["d", day, "1-31"], ["dd", day, "01-31"], ["ddd", day, I18n.locale().dayName(1, Locale.ShortFormat)], ["dddd", day, I18n.locale().dayName(1, Locale.LongFormat)], ["M", month, "1-12"], ["MM", month, "01-12"], ["MMM", month, I18n.locale().monthName(0, Locale.ShortFormat)], ["MMMM", month, I18n.locale().monthName(0, Locale.LongFormat)], ["yy", year, thisYear.slice(-2)], ["yyyy", year, thisYear]]
+
                             width: parent.width
-                            spacing: Theme.spacingL
+                            columns: 2
+                            rows: 5
+                            flow: Grid.TopToBottom
+                            columnSpacing: Theme.spacingL
+                            rowSpacing: Theme.spacingXXS
 
-                            Column {
-                                width: (parent.width - Theme.spacingL) / 2
-                                spacing: Theme.spacingXXS
-
-                                StyledText {
-                                    text: I18n.tr("• d - Day (1-31)")
-                                    font.pixelSize: Theme.fontSizeSmall
-                                    color: Theme.surfaceVariantText
-                                }
-                                StyledText {
-                                    text: I18n.tr("• dd - Day (01-31)")
-                                    font.pixelSize: Theme.fontSizeSmall
-                                    color: Theme.surfaceVariantText
-                                }
-                                StyledText {
-                                    text: I18n.tr("• ddd - Day name (Mon)")
-                                    font.pixelSize: Theme.fontSizeSmall
-                                    color: Theme.surfaceVariantText
-                                }
-                                StyledText {
-                                    text: I18n.tr("• dddd - Day name (Monday)")
-                                    font.pixelSize: Theme.fontSizeSmall
-                                    color: Theme.surfaceVariantText
-                                }
-                                StyledText {
-                                    text: I18n.tr("• M - Month (1-12)")
-                                    font.pixelSize: Theme.fontSizeSmall
-                                    color: Theme.surfaceVariantText
-                                }
-                            }
-
-                            Column {
-                                width: (parent.width - Theme.spacingL) / 2
-                                spacing: Theme.spacingXXS
+                            Repeater {
+                                model: formatLegend.entries
 
                                 StyledText {
-                                    text: I18n.tr("• MM - Month (01-12)")
-                                    font.pixelSize: Theme.fontSizeSmall
-                                    color: Theme.surfaceVariantText
-                                }
-                                StyledText {
-                                    text: I18n.tr("• MMM - Month (Jan)")
-                                    font.pixelSize: Theme.fontSizeSmall
-                                    color: Theme.surfaceVariantText
-                                }
-                                StyledText {
-                                    text: I18n.tr("• MMMM - Month (January)")
-                                    font.pixelSize: Theme.fontSizeSmall
-                                    color: Theme.surfaceVariantText
-                                }
-                                StyledText {
-                                    text: I18n.tr("• yy - Year (24)")
-                                    font.pixelSize: Theme.fontSizeSmall
-                                    color: Theme.surfaceVariantText
-                                }
-                                StyledText {
-                                    text: I18n.tr("• yyyy - Year (2024)")
+                                    required property var modelData
+
+                                    width: (formatLegend.width - formatLegend.columnSpacing) / 2
+                                    text: "• %1 - %2 (%3)".arg(modelData[0]).arg(modelData[1]).arg(modelData[2])
                                     font.pixelSize: Theme.fontSizeSmall
                                     color: Theme.surfaceVariantText
                                 }
@@ -400,7 +363,7 @@ Item {
                     settingKey: "calendarBackend"
                     text: I18n.tr("Calendar backend")
                     readonly property var _backendValues: ["auto", "khal", "dankcal"]
-                    readonly property var _backendLabels: [I18n.tr("Auto", "calendar backend option"), I18n.tr("khal", "calendar backend option"), I18n.tr("Dux Calendar", "calendar backend option")]
+                    readonly property var _backendLabels: [I18n.tr("Auto", "calendar backend option"), "khal", I18n.tr("Dux Calendar", "calendar backend option")]
                     options: _backendLabels
                     currentValue: _backendLabels[Math.max(0, _backendValues.indexOf(SettingsData.calendarBackend))]
                     onValueChanged: value => {

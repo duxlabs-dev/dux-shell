@@ -119,12 +119,6 @@
   "%1 fixes": {
     "%1 fixes": "%1 Korrekturen"
   },
-  "%1 h": {
-    "%1 h": "%1 Std."
-  },
-  "%1 h %2 m": {
-    "%1 h %2 m": "%1 Std. %2 Min."
-  },
   "%1 h %2 m left": {
     "%1 h %2 m left": "%1 Std. %2 Min. verbleibend"
   },
@@ -250,9 +244,6 @@
   },
   "%1 processes": {
     "%1 processes": "%1 Prozesse"
-  },
-  "%1 procs": {
-    "%1 procs": "%1 Prozesse"
   },
   "%1 second": {
     "%1 second": "%1 Sekunde"
@@ -397,9 +388,6 @@
   },
   "AC power": {
     "AC power": "Netzbetrieb"
-  },
-  "API": {
-    "API": "API"
   },
   "AUR helpers are interactive — see the terminal window for prompts. This popout will return to idle when the upgrade exits.": {
     "AUR helpers are interactive — see the terminal window for prompts. This popout will return to idle when the upgrade exits.": "AUR-Helper sind interaktiv — siehe das Terminalfenster für Eingabeaufforderungen. Dieses Popout kehrt in den Leerlauf zurück, wenn das Upgrade beendet ist."
@@ -794,9 +782,6 @@
   "Anchor": {
     "Anchor": "Anker"
   },
-  "Animation duration": {
-    "Animation duration": "Animationsdauer"
-  },
   "Animation style": {
     "Animation style": "Animationsstil"
   },
@@ -1190,9 +1175,6 @@
   "Avoid open popouts": {
     "Avoid open popouts": ""
   },
-  "BIOS": {
-    "BIOS": "BIOS"
-  },
   "Backend": {
     "Backend": "Backend"
   },
@@ -1501,9 +1483,6 @@
   },
   "CPU": {
     "CPU": "CPU"
-  },
-  "CPU graph": {
-    "CPU graph": "CPU-Graph"
   },
   "CPU temperature": {
     "CPU temperature": "CPU-Temperatur"
@@ -2495,9 +2474,6 @@
   "DMS will then manage %1 animations and override animation settings in your config.": {
     "DMS will then manage %1 animations and override animation settings in your config.": ""
   },
-  "DNS": {
-    "DNS": ""
-  },
   "Daemon": {
     "Daemon": "Daemon"
   },
@@ -2819,9 +2795,6 @@
   "Disabled by Frame Mode": {
     "Disabled by Frame Mode": "Deaktiviert durch Frame-Modus"
   },
-  "Disabling WiFi...": {
-    "Disabling WiFi...": "WLAN wird deaktiviert ..."
-  },
   "Disabling auto-login on startup...": {
     "Disabling auto-login on startup...": "Automatische Anmeldung beim Start wird deaktiviert ..."
   },
@@ -2842,9 +2815,6 @@
   },
   "Disconnected": {
     "Disconnected": "Getrennt"
-  },
-  "Disconnected from WiFi": {
-    "Disconnected from WiFi": "Vom WLAN getrennt"
   },
   "Discover community plugins. Review their code before installing, and audit changes before updating.": {
     "Discover community plugins. Review their code before installing, and audit changes before updating.": "Entdecken Sie Community-Plugins. Sehen Sie deren Code vor der Installation nochmals durch und prüfen Sie Änderungen vor der Aktualisierung."
@@ -2981,9 +2951,6 @@
   "Does not fit here. Drag to another spot.": {
     "Does not fit here. Drag to another spot.": ""
   },
-  "Domain (optional)": {
-    "Domain (optional)": "Domain (optional)"
-  },
   "Dominant": {
     "Dominant": "Dominant"
   },
@@ -3076,9 +3043,6 @@
   },
   "Dusk (Astronomical Twilight)": {
     "Dusk (Astronomical Twilight)": "Abenddämmerung (Astronomische Dämmerung)"
-  },
-  "Dusk (Civil Twighlight)": {
-    "Dusk (Civil Twighlight)": "Abenddämmerung (Bürgerliche Dämmerung)"
   },
   "Dusk (Nautical Twilight)": {
     "Dusk (Nautical Twilight)": "Abenddämmerung (Nautische Dämmerung)"
@@ -3209,9 +3173,6 @@
   "Empty space": {
     "Empty space": ""
   },
-  "Enable Wi-Fi before starting the hotspot.": {
-    "Enable Wi-Fi before starting the hotspot.": "Aktivieren Sie WLAN, bevor Sie den Hotspot starten."
-  },
   "Enable autoconnect": {
     "Enable autoconnect": "Automatische Verbindung aktivieren"
   },
@@ -3226,9 +3187,6 @@
   },
   "Enabled": {
     "Enabled": "Aktiviert"
-  },
-  "Enabling WiFi...": {
-    "Enabling WiFi...": "WLAN wird aktiviert ..."
   },
   "Enabling cellular...": {
     "Enabling cellular...": "Mobilfunk wird aktiviert ..."
@@ -3509,9 +3467,6 @@
   "Failed to disconnect VPNs": {
     "Failed to disconnect VPNs": "VPNs konnten nicht getrennt werden"
   },
-  "Failed to disconnect WiFi": {
-    "Failed to disconnect WiFi": "WLAN konnte nicht getrennt werden"
-  },
   "Failed to duplicate %1": {
     "Failed to duplicate %1": ""
   },
@@ -3520,9 +3475,6 @@
   },
   "Failed to enable IP location": {
     "Failed to enable IP location": "IP-Standort konnte nicht aktiviert werden"
-  },
-  "Failed to enable WiFi": {
-    "Failed to enable WiFi": "WLAN konnte nicht aktiviert werden"
   },
   "Failed to enable job acceptance": {
     "Failed to enable job acceptance": "Auftragsannahme konnte nicht aktiviert werden"
@@ -3656,9 +3608,6 @@
   "Failed to save screenshot": {
     "Failed to save screenshot": ""
   },
-  "Failed to send file": {
-    "Failed to send file": ""
-  },
   "Failed to set brightness": {
     "Failed to set brightness": "Helligkeit konnte nicht festgelegt werden"
   },
@@ -3682,9 +3631,6 @@
   },
   "Failed to set profile image": {
     "Failed to set profile image": "Profilbild konnte nicht festgelegt werden"
-  },
-  "Failed to set profile image: %1": {
-    "Failed to set profile image: %1": "Profilbild konnte nicht festgelegt werden: %1"
   },
   "Failed to start connection to %1": {
     "Failed to start connection to %1": "Verbindung zu %1 konnte nicht gestaret werden"
@@ -4013,9 +3959,6 @@
   "Fonts & motion": {
     "Fonts & motion": "Schriftarten & Bewegung"
   },
-  "Fonts, scale, animations": {
-    "Fonts, scale, animations": "Schriftarten, Skalierung, Animationen"
-  },
   "For %1": {
     "For %1": "Für %1"
   },
@@ -4243,9 +4186,6 @@
   },
   "Get Started": {
     "Get Started": "Erste Schritte"
-  },
-  "Git": {
-    "Git": "Git"
   },
   "Global fonts can be configured in Settings → Personalization": {
     "Global fonts can be configured in Settings → Personalization": "Globale Schriftarten können unter Einstellungen → Personalisierung konfiguriert werden"
@@ -4643,12 +4583,6 @@
   "IP sharing setup failed. Check that %1 is installed.": {
     "IP sharing setup failed. Check that %1 is installed.": "Einrichtung der IP-Freigabe fehlgeschlagen. Überprüfen Sie, ob %1 installiert ist."
   },
-  "IPv4": {
-    "IPv4": ""
-  },
-  "IPv6": {
-    "IPv6": "IPv6"
-  },
   "ISO date": {
     "ISO date": "ISO-Datum"
   },
@@ -4844,9 +4778,6 @@
   "Initial title": {
     "Initial title": "Initialer Titel"
   },
-  "Initialised": {
-    "Initialised": "Initialisiert"
-  },
   "Injected palettes": {
     "Injected palettes": "Injizierte Paletten"
   },
@@ -4895,12 +4826,6 @@
   "Install Plugin": {
     "Install Plugin": "Plugin installieren"
   },
-  "Install Theme": {
-    "Install Theme": "Theme installieren"
-  },
-  "Install a theme": {
-    "Install a theme": ""
-  },
   "Install color themes from the DMS theme registry": {
     "Install color themes from the DMS theme registry": "Farb-Themes aus der DMS-Theme-Registry installieren"
   },
@@ -4939,9 +4864,6 @@
   },
   "Installed": {
     "Installed": "Installiert"
-  },
-  "Installed %1": {
-    "Installed %1": ""
   },
   "Installed %1, still running %2": {
     "Installed %1, still running %2": "%1 installiert, ausgeführt wird noch %2"
@@ -5552,9 +5474,6 @@
   "MIT License": {
     "MIT License": "MIT-Lizenz"
   },
-  "MTU": {
-    "MTU": "MTU"
-  },
   "Mac": {
     "Mac": ""
   },
@@ -5813,9 +5732,6 @@
   "Memory controller": {
     "Memory controller": "Speicherkontroller"
   },
-  "Memory graph": {
-    "Memory graph": "Speichergraph"
-  },
   "Memory usage": {
     "Memory usage": "Speicherauslastung"
   },
@@ -6062,12 +5978,6 @@
   "Mute popups for %1": {
     "Mute popups for %1": "Popups für %1 stummschalten"
   },
-  "Mute popups for %1 (1 hour)": {
-    "Mute popups for %1 (1 hour)": "Popups für %1 stummschalten (1 Stunde)"
-  },
-  "Mute popups for %1 (4 hours)": {
-    "Mute popups for %1 (4 hours)": "Popups für %1 stummschalten (4 Stunden)"
-  },
   "Mute, ignore and priority rules per app": {
     "Mute, ignore and priority rules per app": "Regeln zum Stummschalten, Ignorieren und für Priorität pro App"
   },
@@ -6125,9 +6035,6 @@
   "Network": {
     "Network": "Netzwerk"
   },
-  "Network Info": {
-    "Network Info": "Netzwerk-Info"
-  },
   "Network Information": {
     "Network Information": "Netzwerkinformationen"
   },
@@ -6137,14 +6044,8 @@
   "Network download and upload speed display": {
     "Network download and upload speed display": "Anzeige der Download- und Upload-Geschwindigkeit im Netzwerk"
   },
-  "Network graph": {
-    "Network graph": "Netzwerkgraph"
-  },
   "Network speed monitor": {
     "Network speed monitor": "Netzwerkgeschwindigkeitsüberwachung"
-  },
-  "Networks, saved networks, hotspot": {
-    "Networks, saved networks, hotspot": "Netzwerke, gespeicherte Netzwerke, Hotspot"
   },
   "Neutral": {
     "Neutral": "Neutral"
@@ -7439,9 +7340,6 @@
   "Popouts": {
     "Popouts": "Popouts"
   },
-  "Popouts and modals use the main animation duration": {
-    "Popouts and modals use the main animation duration": "Popouts und Modale verwenden die Dauer der Hauptanimation"
-  },
   "Popular": {
     "Popular": "Beliebt"
   },
@@ -8414,9 +8312,6 @@
   "SE": {
     "SE": "SO"
   },
-  "SSID": {
-    "SSID": "SSID"
-  },
   "SW": {
     "SW": "SW"
   },
@@ -8737,9 +8632,6 @@
   },
   "Selected image file not found.": {
     "Selected image file not found.": "Ausgewähltes Bild nicht gefunden."
-  },
-  "Sending file to %1...": {
-    "Sending file to %1...": ""
   },
   "Sends the playing artist and album name to Apple": {
     "Sends the playing artist and album name to Apple": "Sendet den Name des gerade abgespielten Interpreten und des Albums an Apple"
@@ -9647,9 +9539,6 @@
   "Sync needs sudo authentication. Opening terminal so you can use password or fingerprint.": {
     "Sync needs sudo authentication. Opening terminal so you can use password or fingerprint.": "Sync benötigt sudo-Authentifizierung. Terminal wird geöffnet, damit Sie Passwort oder Fingerabdruck verwenden können."
   },
-  "Sync popouts and modals": {
-    "Sync popouts and modals": "Popouts und Modale synchronisieren"
-  },
   "Sync position across displays": {
     "Sync position across displays": "Position über Displays hinweg synchronisieren"
   },
@@ -9715,9 +9604,6 @@
   },
   "Systemd unit": {
     "Systemd unit": "Systemd-Einheit"
-  },
-  "TRIM": {
-    "TRIM": "TRIM"
   },
   "Tab": {
     "Tab": "Tab"
@@ -9851,9 +9737,6 @@
   "The Island takes its place on this bar": {
     "The Island takes its place on this bar": "Das Island nimmt seinen Platz auf dieser Leiste ein"
   },
-  "The WiFi adapter could not start access point mode.": {
-    "The WiFi adapter could not start access point mode.": "Der WLAN-Adapter konnte den Access-Point-Modus nicht starten."
-  },
   "The arrow points in the direction the wind is blowing. The label shows where it comes from.": {
     "The arrow points in the direction the wind is blowing. The label shows where it comes from.": "Der Pfeil zeigt in die Richtung, in die der Wind weht. Das Label gibt an, woher er kommt."
   },
@@ -9932,14 +9815,14 @@
   "Theme color": {
     "Theme color": "Theme-Farbe"
   },
+  "Theme color behind the collapsed island": {
+    "Theme color behind the collapsed island": ""
+  },
+  "Theme color behind the expanded island": {
+    "Theme color behind the expanded island": ""
+  },
   "Theme colors come from this display's wallpaper": {
     "Theme colors come from this display's wallpaper": "Theme-Farben stammen aus Hintergrundbild dieses Displays"
-  },
-  "Theme colour behind the collapsed island": {
-    "Theme colour behind the collapsed island": ""
-  },
-  "Theme colour behind the expanded island": {
-    "Theme colour behind the expanded island": ""
   },
   "Theme extracted to: %1": {
     "Theme extracted to: %1": "Theme extrahiert nach: %1"
@@ -9952,9 +9835,6 @@
   },
   "Theme, light and dark, matugen": {
     "Theme, light and dark, matugen": "Theme, hell und dunkel, Matugen"
-  },
-  "Theme, palette, dark mode": {
-    "Theme, palette, dark mode": "Theme, Palette, Dunkelmodus"
   },
   "Themed app icons": {
     "Themed app icons": ""
@@ -10360,9 +10240,6 @@
   },
   "Unknown Artist": {
     "Unknown Artist": "Unbekannter Künstler"
-  },
-  "Unknown Config": {
-    "Unknown Config": "Unbekannte Konfiguration"
   },
   "Unknown Device": {
     "Unknown Device": "Unbekanntes Gerät"
@@ -10799,12 +10676,6 @@
   "W": {
     "W": "W"
   },
-  "WPA2 password": {
-    "WPA2 password": "WPA2-Passwort"
-  },
-  "WWN": {
-    "WWN": "WWN"
-  },
   "Waiting": {
     "Waiting": "Wartend"
   },
@@ -10928,12 +10799,6 @@
   "Wi-Fi and Ethernet connection": {
     "Wi-Fi and Ethernet connection": "WLAN- und Ethernet-Verbindung"
   },
-  "Wi-Fi is disabled": {
-    "Wi-Fi is disabled": "WLAN ist deaktiviert"
-  },
-  "Wi-Fi is disabled. You can still edit and save hotspot settings, but starting the hotspot requires Wi-Fi to be enabled.": {
-    "Wi-Fi is disabled. You can still edit and save hotspot settings, but starting the hotspot requires Wi-Fi to be enabled.": "WLAN ist deaktiviert. Sie können Hotspot-Einstellungen weiterhin bearbeiten und speichern, aber zum Starten des Hotspots muss WLAN aktiviert sein."
-  },
   "Wi-Fi network": {
     "Wi-Fi network": "WLAN-Netzwerk"
   },
@@ -10942,18 +10807,6 @@
   },
   "Wi-Fi, Ethernet, VPN": {
     "Wi-Fi, Ethernet, VPN": "WLAN, Ethernet, VPN"
-  },
-  "WiFi QR code for %1": {
-    "WiFi QR code for %1": "WLAN QR-Code für %1"
-  },
-  "WiFi disabled": {
-    "WiFi disabled": "WLAN deaktiviert"
-  },
-  "WiFi enabled": {
-    "WiFi enabled": "WLAN aktiviert"
-  },
-  "WiFi is off": {
-    "WiFi is off": "WLAN ist aus"
   },
   "Wide (BT2020)": {
     "Wide (BT2020)": "Breit (BT2020)"
@@ -11135,6 +10988,9 @@
   "Y axis": {
     "Y axis": "Y-Achse"
   },
+  "Year": {
+    "Year": ""
+  },
   "Yellow": {
     "Yellow": "Gelb"
   },
@@ -11170,9 +11026,6 @@
   },
   "Your hotspot is running.": {
     "Your hotspot is running.": "Ihr Hotspot wird ausgeführt."
-  },
-  "Your hotspot profile is saved and ready to start.": {
-    "Your hotspot profile is saved and ready to start.": "Ihr Hotspot-Profil ist gespeichert und startbereit."
   },
   "Your keyboard layout puts %1 above the first level, so this bind will never fire. Pick a key the layout types without an extra layer.": {
     "Your keyboard layout puts %1 above the first level, so this bind will never fire. Pick a key the layout types without an extra layer.": "Ihr Tastaturlayout befindert sich %1 oberhalb der ersten Ebene, sodass diese Bindung niemals ausgelöst wird. Wählen Sie eine Taste aus, deren Layout ohne zusätzliche Ebene tippt."
@@ -11270,9 +11123,6 @@
   "e.g., scratch, /^tmp_.*/, build": {
     "e.g., scratch, /^tmp_.*/, build": "bspw. scratch, /^tmp_.*/, build"
   },
-  "efibootmgr failed": {
-    "efibootmgr failed": "efibootmgr fehlgeschlagen"
-  },
   "expires in %1": {
     "expires in %1": "läuft ab in %1"
   },
@@ -11291,17 +11141,11 @@
   "keyboard tab key name": {
     "Tab": "Tab"
   },
-  "khal": {
-    "khal": "khal"
-  },
   "last seen %1": {
     "last seen %1": "Zuletzt gesehen %1"
   },
   "leave empty for default": {
     "leave empty for default": "Leer lassen für Vorgabe"
-  },
-  "loginctl activate failed (exit %1)": {
-    "loginctl activate failed (exit %1)": "loginctl activate fehlgeschlagen (Beendet mit %1)"
   },
   "loginctl integration": {
     "loginctl integration": "loginctl-Integration"
@@ -11423,15 +11267,6 @@
   "updated": {
     "updated": "aktualisiert"
   },
-  "useradd failed (exit %1)": {
-    "useradd failed (exit %1)": "useradd fehlgeschlagen (Beendet mit %1)"
-  },
-  "userdel failed (exit %1)": {
-    "userdel failed (exit %1)": "userdel fehlgeschlagen (Beendet mit %1)"
-  },
-  "usermod failed (exit %1)": {
-    "usermod failed (exit %1)": "usermod fehlgeschlagen (Beendet mit %1)"
-  },
   "verb, clipboard entry action button tooltip": {
     "Preview": "Vorschau"
   },
@@ -11443,35 +11278,5 @@
   },
   "wifi network status, network has a saved profile": {
     "Saved": "Gespeichert"
-  },
-  "• M - Month (1-12)": {
-    "• M - Month (1-12)": "• M - Monat (1-12)"
-  },
-  "• MM - Month (01-12)": {
-    "• MM - Month (01-12)": "• MM - Monat (01-12)"
-  },
-  "• MMM - Month (Jan)": {
-    "• MMM - Month (Jan)": "• MMM - Monat (Jan)"
-  },
-  "• MMMM - Month (January)": {
-    "• MMMM - Month (January)": "• MMMM - Monat (Januar)"
-  },
-  "• d - Day (1-31)": {
-    "• d - Day (1-31)": "• d - Tag (1-31)"
-  },
-  "• dd - Day (01-31)": {
-    "• dd - Day (01-31)": "• dd - Tag (01-31)"
-  },
-  "• ddd - Day name (Mon)": {
-    "• ddd - Day name (Mon)": "• ddd - Tag (Mon)"
-  },
-  "• dddd - Day name (Monday)": {
-    "• dddd - Day name (Monday)": "• dddd - Tag (Montag)"
-  },
-  "• yy - Year (24)": {
-    "• yy - Year (24)": "• yy - Jahr (24)"
-  },
-  "• yyyy - Year (2024)": {
-    "• yyyy - Year (2024)": "• yyyy - Jahr (2024)"
   }
 }

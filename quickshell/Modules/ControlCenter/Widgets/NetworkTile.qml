@@ -33,7 +33,7 @@ CcTile {
     }
     title: {
         if (NetworkService.wifiToggling)
-            return NetworkService.wifiEnabled ? I18n.tr("Disabling WiFi...", "network status") : I18n.tr("Enabling WiFi...", "network status");
+            return NetworkService.wifiEnabled ? I18n.tr("Disabling Wi-Fi...", "network status") : I18n.tr("Enabling Wi-Fi...", "network status");
         if (wifiConnecting)
             return NetworkService.connectingSSID || I18n.tr("Connecting...", "network status");
         switch (status) {
@@ -54,7 +54,7 @@ CcTile {
                 return NetworkService.currentWifiSSID;
             break;
         }
-        return NetworkService.wifiEnabled ? I18n.tr("Not connected", "network status") : I18n.tr("WiFi is off", "network status");
+        return NetworkService.wifiEnabled ? I18n.tr("Not connected", "network status") : I18n.tr("Wi-Fi is off", "network status");
     }
     subtitle: {
         if (NetworkService.wifiToggling)

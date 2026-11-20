@@ -279,7 +279,7 @@ Item {
                 }
 
                 SettingsRow {
-                    title: I18n.tr("API", "about page card title, application programming interface version")
+                    title: "API"
                     trailingBadge: `v${DMSService.apiVersion}`
                 }
 

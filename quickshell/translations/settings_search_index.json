@@ -6596,6 +6596,7 @@
       "colors",
       "colour",
       "compact",
+      "hue",
       "island",
       "look",
       "panel",
@@ -6603,10 +6604,11 @@
       "style",
       "taskbar",
       "theme",
+      "tint",
       "topbar"
     ],
     "parentLabel": "Bar",
-    "description": "Theme colour behind the collapsed island",
+    "description": "Theme color behind the collapsed island",
     "conditionKey": "islandEnabled"
   },
   {
@@ -6765,6 +6767,7 @@
       "colors",
       "colour",
       "expanded",
+      "hue",
       "island",
       "look",
       "panel",
@@ -6772,10 +6775,11 @@
       "style",
       "taskbar",
       "theme",
+      "tint",
       "topbar"
     ],
     "parentLabel": "Bar",
-    "description": "Theme colour behind the expanded island",
+    "description": "Theme color behind the expanded island",
     "conditionKey": "islandEnabled"
   },
   {
@@ -19551,6 +19555,7 @@
       "colour",
       "compact",
       "dot",
+      "hue",
       "island",
       "look",
       "panel",
@@ -19558,10 +19563,11 @@
       "style",
       "taskbar",
       "theme",
+      "tint",
       "topbar"
     ],
     "parentLabel": "Bar",
-    "description": "Theme colour behind the collapsed island",
+    "description": "Theme color behind the collapsed island",
     "conditionKey": "dotEnabled"
   },
   {
@@ -19810,6 +19816,7 @@
       "colour",
       "dot",
       "expanded",
+      "hue",
       "island",
       "look",
       "panel",
@@ -19817,10 +19824,11 @@
       "style",
       "taskbar",
       "theme",
+      "tint",
       "topbar"
     ],
     "parentLabel": "Bar",
-    "description": "Theme colour behind the expanded island",
+    "description": "Theme color behind the expanded island",
     "conditionKey": "dotEnabled"
   },
   {
