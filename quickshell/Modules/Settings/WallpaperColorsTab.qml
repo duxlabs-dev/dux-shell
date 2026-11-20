@@ -45,6 +45,10 @@ Column {
     readonly property var iconThemeGlyphs: iconThemeImages.map(image => image ? "" : "palette")
     // Cursor theme name -> its default pointer as a PNG data URL, from the same command.
     property var cursorPointers: ({})
+    property var cursorLibrary: ({})
+    property bool cursorLibraryOpen: false
+    property bool cursorInstalling: false
+    property bool cursorInstallFolder: false
     readonly property var cursorThemeImages: (cachedCursorThemes || []).map(name => cursorPointers[name] ? "svg:" + cursorPointers[name] : "")
     readonly property var cursorThemeGlyphs: cursorThemeImages.map(image => image ? "" : "arrow_selector_tool")
     // A generation of Dux Icons is a new directory, so its preview files move with every rebuild.
@@ -137,11 +141,17 @@ Column {
         Proc.runCommand("iconLibrary", [Proc.dmsBin, "icon-theme", "list", "--state-dir", Theme.stateDir], (output, exitCode) => {
             root.iconLibrary = IconFolders.parseLibrary(output);
             root.cursorPointers = IconFolders.parsePointers(output);
+            root.cursorLibrary = IconFolders.parseCursorLibrary(output);
         }, 0, undefined, root);
     }
 
     function refreshIconThemes() {
         SettingsData.detectAvailableIconThemes();
+        loadIconLibrary();
+    }
+
+    function refreshCursorThemes() {
+        SettingsData.detectAvailableCursorThemes();
         loadIconLibrary();
     }
 
@@ -164,54 +174,80 @@ Column {
             iconBrowserLoader.item.open();
     }
 
-    function installIconTheme(path, replace) {
-        iconInstalling = true;
-        const args = [Proc.dmsBin, "icon-theme", "install"].concat(replace ? ["--replace"] : [], ["--", path]);
+    function browseCursorTheme(folder) {
+        cursorInstallFolder = folder;
+        cursorBrowserLoader.active = true;
+        if (cursorBrowserLoader.item)
+            cursorBrowserLoader.item.open();
+    }
+
+    function installPack(kind, path, replace) {
+        const isCursor = kind === "cursor";
+        if (isCursor)
+            cursorInstalling = true;
+        else
+            iconInstalling = true;
+        const subcmd = isCursor ? "cursor-theme" : "icon-theme";
+        const args = [Proc.dmsBin, subcmd, "install"].concat(replace ? ["--replace"] : [], ["--", path]);
         Proc.runCommand(null, args, (output, exitCode) => {
-            root.iconInstalling = false;
+            if (isCursor)
+                root.cursorInstalling = false;
+            else
+                root.iconInstalling = false;
             const reply = IconFolders.parseReply(output);
             if (exitCode === 0) {
-                ToastService.showInfo(I18n.tr("Installed %1", "icon theme install toast, %1 is a list of icon theme names").arg(reply.themes.join(", ")));
-                root.refreshIconThemes();
+                ToastService.showInfo(I18n.tr("Installed %1", "theme install toast, %1 is a list of theme names").arg(reply.themes.join(", ")));
+                if (isCursor)
+                    root.refreshCursorThemes();
+                else
+                    root.refreshIconThemes();
                 return;
             }
             if (reply.code !== "exists") {
-                ToastService.showError(I18n.tr("Icon theme not installed", "icon theme install error toast title"), root.iconRefusalText(reply));
+                const title = isCursor ? I18n.tr("Cursor theme not installed", "cursor theme install error toast title") : I18n.tr("Icon theme not installed", "icon theme install error toast title");
+                ToastService.showError(title, root.iconRefusalText(reply));
                 return;
             }
             profileConfirm.showWithOptions({
-                "title": I18n.tr("Replace icon theme", "icon theme install dialog title"),
+                "title": isCursor ? I18n.tr("Replace cursor theme", "cursor theme install dialog title") : I18n.tr("Replace icon theme", "icon theme install dialog title"),
                 "message": I18n.tr("%1 is already installed. Replace it?", "icon theme install confirmation, %1 is a list of icon theme names").arg(reply.themes.join(", ")),
                 "confirmText": I18n.tr("Replace"),
                 "cancelText": I18n.tr("Cancel"),
                 "danger": true,
-                "onConfirm": () => root.installIconTheme(path, true)
+                "onConfirm": () => root.installPack(kind, path, true)
             });
         }, 0, Proc.noTimeout, root);
     }
 
-    function confirmRemoveIconTheme(name) {
+    function confirmRemovePack(kind, name) {
+        const isCursor = kind === "cursor";
         profileConfirm.showWithOptions({
-            "title": I18n.tr("Remove icon theme", "icon theme remove dialog title"),
+            "title": isCursor ? I18n.tr("Remove cursor theme", "cursor theme remove dialog title") : I18n.tr("Remove icon theme", "icon theme remove dialog title"),
             "message": I18n.tr("Remove '%1' from your icon folder?", "icon theme remove confirmation, %1 is an icon theme name").arg(name),
             "confirmText": I18n.tr("Remove"),
             "cancelText": I18n.tr("Cancel"),
             "danger": true,
-            "onConfirm": () => root.removeIconTheme(name)
+            "onConfirm": () => root.removePack(kind, name)
         });
     }
 
-    function removeIconTheme(name) {
-        const args = [Proc.dmsBin, "icon-theme", "remove", "--state-dir", Theme.stateDir];
+    function removePack(kind, name) {
+        const isCursor = kind === "cursor";
+        const subcmd = isCursor ? "cursor-theme" : "icon-theme";
+        const args = [Proc.dmsBin, subcmd, "remove", "--state-dir", Theme.stateDir];
         for (const used of [SettingsData.iconThemeDark, SettingsData.iconThemeLight, SettingsData.systemDefaultIconTheme, SettingsData.cursorSettings?.theme]) {
             if (used)
                 args.push("--in-use", used);
         }
         Proc.runCommand(null, args.concat(["--", name]), (output, exitCode) => {
-            if (exitCode === 0)
-                root.refreshIconThemes();
-            else
+            if (exitCode === 0) {
+                if (isCursor)
+                    root.refreshCursorThemes();
+                else
+                    root.refreshIconThemes();
+            } else {
                 ToastService.showError(I18n.tr("%1 not removed", "icon theme remove error toast title, %1 is an icon theme name").arg(name), root.iconRefusalText(IconFolders.parseReply(output)));
+            }
         }, 0, Proc.noTimeout, root);
     }
 
@@ -1298,7 +1334,7 @@ Column {
                                     visible: (themeRow.info?.removable ?? false) && !themeRow.picked
                                     iconName: "delete"
                                     tooltipText: I18n.tr("Remove")
-                                    onClicked: root.confirmRemoveIconTheme(themeRow.modelData)
+                                    onClicked: root.confirmRemovePack("icon", themeRow.modelData)
                                 }
                             }
                         }
@@ -1446,6 +1482,90 @@ Column {
                 modified: value !== 0
                 onResetRequested: root.setCursorHideTimeout(0)
                 onSliderValueChanged: newValue => root.setCursorHideTimeout(newValue)
+            }
+
+            SettingsFoldRow {
+                id: cursorLibraryRow
+
+                tab: "theme"
+                tags: ["cursor", "theme", "install", "remove", "delete", "preview", "archive", "manage"]
+                settingKey: "cursorThemeLibrary"
+                title: I18n.tr("Manage themes", "settings row that expands to the installed cursor themes")
+                subtitle: I18n.tr("Preview, install and remove cursor themes", "cursor theme manager row description")
+                open: root.cursorLibraryOpen
+                onToggled: root.cursorLibraryOpen = !root.cursorLibraryOpen
+
+                body: Loader {
+                    width: parent.width
+                    visible: active
+                    active: cursorLibraryRow.open
+
+                    sourceComponent: SettingsGroup {
+                        slotColor: SettingsMetrics.controlColor
+
+                        Repeater {
+                            model: (root.cachedCursorThemes || []).filter(name => root.cursorLibrary[name] !== undefined)
+
+                            SettingsRow {
+                                id: cursorRow
+
+                                required property string modelData
+                                readonly property var info: root.cursorLibrary[modelData]
+                                readonly property bool picked: modelData === SettingsData.cursorSettings.theme
+
+                                title: cursorRow.modelData
+                                trailingBadge: picked ? I18n.tr("In use", "cursor theme list badge, the theme currently applied") : ""
+
+                                supporting: Item {
+                                    width: Theme.iconSizeLarge
+                                    height: Theme.iconSizeLarge
+
+                                    DSVGIcon {
+                                        anchors.fill: parent
+                                        source: cursorRow.info?.pointer ?? ""
+                                        size: Theme.iconSizeLarge
+                                        visible: source !== ""
+                                    }
+
+                                    DIcon {
+                                        anchors.centerIn: parent
+                                        name: "arrow_selector_tool"
+                                        size: Theme.iconSizeMedium
+                                        color: Theme.surfaceVariantText
+                                        visible: !(cursorRow.info?.pointer)
+                                    }
+                                }
+
+                                DActionButton {
+                                    anchors.verticalCenter: parent?.verticalCenter
+                                    visible: (cursorRow.info?.removable ?? false) && !cursorRow.picked
+                                    iconName: "delete"
+                                    tooltipText: I18n.tr("Remove")
+                                    onClicked: root.confirmRemovePack("cursor", cursorRow.modelData)
+                                }
+                            }
+                        }
+
+                        SettingsRow {
+                            title: I18n.tr("Install a theme", "cursor theme manager row title")
+                            subtitle: I18n.tr("From an archive or a folder. Nothing inside it is run.", "icon theme install row description")
+
+                            DButton {
+                                text: I18n.tr("Archive", "button, picks an archive file to install a cursor theme from")
+                                iconName: "folder_zip"
+                                enabled: !root.cursorInstalling
+                                onClicked: root.browseCursorTheme(false)
+                            }
+
+                            DButton {
+                                text: I18n.tr("Folder", "button, picks a folder to install a cursor theme from")
+                                iconName: "folder_open"
+                                enabled: !root.cursorInstalling
+                                onClicked: root.browseCursorTheme(true)
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -1718,7 +1838,21 @@ Column {
             bucket: "iconTheme"
             mode: root.iconInstallFolder ? "openFolder" : "open"
             filters: root.iconInstallFolder ? [] : ["*.tar.gz", "*.tgz", "*.tar.xz", "*.txz", "*.tar.zst", "*.tar", "*.zip"]
-            onAccepted: paths => root.installIconTheme(paths[0], false)
+            onAccepted: paths => root.installPack("icon", paths[0], false)
+        }
+    }
+
+    LazyLoader {
+        id: cursorBrowserLoader
+        active: false
+
+        FileBrowserModal {
+            parentModal: root.parentModal
+            browserTitle: I18n.tr("Install cursor theme", "cursor theme file browser title")
+            bucket: "cursorTheme"
+            mode: root.cursorInstallFolder ? "openFolder" : "open"
+            filters: root.cursorInstallFolder ? [] : ["*.tar.gz", "*.tgz", "*.tar.xz", "*.txz", "*.tar.zst", "*.tar", "*.zip"]
+            onAccepted: paths => root.installPack("cursor", paths[0], false)
         }
     }
 

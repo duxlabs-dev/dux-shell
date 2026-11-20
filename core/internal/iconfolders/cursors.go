@@ -27,23 +27,31 @@ var pointerNames = []string{"left_ptr", "default", "arrow"}
 
 type CursorInfo struct {
 	Name string `json:"name"`
+	// Removable cursor themes live in the user's icon directory.
+	Removable bool `json:"removable"`
 	// Pointer is the theme's default pointer as a PNG data URL, "" where it has none in Xcursor form.
 	Pointer string `json:"pointer"`
 }
 
+func hasCursors(dir string) bool {
+	info, err := os.Lstat(filepath.Join(dir, "cursors"))
+	return err == nil && info.IsDir()
+}
+
 // ListCursors previews every installed cursor theme.
 func ListCursors(o Options) []CursorInfo {
+	o.defaults()
 	lib := o.library()
 	cursors, seen := []CursorInfo{}, map[string]bool{}
 	for _, base := range lib.bases {
 		entries, _ := os.ReadDir(base)
 		for _, entry := range entries {
 			name := entry.Name()
-			if info, err := os.Stat(filepath.Join(base, name, "cursors")); seen[name] || err != nil || !info.IsDir() {
+			if seen[name] || !hasCursors(filepath.Join(base, name)) {
 				continue
 			}
 			seen[name] = true
-			cursors = append(cursors, CursorInfo{Name: name, Pointer: lib.pointer(name, 4)})
+			cursors = append(cursors, CursorInfo{Name: name, Removable: base == o.IconsDir, Pointer: lib.pointer(name, 4)})
 		}
 	}
 	return cursors

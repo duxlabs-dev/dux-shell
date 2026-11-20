@@ -48,12 +48,43 @@ var iconThemeRemoveCmd = &cobra.Command{
 	},
 }
 
+var cursorThemeCmd = &cobra.Command{
+	Use:   "cursor-theme",
+	Short: "Install and remove cursor themes",
+}
+
+var cursorThemeInstallCmd = &cobra.Command{
+	Use:   "install <archive|folder>",
+	Short: "Install the cursor themes of an archive or folder into your icon directory",
+	Args:  cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		replace, _ := cmd.Flags().GetBool("replace")
+		printIconThemes(iconfolders.InstallCursor(iconThemeOptions(cmd), args[0], replace))
+	},
+}
+
+var cursorThemeRemoveCmd = &cobra.Command{
+	Use:   "remove <theme>",
+	Short: "Remove a cursor theme from your icon directory",
+	Args:  cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		inUse, _ := cmd.Flags().GetStringArray("in-use")
+		printIconThemes([]string{args[0]}, iconfolders.RemoveCursor(iconThemeOptions(cmd), args[0], inUse))
+	},
+}
+
 func init() {
 	iconThemeCmd.PersistentFlags().String("state-dir", "", "State directory holding the folder recolor state (default: $XDG_CACHE_HOME/dms)")
 	iconThemeInstallCmd.Flags().Bool("replace", false, "Replace a theme of the same name")
 	iconThemeRemoveCmd.Flags().StringArray("in-use", nil, "A theme that must keep working; repeat for each")
 	iconThemeCmd.AddCommand(iconThemeListCmd, iconThemeInstallCmd, iconThemeRemoveCmd)
 	rootCmd.AddCommand(iconThemeCmd)
+
+	cursorThemeCmd.PersistentFlags().String("state-dir", "", "State directory holding the folder recolor state (default: $XDG_CACHE_HOME/dms)")
+	cursorThemeInstallCmd.Flags().Bool("replace", false, "Replace a theme of the same name")
+	cursorThemeRemoveCmd.Flags().StringArray("in-use", nil, "A theme that must keep working; repeat for each")
+	cursorThemeCmd.AddCommand(cursorThemeInstallCmd, cursorThemeRemoveCmd)
+	rootCmd.AddCommand(cursorThemeCmd)
 }
 
 func iconThemeOptions(cmd *cobra.Command) iconfolders.Options {

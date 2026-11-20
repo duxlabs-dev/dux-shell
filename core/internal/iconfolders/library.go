@@ -233,9 +233,18 @@ func (l *library) needs(user *shelf, dir string) bool {
 
 // RemoveTheme deletes a theme from the user's icon directory, unless a theme in inUse draws from it.
 func RemoveTheme(o Options, name string, inUse []string) error {
+	return removePack(o, name, inUse, func(dir string) bool { return readShelf(dir) != nil })
+}
+
+// RemoveCursor deletes a cursor theme from the user's icon directory, unless a theme in inUse draws from it.
+func RemoveCursor(o Options, name string, inUse []string) error {
+	return removePack(o, name, inUse, hasCursors)
+}
+
+func removePack(o Options, name string, inUse []string, match func(string) bool) error {
 	lib := o.library()
 	dir := filepath.Join(o.IconsDir, name)
-	if name != filepath.Base(name) || reserved(name) || readShelf(dir) == nil {
+	if name != filepath.Base(name) || reserved(name) || !match(dir) {
 		return &LibraryError{Code: CodeNotRemovable, Reason: "not a theme in " + o.IconsDir}
 	}
 
@@ -250,7 +259,14 @@ func RemoveTheme(o Options, name string, inUse []string) error {
 	}
 	var users []string
 	for _, u := range using {
-		if sh := lib.shelf(u.theme); sh != nil && lib.needs(sh, dir) && !slices.Contains(users, u.label) {
+		if slices.Contains(users, u.label) {
+			continue
+		}
+		if u.theme == name {
+			users = append(users, u.label)
+			continue
+		}
+		if sh := lib.shelf(u.theme); sh != nil && lib.needs(sh, dir) {
 			users = append(users, u.label)
 		}
 	}
