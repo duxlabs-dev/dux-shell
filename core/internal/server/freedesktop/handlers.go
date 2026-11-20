@@ -28,6 +28,8 @@ func HandleRequest(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
 		handleGetColorScheme(conn, req, manager)
 	case "freedesktop.settings.setIconTheme":
 		handleSetIconTheme(conn, req, manager)
+	case "freedesktop.settings.setReducedMotion":
+		handleSetReducedMotion(conn, req, manager)
 	default:
 		conn.RespondError(req.ID, fmt.Sprintf("unknown method: %s", req.Method))
 	}
@@ -151,4 +153,20 @@ func handleSetIconTheme(conn *ipc.ConnWriter, req ipc.Request, manager *Manager)
 	}
 
 	conn.Respond(req.ID, models.SuccessResult{Success: true, Message: "icon theme set"})
+}
+
+func handleSetReducedMotion(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
+	reduce, err := params.Bool(req.Params, "reduce")
+	if err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
+
+	result, err := manager.SetReducedMotion(reduce)
+	if err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
+
+	conn.Respond(req.ID, result)
 }

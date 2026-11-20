@@ -34,6 +34,7 @@ func NewManager() (*Manager, error) {
 			Screensaver: ScreensaverState{},
 		},
 		stateMutex:  sync.RWMutex{},
+		motionSeen:  map[string]motionSourceState{},
 		systemConn:  systemConn,
 		sessionConn: sessionConn,
 		currentUID:  uint64(os.Getuid()),
@@ -106,6 +107,7 @@ func (m *Manager) initializeSettings() error {
 	if err := m.updateSettingsState(); err != nil {
 		return fmt.Errorf("failed to update settings state: %w", err)
 	}
+	m.readSystemMotion()
 
 	go m.watchSettingsChanges()
 
@@ -179,30 +181,38 @@ func (m *Manager) watchSettingsChanges() {
 
 		namespace, _ := sig.Body[0].(string)
 		key, _ := sig.Body[1].(string)
-		if namespace != "org.freedesktop.appearance" || key != "color-scheme" {
-			continue
-		}
-
 		variant, ok := sig.Body[2].(dbus.Variant)
 		if !ok {
 			continue
 		}
-		colorScheme, ok := dbusutil.As[uint32](variant)
-		if !ok {
+
+		if source, ok := findMotionSource(namespace, key); ok {
+			m.handleMotionChange(source, variant)
 			continue
 		}
-
-		selfInflicted := m.consumeSelfEcho(colorScheme)
-
-		m.stateMutex.Lock()
-		changed := m.state.Settings.ColorScheme != colorScheme || !m.state.Settings.Available
-		m.state.Settings.ColorScheme = colorScheme
-		m.state.Settings.Available = true
-		m.stateMutex.Unlock()
-
-		if changed && !selfInflicted {
-			m.NotifySubscribers()
+		if namespace != portalAppearanceNamespace || key != portalColorSchemeKey {
+			continue
 		}
+		m.handleColorSchemeChange(variant)
+	}
+}
+
+func (m *Manager) handleColorSchemeChange(variant dbus.Variant) {
+	colorScheme, ok := dbusutil.As[uint32](variant)
+	if !ok {
+		return
+	}
+
+	selfInflicted := m.consumeSelfEcho(colorScheme)
+
+	m.stateMutex.Lock()
+	changed := m.state.Settings.ColorScheme != colorScheme || !m.state.Settings.Available
+	m.state.Settings.ColorScheme = colorScheme
+	m.state.Settings.Available = true
+	m.stateMutex.Unlock()
+
+	if changed && !selfInflicted {
+		m.NotifySubscribers()
 	}
 }
 
@@ -292,7 +302,7 @@ func (m *Manager) Unsubscribe(id string, ch chan FreedeskState) {
 }
 
 func (m *Manager) NotifySubscribers() {
-	m.subscribers.Publish(m.GetState())
+	m.subscribers.PublishLatest(m.GetState())
 }
 
 func (m *Manager) Close() {
