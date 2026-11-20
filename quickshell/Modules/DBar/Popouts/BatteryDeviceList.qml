@@ -510,13 +510,17 @@ Item {
                 }
             }
 
-            ListView {
+            DListView {
                 id: barList
 
                 // A removed row only fades while it is still inside the view, so the view keeps the old height until the collapse.
                 width: parent.width
                 height: Math.max(barList.contentHeight, barsBox.shownHeight - barsBox.pad * 2)
                 interactive: false
+                wheelEnabled: false
+                showScrollBar: false
+                fadeEdges: false
+                rowFadeEnabled: false
                 spacing: Theme.spacingXS
 
                 model: ScriptModel {

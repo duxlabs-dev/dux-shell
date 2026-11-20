@@ -318,7 +318,7 @@ Item {
                     active: root.active
                     showEdit: root.showEdit
                     topRadius: Theme.groupedListOuterRadius
-                    bottomRadius: stats.visible || root.powerInList ? Theme.groupedListInnerRadius : Theme.groupedListOuterRadius
+                    bottomRadius: group.hasStats || root.powerInList ? Theme.groupedListInnerRadius : Theme.groupedListOuterRadius
                     onSettingsRequested: root.openSettings()
                     onEditRequested: root.openWidgetSettings()
                     footer: root.powerInHero ? powerFooter : null
@@ -334,18 +334,19 @@ Item {
                 Item {
                     id: group
                     readonly property bool heroCard: root.hasHero && !root.compactStyle
+                    readonly property bool hasStats: stats.count > 0
                     readonly property real outer: Theme.groupedListOuterRadius
                     readonly property real inner: Theme.groupedListInnerRadius
-                    readonly property real powerTop: root.compactStyle || !heroCard && !stats.visible ? outer : inner
-                    readonly property real powerBottom: root.compactStyle && stats.visible ? inner : outer
+                    readonly property real powerTop: root.compactStyle || !heroCard && !group.hasStats ? outer : inner
+                    readonly property real powerBottom: root.compactStyle && group.hasStats ? inner : outer
 
                     width: parent.width
-                    height: (root.powerInList ? power.height : 0) + (stats.visible ? stats.height : 0) + (root.powerInList && stats.visible ? Theme.groupedListGap : 0)
+                    height: (root.powerInList ? power.height : 0) + (group.hasStats ? stats.height : 0) + (root.powerInList && group.hasStats ? Theme.groupedListGap : 0)
                     visible: height > 0
 
                     BatteryPowerProfile {
                         id: power
-                        y: root.compactStyle || !stats.visible ? 0 : stats.height + Theme.groupedListGap
+                        y: root.compactStyle || !group.hasStats ? 0 : stats.height + Theme.groupedListGap
                         visible: root.powerInList
                         showHeading: SettingsData.batteryPopoutPowerStyle === "slider"
                         active: root.active
