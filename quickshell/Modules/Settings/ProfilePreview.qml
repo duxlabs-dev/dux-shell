@@ -35,7 +35,7 @@ ClippingRectangle {
     DSVGIcon {
         anchors.centerIn: parent
         size: Math.round(parent.height * 0.45)
-        source: Theme.shellDir + "/assets/danklogonormal.svg"
+        source: Theme.shellDir + "/assets/duxlogo.svg"
         colorOverride: Theme.onSurfaceVariant
         visible: !spinner.running && preview.status !== Image.Ready
     }

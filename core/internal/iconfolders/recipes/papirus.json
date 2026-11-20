@@ -1,0 +1,10 @@
+{
+  "themes": ["Papirus", "Papirus-Dark", "Papirus-Light", "ePapirus*"],
+  "stock": ["folder-blue", "folder-blue-*", "user-blue", "user-blue-*"],
+  "palette": "folder-blue",
+  "colors": {
+    "#5294e2": "front",
+    "#4877b1": "back",
+    "#1d344f": "glyph"
+  }
+}

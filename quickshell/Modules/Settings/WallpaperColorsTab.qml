@@ -10,6 +10,7 @@ import qs.Services
 import qs.DCommon.Widgets
 import qs.Modules.Settings.Widgets
 import "../../Common/Format.js" as Format
+import "../../Common/IconFolders.js" as IconFolders
 import "../../Common/ThemePalette.js" as ThemePalette
 import "../../DCommon/Common/MaterialWallpaper.js" as Art
 import "../../Common/WallpaperFormats.js" as WallpaperFormats
@@ -19,7 +20,66 @@ Column {
 
     property var parentModal: null
     property var cachedIconThemes: SettingsData.availableIconThemes
+    readonly property var iconThemeLabels: (cachedIconThemes || []).map(name => IconFolders.label(name))
     property var cachedCursorThemes: SettingsData.availableCursorThemes
+    readonly property string pickedIconTheme: SettingsData.iconTheme
+    // Dux Icons is built in the theme colors; it has its own options in place of folder recoloring.
+    readonly property bool pickedSelfBuiltIcons: IconFolders.isSelf(pickedIconTheme)
+    // In the order of IconFolders.shapes().
+    readonly property var iconShapeLabels: [I18n.tr("Circle", "icon shape"), I18n.tr("Squircle", "icon shape"), I18n.tr("Rounded square", "icon shape"), I18n.tr("Square", "icon shape"), I18n.tr("Hexagon", "icon shape"), I18n.tr("Cookie", "icon shape, a circle with a scalloped edge"), I18n.tr("Clover", "icon shape, a square with rounded lobes at its corners")]
+    readonly property var iconShapeImages: IconFolders.shapes().map(shape => "svg:" + IconFolders.shapeUrl(shape, Theme.primary.toString()))
+    readonly property bool selfBuiltIconsMissing: pickedSelfBuiltIcons && iconFolderProbeDone && iconFolderProbe?.code === "no-generator"
+    property string iconFolderProbeTheme: ""
+    property var iconFolderProbe: null
+    property bool iconFolderProbeDone: false
+    property bool iconFolderEnabling: false
+    // Theme name -> { removable, icons }, from `dms icon-theme list` while this page is open.
+    property var iconLibrary: ({})
+    property bool iconLibraryOpen: false
+    property bool iconInstalling: false
+    property bool iconInstallFolder: false
+    readonly property var iconThemeImages: (cachedIconThemes || []).map(name => {
+        const file = iconLibrary[name]?.icons[0];
+        return file ? "svg:" + file : "";
+    })
+    readonly property var iconThemeGlyphs: iconThemeImages.map(image => image ? "" : "palette")
+    // Cursor theme name -> its default pointer as a PNG data URL, from the same command.
+    property var cursorPointers: ({})
+    readonly property var cursorThemeImages: (cachedCursorThemes || []).map(name => cursorPointers[name] ? "svg:" + cursorPointers[name] : "")
+    readonly property var cursorThemeGlyphs: cursorThemeImages.map(image => image ? "" : "arrow_selector_tool")
+    // A generation of Dux Icons is a new directory, so its preview files move with every rebuild.
+    readonly property string iconGeneration: SettingsData.iconFolderState?.applied ?? ""
+    onIconGenerationChanged: loadIconLibrary()
+    // Empty while folder recoloring can be turned on for the picked pack.
+    readonly property string iconFolderBlocker: {
+        if (pickedIconTheme === "System Default")
+            return iconFolderProbeText("system-default", "");
+        if (!Theme.matugenAvailable)
+            return I18n.tr("Install the %1 package for dynamic theming", "matugen installation hint, %1 is the package name").arg("matugen");
+        if (!iconFolderProbeDone || iconFolderProbe?.supported)
+            return "";
+        return iconFolderProbeText(iconFolderProbe?.code ?? "", iconFolderProbe?.reason ?? "");
+    }
+
+    // The Go probe's English reason is shown only for a code this shell does not know yet.
+    function iconFolderProbeText(code, reason) {
+        const unsupported = I18n.tr("%1 is not supported", "folder recolor toggle, %1 is an icon theme name").arg(pickedIconTheme);
+        switch (code) {
+        case "system-default":
+            return I18n.tr("Pick an icon theme first", "folder recolor toggle, disabled while System Default is selected");
+        case "not-found":
+            return I18n.tr("%1 is not installed", "folder recolor toggle, %1 is an icon theme name").arg(pickedIconTheme);
+        case "unreadable":
+            return I18n.tr("%1 could not be read", "folder recolor toggle, %1 is an icon theme name").arg(pickedIconTheme);
+        case "no-colored-folders":
+            return I18n.tr("%1 has no folders that can be recolored", "folder recolor toggle, %1 is an icon theme name").arg(pickedIconTheme);
+        case "unsupported-pack":
+            return unsupported;
+        }
+        return reason || unsupported;
+    }
+
+    onPickedIconThemeChanged: probeIconFolders(false)
 
     readonly property bool perMonitor: SessionData.perMonitorWallpaper
     readonly property bool perMode: SessionData.perModeWallpaper
@@ -67,8 +127,115 @@ Column {
 
     Component.onCompleted: {
         WallpaperCyclingService.cyclingActive;
-        SettingsData.detectAvailableIconThemes();
+        refreshIconThemes();
         SettingsData.detectAvailableCursorThemes();
+        if (iconFolderProbeTheme !== pickedIconTheme)
+            probeIconFolders(false);
+    }
+
+    function loadIconLibrary() {
+        Proc.runCommand("iconLibrary", [Proc.dmsBin, "icon-theme", "list", "--state-dir", Theme.stateDir], (output, exitCode) => {
+            root.iconLibrary = IconFolders.parseLibrary(output);
+            root.cursorPointers = IconFolders.parsePointers(output);
+        }, 0, undefined, root);
+    }
+
+    function refreshIconThemes() {
+        SettingsData.detectAvailableIconThemes();
+        loadIconLibrary();
+    }
+
+    function iconRefusalText(reply) {
+        switch (reply.code) {
+        case "no-theme":
+            return I18n.tr("No icon theme found there", "icon theme install error, the picked archive or folder holds no theme");
+        case "in-use":
+            return I18n.tr("%1 still uses it", "icon theme remove error, %1 is a list of icon theme names").arg(reply.themes.map(IconFolders.label).join(", "));
+        case "not-removable":
+            return I18n.tr("Only themes in your own icon folder can be removed", "icon theme remove error");
+        }
+        return reply.reason;
+    }
+
+    function browseIconTheme(folder) {
+        iconInstallFolder = folder;
+        iconBrowserLoader.active = true;
+        if (iconBrowserLoader.item)
+            iconBrowserLoader.item.open();
+    }
+
+    function installIconTheme(path, replace) {
+        iconInstalling = true;
+        const args = [Proc.dmsBin, "icon-theme", "install"].concat(replace ? ["--replace"] : [], ["--", path]);
+        Proc.runCommand(null, args, (output, exitCode) => {
+            root.iconInstalling = false;
+            const reply = IconFolders.parseReply(output);
+            if (exitCode === 0) {
+                ToastService.showInfo(I18n.tr("Installed %1", "icon theme install toast, %1 is a list of icon theme names").arg(reply.themes.join(", ")));
+                root.refreshIconThemes();
+                return;
+            }
+            if (reply.code !== "exists") {
+                ToastService.showError(I18n.tr("Icon theme not installed", "icon theme install error toast title"), root.iconRefusalText(reply));
+                return;
+            }
+            profileConfirm.showWithOptions({
+                "title": I18n.tr("Replace icon theme", "icon theme install dialog title"),
+                "message": I18n.tr("%1 is already installed. Replace it?", "icon theme install confirmation, %1 is a list of icon theme names").arg(reply.themes.join(", ")),
+                "confirmText": I18n.tr("Replace"),
+                "cancelText": I18n.tr("Cancel"),
+                "danger": true,
+                "onConfirm": () => root.installIconTheme(path, true)
+            });
+        }, 0, Proc.noTimeout, root);
+    }
+
+    function confirmRemoveIconTheme(name) {
+        profileConfirm.showWithOptions({
+            "title": I18n.tr("Remove icon theme", "icon theme remove dialog title"),
+            "message": I18n.tr("Remove '%1' from your icon folder?", "icon theme remove confirmation, %1 is an icon theme name").arg(name),
+            "confirmText": I18n.tr("Remove"),
+            "cancelText": I18n.tr("Cancel"),
+            "danger": true,
+            "onConfirm": () => root.removeIconTheme(name)
+        });
+    }
+
+    function removeIconTheme(name) {
+        const args = [Proc.dmsBin, "icon-theme", "remove", "--state-dir", Theme.stateDir];
+        for (const used of [SettingsData.iconThemeDark, SettingsData.iconThemeLight, SettingsData.systemDefaultIconTheme, SettingsData.cursorSettings?.theme]) {
+            if (used)
+                args.push("--in-use", used);
+        }
+        Proc.runCommand(null, args.concat(["--", name]), (output, exitCode) => {
+            if (exitCode === 0)
+                root.refreshIconThemes();
+            else
+                ToastService.showError(I18n.tr("%1 not removed", "icon theme remove error toast title, %1 is an icon theme name").arg(name), root.iconRefusalText(IconFolders.parseReply(output)));
+        }, 0, Proc.noTimeout, root);
+    }
+
+    function probeIconFolders(enable) {
+        const theme = pickedIconTheme;
+        iconFolderProbeTheme = theme;
+        iconFolderProbe = null;
+        iconFolderProbeDone = false;
+        iconFolderEnabling = false;
+        if (theme === "System Default" || !(enable || SettingsData.iconFolderRecolor || IconFolders.isSelf(theme)))
+            return;
+        iconFolderEnabling = enable;
+        const mode = SessionData.isLightMode ? "light" : "dark";
+        Proc.runCommand(null, [Proc.dmsBin, "matugen", "icon-folders", "--icon-theme", theme, "--mode", mode, "--state-dir", Theme.stateDir, "--probe"], (output, exitCode) => {
+            if (theme !== root.iconFolderProbeTheme)
+                return;
+            root.iconFolderProbe = exitCode === 0 ? IconFolders.parseProbe(output) : null;
+            root.iconFolderProbeDone = true;
+            if (!root.iconFolderEnabling)
+                return;
+            root.iconFolderEnabling = false;
+            if (root.iconFolderProbe?.supported)
+                SettingsData.set("iconFolderRecolor", true);
+        }, 0, undefined, root);
     }
 
     function firstScreenName() {
@@ -970,8 +1137,10 @@ Column {
                 currentValue: SettingsData.iconThemeDark
                 enableFuzzySearch: true
                 popupWidthOffset: 100
-                maxPopupHeight: 236
-                options: root.cachedIconThemes
+                options: root.iconThemeLabels
+                optionValues: root.cachedIconThemes
+                optionImages: root.iconThemeImages
+                optionIcons: root.iconThemeGlyphs
                 onValueChanged: value => {
                     SettingsData.setIconThemeForMode(value, false);
                     root.warnIfMissingQtTheme();
@@ -989,8 +1158,10 @@ Column {
                 currentValue: SettingsData.iconThemeDark
                 enableFuzzySearch: true
                 popupWidthOffset: 100
-                maxPopupHeight: 236
-                options: root.cachedIconThemes
+                options: root.iconThemeLabels
+                optionValues: root.cachedIconThemes
+                optionImages: root.iconThemeImages
+                optionIcons: root.iconThemeGlyphs
                 onValueChanged: value => {
                     SettingsData.setIconThemeForMode(value, false);
                     root.warnIfMissingQtTheme();
@@ -1008,11 +1179,149 @@ Column {
                 currentValue: SettingsData.iconThemeLight
                 enableFuzzySearch: true
                 popupWidthOffset: 100
-                maxPopupHeight: 236
-                options: root.cachedIconThemes
+                options: root.iconThemeLabels
+                optionValues: root.cachedIconThemes
+                optionImages: root.iconThemeImages
+                optionIcons: root.iconThemeGlyphs
                 onValueChanged: value => {
                     SettingsData.setIconThemeForMode(value, true);
                     root.warnIfMissingQtTheme();
+                }
+            }
+
+            SettingsDropdownRow {
+                visible: root.pickedSelfBuiltIcons
+                tab: "theme"
+                tags: ["icon", "shape", "badge", "circle", "squircle", "rounded", "square", "hexagon", "cookie", "clover", "dux"]
+                settingKey: "iconShape"
+                text: I18n.tr("Icon shape", "Dux Icons setting, the outline of the badge behind every icon")
+                enabled: !root.selfBuiltIconsMissing
+                options: root.iconShapeLabels
+                optionValues: IconFolders.shapes()
+                optionImages: root.iconShapeImages
+                currentValue: SettingsData.iconShape
+                onValueChanged: value => SettingsData.set("iconShape", value)
+            }
+
+            SettingsToggleRow {
+                visible: root.pickedSelfBuiltIcons
+                tab: "theme"
+                tags: ["icon", "app", "monochrome", "themed", "tint", "color", "dux", "dynamic"]
+                settingKey: "iconMonoApps"
+                text: I18n.tr("Themed app icons", "Dux Icons toggle, paints app icons in tones of the theme colors")
+                description: root.selfBuiltIconsMissing ? I18n.tr("Install the %1 command so the icons follow the theme", "Dux Icons toggle, disabled while its build command is missing, %1 is a command name").arg("dux-icons") : I18n.tr("App icons take the theme colors in place of their own", "Dux Icons toggle description")
+                enabled: !root.selfBuiltIconsMissing
+                checked: SettingsData.iconMonoApps
+                onToggled: checked => SettingsData.set("iconMonoApps", checked)
+            }
+
+            SettingsToggleRow {
+                visible: root.pickedSelfBuiltIcons
+                tab: "theme"
+                tags: ["icon", "gradient", "shade", "shading", "badge", "dux"]
+                settingKey: "iconGradient"
+                text: I18n.tr("Shaded icons", "Dux Icons toggle, fills each icon badge with a soft top-to-bottom gradient")
+                description: I18n.tr("Icon backgrounds fade from light to dark", "Dux Icons gradient toggle description")
+                enabled: !root.selfBuiltIconsMissing
+                checked: SettingsData.iconGradient
+                onToggled: checked => SettingsData.set("iconGradient", checked)
+            }
+
+            SettingsToggleRow {
+                visible: !root.pickedSelfBuiltIcons
+                tab: "theme"
+                tags: ["icon", "folder", "color", "recolor", "theme", "matugen", "dynamic"]
+                settingKey: "iconFolderRecolor"
+                text: I18n.tr("Match folder colors to theme", "icon theme toggle, recolors the picked icon pack's folders with the theme colors")
+                description: root.iconFolderBlocker || I18n.tr("Folders follow wallpaper and theme changes", "folder recolor toggle description")
+                // Stays clickable while on, so it can always be turned off.
+                enabled: SettingsData.iconFolderRecolor || root.iconFolderBlocker === ""
+                toggling: root.iconFolderEnabling
+                checked: SettingsData.iconFolderRecolor
+                onToggled: checked => {
+                    if (checked)
+                        root.probeIconFolders(true);
+                    else
+                        SettingsData.set("iconFolderRecolor", false);
+                }
+            }
+
+            SettingsFoldRow {
+                id: iconLibraryRow
+
+                tab: "theme"
+                tags: ["icon", "theme", "install", "remove", "delete", "preview", "archive", "manage"]
+                settingKey: "iconThemeLibrary"
+                title: I18n.tr("Manage themes", "settings row that expands to the installed icon themes")
+                subtitle: I18n.tr("Preview, install and remove icon themes", "icon theme manager row description")
+                open: root.iconLibraryOpen
+                onToggled: root.iconLibraryOpen = !root.iconLibraryOpen
+
+                body: Loader {
+                    width: parent.width
+                    visible: active
+                    active: iconLibraryRow.open
+
+                    sourceComponent: SettingsGroup {
+                        slotColor: SettingsMetrics.controlColor
+
+                        Repeater {
+                            model: (root.cachedIconThemes || []).filter(name => root.iconLibrary[name] !== undefined)
+
+                            SettingsRow {
+                                id: themeRow
+
+                                required property string modelData
+                                readonly property var info: root.iconLibrary[modelData]
+                                readonly property bool picked: modelData === SettingsData.iconThemeDark || modelData === SettingsData.iconThemeLight
+
+                                title: IconFolders.label(modelData)
+                                trailingBadge: picked ? I18n.tr("In use", "icon theme list badge, the theme currently applied") : ""
+
+                                supporting: Row {
+                                    spacing: Theme.spacingS
+
+                                    Repeater {
+                                        model: themeRow.info?.icons ?? []
+
+                                        DSVGIcon {
+                                            required property string modelData
+
+                                            source: modelData
+                                            size: Theme.iconSizeLarge
+                                        }
+                                    }
+                                }
+
+                                DActionButton {
+                                    anchors.verticalCenter: parent?.verticalCenter
+                                    visible: (themeRow.info?.removable ?? false) && !themeRow.picked
+                                    iconName: "delete"
+                                    tooltipText: I18n.tr("Remove")
+                                    onClicked: root.confirmRemoveIconTheme(themeRow.modelData)
+                                }
+                            }
+                        }
+
+                        SettingsRow {
+                            title: I18n.tr("Install a theme", "icon theme manager row title")
+                            subtitle: I18n.tr("From an archive or a folder. Nothing inside it is run.", "icon theme install row description")
+
+                            DButton {
+                                text: I18n.tr("Archive", "button, picks an archive file to install an icon theme from")
+                                iconName: "folder_zip"
+                                enabled: !root.iconInstalling
+                                onClicked: root.browseIconTheme(false)
+                            }
+
+                            DButton {
+                                text: I18n.tr("Folder", "button, picks a folder to install an icon theme from")
+                                iconName: "folder_open"
+                                enabled: !root.iconInstalling
+                                onClicked: root.browseIconTheme(true)
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -1039,8 +1348,9 @@ Column {
                 currentValue: SettingsData.cursorSettings.theme
                 enableFuzzySearch: true
                 popupWidthOffset: 100
-                maxPopupHeight: 236
                 options: root.cachedCursorThemes
+                optionImages: root.cursorThemeImages
+                optionIcons: root.cursorThemeGlyphs
                 modified: SettingsData.cursorSettings.theme !== SettingsData.specDefault("cursorSettings").theme
                 onResetRequested: SettingsData.setCursorTheme(SettingsData.specDefault("cursorSettings").theme)
                 onValueChanged: value => SettingsData.setCursorTheme(value)
@@ -1396,6 +1706,20 @@ Column {
             }
         }
         onLoadFailed: error => ToastService.showError(I18n.tr("Invalid wallpaper layout", "material wallpaper import error"))
+    }
+
+    LazyLoader {
+        id: iconBrowserLoader
+        active: false
+
+        FileBrowserModal {
+            parentModal: root.parentModal
+            browserTitle: I18n.tr("Install icon theme", "icon theme file browser title")
+            bucket: "iconTheme"
+            mode: root.iconInstallFolder ? "openFolder" : "open"
+            filters: root.iconInstallFolder ? [] : ["*.tar.gz", "*.tgz", "*.tar.xz", "*.txz", "*.tar.zst", "*.tar", "*.zip"]
+            onAccepted: paths => root.installIconTheme(paths[0], false)
+        }
     }
 
     LazyLoader {

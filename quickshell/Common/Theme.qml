@@ -1753,7 +1753,9 @@ Singleton {
             "mode": (typeof SettingsData !== "undefined" && SettingsData.matugenSmartMode && kind === "image" && !stockColors) ? "smart" : (isLight ? "light" : "dark"),
             "iconTheme": iconTheme || "System Default",
             "matugenType": matugenType || "scheme-tonal-spot",
-            "runUserTemplates": (typeof SettingsData !== "undefined") ? SettingsData.runUserMatugenTemplates : true
+            "runUserTemplates": (typeof SettingsData !== "undefined") ? SettingsData.runUserMatugenTemplates : true,
+            "iconFolders": typeof SettingsData !== "undefined" && SettingsData.iconThemeGenerated,
+            "iconStyle": (typeof SettingsData !== "undefined" && SettingsData.iconStyleRunArgs) || []
         };
 
         const args = [Proc.dmsBin, "matugen", "queue", "--state-dir", stateDir, "--shell-dir", shellDir, "--config-dir", configDir, "--kind", desired.kind, "--value", desired.value, "--mode", desired.mode, "--icon-theme", desired.iconTheme, "--matugen-type", desired.matugenType,];
@@ -1852,6 +1854,11 @@ Singleton {
             if (skipTemplates.length > 0) {
                 args.push("--skip-templates", skipTemplates.join(","));
             }
+        }
+        // Sent only when on, so a run without it keeps the run key it had before the flag.
+        if (desired.iconFolders) {
+            args.push("--icon-folders");
+            args.push(...desired.iconStyle);
         }
 
         const runKey = Qt.md5(JSON.stringify(args));
@@ -2352,6 +2359,7 @@ Singleton {
             const appliedKey = (exitCode === 0 || exitCode === 2) ? _matugenRunKey : "";
             if (CacheData.matugenAppliedKey !== appliedKey)
                 CacheData.set("matugenAppliedKey", appliedKey);
+            SettingsData.themeRunFinished(systemThemeGenerator.command.indexOf("--icon-folders") !== -1);
 
             if (!pendingThemeRequest) {
                 if (SettingsData.matugenTemplateGtk)

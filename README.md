@@ -2,7 +2,7 @@
 
 <div align="center">
   <a href="https://duxlabs.dev">
-    <img src="assets/danklogo.svg" alt="Dux Modular Shell" width="200">
+    <img src="assets/duxlogo.svg" alt="Dux Modular Shell" width="200">
   </a>
 
 ### A modern desktop shell for Wayland

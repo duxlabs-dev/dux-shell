@@ -1,0 +1,19 @@
+{
+  "themes": ["Colloid", "Colloid-*"],
+  "icons": ["folder", "folder-*", "user-*"],
+  "colors": {
+    "#60c0f0": "front",
+    "#ba68c8": "front", "#f06292": "front", "#f44336": "front", "#fb8c00": "front",
+    "#ffd600": "front", "#66bb6a": "front", "#4db6ac": "front",
+    "#89a3c2": "front", "#c89dbf": "front", "#dc98b1": "front", "#d4878f": "front", "#dca493": "front",
+    "#eac985": "front", "#a0c082": "front", "#83b9b8": "front", "#757a99": "front",
+    "#6272a4": "front", "#bd93f9": "front", "#ff79c6": "front", "#ff5555": "front", "#ffb86c": "front",
+    "#f1fa8c": "front", "#50fa7b": "front", "#50fae9": "front",
+    "#83a598": "front", "#d386cd": "front", "#d3869b": "front", "#fb4934": "front", "#fe8019": "front",
+    "#fabd2f": "front", "#b8bb26": "front", "#8ec07c": "front", "#868686": "front",
+    "#7fbbb3": "front", "#d699b6": "front", "#e67e80": "front", "#e69875": "front", "#dbbc7f": "front",
+    "#a7c080": "front", "#83c092": "front", "#7a8478": "front",
+    "#8caaee": "front", "#ca9ee6": "front", "#f4b8e4": "front", "#ea999c": "front", "#ef9f76": "front",
+    "#a6d189": "front", "#81c8be": "front", "#7c7f93": "front"
+  }
+}

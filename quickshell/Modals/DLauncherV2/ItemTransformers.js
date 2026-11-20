@@ -90,9 +90,7 @@ function transformCoreApp(app, openLabel) {
     var iconType = "material";
 
     if (app.icon) {
-        if (app.icon.startsWith("svg+corner:")) {
-            iconType = "composite";
-        } else if (app.icon.startsWith("material:")) {
+        if (app.icon.startsWith("material:")) {
             iconName = app.icon.substring(9);
         } else {
             iconName = app.icon;
@@ -107,7 +105,6 @@ function transformCoreApp(app, openLabel) {
         subtitle: app.comment || "",
         icon: iconName,
         iconType: iconType,
-        iconFull: app.icon,
         section: "apps",
         data: app,
         isCore: true,

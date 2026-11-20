@@ -74,6 +74,7 @@ T.Control {
     readonly property Item activeItem: Window.activeFocusItem
     readonly property bool focusWithin: (activeItem?.visualFocus ?? false) && _contains(activeItem)
     readonly property real headerBand: paddingV * 2 + headerLine.height
+    readonly property real bodyGap: clickable ? paddingV : Theme.spacingM
     readonly property bool headerHovered: rowHover.hovered && (!hasBody || rowHover.point.position.y < headerBand)
     readonly property bool resetChipHovered: resetChipLoader.item?.hovered ?? false
 
@@ -142,7 +143,7 @@ T.Control {
 
     width: parent?.width ?? 0
     height: implicitHeight
-    implicitHeight: paddingV * 2 + headerLine.height + (hasBody ? bodySlot.height + (headerLine.height > 0 ? Theme.spacingM : 0) : 0)
+    implicitHeight: paddingV * 2 + headerLine.height + (hasBody ? bodySlot.height + (headerLine.height > 0 ? bodyGap : 0) : 0)
 
     SettingsSearchRegistration {
         target: root
@@ -278,7 +279,7 @@ T.Control {
         anchors.verticalCenter: parent.verticalCenter
         anchors.leftMargin: root.paddingH
         anchors.rightMargin: root.paddingH
-        spacing: Theme.spacingM
+        spacing: root.bodyGap
 
         Item {
             id: headerLine

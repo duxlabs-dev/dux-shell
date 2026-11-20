@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+ <defs>
+  <style type="text/css" id="current-color-scheme">.ColorScheme-Text { color: #fcfcfc; } </style>
+ </defs>
+ <path style="fill:#eb0a42" d="M 4 6 H 28 L 32 10 H 60 V 58 H 4 Z"/>
+ <path style="fill-opacity:0.33" d="M 4 6 H 28 L 32 10 H 60 V 16 H 26 L 22 20 H 4 Z"/>
+</svg>

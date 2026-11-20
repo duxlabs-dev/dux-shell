@@ -1052,6 +1052,22 @@ var LOCAL_SPEC = {
         def: false,
         onChange: "applyStoredIconTheme"
     },
+    iconFolderRecolor: {
+        def: false,
+        onChange: "applyStoredIconTheme"
+    },
+    iconMonoApps: {
+        def: false,
+        onChange: "applyStoredIconTheme"
+    },
+    iconShape: {
+        def: "squircle",
+        onChange: "applyStoredIconTheme"
+    },
+    iconGradient: {
+        def: false,
+        onChange: "applyStoredIconTheme"
+    },
     availableIconThemes: {
         def: ["System Default"],
         persist: false

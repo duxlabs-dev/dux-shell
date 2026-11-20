@@ -41,8 +41,6 @@ LauncherTile {
             return "material:" + (item.icon || "image");
         case "unicode":
             return "unicode:" + (item.icon || "");
-        case "composite":
-            return item.iconFull || "";
         case "image":
         default:
             return item.icon || "";

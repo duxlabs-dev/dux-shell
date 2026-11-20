@@ -385,7 +385,7 @@ Singleton {
 
         const componentPaths = _resolveComponentPaths(manifest, dir);
         const surfaces = Object.keys(componentPaths);
-        if (surfaces.length === 0 && !manifest.lyrics?.command && !manifest.weather?.command) {
+        if (surfaces.length === 0 && !manifest.lyrics?.command && !manifest.weather?.command && !manifest.iconFolders?.length) {
             log.error("no valid component surfaces in manifest:", absPath);
             knownManifests[absPath] = {
                 mtime: mtimeEpochMs,
@@ -518,7 +518,7 @@ Singleton {
 
         const componentPaths = plugin.componentPaths || {};
         const surfaces = Object.keys(componentPaths);
-        if (surfaces.length === 0 && !plugin.lyrics?.command && !plugin.weather?.command) {
+        if (surfaces.length === 0 && !plugin.lyrics?.command && !plugin.weather?.command && !plugin.iconFolders?.length) {
             log.error("Plugin has no component surfaces:", pluginId);
             pluginLoadFailed(pluginId, "No component surfaces");
             return false;
@@ -604,6 +604,8 @@ Singleton {
 
             _clearLoadError(pluginId);
             pluginLoaded(pluginId);
+            if (plugin.iconFolders?.length)
+                SettingsData.iconRecipesChanged();
             return true;
         } catch (e) {
             log.error("Error loading plugin:", pluginId, e.message);
@@ -712,6 +714,8 @@ Singleton {
             _destroyComponents(components);
             _cleanupPluginStateWriter(pluginId);
             pluginUnloaded(pluginId);
+            if (plugin.iconFolders?.length)
+                SettingsData.iconRecipesChanged();
             return true;
         } catch (error) {
             log.error("Error unloading plugin:", pluginId, "Error:", error.message);

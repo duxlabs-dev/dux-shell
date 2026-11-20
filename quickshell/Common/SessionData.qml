@@ -314,6 +314,8 @@ Singleton {
     property bool greeterSyncPending: false
     property var greeterSyncBaseline: ({})
     property string lastAppliedIconTheme: ""
+    // Generated folder overlays may be on disk; SettingsData clears them once the feature is off.
+    property bool iconFoldersPresent: false
 
     property string launcherLastMode: "all"
     property string launcherLastFileSearchType: "all"

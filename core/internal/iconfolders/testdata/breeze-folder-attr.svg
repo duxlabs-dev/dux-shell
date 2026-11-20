@@ -1,0 +1,9 @@
+<svg viewBox="0 0 96 96" xmlns="http://www.w3.org/2000/svg">
+ <defs>
+  <style type="text/css" id="current-color-scheme">.ColorScheme-Accent { color: #3daee9; } .ColorScheme-Text { color: #fcfcfc; } </style>
+ </defs>
+ <path style="fill:currentColor" class="ColorScheme-Accent" d="m6 9h36l6 6h42v72h-84z"/>
+ <path d="m6 9h36l6 6h42v9h-51l-6 6h-27z" fill-opacity=".33"/>
+ <path d="m42 9 5 7h43v-1h-42z" fill="#fff" fill-opacity=".2"/>
+ <path d="m5 86v1h86v-1z" fill-opacity=".2"/>
+</svg>

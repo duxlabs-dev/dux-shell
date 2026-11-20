@@ -28,6 +28,7 @@ BasePill {
     readonly property real effectiveHorizontalInnerWidth: Math.max(0, effectiveHorizontalWidth - horizontalPadding * 2)
     property var activeWindow: null
     property var activeDesktopEntry: null
+    readonly property string coreIcon: AppSearchService.windowIcon(activeWindow?.appId, activeWindow)
     property bool isHovered: mouseArea.containsMouse
 
     readonly property string screenName: parentScreen?.name ?? ""
@@ -144,12 +145,12 @@ BasePill {
                 source: {
                     if (!activeWindow || !activeWindow.appId)
                         return "";
-                    return Paths.getAppIcon(activeWindow.appId, activeDesktopEntry);
+                    return root.coreIcon || Paths.getAppIcon(activeWindow.appId, activeDesktopEntry);
                 }
                 smooth: true
                 mipmap: true
                 asynchronous: true
-                layer.enabled: activeWindow && Paths.isDmsAppId(activeWindow.appId)
+                layer.enabled: activeWindow && !root.coreIcon && Paths.isDmsAppId(activeWindow.appId)
                 layer.smooth: true
                 layer.mipmap: true
                 layer.effect: MultiEffect {
@@ -204,12 +205,12 @@ BasePill {
                         source: {
                             if (!activeWindow || !activeWindow.appId)
                                 return "";
-                            return Paths.getAppIcon(activeWindow.appId, activeDesktopEntry);
+                            return root.coreIcon || Paths.getAppIcon(activeWindow.appId, activeDesktopEntry);
                         }
                         smooth: true
                         mipmap: true
                         asynchronous: true
-                        layer.enabled: activeWindow && Paths.isDmsAppId(activeWindow.appId)
+                        layer.enabled: activeWindow && !root.coreIcon && Paths.isDmsAppId(activeWindow.appId)
                         layer.smooth: true
                         layer.mipmap: true
                         layer.effect: MultiEffect {

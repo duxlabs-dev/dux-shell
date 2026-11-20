@@ -7,7 +7,7 @@ const PROGRAM_ICONS = [
     {
         programs: ["dms", "dsearch"],
         icons: ["dev.duxlabs.shell"],
-        logo: "danklogo.svg"
+        logo: "duxlogo.svg"
     },
     {
         programs: ["hyprland", "start-hyprland"],

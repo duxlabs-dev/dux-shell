@@ -6,7 +6,9 @@ import Quickshell
 import Quickshell.Io
 import qs.Common
 import qs.Services
+import "../Common/BuiltInIcons.js" as BuiltInIcons
 import "../Common/SearchMatch.js" as SearchMatch
+import "../DCommon/Common/Hct.js" as Hct
 
 Singleton {
     id: root
@@ -191,13 +193,32 @@ Singleton {
         });
     }
 
-    readonly property string dmsLogoPath: Qt.resolvedUrl("../assets/danklogo2.svg")
+    // Fixed tones of the theme color, so the icons look the same in dark and light mode.
+    readonly property var _builtInTones: {
+        const hct = Hct.toHct(Theme.primary);
+        return [96, 80, 32].map(tone => String(Hct.fromHct(hct.hue, hct.chroma, tone)));
+    }
+
+    // A theme icon is held by name: a file path into a generated theme is gone two generations later.
+    function _builtInIcon(name) {
+        return IconThemeService.drawsShellEntries ? "dev.duxlabs.shell." + name : "svg:" + BuiltInIcons.url(name, _builtInTones);
+    }
+
+    // DMS windows share one app id, so the title tells them apart, as in the dock. Empty for any other window.
+    function windowIcon(appId, window) {
+        if (!Paths.isDmsAppId(appId || ""))
+            return "";
+        const icon = coreApps.find(app => app.name === window?.title)?.icon ?? "";
+        return icon.startsWith("svg:") ? icon.slice(4) : Paths.resolveIconPath(icon);
+    }
+
+    onBuiltInPluginsChanged: invalidateLauncherCache(false)
 
     readonly property var builtInPlugins: ({
             "dms_settings": {
                 id: "dms_settings",
                 name: I18n.tr("Settings", "settings window title"),
-                icon: "svg+corner:" + dmsLogoPath + "|settings",
+                icon: _builtInIcon("settings"),
                 cornerIcon: "settings",
                 comment: "dms",
                 action: "ipc:settings",
@@ -208,7 +229,7 @@ Singleton {
             "dms_notepad": {
                 id: "dms_notepad",
                 name: I18n.tr("Notepad", "Notepad"),
-                icon: "svg+corner:" + dmsLogoPath + "|description",
+                icon: _builtInIcon("notepad"),
                 cornerIcon: "description",
                 comment: "dms",
                 action: "ipc:notepad",
@@ -219,7 +240,7 @@ Singleton {
             "dms_sysmon": {
                 id: "dms_sysmon",
                 name: I18n.tr("System Monitor", "sysmon window title"),
-                icon: "svg+corner:" + dmsLogoPath + "|monitor_heart",
+                icon: _builtInIcon("sysmon"),
                 cornerIcon: "monitor_heart",
                 comment: "dms",
                 action: "ipc:processlist",
@@ -230,7 +251,7 @@ Singleton {
             "dms_colorpicker": {
                 id: "dms_colorpicker",
                 name: I18n.tr("Color Picker"),
-                icon: "svg+corner:" + dmsLogoPath + "|palette",
+                icon: _builtInIcon("colorpicker"),
                 cornerIcon: "palette",
                 comment: "dms",
                 action: "ipc:color-picker",
@@ -263,7 +284,7 @@ Singleton {
             "dms_qr_generator": {
                 id: "dms_qr_generator",
                 name: I18n.tr("QR Generator"),
-                icon: "svg+corner:" + dmsLogoPath + "|qr_code",
+                icon: _builtInIcon("qr"),
                 cornerIcon: "qr_code",
                 comment: "dms",
                 action: "ipc:qr-generator",
@@ -568,6 +589,7 @@ Singleton {
         target: DesktopEntries
         function onApplicationsChanged() {
             root.refreshApplications();
+            SettingsData.appsChanged();
         }
     }
 

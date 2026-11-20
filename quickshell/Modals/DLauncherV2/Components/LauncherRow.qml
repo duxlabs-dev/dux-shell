@@ -48,8 +48,6 @@ DListItem {
             return "material:" + (item.icon || "apps");
         case "unicode":
             return "unicode:" + (item.icon || "");
-        case "composite":
-            return item.iconFull || "";
         case "image":
         default:
             return item.icon || "";

@@ -239,7 +239,7 @@ PanelWindow {
                             width: Theme.iconSizeLarge
                             height: Theme.iconSizeLarge
                             sourceSize: Qt.size(width, height)
-                            source: root.anchorButton?.appData ? Paths.getAppIcon(root.anchorButton.appData.appId, root.anchorButton.cachedDesktopEntry) : ""
+                            source: AppSearchService.windowIcon(tile.toplevel?.appId, tile.toplevel) || (root.anchorButton?.appData ? Paths.getAppIcon(root.anchorButton.appData.appId, root.anchorButton.cachedDesktopEntry) : "")
                             asynchronous: true
                             visible: !capture.hasContent
                             opacity: 0

@@ -136,13 +136,14 @@ BasePill {
             const keyBase = (w.app_id || w.appId || w.class || w.windowClass || "unknown");
             const moddedId = Paths.moddedAppId(keyBase);
             const groupThisWs = root.opt("groupWorkspaceApps") && (!isActiveWs || root.opt("groupActiveWorkspaceApps"));
-            const key = groupThisWs ? moddedId : `${moddedId}_${i}`;
+            const coreIcon = AppSearchService.windowIcon(keyBase, w);
+            const key = groupThisWs ? moddedId + coreIcon : `${moddedId}_${i}`;
 
             if (!byApp[key]) {
-                const isQuickshell = Paths.isDmsAppId(keyBase);
+                const isQuickshell = !coreIcon && Paths.isDmsAppId(keyBase);
                 const isSteamApp = Paths.isSteamApp(moddedId);
                 const desktopEntry = DesktopEntries.heuristicLookup(moddedId);
-                const icon = Paths.getAppIcon(moddedId, desktopEntry);
+                const icon = coreIcon || Paths.getAppIcon(moddedId, desktopEntry);
                 const appName = Paths.getAppName(moddedId, desktopEntry);
                 byApp[key] = {
                     "type": "icon",

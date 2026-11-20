@@ -99,7 +99,7 @@ Item {
         smooth: true
         mipmap: true
         asynchronous: true
-        source: root.resolvedMode === "dank" ? "file://" + Theme.shellDir + "/assets/danklogo.svg" : ""
+        source: root.resolvedMode === "dank" ? "file://" + Theme.shellDir + "/assets/duxlogo.svg" : ""
         layer.enabled: root.colorize
         layer.smooth: true
         layer.mipmap: true
