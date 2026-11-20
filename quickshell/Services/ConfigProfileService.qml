@@ -437,20 +437,22 @@ Singleton {
         return "profile_" + Date.now() + "_" + Math.random().toString(36).slice(2, 9);
     }
 
-    function createProfile(name, groups, sync) {
+    function createProfile(name, groups, sync, ignoreDraft) {
         const trimmed = (name || "").trim();
         if (!ready || !trimmed)
             return "";
+        const fromDraft = ignoreDraft ? null : draft;
         const created = _captureInto({
-            "id": draft?.id || _generateId(),
+            "id": fromDraft?.id || _generateId(),
             "name": trimmed,
             "sync": sync ?? true,
-            "thumbnail": draft?.thumbnail,
-            "thumbnailUpdated": draft?.thumbnailUpdated
-        }, groups, _current());
+            "thumbnail": fromDraft?.thumbnail,
+            "thumbnailUpdated": fromDraft?.thumbnailUpdated
+        }, groups ?? Profiles.GROUPS, _current());
         if (!created || !_write(created))
             return "";
-        draft = null;
+        if (fromDraft)
+            draft = null;
         return created.id;
     }
 
@@ -651,6 +653,14 @@ Singleton {
         return true;
     }
 
+    function cycle(step) {
+        if (profiles.length === 0 || (profiles.length < 2 && activeProfileId))
+            return false;
+        const idx = profiles.findIndex(p => p.id === activeProfileId);
+        const from = idx < 0 && step < 0 ? 0 : idx;
+        return activate(profiles[(from + step + profiles.length) % profiles.length].id);
+    }
+
     function applyGroups(id, groups) {
         const target = find(id);
         if (!ready || _applying || !target || !Profiles.normalize(groups).some(g => target.groups.includes(g)))
@@ -757,5 +767,106 @@ Singleton {
         capturingId = "";
         screenshotTargetId = "";
         screenshotEnded(id);
+    }
+
+    IpcHandler {
+        function _ready() {
+            root.ensureDefault();
+            return root.ready;
+        }
+
+        function _cycled(step) {
+            if (root.cycle(step))
+                return "SUCCESS: Switched to " + root.activeProfile.name;
+            return root.profiles.length < 2 ? "ERROR: No other profile to switch to" : "ERROR: Failed to switch profile";
+        }
+
+        function _resolve(ref) {
+            const byId = root.find(ref);
+            if (byId)
+                return byId;
+            const named = root.profiles.filter(p => p.name === ref);
+            if (named.length > 1)
+                return "ERROR: Several profiles are named " + ref + ", use the id";
+            return named[0] ?? "ERROR: No profile " + ref;
+        }
+
+        function list(): string {
+            if (!_ready())
+                return "ERROR: Profiles are not loaded yet";
+            return root.profiles.map(p => p.id + "\t" + p.name).join("\n");
+        }
+
+        function current(): string {
+            if (!_ready())
+                return "ERROR: Profiles are not loaded yet";
+            const p = root.activeProfile;
+            return p ? p.id + "\t" + p.name : "";
+        }
+
+        function apply(ref: string): string {
+            if (!_ready())
+                return "ERROR: Profiles are not loaded yet";
+            const p = _resolve(ref);
+            if (typeof p === "string")
+                return p;
+            if (p.id === root.activeProfileId)
+                return "SUCCESS: " + p.name + " is already active";
+            return root.activate(p.id) ? "SUCCESS: Switched to " + p.name : "ERROR: Failed to apply " + p.name;
+        }
+
+        function next(): string {
+            if (!_ready())
+                return "ERROR: Profiles are not loaded yet";
+            return _cycled(1);
+        }
+
+        function prev(): string {
+            if (!_ready())
+                return "ERROR: Profiles are not loaded yet";
+            return _cycled(-1);
+        }
+
+        function save(ref: string): string {
+            if (!_ready())
+                return "ERROR: Profiles are not loaded yet";
+            const p = _resolve(ref);
+            if (typeof p === "string")
+                return p;
+            return root.updateFromCurrent(p.id) ? "SUCCESS: Saved " + p.name : "ERROR: Failed to save " + p.name;
+        }
+
+        function create(name: string): string {
+            if (!_ready())
+                return "ERROR: Profiles are not loaded yet";
+            if (!name.trim())
+                return "ERROR: No name given";
+            const id = root.createProfile(name, null, true, true);
+            return id ? "SUCCESS: Created " + name.trim() + " (" + id + ")" : "ERROR: Failed to create " + name;
+        }
+
+        function rename(ref: string, name: string): string {
+            if (!_ready())
+                return "ERROR: Profiles are not loaded yet";
+            const p = _resolve(ref);
+            if (typeof p === "string")
+                return p;
+            if (!name.trim())
+                return "ERROR: No name given";
+            return root.updateProfile(p.id, name, p.groups, p.sync) ? "SUCCESS: Renamed " + p.name + " to " + name.trim() : "ERROR: Failed to rename " + p.name;
+        }
+
+        function remove(ref: string): string {
+            if (!_ready())
+                return "ERROR: Profiles are not loaded yet";
+            const p = _resolve(ref);
+            if (typeof p === "string")
+                return p;
+            if (p.id === root.activeProfileId)
+                return "ERROR: " + p.name + " is the active profile";
+            return root.deleteProfile(p.id) ? "SUCCESS: Deleting " + p.name + "..." : "ERROR: Failed to delete " + p.name;
+        }
+
+        target: "config-profile"
     }
 }
