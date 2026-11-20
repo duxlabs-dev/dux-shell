@@ -18,9 +18,11 @@ Item {
     property bool playing: true
     // Fills each word across its sung time instead of at once, like the dash's smooth highlight.
     property bool sweep: false
+    property real maxWidth: 0
 
     readonly property int revision: controller.wordRevision
     readonly property string fontKey: measure.font.family + "/" + measure.font.pixelSize + "/" + measure.font.weight
+    readonly property real pageLimit: maxWidth > 0 ? maxWidth : width
     property string pagedKey: ""
     property string pageKey: ""
     property string measuredFontKey: ""
@@ -47,6 +49,7 @@ Item {
     onRevisionChanged: place()
     onVisibleChanged: place()
     onWidthChanged: place()
+    onPageLimitChanged: place()
     onFontKeyChanged: place()
     onLiveChanged: place()
     onSweepChanged: place()
@@ -73,7 +76,7 @@ Item {
             return;
         }
         const key = controller.activeIndex + "/" + next.t + "/" + next.voice;
-        const paged = key + "/" + width + "/" + fontKey + "/" + scrollEnabled + "/" + sweep;
+        const paged = key + "/" + pageLimit + "/" + fontKey + "/" + scrollEnabled + "/" + sweep;
         if (paged !== pagedKey) {
             pagedKey = paged;
             const cues = next.w.map(word => word.x);
@@ -109,6 +112,9 @@ Item {
         const sung = index < page.first ? 0 : widthOf(flat(line.w.slice(page.first, index + 1).map(word => word.x).join("")));
         const span = index < page.first ? null : cueSpans[index];
         const before = !span || index <= page.first ? 0 : widthOf(flat(line.w.slice(page.first, index).map(word => word.x).join("")));
+        const duration = span ? span.e - span.t : 0;
+        const progress = sweep && span && Number.isFinite(duration) && duration > 0 ? Math.max(0, Math.min(1, (at - span.t) / duration)) : 1;
+        turnTo(key + "/" + page.first, page.text, before + (sung - before) * progress);
         scrollMotion = span ? {
             start: span.t,
             end: span.e,
@@ -117,14 +123,7 @@ Item {
             hold: 0,
             speed: pxPerMs * 1000
         } : null;
-        if (!sweep || index < page.first) {
-            turnTo(key + "/" + page.first, page.text, sung);
-            return;
-        }
-        const duration = span.e - span.t;
-        const progress = Number.isFinite(duration) && duration > 0 ? Math.max(0, Math.min(1, (at - span.t) / duration)) : 1;
-        turnTo(key + "/" + page.first, page.text, before + (sung - before) * progress);
-        if (progress >= 1 || !live || !controller.playing || controller.rate <= 0 || Theme.reduceMotion)
+        if (!sweep || index < page.first || progress >= 1 || !live || !controller.playing || controller.rate <= 0 || Theme.reduceMotion)
             return;
         sweepMotion.to = sung;
         sweepMotion.duration = Math.max(1, Math.min(2147483647, (span.e - at) * 1000 / controller.rate));
@@ -159,7 +158,7 @@ Item {
     function tokens(text) {
         const result = [];
         for (const token of text.match(/\S+\s*/g) ?? [text]) {
-            if (widthOf(token) <= width) {
+            if (widthOf(token) <= pageLimit) {
                 result.push(token);
                 continue;
             }
@@ -187,7 +186,7 @@ Item {
         }
         const units = [];
         for (const word of words) {
-            if (widthOf(word.text) <= width) {
+            if (widthOf(word.text) <= pageLimit) {
                 units.push(word);
                 continue;
             }
@@ -201,7 +200,7 @@ Item {
         const result = [];
         let page = null;
         for (const word of units) {
-            if (page && widthOf(page.text + word.text) > width) {
+            if (page && widthOf(page.text + word.text) > pageLimit) {
                 result.push(page);
                 page = null;
             }
@@ -222,16 +221,16 @@ Item {
     }
 
     function turnTo(key, text, sung) {
-        const previousOffset = current.offset;
-        const previousScrolls = current.scrolls;
-        if (current.text !== text || measuredFontKey !== fontKey) {
-            pageWidth = widthOf(text);
-            measuredFontKey = fontKey;
-        }
         if (key === pageKey && text === current.text) {
+            if (measuredFontKey !== fontKey) {
+                pageWidth = widthOf(text);
+                measuredFontKey = fontKey;
+            }
             current.fill = sung;
             return;
         }
+        const previousOffset = current.offset;
+        const previousScrolls = current.scrolls;
         pageKey = key;
         slide.stop();
         resetScroll();
@@ -241,6 +240,8 @@ Item {
         outgoing.offset = animate ? previousOffset : 0;
         outgoing.scrolls = animate && previousScrolls;
         snap(text, sung);
+        measuredFontKey = fontKey;
+        pageWidth = widthOf(text);
         shift = animate ? 1 : 0;
         if (animate)
             slide.start();
