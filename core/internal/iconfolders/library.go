@@ -238,7 +238,7 @@ func RemoveTheme(o Options, name string, inUse []string) error {
 
 // RemoveCursor deletes a cursor theme from the user's icon directory, unless a theme in inUse draws from it.
 func RemoveCursor(o Options, name string, inUse []string) error {
-	return removePack(o, name, inUse, hasCursors)
+	return removePack(o, name, inUse, hasCursorDir)
 }
 
 func removePack(o Options, name string, inUse []string, match func(string) bool) error {
@@ -268,7 +268,7 @@ func removePack(o Options, name string, inUse []string, match func(string) bool)
 		}
 		sh := lib.shelf(u.theme)
 		if sh == nil && u.theme != "" && u.theme == filepath.Base(u.theme) {
-			if candidate := filepath.Join(o.IconsDir, u.theme); hasCursors(candidate) {
+			if candidate := filepath.Join(o.IconsDir, u.theme); hasCursorDir(candidate) {
 				sh = &shelf{path: candidate}
 			}
 		}

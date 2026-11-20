@@ -38,6 +38,12 @@ func hasCursors(dir string) bool {
 	return err == nil && info.IsDir()
 }
 
+// hasCursorDir follows a symlinked cursors directory, matching ListCursors and libXcursor.
+func hasCursorDir(dir string) bool {
+	info, err := os.Stat(filepath.Join(dir, "cursors"))
+	return err == nil && info.IsDir()
+}
+
 // ListCursors previews every installed cursor theme.
 func ListCursors(o Options) []CursorInfo {
 	o.defaults()
@@ -47,7 +53,7 @@ func ListCursors(o Options) []CursorInfo {
 		entries, _ := os.ReadDir(base)
 		for _, entry := range entries {
 			name := entry.Name()
-			if info, err := os.Stat(filepath.Join(base, name, "cursors")); seen[name] || err != nil || !info.IsDir() {
+			if seen[name] || !hasCursorDir(filepath.Join(base, name)) {
 				continue
 			}
 			seen[name] = true

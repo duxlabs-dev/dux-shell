@@ -211,6 +211,7 @@ func TestRemoveCursorGuards(t *testing.T) {
 			"GrandChild/index.theme":            index("Mid"),
 			"GrandChild/cursors/left_ptr":       "x",
 			"Linked/cursors/left_ptr":           "->../../Plain/cursors/left_ptr",
+			"LinkedDir/cursors":                 "->../Plain/cursors",
 			"NoCursors/index.theme":             index(""),
 			"hicolor/cursors/left_ptr":          "x",
 		})
@@ -235,6 +236,8 @@ func TestRemoveCursorGuards(t *testing.T) {
 		{name: "an indexless parent inherited directly by in-use cursor", cursor: "IndexlessParent", inUse: []string{"ChildOfIndexless"}, code: CodeInUse, users: []string{"ChildOfIndexless"}},
 		{name: "an indexless parent inherited transitively by in-use cursor", cursor: "IndexlessParent", inUse: []string{"GrandChild"}, code: CodeInUse, users: []string{"GrandChild"}},
 		{name: "a cursor linked into by an indexless in-use cursor", cursor: "Plain", inUse: []string{"Linked"}, code: CodeInUse, users: []string{"Linked"}},
+		{name: "a cursor whose cursors dir is linked into by an indexless in-use cursor", cursor: "Plain", inUse: []string{"LinkedDir"}, code: CodeInUse, users: []string{"LinkedDir"}},
+		{name: "an unused cursor with a symlinked cursors dir", cursor: "LinkedDir", inUse: []string{"Plain"}},
 		{name: "an unused cursor", cursor: "Plain", inUse: []string{"Indexed", "Child"}},
 	}
 
@@ -248,6 +251,9 @@ func TestRemoveCursorGuards(t *testing.T) {
 				require.NoError(t, err)
 				assert.NotContains(t, e.generated(), tc.cursor)
 				assert.Len(t, e.generated(), len(before)-1)
+				if tc.cursor == "LinkedDir" {
+					assert.FileExists(t, filepath.Join(e.icons, "Plain/cursors/left_ptr"))
+				}
 				return
 			}
 			var refusal *LibraryError
