@@ -16,10 +16,13 @@ FocusScope {
     property Item keyForwardTarget: null
     property Item contentViewport: null
     property bool animatingOut: false
+    property bool holdExit: false
 
     readonly property bool presented: dashHost.dashVisible || dashHost.isClosing
+    readonly property string tabSource: DashRegistry.tabSourceFor(entry?.id ?? "")
     readonly property var item: loader.item
     readonly property bool loading: loader.active && loader.status === Loader.Loading
+    readonly property bool built: !!loader.item && !(loader.item.loading ?? false)
     readonly property bool failed: loader.active && (loader.status === Loader.Error || loader.sourceComponent === null)
     readonly property Item focusTarget: loader.item?.focusTarget ?? loader.item ?? null
 
@@ -34,16 +37,35 @@ FocusScope {
         if (isCurrent) {
             animatingOut = false;
             exitAnim.stop();
-            if (loader.item)
+            if (built)
                 enter();
             return;
         }
         enterAnim.stop();
-        if (!loader.item || !DashMetrics.animationsEnabled) {
+        if (!loader.item) {
             opacity = 0;
             return;
         }
         animatingOut = true;
+        Qt.callLater(release);
+    }
+
+    onHoldExitChanged: release()
+
+    onBuiltChanged: {
+        if (built && isCurrent)
+            enter();
+    }
+
+    // Stays up until the incoming tab has built, so a switch crossfades instead of dipping to empty.
+    function release() {
+        if (isCurrent || !animatingOut || holdExit || exitAnim.running)
+            return;
+        if (!DashMetrics.animationsEnabled) {
+            opacity = 0;
+            animatingOut = false;
+            return;
+        }
         exitAnim.restart();
     }
 
@@ -103,7 +125,6 @@ FocusScope {
         id: enterAnim
         target: root
         property: "opacity"
-        from: 0
         to: 1
         duration: DashMetrics.fadeDuration
         easing.type: Easing.BezierSpline
@@ -128,13 +149,12 @@ FocusScope {
         anchors.margins: root.contentPadding
         focus: true
         active: root.isCurrent || root.animatingOut
-        asynchronous: root.entry?.tab?.async === true
-        source: DashRegistry.tabSourceFor(root.entry?.id ?? "")
+        asynchronous: root.entry?.tab?.async === true && !DashRegistry.builtSources[root.tabSource]
+        source: root.tabSource
 
         onLoaded: {
+            DashRegistry.markBuilt(root.tabSource);
             root.inject(item);
-            if (root.isCurrent)
-                root.enter();
         }
     }
 

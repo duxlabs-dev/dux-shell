@@ -695,6 +695,17 @@ Singleton {
         return visibleTabIds.includes(id);
     }
 
+    // Only the first build of a tab or card compiles its types, so later builds run synchronously.
+    property var builtSources: ({})
+
+    function markBuilt(source) {
+        if (source === "" || builtSources[source])
+            return;
+        builtSources = Object.assign({}, builtSources, {
+            [source]: true
+        });
+    }
+
     // Loading by URL parents the object's context to the Loader, so unloading the dash clears its handlers.
     function tabSourceFor(id) {
         const e = entry(id);

@@ -89,9 +89,10 @@ DEditableGridSlot {
             id: cardLoader
             anchors.fill: parent
             focus: true
-            asynchronous: root.entry?.card?.async === true
+            asynchronous: root.entry?.card?.async === true && !DashRegistry.builtSources[source]
             source: root.slot ? DashRegistry.cardSourceFor(root.cardId) : ""
             onLoaded: {
+                DashRegistry.markBuilt(source.toString());
                 root.inject(item);
                 root.grid.slotLoaded(root);
             }
