@@ -34,10 +34,17 @@ Column {
         return {
             value: def.id,
             label: SysmonService.valueLabel(type, def.id),
-            icon: position === 0 ? "star" : position > 0 ? "check" : "",
+            icon: position >= 0 ? "check" : "",
             enabled: position < 0 || vals.length > 1
         };
     })
+
+    readonly property var selectedInOrder: chips.filter(c => vals.indexOf(c.value) >= 0)
+
+    function withMain(ids, main) {
+        const rest = (SysmonCatalog.TYPES[type] ?? []).map(def => def.id).filter(id => id !== main && ids.indexOf(id) >= 0);
+        return ids.indexOf(main) >= 0 ? [main].concat(rest) : rest;
+    }
 
     function edit(changes) {
         const next = Object.assign({}, metric, changes);
@@ -49,9 +56,10 @@ Column {
     }
 
     function toggleValue(id, selected) {
-        const next = selected ? vals.concat([id]) : vals.filter(v => v !== id);
-        if (next.length === 0 || (selected && vals.indexOf(id) >= 0))
+        const ids = selected ? vals.concat([id]) : vals.filter(v => v !== id);
+        if (ids.length === 0 || (selected && vals.indexOf(id) >= 0))
             return;
+        const next = withMain(ids, selected || vals[0] !== id ? vals[0] : withMain(ids, "")[0]);
         let reason = -1;
         for (const chip of chipFlow.children) {
             if (chip.activeFocus)
@@ -131,6 +139,20 @@ Column {
             model: root.chips
             selectedValues: root.vals
             onSelectionToggled: (index, selected) => root.toggleValue(root.chips[index].value, selected)
+        }
+    }
+
+    SettingsButtonGroupRow {
+        visible: root.vals.length > 1
+        text: I18n.tr("Main value", "system monitor: value shown large")
+        model: root.selectedInOrder.map(c => c.label)
+        values: root.selectedInOrder.map(c => c.value)
+        value: root.vals[0]
+        onValueSelected: v => {
+            if (v !== root.vals[0])
+                root.edit({
+                    vals: root.withMain(root.vals, v)
+                });
         }
     }
 

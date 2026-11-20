@@ -176,7 +176,7 @@ Singleton {
                 } else if (errorMsg.includes("not found") || errorMsg.includes("does not exist")) {
                     userMessage = I18n.tr("Selected image file not found.");
                 } else {
-                    userMessage = I18n.tr("Failed to set profile image: %1", "error message, %1 is the error detail").arg(errorMsg.split(":").pop().trim());
+                    userMessage += ": " + errorMsg.split(":").pop().trim();
                 }
 
                 Quickshell.execDetached(["notify-send", "-u", "normal", "-a", "DMS", "-i", "error", I18n.tr("Profile Image Error"), userMessage]);

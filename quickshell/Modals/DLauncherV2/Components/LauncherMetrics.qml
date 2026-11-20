@@ -50,7 +50,6 @@ Singleton {
     readonly property int folderMaxColumns: 4
     readonly property int folderMaxVisibleRows: 3
     readonly property real popupEnterScale: Theme.popupEnterScale
-    readonly property int liftDelay: 500
     // Drag scrolling must work when animation durations are zero.
     readonly property int dragScrollInterval: 50
     readonly property real dragLiftScale: 1.08

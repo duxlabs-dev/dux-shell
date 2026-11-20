@@ -47,19 +47,6 @@ Item {
             return appData.windowCount > 0;
         return appData.isRunning;
     }
-    readonly property string coreIconColorOverride: root.options.launcherLogoColorOverride
-    readonly property bool coreIconHasCustomColor: coreIconColorOverride !== "" && coreIconColorOverride !== "primary" && coreIconColorOverride !== "surface"
-    readonly property color effectiveCoreIconColor: {
-        if (coreIconColorOverride === "primary")
-            return Theme.primary;
-        if (coreIconColorOverride === "surface")
-            return Theme.surfaceText;
-        if (coreIconColorOverride !== "")
-            return coreIconColorOverride;
-        return Theme.surfaceText;
-    }
-    readonly property real effectiveCoreIconBrightness: coreIconHasCustomColor ? root.options.launcherLogoBrightness : 0.0
-    readonly property real effectiveCoreIconContrast: coreIconHasCustomColor ? root.options.launcherLogoContrast : 0.0
 
     function updateDesktopEntry() {
         dockApps?.refreshDesktopEntries();
@@ -498,11 +485,10 @@ Item {
                 active: iconValue !== ""
                 visible: active
                 sourceComponent: AppIconRenderer {
+                    width: actualIconSize
+                    height: actualIconSize
                     iconSize: actualIconSize
                     iconValue: coreIcon.iconValue
-                    colorOverride: effectiveCoreIconColor
-                    brightnessOverride: effectiveCoreIconBrightness
-                    contrastOverride: effectiveCoreIconContrast
                     fallbackText: "?"
                 }
             }
@@ -511,7 +497,14 @@ Item {
                 id: iconImg
 
                 readonly property real displaySize: appData && Paths.isDmsAppId(appData.appId) ? actualIconSize * 0.85 : actualIconSize
+                // A theme change swaps the file; the old picture stays up until the new one is decoded.
+                property bool drawn: false
 
+                retainWhileLoading: true
+                onStatusChanged: {
+                    if (status !== Image.Loading)
+                        drawn = status === Image.Ready;
+                }
                 anchors.centerIn: parent
                 width: displaySize
                 height: displaySize
@@ -529,7 +522,7 @@ Item {
                 mipmap: true
                 smooth: true
                 asynchronous: true
-                visible: status === Image.Ready && !coreIcon.active
+                visible: drawn && !coreIcon.active
                 opacity: root.isMinimized ? 0.4 : 1
                 layer.enabled: appData && Paths.isDmsAppId(appData.appId)
                 layer.smooth: true
@@ -542,7 +535,7 @@ Item {
             }
 
             Loader {
-                readonly property bool missing: !coreIcon.active && iconImg.status !== Image.Ready && !!appData?.appId
+                readonly property bool missing: !coreIcon.active && !iconImg.drawn && !!appData?.appId
                 anchors.centerIn: parent
                 active: missing && !Paths.isSteamApp(appData.appId)
                 sourceComponent: Rectangle {
@@ -578,7 +571,7 @@ Item {
 
             Loader {
                 anchors.centerIn: parent
-                active: !coreIcon.active && iconImg.status !== Image.Ready && !!appData?.appId && Paths.isSteamApp(appData.appId)
+                active: !coreIcon.active && !iconImg.drawn && !!appData?.appId && Paths.isSteamApp(appData.appId)
                 sourceComponent: DIcon {
                     size: actualIconSize
                     name: "sports_esports"

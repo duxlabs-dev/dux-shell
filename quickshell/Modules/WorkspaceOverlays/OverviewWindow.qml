@@ -4,6 +4,7 @@ import Quickshell
 import Quickshell.Wayland
 import Quickshell.Widgets
 import qs.Common
+import qs.Services
 
 Item {
     id: root
@@ -86,7 +87,7 @@ Item {
     property var iconToWindowRatio: 0.25
     property var iconToWindowRatioCompact: 0.45
     property var entry: DesktopEntries.heuristicLookup(Paths.moddedAppId(windowData?.class ?? ""))
-    property var iconPath: Paths.getAppIcon(windowData?.class ?? "", entry) || Quickshell.iconPath("application-x-executable", "image-missing")
+    property var iconPath: AppSearchService.windowIcon(windowData?.class, windowData) || Paths.getAppIcon(windowData?.class ?? "", entry) || Quickshell.iconPath("application-x-executable", "image-missing")
     property bool compactMode: Theme.fontSizeSmall * 4 > targetWindowHeight || Theme.fontSizeSmall * 4 > targetWindowWidth
 
     x: xSpring.value

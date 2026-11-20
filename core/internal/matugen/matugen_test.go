@@ -15,9 +15,11 @@ import (
 	"time"
 
 	matcolor "github.com/duxlabs-dev/dux-go/material/color"
+	"github.com/duxlabs-dev/dux-shell/core/internal/iconfolders"
 	mocks_utils "github.com/duxlabs-dev/dux-shell/core/internal/mocks/utils"
 	"github.com/duxlabs-dev/dux-shell/core/internal/utils"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestAppendConfigBinaryExists(t *testing.T) {
@@ -1255,4 +1257,84 @@ func TestTerminalPaletteOnlyReachesTerminalTemplates(t *testing.T) {
 		}
 	}
 	assert.Greater(t, checked, 10)
+}
+
+func TestSyncIconFolders(t *testing.T) {
+	root := t.TempDir()
+	t.Setenv("HOME", root)
+	t.Setenv("XDG_DATA_HOME", filepath.Join(root, "data"))
+	t.Setenv("XDG_DATA_DIRS", filepath.Join(root, "sys"))
+
+	theme := filepath.Join(root, "sys", "icons", "Adwaita")
+	require.NoError(t, os.MkdirAll(filepath.Join(theme, "scalable", "places"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(theme, "index.theme"), []byte("[Icon Theme]\nName=Adwaita\nDirectories=scalable/places\n\n[scalable/places]\nContext=Places\nSize=128\nType=Scalable\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(theme, "scalable", "places", "folder.svg"), []byte(`<svg xmlns="http://www.w3.org/2000/svg"><path d="m 0 0 h 8 v 8 z" fill="#a4caee"/></svg>`), 0o644))
+
+	opts := &Options{StateDir: filepath.Join(root, "state"), IconTheme: "Adwaita", Mode: ColorModeDark}
+	require.NoError(t, os.MkdirAll(opts.StateDir, 0o755))
+	require.NoError(t, os.WriteFile(opts.ColorsOutput(), []byte(`{"colors":{"dark":{"primary":"#69b2ff","on_primary":"#003055"}}}`), 0o644))
+	stateFile := filepath.Join(opts.StateDir, iconfolders.StateFile)
+
+	picked, regenerated := syncIconFolders(opts)
+	assert.Equal(t, "Adwaita", picked)
+	assert.False(t, regenerated)
+	assert.NoDirExists(t, filepath.Join(root, "data"), "a run that did not ask for folder colors must write no overlay")
+	assert.NoFileExists(t, stateFile)
+
+	opts.IconFolders = true
+	name, regenerated := syncIconFolders(opts)
+	assert.Regexp(t, regexp.MustCompile(`^Adwaita-dms-[0-9a-f]{8}$`), name, "qtengine must be given the applied name, not the picked one")
+	assert.True(t, regenerated)
+	overlay := filepath.Join(root, "data", "icons", name)
+	assert.DirExists(t, overlay)
+
+	again, regenerated := syncIconFolders(opts)
+	assert.Equal(t, name, again)
+	assert.False(t, regenerated, "unchanged inputs must not rewrite qtengine's config on a no-change run")
+
+	opts.IconFolders = false
+	picked, regenerated = syncIconFolders(opts)
+	assert.Equal(t, "Adwaita", picked)
+	assert.False(t, regenerated)
+	assert.FileExists(t, stateFile, "a run without the flag must leave the feature alone")
+	assert.DirExists(t, overlay)
+
+	opts.IconFolders = true
+	opts.IconTheme = "System Default"
+	picked, regenerated = syncIconFolders(opts)
+	assert.Equal(t, "System Default", picked)
+	assert.False(t, regenerated)
+	assert.NoFileExists(t, stateFile, "a run that asks and cannot recolor drops the state")
+	assert.DirExists(t, overlay, "the session has the overlay applied until the shell switches back and clears it")
+
+	state, err := RunIconFolders(iconfolders.Options{StateDir: opts.StateDir}, true)
+	require.NoError(t, err)
+	assert.Equal(t, iconfolders.State{}, state)
+	assert.NoDirExists(t, overlay)
+}
+
+func TestRunIconFoldersWaitsForTheRunLock(t *testing.T) {
+	stateDir := t.TempDir()
+	lock, err := acquireMatugenLock(stateDir)
+	require.NoError(t, err)
+
+	done := make(chan error, 1)
+	go func() {
+		_, err := RunIconFolders(iconfolders.Options{StateDir: stateDir, IconsDir: t.TempDir()}, true)
+		done <- err
+	}()
+
+	select {
+	case <-done:
+		t.Fatal("ran while a theme run held the lock")
+	case <-time.After(250 * time.Millisecond):
+	}
+
+	releaseMatugenLock(lock)
+	select {
+	case err := <-done:
+		require.NoError(t, err)
+	case <-time.After(5 * time.Second):
+		t.Fatal("never ran after the lock was released")
+	}
 }

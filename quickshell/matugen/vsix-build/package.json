@@ -4,7 +4,7 @@
   "description": "Dynamic theme using matugen & dank16 terminal colors - auto-updated by Dux Modular Shell",
   "publisher": "DankLinux",
   "version": "0.0.3",
-  "icon": "danklogo.png",
+  "icon": "duxlogo.png",
   "engines": {
     "vscode": "^1.70.0"
   },
@@ -13,10 +13,10 @@
   ],
   "keywords": [
     "dms",
-    "dank",
+    "dux",
     "material",
-    "dankshell",
-    "danklinux"
+    "matugen",
+    "duxlabs"
   ],
   "repository": {
     "type": "git",

@@ -112,14 +112,14 @@ Item {
 
                             anchors.centerIn: parent
                             height: parent.height
-                            width: height * (506.50931 / 569.94629)
-                            // 2x raster plus mipmap keeps the thin rings smooth at fractional scales
+                            width: height
+                            // 2x raster plus mipmap keeps the thin ring smooth at fractional scales
                             sourceSize.height: Math.ceil(height * dpr * 2)
                             fillMode: Image.PreserveAspectFit
                             smooth: true
                             mipmap: true
                             asynchronous: true
-                            source: "file://" + Theme.shellDir + "/assets/danklogonormal.svg"
+                            source: "file://" + Theme.shellDir + "/assets/duxlogo.svg"
                             layer.enabled: true
                             layer.smooth: true
                             layer.textureSize: Qt.size(Math.ceil(width * dpr), Math.ceil(height * dpr))

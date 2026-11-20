@@ -154,7 +154,7 @@ Item {
         case "stable":
             return I18n.tr("Stable", "release channel");
         case "git":
-            return I18n.tr("Git", "release channel that follows the master branch");
+            return "Git";
         default:
             return I18n.tr("Unknown");
         }

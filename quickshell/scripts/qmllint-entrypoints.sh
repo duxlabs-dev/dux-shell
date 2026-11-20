@@ -82,8 +82,8 @@ print_vfs_recovery() {
     printf 'Update dux-qt-base so "%s qs tooling" can write it, or run the shell from\n' "${dms_bin}" >&2
     printf 'this folder once:\n' >&2
     printf '  rm -f %q && touch %q\n' "${qmlls_config}" "${qmlls_config}" >&2
-    printf '  qs -p %q\n' "${quickshell_dir}" >&2
-    printf 'then stop it with: qs kill -p %q\n' "${quickshell_dir}" >&2
+    printf '  %s qs -p %q\n' "${dms_bin}" "${quickshell_dir}" >&2
+    printf 'then stop it with: %s qs kill -p %q\n' "${dms_bin}" "${quickshell_dir}" >&2
 }
 
 write_tooling || [[ $? -eq 2 ]] || exit 1

@@ -430,34 +430,26 @@ BasePill {
         return rows * itemSize + (rows - 1) * spacing + popupPadding * 2;
     }
 
+    readonly property Component overflowContent: overflowContentComponent
+    readonly property Component trayMenuContent: trayMenuContentComponent
+    readonly property real trayMenuWidth: trayMenuState.computedWidth
+    readonly property real trayMenuHeight: trayMenuState.computedHeight
+    readonly property bool trayMenuOpenedByHover: trayMenuState.openedByHover
+
     Loader {
         id: overflowPopoutLoader
         active: false
-        sourceComponent: DPopout {
-            layerNamespace: "dms:tray-overflow"
-            screen: root.parentScreen
-            popupWidth: root.overflowRawWidth
-            popupHeight: root.overflowRawHeight
-            content: overflowContentComponent
-        }
+        Component.onCompleted: setSource("TrayOverflowPopout.qml", {
+            "tray": root
+        })
     }
 
     Loader {
         id: trayMenuPopoutLoader
         active: false
-        sourceComponent: DPopout {
-            layerNamespace: "dms:tray-menu"
-            screen: root.parentScreen
-            popupWidth: trayMenuState.computedWidth
-            popupHeight: trayMenuState.computedHeight
-            content: trayMenuContentComponent
-            contentHandlesKeys: true
-            readonly property bool openedByHover: trayMenuState.openedByHover
-            onOpened: {
-                contentLoader.item?.entryStack?.clear();
-                contentLoader.item?.forceActiveFocus();
-            }
-        }
+        Component.onCompleted: setSource("TrayMenuPopout.qml", {
+            "tray": root
+        })
     }
 
     Connections {

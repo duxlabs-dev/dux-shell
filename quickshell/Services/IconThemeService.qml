@@ -6,6 +6,9 @@ import Quickshell
 import qs.Common
 import qs.Services
 import "../Common/GSettings.js" as GSettings // qmllint disable unused-imports
+import "../Common/IconFolders.js" as IconFolders
+import "../Common/BuiltInIcons.js" as BuiltInIcons
+import "../DCommon/Common/Hct.js" as Hct
 
 Singleton {
     id: root
@@ -13,9 +16,27 @@ Singleton {
     readonly property string settingsTheme: {
         if (typeof SettingsData === "undefined")
             return "";
-        const theme = SettingsData.resolveIconTheme();
+        const theme = IconFolders.indexName(SettingsData.resolveIconTheme(), SettingsData.iconThemeGenerated, SettingsData.iconFolderState);
         return (!theme || theme === "System Default") ? "" : theme;
     }
+    // Folder icons resolve by path into the overlay; indexing it would rescan on every color change.
+    readonly property var folderIcons: {
+        if (typeof SettingsData === "undefined")
+            return null;
+        return IconFolders.manifest(SettingsData.resolveIconTheme(), SettingsData.iconThemeGenerated, SettingsData.iconFolderState);
+    }
+    // The theme draws DMS's own launcher entries, as the self-built pack does.
+    readonly property bool drawsShellEntries: {
+        if (!indexed || !managedTheme)
+            return false;
+        revision;
+        return Quickshell.iconFile("dev.duxlabs.shell.settings") !== "";
+    }
+    readonly property var builtInTones: {
+        const hct = Hct.toHct(Theme.primary);
+        return [96, 80, 32, 59, 27].map(tone => String(Hct.fromHct(hct.hue, hct.chroma, tone)));
+    }
+    readonly property bool tintsDuxApps: !drawsShellEntries && (Theme.currentTheme === Theme.dynamic || Theme.availableThemeNames.includes(Theme.currentTheme))
     property string systemProbedTheme: ""
     readonly property string managedTheme: settingsTheme || systemProbedTheme
     // Upstream quickshell has no icon index; icons then come from Qt's own theme lookup.
@@ -54,7 +75,8 @@ Singleton {
 printf '%s' "$v" | tr -d "'\\""`;
 
         Proc.runCommand(null, ["sh", "-c", script], (out, code) => {
-            root.systemProbedTheme = (out || "").trim();
+            // The probe can run before the restore lands and read a folder overlay that is about to go.
+            root.systemProbedTheme = IconFolders.baseName((out || "").trim());
             root._probing = false;
         }, 0);
     }
@@ -70,6 +92,12 @@ printf '%s' "$v" | tr -d "'\\""`;
     }
 
     function resolve(name) {
+        const tinted = tintsDuxApps ? BuiltInIcons.duxAppUrl(name, builtInTones) : "";
+        if (tinted)
+            return tinted;
+        const recolored = IconFolders.iconUrl(folderIcons, name);
+        if (recolored)
+            return recolored;
         if (!indexed || !managedTheme || !name)
             return "";
         revision;

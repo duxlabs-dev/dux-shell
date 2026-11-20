@@ -21,7 +21,7 @@ Item {
 
     signal dismissed
     signal memberRightClicked(var item, real sceneX, real sceneY)
-    signal memberDragPressed(Item tile, int memberIndex, real sceneX, real sceneY)
+    signal memberDragPressed(Item tile, int memberIndex, real sceneX, real sceneY, bool fromMouse)
     signal memberDragMoved(real sceneX, real sceneY)
     signal memberDragReleased(real sceneX, real sceneY)
     signal memberDragCanceled
@@ -365,7 +365,7 @@ Item {
 
                             onClicked: root.controller?.executeItem(cell.modelData)
                             onRightClicked: (sceneX, sceneY) => root.memberRightClicked(cell.modelData, sceneX, sceneY)
-                            onDragPressed: (sceneX, sceneY) => root.memberDragPressed(tile, cell.index, sceneX, sceneY)
+                            onDragPressed: (sceneX, sceneY, fromMouse) => root.memberDragPressed(tile, cell.index, sceneX, sceneY, fromMouse)
                             onDragMoved: (sceneX, sceneY) => root.memberDragMoved(sceneX, sceneY)
                             onDragReleased: (sceneX, sceneY) => root.memberDragReleased(sceneX, sceneY)
                             onDragCanceled: root.memberDragCanceled()

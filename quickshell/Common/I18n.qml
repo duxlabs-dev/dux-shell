@@ -273,6 +273,10 @@ Singleton {
         return tr(term, context);
     }
 
+    function commandFailed(command, exitCode) {
+        return I18n.tr("Failed: %1", "error status, %1 is an error message or the command that failed").arg(command) + " " + I18n.tr("(exit %1)", "process exit code").arg(exitCode);
+    }
+
     function duration(seconds) {
         if (seconds < 1)
             return I18n.tr("%1 ms", "duration in milliseconds, %1 is a number").arg(Math.round(seconds * 1000));

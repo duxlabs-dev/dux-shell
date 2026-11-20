@@ -193,12 +193,13 @@ Singleton {
         }
     }
 
-    function loadPluginManifestFile(manifestPathNoScheme, sourceTag, mtimeEpochMs) {
-        const loader = manifestFvComp.createObject(root, {
+    function loadPluginManifestFile(manifestPathNoScheme, sourceTag, mtimeEpochMs, afterLoad) {
+        manifestFvComp.createObject(root, {
             absPath: manifestPathNoScheme,
             path: manifestPathNoScheme,
             sourceTag: sourceTag,
-            mtimeEpochMs: mtimeEpochMs
+            mtimeEpochMs: mtimeEpochMs,
+            afterLoad: afterLoad ?? null
         });
     }
 
@@ -209,6 +210,7 @@ Singleton {
             property string absPath: ""
             property string sourceTag: ""
             property double mtimeEpochMs: 0
+            property var afterLoad: null
             onLoaded: {
                 try {
                     let raw = text();
@@ -224,12 +226,16 @@ Singleton {
                         bad: true
                     };
                 }
+                if (afterLoad)
+                    afterLoad();
                 fv.destroy();
             }
             onLoadFailed: err => {
                 // a directory without plugin.json is not a plugin, not a failed one (#3112)
                 if (err !== FileViewError.FileNotFound)
                     root.log.warn("manifest load failed", absPath, err);
+                if (afterLoad)
+                    afterLoad();
                 fv.destroy();
             }
         }
@@ -385,7 +391,7 @@ Singleton {
 
         const componentPaths = _resolveComponentPaths(manifest, dir);
         const surfaces = Object.keys(componentPaths);
-        if (surfaces.length === 0 && !manifest.lyrics?.command && !manifest.weather?.command) {
+        if (surfaces.length === 0 && !manifest.lyrics?.command && !manifest.weather?.command && !manifest.iconFolders?.length) {
             log.error("no valid component surfaces in manifest:", absPath);
             knownManifests[absPath] = {
                 mtime: mtimeEpochMs,
@@ -497,10 +503,15 @@ Singleton {
             return;
         }
         DMSService.update(pluginId, response => {
-            if (!response.error)
-                forceRescanPlugin(pluginId);
-            if (callback)
-                callback(response);
+            if (response.error) {
+                if (callback)
+                    callback(response);
+                return;
+            }
+            forceRescanPlugin(pluginId, () => {
+                if (callback)
+                    callback(response);
+            });
         });
     }
 
@@ -518,7 +529,7 @@ Singleton {
 
         const componentPaths = plugin.componentPaths || {};
         const surfaces = Object.keys(componentPaths);
-        if (surfaces.length === 0 && !plugin.lyrics?.command && !plugin.weather?.command) {
+        if (surfaces.length === 0 && !plugin.lyrics?.command && !plugin.weather?.command && !plugin.iconFolders?.length) {
             log.error("Plugin has no component surfaces:", pluginId);
             pluginLoadFailed(pluginId, "No component surfaces");
             return false;
@@ -604,6 +615,8 @@ Singleton {
 
             _clearLoadError(pluginId);
             pluginLoaded(pluginId);
+            if (plugin.iconFolders?.length)
+                SettingsData.iconRecipesChanged();
             return true;
         } catch (e) {
             log.error("Error loading plugin:", pluginId, e.message);
@@ -712,6 +725,8 @@ Singleton {
             _destroyComponents(components);
             _cleanupPluginStateWriter(pluginId);
             pluginUnloaded(pluginId);
+            if (plugin.iconFolders?.length)
+                SettingsData.iconRecipesChanged();
             return true;
         } catch (error) {
             log.error("Error unloading plugin:", pluginId, "Error:", error.message);
@@ -1255,20 +1270,19 @@ Singleton {
         checkPluginDirectoryExists();
     }
 
-    function forceRescanPlugin(pluginId) {
+    function forceRescanPlugin(pluginId, onRescanned) {
         const plugin = availablePlugins[pluginId];
-        if (!plugin || !plugin.manifestPath) {
+        if (!plugin || !plugin.manifestPath || !_preparePluginReload(pluginId)) {
+            if (onRescanned)
+                onRescanned();
             return;
         }
         const manifestPath = plugin.manifestPath;
-        const source = plugin.source || "user";
-        if (!_preparePluginReload(pluginId))
-            return;
         delete knownManifests[manifestPath];
         const newMap = Object.assign({}, availablePlugins);
         delete newMap[pluginId];
         availablePlugins = newMap;
-        loadPluginManifestFile(manifestPath, source, Date.now());
+        loadPluginManifestFile(manifestPath, plugin.source || "user", Date.now(), onRescanned);
     }
 
     function createPluginDirectory() {

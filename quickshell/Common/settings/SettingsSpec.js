@@ -632,6 +632,9 @@ var LOCAL_SPEC = {
     blurWallpaperOnOverview: {
         def: false
     },
+    pauseVideoWallpaperOnBattery: {
+        def: false
+    },
     systemTrayIconTintMode: {
         def: "none"
     },
@@ -1063,6 +1066,22 @@ var LOCAL_SPEC = {
         onChange: "applyStoredIconTheme"
     },
     iconThemePerMode: {
+        def: false,
+        onChange: "applyStoredIconTheme"
+    },
+    iconFolderRecolor: {
+        def: false,
+        onChange: "applyStoredIconTheme"
+    },
+    iconMonoApps: {
+        def: false,
+        onChange: "applyStoredIconTheme"
+    },
+    iconShape: {
+        def: "squircle",
+        onChange: "applyStoredIconTheme"
+    },
+    iconGradient: {
         def: false,
         onChange: "applyStoredIconTheme"
     },

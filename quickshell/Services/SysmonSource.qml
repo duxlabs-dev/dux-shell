@@ -101,8 +101,10 @@ QtObject {
             rows = [];
     }
 
+    // Device names only where a type shows more than one device, so a lone GPU reads "GPU".
     function rebuild() {
-        rows = active ? (metrics || []).filter(m => m.on).map(m => buildRow(m)) : [];
+        const shown = active ? (metrics || []).filter(m => m.on) : [];
+        rows = shown.map(m => buildRow(m, shown.some(o => o.device !== m.device && Catalog.typeOf(o.device) === Catalog.typeOf(m.device))));
     }
 
     // Add before remove so an id kept across a change never drops its last ref.
@@ -140,7 +142,7 @@ QtObject {
         return "";
     }
 
-    function buildRow(m) {
+    function buildRow(m, named) {
         const type = Catalog.typeOf(m.device);
         const dev = SysmonService.device(m.device);
         const key = dev?.key ?? "";
@@ -211,7 +213,7 @@ QtObject {
         return {
             key: key,
             type: type,
-            name: SysmonService.displayName(m.device),
+            name: named ? SysmonService.displayName(m.device) : SysmonService.typeName(type),
             icon: icon,
             detail: dev ? detail(type, SysmonService.parseKey(key).id, dev, m.vals) : "",
             asleep: asleep,

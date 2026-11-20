@@ -34,7 +34,7 @@ function choose(candidates, key) {
     return best;
 }
 
-// Every column count, with processes below or beside; squarer tiles win a tie. opts: the frame plus tileW, tileH.
+// Every column count, processes below or beside; ties skip a lone last tile, then go to squarer tiles. opts: frame, tileW, tileH.
 function tilePlan(count, box, opts) {
     const n = Math.max(1, count);
     const procH = opts.processesH || 0;
@@ -51,6 +51,7 @@ function tilePlan(count, box, opts) {
     return choose(candidates, p => {
         const tileBoxW = (box.w - (p.beside ? opts.processesW + opts.gap : 0)) / p.cols;
         const tileBoxH = (box.h - opts.headerH - (p.beside ? 0 : procH)) / p.rows;
-        return Math.abs(Math.log(Math.max(1, tileBoxW) / Math.max(1, tileBoxH)));
+        const lone = n > 3 && p.cols > 1 && n % p.cols === 1;
+        return (lone ? 100 : 0) + Math.abs(Math.log(Math.max(1, tileBoxW) / Math.max(1, tileBoxH)));
     });
 }

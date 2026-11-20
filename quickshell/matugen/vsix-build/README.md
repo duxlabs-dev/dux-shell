@@ -1,4 +1,4 @@
-# Dynamic Base16 DankShell Theme
+# DMS Dux Desktop Suite Theme
 
 A VSCode theme for [Dux Modular Shell](https://github.com/duxlabs-dev/dux-shell).
 

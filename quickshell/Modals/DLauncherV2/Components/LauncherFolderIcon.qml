@@ -48,8 +48,6 @@ Item {
             return "material:" + (member.icon || "apps");
         case "unicode":
             return "unicode:" + (member.icon || "");
-        case "composite":
-            return member.iconFull || "";
         default:
             return member?.icon ?? "";
         }

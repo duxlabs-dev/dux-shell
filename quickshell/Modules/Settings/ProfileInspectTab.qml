@@ -40,6 +40,7 @@ Item {
 
     function _reset() {
         diff = [];
+        SettingsSearchService.ensureIndex();
         _refresh();
     }
 

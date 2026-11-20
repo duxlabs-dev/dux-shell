@@ -2542,9 +2542,8 @@ Item {
                     type: it.type,
                     name: it.name || "",
                     subtitle: it.subtitle || "",
-                    icon: it.icon || "",
+                    icon: it.isCore ? "" : it.icon || "",
                     iconType: it.iconType || "image",
-                    iconFull: it.iconFull || "",
                     section: it.section || "",
                     isCore: it.isCore || false,
                     isBuiltInLauncher: it.isBuiltInLauncher || false,
@@ -2643,7 +2642,6 @@ Item {
                     subtitle: it.subtitle || "",
                     icon: it.icon || "",
                     iconType: it.iconType || "image",
-                    iconFull: it.iconFull || "",
                     section: it.section || "",
                     source: it.source || "",
                     data: {

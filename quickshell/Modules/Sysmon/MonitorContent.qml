@@ -5,6 +5,7 @@ import QtQuick.Layouts
 import qs.Common
 import qs.Services
 import qs.Widgets
+import qs.DCommon.Common as DCommon
 import qs.Modules.Sysmon
 import "Layout.js" as Planner
 import "../../Services/SysmonCatalog.js" as Catalog
@@ -22,6 +23,23 @@ Item {
     property string headerTitle: config.title || Catalog.shortCpuName(DgopService.cpuModel) || DgopService.hostname
 
     readonly property string layout: config.layout ?? "tiles"
+    // Rows and panels sit straight on the wallpaper without a card; tiles always keep their surface.
+    readonly property color panelColor: config.background === "none" ? "transparent" : tileColor
+    readonly property bool tiled: Catalog.paintsTiles(config)
+    readonly property bool listCards: layout === "list" && tiled
+    readonly property bool listCardsStacked: width > height
+    readonly property real listGap: listCards ? gap : Theme.groupedListGap
+    readonly property real listLabelWidth: {
+        if (!listCards)
+            return 0;
+        let w = 0;
+        for (const type of Object.keys(Catalog.TYPES)) {
+            for (const def of Catalog.TYPES[type])
+                w = Math.max(w, DCommon.Fonts.textWidth(labelProbe.font, SysmonService.shortValueLabel(type, def.id)));
+        }
+        return Math.ceil(w);
+    }
+    readonly property string listValueReserve: listCards ? MonitorMetrics.widestReserve(rows, true) : ""
     readonly property var rows: source.rows
     readonly property int count: rows.length
     readonly property bool showProcesses: config.showTopProcesses === true
@@ -71,7 +89,7 @@ Item {
                 for (let c = 1; c <= count; c++) {
                     const r = Math.ceil(count / c);
                     for (const beside of placements)
-                        candidates.push(Planner.measure(box, frame, c * listColumnWidth + (c - 1) * gap, r * listRowHeight + (r - 1) * Theme.groupedListGap, beside, {
+                        candidates.push(Planner.measure(box, frame, c * listColumnWidth + (c - 1) * gap, r * listRowHeight + (r - 1) * listGap, beside, {
                             "cols": c
                         }));
                 }
@@ -103,7 +121,17 @@ Item {
                 return Planner.choose(candidates);
             }
         }
-        return Planner.choose(placements.map(beside => Planner.measure(box, frame, bars.implicitWidth, bars.implicitHeight, beside)));
+        const candidates = [];
+        for (let c = 1; c <= (barsVertical ? 1 : count); c++) {
+            const r = Math.ceil(count / c);
+            const w = barsVertical ? bars.implicitWidth : c * bars.groupWidth + (c - 1) * bars.minGap;
+            const h = barsVertical ? bars.implicitHeight : c === 1 ? bars.stackLength : r * bars.groupHeight + (r - 1) * bars.minGap;
+            for (const beside of placements)
+                candidates.push(Planner.measure(box, frame, w, h, beside, {
+                        "cols": c
+                    }));
+        }
+        return Planner.choose(candidates);
     }
     readonly property bool beside: plan.beside
     readonly property int cols: plan.cols ?? 1
@@ -111,9 +139,10 @@ Item {
     readonly property real fit: Planner.fitScale(plan.w, plan.h, box, MonitorMetrics.scaleFloor)
 
     function listMax(prop, floor) {
+        const items = listCards ? cardRepeater : listRepeater;
         let v = floor;
-        for (let i = 0; i < listRepeater.count; i++)
-            v = Math.max(v, listRepeater.itemAt(i)?.[prop] ?? 0);
+        for (let i = 0; i < items.count; i++)
+            v = Math.max(v, items.itemAt(i)?.[prop] ?? 0);
         return v;
     }
 
@@ -132,7 +161,7 @@ Item {
                 }));
         }
         rangeSeconds: root.config.graphInterval ?? 60
-        charts: root.layout === "graphs" || (root.layout === "tiles" && root.config.style === "graph" && root.solo) ? "all" : root.layout === "bars" ? "none" : "graph"
+        charts: root.layout === "graphs" || (root.layout === "tiles" && root.config.style === "graph" && root.solo) ? "all" : root.layout === "bars" || root.listCards ? "none" : "graph"
         processes: root.showProcesses
         processSort: root.config.topProcessSortBy ?? "cpu"
         processCount: root.processCount
@@ -215,6 +244,10 @@ Item {
                     width: span * cellWidth + (span - 1) * root.gap
                     height: cellHeight
                     row: root.rows[index] ?? ({})
+                    reserveExtras: {
+                        const start = index - index % root.cols;
+                        return root.rows.slice(start, start + root.cols).some(r => !r.asleep && (r.values ?? []).length > 1);
+                    }
                     style: root.config.style ?? "classic"
                     solo: root.solo
                     size: !root.solo || width < MonitorMetrics.wideThreshold ? "sm" : height < MonitorMetrics.wideThreshold ? "wide" : "big"
@@ -232,13 +265,13 @@ Item {
                 visible: root.layout === "list"
                 flow: GridLayout.TopToBottom
                 rows: root.gridRows
-                rowSpacing: Theme.groupedListGap
+                rowSpacing: root.listGap
                 columnSpacing: root.gap
 
                 Repeater {
                     id: listRepeater
 
-                    model: root.layout === "list" ? root.count : 0
+                    model: root.layout === "list" && !root.listCards ? root.count : 0
 
                     MonitorListRow {
                         required property int index
@@ -248,16 +281,45 @@ Item {
                         Layout.preferredWidth: root.listColumnWidth
                         Layout.minimumHeight: root.listRowHeight
                         row: root.rows[index] ?? ({})
-                        style: root.config.style ?? "classic"
                         first: index % root.gridRows === 0
                         last: index % root.gridRows === root.gridRows - 1 || index === root.count - 1
                         accentColor: root.accentColor
-                        tileColor: root.tileColor
+                        tileColor: root.panelColor
                         contentColor: root.contentColor
                         mutedColor: root.mutedColor
                         halo: root.halo
                     }
                 }
+
+                Repeater {
+                    id: cardRepeater
+
+                    model: root.listCards ? root.count : 0
+
+                    MonitorListCard {
+                        required property int index
+
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        Layout.preferredWidth: root.listColumnWidth
+                        Layout.minimumHeight: root.listRowHeight
+                        row: root.rows[index] ?? ({})
+                        stacked: root.listCardsStacked
+                        labelWidth: root.listLabelWidth
+                        valueReserve: root.listValueReserve
+                        accentColor: root.accentColor
+                        cardColor: root.tileColor
+                        contentColor: root.contentColor
+                        mutedColor: root.mutedColor
+                        halo: root.halo
+                    }
+                }
+            }
+
+            MonitorText {
+                id: labelProbe
+                visible: false
+                font.pixelSize: Theme.fontSizeSmall
             }
 
             MonitorBars {
@@ -268,6 +330,9 @@ Item {
                 rows: visible ? root.rows : []
                 barNames: root.config.barNames === true
                 vertical: root.barsVertical
+                columns: root.barsVertical ? 1 : root.cols
+                tiled: root.tiled
+                tileColor: root.tileColor
                 accentColor: root.accentColor
                 contentColor: root.contentColor
                 mutedColor: root.mutedColor
@@ -283,7 +348,7 @@ Item {
                 legend: root.config.legend ?? "list"
                 legendBeside: root.plan.legendBeside === true
                 rangeSeconds: root.config.graphInterval ?? 60
-                tileColor: root.tileColor
+                tileColor: root.panelColor
                 contentColor: root.contentColor
                 mutedColor: root.mutedColor
                 halo: root.halo
@@ -298,7 +363,7 @@ Item {
             visible: root.showProcesses
             processes: source.topProcesses
             sortBy: root.config.topProcessSortBy ?? "cpu"
-            tileColor: root.tileColor
+            tileColor: root.panelColor
             contentColor: root.contentColor
             mutedColor: root.mutedColor
             halo: root.halo

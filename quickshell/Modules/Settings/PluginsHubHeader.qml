@@ -30,6 +30,10 @@ Column {
     property var uninstallErrors: ({})
     property var updateErrors: ({})
     property string updatingPluginId: ""
+    readonly property bool updating: updatingPluginId !== "" || pluginUpdatesDialogItem.isUpdating
+    // A plugin unloads and loads again while it updates; the snapshot keeps its row and toggle still
+    property var heldLoadedPlugins: null
+    readonly property var loadedPlugins: (updating && heldLoadedPlugins) || PluginService.loadedPlugins
     readonly property string pendingRevealPluginId: PluginService.pendingSettingsRevealPluginId
     readonly property var sortOptions: [I18n.tr("Name"), I18n.tr("Author", "installed plugins sort option, plugin author"), I18n.tr("Last modified", "plugin directory modification time")]
     readonly property var filterOptions: [I18n.tr("All"), I18n.tr("Enabled"), I18n.tr("Disabled"), I18n.tr("Update available", "plugin row badge")]
@@ -48,7 +52,7 @@ Column {
     }
 
     readonly property var filteredPlugins: plugins.filter(row => {
-        const loaded = PluginService.loadedPlugins[row.pluginId] !== undefined;
+        const loaded = loadedPlugins[row.pluginId] !== undefined;
         if (filterIndex === 1 && !loaded)
             return false;
         if (filterIndex === 2 && loaded)
@@ -74,6 +78,8 @@ Column {
         return a.text.localeCompare(b.text) || a.pluginId.localeCompare(b.pluginId);
     })
 
+    readonly property var shownPluginIds: filteredPlugins.map(row => row.pluginId)
+
     readonly property var plugins: SettingsTabs.pluginHubRows
     readonly property var updateCheckErrors: (DMSService.installedPlugins || []).filter(plugin => plugin.updateError).reduce((errors, plugin) => {
         errors[plugin.id] = plugin.updateError;
@@ -92,6 +98,7 @@ Column {
     spacing: Theme.spacingL
 
     onPendingRevealPluginIdChanged: revealTimer.restart()
+    onUpdatingChanged: heldLoadedPlugins = updating ? PluginService.loadedPlugins : null
     onVisibleChanged: {
         if (!visible)
             filterOverride = "";
@@ -125,8 +132,10 @@ Column {
                 return;
             if (!PluginService.availablePlugins[root.pendingRevealPluginId])
                 return;
-            root.searchQuery = "";
-            root.filterOverride = "all";
+            if (!root.shownPluginIds.includes(root.pendingRevealPluginId)) {
+                root.searchQuery = "";
+                root.filterOverride = "all";
+            }
             const key = "installedPlugin:" + root.pendingRevealPluginId;
             const entry = SettingsSearchService.registeredCards[key];
             if (!entry)
@@ -364,7 +373,6 @@ Column {
         width: parent.width
         operationsBlocked: Object.keys(root.uninstalling).length > 0 || root.updatingPluginId !== ""
         onUpdatesRequested: plugins => root.confirmUpdates(plugins)
-        onPluginUpdated: pluginId => root.revealPlugin(pluginId)
     }
 
     SettingsCard {
@@ -657,12 +665,14 @@ Column {
         rowSpacing: Theme.spacingM
 
         Repeater {
-            model: root.filteredPlugins
+            model: ScriptModel {
+                values: root.shownPluginIds
+            }
 
             SettingsDeferred {
                 id: installedSlot
 
-                required property var modelData
+                required property string modelData
 
                 Layout.fillWidth: true
                 Layout.minimumWidth: 0
@@ -671,8 +681,8 @@ Column {
 
                 DCard {
                     id: installedCard
-                    readonly property var modelData: installedSlot.modelData
-                    readonly property bool loaded: PluginService.loadedPlugins[modelData.pluginId] !== undefined
+                    readonly property var modelData: SettingsTabs.pluginPage(installedSlot.modelData)
+                    readonly property bool loaded: root.loadedPlugins[modelData.pluginId] !== undefined
                     readonly property var plugin: PluginService.availablePlugins[modelData.pluginId] || ({})
                     readonly property var loadError: PluginService.pluginLoadErrors[modelData.pluginId]
                     readonly property bool compatible: PluginService.checkPluginCompatibility(plugin.requires_dms)

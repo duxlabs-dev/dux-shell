@@ -166,6 +166,14 @@ Item {
 
         readonly property bool isSettingsGroupHost: true
         readonly property color slotColor: root.slotColor
+        // Once one button group row has to fold under its label, the others fold with it.
+        readonly property bool foldButtonGroups: {
+            for (let i = 0; i < children.length; i++) {
+                if (children[i].visible && children[i].foldsAlone === true)
+                    return true;
+            }
+            return false;
+        }
 
         function isEdge(item, first) {
             const slot = root.slots[first ? 0 : root.slots.length - 1];

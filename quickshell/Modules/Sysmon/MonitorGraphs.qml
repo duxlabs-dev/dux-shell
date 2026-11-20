@@ -180,11 +180,13 @@ Rectangle {
                         }
                         MonitorText {
                             halo: root.halo
+                            width: Math.min(implicitWidth, inlineLegend.width - Theme.spacingL - inlineValue.width - item.spacing * 2)
                             text: item.modelData.name ?? ""
                             font.pixelSize: Theme.fontSizeSmall
                             color: root.mutedColor
                         }
                         NumericText {
+                            id: inlineValue
                             style: root.halo ? Text.Outline : Text.Normal
                             styleColor: Theme.surface
                             reserveText: MonitorMetrics.reserveFor(item.modelData.kind ?? "")

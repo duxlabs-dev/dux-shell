@@ -782,7 +782,8 @@
       "typing",
       "wallpaper"
     ],
-    "page": "personalization"
+    "page": "personalization",
+    "icon": "delete"
   },
   {
     "section": "cursorHideAfterInactive",
@@ -1246,6 +1247,38 @@
     "page": "notifications"
   },
   {
+    "section": "iconFolderRecolor",
+    "label": "Folder match theme colors",
+    "tabIndex": -1,
+    "category": "Appearance",
+    "keywords": [
+      "appearance",
+      "background",
+      "bg",
+      "color",
+      "colors",
+      "colour",
+      "colours",
+      "desktop",
+      "dynamic",
+      "folder",
+      "hue",
+      "icon",
+      "image",
+      "look",
+      "match",
+      "matugen",
+      "palette",
+      "picture",
+      "recolor",
+      "style",
+      "theme",
+      "tint",
+      "wallpaper"
+    ],
+    "page": "personalization"
+  },
+  {
     "section": "blurForegroundLayers",
     "label": "Foreground layers",
     "tabIndex": -1,
@@ -1487,6 +1520,39 @@
     "page": "theme_surfaces"
   },
   {
+    "section": "iconShape",
+    "label": "Icon shape",
+    "tabIndex": -1,
+    "category": "Appearance",
+    "keywords": [
+      "appearance",
+      "background",
+      "badge",
+      "bg",
+      "circle",
+      "clover",
+      "colors",
+      "colour",
+      "colours",
+      "cookie",
+      "desktop",
+      "dux",
+      "hexagon",
+      "hue",
+      "icon",
+      "image",
+      "palette",
+      "picture",
+      "rounded",
+      "shape",
+      "square",
+      "squircle",
+      "tint",
+      "wallpaper"
+    ],
+    "page": "personalization"
+  },
+  {
     "section": "iconTheme",
     "label": "Icons",
     "tabIndex": -1,
@@ -1510,7 +1576,8 @@
       "tint",
       "wallpaper"
     ],
-    "page": "personalization"
+    "page": "personalization",
+    "icon": "delete"
   },
   {
     "section": "notificationIgnoreAppTimeout",
@@ -1712,6 +1779,74 @@
       "toast"
     ],
     "page": "notifications"
+  },
+  {
+    "section": "cursorThemeLibrary",
+    "label": "Manage themes",
+    "tabIndex": -1,
+    "category": "Appearance",
+    "keywords": [
+      "appearance",
+      "archive",
+      "background",
+      "bg",
+      "colors",
+      "colour",
+      "colours",
+      "cursor",
+      "delete",
+      "desktop",
+      "hue",
+      "image",
+      "install",
+      "look",
+      "manage",
+      "palette",
+      "picture",
+      "preview",
+      "remove",
+      "style",
+      "theme",
+      "themes",
+      "tint",
+      "wallpaper"
+    ],
+    "page": "personalization",
+    "icon": "delete"
+  },
+  {
+    "section": "iconThemeLibrary",
+    "label": "Manage themes",
+    "tabIndex": -1,
+    "category": "Appearance",
+    "keywords": [
+      "appearance",
+      "archive",
+      "background",
+      "bg",
+      "colors",
+      "colour",
+      "colours",
+      "delete",
+      "desktop",
+      "hue",
+      "icon",
+      "image",
+      "install",
+      "look",
+      "manage",
+      "palette",
+      "picture",
+      "preview",
+      "remove",
+      "style",
+      "theme",
+      "themes",
+      "tint",
+      "wallpaper"
+    ],
+    "page": "personalization",
+    "icon": "delete"
   },
   {
     "section": "materialPresets",
@@ -2096,6 +2231,35 @@
       "style",
       "tint",
       "vibrant",
+      "wallpaper"
+    ],
+    "page": "personalization"
+  },
+  {
+    "section": "pauseVideoWallpaperOnBattery",
+    "label": "Pause video wallpaper on battery",
+    "tabIndex": -1,
+    "category": "Appearance",
+    "keywords": [
+      "animated",
+      "appearance",
+      "background",
+      "battery",
+      "bg",
+      "charge",
+      "charging",
+      "colors",
+      "colour",
+      "colours",
+      "desktop",
+      "hue",
+      "image",
+      "palette",
+      "pause",
+      "picture",
+      "power",
+      "tint",
+      "video",
       "wallpaper"
     ],
     "page": "personalization"
@@ -2670,6 +2834,36 @@
     "page": "personalization"
   },
   {
+    "section": "iconGradient",
+    "label": "Shaded icons",
+    "tabIndex": -1,
+    "category": "Appearance",
+    "keywords": [
+      "appearance",
+      "background",
+      "badge",
+      "bg",
+      "colors",
+      "colour",
+      "colours",
+      "desktop",
+      "dux",
+      "gradient",
+      "hue",
+      "icon",
+      "icons",
+      "image",
+      "palette",
+      "picture",
+      "shade",
+      "shaded",
+      "shading",
+      "tint",
+      "wallpaper"
+    ],
+    "page": "personalization"
+  },
+  {
     "section": "m3ElevationLink",
     "label": "Shadows",
     "tabIndex": -1,
@@ -3009,6 +3203,36 @@
     ],
     "page": "personalization",
     "icon": "colorize"
+  },
+  {
+    "section": "iconMonoApps",
+    "label": "Themed app icons",
+    "tabIndex": -1,
+    "category": "Appearance",
+    "keywords": [
+      "app",
+      "appearance",
+      "background",
+      "bg",
+      "color",
+      "colors",
+      "colour",
+      "colours",
+      "desktop",
+      "dux",
+      "dynamic",
+      "hue",
+      "icon",
+      "icons",
+      "image",
+      "monochrome",
+      "palette",
+      "picture",
+      "themed",
+      "tint",
+      "wallpaper"
+    ],
+    "page": "personalization"
   },
   {
     "section": "focusRingWidth",
@@ -6372,6 +6596,7 @@
       "colors",
       "colour",
       "compact",
+      "hue",
       "island",
       "look",
       "panel",
@@ -6379,10 +6604,11 @@
       "style",
       "taskbar",
       "theme",
+      "tint",
       "topbar"
     ],
     "parentLabel": "Bar",
-    "description": "Theme colour behind the collapsed island",
+    "description": "Theme color behind the collapsed island",
     "conditionKey": "islandEnabled"
   },
   {
@@ -6541,6 +6767,7 @@
       "colors",
       "colour",
       "expanded",
+      "hue",
       "island",
       "look",
       "panel",
@@ -6548,10 +6775,11 @@
       "style",
       "taskbar",
       "theme",
+      "tint",
       "topbar"
     ],
     "parentLabel": "Bar",
-    "description": "Theme colour behind the expanded island",
+    "description": "Theme color behind the expanded island",
     "conditionKey": "islandEnabled"
   },
   {
@@ -19447,6 +19675,7 @@
       "colour",
       "compact",
       "dot",
+      "hue",
       "island",
       "look",
       "panel",
@@ -19454,10 +19683,11 @@
       "style",
       "taskbar",
       "theme",
+      "tint",
       "topbar"
     ],
     "parentLabel": "Bar",
-    "description": "Theme colour behind the collapsed island",
+    "description": "Theme color behind the collapsed island",
     "conditionKey": "dotEnabled"
   },
   {
@@ -19706,6 +19936,7 @@
       "colour",
       "dot",
       "expanded",
+      "hue",
       "island",
       "look",
       "panel",
@@ -19713,10 +19944,11 @@
       "style",
       "taskbar",
       "theme",
+      "tint",
       "topbar"
     ],
     "parentLabel": "Bar",
-    "description": "Theme colour behind the expanded island",
+    "description": "Theme color behind the expanded island",
     "conditionKey": "dotEnabled"
   },
   {

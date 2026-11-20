@@ -48,7 +48,7 @@ DevicePane {
 
     leftStats: [
         {
-            label: I18n.tr("SSID"),
+            label: "SSID",
             value: root.wifi?.ssid || null
         },
         {
@@ -67,7 +67,7 @@ DevicePane {
         },
         {
             advanced: true,
-            label: I18n.tr("IPv6", "network IPv6 address"),
+            label: "IPv6",
             value: root.ipv6Main || null,
             tooltip: root.ipv6.join("\n")
         },
@@ -90,7 +90,7 @@ DevicePane {
         },
         {
             advanced: true,
-            label: I18n.tr("MTU", "network maximum transmission unit"),
+            label: "MTU",
             value: root.rates?.mtu > 0 ? String(root.rates.mtu) : null
         },
         {

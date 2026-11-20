@@ -212,7 +212,7 @@ Item {
                     visible: !NetworkService.wifiEnabled
                     body: StyledText {
                         width: parent.width
-                        text: I18n.tr("Wi-Fi is disabled", "hotspot start error title")
+                        text: I18n.tr("Wi-Fi disabled", "hotspot start error title")
                         font.pixelSize: Theme.fontSizeSmall
                         color: Theme.warning
                         wrapMode: Text.WordWrap
@@ -255,7 +255,7 @@ Item {
                         outlined: true
                         width: parent.width
                         labelText: I18n.tr("Hotspot name", "hotspot SSID field label")
-                        placeholderText: I18n.tr("SSID", "hotspot network name placeholder")
+                        placeholderText: "SSID"
                         text: hotspotCard.ssid
                         leftIconName: "badge"
                         showClearButton: true
