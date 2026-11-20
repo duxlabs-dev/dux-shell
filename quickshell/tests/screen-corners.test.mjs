@@ -31,13 +31,17 @@ const spec = store.SpecModule;
 
 test("screen corner mode defaults to off and round-trips an explicit value", () => {
     assert.equal(spec.SPEC.screenCornerMode.def, "off");
+    assert.equal(spec.SPEC.screenCornerRadius.def, -1);
 
     const fresh = { settingsConfigVersion: 46 };
     store.parse(fresh, { configVersion: 46 });
     assert.equal(fresh.screenCornerMode, "off");
+    assert.equal(fresh.screenCornerRadius, -1);
 
     const root = { settingsConfigVersion: 46 };
-    store.parse(root, { configVersion: 46, screenCornerMode: "unlessFullscreen" });
+    store.parse(root, { configVersion: 46, screenCornerMode: "unlessFullscreen", screenCornerRadius: 24 });
     assert.equal(root.screenCornerMode, "unlessFullscreen");
+    assert.equal(root.screenCornerRadius, 24);
     assert.equal(store.toJson(root, new Set()).screenCornerMode, "unlessFullscreen");
+    assert.equal(store.toJson(root, new Set()).screenCornerRadius, 24);
 });

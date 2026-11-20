@@ -318,18 +318,6 @@ Column {
                 }
             }
 
-            SettingsButtonGroupRow {
-                tab: "theme"
-                tags: ["corner", "radius", "rounded", "screen", "fullscreen"]
-                settingKey: "screenCornerMode"
-                text: I18n.tr("Screen corners", "screen corners: settings row label")
-                model: [I18n.tr("Off"), I18n.tr("On"), I18n.tr("Except fullscreen", "screen corners: hidden while a fullscreen window is active")]
-                values: ["off", "always", "unlessFullscreen"]
-                value: SettingsData.screenCornerMode
-                fallbackValue: "off"
-                onValueSelected: value => SettingsData.set("screenCornerMode", value)
-            }
-
             SettingsSliderRow {
                 tab: "theme"
                 tags: ["corner", "radius", "rounded", "square", "strength"]
@@ -357,6 +345,42 @@ Column {
                 maximum: 32
                 unit: "px"
                 onSliderValueChanged: newValue => SettingsData.set("fixedRadius", newValue)
+            }
+
+            SettingsToggleCard {
+                tab: "theme"
+                tags: ["corner", "radius", "rounded", "screen", "fullscreen"]
+                title: I18n.tr("Override screen corners", "toggle: show screen corner settings and use a custom radius")
+                checked: SettingsData.screenCornerRadius >= 0
+                onToggled: checked => {
+                    SettingsData.set("screenCornerMode", checked ? "always" : "off")
+                    SettingsData.set("screenCornerRadius", checked ? Math.max(0, Math.min(64, Math.round(Theme.cornerRadiusL))) : -1)
+                }
+
+                SettingsButtonGroupRow {
+                    tab: "theme"
+                    tags: ["corner", "radius", "rounded", "screen", "fullscreen"]
+                    settingKey: "screenCornerMode"
+                    text: I18n.tr("Mode", "screen corners: visibility mode")
+                    model: [I18n.tr("On"), I18n.tr("Except fullscreen", "screen corners: hidden while a fullscreen window is active")]
+                    values: ["always", "unlessFullscreen"]
+                    value: SettingsData.screenCornerMode
+                    fallbackValue: "always"
+                    onValueSelected: value => SettingsData.set("screenCornerMode", value)
+                }
+
+                SettingsSliderRow {
+                    tab: "theme"
+                    tags: ["corner", "radius", "screen"]
+                    settingKey: "screenCornerRadius"
+                    text: I18n.tr("Corner radius", "screen corners: radius slider label")
+                    minimumLabel: I18n.tr("Square")
+                    value: SettingsData.screenCornerRadius
+                    minimum: 0
+                    maximum: 64
+                    unit: "px"
+                    onSliderValueChanged: newValue => SettingsData.set("screenCornerRadius", newValue)
+                }
             }
 
             SettingsToggleSliderRow {

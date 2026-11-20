@@ -671,6 +671,23 @@
     "page": "theme_surfaces"
   },
   {
+    "section": "screenCornerRadius",
+    "label": "Corner radius",
+    "tabIndex": -1,
+    "category": "Interface style",
+    "keywords": [
+      "corner",
+      "corners",
+      "interface",
+      "radius",
+      "round",
+      "rounded",
+      "screen",
+      "style"
+    ],
+    "page": "theme_surfaces"
+  },
+  {
     "section": "radiusMode",
     "label": "Corner style",
     "tabIndex": -1,
@@ -1942,6 +1959,23 @@
     "page": "notifications"
   },
   {
+    "section": "screenCornerMode",
+    "label": "Mode",
+    "tabIndex": -1,
+    "category": "Interface style",
+    "keywords": [
+      "corner",
+      "fullscreen",
+      "interface",
+      "mode",
+      "radius",
+      "rounded",
+      "screen",
+      "style"
+    ],
+    "page": "theme_surfaces"
+  },
+  {
     "section": "monoFontFamily",
     "label": "Monospace family",
     "tabIndex": -1,
@@ -2629,24 +2663,6 @@
       "zoom"
     ],
     "page": "personalization"
-  },
-  {
-    "section": "screenCornerMode",
-    "label": "Screen corners",
-    "tabIndex": -1,
-    "category": "Interface style",
-    "keywords": [
-      "corner",
-      "corners",
-      "fullscreen",
-      "interface",
-      "radius",
-      "round",
-      "rounded",
-      "screen",
-      "style"
-    ],
-    "page": "theme_surfaces"
   },
   {
     "section": "scrollShadowsEnabled",

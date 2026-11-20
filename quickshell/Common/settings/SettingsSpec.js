@@ -554,6 +554,9 @@ var LOCAL_SPEC = {
     screenCornerMode: {
         def: "off"
     },
+    screenCornerRadius: {
+        def: -1
+    },
     m3ElevationEnabled: {
         def: true
     },

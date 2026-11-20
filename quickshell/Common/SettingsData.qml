@@ -209,6 +209,7 @@ Singleton {
     property int radiusStrength: Spec.SPEC.radiusStrength.def
     property string radiusMode: Spec.SPEC.radiusMode.def
     property string screenCornerMode: Spec.SPEC.screenCornerMode.def
+    property int screenCornerRadius: Spec.SPEC.screenCornerRadius.def
     property int fixedRadius: Spec.SPEC.fixedRadius.def
     readonly property real cornerRadius: Shape.radius("m", Shape.scaleForStrength(radiusStrength), radiusMode === "fixed" ? fixedRadius : -1)
     property int niriLayoutGapsOverride: Spec.SPEC.niriLayoutGapsOverride.def

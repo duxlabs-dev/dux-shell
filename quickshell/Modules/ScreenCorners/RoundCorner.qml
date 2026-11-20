@@ -8,7 +8,8 @@ Item {
     id: root
 
     property string corner
-    property real implicitSize: Theme.cornerRadiusL
+    // screenCornerRadius >= 0 overrides the global Theme corner radius for this wedge.
+    property real implicitSize: SettingsData.screenCornerRadius >= 0 ? SettingsData.screenCornerRadius : Theme.cornerRadiusL
     property color color: Theme.screenOffColor
 
     implicitWidth: implicitSize
