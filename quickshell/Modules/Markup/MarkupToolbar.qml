@@ -9,7 +9,7 @@ Row {
     id: root
 
     required property AnnotationLayer target
-    readonly property var toolIds: ["select", "pen", "highlighter", "arrow", "rect", "text", "eraser"]
+    readonly property var toolIds: ["select", "pen", "highlighter", "arrow", "rect", "redact", "text", "eraser"]
 
     readonly property var allTools: ({
             "select": {
@@ -31,6 +31,10 @@ Row {
             "rect": {
                 icon: "crop_square",
                 label: I18n.tr("Rectangle", "screenshot markup tool, draws an outlined box")
+            },
+            "redact": {
+                icon: "ad_off",
+                label: I18n.tr("Redact", "screenshot markup tool, draws a solid box to hide sensitive info")
             },
             "text": {
                 icon: "title",
