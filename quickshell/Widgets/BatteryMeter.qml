@@ -8,6 +8,7 @@ import qs.Services
 import qs.DCommon.Common
 import qs.DCommon.Widgets
 import qs.Widgets
+import "../DCommon/Common/Contrast.js" as Contrast
 
 Item {
     id: root
@@ -17,20 +18,36 @@ Item {
     property bool showNumber: true
     property bool showBolt: true
     property string meterStyle: "solid"
-    property bool levelColors: false
+    // A bar battery color mode ("theme", "lowcharging", "level"), or "primary": the accent, red when low.
+    property string colorMode: "primary"
+    property color neutralColor: Theme.isLightColor(Theme.primary) === Theme.isLightColor(Theme.surface) ? Theme.surfaceText : Theme.primary
     property real maxDiameter: 0
+    // Longest side the solid body may take; the thickness shrinks to fit.
+    property real maxLength: 0
     property bool hovered: false
     property color colorOverride: "transparent"
+    // One number in a single readable color over the whole solid body.
+    property bool singleTextColor: false
 
     readonly property bool outlined: root.meterStyle === "outline"
     readonly property bool ring: root.meterStyle === "ring"
     // Duo: an open arc around the network glyph, signal dots in the gap.
     readonly property bool duo: root.meterStyle === "duo"
-    readonly property bool circular: root.ring || root.duo
-    readonly property real arcStart: root.duo ? 150 : -90
-    readonly property real arcSpan: root.duo ? 240 : 360
+    // Arc: the same open arc as duo, without the network face; vertical picks which side the opening is on.
+    readonly property bool arc: root.meterStyle === "arc"
+    readonly property bool circular: root.ring || root.duo || root.arc
+    readonly property bool singleText: root.singleTextColor && !root.outlined && !root.circular
+    readonly property real arcStart: root.duo ? 150 : root.arc ? (root.vertical ? 150 : 60) : -90
+    readonly property real arcSpan: root.duo || root.arc ? 240 : 360
     readonly property real chargeTarget: SettingsData.batteryScaleToChargeLimit ? 100 : Math.max(root.level, Math.min(100, SettingsData.batteryChargeLimit))
-    readonly property real unit: root.thickness / 14
+    // Solid body geometry in units of thickness / 14.
+    readonly property real bodyUnits: 25
+    readonly property real capGapUnits: 1
+    readonly property real capBreadthUnits: 1.25
+    readonly property real barBoltUnits: 9
+    readonly property real boltAspect: 8 / 13
+    readonly property real lengthUnits: root.bodyUnits + root.capGapUnits + (root.vertical ? root.capBreadthUnits : root.barBoltUnits * root.boltAspect)
+    readonly property real unit: root.maxLength > 0 ? Math.min(root.thickness / 14, root.maxLength / root.lengthUnits) : root.thickness / 14
     readonly property real level: Math.max(0, Math.min(100, BatteryService.displayBatteryLevel))
     readonly property bool charging: BatteryService.batteryAvailable && BatteryService.isCharging
     readonly property bool lowState: BatteryService.batteryAvailable && BatteryService.isLowBattery && !BatteryService.isCharging
@@ -39,20 +56,20 @@ Item {
             return root.colorOverride;
         if (!BatteryService.batteryAvailable)
             return Theme.onSurface_38;
-        if (root.levelColors)
-            return BatteryService.levelColor;
-        if (root.lowState)
-            return Theme.error;
-        return Theme.isLightColor(Theme.primary) === Theme.isLightColor(Theme.surface) ? Theme.surfaceText : Theme.primary;
+        if (root.colorMode === "primary")
+            return root.lowState ? Theme.error : root.neutralColor;
+        return BatteryService.colorFor(root.colorMode, BatteryService.batteryLevel, root.charging, root.neutralColor, BatteryService.isPluggedIn);
     }
     readonly property color dimColor: Theme.withAlpha(root.fillColor, root.hovered ? 0.6 : 0.48)
     readonly property color trackColor: {
         if (root.duo)
             return Theme.withAlpha(root.fillColor, root.hovered ? 0.3 : 0.16);
-        if (root.ring)
+        if (root.ring || root.arc)
             return Theme.withAlpha(root.fillColor, root.hovered ? 0.4 : 0.26);
         if (root.outlined)
             return root.hovered ? Theme.onSurface_12 : "transparent";
+        if (root.singleText)
+            return Theme.withAlpha(root.fillColor, 0.5);
         return root.dimColor;
     }
     readonly property color inkColor: {
@@ -60,6 +77,7 @@ Item {
             return Theme.isLightColor(Theme.surface) ? Theme.surfaceText : Theme.surface;
         return Theme.isLightColor(Theme.surface) ? Theme.surface : Theme.surfaceText;
     }
+    readonly property color singleInkColor: Contrast.readableOn(root.fillColor, [Theme.surface, Theme.surfaceText])
     readonly property int glyphWeight: Theme.fontWeight
     readonly property string numberText: Math.round(root.level).toString()
     readonly property bool boltVisible: root.charging && root.showBolt && !root.duo
@@ -84,12 +102,12 @@ Item {
     readonly property real ringTextSize: root.textNeed > 0 ? Math.min(root.baseTextSize, root.baseTextSize * root.ringChordWidth / root.textNeed) : root.baseTextSize
     readonly property real textSize: root.circular ? root.ringTextSize : root.baseTextSize
     readonly property real textBaseline: root.height / 2 - digitInk.tightBoundingRect.y - digitInk.tightBoundingRect.height / 2
-    readonly property real boltBadgeSize: Math.round((root.circular ? 12 : 9) * root.unit)
-    readonly property real boltBadgeWidth: Math.round(root.boltBadgeSize * (8 / 13))
-    readonly property real bodyLength: Math.max(Math.round(25 * root.unit), Math.ceil(root.numberInside ? root.textNeed + root.textCanvasLeft + 1.5 * root.unit : 0))
-    readonly property real capGap: Math.max(1, Math.round(root.unit))
+    readonly property real boltBadgeSize: Math.round((root.circular ? 12 : root.barBoltUnits) * root.unit)
+    readonly property real boltBadgeWidth: Math.round(root.boltBadgeSize * root.boltAspect)
+    readonly property real bodyLength: Math.max(Math.round(root.bodyUnits * root.unit), Math.ceil(root.numberInside ? root.textNeed + root.textCanvasLeft + 1.5 * root.unit : 0))
+    readonly property real capGap: Math.max(1, Math.round(root.capGapUnits * root.unit))
     readonly property real capOffset: root.bodyLength + root.capGap
-    readonly property real capBreadth: Math.max(1, Math.round(1.25 * root.unit))
+    readonly property real capBreadth: Math.max(1, Math.round(root.capBreadthUnits * root.unit))
     readonly property real capSpan: Math.round(6 * root.unit)
 
     implicitWidth: root.circular ? root.ringDiameter : root.vertical ? Math.round(14 * root.unit) : root.capOffset + (root.boltVisible ? root.boltBadgeWidth : root.capBreadth)
@@ -189,7 +207,7 @@ Item {
 
             ShapePath {
                 fillColor: "transparent"
-                strokeColor: root.duo && root.charging ? Theme.withAlpha(root.fillColor, 0.45) : "transparent"
+                strokeColor: (root.duo || root.arc) && root.charging ? Theme.withAlpha(root.fillColor, 0.45) : "transparent"
                 strokeWidth: root.ringStroke
                 capStyle: ShapePath.RoundCap
 
@@ -316,7 +334,7 @@ Item {
         height: root.vertical ? root.capBreadth : root.capSpan
         radius: root.capBreadth / 2
         visible: !root.circular && (root.vertical || !root.boltVisible)
-        color: root.outlined ? root.fillColor : root.dimColor
+        color: root.outlined ? root.fillColor : root.singleText ? root.trackColor : root.dimColor
     }
 
     Rectangle {
@@ -394,7 +412,7 @@ Item {
 
     Glyphs {
         visible: root.numberInside && !root.circular
-        ink: Theme.surfaceText
+        ink: root.singleText ? root.singleInkColor : Theme.surfaceText
     }
 
     Item {
@@ -403,7 +421,7 @@ Item {
         width: fill.width
         height: fill.height
         clip: true
-        visible: root.numberInside && !root.outlined && !root.circular
+        visible: root.numberInside && !root.outlined && !root.circular && !root.singleText
 
         Glyphs {
             x: -parent.x

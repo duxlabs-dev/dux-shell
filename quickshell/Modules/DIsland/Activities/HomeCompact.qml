@@ -646,7 +646,7 @@ Item {
                 fontSize: root.textSize
                 hovered: groupArea.containsMouse
                 meterStyle: root.controller.batteryStyle
-                levelColors: (root.controller.barConfig?.batteryColorMode ?? "theme") === "level"
+                colorMode: root.controller.barConfig?.batteryColorMode ?? SettingsData.barConfigDefault("batteryColorMode")
             }
 
             Grid {

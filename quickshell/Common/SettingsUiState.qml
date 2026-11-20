@@ -39,6 +39,18 @@ Singleton {
     property string selectedConnectionTitle: ""
     property string newConnectionType: ""
 
+    // `where` is a SettingsData.locateBarWidget result.
+    function selectBarWidget(widgetId, where) {
+        const widget = BarWidgetCatalog.get(widgetId);
+        selectedBarId = where.barId;
+        selectedWidgetSection = where.section;
+        selectedWidgetIndex = where.index;
+        selectedDockId = "";
+        selectedWidgetTitle = widget?.text ?? widgetId;
+        selectedWidgetDescription = widget?.description ?? "";
+        selectedWidgetIcon = widget?.icon ?? "widgets";
+    }
+
     function selectConnection(uuid, title, newType) {
         selectedConnectionUuid = uuid ?? "";
         selectedConnectionTitle = title ?? "";

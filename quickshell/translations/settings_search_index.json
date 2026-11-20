@@ -6617,22 +6617,22 @@
     "tabIndex": 6,
     "category": "Appearance",
     "keywords": [
-      "accent",
       "appearance",
       "bar",
       "battery",
+      "charging",
       "color",
       "colour",
       "green",
       "hue",
       "island",
       "level",
+      "low",
       "meter",
       "panel",
       "red",
       "statusbar",
       "taskbar",
-      "theme",
       "tint",
       "topbar"
     ],
@@ -11475,6 +11475,14 @@
     "optionFile": "IslandOptions.qml"
   },
   {
+    "section": "barWidgetOption:BatteryOptions.qml:14",
+    "label": "Badge",
+    "tabIndex": 22,
+    "keywords": [],
+    "runtimeType": "barWidgetOption",
+    "optionFile": "BatteryOptions.qml"
+  },
+  {
     "section": "_tab_22",
     "label": "Bar widgets",
     "tabIndex": 22,
@@ -11496,15 +11504,7 @@
     "description": "Add, reorder, configure"
   },
   {
-    "section": "barWidgetOption:BatteryOptions.qml:7",
-    "label": "Battery",
-    "tabIndex": 22,
-    "keywords": [],
-    "runtimeType": "barWidgetOption",
-    "optionFile": "BatteryOptions.qml"
-  },
-  {
-    "section": "barWidgetOption:BatteryOptions.qml:6",
+    "section": "barWidgetOption:BatteryOptions.qml:10",
     "label": "Battery style",
     "tabIndex": 22,
     "keywords": [],
@@ -11614,6 +11614,14 @@
     "keywords": [],
     "runtimeType": "barWidgetOption",
     "optionFile": "IslandOptions.qml"
+  },
+  {
+    "section": "barWidgetOption:BatteryOptions.qml:1",
+    "label": "Color",
+    "tabIndex": 22,
+    "keywords": [],
+    "runtimeType": "barWidgetOption",
+    "optionFile": "BatteryOptions.qml"
   },
   {
     "section": "barWidgetOption:AppsDockOptions.qml:14",
@@ -11800,6 +11808,30 @@
     "optionFile": "IslandOptions.qml"
   },
   {
+    "section": "barWidgetOption:BatteryOptions.qml:19",
+    "label": "Details",
+    "tabIndex": 22,
+    "keywords": [],
+    "runtimeType": "barWidgetOption",
+    "optionFile": "BatteryOptions.qml"
+  },
+  {
+    "section": "barWidgetOption:BatteryOptions.qml:22",
+    "label": "Devices",
+    "tabIndex": 22,
+    "keywords": [],
+    "runtimeType": "barWidgetOption",
+    "optionFile": "BatteryOptions.qml"
+  },
+  {
+    "section": "barWidgetOption:BatteryOptions.qml:11",
+    "label": "Direction",
+    "tabIndex": 22,
+    "keywords": [],
+    "runtimeType": "barWidgetOption",
+    "optionFile": "BatteryOptions.qml"
+  },
+  {
     "section": "barWidgetOption:SystemMonitorOptions.qml:7",
     "label": "Disk usage format",
     "tabIndex": 22,
@@ -11830,6 +11862,14 @@
     "keywords": [],
     "runtimeType": "barWidgetOption",
     "optionFile": "MusicOptions.qml"
+  },
+  {
+    "section": "barWidgetOption:BatteryOptions.qml:4",
+    "label": "Entries",
+    "tabIndex": 22,
+    "keywords": [],
+    "runtimeType": "barWidgetOption",
+    "optionFile": "BatteryOptions.qml"
   },
   {
     "section": "barWidgetOption:IslandOptions.qml:53",
@@ -12129,12 +12169,28 @@
     "optionFile": "AppsDockOptions.qml"
   },
   {
+    "section": "barWidgetOption:BatteryOptions.qml:18",
+    "label": "Layout",
+    "tabIndex": 22,
+    "keywords": [],
+    "runtimeType": "barWidgetOption",
+    "optionFile": "BatteryOptions.qml"
+  },
+  {
     "section": "barWidgetOption:IslandOptions.qml:38",
     "label": "Live activities",
     "tabIndex": 22,
     "keywords": [],
     "runtimeType": "barWidgetOption",
     "optionFile": "IslandOptions.qml"
+  },
+  {
+    "section": "barWidgetOption:BatteryOptions.qml:3",
+    "label": "Low threshold",
+    "tabIndex": 22,
+    "keywords": [],
+    "runtimeType": "barWidgetOption",
+    "optionFile": "BatteryOptions.qml"
   },
   {
     "section": "barWidgetOption:IslandOptions.qml:26",
@@ -12297,7 +12353,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:BatteryOptions.qml:2",
+    "section": "barWidgetOption:BatteryOptions.qml:6",
     "label": "Only on battery",
     "tabIndex": 22,
     "keywords": [],
@@ -12353,6 +12409,14 @@
     "optionFile": "IslandOptions.qml"
   },
   {
+    "section": "barWidgetOption:BatteryOptions.qml:16",
+    "label": "Overview",
+    "tabIndex": 22,
+    "keywords": [],
+    "runtimeType": "barWidgetOption",
+    "optionFile": "BatteryOptions.qml"
+  },
+  {
     "section": "barWidgetOption:IslandOptions.qml:41",
     "label": "Persistent activity slots",
     "tabIndex": 22,
@@ -12367,6 +12431,14 @@
     "keywords": [],
     "runtimeType": "barWidgetOption",
     "optionFile": "IslandOptions.qml"
+  },
+  {
+    "section": "barWidgetOption:BatteryOptions.qml:21",
+    "label": "Placement",
+    "tabIndex": 22,
+    "keywords": [],
+    "runtimeType": "barWidgetOption",
+    "optionFile": "BatteryOptions.qml"
   },
   {
     "section": "barWidgetOption:IslandOptions.qml:25",
@@ -12385,12 +12457,28 @@
     "optionFile": "IslandOptions.qml"
   },
   {
+    "section": "barWidgetOption:BatteryOptions.qml:12",
+    "label": "Popout",
+    "tabIndex": 22,
+    "keywords": [],
+    "runtimeType": "barWidgetOption",
+    "optionFile": "BatteryOptions.qml"
+  },
+  {
     "section": "barWidgetOption:IslandOptions.qml:13",
     "label": "Power menu",
     "tabIndex": 22,
     "keywords": [],
     "runtimeType": "barWidgetOption",
     "optionFile": "IslandOptions.qml"
+  },
+  {
+    "section": "barWidgetOption:BatteryOptions.qml:20",
+    "label": "Power profile",
+    "tabIndex": 22,
+    "keywords": [],
+    "runtimeType": "barWidgetOption",
+    "optionFile": "BatteryOptions.qml"
   },
   {
     "section": "barWidgetOption:IslandOptions.qml:40",
@@ -12449,12 +12537,28 @@
     "optionFile": "AppsDockOptions.qml"
   },
   {
+    "section": "barWidgetOption:BatteryOptions.qml:2",
+    "label": "Separator",
+    "tabIndex": 22,
+    "keywords": [],
+    "runtimeType": "barWidgetOption",
+    "optionFile": "BatteryOptions.qml"
+  },
+  {
     "section": "barWidgetOption:AppsDockOptions.qml:11",
     "label": "Show",
     "tabIndex": 22,
     "keywords": [],
     "runtimeType": "barWidgetOption",
     "optionFile": "AppsDockOptions.qml"
+  },
+  {
+    "section": "barWidgetOption:BatteryOptions.qml:17",
+    "label": "Show",
+    "tabIndex": 22,
+    "keywords": [],
+    "runtimeType": "barWidgetOption",
+    "optionFile": "BatteryOptions.qml"
   },
   {
     "section": "barWidgetOption:WorkspaceSwitcherOptions.qml:22",
@@ -12489,7 +12593,7 @@
     "optionFile": "AppsDockOptions.qml"
   },
   {
-    "section": "barWidgetOption:BatteryOptions.qml:4",
+    "section": "barWidgetOption:BatteryOptions.qml:8",
     "label": "Show charge rate",
     "tabIndex": 22,
     "keywords": [],
@@ -12497,7 +12601,7 @@
     "optionFile": "BatteryOptions.qml"
   },
   {
-    "section": "barWidgetOption:BatteryOptions.qml:5",
+    "section": "barWidgetOption:BatteryOptions.qml:9",
     "label": "Show discharge rate",
     "tabIndex": 22,
     "keywords": [],
@@ -12545,7 +12649,7 @@
     "optionFile": "WorkspaceSwitcherOptions.qml"
   },
   {
-    "section": "barWidgetOption:BatteryOptions.qml:1",
+    "section": "barWidgetOption:BatteryOptions.qml:5",
     "label": "Show percentage",
     "tabIndex": 22,
     "keywords": [],
@@ -12553,7 +12657,7 @@
     "optionFile": "BatteryOptions.qml"
   },
   {
-    "section": "barWidgetOption:BatteryOptions.qml:3",
+    "section": "barWidgetOption:BatteryOptions.qml:7",
     "label": "Show remaining time",
     "tabIndex": 22,
     "keywords": [],
@@ -12705,6 +12809,14 @@
     "optionFile": "IslandOptions.qml"
   },
   {
+    "section": "barWidgetOption:BatteryOptions.qml:13",
+    "label": "Style",
+    "tabIndex": 22,
+    "keywords": [],
+    "runtimeType": "barWidgetOption",
+    "optionFile": "BatteryOptions.qml"
+  },
+  {
     "section": "barWidgetOption:MusicOptions.qml:1",
     "label": "Style",
     "tabIndex": 22,
@@ -12823,6 +12935,14 @@
     "keywords": [],
     "runtimeType": "barWidgetOption",
     "optionFile": "IslandOptions.qml"
+  },
+  {
+    "section": "barWidgetOption:BatteryOptions.qml:15",
+    "label": "Wavy",
+    "tabIndex": 22,
+    "keywords": [],
+    "runtimeType": "barWidgetOption",
+    "optionFile": "BatteryOptions.qml"
   },
   {
     "section": "barWidgetOption:IslandOptions.qml:16",

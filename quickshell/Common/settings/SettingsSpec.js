@@ -30,6 +30,24 @@ function controlCenterEditLayout(v) {
     return v === "docked" || v === "sheet" ? v : undefined;
 }
 
+function oneOf(values) {
+    return v => values.indexOf(v) >= 0 ? v : undefined;
+}
+
+function subsetOf(values) {
+    return v => Array.isArray(v) ? v.filter(x => values.indexOf(x) >= 0) : undefined;
+}
+
+var BATTERY_POPOUT_DETAILS = ["health", "temperature", "capacity", "power"];
+var BATTERY_POPOUT_LAYOUTS = ["grid", "compact", "chips", "list"];
+var BATTERY_POPOUT_DEVICE_LAYOUTS = ["grid", "compact", "chips", "list", "bars"];
+var BATTERY_BAR_COLORS = ["theme", "lowcharging", "level"];
+var BATTERY_POPOUT_COLORS = ["primary"].concat(BATTERY_BAR_COLORS);
+var BATTERY_POPOUT_STYLES = ["compact", "line", "ring", "card"];
+var BATTERY_POPOUT_BADGES = ["shape", "ring"];
+var BATTERY_POPOUT_POWER_PLACEMENTS = ["card", "overview"];
+var BATTERY_POPOUT_POWER_STYLES = ["circle", "segments", "buttons", "slider"];
+
 var LOCAL_SPEC = {
     dockConfigs: {
         def: [DockConfig.create("dock", "Dock")]
@@ -1227,6 +1245,50 @@ var LOCAL_SPEC = {
     batteryLowThreshold: {
         def: 20
     },
+    batteryPopoutColor: {
+        def: "primary",
+        coerce: oneOf(BATTERY_POPOUT_COLORS)
+    },
+    batteryPopoutStyle: {
+        def: "compact",
+        coerce: oneOf(BATTERY_POPOUT_STYLES)
+    },
+    batteryPopoutBadge: {
+        def: "shape",
+        coerce: oneOf(BATTERY_POPOUT_BADGES)
+    },
+    batteryPopoutWavy: {
+        def: true
+    },
+    batteryPopoutBattery: {
+        def: true
+    },
+    batteryPopoutDetailsLayout: {
+        def: "compact",
+        coerce: oneOf(BATTERY_POPOUT_LAYOUTS)
+    },
+    batteryPopoutDetails: {
+        def: ["health", "capacity", "power"],
+        coerce: subsetOf(BATTERY_POPOUT_DETAILS)
+    },
+    batteryPopoutPower: {
+        def: true
+    },
+    batteryPopoutPowerPlacement: {
+        def: "card",
+        coerce: oneOf(BATTERY_POPOUT_POWER_PLACEMENTS)
+    },
+    batteryPopoutPowerStyle: {
+        def: "buttons",
+        coerce: oneOf(BATTERY_POPOUT_POWER_STYLES)
+    },
+    batteryPopoutDevices: {
+        def: true
+    },
+    batteryPopoutDevicesLayout: {
+        def: "bars",
+        coerce: oneOf(BATTERY_POPOUT_DEVICE_LAYOUTS)
+    },
     batteryNotifyLow: {
         def: false
     },
@@ -1717,7 +1779,7 @@ var LOCAL_SPEC = {
                 maximizeWidgetIcons: false,
                 maximizeWidgetText: false,
                 widgetPadding: 8,
-                batteryColorMode: "theme",
+                batteryColorMode: "lowcharging",
                 gothCornersEnabled: false,
                 gothCornerRadiusOverride: false,
                 gothCornerRadiusValue: 12,

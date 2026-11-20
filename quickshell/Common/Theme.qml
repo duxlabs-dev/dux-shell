@@ -1699,14 +1699,19 @@ Singleton {
     function getPowerProfileIcon(profile) {
         switch (profile) {
         case 0:
-            return "battery_saver";
+            return "eco";
         case 1:
-            return "battery_std";
+            return "balance";
         case 2:
-            return "flash_on";
+            return "speed";
         default:
             return "settings";
         }
+    }
+
+    // The eco leaf's vein breaks into dashes when filled at icon size.
+    function powerProfileIconFilled(profile) {
+        return profile !== 0;
     }
 
     function getPowerProfileLabel(profile) {

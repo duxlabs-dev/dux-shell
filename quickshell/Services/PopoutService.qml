@@ -592,6 +592,17 @@ Singleton {
         }
     }
 
+    // Without that widget in any bar there are no options to open, so land on the page that adds one.
+    function openBarWidgetSettings(widgetId, barId) {
+        const where = SettingsData.locateBarWidget(widgetId, barId);
+        if (!where) {
+            openSettingsWithTab("dankbar_widgets");
+            return;
+        }
+        SettingsUiState.selectBarWidget(widgetId, where);
+        openSettingsWithTab("bar_widget");
+    }
+
     function closeSettings() {
         settingsModal?.hide();
     }

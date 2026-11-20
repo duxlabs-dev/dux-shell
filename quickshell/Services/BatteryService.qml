@@ -5,6 +5,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Services.UPower
 import qs.Common
+import "../Common/BatteryDevices.js" as BatteryDevices
 
 Singleton {
     id: root
@@ -385,20 +386,47 @@ Singleton {
         return scaleDisplayEnabled && scaleAlertsEnabled ? scaledLevel : actualLevel;
     }
 
-    readonly property color levelColor: {
-        if (isCharging)
-            return Theme.success;
-
-        if (isCriticalBattery)
+    function _rampColor(ramp) {
+        switch (ramp) {
+        case "critical":
             return levelCriticalColor;
-
-        if (isLowBattery)
+        case "warning":
             return Theme.warning;
-
-        if (batteryLevel <= SettingsData.batteryLowThreshold * 2)
+        case "caution":
             return levelCautionColor;
+        default:
+            return Theme.success;
+        }
+    }
 
-        return Theme.success;
+    // An unknown reading (0) never counts as low or as a level; `neutral` is what the caller draws for plain text and icons.
+    // `pluggedIn` is only passed for the system battery: on AC but not charging it keeps the accent.
+    function colorFor(mode, percentage, charging, neutral, pluggedIn) {
+        if (!(percentage > 0))
+            return mode === "primary" ? Theme.primary : neutral;
+
+        const low = BatteryDevices.isLow(percentage, charging, SettingsData.batteryLowThreshold);
+
+        switch (mode) {
+        case "primary":
+            return low ? Theme.error : Theme.primary;
+        case "lowcharging":
+            return low ? Theme.error : charging ? Theme.success : pluggedIn ? Theme.primary : neutral;
+        case "level":
+            return _rampColor(BatteryDevices.levelRamp(percentage, charging, SettingsData.batteryLowThreshold, SettingsData.batteryCriticalThreshold));
+        default:
+            return neutral;
+        }
+    }
+
+    function barDeviceEntries(entries) {
+        const system = {
+            "percentage": displayBatteryLevel,
+            "charging": isCharging,
+            "low": isLowBattery && !isCharging,
+            "unknown": !hasBatteryReading
+        };
+        return BatteryDevices.resolveBarEntries(entries, system, peripheralDevices);
     }
 
     property bool _hasNotifiedLowBattery: false
@@ -769,13 +797,35 @@ Singleton {
 
     readonly property bool suggestPowerSaver: false
 
-    readonly property var peripheralDevices: refCount === 0 ? [] : UPower.devices.values.filter(dev => dev && dev.ready && !dev.isLaptopBattery && peripheralIcon(dev.type) !== "").map(dev => ({
+    readonly property var _peripheralSource: refCount === 0 ? [] : UPower.devices.values.filter(dev => dev && dev.ready && !dev.isLaptopBattery && peripheralIcon(dev.type) !== "")
+
+    readonly property var peripheralDevices: {
+        const keys = BatteryDevices.deviceKeys(_peripheralSource.map(dev => ({
+                        "type": dev.type,
+                        "model": dev.model
+                    })));
+        return _peripheralSource.map((dev, index) => {
+            const percentage = Math.round(dev.percentage * 100);
+            const charging = dev.state === UPowerDeviceState.Charging;
+            return {
+                "key": keys[index],
                 "name": dev.model || UPowerDeviceType.toString(dev.type),
-                "percentage": Math.round(dev.percentage * 100),
+                "percentage": percentage,
                 "type": dev.type,
                 "icon": peripheralIcon(dev.type),
-                "charging": dev.state === UPowerDeviceState.Charging
-            }))
+                "charging": charging,
+                "unknown": percentage === 0,
+                "low": BatteryDevices.isLow(percentage, charging, SettingsData.batteryLowThreshold)
+            };
+        });
+    }
+    readonly property bool hasPeripherals: peripheralDevices.length > 0
+    // The lowest known reading; sleeping devices report 0 and never count as lowest.
+    readonly property var lowestPeripheral: peripheralDevices.reduce((lowest, dev) => {
+        if (dev.unknown)
+            return lowest;
+        return !lowest || dev.percentage < lowest.percentage ? dev : lowest;
+    }, null) ?? peripheralDevices[0] ?? null
 
     readonly property var bluetoothDevices: {
         if (refCount === 0)
@@ -823,8 +873,10 @@ Singleton {
             return 0;
 
         const rate = _smoothedChangeRate > 0 ? _smoothedChangeRate : changeRate;
+        const limitEnergy = batteryCapacity * SettingsData.batteryChargeLimit / 100;
+        const target = limitEnergy > batteryEnergy && limitEnergy < batteryCapacity ? limitEnergy : batteryCapacity;
 
-        const totalTime = isCharging ? ((batteryCapacity - batteryEnergy) / rate) : (batteryEnergy / rate);
+        const totalTime = isCharging ? ((target - batteryEnergy) / rate) : (batteryEnergy / rate);
 
         const seconds = Math.abs(totalTime * 3600);
 

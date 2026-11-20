@@ -226,7 +226,7 @@ DModal {
                                     name: Theme.getPowerProfileIcon(modelData)
                                     size: Theme.iconSize + 16
                                     color: isActive ? Theme.accentOnSelectedContainer : Theme.surfaceText
-                                    filled: isActive
+                                    filled: isActive && Theme.powerProfileIconFilled(modelData)
                                     anchors.horizontalCenter: parent.horizontalCenter
                                 }
 

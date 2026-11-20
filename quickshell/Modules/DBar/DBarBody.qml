@@ -334,6 +334,10 @@ Item {
             property Item w
             item: w
             radius: w?.blurRadius ?? Theme.cornerRadius
+            topLeftRadius: w?.blurTopLeftRadius ?? radius
+            topRightRadius: w?.blurTopRightRadius ?? radius
+            bottomLeftRadius: w?.blurBottomLeftRadius ?? radius
+            bottomRightRadius: w?.blurBottomRightRadius ?? radius
         }
     }
 
