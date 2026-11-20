@@ -60,9 +60,7 @@ DEditableGrid {
     // Carried to another page, the dragged tile is that page's to drop; this grid only keeps the pointer grab.
     property bool carried: false
     property string carryGroup: ""
-    property string _stickyGroupId: ""
-    readonly property string hoverGroup: carryGroup !== "" ? carryGroup : heldOutside && !carried && draggingSourceIndex >= 0 ? (groupAt(dragScenePoint, draggingSourceIndex, _stickyGroupId)?.groupId ?? "") : ""
-    onHoverGroupChanged: _stickyGroupId = hoverGroup
+    readonly property string hoverGroup: carryGroup !== "" ? carryGroup : heldOutside && !carried && draggingSourceIndex >= 0 ? (groupAt(dragScenePoint, draggingSourceIndex)?.groupId ?? "") : ""
 
     property var savedWidgets: SettingsData.controlCenterWidgets || []
     readonly property var groupIds: WidgetUtils.groupIds(savedWidgets)
@@ -121,14 +119,12 @@ DEditableGrid {
         return size;
     }
 
-    function groupAt(scenePoint, excludeIndex, stickyId = "") {
+    function groupAt(scenePoint, excludeIndex) {
         for (let i = 0; i < tileRepeater.count; i++) {
             const slot = tileRepeater.itemAt(i) as CcTileSlot;
             if (i === excludeIndex || !slot?.enabled || slot.widgetData.id !== WidgetUtils.GROUP_ID)
                 continue;
-            const local = slot.mapFromItem(null, scenePoint.x, scenePoint.y);
-            const pad = stickyId !== "" && stickyId === slot.tileItem?.groupId ? Theme.spacingS : 0;
-            if (local.x >= -pad && local.x < slot.width + pad && local.y >= -pad && local.y < slot.height + pad)
+            if (slot.contains(slot.mapFromItem(null, scenePoint.x, scenePoint.y)))
                 return slot.tileItem;
         }
         return null;

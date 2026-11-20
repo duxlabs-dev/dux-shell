@@ -511,7 +511,7 @@ FocusScope {
     }
 
     function groupTakesGridDrag(grid, scenePoint) {
-        return WidgetUtils.canGroup(gridDragWidget) && grid.groupAt(scenePoint, grid.draggingSourceIndex, grid._stickyGroupId) !== null;
+        return WidgetUtils.canGroup(gridDragWidget) && grid.groupAt(scenePoint, grid.draggingSourceIndex) !== null;
     }
 
     function gridDragMoved(grid, scenePoint) {

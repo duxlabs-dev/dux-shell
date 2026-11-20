@@ -80,16 +80,13 @@ Item {
         liftedWidth = member.ownWidth;
         liftedIndex = member.modelData.index;
         host.memberDragging = true;
-        dropSlot = 0;
         moveLifted(member, scenePoint);
     }
 
     function moveLifted(member, scenePoint) {
         const point = mapFromItem(null, scenePoint.x, scenePoint.y);
         liftPoint = Qt.point(point.x - member.grabOffset.x, point.y - member.grabOffset.y);
-        // Require a small inset when re-entering after previewExternal reflows the grid.
-        const margin = dropSlot < 0 ? Theme.spacingS : 0;
-        if (point.x >= margin && point.x < width - margin && point.y >= margin && point.y < height - margin) {
+        if (point.x >= 0 && point.x < width && point.y >= 0 && point.y < height) {
             dropSlot = slotAt(point.x);
             host.clearExternal();
             return;
