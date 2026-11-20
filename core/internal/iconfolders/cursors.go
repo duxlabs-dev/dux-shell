@@ -25,12 +25,27 @@ const (
 // The names a theme may give its default pointer, first found wins.
 var pointerNames = []string{"left_ptr", "default", "arrow"}
 
+// Representative cursor states previewed for each theme, in display order.
+var cursorPreviewStates = [][]string{
+	pointerNames,
+	{"hand2", "pointer", "pointing_hand", "hand1"},
+	{"xterm", "text", "ibeam"},
+	{"left_ptr_watch", "progress", "watch", "wait"},
+	{"crosshair", "cross", "tcross"},
+	{"fleur", "move", "all-scroll", "grab"},
+	{"sb_h_double_arrow", "ew-resize", "h_double_arrow"},
+	{"sb_v_double_arrow", "ns-resize", "v_double_arrow"},
+	{"not-allowed", "crossed_circle", "no-drop"},
+}
+
 type CursorInfo struct {
 	Name string `json:"name"`
 	// Removable cursor themes live in the user's icon directory.
 	Removable bool `json:"removable"`
 	// Pointer is the theme's default pointer as a PNG data URL, "" where it has none in Xcursor form.
 	Pointer string `json:"pointer"`
+	// Cursors holds PNG data URLs for representative cursor states in the theme.
+	Cursors []string `json:"cursors,omitempty"`
 }
 
 func hasCursors(dir string) bool {
@@ -57,7 +72,13 @@ func ListCursors(o Options) []CursorInfo {
 				continue
 			}
 			seen[name] = true
-			cursors = append(cursors, CursorInfo{Name: name, Removable: base == o.IconsDir, Pointer: lib.pointer(name, 4)})
+			pointer := lib.pointer(name, 4)
+			cursors = append(cursors, CursorInfo{
+				Name:      name,
+				Removable: base == o.IconsDir,
+				Pointer:   pointer,
+				Cursors:   lib.cursorPreviews(name, pointer),
+			})
 		}
 	}
 	return cursors
@@ -65,11 +86,28 @@ func ListCursors(o Options) []CursorInfo {
 
 // pointer looks through a theme and then what it inherits, as libXcursor does.
 func (l *library) pointer(name string, depth int) string {
+	return l.cursorByNames(name, pointerNames, depth)
+}
+
+func (l *library) cursorPreviews(name, pointer string) []string {
+	var previews []string
+	if pointer != "" {
+		previews = append(previews, pointer)
+	}
+	for _, names := range cursorPreviewStates[1:] {
+		if url := l.cursorByNames(name, names, 4); url != "" {
+			previews = append(previews, url)
+		}
+	}
+	return previews
+}
+
+func (l *library) cursorByNames(name string, names []string, depth int) string {
 	if depth == 0 || name == "" || name != filepath.Base(name) {
 		return ""
 	}
 	for _, base := range l.bases {
-		for _, file := range pointerNames {
+		for _, file := range names {
 			if url := pointerURL(filepath.Join(base, name, "cursors", file)); url != "" {
 				return url
 			}
@@ -77,7 +115,7 @@ func (l *library) pointer(name string, depth int) string {
 	}
 	if sh := l.shelf(name); sh != nil {
 		for _, parent := range sh.inherits {
-			if url := l.pointer(parent, depth-1); url != "" {
+			if url := l.cursorByNames(parent, names, depth-1); url != "" {
 				return url
 			}
 		}

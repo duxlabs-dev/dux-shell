@@ -492,12 +492,13 @@ test("every badge shape has an outline to preview it with", () => {
 
 test("cursor library keeps removable flags and PNG data URL pointers", () => {
     const png = "data:image/png;base64,iVBORw0KGgo=";
-    const text = JSON.stringify({ themes: [], cursors: [{ name: "Adwaita", removable: true, pointer: png }, { name: "Hypr", removable: false, pointer: "" }, { name: "File", pointer: "/usr/share/x.png" }, { pointer: png }, { name: "Bad", pointer: 3 }, null] });
+    const hand = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUg==";
+    const text = JSON.stringify({ themes: [], cursors: [{ name: "Adwaita", removable: true, pointer: png, cursors: [png, hand, "/bad.png"] }, { name: "Hypr", removable: false, pointer: "" }, { name: "File", pointer: "/usr/share/x.png" }, { pointer: png }, { name: "Bad", pointer: 3 }, null] });
     assert.deepEqual(plain(IconFolders.parseCursorLibrary(text)), {
-        Adwaita: { removable: true, pointer: png },
-        Hypr: { removable: false, pointer: "" },
-        File: { removable: false, pointer: "" },
-        Bad: { removable: false, pointer: "" },
+        Adwaita: { removable: true, pointer: png, cursors: [png, hand] },
+        Hypr: { removable: false, pointer: "", cursors: [] },
+        File: { removable: false, pointer: "", cursors: [] },
+        Bad: { removable: false, pointer: "", cursors: [] },
     });
     for (const broken of ["", "{", "null", '{"cursors":3}', '{"themes":[]}'])
         assert.deepEqual(plain(IconFolders.parseCursorLibrary(broken)), {});
