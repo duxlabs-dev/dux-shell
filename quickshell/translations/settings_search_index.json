@@ -2215,6 +2215,25 @@
     "page": "theme_surfaces"
   },
   {
+    "section": "screenCorners",
+    "label": "Override screen corners",
+    "tabIndex": -1,
+    "category": "Interface style",
+    "keywords": [
+      "corner",
+      "corners",
+      "fullscreen",
+      "interface",
+      "override",
+      "radius",
+      "round",
+      "rounded",
+      "screen",
+      "style"
+    ],
+    "page": "theme_surfaces"
+  },
+  {
     "section": "windowRadius",
     "label": "Override window radius",
     "tabIndex": -1,

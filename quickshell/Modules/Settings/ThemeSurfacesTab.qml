@@ -350,6 +350,7 @@ Column {
             SettingsToggleCard {
                 tab: "theme"
                 tags: ["corner", "radius", "rounded", "screen", "fullscreen"]
+                settingKey: "screenCorners"
                 title: I18n.tr("Override screen corners", "toggle: show screen corner settings and use a custom radius")
                 checked: SettingsData.screenCornerRadius >= 0
                 onToggled: checked => {
