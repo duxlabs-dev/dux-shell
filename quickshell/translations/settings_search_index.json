@@ -2631,6 +2631,24 @@
     "page": "personalization"
   },
   {
+    "section": "screenCornerMode",
+    "label": "Screen corners",
+    "tabIndex": -1,
+    "category": "Interface style",
+    "keywords": [
+      "corner",
+      "corners",
+      "fullscreen",
+      "interface",
+      "radius",
+      "round",
+      "rounded",
+      "screen",
+      "style"
+    ],
+    "page": "theme_surfaces"
+  },
+  {
     "section": "scrollShadowsEnabled",
     "label": "Scroll shadows",
     "tabIndex": -1,

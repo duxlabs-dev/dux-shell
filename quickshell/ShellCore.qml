@@ -95,6 +95,12 @@ Item {
     }
 
     Loader {
+        active: SettingsData.screenCornerMode !== "off"
+        asynchronous: false
+        source: "Modules/ScreenCorners/ScreenCorners.qml"
+    }
+
+    Loader {
         active: FrameTransitionState.effectiveFrameEnabled && SettingsData.frameLauncherEdgeHover
         asynchronous: false
         source: "Modules/Frame/FrameLauncherHoverZone.qml"

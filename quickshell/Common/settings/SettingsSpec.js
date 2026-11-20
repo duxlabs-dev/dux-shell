@@ -551,6 +551,9 @@ var LOCAL_SPEC = {
         def: "expressive",
         onChange: "applyInterfaceStyle"
     },
+    screenCornerMode: {
+        def: "off"
+    },
     m3ElevationEnabled: {
         def: true
     },

@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell.Wayland
 import qs.Common
+import qs.Modules.ScreenCorners
 
 FocusScope {
     id: root
@@ -75,6 +76,27 @@ FocusScope {
         anchors.fill: parent
         screenName: root.screenName
         onDismissed: Qt.callLater(() => lockContent.focusPasswordField())
+    }
+
+    RoundCorner {
+        corner: "topLeft"
+        visible: SettingsData.screenCornerMode !== "off"
+        anchors { left: root.left; top: root.top }
+    }
+    RoundCorner {
+        corner: "topRight"
+        visible: SettingsData.screenCornerMode !== "off"
+        anchors { right: root.right; top: root.top }
+    }
+    RoundCorner {
+        corner: "bottomLeft"
+        visible: SettingsData.screenCornerMode !== "off"
+        anchors { left: root.left; bottom: root.bottom }
+    }
+    RoundCorner {
+        corner: "bottomRight"
+        visible: SettingsData.screenCornerMode !== "off"
+        anchors { right: root.right; bottom: root.bottom }
     }
 
     Component.onCompleted: forceActiveFocus()

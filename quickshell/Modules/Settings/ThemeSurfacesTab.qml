@@ -318,6 +318,20 @@ Column {
                 }
             }
 
+            SettingsButtonGroupRow {
+                tab: "theme"
+                tags: ["corner", "radius", "rounded", "screen", "fullscreen"]
+                settingKey: "screenCornerMode"
+                text: I18n.tr("Screen corners")
+                model: [I18n.tr("Off"), I18n.tr("On"), I18n.tr("Except fullscreen", "screen corners: hidden while a fullscreen window is active")]
+                currentIndex: SettingsData.screenCornerMode === "always" ? 1 : SettingsData.screenCornerMode === "unlessFullscreen" ? 2 : 0
+                onSelectionChanged: (index, selected) => {
+                    if (!selected)
+                        return;
+                    SettingsData.set("screenCornerMode", index === 0 ? "off" : index === 1 ? "always" : "unlessFullscreen");
+                }
+            }
+
             SettingsSliderRow {
                 tab: "theme"
                 tags: ["corner", "radius", "rounded", "square", "strength"]
