@@ -18,6 +18,8 @@ Item {
     property bool removable: true
     property string removeIcon: "close"
     property bool horizontalResize: false
+    property bool verticalResize: false
+    property bool verticalResizeAbove: false
     property bool edgeResize: false
     property bool cornerResize: true
     property real resizeEdgeWidth: -1
@@ -28,7 +30,8 @@ Item {
     property vector4d cornerRadii: Qt.vector4d(cornerRadius, cornerRadius, cornerRadius, cornerRadius)
     property real buttonSize: Theme.iconSizeLarge
     property real iconSize: Theme.iconSizeSmall
-    readonly property real handleThickness: Theme.spacingM
+    property real handleThickness: Theme.spacingM
+    property real handleLength: buttonSize
     readonly property real touchTargetSize: Math.max(Theme.minimumTouchTargetSize, buttonSize)
     readonly property real contentInset: touchTargetSize / 2
     readonly property bool showOptionsButton: hasOptions
@@ -102,6 +105,7 @@ Item {
         width: root.touchTargetSize
         height: root.touchTargetSize
         buttonSize: root.buttonSize
+        stateLayerInset: (root.touchTargetSize - root.buttonSize) / 2
         iconSize: root.iconSize
         iconName: root.removeIcon
         iconColor: Theme.error
@@ -140,6 +144,7 @@ Item {
         width: root.touchTargetSize
         height: root.touchTargetSize
         buttonSize: root.buttonSize
+        stateLayerInset: (root.touchTargetSize - root.buttonSize) / 2
         iconSize: root.iconSize
         iconName: "tune"
         iconColor: Theme.primary
@@ -210,12 +215,12 @@ Item {
 
         y: root.horizontalResize ? (root.height - height) / 2 : root.height - root.contentInset - height + root.handleOverhang
         width: root.touchTargetSize
-        height: root.touchTargetSize
+        height: root.horizontalResize ? Math.max(root.touchTargetSize, root.handleLength) : root.touchTargetSize
 
         Rectangle {
             anchors.centerIn: parent
             width: root.handleThickness
-            height: root.buttonSize
+            height: root.handleLength
             radius: Theme.fullRadius(width, height)
             color: Theme.primary
             visible: root.horizontalResize
@@ -276,6 +281,31 @@ Item {
         anchors.rightMargin: root.contentInset - (root.horizontalResize ? width / 2 : root.handleOverhang)
         z: 1
         visible: root.cornerResize
+    }
+
+    Item {
+        anchors.horizontalCenter: parent.horizontalCenter
+        // Grows outward only, so content along the inner edge keeps its input.
+        y: root.verticalResizeAbove ? root.contentInset + root.handleThickness / 2 - height : root.height - root.contentInset - root.handleThickness / 2
+        width: Math.max(root.touchTargetSize, root.handleLength)
+        height: (root.touchTargetSize + root.handleThickness) / 2
+        visible: root.verticalResize
+        z: 1
+
+        Rectangle {
+            anchors.horizontalCenter: parent.horizontalCenter
+            y: root.verticalResizeAbove ? parent.height - height : 0
+            width: root.handleLength
+            height: root.handleThickness
+            radius: Theme.fullRadius(width, height)
+            color: Theme.primary
+        }
+
+        ResizeBand {
+            anchors.fill: parent
+            signX: 0
+            cursorShape: Qt.SizeVerCursor
+        }
     }
 
     Loader {

@@ -8,7 +8,7 @@ import qs.Services
 import qs.Widgets
 import qs.DCommon.Widgets
 import qs.Modules.Settings.Widgets
-import "Drives.js" as Drives
+import "../../Services/Drives.js" as Drives
 import "../../Common/Format.js" as Format
 import "../../Services/SysmonDevices.js" as Devices
 
@@ -29,8 +29,9 @@ Rectangle {
 
     readonly property bool asleep: drive?.asleep ?? false
     readonly property var rates: (DgopService.diskRates ?? []).find(d => d.device === drive?.name) ?? null
-    readonly property var history: DgopService.deviceHistory[Devices.deviceKey("disk", drive?.name ?? "")] ?? ({})
-    readonly property real axisMax: Devices.rateAxisMax(history.a, history.b, 1024 * 1024)
+    readonly property var historyA: DgopService.history(Devices.deviceKey("disk", drive?.name ?? ""), "read")
+    readonly property var historyB: DgopService.history(Devices.deviceKey("disk", drive?.name ?? ""), "write")
+    readonly property real axisMax: Devices.rateAxisMax(historyA, historyB, 1024 * 1024)
     readonly property var allRows: Drives.summaryRows(drive)
     readonly property var powerOn: allRows.find(r => r.id === "powerOnTime") ?? null
     readonly property var smartRows: allRows.filter(r => r.id !== "wear" && r.id !== "powerOnTime" && r.id !== "dataWritten")
@@ -68,7 +69,7 @@ Rectangle {
 
     implicitHeight: body.implicitHeight + pad * 2
     radius: Theme.cornerRadiusL
-    color: Theme.surfaceContainerLow
+    color: ProcessListMetrics.cardColor
 
     function rowLabel(id) {
         switch (id) {
@@ -131,7 +132,7 @@ Rectangle {
         const yes = I18n.tr("Yes");
         const sector = q?.logicalBlock > 0 ? (q.physicalBlock > q.logicalBlock ? q.logicalBlock + " B / " + Format.formatBytes(q.physicalBlock, true) : q.logicalBlock + " B") : "";
         const bus = drive?.connectionBus ? drive.connectionBus.toUpperCase() : "";
-        const rows = [[I18n.tr("Serial number", "drive serial number"), drive?.serial ?? ""], [I18n.tr("WWN", "drive world wide name, a unique id"), drive?.wwn ?? ""], [I18n.tr("Interface"), [bus, drive?.link ?? ""].filter(s => s).join(", ")], [I18n.tr("Partition table"), drive?.tableType === "gpt" ? "GPT" : drive?.tableType === "dos" ? "MBR" : ""], [I18n.tr("Sector size", "logical and physical disk sector size"), sector], [I18n.tr("I/O scheduler", "Linux block I/O scheduler"), q?.scheduler ?? ""], [I18n.tr("Write cache", "disk write cache mode"), q?.writeCache ?? ""], [I18n.tr("TRIM", "SSD discard support"), q ? (q.trim ? yes : I18n.tr("No")) : ""], [I18n.tr("Queue depth", "block device request queue depth"), q?.depth > 0 ? String(q.depth) : ""], [I18n.tr("Removable"), drive?.removable ? yes : ""]];
+        const rows = [[I18n.tr("Serial number", "drive serial number"), drive?.serial ?? ""], ["WWN", drive?.wwn ?? ""], [I18n.tr("Interface"), [bus, drive?.link ?? ""].filter(s => s).join(", ")], [I18n.tr("Partition table"), drive?.tableType === "gpt" ? "GPT" : drive?.tableType === "dos" ? "MBR" : ""], [I18n.tr("Sector size", "logical and physical disk sector size"), sector], [I18n.tr("I/O scheduler", "Linux block I/O scheduler"), q?.scheduler ?? ""], [I18n.tr("Write cache", "disk write cache mode"), q?.writeCache ?? ""], ["TRIM", q ? (q.trim ? yes : I18n.tr("No")) : ""], [I18n.tr("Queue depth", "block device request queue depth"), q?.depth > 0 ? String(q.depth) : ""], [I18n.tr("Removable"), drive?.removable ? yes : ""]];
         return rows.filter(r => r[1] !== "").map(r => ({
                     "label": r[0],
                     "value": r[1]
@@ -164,6 +165,7 @@ Rectangle {
 
         SettingsGroup {
             Layout.fillWidth: true
+            slotColor: Theme.chipSurface
             customPaddingV: 0
             customPaddingH: Theme.spacingL
 
@@ -270,8 +272,8 @@ Rectangle {
                     Layout.preferredWidth: Theme.iconButtonSize * 2
                     Layout.preferredHeight: Theme.buttonHeightXXS
                     compact: true
-                    values: root.history.a ?? []
-                    secondaryValues: root.history.b ?? []
+                    values: root.historyA
+                    secondaryValues: root.historyB
                     maximum: root.axisMax
                     historyLength: DgopService.historySize
                 }
@@ -323,14 +325,14 @@ Rectangle {
                 Layout.fillWidth: true
                 Layout.horizontalStretchFactor: 3
                 Layout.alignment: Qt.AlignTop
-                cardColor: Theme.surfaceContainer
+                cardColor: ProcessListMetrics.cardInsetColor
                 chartHeight: Math.max(Theme.listItemHeight * 1.5, stats.height - Theme.spacingL * 2 - Theme.spacingS * 2 - Theme.fontSizeSmall * 3)
                 label: I18n.tr("Disk read", "disk read rate")
                 valueText: root.rates?.readRate != null ? Format.formatRate(root.rates.readRate, 1) : "—"
                 secondaryLabel: I18n.tr("Disk write", "disk write rate")
                 secondaryValueText: root.rates?.writeRate != null ? Format.formatRate(root.rates.writeRate, 1) : "—"
-                values: root.history.a ?? []
-                secondaryValues: root.history.b ?? []
+                values: root.historyA
+                secondaryValues: root.historyB
                 maximum: root.axisMax
                 maximumText: Format.formatRate(root.axisMax, 1)
                 historyLength: DgopService.historySize
@@ -338,6 +340,7 @@ Rectangle {
 
             SettingsGroup {
                 id: stats
+                slotColor: Theme.chipSurface
                 Layout.fillWidth: true
                 Layout.horizontalStretchFactor: 2
                 Layout.maximumWidth: Theme.fontSizeMedium * 25
@@ -362,6 +365,7 @@ Rectangle {
 
         SettingsGroup {
             visible: root.expanded && root.filesystems.length > 0
+            slotColor: Theme.chipSurface
             Layout.fillWidth: true
             customPaddingV: 0
             customPaddingH: Theme.spacingL
@@ -407,7 +411,7 @@ Rectangle {
                         Layout.preferredWidth: Theme.fontSizeMedium * 10
                         Layout.preferredHeight: Theme.spacingS
                         radius: height / 2
-                        color: Theme.surfaceContainerHighest
+                        color: Theme.chipSurfaceNested
                         opacity: fsRow.modelData.usedRatio != null ? 1 : 0
 
                         Rectangle {
@@ -500,7 +504,7 @@ Rectangle {
         implicitWidth: pillRow.implicitWidth + Theme.spacingM * 2
         implicitHeight: Theme.buttonHeightXS
         radius: height / 2
-        color: Theme.surfaceContainerHighest
+        color: Theme.chipSurfaceNested
 
         Row {
             id: pillRow

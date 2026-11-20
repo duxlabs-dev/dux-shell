@@ -34,8 +34,8 @@ DOSD {
         if (!tip)
             return;
         const pos = item.mapToItem(null, 0, 0);
-        const left = pos.x;
-        const top = pos.y;
+        const left = pos.x + (surface?.bandX ?? 0);
+        const top = pos.y + (surface?.bandY ?? 0);
         const gap = Theme.spacingS;
         tip.text = endIconLabel;
         switch (alignY) {
@@ -87,7 +87,7 @@ DOSD {
         iconName: root.iconName
         insetIconName: root.insetIconName
         endIconName: root.endIconName
-        endIconInteractive: root.sheet !== null
+        endIconInteractive: root.hasSheet
         endIconLabel: root.endIconLabel
         iconInteractive: root.iconInteractive
         iconLabel: root.iconLabel
@@ -106,7 +106,7 @@ DOSD {
             root.expand();
         }
         onEndIconHoveredChanged: {
-            if (endIconHovered && root.sheet)
+            if (endIconHovered && root.hasSheet)
                 root.showEndIconTooltip(endIconItem);
             else
                 root.hideEndIconTooltip();

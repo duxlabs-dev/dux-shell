@@ -123,7 +123,6 @@ Rectangle {
         visible: opacity > 0
 
         Behavior on opacity {
-            enabled: Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
             NumberAnimation {
                 duration: SettingsMetrics.fadeDuration
                 easing.type: Easing.BezierSpline

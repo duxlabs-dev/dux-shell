@@ -54,6 +54,7 @@ Item {
         interval: CcMetrics.dndRefreshInterval
         repeat: true
         running: root.visible && SessionData.doNotDisturb && SessionData.doNotDisturbUntil > 0
+        triggeredOnStart: true
         onTriggered: root.nowMs = Date.now()
     }
 

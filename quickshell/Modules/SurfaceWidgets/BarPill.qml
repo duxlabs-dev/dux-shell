@@ -42,7 +42,7 @@ Item {
     property color contentColor: defaultContentColor
     readonly property real dpr: parentScreen ? CompositorService.getScreenScale(parentScreen) : 1
     readonly property real horizontalPadding: Theme.snap((barConfig?.widgetPadding ?? SettingsData.barWidgetPaddingDefault) * (widgetThickness / 30), dpr)
-    readonly property real contentThickness: widgetThickness - horizontalPadding * 2
+    readonly property real contentThickness: Math.max(0, widgetThickness - horizontalPadding * 2)
     readonly property real visualWidth: Theme.snap(isVerticalOrientation ? widgetThickness : (contentLoader.item ? (contentLoader.item.implicitWidth + horizontalPadding * 2) : 0), dpr)
     readonly property real visualHeight: Theme.snap(isVerticalOrientation ? (contentLoader.item ? (contentLoader.item.implicitHeight + horizontalPadding * 2) : 0) : widgetThickness, dpr)
     readonly property alias visualContent: visualContent
@@ -70,7 +70,7 @@ Item {
     readonly property bool pressed: mouseArea.pressed || (pressSource?.pressed ?? false)
     property real pressProgress: pressed && enableBackgroundHover ? 1 : 0
     readonly property real blurRadius: segmentRole === "solo" ? outerRadius : innerRadius
-    readonly property bool radiusMotion: !SettingsData.reduceMotion && !Theme.springMotionDisabled
+    readonly property bool radiusMotion: !Theme.reduceMotion
     readonly property real outlineThickness: (barConfig?.widgetOutlineEnabled ?? false) ? (barConfig?.widgetOutlineThickness ?? Theme.outlineWidth) : 0
     readonly property color outlineColor: {
         if (outlineThickness <= 0)

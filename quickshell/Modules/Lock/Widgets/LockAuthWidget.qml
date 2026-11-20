@@ -67,7 +67,7 @@ Item {
     implicitWidth: ring ? ringSize : Math.min(LockMetrics.passwordRowWidth, (lockHost?.width ?? LockMetrics.passwordRowWidth) - Theme.spacingXL * 2)
     implicitHeight: passwordLayout.implicitHeight
     // Feedback and the caps lock warning hang below the box so centring the box centres the field.
-    readonly property real bottomOverflow: Theme.spacingS + Math.max(capsLockRow.implicitHeight, authFeedbackText.height)
+    readonly property real bottomOverflow: Theme.spacingS + Math.max(capsLockRow.implicitHeight, authFeedbackText.visible ? authFeedbackText.height : 0)
 
     function encodeFileUrl(path) {
         if (!path)
@@ -264,7 +264,7 @@ Item {
                         to: 0
                         duration: Theme.expressiveDurations.expressiveSlowEffects
                         easing.type: Easing.BezierSpline
-                        easing.bezierCurve: Theme.expressiveCurves.expressiveEffects
+                        easing.bezierCurve: Theme.expressiveCurves.expressiveSlowEffects
                     }
                 }
             }
@@ -368,7 +368,7 @@ Item {
                 color: {
                     if (!root.contained)
                         return "transparent";
-                    return root.style === "expressive" ? Theme.surfaceContainerHigh : Theme.cardSurface;
+                    return root.style === "expressive" ? Theme.chipSurface : Theme.cardSurface;
                 }
                 border.width: {
                     if (!root.contained)
@@ -498,7 +498,7 @@ Item {
                                 target: morphContainer
                                 property: "scale"
                                 to: 1
-                                duration: LockMetrics.shakeDuration
+                                duration: LockMetrics.settleDuration
                                 easing.type: Easing.BezierSpline
                                 easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
                             }
@@ -1188,7 +1188,7 @@ Item {
             id: authFeedbackText
 
             width: parent.width
-            height: text.length > 0 ? Math.min(implicitHeight, Math.ceil(Theme.fontSizeSmall * 4.5)) : 0
+            visible: text.length > 0
             text: root.currentAuthFeedbackText()
             color: root.authFeedbackIsHint() ? Theme.outline : Theme.error
             font.pixelSize: Theme.fontSizeSmall

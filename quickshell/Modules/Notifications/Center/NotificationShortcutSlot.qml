@@ -26,12 +26,12 @@ DIconButton {
             return 1 + Theme.buttonGroupExpandRatio;
         return squeezed ? 1 - Theme.buttonGroupExpandRatio : 1;
     }
-    readonly property var pressSpring: Theme.springPreset("fast", Theme.expressiveDurations.expressiveFastSpatial)
+    readonly property var pressSpring: Theme.springPreset("fastSpatial")
 
     signal editRequested
 
-    buttonSize: Theme.iconButtonSize
-    width: buttonSize * widthSpring.value
+    buttonSize: NotificationMetrics.footerHeight
+    width: NotificationMetrics.shortcutWidth * widthSpring.value
     iconSize: Theme.iconSizeMedium
     variant: empty ? "standard" : "tonal"
     checkable: shortcut === "dnd" || shortcut === "history" || shortcut === "hints"
@@ -99,7 +99,7 @@ DIconButton {
 
     SpringMotion {
         id: widthSpring
-        enabled: root.live && root.visible && !Theme.springMotionDisabled
+        enabled: root.live && root.visible
         stiffness: root.pressSpring.stiffness
         damping: root.pressSpring.damping
         Component.onCompleted: snapTo(root.targetScale)

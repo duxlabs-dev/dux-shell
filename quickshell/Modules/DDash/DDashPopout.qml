@@ -15,8 +15,6 @@ DPopout {
     layerNamespace: "dms:dash"
     contentHandlesKeys: true
     closesWithSource: false
-    resizeCurve: Theme.expressiveCurves.standard
-    resizeDuration: Theme.expressiveDurations.expressiveFastSpatial
     resizeMotion: true
     resizing: contentLoader.item?.panelResizing ?? false
     inputMargin: editGutter * 2
@@ -82,6 +80,7 @@ DPopout {
     readonly property real editGutter: editMode ? PopoutMetrics.editOverflow : 0
 
     popupWidth: panelWidthFor(DashMetrics.panelColumnsFor(activeTabId))
+    minimumSurfaceWidth: editMode ? panelWidthFor(columnCap) : 0
     popupHeight: contentLoader.item?.implicitHeight ?? (DashMetrics.tabDefaultHeight + Theme.navigationHeight + DashMetrics.contentGap + DashMetrics.contentPadding * 2)
     triggerWidth: DashMetrics.triggerWidth
     screen: triggerScreen
@@ -553,10 +552,11 @@ DPopout {
                         readonly property var currentItem: root.activeTabId !== "" ? currentHost?.item ?? null : null
                         readonly property Item focusTarget: root.activeTabId === "" ? emptyContent.item?.focusTarget ?? null : currentHost?.focusTarget ?? null
                         readonly property bool currentSettled: !!currentHost && (!!currentHost.item || currentHost.failed)
+                        readonly property bool currentBuilt: !!currentHost && (currentHost.built || currentHost.failed)
                         readonly property real currentHostImplicitHeight: currentHost?.implicitHeight ?? 0
                         readonly property real targetHeight: root.activeTabId === "" ? emptyContent.implicitHeight : currentSettled && currentHost.isCurrent ? DashMetrics.panelHeightFor(root.activeTabId, currentHostImplicitHeight) : -1
                         readonly property real bodyHeight: root.activeTabId === "" ? emptyContent.implicitHeight : Math.max(settledHeight, currentHostImplicitHeight)
-                        readonly property bool ready: targetHeight >= 0 && settledHeight === targetHeight
+                        readonly property bool ready: targetHeight >= 0 && settledHeight === targetHeight && !(currentItem?.loading ?? false)
                         readonly property real availableHeight: root.screen ? root.screen.height - mainContainer.horizontalChromeHeight - DashMetrics.contentPadding * 2 - Theme.barHeight - Theme.spacingL * 2 : contentHeight
                         readonly property int rowBudget: DashMetrics.rowCapFor(availableHeight)
                         // Growing a panel not hung from a top bar moves the grid under a held card, which retargets the drop.
@@ -628,6 +628,7 @@ DPopout {
                                 keyForwardTarget: mainContainer
                                 contentViewport: pages
                                 isCurrent: root.activeTabId === modelData
+                                holdExit: root.activeTabId !== "" && !pages.currentBuilt
 
                                 onIsCurrentChanged: {
                                     if (isCurrent) {

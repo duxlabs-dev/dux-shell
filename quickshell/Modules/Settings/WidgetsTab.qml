@@ -58,7 +58,8 @@ Item {
         return SettingsData.isDotBarConfig(bc) || !SettingsData.islandSetting(bc, "islandSatellitesEnabled");
     }
 
-    property bool hasMultipleBars: SettingsData.barConfigs.length > 1
+    readonly property var selectableBars: SettingsData.barConfigs.filter(cfg => cfg.enabled || !SettingsData.isDotBarConfig(cfg))
+    property bool hasMultipleBars: selectableBars.length > 1
     property int pluginCatalogRevision: 0
 
     property string highlightedId: ""
@@ -310,10 +311,6 @@ Item {
         return sectionId === "left" ? "leftWidgets" : sectionId === "center" ? "centerWidgets" : "rightWidgets";
     }
 
-    function sectionItem(sectionId) {
-        return sectionId === "left" ? leftSection : sectionId === "center" ? centerSection : sectionId === "right" ? rightSection : null;
-    }
-
     function reorderSection(sectionId, orderedIds) {
         var remaining = getWidgetsForSection(sectionId).slice();
         var reordered = [];
@@ -556,74 +553,77 @@ Item {
             onTapped: widgetsTab.forceActiveFocus()
         }
 
-        SettingsCard {
-            iconName: "toolbar"
-            title: I18n.tr("Bar")
-            visible: hasMultipleBars
+        SettingsDeferred {
+            when: hasMultipleBars
 
-            SettingsRow {
-                body: DButtonGroup {
-                    id: barSelectorGroup
-                    arrowKeysSelect: false
-                    width: parent.width
-                    model: SettingsData.barConfigs.map(cfg => cfg.name || ("Bar " + (SettingsData.barConfigs.indexOf(cfg) + 1)))
-                    currentIndex: {
-                        const idx = SettingsData.barConfigs.findIndex(cfg => cfg.id === selectedBarId);
-                        return idx >= 0 ? idx : 0;
-                    }
-                    checkEnabled: false
-                    onSelectionChanged: (index, selected) => {
-                        if (!selected)
-                            return;
-                        if (index >= 0 && index < SettingsData.barConfigs.length)
-                            selectedBarId = SettingsData.barConfigs[index].id;
+            SettingsCard {
+                iconName: "toolbar"
+                title: I18n.tr("Bar")
+
+                SettingsRow {
+                    body: DButtonGroup {
+                        id: barSelectorGroup
+                        arrowKeysSelect: false
+                        width: parent.width
+                        model: widgetsTab.selectableBars.map(cfg => cfg.name || ("Bar " + (SettingsData.barConfigs.indexOf(cfg) + 1)))
+                        currentIndex: Math.max(0, widgetsTab.selectableBars.findIndex(cfg => cfg.id === widgetsTab.selectedBarId))
+                        checkEnabled: false
+                        onSelectionChanged: (index, selected) => {
+                            if (!selected)
+                                return;
+                            const config = widgetsTab.selectableBars[index];
+                            if (config)
+                                widgetsTab.selectedBarId = config.id;
+                        }
                     }
                 }
             }
         }
 
-        SettingsCard {
-            iconName: "widgets"
-            title: I18n.tr("Sections", "bar widget settings heading for left, center, right sections")
+        SettingsDeferred {
+            SettingsCard {
+                iconName: "widgets"
+                title: I18n.tr("Sections", "bar widget settings heading for left, center, right sections")
 
-            headerActions: DButton {
-                text: I18n.tr("Reset")
-                iconName: "refresh"
-                buttonHeight: Theme.buttonHeightXS
-                variant: "tonal"
-                onClicked: {
-                    setWidgetsForSection("left", defaultLeftWidgets);
-                    setWidgetsForSection("center", defaultCenterWidgets);
-                    setWidgetsForSection("right", defaultRightWidgets);
-                    if (widgetsTab.dankIslandOwnsSelectedBarCenter)
-                        setWidgetsForSection("island", SettingsData.islandHomeLayoutDefault());
+                headerActions: DButton {
+                    text: I18n.tr("Reset")
+                    iconName: "refresh"
+                    buttonHeight: Theme.buttonHeightXS
+                    variant: "tonal"
+                    onClicked: {
+                        setWidgetsForSection("left", defaultLeftWidgets);
+                        setWidgetsForSection("center", defaultCenterWidgets);
+                        setWidgetsForSection("right", defaultRightWidgets);
+                        if (widgetsTab.dankIslandOwnsSelectedBarCenter)
+                            setWidgetsForSection("island", SettingsData.islandHomeLayoutDefault());
+                    }
                 }
-            }
 
-            SettingsRow {
-                body: StyledText {
-                    width: parent.width
-                    text: I18n.tr("Drag the handle to reorder. Tap a widget for its settings, use the switch to hide it without changing spacing, or X to remove it.")
-                    font.pixelSize: Theme.fontSizeSmall
-                    color: Theme.surfaceVariantText
-                    wrapMode: Text.WordWrap
+                SettingsRow {
+                    body: StyledText {
+                        width: parent.width
+                        text: I18n.tr("Drag the handle to reorder. Tap a widget for its settings, use the switch to hide it without changing spacing, or X to remove it.")
+                        font.pixelSize: Theme.fontSizeSmall
+                        color: Theme.surfaceVariantText
+                        wrapMode: Text.WordWrap
+                    }
                 }
-            }
 
-            SettingsRow {
-                iconName: "view_in_ar"
-                iconColor: Theme.surfaceVariantText
-                visible: widgetsTab.dankIslandOwnsSelectedBarCenter
-                title: I18n.tr("The Island takes its place on this bar", "widgets settings: the island replaces the bar's center section")
-                subtitle: I18n.tr("Island widgets above the clock sit before it, the rest after it", "widgets settings: island widget order hint")
-            }
+                SettingsRow {
+                    iconName: "view_in_ar"
+                    iconColor: Theme.surfaceVariantText
+                    visible: widgetsTab.dankIslandOwnsSelectedBarCenter
+                    title: I18n.tr("The Island takes its place on this bar", "widgets settings: the island replaces the bar's center section")
+                    subtitle: I18n.tr("Island widgets above the clock sit before it, the rest after it", "widgets settings: island widget order hint")
+                }
 
-            SettingsRow {
-                iconName: "info"
-                iconColor: Theme.surfaceVariantText
-                visible: widgetsTab.islandSatellitesHidden
-                title: I18n.tr("Satellites", "island settings: satellite widgets card title")
-                subtitle: I18n.tr("Not shown on this bar, so its section widgets stay hidden", "widgets settings: island satellites are not rendered on this bar")
+                SettingsRow {
+                    iconName: "info"
+                    iconColor: Theme.surfaceVariantText
+                    visible: widgetsTab.islandSatellitesHidden
+                    title: I18n.tr("Satellites", "island settings: satellite widgets card title")
+                    subtitle: I18n.tr("Not shown on this bar, so its section widgets stay hidden", "widgets settings: island satellites are not rendered on this bar")
+                }
             }
         }
 
@@ -631,139 +631,146 @@ Item {
             width: parent.width
             spacing: Theme.spacingL
 
-            WidgetsTabSection {
-                id: leftSection
-                width: parent.width
-                title: selectedBarIsVertical ? I18n.tr("Top section") : I18n.tr("Left section")
-                sectionId: "left"
-                barId: widgetsTab.selectedBarId
-                allWidgets: widgetsTab.baseWidgetDefinitions
-                items: widgetsTab.getItemsForSection("left")
-                onItemEnabledChanged: (sectionId, itemId, enabled) => {
-                    widgetsTab.handleItemEnabledChanged(sectionId, itemId, enabled);
-                }
-                highlightedId: widgetsTab.highlightedId
-                highlightedSection: widgetsTab.highlightedSection
-                onItemOrderChanged: (sectionId, indices) => {
-                    const items = widgetsTab.getWidgetsForSection(sectionId);
-                    widgetsTab.setWidgetsForSection(sectionId, indices.map(i => items[i]));
-                }
-                reorderGroup: dragGroup
-                onDragStarted: {
-                    widgetsTab.highlightedSection = "";
-                    widgetsTab.highlightedId = "";
-                }
-                onAddWidget: sectionId => {
-                    showWidgetSelectionPopup(sectionId);
-                }
-                onRemoveWidget: (sectionId, index) => {
-                    widgetsTab.removeWidgetFromSection(sectionId, index);
-                }
-                onSpacerSizeChanged: (sectionId, index, size) => {
-                    widgetsTab.handleSpacerSizeChanged(sectionId, index, size);
-                }
-                onConfigureWidget: (sectionId, index) => widgetsTab.configureWidget(sectionId, index)
-            }
-
-            WidgetsTabSection {
-                id: islandSection
-                width: parent.width
-                visible: widgetsTab.dankIslandOwnsSelectedBarCenter
-                title: I18n.tr("Island widgets", "bar widget settings: widgets in the collapsed island")
-                sectionId: "island"
-                overflowAvailable: false
-                barId: widgetsTab.selectedBarId
-                allWidgets: widgetsTab.baseWidgetDefinitions
-                items: widgetsTab.dankIslandOwnsSelectedBarCenter ? widgetsTab.getItemsForSection("island") : []
-                highlightedId: widgetsTab.highlightedId
-                highlightedSection: widgetsTab.highlightedSection
-                onItemEnabledChanged: (sectionId, itemId, enabled) => widgetsTab.handleItemEnabledChanged(sectionId, itemId, enabled)
-                onItemOrderChanged: (sectionId, indices) => {
-                    const items = widgetsTab.getWidgetsForSection(sectionId);
-                    widgetsTab.setWidgetsForSection(sectionId, indices.map(i => items[i]));
-                }
-                onDragStarted: {
-                    widgetsTab.highlightedSection = "";
-                    widgetsTab.highlightedId = "";
-                }
-                onAddWidget: sectionId => widgetsTab.showWidgetSelectionPopup(sectionId)
-                onRemoveWidget: (sectionId, index) => widgetsTab.removeWidgetFromSection(sectionId, index)
-                onSpacerSizeChanged: (sectionId, index, size) => widgetsTab.handleSpacerSizeChanged(sectionId, index, size)
-                onConfigureWidget: (sectionId, index) => widgetsTab.configureWidget(sectionId, index)
-
-                SettingsSearchRegistration {
-                    target: islandSection
-                    settingKey: "islandHomeLayout"
+            SettingsDeferred {
+                WidgetsTabSection {
+                    width: parent.width
+                    title: selectedBarIsVertical ? I18n.tr("Top section") : I18n.tr("Left section")
+                    sectionId: "left"
+                    barId: widgetsTab.selectedBarId
+                    allWidgets: widgetsTab.baseWidgetDefinitions
+                    items: widgetsTab.getItemsForSection("left")
+                    onItemEnabledChanged: (sectionId, itemId, enabled) => {
+                        widgetsTab.handleItemEnabledChanged(sectionId, itemId, enabled);
+                    }
+                    highlightedId: widgetsTab.highlightedId
+                    highlightedSection: widgetsTab.highlightedSection
+                    onItemOrderChanged: (sectionId, indices) => {
+                        const items = widgetsTab.getWidgetsForSection(sectionId);
+                        widgetsTab.setWidgetsForSection(sectionId, indices.map(i => items[i]));
+                    }
+                    reorderGroup: dragGroup
+                    onDragStarted: {
+                        widgetsTab.highlightedSection = "";
+                        widgetsTab.highlightedId = "";
+                    }
+                    onAddWidget: sectionId => {
+                        showWidgetSelectionPopup(sectionId);
+                    }
+                    onRemoveWidget: (sectionId, index) => {
+                        widgetsTab.removeWidgetFromSection(sectionId, index);
+                    }
+                    onSpacerSizeChanged: (sectionId, index, size) => {
+                        widgetsTab.handleSpacerSizeChanged(sectionId, index, size);
+                    }
+                    onConfigureWidget: (sectionId, index) => widgetsTab.configureWidget(sectionId, index)
                 }
             }
 
-            WidgetsTabSection {
-                id: centerSection
-                width: parent.width
-                visible: !widgetsTab.dankIslandOwnsSelectedBarCenter
-                title: selectedBarIsVertical ? I18n.tr("Middle section") : I18n.tr("Center section")
-                sectionId: "center"
-                barId: widgetsTab.selectedBarId
-                allWidgets: widgetsTab.baseWidgetDefinitions
-                items: widgetsTab.getItemsForSection("center")
-                onItemEnabledChanged: (sectionId, itemId, enabled) => {
-                    widgetsTab.handleItemEnabledChanged(sectionId, itemId, enabled);
+            SettingsDeferred {
+                when: widgetsTab.dankIslandOwnsSelectedBarCenter
+
+                WidgetsTabSection {
+                    id: islandSection
+                    width: parent.width
+                    title: I18n.tr("Island widgets", "bar widget settings: widgets in the collapsed island")
+                    sectionId: "island"
+                    overflowAvailable: false
+                    barId: widgetsTab.selectedBarId
+                    allWidgets: widgetsTab.baseWidgetDefinitions
+                    items: widgetsTab.dankIslandOwnsSelectedBarCenter ? widgetsTab.getItemsForSection("island") : []
+                    highlightedId: widgetsTab.highlightedId
+                    highlightedSection: widgetsTab.highlightedSection
+                    onItemEnabledChanged: (sectionId, itemId, enabled) => widgetsTab.handleItemEnabledChanged(sectionId, itemId, enabled)
+                    onItemOrderChanged: (sectionId, indices) => {
+                        const items = widgetsTab.getWidgetsForSection(sectionId);
+                        widgetsTab.setWidgetsForSection(sectionId, indices.map(i => items[i]));
+                    }
+                    onDragStarted: {
+                        widgetsTab.highlightedSection = "";
+                        widgetsTab.highlightedId = "";
+                    }
+                    onAddWidget: sectionId => widgetsTab.showWidgetSelectionPopup(sectionId)
+                    onRemoveWidget: (sectionId, index) => widgetsTab.removeWidgetFromSection(sectionId, index)
+                    onSpacerSizeChanged: (sectionId, index, size) => widgetsTab.handleSpacerSizeChanged(sectionId, index, size)
+                    onConfigureWidget: (sectionId, index) => widgetsTab.configureWidget(sectionId, index)
+
+                    SettingsSearchRegistration {
+                        target: islandSection
+                        settingKey: "islandHomeLayout"
+                    }
                 }
-                highlightedId: widgetsTab.highlightedId
-                highlightedSection: widgetsTab.highlightedSection
-                onItemOrderChanged: (sectionId, indices) => {
-                    const items = widgetsTab.getWidgetsForSection(sectionId);
-                    widgetsTab.setWidgetsForSection(sectionId, indices.map(i => items[i]));
-                }
-                reorderGroup: dragGroup
-                onDragStarted: {
-                    widgetsTab.highlightedSection = "";
-                    widgetsTab.highlightedId = "";
-                }
-                onAddWidget: sectionId => {
-                    showWidgetSelectionPopup(sectionId);
-                }
-                onRemoveWidget: (sectionId, index) => {
-                    widgetsTab.removeWidgetFromSection(sectionId, index);
-                }
-                onSpacerSizeChanged: (sectionId, index, size) => {
-                    widgetsTab.handleSpacerSizeChanged(sectionId, index, size);
-                }
-                onConfigureWidget: (sectionId, index) => widgetsTab.configureWidget(sectionId, index)
             }
 
-            WidgetsTabSection {
-                id: rightSection
-                width: parent.width
-                title: selectedBarIsVertical ? I18n.tr("Bottom section") : I18n.tr("Right section")
-                sectionId: "right"
-                barId: widgetsTab.selectedBarId
-                allWidgets: widgetsTab.baseWidgetDefinitions
-                items: widgetsTab.getItemsForSection("right")
-                onItemEnabledChanged: (sectionId, itemId, enabled) => {
-                    widgetsTab.handleItemEnabledChanged(sectionId, itemId, enabled);
+            SettingsDeferred {
+                when: !widgetsTab.dankIslandOwnsSelectedBarCenter
+
+                WidgetsTabSection {
+                    width: parent.width
+                    title: selectedBarIsVertical ? I18n.tr("Middle section") : I18n.tr("Center section")
+                    sectionId: "center"
+                    barId: widgetsTab.selectedBarId
+                    allWidgets: widgetsTab.baseWidgetDefinitions
+                    items: widgetsTab.getItemsForSection("center")
+                    onItemEnabledChanged: (sectionId, itemId, enabled) => {
+                        widgetsTab.handleItemEnabledChanged(sectionId, itemId, enabled);
+                    }
+                    highlightedId: widgetsTab.highlightedId
+                    highlightedSection: widgetsTab.highlightedSection
+                    onItemOrderChanged: (sectionId, indices) => {
+                        const items = widgetsTab.getWidgetsForSection(sectionId);
+                        widgetsTab.setWidgetsForSection(sectionId, indices.map(i => items[i]));
+                    }
+                    reorderGroup: dragGroup
+                    onDragStarted: {
+                        widgetsTab.highlightedSection = "";
+                        widgetsTab.highlightedId = "";
+                    }
+                    onAddWidget: sectionId => {
+                        showWidgetSelectionPopup(sectionId);
+                    }
+                    onRemoveWidget: (sectionId, index) => {
+                        widgetsTab.removeWidgetFromSection(sectionId, index);
+                    }
+                    onSpacerSizeChanged: (sectionId, index, size) => {
+                        widgetsTab.handleSpacerSizeChanged(sectionId, index, size);
+                    }
+                    onConfigureWidget: (sectionId, index) => widgetsTab.configureWidget(sectionId, index)
                 }
-                highlightedId: widgetsTab.highlightedId
-                highlightedSection: widgetsTab.highlightedSection
-                onItemOrderChanged: (sectionId, indices) => {
-                    const items = widgetsTab.getWidgetsForSection(sectionId);
-                    widgetsTab.setWidgetsForSection(sectionId, indices.map(i => items[i]));
+            }
+
+            SettingsDeferred {
+                WidgetsTabSection {
+                    width: parent.width
+                    title: selectedBarIsVertical ? I18n.tr("Bottom section") : I18n.tr("Right section")
+                    sectionId: "right"
+                    barId: widgetsTab.selectedBarId
+                    allWidgets: widgetsTab.baseWidgetDefinitions
+                    items: widgetsTab.getItemsForSection("right")
+                    onItemEnabledChanged: (sectionId, itemId, enabled) => {
+                        widgetsTab.handleItemEnabledChanged(sectionId, itemId, enabled);
+                    }
+                    highlightedId: widgetsTab.highlightedId
+                    highlightedSection: widgetsTab.highlightedSection
+                    onItemOrderChanged: (sectionId, indices) => {
+                        const items = widgetsTab.getWidgetsForSection(sectionId);
+                        widgetsTab.setWidgetsForSection(sectionId, indices.map(i => items[i]));
+                    }
+                    reorderGroup: dragGroup
+                    onDragStarted: {
+                        widgetsTab.highlightedSection = "";
+                        widgetsTab.highlightedId = "";
+                    }
+                    onAddWidget: sectionId => {
+                        showWidgetSelectionPopup(sectionId);
+                    }
+                    onRemoveWidget: (sectionId, index) => {
+                        widgetsTab.removeWidgetFromSection(sectionId, index);
+                    }
+                    onSpacerSizeChanged: (sectionId, index, size) => {
+                        widgetsTab.handleSpacerSizeChanged(sectionId, index, size);
+                    }
+                    onConfigureWidget: (sectionId, index) => widgetsTab.configureWidget(sectionId, index)
                 }
-                reorderGroup: dragGroup
-                onDragStarted: {
-                    widgetsTab.highlightedSection = "";
-                    widgetsTab.highlightedId = "";
-                }
-                onAddWidget: sectionId => {
-                    showWidgetSelectionPopup(sectionId);
-                }
-                onRemoveWidget: (sectionId, index) => {
-                    widgetsTab.removeWidgetFromSection(sectionId, index);
-                }
-                onSpacerSizeChanged: (sectionId, index, size) => {
-                    widgetsTab.handleSpacerSizeChanged(sectionId, index, size);
-                }
-                onConfigureWidget: (sectionId, index) => widgetsTab.configureWidget(sectionId, index)
             }
         }
     }

@@ -235,11 +235,12 @@ Item {
         }
 
         transitions: Transition {
-            enabled: !SettingsData.reduceMotion
+            enabled: !Theme.reduceMotion
             NumberAnimation {
                 properties: "width,opacity"
-                duration: Theme.shortDuration
-                easing.type: Theme.standardEasing
+                duration: Theme.expressiveDurations.expressiveDefaultSpatial
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
             }
         }
 
@@ -282,11 +283,12 @@ Item {
         }
 
         transitions: Transition {
-            enabled: !SettingsData.reduceMotion
+            enabled: !Theme.reduceMotion
             NumberAnimation {
                 properties: "height,opacity"
-                duration: Theme.shortDuration
-                easing.type: Theme.standardEasing
+                duration: Theme.expressiveDurations.expressiveDefaultSpatial
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
             }
         }
 

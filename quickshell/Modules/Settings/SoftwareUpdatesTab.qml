@@ -154,7 +154,7 @@ Item {
         case "stable":
             return I18n.tr("Stable", "release channel");
         case "git":
-            return I18n.tr("Git", "release channel that follows the master branch");
+            return "Git";
         default:
             return I18n.tr("Unknown");
         }
@@ -316,129 +316,131 @@ Item {
             }
         }
 
-        SettingsCard {
-            width: parent.width
-            title: "Dux Modular Shell"
-            iconName: "deployed_code"
-            settingKey: "softwareUpdatesShell"
-            tags: ["dms", "shell", "version", "channel", "restart"]
+        SettingsDeferred {
+            SettingsCard {
+                width: parent.width
+                title: "Dux Modular Shell"
+                iconName: "deployed_code"
+                settingKey: "softwareUpdatesShell"
+                tags: ["dms", "shell", "version", "channel", "restart"]
 
-            SettingsRow {
-                readonly property bool failed: SystemUpdateService.hasError && !root.busy
+                SettingsRow {
+                    readonly property bool failed: SystemUpdateService.hasError && !root.busy
 
-                title: root.statusTitle()
-                titleColor: failed ? Theme.error : contentColor
-                subtitle: root.statusSubtitle()
-                iconName: failed ? "error_outline" : root.needsRestart ? "restart_alt" : "system_update_alt"
-                iconColor: failed ? Theme.error : root.needsRestart ? Theme.warning : Theme.primary
+                    title: root.statusTitle()
+                    titleColor: failed ? Theme.error : contentColor
+                    subtitle: root.statusSubtitle()
+                    iconName: failed ? "error_outline" : root.needsRestart ? "restart_alt" : "system_update_alt"
+                    iconColor: failed ? Theme.error : root.needsRestart ? Theme.warning : Theme.primary
 
-                DActionButton {
-                    anchors.verticalCenter: parent.verticalCenter
-                    visible: SystemUpdateService.sysupdateAvailable && !root.primaryIsCheck
-                    enabled: !root.busy
-                    buttonSize: Theme.buttonHeightS
-                    iconName: "refresh"
-                    iconColor: Theme.surfaceText
-                    backgroundColor: SettingsMetrics.controlSurface
-                    tooltipText: I18n.tr("Check for updates")
-                    onClicked: SystemUpdateService.checkForUpdates()
+                    DActionButton {
+                        anchors.verticalCenter: parent.verticalCenter
+                        visible: SystemUpdateService.sysupdateAvailable && !root.primaryIsCheck
+                        enabled: !root.busy
+                        buttonSize: Theme.buttonHeightS
+                        iconName: "refresh"
+                        iconColor: Theme.surfaceText
+                        backgroundColor: SettingsMetrics.controlSurface
+                        tooltipText: I18n.tr("Check for updates")
+                        onClicked: SystemUpdateService.checkForUpdates()
+                    }
+
+                    DButton {
+                        anchors.verticalCenter: parent.verticalCenter
+                        visible: SystemUpdateService.sysupdateAvailable
+                        buttonHeight: Theme.buttonHeightS
+                        text: root.primaryLabel()
+                        iconName: root.primaryIcon()
+                        busy: SystemUpdateService.isChecking
+                        enabled: !SystemUpdateService.isChecking
+                        onClicked: root.primaryAction()
+                    }
                 }
 
-                DButton {
-                    anchors.verticalCenter: parent.verticalCenter
-                    visible: SystemUpdateService.sysupdateAvailable
-                    buttonHeight: Theme.buttonHeightS
-                    text: root.primaryLabel()
-                    iconName: root.primaryIcon()
-                    busy: SystemUpdateService.isChecking
-                    enabled: !SystemUpdateService.isChecking
-                    onClicked: root.primaryAction()
-                }
-            }
-
-            SettingsRow {
-                title: I18n.tr("Version")
-                iconName: "tag"
-                subtitle: {
-                    const running = SystemUpdateService.shellRunning || ShellVersionService.shellVersion;
-                    const to = SystemUpdateService.shellUpdateVersion;
-                    if (to)
-                        return running + " → " + to;
-                    return running;
-                }
-                trailingBadge: root.installMethodLabel()
-            }
-
-            SettingsRow {
-                title: I18n.tr("Channel")
-                iconName: "alt_route"
-                subtitle: root.channelLabel()
-                trailingBadge: SystemUpdateService.shellManagedExternally ? I18n.tr("Managed by Nix", "badge on the DMS update row when the shell is installed through Nix") : ""
-            }
-
-            SettingsRow {
-                readonly property var master: SystemUpdateService.releases?.master ?? null
-
-                visible: SystemUpdateService.shellChannel === "git" && SystemUpdateService.commitsBehind >= 0
-                title: I18n.tr("Master branch", "git channel row, the branch the build tracks")
-                subtitle: {
-                    const date = new Date(master?.date ?? NaN);
-                    return isNaN(date) ? "" : I18n.tr("Last commit %1", "git channel row, %1 is a localized date").arg(date.toLocaleDateString(Qt.locale(), Locale.ShortFormat));
-                }
-                iconName: "commit"
-
-                // Drawn in the slot so it precedes the button; trailingBadge would land after it
-                StyledText {
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: SystemUpdateService.commitsBehind === 0 ? I18n.tr("Up to date") : I18n.tr("%1 behind", "git channel badge, %1 is the number of commits master is ahead").arg(SystemUpdateService.commitsBehind)
-                    font.pixelSize: Theme.fontSizeSmall
-                    color: SystemUpdateService.commitsBehind === 0 ? Theme.surfaceVariantText : Theme.primary
+                SettingsRow {
+                    title: I18n.tr("Version")
+                    iconName: "tag"
+                    subtitle: {
+                        const running = SystemUpdateService.shellRunning || ShellVersionService.shellVersion;
+                        const to = SystemUpdateService.shellUpdateVersion;
+                        if (to)
+                            return running + " → " + to;
+                        return running;
+                    }
+                    trailingBadge: root.installMethodLabel()
                 }
 
-                DActionButton {
-                    anchors.verticalCenter: parent.verticalCenter
-                    buttonSize: Theme.buttonHeightS
-                    iconName: "open_in_browser"
-                    iconColor: Theme.primary
-                    backgroundColor: SettingsMetrics.controlSurface
-                    tooltipText: I18n.tr("View on GitHub", "link to the release on GitHub")
-                    onClicked: Qt.openUrlExternally("https://github.com/duxlabs-dev/dux-shell/commits/master")
+                SettingsRow {
+                    title: I18n.tr("Channel")
+                    iconName: "alt_route"
+                    subtitle: root.channelLabel()
+                    trailingBadge: SystemUpdateService.shellManagedExternally ? I18n.tr("Managed by Nix", "badge on the DMS update row when the shell is installed through Nix") : ""
                 }
-            }
 
-            SettingsNavRow {
-                visible: root.notesRelease !== null
-                title: I18n.tr("Release notes", "settings page and card title, notes for a DMS release")
-                iconName: "article"
-                hint: root.notesRelease?.codename ? "v" + root.notesRelease.version + " · " + root.notesRelease.codename : "v" + (root.notesRelease?.version ?? "")
-                onClicked: keyboard => root.parentModal?.navigateTo("updater_changelog", keyboard)
-            }
+                SettingsRow {
+                    readonly property var master: SystemUpdateService.releases?.master ?? null
 
-            SettingsRow {
-                visible: SystemUpdateService.restartPending
-                title: I18n.tr("Requires restart")
-                iconName: "restart_alt"
-                iconColor: Theme.warning
-                subtitle: SystemUpdateService.shellInstalled ? I18n.tr("Installed %1, still running %2", "%1 is the installed version, %2 the running one").arg(SystemUpdateService.shellInstalled).arg(SystemUpdateService.shellRunning) : I18n.tr("A newer dms binary is installed.", "software updates row subtitle, the running shell is older than the installed binary")
-            }
+                    visible: SystemUpdateService.shellChannel === "git" && SystemUpdateService.commitsBehind >= 0
+                    title: I18n.tr("Master branch", "git channel row, the branch the build tracks")
+                    subtitle: {
+                        const date = new Date(master?.date ?? NaN);
+                        return isNaN(date) ? "" : I18n.tr("Last commit %1", "git channel row, %1 is a localized date").arg(date.toLocaleDateString(Qt.locale(), Locale.ShortFormat));
+                    }
+                    iconName: "commit"
 
-            SettingsRow {
-                visible: SystemUpdateService.legacyRepos.length > 0
-                title: I18n.tr("Package repositories moved", "notification title, the DMS package repositories moved to a new owner")
-                subtitle: I18n.tr("Run %1 in a terminal.", "%1 is a shell command").arg(SystemUpdateService.migrateCommand)
-                iconName: "swap_horiz"
-                iconColor: Theme.warning
+                    // Drawn in the slot so it precedes the button; trailingBadge would land after it
+                    StyledText {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: SystemUpdateService.commitsBehind === 0 ? I18n.tr("Up to date") : I18n.tr("%1 behind", "git channel badge, %1 is the number of commits master is ahead").arg(SystemUpdateService.commitsBehind)
+                        font.pixelSize: Theme.fontSizeSmall
+                        color: SystemUpdateService.commitsBehind === 0 ? Theme.surfaceVariantText : Theme.primary
+                    }
 
-                DActionButton {
-                    anchors.verticalCenter: parent.verticalCenter
-                    buttonSize: Theme.buttonHeightS
-                    iconName: "content_copy"
-                    iconColor: Theme.surfaceText
-                    backgroundColor: SettingsMetrics.controlSurface
-                    tooltipText: I18n.tr("Copy")
-                    onClicked: {
-                        Quickshell.execDetached(["dms", "cl", "copy", SystemUpdateService.migrateCommand]);
-                        ToastService.showInfo(I18n.tr("Copied to clipboard"));
+                    DActionButton {
+                        anchors.verticalCenter: parent.verticalCenter
+                        buttonSize: Theme.buttonHeightS
+                        iconName: "open_in_browser"
+                        iconColor: Theme.primary
+                        backgroundColor: SettingsMetrics.controlSurface
+                        tooltipText: I18n.tr("View on GitHub", "link to the release on GitHub")
+                        onClicked: Qt.openUrlExternally("https://github.com/duxlabs-dev/dux-shell/commits/master")
+                    }
+                }
+
+                SettingsNavRow {
+                    visible: root.notesRelease !== null
+                    title: I18n.tr("Release notes", "settings page and card title, notes for a DMS release")
+                    iconName: "article"
+                    hint: root.notesRelease?.codename ? "v" + root.notesRelease.version + " · " + root.notesRelease.codename : "v" + (root.notesRelease?.version ?? "")
+                    onClicked: keyboard => root.parentModal?.navigateTo("updater_changelog", keyboard)
+                }
+
+                SettingsRow {
+                    visible: SystemUpdateService.restartPending
+                    title: I18n.tr("Requires restart")
+                    iconName: "restart_alt"
+                    iconColor: Theme.warning
+                    subtitle: SystemUpdateService.shellInstalled ? I18n.tr("Installed %1, still running %2", "%1 is the installed version, %2 the running one").arg(SystemUpdateService.shellInstalled).arg(SystemUpdateService.shellRunning) : I18n.tr("A newer dms binary is installed.", "software updates row subtitle, the running shell is older than the installed binary")
+                }
+
+                SettingsRow {
+                    visible: SystemUpdateService.legacyRepos.length > 0
+                    title: I18n.tr("Package repositories moved", "notification title, the DMS package repositories moved to a new owner")
+                    subtitle: I18n.tr("Run %1 in a terminal.", "%1 is a shell command").arg(SystemUpdateService.migrateCommand)
+                    iconName: "swap_horiz"
+                    iconColor: Theme.warning
+
+                    DActionButton {
+                        anchors.verticalCenter: parent.verticalCenter
+                        buttonSize: Theme.buttonHeightS
+                        iconName: "content_copy"
+                        iconColor: Theme.surfaceText
+                        backgroundColor: SettingsMetrics.controlSurface
+                        tooltipText: I18n.tr("Copy")
+                        onClicked: {
+                            Quickshell.execDetached(["dms", "cl", "copy", SystemUpdateService.migrateCommand]);
+                            ToastService.showInfo(I18n.tr("Copied to clipboard"));
+                        }
                     }
                 }
             }
@@ -480,9 +482,8 @@ Item {
                     rotation: root.packagesExpanded ? 180 : 0
 
                     Behavior on rotation {
-                        enabled: Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
                         NumberAnimation {
-                            duration: Theme.expressiveDurations.expressiveFastSpatial
+                            duration: Theme.expressiveDurations.expressiveDefaultSpatial
                             easing.type: Easing.BezierSpline
                             easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
                         }
@@ -583,275 +584,281 @@ Item {
             }
         }
 
-        SettingsCard {
-            width: parent.width
-            title: I18n.tr("Options")
-            iconName: "tune"
-            settingKey: "systemUpdater"
-            collapsible: true
-            expanded: false
+        SettingsDeferred {
+            SettingsCard {
+                width: parent.width
+                title: I18n.tr("Options")
+                iconName: "tune"
+                settingKey: "systemUpdater"
+                collapsible: true
+                expanded: false
 
-            SettingsDropdownRow {
-                settingKey: "systemUpdaterCheckInterval"
-                resetKeys: ["updaterIntervalSeconds"]
-                resetByKeys: false
-                onResetRequested: {
-                    root.customIntervalSelected = false;
-                    SettingsData.resetToDefault(["updaterIntervalSeconds"]);
-                    SystemUpdateService.setInterval(SettingsData.updaterIntervalSeconds);
-                }
-                tags: ["interval", "poll", "frequency"]
-                text: I18n.tr("Check interval")
-                options: root.intervalOptions.map(o => o.label).concat([root.customIntervalLabel])
-                currentValue: root.customIntervalSelected ? root.customIntervalLabel : root.intervalLabelFor(SettingsData.updaterIntervalSeconds)
-                onValueChanged: label => {
-                    if (label === root.customIntervalLabel) {
-                        root.customIntervalSelected = true;
-                        return;
+                SettingsDropdownRow {
+                    settingKey: "systemUpdaterCheckInterval"
+                    resetKeys: ["updaterIntervalSeconds"]
+                    resetByKeys: false
+                    onResetRequested: {
+                        root.customIntervalSelected = false;
+                        SettingsData.resetToDefault(["updaterIntervalSeconds"]);
+                        SystemUpdateService.setInterval(SettingsData.updaterIntervalSeconds);
                     }
-                    root.customIntervalSelected = false;
-                    const secs = root.intervalSecondsFor(label);
-                    SettingsData.set("updaterIntervalSeconds", secs);
-                    SystemUpdateService.setInterval(secs);
-                }
-            }
-
-            SettingsTextFieldRow {
-                id: customIntervalField
-                leftIconName: "timer"
-                visible: root.customIntervalSelected
-                text: I18n.tr("Custom interval in minutes (minimum 5)")
-                placeholderText: "1440"
-                value: Math.round(SettingsData.updaterIntervalSeconds / 60).toString()
-                validator: IntValidator {
-                    bottom: 5
-                }
-                onValueEdited: value => {
-                    const minutes = parseInt(value, 10);
-                    if (isNaN(minutes) || minutes < 5)
-                        return;
-                    const seconds = minutes * 60;
-                    SettingsData.set("updaterIntervalSeconds", seconds);
-                    SystemUpdateService.setInterval(seconds);
-                }
-            }
-
-            SettingsToggleRow {
-                settingKey: "systemUpdaterCheckOnStart"
-                tags: ["startup", "check", "boot"]
-                text: I18n.tr("Check on startup")
-                checked: SettingsData.updaterCheckOnStart
-                onToggled: checked => SettingsData.set("updaterCheckOnStart", checked)
-            }
-
-            SettingsToggleRow {
-                settingKey: "systemUpdaterPauseOnBattery"
-                tags: ["battery", "power", "pause"]
-                visible: BatteryService.batteryAvailable
-                text: I18n.tr("Pause checks on battery", "software updates toggle, skip background checks on battery power")
-                checked: SettingsData.updaterPauseOnBattery
-                onToggled: checked => SettingsData.set("updaterPauseOnBattery", checked)
-            }
-
-            SettingsToggleRow {
-                settingKey: "systemUpdaterNotify"
-                tags: ["notify", "notification", "alert"]
-                text: I18n.tr("Notify me on new updates", "software updates toggle")
-                description: I18n.tr("Checks in the background at the check interval. Notifies only when the count grows.", "notify on new updates toggle description")
-                checked: SettingsData.updaterNotify
-                onToggled: checked => SettingsData.set("updaterNotify", checked)
-            }
-
-            SettingsDropdownRow {
-                settingKey: "systemUpdaterNotifyMin"
-                tags: ["notify", "notification", "frequency", "throttle"]
-                resetKeys: ["updaterNotifyMinSeconds"]
-                visible: SettingsData.updaterNotify
-                text: I18n.tr("Notify at most", "software updates dropdown label, how often update notifications may repeat")
-                options: root.notifyOptions.map(o => o.label)
-                currentValue: (root.notifyOptions.find(o => o.seconds === SettingsData.updaterNotifyMinSeconds) ?? root.notifyOptions[root.notifyOptions.length - 1]).label
-                onValueChanged: label => {
-                    const opt = root.notifyOptions.find(o => o.label === label);
-                    if (opt)
-                        SettingsData.set("updaterNotifyMinSeconds", opt.seconds);
-                }
-            }
-
-            SettingsToggleRow {
-                settingKey: "systemUpdaterFlatpak"
-                tags: ["flatpak", "include"]
-                text: I18n.tr("Include Flatpak updates")
-                visible: (SystemUpdateService.backends || []).some(b => b.repo === "flatpak")
-                checked: SettingsData.updaterIncludeFlatpak
-                onToggled: checked => SettingsData.set("updaterIncludeFlatpak", checked)
-            }
-
-            SettingsToggleRow {
-                settingKey: "systemUpdaterAUR"
-                tags: ["aur", "paru", "yay", "shelly"]
-                text: I18n.tr("Include AUR updates")
-                visible: (SystemUpdateService.backends || []).some(b => ["paru", "yay", "shelly"].includes(b.id))
-                checked: SettingsData.updaterAllowAUR
-                onToggled: checked => SettingsData.set("updaterAllowAUR", checked)
-            }
-
-            SettingsToggleRow {
-                settingKey: "systemUpdaterReopenAfterUpgrade"
-                tags: ["reopen", "popout", "terminal", "upgrade"]
-                text: I18n.tr("Reopen panel after update")
-                visible: root.upgradeRunsInTerminal
-                checked: SettingsData.updaterReopenAfterUpgrade
-                onToggled: checked => SettingsData.set("updaterReopenAfterUpgrade", checked)
-            }
-
-            SettingsToggleRow {
-                settingKey: "systemUpdaterUpgradeInWindow"
-                tags: ["window", "popout", "floating", "log", "output"]
-                text: I18n.tr("Show upgrade in a window", "software updates toggle")
-                description: I18n.tr("Opens a floating window with the live output", "show upgrade in a window toggle description")
-                visible: !root.upgradeRunsInTerminal
-                checked: SettingsData.updaterUpgradeInWindow
-                onToggled: checked => SettingsData.set("updaterUpgradeInWindow", checked)
-            }
-
-            TerminalPickerRow {}
-        }
-
-        SettingsCard {
-            id: ignoredPackagesCard
-            width: parent.width
-            iconName: "visibility_off"
-            title: I18n.tr("Ignored packages")
-            settingKey: "systemUpdaterIgnoredPackages"
-            tags: ["system", "update", "package", "ignore"]
-            collapsible: true
-            expanded: false
-
-            property bool errorIsInvalidName: false
-
-            function addIgnoredPackage() {
-                const name = newIgnoredPackageField.value.trim();
-                if (name === "")
-                    return;
-                errorIsInvalidName = !SystemUpdateService.isValidIgnoredName(name);
-                if (errorIsInvalidName) {
-                    ignoredPackageError.visible = true;
-                    return;
-                }
-                ignoredPackageError.visible = !SystemUpdateService.ignorePackage(name);
-                if (ignoredPackageError.visible)
-                    return;
-                newIgnoredPackageField.value = "";
-            }
-
-            SettingsTextFieldRow {
-                id: newIgnoredPackageField
-                leftIconName: "inventory_2"
-                text: I18n.tr("Name")
-                description: {
-                    if (SettingsData.updaterUseCustomCommand)
-                        return I18n.tr("Ignored packages only apply to the built-in updater. Your custom command controls its own exclusions.");
-                    if (SystemUpdateService.pkgManager === "shelly")
-                        return I18n.tr("With Shelly, only Flatpak packages in the current update list can be ignored.");
-                    return (SettingsData.updaterIgnoredPackages || []).length > 0 ? I18n.tr("Ignored packages are hidden from the updater and skipped by 'Update All'.") : I18n.tr("No packages ignored. Add one here or hover an update in the popout and click the hide button.");
-                }
-                placeholderText: I18n.tr("Package name (e.g., docker)")
-                onAccepted: ignoredPackagesCard.addIgnoredPackage()
-                onValueEdited: ignoredPackageError.visible = false
-
-                actions: DIconButton {
-                    variant: "filled"
-                    iconName: "add"
-                    tooltipText: I18n.tr("Ignore package", "tooltip, exclude a package from system updates")
-                    enabled: newIgnoredPackageField.value.trim() !== ""
-                    onClicked: ignoredPackagesCard.addIgnoredPackage()
-                }
-            }
-
-            SettingsRow {
-                id: ignoredPackageError
-                visible: false
-                title: ignoredPackagesCard.errorIsInvalidName ? I18n.tr("Invalid package name — letters, digits and @._+:/- only.", "ignored packages validation error") : I18n.tr("With Shelly, only Flatpak packages in the current update list can be ignored.")
-                titleColor: Theme.error
-            }
-
-            Repeater {
-                model: SettingsData.updaterIgnoredPackages
-
-                delegate: SettingsRow {
-                    id: ignoredRow
-                    required property string modelData
-                    required property int index
-
-                    title: modelData
-                    iconName: "visibility_off"
-
-                    DActionButton {
-                        anchors.verticalCenter: parent.verticalCenter
-                        iconName: "delete"
-                        iconColor: Theme.error
-                        tooltipText: I18n.tr("Stop ignoring %1", "system updater button tooltip, %1 is the package name").arg(ignoredRow.modelData)
-                        onClicked: SystemUpdateService.unignorePackage(ignoredRow.modelData)
+                    tags: ["interval", "poll", "frequency"]
+                    text: I18n.tr("Check interval")
+                    options: root.intervalOptions.map(o => o.label).concat([root.customIntervalLabel])
+                    currentValue: root.customIntervalSelected ? root.customIntervalLabel : root.intervalLabelFor(SettingsData.updaterIntervalSeconds)
+                    onValueChanged: label => {
+                        if (label === root.customIntervalLabel) {
+                            root.customIntervalSelected = true;
+                            return;
+                        }
+                        root.customIntervalSelected = false;
+                        const secs = root.intervalSecondsFor(label);
+                        SettingsData.set("updaterIntervalSeconds", secs);
+                        SystemUpdateService.setInterval(secs);
                     }
                 }
+
+                SettingsTextFieldRow {
+                    id: customIntervalField
+                    leftIconName: "timer"
+                    visible: root.customIntervalSelected
+                    text: I18n.tr("Custom interval in minutes (minimum 5)")
+                    placeholderText: "1440"
+                    value: Math.round(SettingsData.updaterIntervalSeconds / 60).toString()
+                    validator: IntValidator {
+                        bottom: 5
+                    }
+                    onValueEdited: value => {
+                        const minutes = parseInt(value, 10);
+                        if (isNaN(minutes) || minutes < 5)
+                            return;
+                        const seconds = minutes * 60;
+                        SettingsData.set("updaterIntervalSeconds", seconds);
+                        SystemUpdateService.setInterval(seconds);
+                    }
+                }
+
+                SettingsToggleRow {
+                    settingKey: "systemUpdaterCheckOnStart"
+                    tags: ["startup", "check", "boot"]
+                    text: I18n.tr("Check on startup")
+                    checked: SettingsData.updaterCheckOnStart
+                    onToggled: checked => SettingsData.set("updaterCheckOnStart", checked)
+                }
+
+                SettingsToggleRow {
+                    settingKey: "systemUpdaterPauseOnBattery"
+                    tags: ["battery", "power", "pause"]
+                    visible: BatteryService.batteryAvailable
+                    text: I18n.tr("Pause checks on battery", "software updates toggle, skip background checks on battery power")
+                    checked: SettingsData.updaterPauseOnBattery
+                    onToggled: checked => SettingsData.set("updaterPauseOnBattery", checked)
+                }
+
+                SettingsToggleRow {
+                    settingKey: "systemUpdaterNotify"
+                    tags: ["notify", "notification", "alert"]
+                    text: I18n.tr("Notify me on new updates", "software updates toggle")
+                    description: I18n.tr("Checks in the background at the check interval. Notifies only when the count grows.", "notify on new updates toggle description")
+                    checked: SettingsData.updaterNotify
+                    onToggled: checked => SettingsData.set("updaterNotify", checked)
+                }
+
+                SettingsDropdownRow {
+                    settingKey: "systemUpdaterNotifyMin"
+                    tags: ["notify", "notification", "frequency", "throttle"]
+                    resetKeys: ["updaterNotifyMinSeconds"]
+                    visible: SettingsData.updaterNotify
+                    text: I18n.tr("Notify at most", "software updates dropdown label, how often update notifications may repeat")
+                    options: root.notifyOptions.map(o => o.label)
+                    currentValue: (root.notifyOptions.find(o => o.seconds === SettingsData.updaterNotifyMinSeconds) ?? root.notifyOptions[root.notifyOptions.length - 1]).label
+                    onValueChanged: label => {
+                        const opt = root.notifyOptions.find(o => o.label === label);
+                        if (opt)
+                            SettingsData.set("updaterNotifyMinSeconds", opt.seconds);
+                    }
+                }
+
+                SettingsToggleRow {
+                    settingKey: "systemUpdaterFlatpak"
+                    tags: ["flatpak", "include"]
+                    text: I18n.tr("Include Flatpak updates")
+                    visible: (SystemUpdateService.backends || []).some(b => b.repo === "flatpak")
+                    checked: SettingsData.updaterIncludeFlatpak
+                    onToggled: checked => SettingsData.set("updaterIncludeFlatpak", checked)
+                }
+
+                SettingsToggleRow {
+                    settingKey: "systemUpdaterAUR"
+                    tags: ["aur", "paru", "yay", "shelly"]
+                    text: I18n.tr("Include AUR updates")
+                    visible: (SystemUpdateService.backends || []).some(b => ["paru", "yay", "shelly"].includes(b.id))
+                    checked: SettingsData.updaterAllowAUR
+                    onToggled: checked => SettingsData.set("updaterAllowAUR", checked)
+                }
+
+                SettingsToggleRow {
+                    settingKey: "systemUpdaterReopenAfterUpgrade"
+                    tags: ["reopen", "popout", "terminal", "upgrade"]
+                    text: I18n.tr("Reopen panel after update")
+                    visible: root.upgradeRunsInTerminal
+                    checked: SettingsData.updaterReopenAfterUpgrade
+                    onToggled: checked => SettingsData.set("updaterReopenAfterUpgrade", checked)
+                }
+
+                SettingsToggleRow {
+                    settingKey: "systemUpdaterUpgradeInWindow"
+                    tags: ["window", "popout", "floating", "log", "output"]
+                    text: I18n.tr("Show upgrade in a window", "software updates toggle")
+                    description: I18n.tr("Opens a floating window with the live output", "show upgrade in a window toggle description")
+                    visible: !root.upgradeRunsInTerminal
+                    checked: SettingsData.updaterUpgradeInWindow
+                    onToggled: checked => SettingsData.set("updaterUpgradeInWindow", checked)
+                }
+
+                TerminalPickerRow {}
             }
         }
 
-        SettingsCard {
-            width: parent.width
-            iconName: "terminal"
-            title: I18n.tr("Advanced")
-            settingKey: "systemUpdaterAdvanced"
-            collapsible: true
-            expanded: false
+        SettingsDeferred {
+            SettingsCard {
+                id: ignoredPackagesCard
+                width: parent.width
+                iconName: "visibility_off"
+                title: I18n.tr("Ignored packages")
+                settingKey: "systemUpdaterIgnoredPackages"
+                tags: ["system", "update", "package", "ignore"]
+                collapsible: true
+                expanded: false
 
-            SettingsToggleRow {
-                settingKey: "systemUpdaterCustomCommand"
-                tags: ["custom", "command", "terminal"]
-                text: I18n.tr("Use custom command")
-                checked: SettingsData.updaterUseCustomCommand
-                onToggled: checked => {
-                    if (!checked) {
-                        updaterCustomCommand.value = "";
-                        updaterTerminalCustomClass.value = "";
-                        SettingsData.set("updaterCustomCommand", "");
-                        SettingsData.set("updaterTerminalAdditionalParams", "");
+                property bool errorIsInvalidName: false
+
+                function addIgnoredPackage() {
+                    const name = newIgnoredPackageField.value.trim();
+                    if (name === "")
+                        return;
+                    errorIsInvalidName = !SystemUpdateService.isValidIgnoredName(name);
+                    if (errorIsInvalidName) {
+                        ignoredPackageError.visible = true;
+                        return;
                     }
-                    SettingsData.set("updaterUseCustomCommand", checked);
+                    ignoredPackageError.visible = !SystemUpdateService.ignorePackage(name);
+                    if (ignoredPackageError.visible)
+                        return;
+                    newIgnoredPackageField.value = "";
+                }
+
+                SettingsTextFieldRow {
+                    id: newIgnoredPackageField
+                    leftIconName: "inventory_2"
+                    text: I18n.tr("Name")
+                    description: {
+                        if (SettingsData.updaterUseCustomCommand)
+                            return I18n.tr("Ignored packages only apply to the built-in updater. Your custom command controls its own exclusions.");
+                        if (SystemUpdateService.pkgManager === "shelly")
+                            return I18n.tr("With Shelly, only Flatpak packages in the current update list can be ignored.");
+                        return (SettingsData.updaterIgnoredPackages || []).length > 0 ? I18n.tr("Ignored packages are hidden from the updater and skipped by 'Update All'.") : I18n.tr("No packages ignored. Add one here or hover an update in the popout and click the hide button.");
+                    }
+                    placeholderText: I18n.tr("Package name (e.g., docker)")
+                    onAccepted: ignoredPackagesCard.addIgnoredPackage()
+                    onValueEdited: ignoredPackageError.visible = false
+
+                    actions: DIconButton {
+                        variant: "filled"
+                        iconName: "add"
+                        tooltipText: I18n.tr("Ignore package", "tooltip, exclude a package from system updates")
+                        enabled: newIgnoredPackageField.value.trim() !== ""
+                        onClicked: ignoredPackagesCard.addIgnoredPackage()
+                    }
+                }
+
+                SettingsRow {
+                    id: ignoredPackageError
+                    visible: false
+                    title: ignoredPackagesCard.errorIsInvalidName ? I18n.tr("Invalid package name — letters, digits and @._+:/- only.", "ignored packages validation error") : I18n.tr("With Shelly, only Flatpak packages in the current update list can be ignored.")
+                    titleColor: Theme.error
+                }
+
+                Repeater {
+                    model: SettingsData.updaterIgnoredPackages
+
+                    delegate: SettingsRow {
+                        id: ignoredRow
+                        required property string modelData
+                        required property int index
+
+                        title: modelData
+                        iconName: "visibility_off"
+
+                        DActionButton {
+                            anchors.verticalCenter: parent.verticalCenter
+                            iconName: "delete"
+                            iconColor: Theme.error
+                            tooltipText: I18n.tr("Stop ignoring %1", "system updater button tooltip, %1 is the package name").arg(ignoredRow.modelData)
+                            onClicked: SystemUpdateService.unignorePackage(ignoredRow.modelData)
+                        }
+                    }
                 }
             }
+        }
 
-            SettingsNoteRow {
-                enabled: SettingsData.updaterUseCustomCommand
-                text: I18n.tr("Custom command and terminal params are split on whitespace; paths with spaces will break.")
-            }
+        SettingsAdvancedSection {
+            SettingsDeferred {
+                SettingsCard {
+                    width: parent.width
+                    iconName: "terminal"
+                    title: I18n.tr("Advanced")
+                    settingKey: "systemUpdaterAdvanced"
 
-            SettingsTextFieldRow {
-                id: updaterCustomCommand
-                leftIconName: "terminal"
-                visible: SettingsData.updaterUseCustomCommand
-                resetKeys: ["updaterCustomCommand"]
-                text: I18n.tr("Custom update command")
-                placeholderText: "topgrade --no-retry"
-                value: SettingsData.updaterCustomCommand
-                onValueEdited: value => SettingsData.set("updaterCustomCommand", value.trim())
-            }
+                    SettingsToggleRow {
+                        settingKey: "systemUpdaterCustomCommand"
+                        tags: ["custom", "command", "terminal"]
+                        text: I18n.tr("Use custom command")
+                        checked: SettingsData.updaterUseCustomCommand
+                        onToggled: checked => {
+                            if (!checked) {
+                                updaterCustomCommand.value = "";
+                                updaterTerminalCustomClass.value = "";
+                                SettingsData.set("updaterCustomCommand", "");
+                                SettingsData.set("updaterTerminalAdditionalParams", "");
+                            }
+                            SettingsData.set("updaterUseCustomCommand", checked);
+                        }
+                    }
 
-            SettingsTextFieldRow {
-                id: updaterTerminalCustomClass
-                leftIconName: "terminal"
-                visible: SettingsData.updaterUseCustomCommand
-                resetKeys: ["updaterTerminalAdditionalParams"]
-                text: I18n.tr("Terminal additional parameters")
-                placeholderText: "-T updater"
-                value: SettingsData.updaterTerminalAdditionalParams
-                onValueEdited: value => SettingsData.set("updaterTerminalAdditionalParams", value.trim())
+                    SettingsNoteRow {
+                        enabled: SettingsData.updaterUseCustomCommand
+                        text: I18n.tr("Custom command and terminal params are split on whitespace; paths with spaces will break.")
+                    }
+
+                    SettingsTextFieldRow {
+                        id: updaterCustomCommand
+                        leftIconName: "terminal"
+                        visible: SettingsData.updaterUseCustomCommand
+                        resetKeys: ["updaterCustomCommand"]
+                        text: I18n.tr("Custom update command")
+                        placeholderText: "topgrade --no-retry"
+                        value: SettingsData.updaterCustomCommand
+                        onValueEdited: value => SettingsData.set("updaterCustomCommand", value.trim())
+                    }
+
+                    SettingsTextFieldRow {
+                        id: updaterTerminalCustomClass
+                        leftIconName: "terminal"
+                        visible: SettingsData.updaterUseCustomCommand
+                        resetKeys: ["updaterTerminalAdditionalParams"]
+                        text: I18n.tr("Terminal additional parameters")
+                        placeholderText: "-T updater"
+                        value: SettingsData.updaterTerminalAdditionalParams
+                        onValueEdited: value => SettingsData.set("updaterTerminalAdditionalParams", value.trim())
+                    }
+                }
             }
         }
     }
 
     ConfirmDialogOverlay {
         id: installConfirm
-        parent: root.parentModal?.modalFocusScope ?? root
+        parent: root.parentModal?.dialogHostFor(root) ?? root
     }
 }

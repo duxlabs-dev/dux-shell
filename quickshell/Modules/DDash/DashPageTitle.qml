@@ -29,7 +29,7 @@ Item {
 
         DIcon {
             anchors.centerIn: parent
-            name: root.editable && titleIcon.hovered ? "edit" : DashRegistry.entry(root.entryId)?.icon ?? "dashboard"
+            name: root.editable && titleIcon.hovered ? "dashboard_2_edit" : DashRegistry.entry(root.entryId)?.icon ?? "dashboard"
             size: Theme.iconSize
             color: Theme.onSecondaryContainer
         }

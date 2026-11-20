@@ -2,9 +2,11 @@ package network
 
 import (
 	"bufio"
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
 	"strings"
 
@@ -16,11 +18,14 @@ type openConnectAuthResult struct {
 	Host        string
 	User        string
 	Fingerprint string
+	ConnectURL  string
+	Resolve     string
 }
 
 type openConnectAuthError struct {
 	cause      error
 	serverCert string
+	needsInput bool
 }
 
 func (e *openConnectAuthError) Error() string {
@@ -148,9 +153,6 @@ func runOpenConnectPasswordAuth(
 	data map[string]string,
 	username, password, trustedCerts string,
 ) (*openConnectAuthResult, error) {
-	if data["protocol"] != "fortinet" {
-		return nil, fmt.Errorf("only Fortinet password authentication is supported")
-	}
 	gateway := data["gateway"]
 	if gateway == "" {
 		return nil, fmt.Errorf("OpenConnect gateway is empty")
@@ -159,8 +161,9 @@ func runOpenConnectPasswordAuth(
 		return nil, fmt.Errorf("OpenConnect username and password are required")
 	}
 
+	protocol := cmp.Or(data["protocol"], "anyconnect")
 	args := []string{
-		"--protocol=fortinet",
+		"--protocol=" + protocol,
 		"--user=" + username,
 		"--passwd-on-stdin",
 		"--non-inter",
@@ -178,7 +181,13 @@ func runOpenConnectPasswordAuth(
 	if err != nil {
 		return result, err
 	}
+	// NetworkManager-openconnect's own dialog hands back the connect URL and resolved address.
 	result.Host = gateway
+	if protocol == "fortinet" {
+		result.Resolve = ""
+	} else if result.ConnectURL != "" {
+		result.Host = result.ConnectURL
+	}
 	// With several pins only openconnect's FINGERPRINT says which node answered.
 	if result.Fingerprint == "" && len(pins) == 1 {
 		result.Fingerprint = pins[0]
@@ -194,6 +203,8 @@ func runOpenConnectAuthenticate(ctx context.Context, args []string, secret strin
 
 	cmd := exec.CommandContext(ctx, ocPath, args...)
 	cmd.Stdin = strings.NewReader(secret + "\n")
+	// Untranslated messages, so the non-interactive input error below matches.
+	cmd.Env = append(os.Environ(), "LANGUAGE=en")
 
 	output, err := cmd.CombinedOutput()
 	result := parseOpenConnectAuthenticateOutput(string(output))
@@ -202,7 +213,11 @@ func runOpenConnectAuthenticate(ctx context.Context, args []string, secret strin
 		if ctx.Err() != nil {
 			return nil, fmt.Errorf("openconnect authentication timed out or was cancelled: %w", ctx.Err())
 		}
-		return nil, &openConnectAuthError{cause: err, serverCert: serverCert}
+		return nil, &openConnectAuthError{
+			cause:      err,
+			serverCert: serverCert,
+			needsInput: strings.Contains(string(output), "User input required in non-interactive mode"),
+		}
 	}
 	if result.Cookie == "" {
 		return nil, &openConnectAuthError{
@@ -229,10 +244,12 @@ func parseOpenConnectAuthenticateOutput(output string) *openConnectAuthResult {
 		case strings.HasPrefix(line, "FINGERPRINT="):
 			result.Fingerprint = unshellQuote(strings.TrimPrefix(line, "FINGERPRINT="))
 		case strings.HasPrefix(line, "CONNECT_URL="):
-			connectURL := unshellQuote(strings.TrimPrefix(line, "CONNECT_URL="))
-			if connectURL != "" && result.Host == "" {
-				result.Host = connectURL
+			result.ConnectURL = unshellQuote(strings.TrimPrefix(line, "CONNECT_URL="))
+			if result.ConnectURL != "" && result.Host == "" {
+				result.Host = result.ConnectURL
 			}
+		case strings.HasPrefix(line, "RESOLVE="):
+			result.Resolve = unshellQuote(strings.TrimPrefix(line, "RESOLVE="))
 		}
 	}
 	return result

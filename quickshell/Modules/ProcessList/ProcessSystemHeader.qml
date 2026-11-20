@@ -15,7 +15,7 @@ RowLayout {
 
     StyledText {
         Layout.fillWidth: true
-        text: (DgopService.hostname || "localhost") + " · " + (DgopService.distribution || "Linux") + " · " + I18n.tr("Uptime") + ": " + (DgopService.shortUptime ? DgopService.shortUptime.slice(2).trim() : "--") + " · " + I18n.tr("%1 procs", "short for processes, %1 is a count").arg(DgopService.processCount)
+        text: (DgopService.hostname || "localhost") + " · " + (DgopService.distribution || "Linux") + " · " + I18n.tr("Uptime") + ": " + (DgopService.shortUptime ? DgopService.shortUptime.slice(2).trim() : "--") + " · " + I18n.tr("%1 processes", "short for processes, %1 is a count").arg(DgopService.processCount)
         font.pixelSize: Theme.fontSizeSmall
         color: Theme.onSurfaceVariant
         elide: Text.ElideRight

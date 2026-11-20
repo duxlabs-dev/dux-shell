@@ -241,6 +241,7 @@ Singleton {
             "text": I18n.tr("Clock"),
             "icon": "schedule",
             "card": {
+                "allowMultiple": true,
                 "source": Qt.resolvedUrl("Overview/ClockCard.qml"),
                 "w": 2,
                 "h": 2,
@@ -490,7 +491,7 @@ Singleton {
 
     readonly property var cardEntries: entries.filter(e => e.card)
     readonly property var placed: Array.isArray(SettingsData.dashCards) ? SettingsData.dashCards : []
-    readonly property var unplaced: cardEntries.filter(e => e.available !== false && !placed.some(c => c.id === e.id))
+    readonly property var addableCards: cardEntries.filter(e => e.available !== false && (e.card.allowMultiple === true || !placed.some(c => c.id === e.id)))
 
     function pluginOption(pluginId, raw) {
         if (!raw || typeof raw.key !== "string" || raw.key === "" || raw.key === widgetsKey)
@@ -540,7 +541,15 @@ Singleton {
         return sheetOptionSpecs(id, tabScope).length > 0;
     }
 
-    function storedOptions(id) {
+    function instanceIndex(id, instanceId) {
+        return placed.findIndex(c => c.id === id && c.instanceId === instanceId);
+    }
+
+    function storedOptions(id, instanceId = "") {
+        if (instanceId !== "") {
+            const options = placed[instanceIndex(id, instanceId)]?.options;
+            return options && typeof options === "object" && !Array.isArray(options) ? options : {};
+        }
         const all = SettingsData.dashOptions;
         if (!all || typeof all !== "object")
             return {};
@@ -548,8 +557,8 @@ Singleton {
         return mine && typeof mine === "object" ? mine : {};
     }
 
-    function hasStoredOptions(id) {
-        const stored = storedOptions(id);
+    function hasStoredOptions(id, instanceId = "") {
+        const stored = storedOptions(id, instanceId);
         return optionSpecs(id).some(spec => spec.key in stored);
     }
 
@@ -564,20 +573,43 @@ Singleton {
         return Options.value(spec, value);
     }
 
-    function option(id, key) {
-        return resolvedOptions(id)[key];
+    function option(id, key, instanceId = "") {
+        return resolvedOptions(id, storedOptions(id, instanceId))[key];
     }
 
-    function setOption(id, key, value) {
+    function setOption(id, key, value, instanceId = "") {
         setOptions(id, {
             [key]: value
-        });
+        }, instanceId);
     }
 
-    function setOptions(id, values) {
-        const specs = optionSpecs(id);
+    function saveOptions(id, mine, instanceId) {
+        const empty = Object.keys(mine).length === 0;
+        if (instanceId !== "") {
+            const index = instanceIndex(id, instanceId);
+            if (index < 0)
+                return;
+            const cards = placed.slice();
+            const card = Object.assign({}, cards[index]);
+            if (empty)
+                delete card.options;
+            else
+                card.options = mine;
+            cards[index] = card;
+            SettingsData.set("dashCards", cards);
+            return;
+        }
         const all = Object.assign({}, SettingsData.dashOptions ?? {});
-        const mine = Object.assign({}, storedOptions(id));
+        if (empty)
+            delete all[id];
+        else
+            all[id] = mine;
+        SettingsData.set("dashOptions", all);
+    }
+
+    function setOptions(id, values, instanceId = "") {
+        const specs = optionSpecs(id);
+        const mine = Object.assign({}, storedOptions(id, instanceId));
         let changed = false;
         for (const key in values) {
             const spec = specs.find(s => s.key === key);
@@ -592,13 +624,8 @@ Singleton {
                 mine[key] = value;
             changed = true;
         }
-        if (!changed)
-            return;
-        if (Object.keys(mine).length === 0)
-            delete all[id];
-        else
-            all[id] = mine;
-        SettingsData.set("dashOptions", all);
+        if (changed)
+            saveOptions(id, mine, instanceId);
     }
 
     function setPanelSize(id, columns, rows) {
@@ -615,18 +642,13 @@ Singleton {
         setPanelSize(id, DashMetrics.defaultGridColumns, DashMetrics.defaultRowsFor(id));
     }
 
-    function resetOptions(id) {
-        if (!hasStoredOptions(id))
+    function resetOptions(id, instanceId = "") {
+        if (!hasStoredOptions(id, instanceId))
             return;
-        const all = Object.assign({}, SettingsData.dashOptions ?? {});
-        const mine = Object.assign({}, storedOptions(id));
+        const mine = Object.assign({}, storedOptions(id, instanceId));
         for (const spec of optionSpecs(id))
             delete mine[spec.key];
-        if (Object.keys(mine).length === 0)
-            delete all[id];
-        else
-            all[id] = mine;
-        SettingsData.set("dashOptions", all);
+        saveOptions(id, mine, instanceId);
     }
 
     function widgetLayout(id) {
@@ -671,6 +693,17 @@ Singleton {
 
     function isSelectable(id) {
         return visibleTabIds.includes(id);
+    }
+
+    // Only the first build of a tab or card compiles its types, so later builds run synchronously.
+    property var builtSources: ({})
+
+    function markBuilt(source) {
+        if (source === "" || builtSources[source])
+            return;
+        builtSources = Object.assign({}, builtSources, {
+            [source]: true
+        });
     }
 
     // Loading by URL parents the object's context to the Loader, so unloading the dash clears its handlers.

@@ -109,7 +109,7 @@ Item {
 
     Timer {
         id: transitionDelayTimer
-        interval: 16
+        interval: Timing.frame
         repeat: false
         onTriggered: transitionAnimation.start()
     }

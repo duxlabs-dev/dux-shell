@@ -7,8 +7,9 @@ import Quickshell.Io
 import Quickshell.Services.UPower
 import qs.Common
 import qs.Services
+import "Drives.js" as Drives
 import "SysmonDevices.js" as SysmonDevices
-import "../Common/Format.js" as Format
+import "SysmonHistory.js" as SysmonHistory
 import "ProcessSort.js" as ProcessSort
 
 Singleton {
@@ -108,17 +109,35 @@ Singleton {
     property string shortUptime: ""
 
     readonly property int historySize: 60
-    property var cpuHistory: []
-    property var memoryHistory: []
-    property var networkHistory: ({
-            "rx": [],
-            "tx": []
+    readonly property int historyRetentionMs: 1800000
+    property var historyStore: null
+    property int historyRevision: 0
+
+    // Bucket averages (NaN = gap) for a device's value; bindings that call it update per recorded sample.
+    function history(deviceKey, value, rangeMs, points) {
+        if (historyRevision === 0 || !historyStore)
+            return [];
+        const interval = updateInterval;
+        const span = rangeMs ?? historySize * interval;
+        const buckets = Math.min(points ?? historySize, Math.max(1, Math.round(span / interval)));
+        return SysmonHistory.range(historyStore, SysmonHistory.key(deviceKey, value), span, buckets, 15000, Date.now());
+    }
+
+    // Deprecated for plugins, use history(deviceKey, value, rangeMs, points).
+    readonly property var cpuHistory: legacyHistory("cpu", "usage", 1)
+    readonly property var memoryHistory: legacyHistory("memory", "used", 1)
+    readonly property var networkHistory: ({
+            "rx": legacyHistory("net", "down", 1024),
+            "tx": legacyHistory("net", "up", 1024)
         })
-    property var diskHistory: ({
-            "read": [],
-            "write": []
+    readonly property var diskHistory: ({
+            "read": legacyHistory("disk", "read", 1048576),
+            "write": legacyHistory("disk", "write", 1048576)
         })
-    property var deviceHistory: ({})
+
+    function legacyHistory(deviceKey, value, divisor) {
+        return history(deviceKey, value).filter(v => isFinite(v)).map(v => v / divisor);
+    }
 
     function ensureMeta() {
         _metaWanted = true;
@@ -219,49 +238,32 @@ Singleton {
         if (!hasModule("cpu")) {
             cpuCursor = "";
             cpuSampleCount = 0;
-            cpuHistory = [];
             perCoreCpuUsage = [];
             cpuInfo = null;
-            removeDeviceHistory("cpu");
         }
-        if (!hasModule("memory")) {
-            memoryHistory = [];
+        if (!hasModule("memory"))
             memoryInfo = null;
-            removeDeviceHistory("memory");
-        }
         if (!hasModule("disk-rate")) {
             diskRateCursor = "";
             diskRates = [];
-            removeDeviceHistory("disk");
         }
         if (!hasModule("net-rate")) {
             netRateCursor = "";
             netRates = [];
-            removeDeviceHistory("net");
         }
-        if (!hasModule("gpu")) {
+        if (!hasModule("gpu"))
             gpuCursor = "";
-            removeDeviceHistory("gpu");
-        }
         if (!hasModule("sensors"))
             sensors = [];
         if (!hasModule("memory-modules"))
             memoryModules = null;
         if (!hasModule("network")) {
-            networkHistory = {
-                rx: [],
-                tx: []
-            };
             networkInterfaces = [];
             lastNetworkStats = null;
             networkRxRate = 0;
             networkTxRate = 0;
         }
         if (!hasModule("disk")) {
-            diskHistory = {
-                read: [],
-                write: []
-            };
             diskDevices = [];
             lastDiskStats = null;
             diskReadRate = 0;
@@ -296,39 +298,6 @@ Singleton {
                     "children": []
                 } : {}));
             applySorting();
-        }
-    }
-
-    function removeDeviceHistory(prefix) {
-        const next = {};
-        let changed = false;
-        for (const key of Object.keys(deviceHistory)) {
-            if (key === prefix || key.startsWith(prefix + ":"))
-                changed = true;
-            else
-                next[key] = deviceHistory[key];
-        }
-        if (changed)
-            deviceHistory = next;
-    }
-
-    // Appends one sample per key to `history` in place and drops keys under `prefix` missing from `liveKeys` (null keeps all).
-    function pushDeviceHistory(history, prefix, samples, liveKeys) {
-        if (liveKeys) {
-            for (const key of Object.keys(history)) {
-                if (key.startsWith(prefix + ":") && !liveKeys.includes(key))
-                    delete history[key];
-            }
-        }
-        for (const sample of samples) {
-            const old = history[sample.key] || {
-                a: [],
-                b: []
-            };
-            history[sample.key] = {
-                a: Format.addToHistory(old.a, sample.a, historySize),
-                b: sample.b === undefined ? old.b : Format.addToHistory(old.b, sample.b, historySize)
-            };
         }
     }
 
@@ -388,10 +357,8 @@ Singleton {
                 gpuPciIds = gpuPciIds.slice();
                 gpuPciIds.splice(index, 1);
             }
-            if (gpuPciIds.length === 0) {
+            if (gpuPciIds.length === 0)
                 gpuCursor = "";
-                removeDeviceHistory("gpu");
-            }
 
             // Clear temperature data for this GPU when no longer monitored
             if (availableGpus && availableGpus.length > 0) {
@@ -705,8 +672,9 @@ Singleton {
 
     function parseData(data) {
         const sampleTime = Date.now();
-        const history = Object.assign({}, deviceHistory);
-        let historyChanged = false;
+        const samples = [];
+        const departed = [];
+        let diskDeparted = null;
         if (hasModule("cpu") && data.cpu) {
             const cpu = data.cpu;
             cpuSampleCount++;
@@ -718,14 +686,13 @@ Singleton {
             cpuModel = cpu.model || "";
             perCoreCpuUsage = cpu.coreUsage || [];
             cpuInfo = cpu;
-            cpuHistory = Format.addToHistory(cpuHistory, cpuUsage, historySize);
-            historyChanged = true;
-            pushDeviceHistory(history, "cpu", [
-                {
-                    key: "cpu",
-                    a: cpuUsage
-                }
-            ], null);
+            samples.push([SysmonHistory.key("cpu", "usage"), cpuUsage]);
+            if (cpuTemperature > 0)
+                samples.push([SysmonHistory.key("cpu", "temp"), cpuTemperature]);
+            if (cpuFrequency > 0)
+                samples.push([SysmonHistory.key("cpu", "clock"), cpuFrequency]);
+            for (let i = 0; i < perCoreCpuUsage.length; i++)
+                samples.push([SysmonHistory.key("cpu", "thread" + i), perCoreCpuUsage[i]]);
 
             if (cpu.cursor) {
                 cpuCursor = cpu.cursor;
@@ -755,15 +722,10 @@ Singleton {
             totalSwapKB = mem.swaptotal || 0;
             usedSwapKB = (mem.swaptotal || 0) - (mem.swapfree || 0);
 
-            memoryHistory = Format.addToHistory(memoryHistory, memoryUsage, historySize);
             memoryInfo = mem;
-            historyChanged = true;
-            pushDeviceHistory(history, "memory", [
-                {
-                    key: "memory",
-                    a: memoryUsage
-                }
-            ], null);
+            samples.push([SysmonHistory.key("memory", "used"), memoryUsage]);
+            if (totalSwapKB > 0)
+                samples.push([SysmonHistory.key("memory", "swap"), usedSwapKB / totalSwapKB * 100]);
         }
 
         if (hasModule("network") && data.network && Array.isArray(data.network)) {
@@ -782,10 +744,7 @@ Singleton {
                 const txDiff = totalTx - lastNetworkStats.tx;
                 networkRxRate = Math.max(0, rxDiff / timeDiff);
                 networkTxRate = Math.max(0, txDiff / timeDiff);
-                networkHistory = {
-                    rx: Format.addToHistory(networkHistory.rx, networkRxRate / 1024, historySize),
-                    tx: Format.addToHistory(networkHistory.tx, networkTxRate / 1024, historySize)
-                };
+                samples.push([SysmonHistory.key("net", "down"), networkRxRate], [SysmonHistory.key("net", "up"), networkTxRate]);
             }
             lastNetworkStats = {
                 "time": sampleTime,
@@ -807,10 +766,7 @@ Singleton {
                 const writeDiff = totalWrite - lastDiskStats.write;
                 diskReadRate = Math.max(0, readDiff / timeDiff);
                 diskWriteRate = Math.max(0, writeDiff / timeDiff);
-                diskHistory = {
-                    read: Format.addToHistory(diskHistory.read, diskReadRate / (1024 * 1024), historySize),
-                    write: Format.addToHistory(diskHistory.write, diskWriteRate / (1024 * 1024), historySize)
-                };
+                samples.push([SysmonHistory.key("disk", "read"), diskReadRate], [SysmonHistory.key("disk", "write"), diskWriteRate]);
             }
             lastDiskStats = {
                 "time": sampleTime,
@@ -840,13 +796,31 @@ Singleton {
             if (data.diskrate.cursor)
                 diskRateCursor = data.diskrate.cursor;
             const whole = rates.filter(r => SysmonDevices.isWholeDisk(r.device));
-            const samples = hadCursor ? whole.map(r => ({
-                        key: SysmonDevices.deviceKey("disk", r.device),
-                        a: r.readRate || 0,
-                        b: r.writeRate || 0
-                    })) : [];
-            historyChanged = true;
-            pushDeviceHistory(history, "disk", samples, whole.map(r => SysmonDevices.deviceKey("disk", r.device)));
+            const keys = whole.map(r => SysmonDevices.deviceKey("disk", r.device));
+            if (hadCursor) {
+                for (let i = 0; i < whole.length; i++)
+                    samples.push([SysmonHistory.key(keys[i], "read"), whole[i].readRate || 0], [SysmonHistory.key(keys[i], "write"), whole[i].writeRate || 0]);
+            }
+            diskDeparted = ["disk", keys];
+            departed.push(diskDeparted);
+        }
+
+        if (hasModule("diskmounts") && Array.isArray(data.diskmounts)) {
+            const space = Drives.usedSpace(DriveService.drives, data.diskmounts, "", "");
+            if (space)
+                samples.push([SysmonHistory.key("disk", "space"), space.percent]);
+            for (const d of DriveService.drives || []) {
+                const dev = d.name || d.device;
+                if (!SysmonDevices.isWholeDisk(dev))
+                    continue;
+                const own = Drives.usedSpace(DriveService.drives, data.diskmounts, dev, "");
+                if (!own)
+                    continue;
+                const key = SysmonDevices.deviceKey("disk", dev);
+                samples.push([SysmonHistory.key(key, "space"), own.percent]);
+                if (diskDeparted)
+                    diskDeparted[1].push(key);
+            }
         }
 
         if (hasModule("net-rate") && data.netrate && Array.isArray(data.netrate.interfaces)) {
@@ -868,13 +842,12 @@ Singleton {
             netRates = rates;
             if (data.netrate.cursor)
                 netRateCursor = data.netrate.cursor;
-            const samples = hadCursor ? rates.map(r => ({
-                        key: SysmonDevices.deviceKey("net", r.iface),
-                        a: r.rxRate || 0,
-                        b: r.txRate || 0
-                    })) : [];
-            historyChanged = true;
-            pushDeviceHistory(history, "net", samples, rates.map(r => SysmonDevices.deviceKey("net", r.iface)));
+            const keys = rates.map(r => SysmonDevices.deviceKey("net", r.iface));
+            if (hadCursor) {
+                for (let i = 0; i < rates.length; i++)
+                    samples.push([SysmonHistory.key(keys[i], "down"), rates[i].rxRate || 0], [SysmonHistory.key(keys[i], "up"), rates[i].txRate || 0]);
+            }
+            departed.push(["net", keys]);
         }
 
         const gpuData = data.gpu?.gpus ?? data.gpus;
@@ -891,13 +864,19 @@ Singleton {
         if (hasModule("gpu") && Array.isArray(data.gpu?.gpus)) {
             gpuCursor = data.gpu.cursor ?? "";
             const read = data.gpu.gpus.filter(g => g.state);
-            const samples = read.filter(g => g.state === "active" && g.usage !== undefined).map(g => ({
-                        key: SysmonDevices.deviceKey("gpu", SysmonDevices.gpuSlot(g)),
-                        a: g.usage,
-                        b: g.memoryUsed !== undefined && g.memoryTotal > 0 ? g.memoryUsed / g.memoryTotal * 100 : undefined
-                    }));
-            historyChanged = true;
-            pushDeviceHistory(history, "gpu", samples, read.map(g => SysmonDevices.deviceKey("gpu", SysmonDevices.gpuSlot(g))));
+            for (const g of read) {
+                if (g.state !== "active" || g.usage === undefined)
+                    continue;
+                const key = SysmonDevices.deviceKey("gpu", SysmonDevices.gpuSlot(g));
+                samples.push([SysmonHistory.key(key, "usage"), g.usage]);
+                if (g.memoryUsed !== undefined && g.memoryTotal > 0)
+                    samples.push([SysmonHistory.key(key, "vram"), g.memoryUsed / g.memoryTotal * 100]);
+                if (g.temperature > 0)
+                    samples.push([SysmonHistory.key(key, "temp"), g.temperature]);
+                if (g.power !== undefined)
+                    samples.push([SysmonHistory.key(key, "power"), g.power]);
+            }
+            departed.push(["gpu", data.gpu.gpus.map(g => SysmonDevices.deviceKey("gpu", SysmonDevices.gpuSlot(g)))]);
         }
 
         if (hasModule("sensors") && data.sensors && Array.isArray(data.sensors.sensors))
@@ -906,8 +885,7 @@ Singleton {
         if (hasModule("memory-modules") && data.memorymodules)
             memoryModules = data.memorymodules;
 
-        if (historyChanged)
-            deviceHistory = history;
+        recordHistory(sampleTime, samples, departed);
 
         if (hasModule("diskmounts") && data.diskmounts) {
             diskMountsRequested = true;
@@ -949,6 +927,20 @@ Singleton {
         }
 
         statsUpdated();
+    }
+
+    function recordHistory(time, samples, departed) {
+        if (!historyStore && (samples.length === 0 || !pollingActive))
+            return;
+        if (!historyStore)
+            historyStore = SysmonHistory.create(900);
+        let changed = false;
+        for (const d of departed)
+            changed = SysmonHistory.dropDevices(historyStore, d[0], d[1]) || changed;
+        changed = SysmonHistory.record(historyStore, time, samples) || changed;
+        changed = SysmonHistory.prune(historyStore, time - historyRetentionMs) || changed;
+        if (changed)
+            historyRevision++;
     }
 
     // A merged row's members carry their root's pid, so the root's own row has a key apart from the merged one.
@@ -1082,7 +1074,7 @@ Singleton {
 
     Timer {
         id: primeTimer
-        interval: 1000
+        interval: Timing.second
         onTriggered: root.updateAllStats()
     }
 
@@ -1093,6 +1085,23 @@ Singleton {
         repeat: true
         triggeredOnStart: true
         onTriggered: root.updateAllStats()
+    }
+
+    // Frees the store once its newest sample has aged out of every range.
+    Timer {
+        id: historyRetentionTimer
+        interval: root.historyRetentionMs
+        onTriggered: {
+            root.historyStore = null;
+            root.historyRevision++;
+        }
+    }
+
+    onPollingActiveChanged: {
+        if (pollingActive)
+            historyRetentionTimer.stop();
+        else if (historyStore)
+            historyRetentionTimer.restart();
     }
 
     onDgopAvailableChanged: {

@@ -21,7 +21,7 @@ DModal {
 
     Timer {
         id: countdownTimer
-        interval: 1000
+        interval: Timing.second
         repeat: true
         running: root.shouldBeVisible
         onTriggered: {
@@ -188,8 +188,9 @@ DModal {
 
                             Behavior on color {
                                 ColorAnimation {
-                                    duration: Theme.shortDuration
-                                    easing.type: Theme.standardEasing
+                                    duration: Theme.expressiveDurations.expressiveFastEffects
+                                    easing.type: Easing.BezierSpline
+                                    easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
                                 }
                             }
                         }

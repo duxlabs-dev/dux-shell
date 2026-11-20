@@ -94,7 +94,7 @@ DIdleSurface {
         }
     }
     readonly property real popupSpacing: notificationConnectedMode ? 0 : Theme.groupedListGap
-    readonly property int motionStagger: NotificationMetrics.animationsEnabled ? Theme.notificationStackStaggerDuration : 0
+    readonly property int motionStagger: NotificationMetrics.animationsEnabled ? NotificationMetrics.stackStaggerDuration : 0
     property var popupWindows: []
     property var destroyingWindows: new Set()
     property var pendingDestroys: []
@@ -106,15 +106,7 @@ DIdleSurface {
     property real _lastEnterMs: 0
     property real _lastExitMs: 0
     readonly property real chromeReleaseTailStart: 0.90
-    property Component popupComponent: Component {
-        NotificationPopup {
-            onExitFinished: manager._onPopupExitFinished(this)
-            onExitRequested: manager._onPopupExitRequested(this)
-            onSurfaceMapped: manager._pumpMotion()
-            onPopupHeightChanged: manager._onPopupHeightChanged(this)
-            onPopupChromeGeometryChanged: manager._onPopupChromeGeometryChanged(this)
-        }
-    }
+    property Component popupComponent: null
 
     Connections {
         function onVisibleNotificationsChanged() {
@@ -188,7 +180,7 @@ DIdleSurface {
 
     Timer {
         id: sweeper
-        interval: 500
+        interval: Timing.settleLong
         running: false
         repeat: true
         onTriggered: {
@@ -272,6 +264,8 @@ DIdleSurface {
         if (!wrapper)
             return;
         const notificationId = wrapper?.notification ? wrapper.notification.id : "";
+        if (!popupComponent)
+            popupComponent = Qt.createComponent("NotificationPopup.qml");
         const win = popupComponent.createObject(cardHost, {
             "notificationData": wrapper,
             "notificationId": notificationId,

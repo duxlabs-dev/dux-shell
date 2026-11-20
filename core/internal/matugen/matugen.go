@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/duxlabs-dev/dux-shell/core/internal/dank16"
+	"github.com/duxlabs-dev/dux-shell/core/internal/iconfolders"
 	"github.com/duxlabs-dev/dux-shell/core/internal/log"
 	"github.com/duxlabs-dev/dux-shell/core/internal/utils"
 	"github.com/godbus/dbus/v5"
@@ -114,6 +115,10 @@ type Options struct {
 	TerminalOpacity     int
 	TerminalPalette     string
 	SkipTemplates       string
+	IconFolders         bool
+	IconMonoApps        bool
+	IconShape           string
+	IconGradient        bool
 	AppChecker          utils.AppChecker
 }
 
@@ -517,7 +522,22 @@ func buildOnce(opts *Options) (bool, error) {
 		return false, err
 	}
 	signalTerminals(opts)
+
+	// Before the gate: a newly picked icon theme needs its overlay even when the colors did not move.
+	iconTheme, regenerated := syncIconFolders(opts)
+	syncQtengine := func() {
+		// qtengine points at the .colors file kcolorscheme writes, so it is skipped along with it.
+		if opts.ShouldSkipTemplate("qtengine") || opts.ShouldSkipTemplate("kcolorscheme") || !QtengineActive() {
+			return
+		}
+		if err := SyncQtengineConfigAt(opts.ConfigDir, iconTheme); err != nil {
+			log.Warnf("Failed to sync qtengine config: %v", err)
+		}
+	}
 	if !changed {
+		if regenerated {
+			syncQtengine()
+		}
 		return false, nil
 	}
 
@@ -545,20 +565,53 @@ func buildOnce(opts *Options) (bool, error) {
 		refreshQt6ct()
 	}
 
-	// kcolorscheme writes the .colors file qtengine is pointed at, so with that
-	// template off there is nothing to point to and the config would name a
-	// scheme DMS no longer generates.
-	if !opts.ShouldSkipTemplate("qtengine") && !opts.ShouldSkipTemplate("kcolorscheme") && QtengineActive() {
-		if err := SyncQtengineConfigAt(opts.ConfigDir, opts.IconTheme); err != nil {
-			log.Warnf("Failed to sync qtengine config: %v", err)
-		}
-	}
+	syncQtengine()
 
 	if !opts.ShouldSkipTemplate("fcitx5") && appExists(opts.AppChecker, []string{"fcitx5"}, nil) {
 		refreshFcitx5()
 	}
 
 	return true, nil
+}
+
+// RunIconFolders takes the run lock so it lands after a run in flight, whose options may be stale.
+func RunIconFolders(opts iconfolders.Options, clearAll bool) (iconfolders.State, error) {
+	if opts.StateDir == "" {
+		return iconfolders.State{}, fmt.Errorf("state-dir is required")
+	}
+	if err := os.MkdirAll(opts.StateDir, 0o755); err != nil {
+		return iconfolders.State{}, fmt.Errorf("failed to create state dir: %w", err)
+	}
+	lock, err := acquireMatugenLock(opts.StateDir)
+	if err != nil {
+		return iconfolders.State{}, err
+	}
+	defer releaseMatugenLock(lock)
+
+	if clearAll {
+		return iconfolders.State{}, iconfolders.Clear(opts)
+	}
+	return iconfolders.Apply(opts)
+}
+
+func syncIconFolders(opts *Options) (string, bool) {
+	// Without folder colors, leave any overlay alone: a script may run while the shell has it applied.
+	if !opts.IconFolders {
+		return opts.IconTheme, false
+	}
+
+	before := iconfolders.ReadState(opts.StateDir).Applied
+	state, err := iconfolders.Apply(iconfolders.Options{StateDir: opts.StateDir, IconTheme: opts.IconTheme, Mode: string(opts.Mode), MonoApps: opts.IconMonoApps, Shape: opts.IconShape, Gradient: opts.IconGradient})
+	if err != nil {
+		log.Warnf("Failed to recolor folder icons: %v", err)
+	}
+	if state.Applied == "" {
+		return opts.IconTheme, false
+	}
+	if state.Applied != before {
+		log.Infof("Folder icons recolored: %s", state.Applied)
+	}
+	return state.Applied, state.Applied != before
 }
 
 // The shell only needs dms-colors.json, so it is rendered and committed on its own before the template pass.
@@ -930,7 +983,9 @@ type vscodeEditor struct {
 
 var vscodeEditors = []vscodeEditor{
 	{"vscode", ".vscode"},
+	{"vscode-flatpak", filepath.Join(".var", "app", "com.visualstudio.code", "data", "vscode")},
 	{"codium", ".vscode-oss"},
+	{"codium-flatpak", filepath.Join(".var", "app", "com.vscodium.codium", "data", "codium")},
 	{"cursor", ".cursor"},
 	{"windsurf", ".windsurf"},
 	{"positron", ".positron"},

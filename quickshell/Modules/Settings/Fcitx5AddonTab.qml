@@ -161,16 +161,19 @@ Item {
             }
         }
 
-        SettingsCard {
-            width: parent.width
-            visible: root.built.hidden.length > 0
-            iconName: "tune"
+        SettingsDeferred {
+            when: root.built.hidden.length > 0
 
-            SettingsNoteRow {
-                noteIconName: "info"
-                tint: Theme.primary
-                tintBackground: Theme.primaryHover
-                text: I18n.tr("Some options are only available in fcitx5-configtool: %1", "Displayed when not all config options are displayed in a fcitx5 addon config page, followed by the option names").arg(root.built.hidden.join(", "))
+            SettingsCard {
+                width: parent.width
+                iconName: "tune"
+
+                SettingsNoteRow {
+                    noteIconName: "info"
+                    tint: Theme.primary
+                    tintBackground: Theme.primaryHover
+                    text: I18n.tr("Some options are only available in fcitx5-configtool: %1", "Displayed when not all config options are displayed in a fcitx5 addon config page, followed by the option names").arg(root.built.hidden.join(", "))
+                }
             }
         }
     }

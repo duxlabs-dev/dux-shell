@@ -30,7 +30,7 @@ Item {
     readonly property alias implicitTextHeight: label.implicitHeight
     readonly property bool needsScrolling: label.implicitWidth > width && SettingsData.scrollTitleEnabled
     readonly property bool rightToLeft: label.effectiveHorizontalAlignment === Text.AlignRight
-    readonly property bool scrollActive: needsScrolling && visible && (Window.window?.visible ?? false) && active && !SettingsData.reduceMotion
+    readonly property bool scrollActive: needsScrolling && visible && (Window.window?.visible ?? false) && active && !Theme.reduceMotion
     readonly property real maxScrollOffset: loop ? label.implicitWidth + loopGap : Math.max(0, label.implicitWidth - width + overscroll)
 
     property real scrollOffset: 0
@@ -194,7 +194,7 @@ Item {
 
     Timer {
         id: cavaTickWatch
-        interval: 150
+        interval: Timing.debounce
     }
 
     Connections {
@@ -225,9 +225,9 @@ Item {
                 property: "opacity"
                 from: 0.7
                 to: 1
-                duration: Theme.shortDuration
+                duration: Theme.expressiveDurations.expressiveFastEffects
                 easing.type: Easing.BezierSpline
-                easing.bezierCurve: Theme.expressiveCurves.emphasizedDecel
+                easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
             }
 
             NumberAnimation {
@@ -235,9 +235,9 @@ Item {
                 property: "textShift"
                 from: 4
                 to: 0
-                duration: Theme.shortDuration
+                duration: Theme.expressiveDurations.expressiveFastSpatial
                 easing.type: Easing.BezierSpline
-                easing.bezierCurve: Theme.expressiveCurves.emphasizedDecel
+                easing.bezierCurve: Theme.expressiveCurves.expressiveFastSpatial
             }
         }
     }

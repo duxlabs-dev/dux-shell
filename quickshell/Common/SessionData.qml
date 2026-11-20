@@ -91,7 +91,7 @@ Singleton {
 
     Timer {
         id: screenShareReleaseTimer
-        interval: 4000
+        interval: Timing.holdLong
         repeat: false
         running: false
         onTriggered: root._endScreenShareDnd()
@@ -115,7 +115,7 @@ Singleton {
 
     Timer {
         id: osdSuppressTimer
-        interval: 2000
+        interval: Timing.hold
         running: true
         onTriggered: root.suppressOSD = false
     }
@@ -315,6 +315,8 @@ Singleton {
     property bool greeterSyncPending: false
     property var greeterSyncBaseline: ({})
     property string lastAppliedIconTheme: ""
+    // Generated folder overlays may be on disk; SettingsData clears them once the feature is off.
+    property bool iconFoldersPresent: false
 
     property string launcherLastMode: "all"
     property string launcherLastFileSearchType: "all"

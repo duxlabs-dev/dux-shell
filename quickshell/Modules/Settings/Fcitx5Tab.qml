@@ -315,7 +315,7 @@ Item {
     SettingsRenameDialog {
         id: renameDialog
 
-        parent: root.parentModal?.modalFocusScope ?? root
+        parent: root.parentModal?.dialogHostFor(root) ?? root
         title: I18n.tr("Rename")
         onAccepted: name => root.renameGroup(root.renameTarget, name)
     }
@@ -326,195 +326,210 @@ Item {
             text: I18n.tr("Update DMS to configure fcitx5 from here", "Tip displayed when dms core is too old for fcitx5")
         }
 
-        SettingsCard {
-            width: parent.width
-            visible: root.editable
-            tags: ["fcitx5", "input method", "group"]
-            title: I18n.tr("Groups")
-            settingKey: "fcitx5Groups"
-            iconName: "folder"
+        SettingsDeferred {
+            when: root.editable
 
-            headerActions: DButton {
-                text: I18n.tr("Add")
-                iconName: "add"
-                buttonHeight: Theme.buttonHeightXS
-                onClicked: root.addGroup()
-            }
+            SettingsCard {
+                width: parent.width
+                tags: ["fcitx5", "input method", "group"]
+                title: I18n.tr("Groups")
+                settingKey: "fcitx5Groups"
+                iconName: "folder"
 
-            Repeater {
-                model: root.groupNames
+                headerActions: DButton {
+                    text: I18n.tr("Add")
+                    iconName: "add"
+                    buttonHeight: Theme.buttonHeightXS
+                    onClicked: root.addGroup()
+                }
 
-                delegate: SettingsInstanceRow {
-                    required property string modelData
+                Repeater {
+                    model: root.groupNames
 
-                    title: modelData
-                    summary: root.activeGroup === modelData ? I18n.tr("Active") : ""
-                    selected: root.selectedGroup === modelData
-                    toggleVisible: false
-                    deletable: root.groupNames.length > 1
-                    onClicked: {
-                        root.selectedGroup = modelData;
-                        root.loadGroup(modelData);
-                    }
-                    onDeleteRequested: root.groupRequest("removeGroup", modelData)
+                    delegate: SettingsInstanceRow {
+                        required property string modelData
 
-                    DActionButton {
-                        anchors.verticalCenter: parent.verticalCenter
-                        iconName: "edit"
-                        tooltipText: I18n.tr("Rename")
+                        title: modelData
+                        summary: root.activeGroup === modelData ? I18n.tr("Active") : ""
+                        selected: root.selectedGroup === modelData
+                        toggleVisible: false
+                        deletable: root.groupNames.length > 1
                         onClicked: {
-                            root.renameTarget = modelData;
-                            renameDialog.show(modelData);
+                            root.selectedGroup = modelData;
+                            root.loadGroup(modelData);
+                        }
+                        onDeleteRequested: root.groupRequest("removeGroup", modelData)
+
+                        DActionButton {
+                            anchors.verticalCenter: parent.verticalCenter
+                            iconName: "edit"
+                            tooltipText: I18n.tr("Rename")
+                            onClicked: {
+                                root.renameTarget = modelData;
+                                renameDialog.show(modelData);
+                            }
                         }
                     }
                 }
             }
         }
 
-        SettingsCard {
-            width: parent.width
-            visible: root.editable
-            tags: ["fcitx5", "input method", "ime", "layout", "language"]
-            title: root.selectedGroup
-            settingKey: "fcitx5InputMethods"
-            iconName: "language"
+        SettingsDeferred {
+            when: root.editable
 
-            headerActions: DButton {
-                text: I18n.tr("Add")
-                iconName: "add"
-                buttonHeight: Theme.buttonHeightXS
-                onClicked: root.showPicker()
-            }
+            SettingsCard {
+                width: parent.width
+                tags: ["fcitx5", "input method", "ime", "layout", "language"]
+                title: root.selectedGroup
+                settingKey: "fcitx5InputMethods"
+                iconName: "language"
 
-            SettingsReorderList {
-                id: imList
-
-                model: root.items
-                onReordered: indices => root.saveItems(Fcitx5Schema.applyOrder(root.items, indices))
-
-                delegate: SettingsReorderRow {
-                    id: imRow
-
-                    required property var modelData
-                    readonly property bool hasLayout: !Fcitx5Schema.isKeyboardIM(modelData.name) && (root.layoutChoices?.values.length ?? 0) > 0
-
-                    reorderList: imList
-                    title: root.imName(modelData.name)
-                    subtitle: root.catalog[modelData.name]?.nativeName ?? ""
-
-                    DDropdown {
-                        // DDropdown assigns currentValue on selection, which would drop a binding on it.
-                        readonly property string syncedValue: Fcitx5Schema.layoutKey(imRow.modelData.layout)
-
-                        onSyncedValueChanged: currentValue = syncedValue
-                        anchors.verticalCenter: parent.verticalCenter
-                        visible: imRow.hasLayout
-                        backgroundColor: SettingsMetrics.controlSurface
-                        enableFuzzySearch: true
-                        options: root.layoutChoices?.labels ?? []
-                        optionValues: root.layoutChoices?.values ?? []
-                        Accessible.name: I18n.tr("Keyboard layout")
-                        onValueChanged: value => root.saveItems(root.items.map((item, i) => i === imRow.index ? {
-                                    "name": item.name,
-                                    "layout": Fcitx5Schema.layoutFromKey(value)
-                                } : item))
-                    }
-
-                    DActionButton {
-                        anchors.verticalCenter: parent.verticalCenter
-                        iconName: "close"
-                        iconColor: Theme.error
-                        enabled: root.items.length > 1
-                        tooltipText: I18n.tr("Remove")
-                        onClicked: root.saveItems(root.items.filter((_, i) => i !== imRow.index))
-                    }
+                headerActions: DButton {
+                    text: I18n.tr("Add")
+                    iconName: "add"
+                    buttonHeight: Theme.buttonHeightXS
+                    onClicked: root.showPicker()
                 }
-            }
-        }
 
-        SettingsCard {
-            width: parent.width
-            visible: root.editable && root.behaviorRows.length > 0
-            tags: ["fcitx5", "input method", "behavior", "preedit", "share", "state"]
-            title: I18n.tr("Behavior")
-            settingKey: "fcitx5Behavior"
-            iconName: "tune"
-            collapsible: true
+                SettingsReorderList {
+                    id: imList
 
-            Repeater {
-                model: root.behaviorRows
+                    model: root.items
+                    onReordered: indices => root.saveItems(Fcitx5Schema.applyOrder(root.items, indices))
 
-                delegate: Fcitx5Row {
-                    required property var modelData
+                    delegate: SettingsReorderRow {
+                        id: imRow
 
-                    row: modelData
-                    value: Fcitx5Schema.getPath(root.globalValue, modelData.path)
-                    onValueEdited: (path, value) => root.saveGlobal(path, value)
-                }
-            }
-        }
+                        required property var modelData
+                        readonly property bool hasLayout: !Fcitx5Schema.isKeyboardIM(modelData.name) && (root.layoutChoices?.values.length ?? 0) > 0
 
-        SettingsCard {
-            width: parent.width
-            visible: root.editable && root.hotkeyRows.length > 0
-            tags: ["fcitx5", "input method", "hotkey", "shortcut", "toggle", "switch"]
-            title: I18n.tr("Keyboard shortcuts")
-            settingKey: "fcitx5Hotkeys"
-            iconName: "keyboard_command_key"
-            collapsible: true
-            expanded: false
+                        reorderList: imList
+                        title: root.imName(modelData.name)
+                        subtitle: root.catalog[modelData.name]?.nativeName ?? ""
 
-            Repeater {
-                model: root.hotkeyRows
+                        DDropdown {
+                            // DDropdown assigns currentValue on selection, which would drop a binding on it.
+                            readonly property string syncedValue: Fcitx5Schema.layoutKey(imRow.modelData.layout)
 
-                delegate: Fcitx5Row {
-                    required property var modelData
-
-                    row: modelData
-                    value: Fcitx5Schema.getPath(root.globalValue, modelData.path)
-                    onValueEdited: (path, value) => root.saveGlobal(path, value)
-                }
-            }
-        }
-
-        SettingsCard {
-            width: parent.width
-            visible: root.editable && addonModel.count > 0
-            tags: ["fcitx5", "input method", "plugin", "addon", "module"]
-            title: I18n.tr("Plugins")
-            settingKey: "fcitx5Plugins"
-            iconName: "extension"
-            collapsible: true
-
-            Repeater {
-                model: addonModel
-
-                delegate: SettingsSplitRow {
-                    required property int index
-                    required property string uniqueName
-                    required property string name
-                    required property string comment
-                    required property int category
-                    required property bool configurable
-                    required property bool addonEnabled
-
-                    iconName: root.addonIcons[category]
-                    iconColor: checked ? Theme.primary : Theme.onSurfaceVariant
-                    title: name
-                    subtitle: comment
-                    navigable: configurable
-                    clickable: true
-                    checked: addonEnabled
-                    onNavigated: keyboard => {
-                        if (!configurable) {
-                            root.setAddonEnabled(index, !checked);
-                            return;
+                            onSyncedValueChanged: currentValue = syncedValue
+                            anchors.verticalCenter: parent.verticalCenter
+                            visible: imRow.hasLayout
+                            backgroundColor: SettingsMetrics.controlSurface
+                            enableFuzzySearch: true
+                            options: root.layoutChoices?.labels ?? []
+                            optionValues: root.layoutChoices?.values ?? []
+                            Accessible.name: I18n.tr("Keyboard layout")
+                            onValueChanged: value => root.saveItems(root.items.map((item, i) => i === imRow.index ? {
+                                        "name": item.name,
+                                        "layout": Fcitx5Schema.layoutFromKey(value)
+                                    } : item))
                         }
-                        SettingsUiState.selectedFcitx5Addon = uniqueName;
-                        SettingsUiState.selectedFcitx5AddonTitle = name;
-                        root.parentModal?.navigateTo("fcitx5_addon", keyboard);
+
+                        DActionButton {
+                            anchors.verticalCenter: parent.verticalCenter
+                            iconName: "close"
+                            iconColor: Theme.error
+                            enabled: root.items.length > 1
+                            tooltipText: I18n.tr("Remove")
+                            onClicked: root.saveItems(root.items.filter((_, i) => i !== imRow.index))
+                        }
                     }
-                    onToggled: value => root.setAddonEnabled(index, value)
+                }
+            }
+        }
+
+        SettingsDeferred {
+            when: root.editable && root.behaviorRows.length > 0
+
+            SettingsCard {
+                width: parent.width
+                tags: ["fcitx5", "input method", "behavior", "preedit", "share", "state"]
+                title: I18n.tr("Behavior")
+                settingKey: "fcitx5Behavior"
+                iconName: "tune"
+                collapsible: true
+
+                Repeater {
+                    model: root.behaviorRows
+
+                    delegate: Fcitx5Row {
+                        required property var modelData
+
+                        row: modelData
+                        value: Fcitx5Schema.getPath(root.globalValue, modelData.path)
+                        onValueEdited: (path, value) => root.saveGlobal(path, value)
+                    }
+                }
+            }
+        }
+
+        SettingsDeferred {
+            when: root.editable && root.hotkeyRows.length > 0
+
+            SettingsCard {
+                width: parent.width
+                tags: ["fcitx5", "input method", "hotkey", "shortcut", "toggle", "switch"]
+                title: I18n.tr("Keyboard shortcuts")
+                settingKey: "fcitx5Hotkeys"
+                iconName: "keyboard_command_key"
+                collapsible: true
+                expanded: false
+
+                Repeater {
+                    model: root.hotkeyRows
+
+                    delegate: Fcitx5Row {
+                        required property var modelData
+
+                        row: modelData
+                        value: Fcitx5Schema.getPath(root.globalValue, modelData.path)
+                        onValueEdited: (path, value) => root.saveGlobal(path, value)
+                    }
+                }
+            }
+        }
+
+        SettingsDeferred {
+            when: root.editable && addonModel.count > 0
+
+            SettingsCard {
+                width: parent.width
+                tags: ["fcitx5", "input method", "plugin", "addon", "module"]
+                title: I18n.tr("Plugins")
+                settingKey: "fcitx5Plugins"
+                iconName: "extension"
+                collapsible: true
+
+                Repeater {
+                    model: addonModel
+
+                    delegate: SettingsSplitRow {
+                        required property int index
+                        required property string uniqueName
+                        required property string name
+                        required property string comment
+                        required property int category
+                        required property bool configurable
+                        required property bool addonEnabled
+
+                        iconName: root.addonIcons[category]
+                        iconColor: checked ? Theme.primary : Theme.onSurfaceVariant
+                        title: name
+                        subtitle: comment
+                        navigable: configurable
+                        clickable: true
+                        checked: addonEnabled
+                        onNavigated: keyboard => {
+                            if (!configurable) {
+                                root.setAddonEnabled(index, !checked);
+                                return;
+                            }
+                            SettingsUiState.selectedFcitx5Addon = uniqueName;
+                            SettingsUiState.selectedFcitx5AddonTitle = name;
+                            root.parentModal?.navigateTo("fcitx5_addon", keyboard);
+                        }
+                        onToggled: value => root.setAddonEnabled(index, value)
+                    }
                 }
             }
         }

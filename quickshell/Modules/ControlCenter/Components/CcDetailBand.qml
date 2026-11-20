@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import Quickshell.Widgets
 import qs.Common
 import qs.Modules.ControlCenter
 import qs.Modules.ControlCenter.Details
@@ -30,6 +31,7 @@ FocusScope {
     signal portSelectorRequested(var node)
 
     property string shownSection: ""
+    property real _heldHeight: 0
     readonly property var pageItem: pageLoader.item
     readonly property bool pluginPage: shownSection.startsWith("plugin_") || shownSection.startsWith("builtin_")
     // A page measures itself a tick after it loads; waiting for that keeps the first target the final one.
@@ -45,7 +47,13 @@ FocusScope {
     // The band's extent includes the gap above and below its card, so they grow and shrink with it.
     readonly property real chromeHeight: CcMetrics.gridGap * 2 + CcMetrics.detailHeaderHeight + CcMetrics.detailDialogPadding * 2
     readonly property real contentCap: Math.max(CcMetrics.detailHeightFloor(shownSection, pageItem?.preferredHeight ?? 0), maximumHeight - chromeHeight)
-    readonly property real targetHeight: section === "" || pageHeight <= 0 ? 0 : chromeHeight + Math.min(pageHeight, contentCap)
+    readonly property real _measuredHeight: section === "" || pageHeight <= 0 ? 0 : chromeHeight + Math.min(pageHeight, contentCap)
+    // Hold the previous band height across section switches until the new page measures itself, so switching tiles animates only the delta.
+    readonly property real targetHeight: section === "" ? 0 : (_measuredHeight > 0 ? _measuredHeight : _heldHeight)
+    on_MeasuredHeightChanged: {
+        if (section !== "" && _measuredHeight > 0)
+            _heldHeight = _measuredHeight;
+    }
     readonly property bool transitioning: heightAnimation.running
     // Only IPC can ask for a plugin section whose tile is not placed, so there is nothing to show.
     readonly property bool pageEmpty: pageItem?.empty === true
@@ -68,15 +76,20 @@ FocusScope {
         enabled: CcMetrics.animationsEnabled
         NumberAnimation {
             id: heightAnimation
-            duration: CcMetrics.transitionDuration
+            duration: Theme.expressiveDurations.expressiveDefaultSpatial
             easing.type: Easing.BezierSpline
-            easing.bezierCurve: Theme.expressiveCurves.standard
+            easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
         }
+    }
+
+    function _collapseIfEmpty() {
+        if (pageEmpty && section !== "")
+            collapseRequested();
     }
 
     onPageEmptyChanged: {
         if (pageEmpty && section !== "")
-            Qt.callLater(collapseRequested);
+            Qt.callLater(_collapseIfEmpty);
     }
 
     function finishClose() {
@@ -84,6 +97,7 @@ FocusScope {
             return;
         pageLoader.sourceComponent = null;
         shownSection = "";
+        _heldHeight = 0;
         dismissed();
     }
 
@@ -130,6 +144,7 @@ FocusScope {
                 finishClose();
             return;
         }
+        pageLoader.sourceComponent = null;
         shownSection = section;
         pageLoader.sourceComponent = _componentFor(section);
         (pageItem ?? root).forceActiveFocus();
@@ -144,7 +159,7 @@ FocusScope {
         y: CcMetrics.gridGap
         width: parent.width
         height: Math.max(0, parent.height - CcMetrics.gridGap * 2)
-        radius: CcMetrics.tallTileRadius
+        radius: CcMetrics.detailBandRadius
         color: CcMetrics.dialogColor
         border.width: Theme.layerOutlineWidth
         border.color: Theme.outlineMedium
@@ -209,17 +224,23 @@ FocusScope {
                 }
             }
 
-            Loader {
-                id: pageLoader
+            ClippingRectangle {
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.top: header.bottom
                 anchors.bottom: parent.bottom
-                active: root.shownSection !== ""
-                onLoaded: {
-                    const actions = item.headerActions ?? null;
-                    if (actions)
-                        actions.parent = headerSlot;
+                radius: Theme.groupedListOuterRadius
+                color: "transparent"
+
+                Loader {
+                    id: pageLoader
+                    anchors.fill: parent
+                    active: root.shownSection !== ""
+                    onLoaded: {
+                        const actions = item.headerActions ?? null;
+                        if (actions)
+                            actions.parent = headerSlot;
+                    }
                 }
             }
         }

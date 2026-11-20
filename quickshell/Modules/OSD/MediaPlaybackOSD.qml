@@ -73,7 +73,7 @@ DOSD {
         // art url can land in a later metadata update than the title
         if (TrackArtService.getArtworkUrl(player) === "") {
             _pendingShow = true;
-            pendingShowFallback.interval = 600;
+            pendingShowFallback.interval = Timing.settleLong;
             pendingShowFallback.restart();
             return;
         }
@@ -82,20 +82,20 @@ DOSD {
             return;
         }
         _pendingShow = true;
-        pendingShowFallback.interval = 1500;
+        pendingShowFallback.interval = Timing.holdShort;
         pendingShowFallback.restart();
     }
 
     Timer {
         id: iconDebounce
-        interval: 150
+        interval: Timing.debounce
         property string pendingIcon: "music_note"
         onTriggered: root._displayIcon = pendingIcon
     }
 
     Timer {
         id: pendingShowFallback
-        interval: 1500
+        interval: Timing.holdShort
         onTriggered: {
             if (!root._pendingShow)
                 return;
@@ -138,7 +138,7 @@ DOSD {
         if (!_pendingShow)
             return;
         if (trackArtLoading) {
-            pendingShowFallback.interval = 1500;
+            pendingShowFallback.interval = Timing.holdShort;
             pendingShowFallback.restart();
             return;
         }
@@ -192,6 +192,17 @@ DOSD {
             handleUpdate();
         }
         function onMetadataChanged() {
+            handleUpdate();
+        }
+        // metadataChanged fires before the track* properties update; when the art url
+        // stays the same (same album) nothing else follows, so listen to them directly.
+        function onTrackTitleChanged() {
+            handleUpdate();
+        }
+        function onTrackArtistChanged() {
+            handleUpdate();
+        }
+        function onTrackAlbumChanged() {
             handleUpdate();
         }
         function onIsPlayingChanged() {

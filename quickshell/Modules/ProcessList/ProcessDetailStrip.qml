@@ -186,7 +186,7 @@ Rectangle {
         implicitWidth: chipRow.implicitWidth + Theme.spacingM * 2
         implicitHeight: Theme.buttonHeightXS
         radius: Theme.cornerRadiusS
-        color: emphasis ? Theme.secondaryContainer : Theme.surfaceContainerHighest
+        color: emphasis ? Theme.secondaryContainer : Theme.chipSurfaceNested
         Accessible.role: Accessible.StaticText
         Accessible.name: tip ? tip + ": " + text : text
 
@@ -264,7 +264,7 @@ Rectangle {
             width: parent.width
             customPaddingV: 0
             customPaddingH: Theme.spacingM
-            slotColor: Theme.surfaceContainerHighest
+            slotColor: Theme.chipSurfaceNested
 
             // By count, so a new sample rebinds the rows instead of rebuilding them; hidden tabs build none.
             Repeater {
@@ -284,7 +284,7 @@ Rectangle {
 
     implicitHeight: body.implicitHeight + Theme.spacingL * 2
     radius: Theme.cornerRadiusM
-    color: Theme.surfaceContainerHigh
+    color: Theme.chipSurface
 
     // Clicks between the controls stay here instead of reaching the row, which would collapse the strip.
     MouseArea {
@@ -612,7 +612,7 @@ Rectangle {
                     width: parent.width
                     height: Math.max(commandFull.implicitHeight + Theme.spacingS * 2, commandCopy.height + Theme.spacingXS * 2)
                     radius: Theme.cornerRadiusL
-                    color: Theme.surfaceContainerHighest
+                    color: Theme.chipSurfaceNested
 
                     StyledText {
                         id: commandFull

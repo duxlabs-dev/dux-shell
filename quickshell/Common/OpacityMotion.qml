@@ -7,7 +7,7 @@ QtObject {
     id: root
 
     property bool enabled: true
-    property int duration: Theme.currentAnimationBaseDuration
+    property int duration: Theme.expressiveDurations.expressiveEffects
     property real target: 0
     readonly property real value: Math.max(0, Math.min(1, motion.value))
     readonly property bool running: motion.running

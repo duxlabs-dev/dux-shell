@@ -65,7 +65,7 @@ Singleton {
 
     Timer {
         id: sessionInitTimer
-        interval: 200
+        interval: Timing.settle
         running: true
         repeat: false
         onTriggered: {
@@ -85,7 +85,7 @@ Singleton {
     Timer {
         id: lockBeforeSleepFallback
         // Custom lockers never set WlSessionLock.secure.
-        interval: 2000
+        interval: Timing.hold
         repeat: false
         onTriggered: root.flushPendingSleep()
     }
@@ -93,7 +93,7 @@ Singleton {
     Timer {
         id: sleepRequestTimeout
         // A refused sleep or a command that skips logind never sends PrepareForSleep.
-        interval: 10000
+        interval: Timing.timeout
         repeat: false
         onTriggered: root.sleepRequested = false
     }

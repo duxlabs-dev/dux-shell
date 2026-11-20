@@ -120,210 +120,223 @@ Item {
             }
         }
 
-        SettingsCard {
-            SettingsRow {
-                body: StyledText {
-                    text: I18n.tr('DMS is a modern, highly customizable desktop shell that looks great out of the box, without sacrificing the freedom to make it your own.<br/><br/>Built with %1 and %2, it brings together panels, widgets, system controls, and more into a cohesive desktop experience.', 'about page blurb, %1 is a Quickshell link, %2 is a Go link').arg(`<a href="https://quickshell.org" style="text-decoration:none; color:${Theme.primary};">Quickshell</a>`).arg(`<a href="https://go.dev" style="text-decoration:none; color:${Theme.primary};">Go</a>`)
-                    textFormat: Text.RichText
-                    font.pixelSize: Theme.fontSizeMedium
-                    linkColor: Theme.primary
-                    onLinkActivated: url => Qt.openUrlExternally(url)
-                    color: Theme.surfaceVariantText
-                    width: parent.width
-                    wrapMode: Text.WordWrap
+        SettingsDeferred {
+            SettingsCard {
+                SettingsRow {
+                    body: StyledText {
+                        text: I18n.tr('DMS is a modern, highly customizable desktop shell that looks great out of the box, without sacrificing the freedom to make it your own.<br/><br/>Built with %1 and %2, it brings together panels, widgets, system controls, and more into a cohesive desktop experience.', 'about page blurb, %1 is a Quickshell link, %2 is a Go link').arg(`<a href="https://quickshell.org" style="text-decoration:none; color:${Theme.primary};">Quickshell</a>`).arg(`<a href="https://go.dev" style="text-decoration:none; color:${Theme.primary};">Go</a>`)
+                        textFormat: Text.RichText
+                        font.pixelSize: Theme.fontSizeMedium
+                        linkColor: Theme.primary
+                        onLinkActivated: url => Qt.openUrlExternally(url)
+                        color: Theme.surfaceVariantText
+                        width: parent.width
+                        wrapMode: Text.WordWrap
 
-                    HoverHandler {
-                        cursorShape: parent.hoveredLink ? Qt.PointingHandCursor : Qt.ArrowCursor
-                    }
-                }
-            }
-        }
-
-        SettingsCard {
-            SettingsLinkRow {
-                iconName: "menu_book"
-                title: I18n.tr("Docs")
-                subtitle: root.host(Site.docs)
-                url: Site.docs
-            }
-
-            SettingsLinkRow {
-                iconName: "extension"
-                title: I18n.tr("Plugins")
-                subtitle: root.host(Site.plugins)
-                url: Site.plugins
-            }
-
-            SettingsLinkRow {
-                iconName: "code"
-                title: "GitHub"
-                subtitle: root.host(root.githubUrl)
-                url: root.githubUrl
-            }
-        }
-
-        SettingsCard {
-            title: I18n.tr("Community", "about page card title, chat and community links")
-
-            SettingsLinkRow {
-                visible: root.compositor.url !== ""
-                title: root.compositor.label
-                subtitle: root.host(root.compositor.url)
-                url: root.compositor.url
-                leading: LogoImage {
-                    source: root.assetsDir + root.compositor.logo
-                }
-            }
-
-            SettingsLinkRow {
-                title: "niri/dux Discord"
-                subtitle: root.host(root.discordUrl)
-                url: root.discordUrl
-                leading: LogoImage {
-                    source: root.assetsDir + "discord.svg"
-                }
-            }
-
-            SettingsLinkRow {
-                visible: (root.compositor.discordUrl ?? "") !== ""
-                title: root.compositor.discordLabel ?? ""
-                subtitle: root.host(root.compositor.discordUrl ?? "")
-                url: root.compositor.discordUrl ?? ""
-                leading: LogoImage {
-                    source: root.assetsDir + "discord.svg"
-                }
-            }
-
-            SettingsLinkRow {
-                visible: (root.compositor.matrixUrl ?? "") !== ""
-                title: I18n.tr("niri Matrix chat")
-                subtitle: "matrix.org"
-                url: root.compositor.matrixUrl ?? ""
-                leading: LogoImage {
-                    source: root.assetsDir + "matrix-logo-white.svg"
-                    sourceSize: Qt.size(28, 18)
-                    layer.enabled: true
-                    layer.effect: MultiEffect {
-                        colorization: 1
-                        colorizationColor: Theme.surfaceText
-                    }
-                }
-            }
-
-            SettingsLinkRow {
-                visible: (root.compositor.redditUrl ?? "") !== ""
-                title: I18n.tr("r/niri subreddit")
-                subtitle: root.host(root.compositor.redditUrl ?? "")
-                url: root.compositor.redditUrl ?? ""
-                leading: LogoImage {
-                    source: root.assetsDir + "reddit.svg"
-                }
-            }
-
-            SettingsLinkRow {
-                visible: (root.compositor.ircUrl ?? "") !== ""
-                iconName: "forum"
-                title: I18n.tr("LabWC IRC channel")
-                subtitle: "libera.chat"
-                url: root.compositor.ircUrl ?? ""
-            }
-        }
-
-        SettingsCard {
-            iconName: "memory"
-            title: I18n.tr("Runtime")
-
-            SettingsRow {
-                title: ShellVersionService.runtimeName
-                trailingBadge: ShellVersionService.runtimeVersion
-            }
-
-            SettingsRow {
-                visible: ShellVersionService.runtimeRevision !== ""
-                title: I18n.tr("Revision", "about page runtime build revision")
-                subtitle: ShellVersionService.runtimeRevision
-            }
-
-            SettingsRow {
-                visible: ShellVersionService.runtimeLibrary !== ""
-                title: I18n.tr("Library")
-                body: StyledText {
-                    width: parent.width
-                    text: ShellVersionService.runtimeLibrary
-                    textFormat: Text.PlainText
-                    font.pixelSize: Theme.fontSizeSmall
-                    color: Theme.surfaceVariantText
-                    wrapMode: Text.WrapAnywhere
-                }
-            }
-        }
-
-        SettingsCard {
-            visible: DMSService.isConnected
-            iconName: "dns"
-            title: I18n.tr("Backend", "noun, settings label for the backend service in use")
-
-            SettingsRow {
-                title: I18n.tr("Version")
-                trailingBadge: DMSService.cliVersion || "—"
-            }
-
-            SettingsRow {
-                title: I18n.tr("API", "about page card title, application programming interface version")
-                trailingBadge: `v${DMSService.apiVersion}`
-            }
-
-            SettingsRow {
-                title: I18n.tr("Status")
-                trailingBadge: I18n.tr("Connected")
-
-                DBadge {
-                    color: Theme.success
-                }
-            }
-
-            SettingsRow {
-                visible: DMSService.capabilities.length > 0
-                title: I18n.tr("Capabilities")
-                body: Flow {
-                    width: parent.width
-                    spacing: Theme.spacingS
-
-                    Repeater {
-                        model: DMSService.capabilities
-
-                        DBadge {
-                            required property string modelData
-                            text: modelData
-                            color: Theme.primaryHover
-                            textColor: Theme.primary
+                        HoverHandler {
+                            cursorShape: parent.hoveredLink ? Qt.PointingHandCursor : Qt.ArrowCursor
                         }
                     }
                 }
             }
         }
 
-        SettingsCard {
-            iconName: "build"
-            title: I18n.tr("Tools", "about page card title for welcome and system check")
+        SettingsDeferred {
+            SettingsCard {
+                SettingsLinkRow {
+                    iconName: "menu_book"
+                    title: I18n.tr("Docs")
+                    subtitle: root.host(Site.docs)
+                    url: Site.docs
+                }
 
-            SettingsNavRow {
-                iconName: "system_update_alt"
-                title: I18n.tr("Software updates", "settings page, modal and bar widget title, DMS and system package updates")
-                hint: root.versionText()
-                onClicked: keyboard => root.parentModal?.navigateTo("updater", keyboard)
+                SettingsLinkRow {
+                    iconName: "extension"
+                    title: I18n.tr("Plugins")
+                    subtitle: root.host(Site.plugins)
+                    url: Site.plugins
+                }
+
+                SettingsLinkRow {
+                    iconName: "code"
+                    title: "GitHub"
+                    subtitle: root.host(root.githubUrl)
+                    url: root.githubUrl
+                }
             }
+        }
 
-            SettingsNavRow {
-                iconName: "waving_hand"
-                title: I18n.tr("Show welcome")
-                onClicked: FirstLaunchService.showWelcome()
+        SettingsDeferred {
+            SettingsCard {
+                title: I18n.tr("Community", "about page card title, chat and community links")
+
+                SettingsLinkRow {
+                    visible: root.compositor.url !== ""
+                    title: root.compositor.label
+                    subtitle: root.host(root.compositor.url)
+                    url: root.compositor.url
+                    leading: LogoImage {
+                        source: root.assetsDir + root.compositor.logo
+                    }
+                }
+
+                SettingsLinkRow {
+                    title: "niri/dux Discord"
+                    subtitle: root.host(root.discordUrl)
+                    url: root.discordUrl
+                    leading: LogoImage {
+                        source: root.assetsDir + "discord.svg"
+                    }
+                }
+
+                SettingsLinkRow {
+                    visible: (root.compositor.discordUrl ?? "") !== ""
+                    title: root.compositor.discordLabel ?? ""
+                    subtitle: root.host(root.compositor.discordUrl ?? "")
+                    url: root.compositor.discordUrl ?? ""
+                    leading: LogoImage {
+                        source: root.assetsDir + "discord.svg"
+                    }
+                }
+
+                SettingsLinkRow {
+                    visible: (root.compositor.matrixUrl ?? "") !== ""
+                    title: I18n.tr("niri Matrix chat")
+                    subtitle: "matrix.org"
+                    url: root.compositor.matrixUrl ?? ""
+                    leading: LogoImage {
+                        source: root.assetsDir + "matrix-logo-white.svg"
+                        sourceSize: Qt.size(28, 18)
+                        layer.enabled: true
+                        layer.effect: MultiEffect {
+                            colorization: 1
+                            colorizationColor: Theme.surfaceText
+                        }
+                    }
+                }
+
+                SettingsLinkRow {
+                    visible: (root.compositor.redditUrl ?? "") !== ""
+                    title: I18n.tr("r/niri subreddit")
+                    subtitle: root.host(root.compositor.redditUrl ?? "")
+                    url: root.compositor.redditUrl ?? ""
+                    leading: LogoImage {
+                        source: root.assetsDir + "reddit.svg"
+                    }
+                }
+
+                SettingsLinkRow {
+                    visible: (root.compositor.ircUrl ?? "") !== ""
+                    iconName: "forum"
+                    title: I18n.tr("LabWC IRC channel")
+                    subtitle: "libera.chat"
+                    url: root.compositor.ircUrl ?? ""
+                }
             }
+        }
 
-            SettingsNavRow {
-                iconName: "vital_signs"
-                title: I18n.tr("System check")
-                onClicked: FirstLaunchService.showDoctor()
+        SettingsDeferred {
+            SettingsCard {
+                iconName: "memory"
+                title: I18n.tr("Runtime")
+
+                SettingsRow {
+                    title: ShellVersionService.runtimeName
+                    trailingBadge: ShellVersionService.runtimeVersion
+                }
+
+                SettingsRow {
+                    visible: ShellVersionService.runtimeRevision !== ""
+                    title: I18n.tr("Revision", "about page runtime build revision")
+                    subtitle: ShellVersionService.runtimeRevision
+                }
+
+                SettingsRow {
+                    visible: ShellVersionService.runtimeLibrary !== ""
+                    title: I18n.tr("Library")
+                    body: StyledText {
+                        width: parent.width
+                        text: ShellVersionService.runtimeLibrary
+                        textFormat: Text.PlainText
+                        font.pixelSize: Theme.fontSizeSmall
+                        color: Theme.surfaceVariantText
+                        wrapMode: Text.WrapAnywhere
+                    }
+                }
+            }
+        }
+
+        SettingsDeferred {
+            when: DMSService.isConnected
+
+            SettingsCard {
+                iconName: "dns"
+                title: I18n.tr("Backend", "noun, settings label for the backend service in use")
+
+                SettingsRow {
+                    title: I18n.tr("Version")
+                    trailingBadge: DMSService.cliVersion || "—"
+                }
+
+                SettingsRow {
+                    title: "API"
+                    trailingBadge: `v${DMSService.apiVersion}`
+                }
+
+                SettingsRow {
+                    title: I18n.tr("Status")
+                    trailingBadge: I18n.tr("Connected")
+
+                    DBadge {
+                        color: Theme.success
+                    }
+                }
+
+                SettingsRow {
+                    visible: DMSService.capabilities.length > 0
+                    title: I18n.tr("Capabilities")
+                    body: Flow {
+                        width: parent.width
+                        spacing: Theme.spacingS
+
+                        Repeater {
+                            model: DMSService.capabilities
+
+                            DBadge {
+                                required property string modelData
+                                text: modelData
+                                color: Theme.primaryHover
+                                textColor: Theme.primary
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        SettingsDeferred {
+            SettingsCard {
+                iconName: "build"
+                title: I18n.tr("Tools", "about page card title for welcome and system check")
+
+                SettingsNavRow {
+                    iconName: "system_update_alt"
+                    title: I18n.tr("Software updates", "settings page, modal and bar widget title, DMS and system package updates")
+                    hint: root.versionText()
+                    onClicked: keyboard => root.parentModal?.navigateTo("updater", keyboard)
+                }
+
+                SettingsNavRow {
+                    iconName: "waving_hand"
+                    title: I18n.tr("Show welcome")
+                    onClicked: FirstLaunchService.showWelcome()
+                }
+
+                SettingsNavRow {
+                    iconName: "vital_signs"
+                    title: I18n.tr("System check")
+                    onClicked: FirstLaunchService.showDoctor()
+                }
             }
         }
 

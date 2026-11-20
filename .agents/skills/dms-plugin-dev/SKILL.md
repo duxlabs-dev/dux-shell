@@ -613,7 +613,7 @@ Lookup order: plugin file, then the global DMS catalog, then the English term. `
 ## Step 11: Validate and Test
 
 1. Validate `plugin.json` against the schema at [assets/plugin-schema.json](assets/plugin-schema.json)
-2. Run the shell with verbose output: `qs -v -p $CONFIGPATH/quickshell/dms/shell.qml`
+2. Run the shell with verbose output: `dms qs -v -p $CONFIGPATH/quickshell/dms/shell.qml`
 3. Open Settings > Plugins > Scan for Plugins
 4. Enable your plugin and add it to the DankBar layout, a dock, or the dash (tabs show up on their own; add cards from the dash edit mode)
 

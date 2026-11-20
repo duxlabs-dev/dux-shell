@@ -15,9 +15,8 @@ function sectionFor(widgetData) {
     return id + "_" + (widgetData.instanceId || "default")
 }
 
-function widgetForSection(section) {
+function widgetForSection(section, widgets = SettingsData.controlCenterWidgets || []) {
     const parsed = parse(section)
-    const widgets = SettingsData.controlCenterWidgets || []
     if (!parsed.instanceId)
         return widgets.find(w => w.id === parsed.base) || null
     return widgets.find(w => w.id === parsed.base && (w.instanceId || "default") === parsed.instanceId) || null

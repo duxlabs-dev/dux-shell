@@ -39,6 +39,11 @@ Item {
     property bool closeOnEscapeKey: modalHandle.closeOnEscapeKey
     property bool closeOnBackgroundClick: modalHandle.closeOnBackgroundClick
     property string animationType: modalHandle.animationType
+    readonly property bool dragPassthrough: modalHandle?.dragPassthrough ?? false
+    onDragPassthroughChanged: {
+        if (connected)
+            _queueFullSync();
+    }
 
     property string preferredConnectedBarSide: SettingsData.frameModalEmergeSide
 
@@ -58,8 +63,6 @@ Item {
     property int animationDuration: modalHandle.animationDuration
     property real animationScaleCollapsed: modalHandle.animationScaleCollapsed
     property real animationOffset: modalHandle.animationOffset
-    property list<real> animationEnterCurve: modalHandle.animationEnterCurve
-    property list<real> animationExitCurve: modalHandle.animationExitCurve
     property color backgroundColor: modalHandle.backgroundColor
     property color borderColor: modalHandle.borderColor
     property real borderWidth: modalHandle.borderWidth
@@ -120,8 +123,8 @@ Item {
             surfaceKind: "modal"
             screenName: root._currentScreenName()
             enabled: root.frameOwnsConnectedChrome
-            active: root.shouldBeVisible
-            presented: root.shouldBeVisible || contentWindow.visible
+            active: root.shouldBeVisible && !root.dragPassthrough
+            presented: (root.shouldBeVisible || contentWindow.visible) && !root.dragPassthrough
             dockBlocked: root._dockBlocksEmergence
             dockSide: root.resolvedConnectedBarSide
             onRecoveryRequested: root._queueFullSync()
@@ -131,7 +134,7 @@ Item {
     function _publishModalChromeState() {
         if (!connected)
             return false;
-        const presented = shouldBeVisible || contentWindow.visible;
+        const presented = (shouldBeVisible || contentWindow.visible) && !dragPassthrough;
         const phase = !presented ? "hidden" : (!shouldBeVisible && contentWindow.visible ? "closing" : (!contentWindow.visible ? "opening" : "open"));
         const bodyRect = {
             "x": alignedX + fluidBody.x,
@@ -301,7 +304,7 @@ Item {
     }
 
     function close() {
-        if (_presentPending || (_fluidMotionActive && (SettingsData.reduceMotion || animationDuration <= 0))) {
+        if (_presentPending || (_fluidMotionActive && (Theme.reduceMotion || animationDuration <= 0))) {
             instantClose();
             return;
         }
@@ -399,6 +402,9 @@ Item {
         onTriggered: root._finishClose()
     }
 
+    readonly property bool _standardMotion: !connected && !Theme.isDirectionalEffect && !Theme.isDepthEffect && !_fluidMotionActive
+    readonly property var _morphSpringParams: Theme.springPreset(_standardMotion ? "fastSpatial" : "defaultSpatial")
+
     readonly property var shadowLevel: Theme.elevationLevel3
     readonly property real shadowFallbackOffset: Theme.spacingS
     readonly property real alignedWidth: Theme.px(modalWidth, dpr)
@@ -471,24 +477,34 @@ Item {
         visible: false
         color: "transparent"
 
+        Item {
+            id: fullWindowMask
+            anchors.fill: parent
+            visible: false
+        }
+
+        mask: Region {
+            item: root.dragPassthrough ? null : fullWindowMask
+        }
+
         WindowBlur {
             targetWindow: contentWindow
-            blurEnabled: !root.frameOwnsConnectedChrome
+            blurEnabled: !root.frameOwnsConnectedChrome && !root.dragPassthrough
             surfaceColor: root.effectiveBackgroundColor
             readonly property real s: Math.min(1, modalContainer.scaleValue)
             readonly property real op: Math.max(0, Math.min(1, (morph.value - 0.06) * 2))
             readonly property real visibleScale: root.connected ? s : s * op
             blurX: root._fluidMotionActive ? (modalReveal.x + modalContainer.x + root.fluidBody.x) : modalReveal.x + modalContainer.x + modalContainer.width * (1 - visibleScale) * 0.5 + Theme.snap(modalContainer.animX, root.dpr)
             blurY: root._fluidMotionActive ? (modalReveal.y + modalContainer.y + root.fluidBody.y) : modalReveal.y + modalContainer.y + modalContainer.height * (1 - visibleScale) * 0.5 + Theme.snap(modalContainer.animY, root.dpr)
-            blurWidth: root._fluidMotionActive ? (root.shouldBeVisible ? root.fluidBody.width : 0) : (root.shouldBeVisible && !root.frameOwnsConnectedChrome) ? modalContainer.width * visibleScale : 0
-            blurHeight: root._fluidMotionActive ? (root.shouldBeVisible ? root.fluidBody.height : 0) : (root.shouldBeVisible && !root.frameOwnsConnectedChrome) ? modalContainer.height * visibleScale : 0
+            blurWidth: root.dragPassthrough ? 0 : (root._fluidMotionActive ? (root.shouldBeVisible ? root.fluidBody.width : 0) : (root.shouldBeVisible && !root.frameOwnsConnectedChrome) ? modalContainer.width * visibleScale : 0)
+            blurHeight: root.dragPassthrough ? 0 : (root._fluidMotionActive ? (root.shouldBeVisible ? root.fluidBody.height : 0) : (root.shouldBeVisible && !root.frameOwnsConnectedChrome) ? modalContainer.height * visibleScale : 0)
             blurRadius: root.effectiveCornerRadius
         }
 
         WlrLayershell.namespace: root.layerNamespace
         WlrLayershell.layer: root.effectiveModalLayer
         WlrLayershell.exclusiveZone: -1
-        WlrLayershell.keyboardFocus: KeyboardFocus.keyboardFocus(root.shouldHaveFocus, root.customKeyboardFocus)
+        WlrLayershell.keyboardFocus: root.dragPassthrough ? WlrKeyboardFocus.None : KeyboardFocus.keyboardFocus(root.shouldHaveFocus, root.customKeyboardFocus)
 
         anchors {
             left: true
@@ -521,7 +537,7 @@ Item {
 
         MouseArea {
             anchors.fill: parent
-            enabled: root.closeOnBackgroundClick && root.shouldBeVisible
+            enabled: root.closeOnBackgroundClick && root.shouldBeVisible && !root.dragPassthrough
             z: -2
             onClicked: root.backgroundClicked()
         }
@@ -530,7 +546,7 @@ Item {
             anchors.fill: parent
             z: -1
             color: Theme.backdropColor
-            opacity: root.useBackground ? root.backgroundOpacity * contentFade.value : 0
+            opacity: (!root.dragPassthrough && root.useBackground) ? root.backgroundOpacity * contentFade.value : 0
             visible: root.useBackground
         }
 
@@ -542,6 +558,7 @@ Item {
             width: root.alignedWidth
             height: root.alignedHeight
             clip: root.frameOwnsConnectedChrome
+            opacity: root.dragPassthrough ? 0 : 1
 
             Item {
                 id: modalContainer
@@ -554,7 +571,7 @@ Item {
 
                 MouseArea {
                     anchors.fill: parent
-                    enabled: root.shouldBeVisible
+                    enabled: root.shouldBeVisible && !root.dragPassthrough
                     hoverEnabled: false
                     acceptedButtons: Qt.AllButtons
                     onPressed: mouse => mouse.accepted = true
@@ -674,8 +691,8 @@ Item {
                     reducedMotion: root.animationDuration <= 0
                     positionEpsilon: Math.max(0.001, 0.25 / root.dpr / modalContainer.morphTravelPx)
                     velocityEpsilon: positionEpsilon * damping / Math.max(0.001, 2 * mass)
-                    stiffness: Theme.springPreset("defaultSpatial", root.animationDuration).stiffness
-                    damping: Theme.springPreset("defaultSpatial", root.animationDuration).damping
+                    stiffness: root._morphSpringParams.stiffness
+                    damping: root._morphSpringParams.damping
 
                     Component.onCompleted: snapTo(root.shouldBeVisible ? 1 : 0)
                 }
@@ -781,11 +798,17 @@ Item {
                             Loader {
                                 id: contentLoader
 
-                                readonly property bool wanted: root.directContent === null && (root.keepContentLoaded || root.shouldBeVisible || contentWindow.visible)
+                                readonly property bool wanted: root.directContent === null && (root.shouldBeVisible || contentWindow.visible)
 
                                 sourceComponent: root.modalHandle.content
                                 anchors.fill: parent
                                 active: false
+                                Component.onCompleted: {
+                                    if (root.modalHandle.contentSource.toString() !== "")
+                                        setSource(root.modalHandle.contentSource, {
+                                            modal: root.modalHandle
+                                        });
+                                }
                                 asynchronous: false
                                 focus: true
                                 clip: false
@@ -797,6 +820,8 @@ Item {
                                         active = true;
                                         return;
                                     }
+                                    if (root.keepContentLoaded && root.directContent === null)
+                                        return;
                                     Qt.callLater(() => contentLoader.active = contentLoader.wanted);
                                 }
 

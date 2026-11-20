@@ -35,7 +35,7 @@ Item {
     property color bandColor: Theme.hostSurface
     property Item anchorItem: null
     property Item slotItem: null
-    property Item barBody: null
+    property DBarBody barBody: null
     property var leadingSectionRect: null
     property var centerSectionRect: null
     property var trailingSectionRect: null
@@ -175,9 +175,8 @@ Item {
     readonly property int hostThickness: outerGap + nearInset + (root.isVertical ? maxActivityWidth : maxActivityHeight) + Theme.spacingS + shadowPadding
     readonly property real maximumAlongOffset: root.isVertical ? Math.max(0, (height - maxActivityHeight) / 2 - Theme.spacingS - shadowPadding) : Math.max(0, (width - maxActivityWidth) / 2 - Theme.spacingS - shadowPadding)
     readonly property bool scrollEnabled: root.barConfig?.scrollEnabled ?? true
-    property bool keyboardFocusArmed: true
     property bool keyboardReclaiming: false
-    readonly property int keyboardFocusPolicy: root.keyboardReclaiming && controller.keyboardDismissRequested ? WlrKeyboardFocus.Exclusive : KeyboardFocus.keyboardFocus(controller.keyboardDismissRequested && root.keyboardFocusArmed && !controller.keyboardYielded, null)
+    readonly property int keyboardFocusPolicy: root.keyboardReclaiming && controller.keyboardDismissRequested ? WlrKeyboardFocus.Exclusive : KeyboardFocus.keyboardFocus(controller.keyboardDismissRequested && !controller.keyboardYielded, null)
     readonly property bool wantsFocusGrab: KeyboardFocus.wantsGrab(controller.keyboardDismissRequested && !controller.keyboardYielded, null)
     readonly property var transientFocusWindows: islandTransientSurfaces.focusWindows
     property var dismissWindow: null
@@ -227,13 +226,8 @@ Item {
     }
 
     function requestKeyboardFocus() {
-        if (!controller.keyboardDismissRequested) {
-            keyboardFocusArmed = false;
-            keyboardRearmTimer.restart();
+        if (!controller.keyboardDismissRequested)
             return;
-        }
-        keyboardRearmTimer.stop();
-        keyboardFocusArmed = true;
         islandFocus.forceActiveFocus(Qt.PopupFocusReason);
         surface.requestActivityFocus();
     }
@@ -371,15 +365,8 @@ Item {
     Timer {
         id: keyboardReclaimTimer
 
-        interval: 80
+        interval: Timing.settleShort
         onTriggered: root.keyboardReclaiming = false
-    }
-
-    Timer {
-        id: keyboardRearmTimer
-
-        interval: 80
-        onTriggered: root.keyboardFocusArmed = true
     }
 
     Connections {
@@ -403,6 +390,10 @@ Item {
         id: controller
 
         onKeyboardDismissRequestedChanged: root.requestKeyboardFocus()
+        onPointerInsideChanged: {
+            if (pointerInside)
+                root.barBody?.pointerMovedToIsland();
+        }
         onKeyboardYieldedChanged: {
             if (keyboardYielded || !keyboardDismissRequested)
                 return;
@@ -543,9 +534,9 @@ Item {
         compactBackground: root.embedded && root.setting("islandWidgetBackground") === true && !(root.barConfig?.noBackground ?? false)
         compactBackgroundColor: BarMetrics.widgetFill(root.barConfig)
         opacity: root.freeOpacity
-        reducedMotion: SettingsData.reduceMotion || SettingsData.animationDuration <= 0
-        springStiffness: Math.max(root.springStiffnessRange[0], Math.min(root.springStiffnessRange[1], root.setting("islandSpringStiffness")))
-        springDamping: Math.max(root.springDampingRange[0], Math.min(root.springDampingRange[1], root.setting("islandSpringDamping")))
+        reducedMotion: Theme.reduceMotion
+        springStiffness: Math.max(root.springStiffnessRange[0], Math.min(root.springStiffnessRange[1], root.setting("islandSpringStiffness"))) / (Theme.springScale * Theme.springScale)
+        springDamping: Math.max(root.springDampingRange[0], Math.min(root.springDampingRange[1], root.setting("islandSpringDamping"))) / Theme.springScale
         springMass: Math.max(root.springMassRange[0], Math.min(root.springMassRange[1], root.setting("islandSpringMass")))
         palette: root.setting("islandPalette")
         highContrast: !root.embedded && root.setting("islandHighContrast")
@@ -555,8 +546,9 @@ Item {
 
         Behavior on opacity {
             NumberAnimation {
-                duration: surface.reducedMotion ? 0 : Theme.mediumDuration
-                easing.type: Easing.OutCubic
+                duration: surface.reducedMotion ? 0 : Theme.expressiveDurations.expressiveSlowEffects
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: Theme.expressiveCurves.expressiveSlowEffects
             }
         }
     }

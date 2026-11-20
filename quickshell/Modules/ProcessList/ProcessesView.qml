@@ -350,19 +350,6 @@ Rectangle {
         const process = cachedProcesses[selectedIndex];
         const key = process?.key ?? "";
         expandedPid = (expandedPid === key) ? "" : key;
-        if (expandedPid !== "")
-            revealExpanded.restart();
-    }
-
-    // Once the strip has slid open, scroll it into view; a row near the bottom would otherwise open off screen.
-    Timer {
-        id: revealExpanded
-        interval: Theme.expressiveDurations.expressiveDefaultSpatial
-        onTriggered: {
-            const index = root.cachedProcesses.findIndex(p => p.key === root.expandedPid);
-            if (index >= 0)
-                processListView.positionViewAtIndex(index, ListView.Contain);
-        }
     }
 
     function setGroupOpen(key, open) {
@@ -564,7 +551,7 @@ Rectangle {
                 Layout.bottomMargin: Theme.spacingM
                 implicitHeight: header.implicitHeight
                 radius: Theme.cornerRadiusS
-                color: Theme.surfaceContainerHigh
+                color: Theme.chipSurface
 
                 RowLayout {
                     id: header
@@ -602,7 +589,7 @@ Rectangle {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 clip: true
-                reuseItems: true
+                // No reuseItems: with ScriptModel updates, pooled rows can stay painted over the live ones.
                 cacheBuffer: Math.round(height)
                 activeFocusOnTab: true
                 focus: true
@@ -639,6 +626,7 @@ Rectangle {
                     columns: root.visibleColumnIds
                     process: modelData
                     isExpanded: root.expandedPid === (modelData?.key ?? "")
+                    onExpansionSettled: processListView.positionViewAtIndex(index, ListView.Contain)
                     groupOpen: !!root.openGroups[modelData?.key]
                     onGroupToggled: root.setGroupOpen(modelData.key, !groupOpen)
                     isSelected: root.keyboardNavigationActive && root.selectedIndex === index

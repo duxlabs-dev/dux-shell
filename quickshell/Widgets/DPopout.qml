@@ -19,10 +19,6 @@ Item {
     property int animationDuration: Theme.popoutAnimationDuration
     property real animationScaleCollapsed: Theme.effectScaleCollapsed
     property real animationOffset: Theme.effectAnimOffset
-    property list<real> animationEnterCurve: Theme.variantPopoutEnterCurve
-    property list<real> animationExitCurve: Theme.variantPopoutExitCurve
-    property list<real> resizeCurve: Theme.variantPopoutResizeCurve
-    property int resizeDuration: animationDuration
     property bool resizeMotion: false
     property bool resizing: false
     // Content hung outside the surface, kept on screen, blurred and clickable.
@@ -30,10 +26,15 @@ Item {
     property real topOverflow: 0
     property real leftOverflow: 0
     property real rightOverflow: 0
+    // Side overflow columns reach this far past the body's top or bottom; the body itself stays its own height.
+    property real sideTopOverflow: 0
+    property real sideBottomOverflow: 0
     // Body-relative rect of a surface hung in the side overflow, blurred like the body.
     property Item sideBlurItem: null
     property real sideBlurRadius: 0
     property real inputMargin: 0
+    // Reserved up front: a surface that moves under a pressed pointer reports the drag from its old origin.
+    property real minimumSurfaceWidth: 0
     property bool suspendShadowWhileResizing: false
     property bool shouldBeVisible: false
     property bool hoverDismissEnabled: false
@@ -65,6 +66,7 @@ Item {
     property var screen: null
     property int effectiveBarPosition: 0
     property real effectiveBarBottomGap: 0
+    property bool dragPassthrough: false
 
     signal opened
     signal popoutClosed
@@ -81,14 +83,14 @@ Item {
 
     // Hyprland OnDemand grab: whitelist popout surfaces and bars so dismiss clicks still land.
     DFocusGrab {
-        windows: {
-            const list = root.contentWindow?.focusWindows ?? (root.contentWindow ? [root.contentWindow] : []);
-            const transientWindows = root.transientSurfaceTracker?.focusWindows ?? [];
+        keyboardWindow: root.contentWindow
+        peerWindows: {
+            const surfaces = (root.contentWindow?.dismissWindows ?? []).concat(root.transientSurfaceTracker?.focusWindows ?? []);
             if (!(impl.item?.contentActive ?? false) && !root.transientSurfaceTracker?.active)
-                return list.concat(transientWindows);
-            return list.concat(transientWindows).concat(KeyboardFocus.barWindows, KeyboardFocus.grabPeerWindows);
+                return surfaces;
+            return surfaces.concat(KeyboardFocus.barWindows, KeyboardFocus.grabPeerWindows);
         }
-        wanted: KeyboardFocus.wantsGrab(root.shouldBeVisible, root.customKeyboardFocus)
+        wanted: KeyboardFocus.wantsGrab(root.shouldBeVisible && !root.dragPassthrough, root.customKeyboardFocus)
     }
 
     Loader {
@@ -130,8 +132,8 @@ Item {
         return impl.item?.alignedXFor(width) ?? 0;
     }
 
-    function alignedYFor(overTop, overBottom) {
-        return impl.item?.alignedYFor(overTop, overBottom) ?? 0;
+    function alignedYFor(overTop, overBottom, height = popupHeight) {
+        return impl.item?.alignedYFor(overTop, overBottom, height) ?? 0;
     }
     readonly property vector4d surfaceCornerRadii: impl.item?.surfaceCornerRadii ?? Qt.vector4d(Theme.windowRadius, Theme.windowRadius, Theme.windowRadius, Theme.windowRadius)
     readonly property real maskX: impl.item ? impl.item.maskX : 0
@@ -203,6 +205,7 @@ Item {
     }
 
     function open() {
+        dragPassthrough = false;
         _maybeResolveBackend();
         if (impl.item) {
             _pendingOpen = false;
@@ -374,9 +377,9 @@ Item {
             return false;
         const padding = 24;
         const x = renderedAlignedX - leftOverflow - padding;
-        const y = renderedAlignedY - topOverflow - padding;
+        const y = renderedAlignedY - topOverflow - sideTopOverflow - padding;
         const w = renderedAlignedWidth + leftOverflow + rightOverflow + padding * 2;
-        const h = renderedAlignedHeight + topOverflow + bottomOverflow + padding * 2;
+        const h = renderedAlignedHeight + topOverflow + bottomOverflow + sideTopOverflow + sideBottomOverflow + padding * 2;
         return gx >= x && gx <= x + w && gy >= y && gy <= y + h;
     }
 

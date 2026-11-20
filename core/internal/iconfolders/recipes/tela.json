@@ -1,0 +1,31 @@
+{
+  "themes": [
+    "Tela", "Tela-light", "Tela-dark",
+    "Tela-black*", "Tela-blue*", "Tela-brown*", "Tela-green*", "Tela-grey*", "Tela-orange*", "Tela-pink*",
+    "Tela-purple*", "Tela-red*", "Tela-yellow*", "Tela-manjaro*", "Tela-ubuntu*", "Tela-dracula*", "Tela-nord*"
+  ],
+  "icons": ["folder", "folder-*", "user-desktop", "user-home", "stock_folder"],
+  "stock": ["default-*"],
+  "colors": {
+    "#5294e2": "front",
+    "#4d4d4d": "front",
+    "#5677fc": "front",
+    "#795548": "front",
+    "#66bb6a": "front",
+    "#bdbdbd": "front",
+    "#ff9800": "front",
+    "#f06292": "front",
+    "#7e57c2": "front",
+    "#ef5350": "front",
+    "#ffca28": "front",
+    "#16a085": "front",
+    "#fb8441": "front",
+    "#44475a": "front",
+    "#dd86e0": "front",
+    "#4d576a": "front",
+    "#bd93f9": "back",
+    "#ffffff": "glyph",
+    "#666666": "glyph",
+    "#f8f8f2": "glyph"
+  }
+}

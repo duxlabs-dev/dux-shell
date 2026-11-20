@@ -83,7 +83,7 @@ Column {
 
                         Timer {
                             id: longPressTimer
-                            interval: 200
+                            interval: Timing.longPress
                             repeat: false
                             onTriggered: {
                                 if (NotepadStorageService.tabs.length > 1) {
@@ -119,8 +119,9 @@ Column {
                             Behavior on x {
                                 enabled: !root.suppressShiftAnimation
                                 NumberAnimation {
-                                    duration: 150
-                                    easing.type: Easing.OutCubic
+                                    duration: Theme.expressiveDurations.expressiveFastSpatial
+                                    easing.type: Easing.BezierSpline
+                                    easing.bezierCurve: Theme.expressiveCurves.expressiveFastSpatial
                                 }
                             }
                         }
@@ -204,7 +205,7 @@ Column {
                                         // timer fires afterwards so the field keeps focus + selection.
                                         Timer {
                                             id: renameFocusTimer
-                                            interval: 20
+                                            interval: Timing.frame
                                             repeat: false
                                             onTriggered: {
                                                 renameField.forceActiveFocus();
@@ -228,7 +229,7 @@ Column {
                                         height: 20
                                         radius: Theme.cornerRadius
                                         color: closeMouseArea.containsMouse ? Theme.surfaceTextHover : Theme.withAlpha(Theme.surfaceTextHover, 0)
-                                        visible: NotepadStorageService.tabs.length > 1 && !delegateItem.editing
+                                        visible: !delegateItem.editing
                                         anchors.verticalCenter: parent.verticalCenter
 
                                         DIcon {
@@ -252,8 +253,9 @@ Column {
 
                                 Behavior on color {
                                     ColorAnimation {
-                                        duration: Theme.shortDuration
-                                        easing.type: Theme.standardEasing
+                                        duration: Theme.expressiveDurations.expressiveFastEffects
+                                        easing.type: Easing.BezierSpline
+                                        easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
                                     }
                                 }
                             }

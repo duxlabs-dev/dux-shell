@@ -15,7 +15,6 @@ Item {
 
     property var groupCollapsedStates: ({})
     property var parentModal: null
-    property string newGroupName: ""
     property string renamingGroupId: ""
 
     readonly property var allInstances: SettingsData.desktopWidgetInstances || []
@@ -97,94 +96,85 @@ Item {
     SettingsPage {
         id: mainColumn
 
-        SettingsCard {
-            settingKey: "desktopGeneral"
-            tags: ["desktop", "context", "menu", "right click", "wallpaper"]
-            width: parent.width
-            iconName: "mouse"
-            title: I18n.tr("General")
+        SettingsDeferred {
+            SettingsCard {
+                settingKey: "desktopGeneral"
+                tags: ["desktop", "context", "menu", "right click", "wallpaper"]
+                width: parent.width
+                iconName: "mouse"
+                title: I18n.tr("General")
 
-            SettingsDropdownRow {
-                settingKey: "desktopContextMenu"
-                text: I18n.tr("Right-click menu")
-                description: I18n.tr("Auto turns it off on compositors that use clicks on the empty desktop themselves", "desktop context menu dropdown description")
-                options: [I18n.tr("Auto"), I18n.tr("On"), I18n.tr("Off")]
-                readonly property var values: ["auto", "on", "off"]
-                currentValue: options[Math.max(0, values.indexOf(SettingsData.desktopContextMenu))]
-                onValueChanged: value => SettingsData.set("desktopContextMenu", values[options.indexOf(value)])
+                SettingsDropdownRow {
+                    settingKey: "desktopContextMenu"
+                    text: I18n.tr("Right-click menu")
+                    description: I18n.tr("Auto turns it off on compositors that use clicks on the empty desktop themselves", "desktop context menu dropdown description")
+                    options: [I18n.tr("Auto"), I18n.tr("On"), I18n.tr("Off")]
+                    readonly property var values: ["auto", "on", "off"]
+                    currentValue: options[Math.max(0, values.indexOf(SettingsData.desktopContextMenu))]
+                    onValueChanged: value => SettingsData.set("desktopContextMenu", values[options.indexOf(value)])
+                }
             }
         }
 
-        SettingsCard {
-            settingKey: "desktopWidgetGroups"
-            tags: ["groups", "profiles", "layouts"]
-            width: parent.width
-            iconName: "folder"
-            title: I18n.tr("Groups", "noun, card title for desktop widget groups")
-            collapsible: true
-            expanded: root.allGroups.length > 0
+        SettingsDeferred {
+            SettingsCard {
+                settingKey: "desktopWidgetGroups"
+                tags: ["groups", "profiles", "layouts"]
+                width: parent.width
+                iconName: "folder"
+                title: I18n.tr("Groups", "noun, card title for desktop widget groups")
+                collapsible: true
+                expanded: root.allGroups.length > 0
 
-            SettingsRow {
-                body: Row {
-                    spacing: Theme.spacingS
-                    width: parent.width
+                SettingsTextFieldRow {
+                    id: newGroup
 
-                    DTextField {
-                        id: newGroupField
-                        outlined: true
-                        leftIconName: "folder"
-                        labelText: I18n.tr("Name")
-                        width: parent.width - addGroupBtn.width - Theme.spacingS
-                        text: root.newGroupName
-                        onTextChanged: root.newGroupName = text
-                        onAccepted: {
-                            if (!text.trim())
-                                return;
-                            SettingsData.createDesktopWidgetGroup(text.trim());
-                            root.newGroupName = "";
-                            text = "";
-                        }
+                    function add() {
+                        const name = value.trim();
+                        if (!name)
+                            return;
+                        SettingsData.createDesktopWidgetGroup(name);
+                        value = "";
                     }
 
-                    DButton {
-                        id: addGroupBtn
+                    leftIconName: "folder"
+                    text: I18n.tr("Name")
+                    onAccepted: add()
+
+                    actions: DButton {
                         iconName: "add"
                         text: I18n.tr("Add")
-                        enabled: root.newGroupName.trim().length > 0
-                        onClicked: {
-                            SettingsData.createDesktopWidgetGroup(root.newGroupName.trim());
-                            root.newGroupName = "";
-                            newGroupField.text = "";
-                        }
+                        enabled: newGroup.value.trim().length > 0
+                        onClicked: newGroup.add()
                     }
                 }
-            }
 
-            Repeater {
-                model: root.allGroups
+                Repeater {
+                    model: root.allGroups
 
-                delegate: SettingsRow {
-                    id: groupRow
+                    delegate: SettingsRow {
+                        id: groupRow
 
-                    required property var modelData
+                        required property var modelData
 
-                    iconName: "folder"
-                    title: modelData.name
-                    singleLineTitle: true
+                        iconName: "folder"
+                        title: modelData.name
+                        singleLineTitle: true
 
-                    DActionButton {
-                        iconName: "edit"
-                        tooltipText: I18n.tr("Rename")
-                        onClicked: root.openRenameDialog(groupRow.modelData)
-                    }
+                        DActionButton {
+                            iconName: "edit"
+                            tooltipText: I18n.tr("Rename")
+                            onClicked: root.openRenameDialog(groupRow.modelData)
+                        }
 
-                    DActionButton {
-                        iconName: "delete"
-                        iconColor: Theme.error
-                        tooltipText: I18n.tr("Delete")
-                        onClicked: {
-                            SettingsData.removeDesktopWidgetGroup(groupRow.modelData.id);
-                            ToastService.showInfo(I18n.tr("Group removed"));
+                        DActionButton {
+                            iconName: "delete"
+                            iconColor: Theme.error
+                            tooltipText: I18n.tr("Delete")
+                            onClicked: {
+                                SettingsData.removeDesktopWidgetGroup(groupRow.modelData.id);
+                                ToastService.showInfo(I18n.tr("Group removed"));
+                            }
                         }
                     }
                 }
@@ -257,16 +247,18 @@ Item {
             horizontalAlignment: Text.AlignLeft
         }
 
-        SettingsCard {
-            width: parent.width
-            iconName: "info"
-            title: I18n.tr("Help", "noun, card title for desktop widget usage tips")
+        SettingsDeferred {
+            SettingsCard {
+                width: parent.width
+                iconName: "info"
+                title: I18n.tr("Help", "noun, card title for desktop widget usage tips")
 
-            SettingsRow {
-                iconName: "drag_indicator"
-                iconBox: true
-                title: I18n.tr("Reorder & group")
-                subtitle: I18n.tr("Drag a widget by its handle here to reorder it or drop it into another group")
+                SettingsRow {
+                    iconName: "drag_indicator"
+                    iconBox: true
+                    title: I18n.tr("Reorder & group")
+                    subtitle: I18n.tr("Drag a widget by its handle here to reorder it or drop it into another group")
+                }
             }
         }
 
@@ -299,7 +291,7 @@ Item {
 
     SettingsRenameDialog {
         id: renameDialog
-        parent: root.parentModal?.modalFocusScope ?? root
+        parent: root.parentModal?.dialogHostFor(root) ?? root
         supportingText: root.allGroups.find(g => g.id === root.renamingGroupId)?.name ?? ""
         leftIconName: "folder"
         onAccepted: name => root.saveGroupName(name)

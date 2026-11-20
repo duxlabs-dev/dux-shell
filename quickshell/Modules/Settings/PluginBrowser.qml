@@ -1139,7 +1139,7 @@ RegistryBrowserWindow {
             visible: root.isLoading
 
             SequentialAnimation on opacity {
-                running: loadingGrid.visible && Theme.longDuration > 0
+                running: loadingGrid.visible && !Theme.motionOff
                 loops: Animation.Infinite
                 onRunningChanged: {
                     if (!running)
@@ -1149,12 +1149,14 @@ RegistryBrowserWindow {
                 NumberAnimation {
                     to: 0.45
                     duration: Theme.longDuration
-                    easing.type: Theme.standardEasing
+                    easing.type: Easing.BezierSpline
+                    easing.bezierCurve: Theme.expressiveCurves.expressiveSlowEffects
                 }
                 NumberAnimation {
                     to: 1
                     duration: Theme.longDuration
-                    easing.type: Theme.standardEasing
+                    easing.type: Easing.BezierSpline
+                    easing.bezierCurve: Theme.expressiveCurves.expressiveSlowEffects
                 }
             }
 

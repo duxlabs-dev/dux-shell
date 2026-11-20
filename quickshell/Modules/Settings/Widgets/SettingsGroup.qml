@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import qs.Common
+import qs.Widgets
 
 Item {
     id: root
@@ -16,6 +17,8 @@ Item {
     property var slots: []
     property bool layingOut: false
     property bool layoutReady: false
+    // Children report a change of visibility before their parent does; laying out on each would rebuild the slots per row
+    property bool shown: false
 
     width: parent?.width ?? 0
     implicitHeight: 0
@@ -25,9 +28,13 @@ Item {
     onSpacingChanged: root.layout()
     onCustomPaddingHChanged: root.layout()
     onCustomPaddingVChanged: root.layout()
-    onVisibleChanged: root.layout()
+    onVisibleChanged: {
+        shown = visible;
+        layout();
+    }
     Component.onCompleted: {
         layoutReady = true;
+        shown = visible;
         layout();
     }
     Component.onDestruction: layoutReady = false
@@ -54,7 +61,7 @@ Item {
     }
 
     function layout() {
-        if (!layoutReady || !visible || layingOut)
+        if (!layoutReady || !shown || !visible || layingOut)
             return;
         layingOut = true;
         const items = [];
@@ -128,16 +135,13 @@ Item {
             border.width: SettingsMetrics.groupEdgeWidth
             border.color: Theme.outlineMedium
 
-            Rectangle {
-                x: SettingsMetrics.rowPaddingH
-                width: parent.width - SettingsMetrics.rowPaddingH * 2
-                height: Theme.dividerWidth
+            DDivider {
+                inset: SettingsMetrics.rowPaddingH
                 visible: SettingsMetrics.continuousGroups && !parent.first
                 color: SettingsMetrics.groupDividerColor
             }
 
             Behavior on color {
-                enabled: Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
                 ColorAnimation {
                     duration: SettingsMetrics.fadeDuration
                     easing.type: Easing.BezierSpline
@@ -162,6 +166,14 @@ Item {
 
         readonly property bool isSettingsGroupHost: true
         readonly property color slotColor: root.slotColor
+        // Once one button group row has to fold under its label, the others fold with it.
+        readonly property bool foldButtonGroups: {
+            for (let i = 0; i < children.length; i++) {
+                if (children[i].visible && children[i].foldsAlone === true)
+                    return true;
+            }
+            return false;
+        }
 
         function isEdge(item, first) {
             const slot = root.slots[first ? 0 : root.slots.length - 1];

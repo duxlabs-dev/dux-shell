@@ -40,6 +40,7 @@ Item {
 
     function _reset() {
         diff = [];
+        SettingsSearchService.ensureIndex();
         _refresh();
     }
 
@@ -74,12 +75,15 @@ Item {
     }
 
     SettingsPage {
-        SettingsCard {
-            width: parent.width
-            visible: root.profile !== null && root.diff.length === 0
+        SettingsDeferred {
+            when: root.profile !== null && root.diff.length === 0
 
-            SettingsRow {
-                title: I18n.tr("Matches the current settings", "config profile compare page: applying would change nothing")
+            SettingsCard {
+                width: parent.width
+
+                SettingsRow {
+                    title: I18n.tr("Matches the current settings", "config profile compare page: applying would change nothing")
+                }
             }
         }
 

@@ -168,7 +168,7 @@ Singleton {
 
     readonly property real meterBarThickness: Theme.spacingM
     readonly property real overviewPlayWidth: 64
-    readonly property int meterDuration: fadeDuration
+    readonly property int meterDuration: Theme.expressiveDurations.expressiveSlowEffects
     readonly property real cpuWarnPercent: 60
     readonly property real cpuCriticalPercent: 80
     readonly property real tempWarnDegrees: 69
@@ -216,7 +216,7 @@ Singleton {
     readonly property int mediaArtDiscRotationDuration: 20000
     readonly property real mediaArtSwayAngle: 10
     readonly property int mediaArtSwayDuration: 8000
-    readonly property int mediaArtSpinInterval: 16
+    readonly property int mediaArtSpinInterval: Timing.cappedTick
     readonly property real mediaSeekbarHeight: 22
     readonly property real mediaSeekbarHandleSize: 16
     readonly property real mediaSeekbarHandleDragWidth: 5
@@ -242,7 +242,6 @@ Singleton {
     readonly property real mediaDeviceNameWidthRatio: 0.42
     readonly property real accentSelectedAlpha: 0.2
     readonly property real groupIdleAlpha: 0.1
-    readonly property int mediaPositionPollInterval: 1000
     readonly property int mediaVolumeEchoTimeout: 1500
     readonly property int mediaTransitionGraceInterval: 3000
     readonly property int mediaPlayerLossGraceInterval: 1500

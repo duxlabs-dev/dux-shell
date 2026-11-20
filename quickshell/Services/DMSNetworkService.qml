@@ -178,6 +178,7 @@ Singleton {
     property var vpnBusyStartTime: 0
     property string vpnError: ""
     property string vpnErrorUuid: ""
+    property string vpnConnectRequest: ""
 
     property var profiles: {
         const mergedProfiles = vpnProfiles ? vpnProfiles.slice() : [];
@@ -578,12 +579,17 @@ Singleton {
         }
 
         const incomingVpnError = state.vpnError || "";
-        if (incomingVpnError && incomingVpnError !== vpnError) {
+        if (incomingVpnError && (incomingVpnError !== vpnError || (state.vpnErrorUuid || "") !== vpnErrorUuid)) {
             vpnIsBusy = false;
             pendingVpnUuid = "";
             vpnBusyStartTime = 0;
-            const failedName = (vpnProfiles.find(p => p.uuid === state.vpnErrorUuid)?.name) || I18n.tr("VPN", "virtual private network, widget and page title");
-            ToastService.showError(I18n.tr("%1: %2", "vpn error toast, %1 is the vpn name, %2 is the error").arg(failedName).arg(incomingVpnError));
+            const failedProfile = vpnProfiles.find(p => p.uuid === state.vpnErrorUuid);
+            const failedName = failedProfile?.name || I18n.tr("VPN", "virtual private network, widget and page title");
+            // A failed connect request already showed its own toast with the details.
+            if (vpnConnectRequest && (vpnConnectRequest === state.vpnErrorUuid || vpnConnectRequest === failedProfile?.name))
+                vpnConnectRequest = "";
+            else
+                ToastService.showError(I18n.tr("%1: %2", "vpn error toast, %1 is the vpn name, %2 is the error").arg(failedName).arg(incomingVpnError));
         }
         vpnError = incomingVpnError;
         vpnErrorUuid = state.vpnErrorUuid || "";
@@ -806,9 +812,9 @@ Singleton {
         } : null;
         DMSService.sendRequest("network.wifi.disconnect", params, response => {
             if (response.error) {
-                ToastService.showError(I18n.tr("Failed to disconnect WiFi"), response.error);
+                ToastService.showError(I18n.tr("Failed to disconnect Wi-Fi"), response.error);
             } else {
-                ToastService.showInfo(I18n.tr("Disconnected from WiFi"));
+                ToastService.showInfo(I18n.tr("Disconnected from Wi-Fi"));
                 currentWifiSSID = "";
                 connectionStatus = "";
             }
@@ -901,7 +907,7 @@ Singleton {
                 log.warn("Failed to toggle WiFi:", response.error);
             } else if (response.result) {
                 wifiEnabled = response.result.enabled;
-                ToastService.showInfo(wifiEnabled ? I18n.tr("WiFi enabled") : I18n.tr("WiFi disabled"));
+                ToastService.showInfo(wifiEnabled ? I18n.tr("Wi-Fi enabled") : I18n.tr("Wi-Fi disabled"));
             }
         });
     }
@@ -927,9 +933,9 @@ Singleton {
             return;
         DMSService.sendRequest("network.wifi.enable", null, response => {
             if (response.error) {
-                ToastService.showError(I18n.tr("Failed to enable WiFi"), response.error);
+                ToastService.showError(I18n.tr("Failed to enable Wi-Fi"), response.error);
             } else {
-                ToastService.showInfo(I18n.tr("WiFi enabled"));
+                ToastService.showInfo(I18n.tr("Wi-Fi enabled"));
             }
         });
     }
@@ -1006,7 +1012,7 @@ Singleton {
     }
 
     Timer {
-        interval: 10000
+        interval: Timing.poll
         repeat: true
         running: root.autoScan && root.networkAvailable && root.wifiEnabled
         onTriggered: root.scanWifi()
@@ -1043,16 +1049,16 @@ Singleton {
             details += "MAC: " + info.hwAddr + "\\n";
             details += I18n.tr("Speed") + ": " + "%1 Mbps".arg(info.speed) + "\\n" + "\\n";
 
-            details += I18n.tr("IPv4", "network IP version") + ":" + "\\n";
+            details += "IPv4" + ":" + "\\n";
 
             for (const ip4 of info.IPv4s.ips) {
                 details += "    " + I18n.tr("IP address") + ": " + ip4 + "\\n";
             }
             details += "    " + I18n.tr("Gateway", "network IP setting label") + ": " + info.IPv4s.gateway + "\\n";
-            details += "    " + I18n.tr("DNS", "network IP setting label") + ": " + info.IPv4s.dns + "\\n";
+            details += "    " + "DNS" + ": " + info.IPv4s.dns + "\\n";
 
             if (info.IPv6s.ips) {
-                details += "\\n" + I18n.tr("IPv6", "network IP version") + ":" + "\\n";
+                details += "\\n" + "IPv6" + ":" + "\\n";
 
                 for (const ip6 of info.IPv6s.ips) {
                     details += "    " + I18n.tr("IP address") + ": " + ip6 + "\\n";
@@ -1061,7 +1067,7 @@ Singleton {
                     details += "    " + I18n.tr("Gateway", "network IP setting label") + ": " + info.IPv6s.gateway + "\\n";
                 }
                 if (info.IPv6s.dns.length > 0) {
-                    details += "    " + I18n.tr("DNS", "network IP setting label") + ": " + info.IPv6s.dns + "\\n";
+                    details += "    " + "DNS" + ": " + info.IPv6s.dns + "\\n";
                 }
             }
         }
@@ -1177,6 +1183,7 @@ Singleton {
         vpnIsBusy = true;
         pendingVpnUuid = uuidOrName;
         vpnBusyStartTime = Date.now();
+        vpnConnectRequest = uuidOrName;
 
         const params = {
             uuidOrName: uuidOrName,
@@ -1189,6 +1196,8 @@ Singleton {
                 pendingVpnUuid = "";
                 vpnBusyStartTime = 0;
                 ToastService.showError(I18n.tr("Failed to connect VPN"), response.error);
+            } else {
+                vpnConnectRequest = "";
             }
         });
     }
@@ -1593,7 +1602,7 @@ Singleton {
         case "hotspot-ip-config-failed":
             return I18n.tr("IP sharing setup failed. Check that %1 is installed.", "hotspot IP configuration failure message, %1 is a package name").arg("dnsmasq");
         case "hotspot-supplicant-failed":
-            return I18n.tr("The WiFi adapter could not start access point mode.", "hotspot adapter failure message");
+            return I18n.tr("The Wi-Fi adapter could not start access point mode.", "hotspot adapter failure message");
         case "hotspot-wpa3-failed":
             return I18n.tr("This Wi-Fi adapter can't host a WPA3 hotspot. Use WPA2.", "hotspot WPA3 activation failure message");
         default:

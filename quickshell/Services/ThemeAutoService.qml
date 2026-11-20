@@ -209,7 +209,10 @@ Singleton {
                     });
                 } else {
                     root.log.warn("Theme automation: No location configured");
+                    return;
                 }
+                if (root.active)
+                    root.evaluate();
             }
         }
     }
@@ -482,28 +485,6 @@ Singleton {
         return false;
     }
 
-    Timer {
-        id: locationRetryTimer
-        interval: 1000
-        repeat: true
-        running: false
-        property int retryCount: 0
-
-        onTriggered: {
-            if (root.sendLocationToBackend()) {
-                stop();
-                retryCount = 0;
-                root.evaluate();
-            } else {
-                retryCount++;
-                if (retryCount >= 10) {
-                    stop();
-                    retryCount = 0;
-                }
-            }
-        }
-    }
-
     function start() {
         root.active = true;
 
@@ -512,11 +493,9 @@ Singleton {
 
         const sent = sendLocationToBackend();
 
-        if (!sent && typeof SessionData !== "undefined" && SessionData.themeModeAutoMode === "location") {
-            locationRetryTimer.start();
-        } else {
-            evaluate();
-        }
+        if (!sent && SessionData.themeModeAutoMode === "location")
+            return;
+        evaluate();
     }
 
     function stop() {

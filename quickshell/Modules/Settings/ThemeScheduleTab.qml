@@ -45,79 +45,83 @@ Item {
     }
 
     SettingsPage {
-        SettingsCard {
+        SettingsMainToggle {
             tab: "theme"
-            tags: ["light", "dark", "mode", "appearance", "automatic", "schedule", "sunrise", "sunset", "matugen", "smart", "wallpaper", "brightness"]
-            settingKey: "themeSchedule"
+            tags: ["light", "dark", "mode"]
+            settingKey: "themeScheduleDarkMode"
+            iconName: "dark_mode"
+            text: I18n.tr("Dark mode")
+            checked: !SessionData.isLightMode
+            onToggled: toggled => {
+                if (toggled === !SessionData.isLightMode)
+                    return;
+                Theme.screenTransition();
+                Theme.setLightMode(!toggled);
+            }
+        }
 
-            SettingsToggleRow {
+        SettingsDeferred {
+            SettingsCard {
                 tab: "theme"
-                tags: ["light", "dark", "mode"]
-                settingKey: "themeScheduleDarkMode"
-                iconName: "dark_mode"
-                text: I18n.tr("Dark mode")
-                checked: !SessionData.isLightMode
-                onToggled: toggled => {
-                    if (toggled === !SessionData.isLightMode)
-                        return;
-                    Theme.screenTransition();
-                    Theme.setLightMode(!toggled);
+                tags: ["light", "dark", "mode", "appearance", "automatic", "schedule", "sunrise", "sunset", "matugen", "smart", "wallpaper", "brightness"]
+                title: I18n.tr("Schedule", "noun, time based light and dark theme switching mode")
+                settingKey: "themeSchedule"
+
+                SettingsButtonGroupRow {
+                    tab: "theme"
+                    tags: ["automatic", "schedule", "location", "sunrise", "sunset", "wallpaper", "matugen"]
+                    settingKey: "themeModeAutoEnabled"
+                    text: I18n.tr("Automatic control")
+                    model: root.modeLabels
+                    currentIndex: Math.max(0, root.modes.indexOf(root.mode))
+                    onSelectionChanged: (index, selected) => {
+                        if (!selected)
+                            return;
+                        root.setMode(root.modes[index]);
+                    }
                 }
-            }
 
-            SettingsButtonGroupRow {
-                tab: "theme"
-                tags: ["automatic", "schedule", "location", "sunrise", "sunset", "wallpaper", "matugen"]
-                settingKey: "themeModeAutoEnabled"
-                text: I18n.tr("Automatic control")
-                model: root.modeLabels
-                currentIndex: Math.max(0, root.modes.indexOf(root.mode))
-                onSelectionChanged: (index, selected) => {
-                    if (!selected)
-                        return;
-                    root.setMode(root.modes[index]);
+                SettingsToggleRow {
+                    tab: "theme"
+                    tags: ["gamma", "night", "share", "schedule"]
+                    settingKey: "themeModeShareGammaSettings"
+                    visible: root.scheduled
+                    text: I18n.tr("Share gamma control settings")
+                    description: SessionData.themeModeShareGammaSettings ? I18n.tr("Using shared settings from Gamma Control") : ""
+                    checked: SessionData.themeModeShareGammaSettings
+                    onToggled: checked => SessionData.setThemeModeShareGammaSettings(checked)
                 }
-            }
 
-            SettingsToggleRow {
-                tab: "theme"
-                tags: ["gamma", "night", "share", "schedule"]
-                settingKey: "themeModeShareGammaSettings"
-                visible: root.scheduled
-                text: I18n.tr("Share gamma control settings")
-                description: SessionData.themeModeShareGammaSettings ? I18n.tr("Using shared settings from Gamma Control") : ""
-                checked: SessionData.themeModeShareGammaSettings
-                onToggled: checked => SessionData.setThemeModeShareGammaSettings(checked)
-            }
-
-            SettingsTimeRow {
-                visible: root.ownSchedule && root.mode === "time"
-                is24Hour: SettingsData.use24HourClock
-                startTitle: I18n.tr("Dark mode starts")
-                startHour: SessionData.themeModeStartHour
-                startMinute: SessionData.themeModeStartMinute
-                endTitle: I18n.tr("Light mode starts")
-                endHour: SessionData.themeModeEndHour
-                endMinute: SessionData.themeModeEndMinute
-                onStartChanged: (hour, minute) => {
-                    SessionData.setThemeModeStartHour(hour);
-                    SessionData.setThemeModeStartMinute(minute);
+                SettingsTimeRow {
+                    dialogHost: root.parentModal?.dialogHostFor(root) ?? null
+                    visible: root.ownSchedule && root.mode === "time"
+                    is24Hour: SettingsData.use24HourClock
+                    startTitle: I18n.tr("Dark mode starts")
+                    startHour: SessionData.themeModeStartHour
+                    startMinute: SessionData.themeModeStartMinute
+                    endTitle: I18n.tr("Light mode starts")
+                    endHour: SessionData.themeModeEndHour
+                    endMinute: SessionData.themeModeEndMinute
+                    onStartChanged: (hour, minute) => {
+                        SessionData.setThemeModeStartHour(hour);
+                        SessionData.setThemeModeStartMinute(minute);
+                    }
+                    onEndChanged: (hour, minute) => {
+                        SessionData.setThemeModeEndHour(hour);
+                        SessionData.setThemeModeEndMinute(minute);
+                    }
                 }
-                onEndChanged: (hour, minute) => {
-                    SessionData.setThemeModeEndHour(hour);
-                    SessionData.setThemeModeEndMinute(minute);
+
+                SettingsLocationSection {
+                    visible: root.ownSchedule && root.mode === "location"
                 }
-            }
 
-            SettingsLocationSection {
-                visible: root.ownSchedule && root.mode === "location"
-            }
-
-            SettingsRow {
-                iconName: "schedule"
-                title: I18n.tr("Next Transition")
-                subtitle: Format.formatIsoTime(SessionData.themeModeNextTransition)
-                visible: root.scheduled && SessionData.themeModeNextTransition !== ""
+                SettingsRow {
+                    iconName: "schedule"
+                    title: I18n.tr("Next Transition")
+                    subtitle: Format.formatIsoTime(SessionData.themeModeNextTransition)
+                    visible: root.scheduled && SessionData.themeModeNextTransition !== ""
+                }
             }
         }
     }

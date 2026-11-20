@@ -183,6 +183,8 @@ Item {
 
         ClipboardButton {
             id: clipboardWidget
+            onIsMouseHoveredChanged: if (isMouseHovered)
+                PopoutService.prewarm(PopoutService.clipboardHistoryPopoutLoader)
             widgetThickness: surfaceContext.widgetThickness
             barThickness: surfaceContext.thickness
             axis: surfaceContext.axis
@@ -258,6 +260,8 @@ Item {
 
         LauncherButton {
             id: launcherButton
+            onIsMouseHoveredChanged: if (isMouseHovered)
+                PopoutService.prewarm(PopoutService.appDrawerLoader)
             isActive: false
             widgetThickness: surfaceContext.widgetThickness
             barThickness: surfaceContext.thickness
@@ -379,6 +383,8 @@ Item {
 
         Clock {
             id: clockWidget
+            onIsMouseHoveredChanged: if (isMouseHovered)
+                PopoutService.prewarm(PopoutService.dankDashPopoutLoader)
             axis: root.surfaceContext.axis
             compactMode: root.overlapping
             barThickness: root.surfaceContext.thickness
@@ -767,6 +773,8 @@ Item {
 
         ControlCenterButton {
             id: controlCenterButton
+            onIsMouseHoveredChanged: if (isMouseHovered)
+                PopoutService.prewarm(PopoutService.controlCenterLoader)
             isActive: PopoutService.controlCenterLoader?.item ? PopoutService.controlCenterLoader?.item.shouldBeVisible : false
             widgetThickness: surfaceContext.widgetThickness
             barThickness: surfaceContext.thickness

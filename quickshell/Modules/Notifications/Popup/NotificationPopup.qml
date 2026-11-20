@@ -14,6 +14,12 @@ Item {
 
     required property var screen
     required property var surface
+
+    onExitFinished: surface._onPopupExitFinished(win)
+    onExitRequested: surface._onPopupExitRequested(win)
+    onSurfaceMapped: surface._pumpMotion()
+    onPopupHeightChanged: surface._onPopupHeightChanged(win)
+    onPopupChromeGeometryChanged: surface._onPopupChromeGeometryChanged(win)
     readonly property alias maskRegion: contentInputMask
     readonly property var blurRegion: blur.effectiveRegion
     readonly property bool wantsOverlay: CompositorService.framePeerSurfacesUseOverlayForScreen(win.screen) || (!!notificationData && (SettingsData.notificationOverlayEnabled || notificationData.urgency === NotificationUrgency.Critical))
@@ -596,26 +602,30 @@ Item {
         property real shadowBlurPx: shadowsAllowed ? elevLevel.blurPx : 0
         property real shadowOffsetX: shadowsAllowed ? Theme.elevationOffsetX(elevLevel) : 0
         property real shadowOffsetY: shadowsAllowed ? Theme.elevationOffsetY(elevLevel) : 0
-        readonly property int shadowMotionDuration: win.inlineHeightAnimating ? Theme.notificationStackShiftDuration : Theme.shortDuration
+        readonly property int shadowMotionDuration: win.inlineHeightAnimating ? NotificationMetrics.heightDuration : Theme.expressiveDurations.expressiveFastEffects
+        readonly property var shadowMotionCurve: win.inlineHeightAnimating ? NotificationMetrics.heightCurve : Theme.expressiveCurves.expressiveFastEffects
 
         Behavior on shadowBlurPx {
             NumberAnimation {
                 duration: content.shadowMotionDuration
-                easing.type: Theme.standardEasing
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: content.shadowMotionCurve
             }
         }
 
         Behavior on shadowOffsetX {
             NumberAnimation {
                 duration: content.shadowMotionDuration
-                easing.type: Theme.standardEasing
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: content.shadowMotionCurve
             }
         }
 
         Behavior on shadowOffsetY {
             NumberAnimation {
                 duration: content.shadowMotionDuration
-                easing.type: Theme.standardEasing
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: content.shadowMotionCurve
             }
         }
 
@@ -869,7 +879,7 @@ Item {
         target: win
         property: "presentationProgress"
         to: 1
-        duration: NotificationMetrics.animationsEnabled ? Theme.notificationEnterDuration : 0
+        duration: NotificationMetrics.animationsEnabled ? NotificationMetrics.enterDuration : 0
         easing.bezierCurve: NotificationMetrics.enterCurve
         onFinished: {
             if (!win.exiting && !win._isDestroying)
@@ -884,7 +894,7 @@ Item {
             target: win
             property: "presentationProgress"
             to: 0
-            duration: NotificationMetrics.animationsEnabled && !content.chromeOnlyExit ? Theme.notificationExitDuration : 0
+            duration: NotificationMetrics.animationsEnabled && !content.chromeOnlyExit ? NotificationMetrics.exitDuration : 0
             easing.bezierCurve: NotificationMetrics.exitCurve
         }
 
@@ -892,7 +902,7 @@ Item {
             target: win
             property: "chromeRelease"
             to: 1
-            duration: NotificationMetrics.animationsEnabled && win.collapseChromeOnExit ? Theme.notificationStackShiftDuration : 0
+            duration: NotificationMetrics.animationsEnabled && win.collapseChromeOnExit ? NotificationMetrics.heightDuration : 0
             easing.bezierCurve: NotificationMetrics.heightCurve
         }
 
@@ -956,7 +966,7 @@ Item {
     Timer {
         id: exitWatchdog
 
-        interval: Math.max(600, Theme.notificationExitDuration + Theme.notificationStackShiftDuration + Theme.shortDuration)
+        interval: Math.max(600, NotificationMetrics.exitDuration + NotificationMetrics.heightDuration + Theme.shortDuration)
         repeat: false
         onTriggered: finalizeExit("watchdog")
     }

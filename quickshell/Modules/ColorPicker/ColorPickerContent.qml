@@ -422,7 +422,7 @@ DDialog {
                         buttonSize: Theme.iconSizeSmall + Theme.spacingXS
                         iconSize: Theme.iconSizeSmall - Theme.spacingXS
                         iconName: "close"
-                        backgroundColor: Theme.surfaceContainerHighest
+                        backgroundColor: Theme.chipSurfaceNested
                         focusPolicy: Qt.NoFocus
                         visible: recentHover.hovered
                         tooltipText: I18n.tr("Remove from recent colors", "button on a recently picked color swatch")

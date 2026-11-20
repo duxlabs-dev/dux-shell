@@ -19,7 +19,9 @@ DContextMenu {
         if (!screenName)
             return;
         if (openState) {
-            TrayMenuManager.registerMenu(screenName, { close: () => root.hide() });
+            TrayMenuManager.registerMenu(screenName, {
+                close: () => root.hide()
+            });
             customContentItem?.clearState?.();
         } else {
             TrayMenuManager.unregisterMenu(screenName);
@@ -77,7 +79,7 @@ DContextMenu {
 
     Timer {
         id: pendingActionCloseTimer
-        interval: 80
+        interval: Timing.settleShort
         repeat: false
         onTriggered: root.hide()
     }

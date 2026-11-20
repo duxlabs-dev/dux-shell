@@ -8,7 +8,8 @@ Item {
     required property string json
     required property var grid
 
-    readonly property var slot: grid.slotLayout.slots[index] ?? null
+    property var retainedSlot: null
+    readonly property var slot: grid.slotLayout.slots[index] ?? retainedSlot
     readonly property bool dragging: grid.draggingSourceIndex === index
     readonly property bool resizing: grid.sizePreview?.index === index
     property var resizeOrigin: null
@@ -114,7 +115,7 @@ Item {
     }
 
     Behavior on width {
-        enabled: !root.dragging && root.resizeOrigin === null && root.grid.animationsEnabled && root.grid.animateLayout && !root.grid.holdLayout
+        enabled: !root.dragging && root.resizeOrigin === null && root.grid.animateLayout && !root.grid.holdLayout
         NumberAnimation {
             duration: Theme.expressiveDurations.expressiveFastSpatial
             easing.type: Easing.BezierSpline
@@ -123,7 +124,7 @@ Item {
     }
 
     Behavior on height {
-        enabled: !root.dragging && root.resizeOrigin === null && root.grid.animationsEnabled && root.grid.animateLayout && !root.grid.holdLayout
+        enabled: !root.dragging && root.resizeOrigin === null && root.grid.animateLayout && !root.grid.holdLayout
         NumberAnimation {
             duration: Theme.expressiveDurations.expressiveFastSpatial
             easing.type: Easing.BezierSpline
@@ -132,7 +133,7 @@ Item {
     }
 
     Behavior on x {
-        enabled: !root.dragging && root.resizeOrigin === null && root.grid.animationsEnabled && root.grid.animateLayout && !root.grid.holdLayout
+        enabled: !root.dragging && root.resizeOrigin === null && root.grid.animateLayout && !root.grid.holdLayout
         NumberAnimation {
             duration: Theme.expressiveDurations.expressiveDefaultSpatial
             easing.type: Easing.BezierSpline
@@ -141,7 +142,7 @@ Item {
     }
 
     Behavior on y {
-        enabled: !root.dragging && root.resizeOrigin === null && root.grid.animationsEnabled && root.grid.animateLayout && !root.grid.holdLayout
+        enabled: !root.dragging && root.resizeOrigin === null && root.grid.animateLayout && !root.grid.holdLayout
         NumberAnimation {
             duration: Theme.expressiveDurations.expressiveDefaultSpatial
             easing.type: Easing.BezierSpline

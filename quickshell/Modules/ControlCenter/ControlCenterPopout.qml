@@ -8,8 +8,6 @@ DPopout {
     id: root
 
     layerNamespace: "dms:control-center"
-    resizeCurve: Theme.expressiveCurves.standard
-    resizeDuration: CcMetrics.transitionDuration
     resizeMotion: true
     resizing: contentLoader.item?.panelResizing ?? false
     // Hangs above wherever a strip below would push the panel off its resting spot (bottom bar, low side-bar trigger).
@@ -19,9 +17,17 @@ DPopout {
     topOverflow: _stripEdit && stripAbove ? CcMetrics.editActionsHeight : 0
     leftOverflow: dockFits && dockSide === "left" ? _dockReserve : 0
     rightOverflow: dockFits && dockSide === "right" ? _dockReserve : 0
+    // The docked panel keeps its own floor and hangs past a shorter body, toward the side with room.
+    readonly property real dockPanelMinHeight: CcMetrics.dockedPanelMinHeight
+    readonly property real dockOverhang: dockFits ? Math.max(0, _dockMinHeight - popupHeight) : 0
+    // Judged at the shortest body, so a height drag never flips the panel across and moves the body under the pointer.
+    readonly property bool dockAbove: dockFits && alignedYFor(0, Math.max(0, _dockMinHeight - CcMetrics.minHeight), CcMetrics.minHeight) !== alignedYFor(0, 0, CcMetrics.minHeight)
+    sideTopOverflow: dockAbove ? dockOverhang : 0
+    sideBottomOverflow: dockAbove ? 0 : dockOverhang
     sideBlurItem: contentLoader.item?.dockedBlurItem ?? null
     sideBlurRadius: contentLoader.item?.surfaceRadius ?? 0
     inputMargin: editMode ? CcMetrics.editOverflow : 0
+    minimumSurfaceWidth: editMode ? CcMetrics.sheetWidthFor(gridColumnCap) : 0
 
     property string expandedSection: ""
     property string pendingSection: ""
@@ -58,7 +64,7 @@ DPopout {
         return _maxPopupHeight(0) >= _dockMinHeight && _dockedCap(side) >= CcMetrics.minimumColumns;
     }
 
-    // Short screens keep the strip, with the list in a popover; a short body still docks, as the edit floor grows it.
+    // Short screens keep the strip, with the list in a popover; a short body still docks, with the panel hanging past it.
     function _pickDockSide() {
         if (SettingsData.controlCenterEditLayout !== "docked")
             return "strip";
@@ -91,6 +97,11 @@ DPopout {
     readonly property int gridColumns: Math.min(CcMetrics.gridColumns, gridColumnCap)
     readonly property real sheetContentWidth: CcMetrics.sheetWidthFor(gridColumns)
     readonly property real availableHeight: _maxPopupHeight(0)
+
+    function resizeYFor(height) {
+        const overhang = dockFits ? Math.max(0, _dockMinHeight - height) : 0;
+        return alignedYFor(topOverflow + (dockAbove ? overhang : 0), bottomOverflow + (dockAbove ? 0 : overhang), height);
+    }
     property bool powerMenuOpen: powerMenuModalLoader?.item?.shouldBeVisible ?? false
     property var colorPickerModal: null
     property var powerMenuModalLoader: null
@@ -166,8 +177,8 @@ DPopout {
     }
 
     popupWidth: sheetContentWidth
-    // With the panel or popover up, removing tiles stops shrinking the body at its minimum.
-    readonly property real _editFloor: dockFits ? _dockMinHeight : (contentLoader.item?.widgetPopoverOpen ?? false) ? CcMetrics.widgetPopoverMinHeight + CcMetrics.sheetPadding * 2 : CcMetrics.minHeight
+    // With the popover up, removing tiles stops shrinking the body at its minimum.
+    readonly property real _editFloor: !dockFits && (contentLoader.item?.widgetPopoverOpen ?? false) ? CcMetrics.widgetPopoverMinHeight + CcMetrics.sheetPadding * 2 : CcMetrics.minHeight
     popupHeight: Math.min(_maxPopupHeight(_stripEdit ? CcMetrics.editOverflow : 0), Math.max(_editFloor, contentLoader.item?.targetImplicitHeight ?? CcMetrics.minHeight))
     triggerWidth: CcMetrics.triggerWidth
     positioning: ""

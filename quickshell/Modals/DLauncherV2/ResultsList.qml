@@ -73,6 +73,7 @@ Item {
     property point _dragGrab: Qt.point(0, 0)
     property size _dragSize: Qt.size(0, 0)
     property bool _dragImageTile: false
+    property bool _mouseDrag: false
     readonly property bool _pressActive: _pressIndex >= 0 || _pressMemberIndex >= 0
     readonly property bool _dragActive: _liftedIndex >= 0 || _liftedMemberIndex >= 0
 
@@ -81,7 +82,7 @@ Item {
             _resetDrag();
     }
 
-    function _armDrag(tile, sceneX, sceneY, memberIndex = -1) {
+    function _armDrag(tile, sceneX, sceneY, fromMouse, memberIndex = -1) {
         _resetDrag();
         const item = tile?.item;
         if (!item || controller?.searchQuery)
@@ -96,10 +97,13 @@ Item {
         _pressMemberIndex = memberIndex;
         _pressScene = Qt.point(sceneX, sceneY);
         _dragPoint = mapFromItem(null, sceneX, sceneY);
+        _mouseDrag = fromMouse;
+        tile.holdGrab = fromMouse;
         liftTimer.restart();
     }
 
     function _lift() {
+        liftTimer.stop();
         const tile = _dragTile;
         if (!tile?.item || !visible) {
             _resetDrag();
@@ -119,8 +123,11 @@ Item {
         if (!_pressActive)
             return;
         if (!_dragActive && Math.hypot(sceneX - _pressScene.x, sceneY - _pressScene.y) >= (_dragTile?.dragThreshold ?? 0)) {
-            _resetDrag();
-            return;
+            if (!_mouseDrag) {
+                _resetDrag();
+                return;
+            }
+            _lift();
         }
         _dragPoint = mapFromItem(null, sceneX, sceneY);
         if (!_dragActive)
@@ -172,6 +179,9 @@ Item {
         if (!_pressActive)
             return;
         liftTimer.stop();
+        if (_dragTile)
+            _dragTile.holdGrab = false;
+        _mouseDrag = false;
         if (root.folderPopup)
             root.folderPopup.memberDragOutside = false;
         _liftedIndex = -1;
@@ -246,7 +256,7 @@ Item {
 
     Timer {
         id: liftTimer
-        interval: LauncherMetrics.liftDelay
+        interval: Timing.longPress
         onTriggered: root._lift()
     }
 
@@ -669,8 +679,6 @@ Item {
                 width: mainListView.width
                 height: rowData?.height ?? LauncherMetrics.rowHeight
 
-                Component.onCompleted: mainListView.fadeIn(delegateRoot, index)
-
                 Loader {
                     active: delegateRoot.rowType === "list_item"
                     sourceComponent: Rectangle {
@@ -681,7 +689,6 @@ Item {
                         height: delegateRoot.height - LauncherMetrics.rowGap
                         z: -1
                         visible: delegateRoot.visible
-                        opacity: delegateRoot.opacity
                         color: Theme.foregroundColor(Theme.cardSurface, Theme.isFloatingWindow(root))
                         border.width: Theme.layerOutlineWidth
                         border.color: Theme.outlineMedium
@@ -773,7 +780,6 @@ Item {
                                     height: delegateRoot.height - LauncherMetrics.tileGap
                                     z: -1
                                     visible: delegateRoot.visible && !gridCellDelegate.isBare
-                                    opacity: delegateRoot.opacity
                                     color: Theme.foregroundColor(Theme.cardSurface, Theme.isFloatingWindow(root))
                                     border.width: Theme.layerOutlineWidth
                                     border.color: Theme.outlineMedium
@@ -800,7 +806,7 @@ Item {
                                             dragSource: root._liftedIndex >= 0 && gridTile.flatIndex === root._liftedIndex
                                             receiving: root._dropTargetIndex >= 0 && gridTile.flatIndex === root._dropTargetIndex
 
-                                            onDragPressed: (sceneX, sceneY) => root._armDrag(gridTile, sceneX, sceneY)
+                                            onDragPressed: (sceneX, sceneY, fromMouse) => root._armDrag(gridTile, sceneX, sceneY, fromMouse)
                                             onDragMoved: (sceneX, sceneY) => root._dragMove(sceneX, sceneY)
                                             onDragReleased: (sceneX, sceneY) => root._dragRelease(sceneX, sceneY)
                                             onDragCanceled: root._resetDrag()
@@ -830,7 +836,7 @@ Item {
                                             dragSource: root._liftedIndex >= 0 && imageTileItem.flatIndex === root._liftedIndex
                                             receiving: root._dropTargetIndex >= 0 && imageTileItem.flatIndex === root._dropTargetIndex
 
-                                            onDragPressed: (sceneX, sceneY) => root._armDrag(imageTileItem, sceneX, sceneY)
+                                            onDragPressed: (sceneX, sceneY, fromMouse) => root._armDrag(imageTileItem, sceneX, sceneY, fromMouse)
                                             onDragMoved: (sceneX, sceneY) => root._dragMove(sceneX, sceneY)
                                             onDragReleased: (sceneX, sceneY) => root._dragRelease(sceneX, sceneY)
                                             onDragCanceled: root._resetDrag()
@@ -954,7 +960,7 @@ Item {
             dragActive: root._dragActive
             onDismissed: Qt.callLater(root._hideFolderPopup)
             onMemberRightClicked: (item, sceneX, sceneY) => root.itemRightClicked(-1, item, sceneX, sceneY)
-            onMemberDragPressed: (tile, memberIndex, sceneX, sceneY) => root._armDrag(tile, sceneX, sceneY, memberIndex)
+            onMemberDragPressed: (tile, memberIndex, sceneX, sceneY, fromMouse) => root._armDrag(tile, sceneX, sceneY, fromMouse, memberIndex)
             onMemberDragMoved: (sceneX, sceneY) => root._dragMove(sceneX, sceneY)
             onMemberDragReleased: (sceneX, sceneY) => root._dragRelease(sceneX, sceneY)
             onMemberDragCanceled: root._resetDrag()
@@ -988,7 +994,7 @@ Item {
                 NumberAnimation on scale {
                     from: 1
                     to: LauncherMetrics.dragLiftScale
-                    duration: SettingsData.reduceMotion ? 0 : Theme.expressiveDurations.expressiveFastSpatial
+                    duration: Theme.reduceMotion ? 0 : Theme.expressiveDurations.expressiveFastSpatial
                     easing.type: Easing.BezierSpline
                     easing.bezierCurve: Theme.expressiveCurves.expressiveFastSpatial
                 }

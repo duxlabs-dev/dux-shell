@@ -33,7 +33,7 @@ LevelOSD {
 
     Timer {
         id: _suppressTimer
-        interval: 2000
+        interval: Timing.hold
         onTriggered: root._suppressNewPlayer = false
     }
 

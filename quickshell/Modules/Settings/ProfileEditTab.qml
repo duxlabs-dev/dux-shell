@@ -247,106 +247,117 @@ Item {
             }
         }
 
-        SettingsCard {
-            width: parent.width
+        SettingsDeferred {
+            SettingsCard {
+                width: parent.width
 
-            SettingsRow {
-                title: I18n.tr("Image", "config profile thumbnail")
-                body: [
-                    ProfilePreview {
-                        width: Math.min(parent?.width ?? 0, SettingsMetrics.mediaMaxWidth)
-                        owner: root.imageOwner
-                        targetScreen: root.parentModal?.screen ?? Quickshell.screens[0] ?? null
-                    },
-                    Flow {
+                SettingsRow {
+                    title: I18n.tr("Image", "config profile thumbnail")
+                    body: [
+                        ProfilePreview {
+                            width: Math.min(parent?.width ?? 0, SettingsMetrics.mediaMaxWidth)
+                            owner: root.imageOwner
+                            targetScreen: root.parentModal?.screen ?? Quickshell.screens[0] ?? null
+                        },
+                        Flow {
+                            width: parent?.width ?? 0
+                            spacing: Theme.spacingS
+
+                            DButton {
+                                text: I18n.tr("Browse Files")
+                                iconName: "folder_open"
+                                backgroundColor: Theme.secondaryContainer
+                                textColor: Theme.onSecondaryContainer
+                                enabled: root.imageId !== ""
+                                onClicked: root._openBrowser()
+                            }
+
+                            DButton {
+                                text: I18n.tr("Take screenshot", "config profile image: take a screenshot of the current screen")
+                                iconName: "screenshot_monitor"
+                                backgroundColor: Theme.secondaryContainer
+                                textColor: Theme.onSecondaryContainer
+                                enabled: root.imageId !== "" && ConfigProfileService.screenshotTargetId === ""
+                                onClicked: ConfigProfileService.startScreenshot(root.imageId)
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+
+        SettingsDeferred {
+            when: !root.isNew && root.profileId === ConfigProfileService.activeProfileId
+
+            SettingsCard {
+                width: parent.width
+
+                SettingsToggleRow {
+                    text: I18n.tr("Sync changes to this profile", "config profile toggle: write later setting changes into this profile")
+                    checked: root.pendingSync
+                    onToggled: on => root.pendingSync = on
+                }
+            }
+        }
+
+        SettingsDeferred {
+            when: !root.isNew
+
+            SettingsCard {
+                width: parent.width
+
+                SettingsRow {
+                    subtitle: root.dirty ? I18n.tr("Unsaved changes") : ""
+                    body: Flow {
                         width: parent?.width ?? 0
                         spacing: Theme.spacingS
 
                         DButton {
-                            text: I18n.tr("Browse Files")
-                            iconName: "folder_open"
+                            enabled: !root.dirty
+                            text: I18n.tr("Update from current settings", "config profile action: overwrite the profile with the current setup")
+                            iconName: "sync"
                             backgroundColor: Theme.secondaryContainer
                             textColor: Theme.onSecondaryContainer
-                            enabled: root.imageId !== ""
-                            onClicked: root._openBrowser()
+                            onClicked: confirm.showWithOptions({
+                                title: I18n.tr("Update from current settings", "config profile action: overwrite the profile with the current setup"),
+                                message: I18n.tr("Replace settings of profile \"%1\"?", "confirm dialog message, %1 is the config profile name").arg(root.profile?.name ?? ""),
+                                confirmText: I18n.tr("Update"),
+                                onConfirm: () => root._updateFromCurrent()
+                            })
                         }
 
                         DButton {
-                            text: I18n.tr("Take screenshot", "config profile image: take a screenshot of the current screen")
-                            iconName: "screenshot_monitor"
+                            text: I18n.tr("Export", "config profile action: save the profile as an archive file")
+                            iconName: "upload"
                             backgroundColor: Theme.secondaryContainer
                             textColor: Theme.onSecondaryContainer
-                            enabled: root.imageId !== "" && ConfigProfileService.screenshotTargetId === ""
-                            onClicked: ConfigProfileService.startScreenshot(root.imageId)
+                            enabled: !root.dirty
+                            onClicked: root._openExport()
                         }
                     }
-                ]
-            }
-        }
+                }
 
-        SettingsCard {
-            width: parent.width
-            visible: !root.isNew && root.profileId === ConfigProfileService.activeProfileId
-
-            SettingsToggleRow {
-                text: I18n.tr("Sync changes to this profile", "config profile toggle: write later setting changes into this profile")
-                checked: root.pendingSync
-                onToggled: on => root.pendingSync = on
-            }
-        }
-
-        SettingsCard {
-            width: parent.width
-            visible: !root.isNew
-
-            SettingsRow {
-                subtitle: root.dirty ? I18n.tr("Unsaved changes") : ""
-                body: Flow {
-                    width: parent?.width ?? 0
-                    spacing: Theme.spacingS
-
-                    DButton {
-                        enabled: !root.dirty
-                        text: I18n.tr("Update from current settings", "config profile action: overwrite the profile with the current setup")
-                        iconName: "sync"
-                        backgroundColor: Theme.secondaryContainer
-                        textColor: Theme.onSecondaryContainer
-                        onClicked: confirm.showWithOptions({
-                            title: I18n.tr("Update from current settings", "config profile action: overwrite the profile with the current setup"),
-                            message: I18n.tr("Replace settings of profile \"%1\"?", "confirm dialog message, %1 is the config profile name").arg(root.profile?.name ?? ""),
-                            confirmText: I18n.tr("Update"),
-                            onConfirm: () => root._updateFromCurrent()
-                        })
-                    }
-
-                    DButton {
-                        text: I18n.tr("Export", "config profile action: save the profile as an archive file")
-                        iconName: "upload"
-                        backgroundColor: Theme.secondaryContainer
-                        textColor: Theme.onSecondaryContainer
-                        enabled: !root.dirty
-                        onClicked: root._openExport()
-                    }
+                SettingsNavRow {
+                    title: I18n.tr("Compare", "config profile: page and link row showing what applying the profile would change")
+                    onClicked: keyboard => root.parentModal?.navigateTo("profile_inspect", keyboard)
                 }
             }
-
-            SettingsNavRow {
-                title: I18n.tr("Compare", "config profile: page and link row showing what applying the profile would change")
-                onClicked: keyboard => root.parentModal?.navigateTo("profile_inspect", keyboard)
-            }
         }
 
-        SettingsCard {
-            width: parent.width
-            visible: !root.isNew
+        SettingsDeferred {
+            when: !root.isNew
 
-            SettingsRow {
-                body: DButton {
-                    text: I18n.tr("Delete profile")
-                    iconName: "delete"
-                    backgroundColor: SettingsMetrics.controlSurface
-                    textColor: Theme.error
-                    onClicked: confirm.request(root.profile, () => root._deleteConfirmed())
+            SettingsCard {
+                width: parent.width
+
+                SettingsRow {
+                    body: DButton {
+                        text: I18n.tr("Delete profile")
+                        iconName: "delete"
+                        backgroundColor: SettingsMetrics.controlSurface
+                        textColor: Theme.error
+                        onClicked: confirm.request(root.profile, () => root._deleteConfirmed())
+                    }
                 }
             }
         }

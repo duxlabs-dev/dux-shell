@@ -18,7 +18,7 @@ const COLUMNS = [
     {id: "threads", width: 5},
     {id: "nice", width: 7},
     {id: "cpuTime", width: 6},
-    {id: "pid", width: 5},
+    {id: "pid", width: 6},
     {id: "user", width: 8}
 ];
 

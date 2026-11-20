@@ -18,7 +18,7 @@ Item {
     property color occupiedColor: Theme.surfaceTextMedium
     property color emptyColor: Theme.surfaceTextAlpha
     property color urgentColor: Theme.error
-    property bool animated: !SettingsData.reduceMotion
+    property bool animated: !Theme.reduceMotion
 
     implicitWidth: strip.implicitWidth
     implicitHeight: strip.implicitHeight
@@ -81,23 +81,27 @@ Item {
                 Behavior on width {
                     enabled: root.animated && !root.vertical
                     NumberAnimation {
-                        duration: Theme.mediumDuration
-                        easing.type: Theme.standardEasing
+                        duration: Theme.expressiveDurations.expressiveDefaultSpatial
+                        easing.type: Easing.BezierSpline
+                        easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
                     }
                 }
 
                 Behavior on height {
                     enabled: root.animated && root.vertical
                     NumberAnimation {
-                        duration: Theme.mediumDuration
-                        easing.type: Theme.standardEasing
+                        duration: Theme.expressiveDurations.expressiveDefaultSpatial
+                        easing.type: Easing.BezierSpline
+                        easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
                     }
                 }
 
                 Behavior on color {
                     enabled: root.animated
                     ColorAnimation {
-                        duration: Theme.shortDuration
+                        duration: Theme.expressiveDurations.expressiveFastEffects
+                        easing.type: Easing.BezierSpline
+                        easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
                     }
                 }
             }

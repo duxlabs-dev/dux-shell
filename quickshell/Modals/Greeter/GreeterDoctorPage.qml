@@ -172,8 +172,9 @@ Item {
 
         Behavior on opacity {
             NumberAnimation {
-                duration: Theme.mediumDuration
-                easing.type: Theme.emphasizedEasing
+                duration: Theme.expressiveDurations.expressiveSlowEffects
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: Theme.expressiveCurves.expressiveSlowEffects
             }
         }
 

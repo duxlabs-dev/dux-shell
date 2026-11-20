@@ -54,7 +54,7 @@ Item {
 
     Loader {
         id: qrLoader
-        parent: root.parentModal?.modalFocusScope ?? root
+        parent: root.parentModal?.dialogHostFor(root) ?? root
         anchors.fill: parent
         z: 100
         active: root.qrMounted

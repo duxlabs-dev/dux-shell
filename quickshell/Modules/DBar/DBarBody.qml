@@ -52,7 +52,7 @@ Item {
         if (!isIsland)
             return Theme.hostSurface;
         if (SettingsData.islandSetting(barConfig, "islandHighContrast"))
-            return Theme.surfaceContainerHighest;
+            return Theme.highContrastSurface;
         const palette = SettingsData.islandSetting(barConfig, "islandPalette");
         return palette === "bright" ? Theme.surfaceBright : palette === "dim" ? Theme.surfaceDim : _hostSurface;
     }
@@ -111,6 +111,10 @@ Item {
 
     function processScrollWheel(wheel) {
         scrollArea.processWheel(wheel);
+    }
+
+    function pointerMovedToIsland() {
+        topBarContent.pointerMovedToIsland();
     }
 
     property var controlCenterButtonRef: null
@@ -306,7 +310,7 @@ Item {
 
     Timer {
         id: _blurRebuildTimer
-        interval: 1
+        interval: 0
         onTriggered: barBlur.rebuild()
     }
 
@@ -792,10 +796,11 @@ Item {
     readonly property real surfaceSpacing: Math.max(effectiveSpacing, renderedSpacing)
 
     Behavior on renderedSpacing {
-        enabled: (barWindow.hostWindow?.visible ?? false) && !SettingsData.reduceMotion
+        enabled: (barWindow.hostWindow?.visible ?? false) && !Theme.reduceMotion
         NumberAnimation {
-            duration: Theme.shortDuration
-            easing.type: Easing.OutCubic
+            duration: Theme.expressiveDurations.expressiveDefaultSpatial
+            easing.type: Easing.BezierSpline
+            easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
         }
     }
 
@@ -822,21 +827,23 @@ Item {
     property real fittedTrailingPad: fitToWidgets ? Math.max(0, topBarContent.fittedTrailingPad) : 0
     readonly property int lengthPaddingStartPx: Theme.px(fitToWidgets ? fittedLeadingPad : effectiveBarLengthPadding, _dpr)
     readonly property int lengthPaddingEndPx: Theme.px(fitToWidgets ? fittedTrailingPad : effectiveBarLengthPadding, _dpr)
-    readonly property bool fitAnimated: fitToWidgets && _fitSettled && (hostWindow?.visible ?? false) && !SettingsData.reduceMotion
+    readonly property bool fitAnimated: fitToWidgets && _fitSettled && (hostWindow?.visible ?? false) && !Theme.reduceMotion
 
     Behavior on fittedLeadingPad {
         enabled: barWindow.fitAnimated
         NumberAnimation {
-            duration: Theme.shortDuration
-            easing.type: Easing.OutCubic
+            duration: Theme.expressiveDurations.expressiveDefaultSpatial
+            easing.type: Easing.BezierSpline
+            easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
         }
     }
 
     Behavior on fittedTrailingPad {
         enabled: barWindow.fitAnimated
         NumberAnimation {
-            duration: Theme.shortDuration
-            easing.type: Easing.OutCubic
+            duration: Theme.expressiveDurations.expressiveDefaultSpatial
+            easing.type: Easing.BezierSpline
+            easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
         }
     }
 
@@ -909,7 +916,7 @@ Item {
     // Waits out the collapse's last frame.
     Timer {
         id: islandRoomRelease
-        interval: 150
+        interval: Timing.settle
         onTriggered: {
             if (barWindow.islandSheetOut)
                 return;
@@ -951,7 +958,7 @@ Item {
 
     // Outlives the close so moving between popouts doesn't resize the window.
     Timer {
-        interval: 1000
+        interval: Timing.settleSlow
         running: barWindow.popoutRoomState !== "" && !barWindow.popoutOut
         onTriggered: {
             if (!barWindow.popoutRoomAlwaysHeld)
@@ -1146,7 +1153,7 @@ Item {
         // the timer re-evaluates against the post-transition mask.
         Timer {
             id: revealSettle
-            interval: 600
+            interval: Timing.settleSlow
             repeat: false
             onTriggered: topBarCore.evaluateReveal()
         }
@@ -1312,18 +1319,20 @@ Item {
                     onYChanged: barWindow.refreshBlurRegion()
 
                     Behavior on x {
-                        enabled: !SettingsData.reduceMotion
+                        enabled: !Theme.reduceMotion
                         NumberAnimation {
-                            duration: Theme.shortDuration
-                            easing.type: Easing.OutCubic
+                            duration: Theme.expressiveDurations.expressiveFastSpatial
+                            easing.type: Easing.BezierSpline
+                            easing.bezierCurve: Theme.expressiveCurves.expressiveFastSpatial
                         }
                     }
 
                     Behavior on y {
-                        enabled: !SettingsData.reduceMotion
+                        enabled: !Theme.reduceMotion
                         NumberAnimation {
-                            duration: Theme.shortDuration
-                            easing.type: Easing.OutCubic
+                            duration: Theme.expressiveDurations.expressiveFastSpatial
+                            easing.type: Easing.BezierSpline
+                            easing.bezierCurve: Theme.expressiveCurves.expressiveFastSpatial
                         }
                     }
                 }
@@ -1553,39 +1562,23 @@ Item {
                     // Band-sized and empty until the island loads; Qt's pointer-clip cache is already set by then.
                     PointerOverflowMarker {}
 
-                    sourceComponent: IslandBarHost {
-                        barConfig: barWindow.barConfig
-                        screen: barWindow.screen
-                        hostWindow: barWindow.hostWindow
-                        barId: barWindow._barId
-                        originOffsetX: topBarMouseArea.x + islandLoader.x
-                        originOffsetY: topBarMouseArea.y + islandLoader.y
-                        hostOffsetX: barWindow.hostOffsetX
-                        hostOffsetY: barWindow.hostOffsetY
-                        chrome: barWindow.islandChromeMode
-                        frameHosted: barWindow.frameHosted
-                        anchorItem: topBarContainer
-                        slotItem: barWindow.islandSlot
-                        barBody: barWindow
-                        bandThickness: barWindow.isVertical ? barUnitInset.width : barUnitInset.height
-                        bandInset: barUnitInset.spacingPx
-                        bandAlongStart: barWindow.isVertical ? barUnitInset.y : barUnitInset.x
-                        bandAlongEnd: barWindow.isVertical ? barUnitInset.y + barUnitInset.height : barUnitInset.x + barUnitInset.width
-                        bandColor: barWindow._bgColor
-                        leadingSectionRect: barWindow.leadingSectionRect
-                        centerSectionRect: barWindow.centerSectionRect
-                        trailingSectionRect: barWindow.trailingSectionRect
-                        onScrollWheel: wheel => scrollArea.processWheel(wheel)
-                    }
+                    Component.onCompleted: setSource("DBarIslandHost.qml", {
+                        body: barWindow,
+                        originItem: topBarMouseArea,
+                        slotLoader: islandLoader,
+                        anchorItem: topBarContainer,
+                        bandItem: barUnitInset,
+                        scrollItem: scrollArea
+                    })
                 }
 
                 Loader {
                     anchors.fill: parent
                     active: barWindow.editingWidgets
-                    sourceComponent: BarEditor {
-                        body: barWindow
+                    Component.onCompleted: setSource("BarEditor.qml", {
+                        body: barWindow,
                         content: topBarContent
-                    }
+                    })
                 }
             }
         }

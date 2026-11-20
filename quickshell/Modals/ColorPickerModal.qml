@@ -2,7 +2,7 @@ import QtQuick
 import Quickshell.Io
 import qs.Common
 import qs.Modals.Common
-import qs.Modules.ColorPicker
+import qs.Services
 
 DModal {
     id: root
@@ -22,6 +22,10 @@ DModal {
     allowStacking: true
 
     function show(overlayLayer = false) {
+        if (PopoutService.settingsModal?.hostsColorPicker) {
+            PopoutService.settingsModal.pickColor(root);
+            return;
+        }
         useOverlayLayer = overlayLayer;
         open();
         contentLoader?.item?.setColor(selectedColor);
@@ -101,19 +105,5 @@ DModal {
         target: "color-picker"
     }
 
-    content: Component {
-        ColorPickerContent {
-            anchors.fill: parent
-            pickerTitle: root.pickerTitle
-            initialColor: root.selectedColor
-            showSaveButton: typeof root.onColorSelectedCallback === "function"
-            onColorSelected: color => root.colorSelected(color)
-            onCloseRequested: root.hide()
-            onHideRequested: {
-                root.hideInstant();
-                startScreenPick();
-            }
-            onShowRequested: root.show(root.useOverlayLayer)
-        }
-    }
+    contentSource: Qt.resolvedUrl("ColorPickerModalContent.qml")
 }

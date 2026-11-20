@@ -10,7 +10,7 @@ function formatRate(bytesPerSec, gbDecimals) {
     return (bytesPerSec / (1024 * 1024 * 1024)).toFixed(gbDecimals ?? 2) + " GB/s";
 }
 
-function formatRateCompact(bytesPerSec, abbreviated) {
+function formatRateCompact(bytesPerSec, abbreviated, oneDecimal) {
     const units = ["K", "M", "G", "T"];
     let value = bytesPerSec / 1024;
     let unit = 0;
@@ -18,7 +18,9 @@ function formatRateCompact(bytesPerSec, abbreviated) {
         value /= 1024;
         unit++;
     }
-    const shown = bytesPerSec > 0 ? Math.max(1, Math.round(value)) : 0;
+    let shown = bytesPerSec > 0 ? Math.max(1, Math.round(value)) : 0;
+    if (oneDecimal && bytesPerSec > 0 && value < 9.95)
+        shown = Math.max(0.1, value).toFixed(1);
     return abbreviated ? shown + units[unit] : shown + " " + units[unit] + "B/s";
 }
 
@@ -93,14 +95,6 @@ function formatUntil(ts, use24h) {
     const suffix = hours >= 12 ? "PM" : "AM";
     const h12 = ((hours + 11) % 12) + 1;
     return h12 + ":" + pad2(minutes) + " " + suffix;
-}
-
-function addToHistory(arr, val, max) {
-    const newArr = arr.slice();
-    newArr.push(val);
-    if (newArr.length > max)
-        newArr.shift();
-    return newArr;
 }
 
 function escapeHtml(text) {

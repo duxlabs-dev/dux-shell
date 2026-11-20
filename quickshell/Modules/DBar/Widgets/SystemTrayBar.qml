@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Layouts
 import Quickshell
 import Quickshell.Services.SystemTray
 import qs.Common
@@ -20,7 +19,18 @@ BasePill {
     property var widgetData: null
     property string section: "right"
     // A same-named binding inside the overflow grid would resolve to its own property.
-    readonly property DPopout overflowPopoutRef: overflowPopout
+    readonly property var overflowPopoutRef: overflowPopoutLoader.item
+    readonly property var trayMenuPopoutRef: trayMenuPopoutLoader.item
+
+    function overflowPopout() {
+        overflowPopoutLoader.active = true;
+        return overflowPopoutLoader.item;
+    }
+
+    function trayMenuPopout() {
+        trayMenuPopoutLoader.active = true;
+        return trayMenuPopoutLoader.item;
+    }
     property bool isAtBottom: false
     property bool useOverflowPopup: !widgetData?.trayUseInlineExpansion
     property bool useSingleLineOverflowPopup: SettingsData.widgetOption("systemTray", widgetData, "trayPopupSingleLine")
@@ -338,16 +348,18 @@ BasePill {
         Transition {
             NumberAnimation {
                 properties: "width,height"
-                duration: Theme.shortDuration
-                easing.type: Theme.standardEasing
+                duration: Theme.expressiveDurations.expressiveDefaultSpatial
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
             }
         }
     ]
 
     Behavior on opacity {
         NumberAnimation {
-            duration: Theme.shortDuration
-            easing.type: Theme.standardEasing
+            duration: Theme.expressiveDurations.expressiveFastEffects
+            easing.type: Easing.BezierSpline
+            easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
         }
     }
 
@@ -376,10 +388,10 @@ BasePill {
     function _openOverflowAt(triggerItem) {
         if (!triggerItem || !root.parentScreen)
             return;
-        if (!root.positionPopout(overflowPopout, triggerItem, root.isVerticalOrientation ? triggerItem.height : triggerItem.width))
+        if (!root.positionPopout(root.overflowPopout(), triggerItem, root.isVerticalOrientation ? triggerItem.height : triggerItem.width))
             return;
         root.menuOpen = true;
-        PopoutManager.requestPopout(overflowPopout, undefined, "tray-overflow-" + root.section);
+        PopoutManager.requestPopout(root.overflowPopoutRef, undefined, "tray-overflow-" + root.section);
     }
 
     readonly property real overflowRawWidth: {
@@ -418,32 +430,30 @@ BasePill {
         return rows * itemSize + (rows - 1) * spacing + popupPadding * 2;
     }
 
-    DPopout {
-        id: overflowPopout
-        layerNamespace: "dms:tray-overflow"
-        screen: root.parentScreen
-        popupWidth: root.overflowRawWidth
-        popupHeight: root.overflowRawHeight
-        content: overflowContentComponent
+    readonly property Component overflowContent: overflowContentComponent
+    readonly property Component trayMenuContent: trayMenuContentComponent
+    readonly property real trayMenuWidth: trayMenuState.computedWidth
+    readonly property real trayMenuHeight: trayMenuState.computedHeight
+    readonly property bool trayMenuOpenedByHover: trayMenuState.openedByHover
+
+    Loader {
+        id: overflowPopoutLoader
+        active: false
+        Component.onCompleted: setSource("TrayOverflowPopout.qml", {
+            "tray": root
+        })
     }
 
-    DPopout {
-        id: trayMenuPopout
-        layerNamespace: "dms:tray-menu"
-        screen: root.parentScreen
-        popupWidth: trayMenuState.computedWidth
-        popupHeight: trayMenuState.computedHeight
-        content: trayMenuContentComponent
-        contentHandlesKeys: true
-        property alias openedByHover: trayMenuState.openedByHover
-        onOpened: {
-            contentLoader.item?.entryStack?.clear();
-            contentLoader.item?.forceActiveFocus();
-        }
+    Loader {
+        id: trayMenuPopoutLoader
+        active: false
+        Component.onCompleted: setSource("TrayMenuPopout.qml", {
+            "tray": root
+        })
     }
 
     Connections {
-        target: overflowPopout
+        target: root.overflowPopoutRef
         function onBackgroundClicked() {
             root.menuOpen = false;
         }
@@ -466,10 +476,10 @@ BasePill {
             return;
         if (root.menuOpen) {
             trayMenuState.close();
-            TrayMenuManager.registerMenu(root.parentScreen.name, overflowPopout);
+            TrayMenuManager.registerMenu(root.parentScreen.name, root.overflowPopout());
         } else {
-            root._unregisterMenuIfMatches(overflowPopout);
-            overflowPopout.close();
+            root._unregisterMenuIfMatches(root.overflowPopoutRef);
+            root.overflowPopoutRef?.close();
         }
     }
 
@@ -576,16 +586,18 @@ BasePill {
             Behavior on width {
                 enabled: !root.isVerticalOrientation
                 NumberAnimation {
-                    duration: Theme.shortDuration
-                    easing.type: Theme.standardEasing
+                    duration: Theme.expressiveDurations.expressiveDefaultSpatial
+                    easing.type: Easing.BezierSpline
+                    easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
                 }
             }
 
             Behavior on height {
                 enabled: root.isVerticalOrientation
                 NumberAnimation {
-                    duration: Theme.shortDuration
-                    easing.type: Theme.standardEasing
+                    duration: Theme.expressiveDurations.expressiveDefaultSpatial
+                    easing.type: Easing.BezierSpline
+                    easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
                 }
             }
 
@@ -602,8 +614,9 @@ BasePill {
 
                 Behavior on opacity {
                     NumberAnimation {
-                        duration: Theme.shortDuration
-                        easing.type: Theme.standardEasing
+                        duration: Theme.expressiveDurations.expressiveFastEffects
+                        easing.type: Easing.BezierSpline
+                        easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
                     }
                 }
 
@@ -670,15 +683,17 @@ BasePill {
                 Behavior on x {
                     enabled: !root.suppressShiftAnimation
                     NumberAnimation {
-                        duration: 150
-                        easing.type: Easing.OutCubic
+                        duration: Theme.expressiveDurations.expressiveFastSpatial
+                        easing.type: Easing.BezierSpline
+                        easing.bezierCurve: Theme.expressiveCurves.expressiveFastSpatial
                     }
                 }
                 Behavior on y {
                     enabled: !root.suppressShiftAnimation
                     NumberAnimation {
-                        duration: 150
-                        easing.type: Easing.OutCubic
+                        duration: Theme.expressiveDurations.expressiveFastSpatial
+                        easing.type: Easing.BezierSpline
+                        easing.bezierCurve: Theme.expressiveCurves.expressiveFastSpatial
                     }
                 }
             }
@@ -693,7 +708,7 @@ BasePill {
 
                 Timer {
                     id: longPressTimer
-                    interval: 400
+                    interval: Timing.longPress
                     repeat: false
                     onTriggered: dragHandler.longPressing = true
                 }
@@ -953,36 +968,36 @@ BasePill {
 
         function close() {
             showMenu = false;
-            root._unregisterMenuIfMatches(trayMenuPopout);
-            trayMenuPopout.close();
+            root._unregisterMenuIfMatches(root.trayMenuPopoutRef);
+            root.trayMenuPopoutRef?.close();
         }
     }
 
     Binding {
-        target: trayMenuPopout
+        target: root.trayMenuPopoutRef
         property: "popupWidth"
         value: trayMenuState.computedWidth
     }
     Binding {
-        target: trayMenuPopout
+        target: root.trayMenuPopoutRef
         property: "popupHeight"
         value: trayMenuState.computedHeight
     }
 
     Connections {
-        target: trayMenuPopout
+        target: root.trayMenuPopoutRef
         function onBackgroundClicked() {
             trayMenuState.close();
         }
         function onPopoutClosed() {
             trayMenuState.showMenu = false;
-            root._unregisterMenuIfMatches(trayMenuPopout);
+            root._unregisterMenuIfMatches(root.trayMenuPopoutRef);
         }
     }
 
     Timer {
         id: pendingActionCloseTimer
-        interval: 80
+        interval: Timing.settleShort
         repeat: false
         onTriggered: trayMenuState.close()
     }
@@ -1025,7 +1040,7 @@ BasePill {
                     width: menuFlickable.width
                     trayItem: trayMenuState.trayItem
                     menuHandle: trayMenuState.menuHandle
-                    anchorWindow: trayMenuPopout.contentWindow
+                    anchorWindow: root.trayMenuPopoutRef?.contentWindow ?? null
                     bar: root
                     onCloseRequested: trayMenuState.close()
                     onActionTriggered: pendingActionCloseTimer.restart()
@@ -1047,9 +1062,9 @@ BasePill {
 
         const registration = BarWidgetService.registrationForItem(root);
         if (registration?.context?.owner?.overflowAnchor)
-            registration.context.surface.positionPopout(trayMenuPopout, root, root.section);
+            registration.context.surface.positionPopout(root.trayMenuPopout(), root, root.section);
         else
-            trayMenuPopout.setTriggerPosition(pos.x, pos.y, pos.width, root.section, screen, barPosition, root.barThickness, root.barSpacing, root.barConfig);
+            root.trayMenuPopout().setTriggerPosition(pos.x, pos.y, pos.width, root.section, screen, barPosition, root.barThickness, root.barSpacing, root.barConfig);
 
         trayMenuState.trayItem = item;
         trayMenuState.menuHandle = item?.menu ?? null;
@@ -1061,10 +1076,10 @@ BasePill {
             root.menuOpen = false;
 
         if (screen)
-            TrayMenuManager.registerMenu(screen.name, trayMenuPopout);
+            TrayMenuManager.registerMenu(screen.name, root.trayMenuPopout());
 
         trayMenuState.showMenu = true;
-        PopoutManager.requestPopout(trayMenuPopout, undefined, "tray-menu-" + (item?.id ?? ""));
+        PopoutManager.requestPopout(root.trayMenuPopout(), undefined, "tray-menu-" + (item?.id ?? ""));
     }
 
     function showForTrayItem(item, anchor, screen, atBottom, vertical, axisObj, byHover) {

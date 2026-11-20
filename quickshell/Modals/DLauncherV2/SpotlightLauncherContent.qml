@@ -4,6 +4,7 @@ import QtQuick
 import Quickshell.Widgets
 import qs.Common
 import qs.Services
+import qs.Widgets
 import qs.DCommon.Widgets
 import qs.Modals.DLauncherV2.Components
 import "../../Common/LauncherKeybinds.js" as LauncherKeybinds
@@ -44,7 +45,6 @@ FocusScope {
     readonly property real _resultsContentH: resultsList.contentHeight > 0 ? _resultsTopGap + resultsList.contentHeight + resultsList.bottomInset : _statusH
     // The popup needs space beyond the underlying result rows.
     readonly property real _resultsH: !_hasQuery ? 0 : root.controller.activeFolderId ? _maxResultsH : Math.min(_resultsContentH, _resultsTopGap + resultsList.fittedHeight + resultsList.bottomInset)
-    readonly property int _resizeDuration: Theme.expressiveDurations.expressiveFastSpatial
     readonly property real _frameClipRadius: Math.max(0, (parentModal?.frameBottomRadius ?? 0) - resultsInset)
     readonly property real _editAvailableH: maxResultsHeight > 0 ? maxResultsHeight + _searchAreaH : Math.max(LauncherMetrics.maxResultsHeight, (parentModal?.screenHeight ?? Theme.mediumBreakpoint) - (parentModal?.modalY ?? 0) - Theme.spacingL)
     readonly property real _editH: Math.min(editLoader.implicitHeight, _editAvailableH)
@@ -429,13 +429,11 @@ FocusScope {
         }
     }
 
-    Rectangle {
+    DDivider {
         anchors.top: mesgRow.bottom
         anchors.left: parent.left
         anchors.right: parent.right
-        height: Theme.outlineWidth
         z: 1
-        color: Theme.outlineVariant
         visible: !root.editMode && root._hasQuery && !(Theme.focusRingWidth > 0 && searchInput.getActiveFocus())
     }
 
@@ -455,9 +453,9 @@ FocusScope {
         Behavior on height {
             enabled: root.resizeAnimated && root._animateResize
             NumberAnimation {
-                duration: root._resizeDuration
+                duration: Theme.expressiveDurations.expressiveDefaultSpatial
                 easing.type: Easing.BezierSpline
-                easing.bezierCurve: Theme.expressiveCurves.standard
+                easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
             }
         }
 

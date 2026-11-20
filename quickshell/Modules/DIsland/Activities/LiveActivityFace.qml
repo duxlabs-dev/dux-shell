@@ -60,7 +60,7 @@ Item {
     readonly property Component customFace: (expanded ? renderer?.expanded : iconOnly ? null : renderer?.compact) ?? null
     readonly property Component customIcon: renderer?.icon ?? null
     readonly property bool live: visible && opacity > 0 && !!Window.window && Window.window.visible
-    readonly property bool rendererMotionEnabled: live && !SettingsData.reduceMotion && Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None && controller.liveIconAnimationMode !== "none"
+    readonly property bool rendererMotionEnabled: live && !Theme.reduceMotion && controller.liveIconAnimationMode !== "none"
     readonly property bool motionEnabled: rendererMotionEnabled && !customFace && !customIcon
 
     function focusFace() {
@@ -115,7 +115,9 @@ Item {
         readonly property real contentInset: root.expanded ? Theme.spacingL : Theme.spacingM
         readonly property real contentSpacing: Theme.spacingM
         readonly property real actionHeight: Theme.buttonHeightS
-        function close() { root.controller.requestCollapse(); }
+        function close() {
+            root.controller.requestCollapse();
+        }
     }
 
     IslandActivityLayout {
@@ -336,7 +338,7 @@ Item {
                 color: root.foreground
 
                 Behavior on width {
-                    enabled: !SettingsData.reduceMotion && Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
+                    enabled: !Theme.reduceMotion
                     NumberAnimation {
                         duration: Math.min(220, Math.max(120, root.controller.liveIconAnimationDuration * 0.24))
                         easing.type: Easing.OutCubic

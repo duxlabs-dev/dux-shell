@@ -59,7 +59,7 @@ Item {
             "xwayland": "XWayland",
             "fullscreen": I18n.tr("Fullscreen"),
             "pinned": I18n.tr("Pinned"),
-            "initialised": I18n.tr("Initialised"),
+            "initialised": I18n.tr("Initialized"),
             "initialClass": I18n.tr("Initial class"),
             "initialTitle": I18n.tr("Initial title"),
             "tag": I18n.tr("Tag"),
@@ -394,193 +394,88 @@ Item {
             visibleCondition: windowRulesInclude.compositorSupported
         }
 
-        SettingsCard {
-            width: parent.width
-            iconName: "list"
-            title: I18n.tr("Rules (%1)", "window rules settings card title, %1 is a count").arg(root.windowRules?.length ?? 0)
+        SettingsDeferred {
+            SettingsCard {
+                width: parent.width
+                iconName: "list"
+                title: I18n.tr("Rules (%1)", "window rules settings card title, %1 is a count").arg(root.windowRules?.length ?? 0)
 
-            SettingsRow {
-                visible: !root.windowRules || root.windowRules.length === 0
-                body: Column {
-                    width: parent.width
-                    spacing: Theme.spacingXS
-
-                    DIcon {
-                        name: "select_window"
-                        size: Theme.iconSizeLarge
-                        color: Theme.surfaceVariantText
-                        anchors.horizontalCenter: parent.horizontalCenter
-                    }
-
-                    StyledText {
-                        text: I18n.tr("No window rules configured")
-                        font.pixelSize: Theme.fontSizeSmall
-                        color: Theme.surfaceVariantText
-                        anchors.horizontalCenter: parent.horizontalCenter
-                    }
-                }
-            }
-
-            SettingsReorderList {
-                id: rulesListColumn
-
-                model: root.windowRules || []
-                visible: count > 0
-                enabled: !root.savingRuleOrder
-                onReordered: indices => root.reorderRules(indices)
-
-                delegate: SettingsReorderRow {
-                    id: ruleRow
-
-                    required property var modelData
-
-                    reorderList: rulesListColumn
-                    reorderEnabled: !root.readOnly
-                    readonly property string ruleIdRef: modelData.id
-                    readonly property var liveRuleData: (root.windowRules || []).find(rule => rule.id === ruleIdRef) ?? modelData
-
-                    title: liveRuleData.name || liveRuleData.matchCriteria?.appId || liveRuleData.matchCriteria?.title || I18n.tr("Unnamed rule")
-                    subtitle: {
-                        const criteria = liveRuleData.matchCriteria || {};
-                        const parts = [];
-                        if (criteria.appId)
-                            parts.push(criteria.appId);
-                        if (criteria.title)
-                            parts.push("title: " + criteria.title);
-                        return parts.length > 0 ? parts.join(" · ") : I18n.tr("No match criteria");
-                    }
-
-                    DActionButton {
-                        anchors.verticalCenter: parent.verticalCenter
-                        iconName: "edit"
-                        enabled: !root.readOnly
-                        Accessible.name: I18n.tr("Edit rule")
-                        onClicked: root.editRule(ruleRow.liveRuleData)
-                    }
-
-                    DActionButton {
-                        anchors.verticalCenter: parent.verticalCenter
-                        iconName: "delete"
-                        iconColor: Theme.error
-                        enabled: !root.readOnly
-                        Accessible.name: I18n.tr("Delete rule")
-                        onClicked: root.removeRule(ruleRow.ruleIdRef)
-                    }
-
-                    body: Flow {
+                SettingsRow {
+                    visible: !root.windowRules || root.windowRules.length === 0
+                    body: Column {
                         width: parent.width
                         spacing: Theme.spacingXS
-                        visible: actionRepeater.count > 0
 
-                        Repeater {
-                            id: actionRepeater
-                            model: root.actionChips(ruleRow.liveRuleData.actions)
+                        DIcon {
+                            name: "select_window"
+                            size: Theme.iconSizeLarge
+                            color: Theme.surfaceVariantText
+                            anchors.horizontalCenter: parent.horizontalCenter
+                        }
 
-                            delegate: DBadge {
-                                required property string modelData
-                                maximumWidth: parent?.width ?? 0
-                                text: modelData
-                                color: Theme.primaryContainer
-                                textColor: Theme.onPrimaryContainer
-                                tooltipText: truncated ? modelData : null
-                            }
+                        StyledText {
+                            text: I18n.tr("No window rules configured")
+                            font.pixelSize: Theme.fontSizeSmall
+                            color: Theme.surfaceVariantText
+                            anchors.horizontalCenter: parent.horizontalCenter
                         }
                     }
                 }
-            }
-        }
 
-        SettingsCard {
-            width: parent.width
-            iconName: "description"
-            title: I18n.tr("User window rules (%1)", "card title for read-only compositor config rules, %1 is a count").arg(root.externalRules?.length ?? 0)
-            visible: root.externalRules && root.externalRules.length > 0
+                SettingsReorderList {
+                    id: rulesListColumn
 
-            SettingsRow {
-                body: StyledText {
-                    width: parent.width
-                    text: I18n.tr("Rules found in your compositor config. These are read-only here, use Convert to DMS to make an editable copy.")
-                    font.pixelSize: Theme.fontSizeSmall
-                    color: Theme.surfaceVariantText
-                    wrapMode: Text.WordWrap
-                }
-            }
+                    model: root.windowRules || []
+                    visible: count > 0
+                    enabled: !root.savingRuleOrder
+                    onReordered: indices => root.reorderRules(indices)
 
-            Repeater {
-                model: ScriptModel {
-                    objectProp: "id"
-                    values: root.externalRules || []
-                }
+                    delegate: SettingsReorderRow {
+                        id: ruleRow
 
-                delegate: SettingsRow {
-                    id: externalCard
-                    required property var modelData
+                        required property var modelData
 
-                    readonly property string displayName: {
-                        const name = externalCard.modelData.name || "";
-                        if (name)
-                            return name;
-                        return root.matchSummary(externalCard.modelData);
-                    }
-                    readonly property string sourceFile: (externalCard.modelData.source || "").split("/").pop()
-                    readonly property bool expanded: root.expandedExternalId === externalCard.modelData.id
-                    readonly property bool hasActions: {
-                        const a = externalCard.modelData.actions || {};
-                        return Object.keys(a).some(k => a[k] !== undefined && a[k] !== null && a[k] !== "");
-                    }
+                        reorderList: rulesListColumn
+                        reorderEnabled: !root.readOnly
+                        readonly property string ruleIdRef: modelData.id
+                        readonly property var liveRuleData: (root.windowRules || []).find(rule => rule.id === ruleIdRef) ?? modelData
 
-                    title: externalCard.displayName
-                    subtitle: {
-                        const m = externalCard.modelData.matchCriteria || {};
-                        let parts = [];
-                        if (m.appId)
-                            parts.push(m.appId);
-                        if (m.title)
-                            parts.push("title: " + m.title);
-                        const base = parts.length > 0 ? parts.join(" · ") : I18n.tr("No match criteria");
-                        const count = root.matchesOf(externalCard.modelData).length;
-                        return count > 1 ? I18n.tr("%1 (+%2 more)").arg(base).arg(count - 1) : base;
-                    }
-                    clickable: true
-                    onClicked: root.expandedExternalId = externalCard.expanded ? "" : externalCard.modelData.id
+                        title: liveRuleData.name || liveRuleData.matchCriteria?.appId || liveRuleData.matchCriteria?.title || I18n.tr("Unnamed rule")
+                        subtitle: {
+                            const criteria = liveRuleData.matchCriteria || {};
+                            const parts = [];
+                            if (criteria.appId)
+                                parts.push(criteria.appId);
+                            if (criteria.title)
+                                parts.push("title: " + criteria.title);
+                            return parts.length > 0 ? parts.join(" · ") : I18n.tr("No match criteria");
+                        }
 
-                    DBadge {
-                        visible: externalCard.sourceFile.length > 0
-                        anchors.verticalCenter: parent.verticalCenter
-                        text: externalCard.sourceFile
-                        color: SettingsMetrics.controlColor
-                        textColor: Theme.surfaceVariantText
-                    }
+                        DActionButton {
+                            anchors.verticalCenter: parent.verticalCenter
+                            iconName: "edit"
+                            enabled: !root.readOnly
+                            Accessible.name: I18n.tr("Edit rule")
+                            onClicked: root.editRule(ruleRow.liveRuleData)
+                        }
 
-                    DIcon {
-                        name: externalCard.expanded ? "expand_less" : "expand_more"
-                        size: Theme.iconSize
-                        color: Theme.surfaceVariantText
-                        anchors.verticalCenter: parent.verticalCenter
-                    }
+                        DActionButton {
+                            anchors.verticalCenter: parent.verticalCenter
+                            iconName: "delete"
+                            iconColor: Theme.error
+                            enabled: !root.readOnly
+                            Accessible.name: I18n.tr("Delete rule")
+                            onClicked: root.removeRule(ruleRow.ruleIdRef)
+                        }
 
-                    DActionButton {
-                        iconName: "content_copy"
-                        iconColor: Theme.surfaceVariantText
-                        enabled: !root.readOnly
-                        anchors.verticalCenter: parent.verticalCenter
-                        tooltipText: I18n.tr("Convert to DMS")
-                        tooltipSide: "left"
-                        onClicked: root.copyRuleToDms(externalCard.modelData)
-                    }
-
-                    body: Column {
-                        width: parent.width
-                        spacing: Theme.spacingS
-                        visible: externalCard.hasActions || externalCard.expanded
-
-                        Flow {
+                        body: Flow {
                             width: parent.width
                             spacing: Theme.spacingXS
-                            visible: externalCard.hasActions
+                            visible: actionRepeater.count > 0
 
                             Repeater {
-                                model: root.actionChips(externalCard.modelData.actions)
+                                id: actionRepeater
+                                model: root.actionChips(ruleRow.liveRuleData.actions)
 
                                 delegate: DBadge {
                                     required property string modelData
@@ -592,63 +487,173 @@ Item {
                                 }
                             }
                         }
+                    }
+                }
+            }
+        }
 
-                        Column {
+        SettingsDeferred {
+            when: root.externalRules && root.externalRules.length > 0
+
+            SettingsCard {
+                width: parent.width
+                iconName: "description"
+                title: I18n.tr("User window rules (%1)", "card title for read-only compositor config rules, %1 is a count").arg(root.externalRules?.length ?? 0)
+
+                SettingsRow {
+                    body: StyledText {
+                        width: parent.width
+                        text: I18n.tr("Rules found in your compositor config. These are read-only here, use Convert to DMS to make an editable copy.")
+                        font.pixelSize: Theme.fontSizeSmall
+                        color: Theme.surfaceVariantText
+                        wrapMode: Text.WordWrap
+                    }
+                }
+
+                Repeater {
+                    model: ScriptModel {
+                        objectProp: "id"
+                        values: root.externalRules || []
+                    }
+
+                    delegate: SettingsRow {
+                        id: externalCard
+                        required property var modelData
+
+                        readonly property string displayName: {
+                            const name = externalCard.modelData.name || "";
+                            if (name)
+                                return name;
+                            return root.matchSummary(externalCard.modelData);
+                        }
+                        readonly property string sourceFile: (externalCard.modelData.source || "").split("/").pop()
+                        readonly property bool expanded: root.expandedExternalId === externalCard.modelData.id
+                        readonly property bool hasActions: {
+                            const a = externalCard.modelData.actions || {};
+                            return Object.keys(a).some(k => a[k] !== undefined && a[k] !== null && a[k] !== "");
+                        }
+
+                        title: externalCard.displayName
+                        subtitle: {
+                            const m = externalCard.modelData.matchCriteria || {};
+                            let parts = [];
+                            if (m.appId)
+                                parts.push(m.appId);
+                            if (m.title)
+                                parts.push("title: " + m.title);
+                            const base = parts.length > 0 ? parts.join(" · ") : I18n.tr("No match criteria");
+                            const count = root.matchesOf(externalCard.modelData).length;
+                            return count > 1 ? I18n.tr("%1 (+%2 more)").arg(base).arg(count - 1) : base;
+                        }
+                        clickable: true
+                        onClicked: root.expandedExternalId = externalCard.expanded ? "" : externalCard.modelData.id
+
+                        DBadge {
+                            visible: externalCard.sourceFile.length > 0
+                            anchors.verticalCenter: parent.verticalCenter
+                            text: externalCard.sourceFile
+                            color: SettingsMetrics.controlColor
+                            textColor: Theme.surfaceVariantText
+                        }
+
+                        DIcon {
+                            name: externalCard.expanded ? "expand_less" : "expand_more"
+                            size: Theme.iconSize
+                            color: Theme.surfaceVariantText
+                            anchors.verticalCenter: parent.verticalCenter
+                        }
+
+                        DActionButton {
+                            iconName: "content_copy"
+                            iconColor: Theme.surfaceVariantText
+                            enabled: !root.readOnly
+                            anchors.verticalCenter: parent.verticalCenter
+                            tooltipText: I18n.tr("Convert to DMS")
+                            tooltipSide: "left"
+                            onClicked: root.copyRuleToDms(externalCard.modelData)
+                        }
+
+                        body: Column {
                             width: parent.width
-                            spacing: Theme.spacingXS
-                            visible: externalCard.expanded
+                            spacing: Theme.spacingS
+                            visible: externalCard.hasActions || externalCard.expanded
 
-                            SettingsDivider {}
+                            Flow {
+                                width: parent.width
+                                spacing: Theme.spacingXS
+                                visible: externalCard.hasActions
 
-                            StyledText {
-                                text: I18n.tr("Match (%1)", "noun, window rule match criteria heading, %1 is a count").arg(root.matchesOf(externalCard.modelData).length)
-                                font.pixelSize: Theme.fontSizeSmall
-                                font.weight: Theme.fontWeightMedium
-                                color: Theme.surfaceText
+                                Repeater {
+                                    model: root.actionChips(externalCard.modelData.actions)
+
+                                    delegate: DBadge {
+                                        required property string modelData
+                                        maximumWidth: parent?.width ?? 0
+                                        text: modelData
+                                        color: Theme.primaryContainer
+                                        textColor: Theme.onPrimaryContainer
+                                        tooltipText: truncated ? modelData : null
+                                    }
+                                }
                             }
 
-                            Repeater {
-                                model: root.matchesOf(externalCard.modelData)
+                            Column {
+                                width: parent.width
+                                spacing: Theme.spacingXS
+                                visible: externalCard.expanded
 
-                                delegate: StyledText {
-                                    required property var modelData
+                                SettingsDivider {}
+
+                                StyledText {
+                                    text: I18n.tr("Match (%1)", "noun, window rule match criteria heading, %1 is a count").arg(root.matchesOf(externalCard.modelData).length)
+                                    font.pixelSize: Theme.fontSizeSmall
+                                    font.weight: Theme.fontWeightMedium
+                                    color: Theme.surfaceText
+                                }
+
+                                Repeater {
+                                    model: root.matchesOf(externalCard.modelData)
+
+                                    delegate: StyledText {
+                                        required property var modelData
+                                        width: parent.width
+                                        text: {
+                                            const c = root.formatCriteria(modelData, root.matchLabels);
+                                            return "• " + (c.length > 0 ? c.join("   ·   ") : I18n.tr("Any window"));
+                                        }
+                                        font.pixelSize: Theme.fontSizeSmall
+                                        color: Theme.surfaceVariantText
+                                        wrapMode: Text.WordWrap
+                                    }
+                                }
+
+                                StyledText {
+                                    text: I18n.tr("Actions")
+                                    font.pixelSize: Theme.fontSizeSmall
+                                    font.weight: Theme.fontWeightMedium
+                                    color: Theme.surfaceText
+                                    topPadding: Theme.spacingXS
+                                }
+
+                                StyledText {
                                     width: parent.width
                                     text: {
-                                        const c = root.formatCriteria(modelData, root.matchLabels);
-                                        return "• " + (c.length > 0 ? c.join("   ·   ") : I18n.tr("Any window"));
+                                        const a = root.formatCriteria(externalCard.modelData.actions, root.actionLabels);
+                                        return a.length > 0 ? a.join("   ·   ") : I18n.tr("None");
                                     }
                                     font.pixelSize: Theme.fontSizeSmall
                                     color: Theme.surfaceVariantText
                                     wrapMode: Text.WordWrap
                                 }
-                            }
 
-                            StyledText {
-                                text: I18n.tr("Actions")
-                                font.pixelSize: Theme.fontSizeSmall
-                                font.weight: Theme.fontWeightMedium
-                                color: Theme.surfaceText
-                                topPadding: Theme.spacingXS
-                            }
-
-                            StyledText {
-                                width: parent.width
-                                text: {
-                                    const a = root.formatCriteria(externalCard.modelData.actions, root.actionLabels);
-                                    return a.length > 0 ? a.join("   ·   ") : I18n.tr("None");
+                                StyledText {
+                                    width: parent.width
+                                    text: I18n.tr("Source: %1", "window rule detail, %1 is the config file path").arg(externalCard.modelData.source || "")
+                                    font.pixelSize: Theme.fontSizeXSmall
+                                    color: Theme.surfaceVariantText
+                                    elide: Text.ElideMiddle
+                                    topPadding: Theme.spacingXS
                                 }
-                                font.pixelSize: Theme.fontSizeSmall
-                                color: Theme.surfaceVariantText
-                                wrapMode: Text.WordWrap
-                            }
-
-                            StyledText {
-                                width: parent.width
-                                text: I18n.tr("Source: %1", "window rule detail, %1 is the config file path").arg(externalCard.modelData.source || "")
-                                font.pixelSize: Theme.fontSizeXSmall
-                                color: Theme.surfaceVariantText
-                                elide: Text.ElideMiddle
-                                topPadding: Theme.spacingXS
                             }
                         }
                     }
@@ -669,7 +674,7 @@ Item {
 
     Loader {
         id: editorLoader
-        parent: root.parentModal?.modalFocusScope ?? root
+        parent: root.parentModal?.dialogHostFor(root) ?? root
         anchors.fill: parent
         z: 100
         active: root.editorMounted

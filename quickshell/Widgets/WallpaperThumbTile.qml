@@ -13,7 +13,7 @@ Item {
     property bool mismatched: false
     property real mismatchedOpacity: 1
     property string sizeText: ""
-    readonly property bool animationsEnabled: !SettingsData.reduceMotion && Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
+    readonly property bool animationsEnabled: !Theme.reduceMotion
 
     signal clicked
 

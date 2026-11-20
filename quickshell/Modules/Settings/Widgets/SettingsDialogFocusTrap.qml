@@ -17,7 +17,7 @@ Item {
 
     function _trap() {
         const d = dialog;
-        if (!active || !d || d.activeFocus)
+        if (!active || !d || !d.visible || d.activeFocus)
             return;
         const first = d.nextItemInFocusChain(true);
         if (first && _isInside(first, d)) {

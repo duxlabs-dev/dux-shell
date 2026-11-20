@@ -24,6 +24,7 @@ Singleton {
     property int currentTabIndex: 0
     property var tabsBeingCreated: ({})
     property bool metadataLoaded: false
+    property double closingLastTabId: -1
 
     // Shared live edit state across slideout and popout surfaces.
     property var sessionBuffers: ({})
@@ -224,20 +225,23 @@ Singleton {
         approvedLargeFiles[path] = true;
     }
 
+    function tabFullPath(tab) {
+        return tab.isTemporary ? baseDir + "/" + tab.filePath : tab.filePath;
+    }
+
     function saveTabContent(tabIndex, content) {
         if (tabIndex < 0 || tabIndex >= tabs.length)
             return;
         var tab = tabs[tabIndex];
-        var fullPath = tab.isTemporary ? baseDir + "/" + tab.filePath : tab.filePath;
 
-        var saver = tabFileSaverComponent.createObject(root, {
-            path: fullPath,
+        tabFileSaverComponent.createObject(root, {
+            path: tabFullPath(tab),
             content: content,
-            tabIndex: tabIndex
+            tabId: tab.id
         });
     }
 
-    function createNewTab() {
+    function createNewTab(onCreated) {
         var id = Date.now();
         var filePath = "notepad-files/untitled-" + id + ".txt";
         var fullPath = baseDir + "/" + filePath;
@@ -265,6 +269,8 @@ Singleton {
             delete updatedTabsBeingCreated[id];
             tabsBeingCreated = updatedTabsBeingCreated;
             saveMetadata();
+            if (onCreated)
+                onCreated();
         });
 
         return newTab;
@@ -296,50 +302,32 @@ Singleton {
     function closeTab(tabIndex) {
         if (tabIndex < 0 || tabIndex >= tabs.length)
             return;
-        var newTabs = tabs.slice();
-        var closedTabId = newTabs[tabIndex] ? newTabs[tabIndex].id : -1;
-        clearSessionBuffer(closedTabId);
-        if (conflictTabId === closedTabId)
-            clearConflict();
-
-        if (newTabs.length <= 1) {
-            var id = Date.now();
-            var filePath = "notepad-files/untitled-" + id + ".txt";
-
-            var newTabsBeingCreated = Object.assign({}, tabsBeingCreated);
-            newTabsBeingCreated[id] = true;
-            tabsBeingCreated = newTabsBeingCreated;
-            createEmptyFile(baseDir + "/" + filePath, function () {
-                newTabs[0] = {
-                    id: id,
-                    title: I18n.tr("Untitled"),
-                    filePath: filePath,
-                    isTemporary: true,
-                    lastModified: new Date().toISOString(),
-                    cursorPosition: 0,
-                    scrollPosition: 0
-                };
-                currentTabIndex = 0;
-                tabs = newTabs;
-
-                var updatedTabsBeingCreated = Object.assign({}, tabsBeingCreated);
-                delete updatedTabsBeingCreated[id];
-                tabsBeingCreated = updatedTabsBeingCreated;
-                saveMetadata();
+        // Replace the last tab through a normal switch so every open editor reloads.
+        if (tabs.length === 1) {
+            var lastTabId = tabs[0].id;
+            if (closingLastTabId === lastTabId)
+                return;
+            closingLastTabId = lastTabId;
+            createNewTab(() => {
+                closingLastTabId = -1;
+                closeTab(tabs.findIndex(tab => tab.id === lastTabId));
             });
             return;
-        } else {
-            var tabToDelete = newTabs[tabIndex];
-            if (tabToDelete && tabToDelete.isTemporary) {
-                deleteFile(baseDir + "/" + tabToDelete.filePath);
-            }
+        }
 
-            newTabs.splice(tabIndex, 1);
-            if (currentTabIndex >= newTabs.length) {
-                currentTabIndex = newTabs.length - 1;
-            } else if (currentTabIndex > tabIndex) {
-                currentTabIndex -= 1;
-            }
+        var newTabs = tabs.slice();
+        var tabToClose = newTabs[tabIndex];
+        clearSessionBuffer(tabToClose.id);
+        if (conflictTabId === tabToClose.id)
+            clearConflict();
+        if (tabToClose.isTemporary)
+            deleteFile(baseDir + "/" + tabToClose.filePath);
+
+        newTabs.splice(tabIndex, 1);
+        if (currentTabIndex >= newTabs.length) {
+            currentTabIndex = newTabs.length - 1;
+        } else if (currentTabIndex > tabIndex) {
+            currentTabIndex -= 1;
         }
 
         tabs = newTabs;
@@ -467,8 +455,7 @@ Singleton {
         id: tabFileSaverComponent
         FileView {
             property string content
-            property int tabIndex
-            property var creationCallback
+            property var tabId
 
             blockWrites: false
             atomicWrites: true
@@ -476,20 +463,17 @@ Singleton {
             Component.onCompleted: setText(content)
 
             onSaved: {
-                if (tabIndex >= 0) {
+                var tabIndex = root.tabs.findIndex(tab => tab.id === tabId);
+                // The tab was closed or saved elsewhere mid-write, so this recreated a file its rm already removed.
+                if (tabIndex < 0 || root.tabFullPath(root.tabs[tabIndex]) !== path)
+                    root.deleteFile(path);
+                else
                     root.updateTabMetadata(tabIndex, {});
-                }
-                if (creationCallback) {
-                    creationCallback();
-                }
                 destroy();
             }
 
             onSaveFailed: {
                 log.error("Failed to save tab content");
-                if (creationCallback) {
-                    creationCallback();
-                }
                 destroy();
             }
         }

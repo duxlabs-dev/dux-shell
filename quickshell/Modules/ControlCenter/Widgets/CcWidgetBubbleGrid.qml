@@ -9,8 +9,11 @@ Grid {
 
     property var entries: []
     property bool roundAll: true
+    property bool wrapLabels: false
+    property bool fillPreviews: false
     property real bubbleSize: CcMetrics.previewSize
     property bool draggable: false
+    property var canAdd: widgetId => true
     property Item fallbackFocus: null
     property int refocusIndex: -1
 
@@ -19,6 +22,10 @@ Grid {
     signal dragMoved(string widgetId, point scenePoint)
     signal dragEnded(string widgetId, bool canceled)
     signal itemFocused(Item item)
+
+    function focusEntry(index) {
+        repeater.itemAt(index)?.forceActiveFocus(Qt.TabFocusReason);
+    }
 
     columns: Math.max(1, Math.floor((width + columnSpacing) / (bubbleSize + columnSpacing)))
     columnSpacing: Theme.spacingM
@@ -45,15 +52,20 @@ Grid {
             required property int index
 
             entry: modelData
+            addAllowed: grid.canAdd(modelData.id)
             bubbleSize: grid.bubbleSize
             draggable: grid.draggable
             roundAll: grid.roundAll
+            wrapLabel: grid.wrapLabels
             canStep: (dx, dy) => {
                 const target = index + dx + dy * grid.columns;
                 return target >= 0 && target < repeater.count;
             }
             width: (grid.width - grid.columnSpacing * (grid.columns - 1)) / grid.columns
+            previewWidth: grid.fillPreviews ? width : grid.bubbleSize
             onClicked: {
+                if (!bubble.addAllowed)
+                    return;
                 grid.refocusIndex = bubble.activeFocus ? index : -1;
                 grid.chosen(modelData.id);
             }
@@ -65,7 +77,7 @@ Grid {
                     grid.itemFocused(bubble);
             }
             onStep: (dx, dy) => {
-                repeater.itemAt(index + dx + dy * grid.columns)?.forceActiveFocus(Qt.TabFocusReason);
+                grid.focusEntry(index + dx + dy * grid.columns);
             }
         }
     }

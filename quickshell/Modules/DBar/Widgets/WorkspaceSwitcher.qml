@@ -136,13 +136,14 @@ BasePill {
             const keyBase = (w.app_id || w.appId || w.class || w.windowClass || "unknown");
             const moddedId = Paths.moddedAppId(keyBase);
             const groupThisWs = root.opt("groupWorkspaceApps") && (!isActiveWs || root.opt("groupActiveWorkspaceApps"));
-            const key = groupThisWs ? moddedId : `${moddedId}_${i}`;
+            const coreIcon = AppSearchService.windowIcon(keyBase, w);
+            const key = groupThisWs ? moddedId + coreIcon : `${moddedId}_${i}`;
 
             if (!byApp[key]) {
-                const isQuickshell = Paths.isDmsAppId(keyBase);
+                const isQuickshell = !coreIcon && Paths.isDmsAppId(keyBase);
                 const isSteamApp = Paths.isSteamApp(moddedId);
                 const desktopEntry = DesktopEntries.heuristicLookup(moddedId);
-                const icon = Paths.getAppIcon(moddedId, desktopEntry);
+                const icon = coreIcon || Paths.getAppIcon(moddedId, desktopEntry);
                 const appName = Paths.getAppName(moddedId, desktopEntry);
                 byApp[key] = {
                     "type": "icon",
@@ -383,7 +384,7 @@ BasePill {
                     return 0;
                 }
 
-                readonly property var shiftSpringParams: Theme.springPreset("fast", 150)
+                readonly property var shiftSpringParams: Theme.springPreset("fastSpatial")
 
                 SpringMotion {
                     id: shiftXSpring
@@ -813,7 +814,7 @@ BasePill {
 
                 Timer {
                     id: dataUpdateTimer
-                    interval: 50
+                    interval: Timing.debounceFast
                     onTriggered: delegateRoot.loadData()
                 }
 
@@ -855,7 +856,7 @@ BasePill {
                 readonly property color outlineColor: dragHandler.dragging ? Theme.primary : (isUrgent ? urgentColor : (isDropTarget ? Theme.primary : Theme.withAlpha(Theme.primary, 0)))
 
                 Behavior on width {
-                    enabled: !SettingsData.reduceMotion
+                    enabled: !Theme.reduceMotion
                     NumberAnimation {
                         duration: Theme.expressiveDurations.expressiveFastSpatial
                         easing.type: Easing.BezierSpline
@@ -864,7 +865,7 @@ BasePill {
                 }
 
                 Behavior on height {
-                    enabled: !SettingsData.reduceMotion
+                    enabled: !Theme.reduceMotion
                     NumberAnimation {
                         duration: Theme.expressiveDurations.expressiveFastSpatial
                         easing.type: Easing.BezierSpline
@@ -893,7 +894,7 @@ BasePill {
                     border.color: (delegateRoot.focusedBorderEnabledForMonitor && isActive && !isPlaceholder) ? focusedBorderColor : Theme.withAlpha(focusedBorderColor, 0)
 
                     Behavior on width {
-                        enabled: !SettingsData.reduceMotion
+                        enabled: !Theme.reduceMotion
                         NumberAnimation {
                             duration: Theme.expressiveDurations.expressiveFastSpatial
                             easing.type: Easing.BezierSpline
@@ -902,7 +903,7 @@ BasePill {
                     }
 
                     Behavior on height {
-                        enabled: !SettingsData.reduceMotion
+                        enabled: !Theme.reduceMotion
                         NumberAnimation {
                             duration: Theme.expressiveDurations.expressiveFastSpatial
                             easing.type: Easing.BezierSpline
@@ -911,7 +912,7 @@ BasePill {
                     }
 
                     Behavior on border.width {
-                        enabled: !SettingsData.reduceMotion
+                        enabled: !Theme.reduceMotion
                         NumberAnimation {
                             duration: Theme.expressiveDurations.expressiveFastSpatial
                             easing.type: Easing.BezierSpline
@@ -920,7 +921,7 @@ BasePill {
                     }
 
                     Behavior on border.color {
-                        enabled: !SettingsData.reduceMotion
+                        enabled: !Theme.reduceMotion
                         ColorAnimation {
                             duration: Theme.expressiveDurations.expressiveEffects
                             easing.type: Easing.BezierSpline
@@ -964,7 +965,7 @@ BasePill {
                     }
 
                     Behavior on opacity {
-                        enabled: !SettingsData.reduceMotion
+                        enabled: !Theme.reduceMotion
                         NumberAnimation {
                             duration: Theme.expressiveDurations.expressiveEffects
                             easing.type: Easing.BezierSpline
@@ -973,7 +974,7 @@ BasePill {
                     }
 
                     Behavior on width {
-                        enabled: !SettingsData.reduceMotion
+                        enabled: !Theme.reduceMotion
                         NumberAnimation {
                             duration: Theme.expressiveDurations.expressiveFastSpatial
                             easing.type: Easing.BezierSpline
@@ -982,7 +983,7 @@ BasePill {
                     }
 
                     Behavior on height {
-                        enabled: !SettingsData.reduceMotion
+                        enabled: !Theme.reduceMotion
                         NumberAnimation {
                             duration: Theme.expressiveDurations.expressiveFastSpatial
                             easing.type: Easing.BezierSpline
@@ -991,7 +992,7 @@ BasePill {
                     }
 
                     Behavior on border.width {
-                        enabled: !SettingsData.reduceMotion
+                        enabled: !Theme.reduceMotion
                         NumberAnimation {
                             duration: Theme.expressiveDurations.expressiveFastSpatial
                             easing.type: Easing.BezierSpline
@@ -1000,7 +1001,7 @@ BasePill {
                     }
 
                     Behavior on border.color {
-                        enabled: !SettingsData.reduceMotion
+                        enabled: !Theme.reduceMotion
                         ColorAnimation {
                             duration: Theme.expressiveDurations.expressiveEffects
                             easing.type: Easing.BezierSpline

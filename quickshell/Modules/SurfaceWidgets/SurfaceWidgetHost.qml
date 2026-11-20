@@ -1,5 +1,4 @@
 import QtQuick
-import QtQml.Models
 import qs.Services
 import qs.Common
 
@@ -85,16 +84,17 @@ Loader {
         restoreMode: Binding.RestoreBinding
     }
 
-    Instantiator {
-        model: ["parentScreen", "section", "widgetThickness", "barThickness", "barSpacing", "barConfig", "blurBarWindow", "axis", "widgetData", "isFirst", "isLast", "sectionSpacing", "sectionAvailablePrimarySize", "isLeftBarEdge", "isRightBarEdge", "isTopBarEdge", "isBottomBarEdge", "crossEdgeExtension", "segmentRole", "surfaceContext", "hostContext", "allottedPrimarySize"]
-        delegate: Binding {
-            required property string modelData
-            target: root.item
-            when: root.item && modelData in root.item
-            property: modelData
-            value: root[modelData]
-            restoreMode: Binding.RestoreNone
-        }
+    readonly property var forwardedProperties: ["parentScreen", "section", "widgetThickness", "barThickness", "barSpacing", "barConfig", "blurBarWindow", "axis", "widgetData", "isFirst", "isLast", "sectionSpacing", "sectionAvailablePrimarySize", "isLeftBarEdge", "isRightBarEdge", "isTopBarEdge", "isBottomBarEdge", "crossEdgeExtension", "segmentRole", "surfaceContext", "hostContext", "allottedPrimarySize"]
+
+    function forwardProperty(name) {
+        if (!item || !(name in item))
+            return;
+        item[name] = root[name];
+    }
+
+    function forwardProperties() {
+        for (const name of forwardedProperties)
+            forwardProperty(name);
     }
 
     Binding {
@@ -149,11 +149,40 @@ Loader {
         unregisterWidget();
     }
 
-    onParentScreenChanged: registerWidgetIfEligible()
+    onParentScreenChanged: {
+        forwardProperty("parentScreen");
+        registerWidgetIfEligible();
+    }
+    onSectionChanged: forwardProperty("section")
+    onWidgetThicknessChanged: forwardProperty("widgetThickness")
+    onBarThicknessChanged: forwardProperty("barThickness")
+    onBarSpacingChanged: forwardProperty("barSpacing")
+    onBarConfigChanged: forwardProperty("barConfig")
+    onBlurBarWindowChanged: forwardProperty("blurBarWindow")
+    onAxisChanged: forwardProperty("axis")
+    onWidgetDataChanged: forwardProperty("widgetData")
+    onIsFirstChanged: forwardProperty("isFirst")
+    onIsLastChanged: forwardProperty("isLast")
+    onSectionSpacingChanged: forwardProperty("sectionSpacing")
+    onSectionAvailablePrimarySizeChanged: forwardProperty("sectionAvailablePrimarySize")
+    onIsLeftBarEdgeChanged: forwardProperty("isLeftBarEdge")
+    onIsRightBarEdgeChanged: forwardProperty("isRightBarEdge")
+    onIsTopBarEdgeChanged: forwardProperty("isTopBarEdge")
+    onIsBottomBarEdgeChanged: forwardProperty("isBottomBarEdge")
+    onCrossEdgeExtensionChanged: forwardProperty("crossEdgeExtension")
+    onSegmentRoleChanged: forwardProperty("segmentRole")
+    onSurfaceContextChanged: {
+        forwardProperty("surfaceContext");
+        registerWidgetIfEligible();
+    }
+    onHostContextChanged: forwardProperty("hostContext")
+    onAllottedPrimarySizeChanged: forwardProperty("allottedPrimarySize")
     onRegistrationIdChanged: registerWidgetIfEligible()
-    onSurfaceContextChanged: registerWidgetIfEligible()
     onWidgetIdChanged: registerWidgetIfEligible()
-    onItemChanged: registerWidgetIfEligible()
+    onItemChanged: {
+        forwardProperties();
+        registerWidgetIfEligible();
+    }
 
     function registerWidgetIfEligible() {
         unregisterWidget();

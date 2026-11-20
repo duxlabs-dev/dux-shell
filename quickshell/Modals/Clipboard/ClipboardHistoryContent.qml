@@ -367,13 +367,15 @@ FocusScope {
             ParallelAnimation {
                 NumberAnimation {
                     property: "opacity"
-                    duration: Theme.shortDuration
-                    easing.type: Theme.standardEasing
+                    duration: Theme.expressiveDurations.expressiveFastEffects
+                    easing.type: Easing.BezierSpline
+                    easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
                 }
                 NumberAnimation {
                     property: "scale"
-                    duration: Theme.shortDuration
-                    easing.type: Theme.emphasizedEasing
+                    duration: Theme.expressiveDurations.expressiveFastSpatial
+                    easing.type: Easing.BezierSpline
+                    easing.bezierCurve: Theme.expressiveCurves.expressiveFastSpatial
                 }
             }
         },
@@ -383,13 +385,15 @@ FocusScope {
             ParallelAnimation {
                 NumberAnimation {
                     property: "opacity"
-                    duration: Theme.shortDuration
-                    easing.type: Theme.standardEasing
+                    duration: Theme.expressiveDurations.expressiveFastEffects
+                    easing.type: Easing.BezierSpline
+                    easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
                 }
                 NumberAnimation {
                     property: "scale"
-                    duration: Theme.shortDuration
-                    easing.type: Theme.emphasizedEasing
+                    duration: Theme.expressiveDurations.expressiveFastSpatial
+                    easing.type: Easing.BezierSpline
+                    easing.bezierCurve: Theme.expressiveCurves.expressiveFastSpatial
                 }
             }
         }

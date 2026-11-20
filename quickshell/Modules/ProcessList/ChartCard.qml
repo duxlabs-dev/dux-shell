@@ -18,7 +18,7 @@ Rectangle {
     property string maximumText: ""
     property int historyLength: 0
     property real chartHeight: Theme.listItemHeight * 2
-    property color cardColor: Theme.surfaceContainerLow
+    property color cardColor: ProcessListMetrics.cardColor
     property bool compact: false
     readonly property real padding: compact ? 0 : Theme.spacingL
 

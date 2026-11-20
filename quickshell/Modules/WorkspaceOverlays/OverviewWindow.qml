@@ -4,6 +4,7 @@ import Quickshell
 import Quickshell.Wayland
 import Quickshell.Widgets
 import qs.Common
+import qs.Services
 
 Item {
     id: root
@@ -18,11 +19,10 @@ Item {
     property real contentOriginY: 0
     property real contentScale: 0
 
-    readonly property var geometrySpringParams: Theme.springPreset("expressive", Theme.variantDuration(Theme.expressiveDurations.expressiveDefaultSpatial, overviewOpen))
+    readonly property var geometrySpringParams: Theme.springPreset("defaultSpatial")
 
     SpringMotion {
         id: xSpring
-        reducedMotion: Theme.springMotionDisabled
         positionEpsilon: 0.05
         velocityEpsilon: 0.05
         stiffness: root.geometrySpringParams.stiffness
@@ -32,7 +32,6 @@ Item {
 
     SpringMotion {
         id: ySpring
-        reducedMotion: Theme.springMotionDisabled
         positionEpsilon: 0.05
         velocityEpsilon: 0.05
         stiffness: root.geometrySpringParams.stiffness
@@ -42,7 +41,6 @@ Item {
 
     SpringMotion {
         id: widthSpring
-        reducedMotion: Theme.springMotionDisabled
         positionEpsilon: 0.05
         velocityEpsilon: 0.05
         stiffness: root.geometrySpringParams.stiffness
@@ -52,7 +50,6 @@ Item {
 
     SpringMotion {
         id: heightSpring
-        reducedMotion: Theme.springMotionDisabled
         positionEpsilon: 0.05
         velocityEpsilon: 0.05
         stiffness: root.geometrySpringParams.stiffness
@@ -90,7 +87,7 @@ Item {
     property var iconToWindowRatio: 0.25
     property var iconToWindowRatioCompact: 0.45
     property var entry: DesktopEntries.heuristicLookup(Paths.moddedAppId(windowData?.class ?? ""))
-    property var iconPath: Paths.getAppIcon(windowData?.class ?? "", entry) || Quickshell.iconPath("application-x-executable", "image-missing")
+    property var iconPath: AppSearchService.windowIcon(windowData?.class, windowData) || Paths.getAppIcon(windowData?.class ?? "", entry) || Quickshell.iconPath("application-x-executable", "image-missing")
     property bool compactMode: Theme.fontSizeSmall * 4 > targetWindowHeight || Theme.fontSizeSmall * 4 > targetWindowWidth
 
     x: xSpring.value
@@ -119,7 +116,7 @@ Item {
             Rectangle {
                 anchors.fill: parent
                 radius: Theme.cornerRadius
-                color: pressed ? Theme.withAlpha(Theme.surfaceContainerHigh, 0.5) : hovered ? Theme.withAlpha(Theme.surfaceVariant, 0.3) : Theme.withAlpha(Theme.surfaceContainer, 0.1)
+                color: pressed ? Theme.withAlpha(Theme.surfaceText, Theme.stateLayerDrag) : hovered ? Theme.surfaceHover : Theme.surfaceLight
                 border.color: Theme.withAlpha(Theme.outline, 0.3)
                 border.width: 1
             }
@@ -138,7 +135,6 @@ Item {
 
                     SpringMotion {
                         id: iconWidthSpring
-                        reducedMotion: Theme.springMotionDisabled
                         positionEpsilon: 0.05
                         velocityEpsilon: 0.05
                         stiffness: root.geometrySpringParams.stiffness
@@ -148,7 +144,6 @@ Item {
 
                     SpringMotion {
                         id: iconHeightSpring
-                        reducedMotion: Theme.springMotionDisabled
                         positionEpsilon: 0.05
                         velocityEpsilon: 0.05
                         stiffness: root.geometrySpringParams.stiffness

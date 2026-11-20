@@ -91,6 +91,7 @@ type VPNProfile struct {
 	Username    string            `json:"username,omitempty"`
 	Autoconnect bool              `json:"autoconnect"`
 	Data        map[string]string `json:"data,omitempty"`
+	PluginLogin bool              `json:"pluginLogin,omitempty"`
 }
 
 type VPNActive struct {
@@ -304,6 +305,8 @@ type VPNPlugin struct {
 	Program        string   `json:"program,omitempty"`
 	Supports       []string `json:"supports,omitempty"`
 	FileExtensions []string `json:"fileExtensions"`
+	AuthDialog     string   `json:"-"`
+	ExternalUIMode bool     `json:"-"`
 }
 
 type VPNConfig struct {

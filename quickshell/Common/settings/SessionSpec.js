@@ -303,6 +303,9 @@ var LOCAL_SPEC = {
     lastAppliedIconTheme: {
         def: ""
     },
+    iconFoldersPresent: {
+        def: false
+    },
     launcherLastMode: {
         def: "all"
     },

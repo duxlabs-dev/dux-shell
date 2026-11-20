@@ -164,9 +164,9 @@ Card {
                         Behavior on width {
                             enabled: DashMetrics.animationsEnabled
                             NumberAnimation {
-                                duration: DashMetrics.meterDuration
+                                duration: Theme.expressiveDurations.expressiveSlowEffects
                                 easing.type: Easing.BezierSpline
-                                easing.bezierCurve: Theme.expressiveCurves.standard
+                                easing.bezierCurve: Theme.expressiveCurves.expressiveSlowEffects
                             }
                         }
                     }
@@ -225,9 +225,9 @@ Card {
                         Behavior on height {
                             enabled: DashMetrics.animationsEnabled
                             NumberAnimation {
-                                duration: DashMetrics.meterDuration
+                                duration: Theme.expressiveDurations.expressiveSlowEffects
                                 easing.type: Easing.BezierSpline
-                                easing.bezierCurve: Theme.expressiveCurves.standard
+                                easing.bezierCurve: Theme.expressiveCurves.expressiveSlowEffects
                             }
                         }
                     }

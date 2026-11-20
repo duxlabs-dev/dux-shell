@@ -1,6 +1,5 @@
 import QtQuick
 import qs.Common
-import qs.Modules.ControlCenter.Details
 import qs.Services
 
 LevelOSD {
@@ -21,11 +20,7 @@ LevelOSD {
     available: !!audio
     displayText: audio?.muted ? I18n.tr("Muted") : ""
 
-    sheet: OsdDetailSheet {
-        AudioOutputDetail {
-            anchors.fill: parent
-        }
-    }
+    sheetSource: Qt.resolvedUrl("VolumeOsdSheet.qml")
 
     onIconClicked: AudioService.toggleMute()
     onLevelRequested: level => {

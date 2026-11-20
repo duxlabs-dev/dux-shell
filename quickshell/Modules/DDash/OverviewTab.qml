@@ -27,6 +27,7 @@ FocusScope {
     readonly property int usedColumns: grid.usedColumns
     readonly property bool cardResizing: grid.sizePreview !== null
     readonly property bool cardInteracting: grid.interacting
+    readonly property bool loading: grid.loading
     readonly property bool sheetShown: (detailSheet.item?.shown ?? false) || (editorSheet.item?.shown ?? false) || (optionsSheet.item?.shown ?? false)
     readonly property bool addMenuOpen: addMenu.item?.open ?? false
     readonly property bool blocksTabNavigation: grid.blocksTabNavigation || sheetShown || addMenuOpen
@@ -71,9 +72,9 @@ FocusScope {
         });
     }
 
-    function presentOptions(cardId) {
+    function presentOptions(cardId, instanceId) {
         optionsSheet.active = true;
-        optionsSheet.item.presentFor(cardId);
+        optionsSheet.item.presentFor(cardId, instanceId);
     }
 
     function presentDetail(eventData) {
@@ -126,7 +127,7 @@ FocusScope {
                 root.tabRequested(cardId);
         }
         onNavFocusRequested: backwards => root.navFocusRequested(backwards)
-        onOptionsRequested: cardId => root.presentOptions(cardId)
+        onOptionsRequested: (cardId, instanceId) => root.presentOptions(cardId, instanceId)
         onDetailRequested: eventData => root.presentDetail(eventData)
         onEditorRequested: (eventData, initialDate) => root.presentEditor(eventData, initialDate)
     }

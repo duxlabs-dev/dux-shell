@@ -6,6 +6,7 @@ import QtQuick.Layouts
 import qs.Common
 import qs.Services
 import qs.DCommon.Widgets
+import "ClipboardUtils.js" as ClipboardUtils
 
 Item {
     id: root
@@ -20,7 +21,7 @@ Item {
 
     Timer {
         id: loadTimeoutTimer
-        interval: 5000
+        interval: Timing.timeoutShort
         repeat: false
         onTriggered: {
             if (!root.textLoaded) {
@@ -37,50 +38,7 @@ Item {
     }
 
     function decodeEntryData(data) {
-        if (!data) {
-            return "";
-        }
-        if (typeof data !== "string") {
-            return String(data);
-        }
-
-        const sanitized = data.replace(/\s+/g, "");
-        if (sanitized.length === 0) {
-            return "";
-        }
-
-        try {
-            const decoded = Qt.atob(sanitized);
-            if (!decoded) {
-                return data;
-            }
-
-            let binary = "";
-            if (typeof decoded === "string") {
-                // Pre-6.11 Qt.atob returns a binary string directly
-                binary = decoded;
-            } else {
-                // Qt 6.11+ Qt.atob returns an ArrayBuffer — convert to avoid O(n²) concat/stack limits
-                const bytes = new Uint8Array(decoded);
-                const chunkSize = 8192;
-                const chunks = [];
-                for (let i = 0; i < bytes.length; i += chunkSize) {
-                    chunks.push(String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize)));
-                }
-                binary = chunks.join("");
-            }
-
-            if (!binary) {
-                return data;
-            }
-            try {
-                return decodeURIComponent(escape(binary));
-            } catch (e) {
-                return binary;
-            }
-        } catch (e) {
-            return data;
-        }
+        return ClipboardUtils.decodeEntryData(data);
     }
 
     function fetchEntry(requestedId) {
@@ -386,7 +344,7 @@ Item {
                     implicitWidth: saveMenuRow.implicitWidth + Theme.spacingS * 2
                     implicitHeight: saveMenuRow.implicitHeight + Theme.spacingS * 2
                     radius: Theme.cornerRadius
-                    color: saveMenuSaveArea.containsMouse ? Theme.surfaceVariant : Theme.withAlpha(Theme.surfaceVariant, 0)
+                    color: saveMenuSaveArea.containsMouse ? Theme.surfaceHover : Theme.withAlpha(Theme.surfaceHover, 0)
 
                     Row {
                         id: saveMenuRow
@@ -424,7 +382,7 @@ Item {
                     implicitWidth: saveMenuCloseRow.implicitWidth + Theme.spacingS * 2
                     implicitHeight: saveMenuCloseRow.implicitHeight + Theme.spacingS * 2
                     radius: Theme.cornerRadius
-                    color: saveMenuCloseArea.containsMouse ? Theme.surfaceVariant : Theme.withAlpha(Theme.surfaceVariant, 0)
+                    color: saveMenuCloseArea.containsMouse ? Theme.surfaceHover : Theme.withAlpha(Theme.surfaceHover, 0)
 
                     Row {
                         id: saveMenuCloseRow
@@ -462,7 +420,7 @@ Item {
                     implicitWidth: saveMenuPasteRow.implicitWidth + Theme.spacingS * 2
                     implicitHeight: saveMenuPasteRow.implicitHeight + Theme.spacingS * 2
                     radius: Theme.cornerRadius
-                    color: saveMenuPasteArea.containsMouse ? Theme.surfaceVariant : Theme.withAlpha(Theme.surfaceVariant, 0)
+                    color: saveMenuPasteArea.containsMouse ? Theme.surfaceHover : Theme.withAlpha(Theme.surfaceHover, 0)
                     opacity: modal.pasteAvailable ? 1 : 0.5
 
                     Row {

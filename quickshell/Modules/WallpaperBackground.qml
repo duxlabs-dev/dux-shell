@@ -51,7 +51,7 @@ Variants {
             z: 1
             enabled: variants.desktopMenuOnWallpaper
             acceptedButtons: Qt.RightButton
-            onClicked: mouse => PopoutService.desktopContextMenu?.open(wallpaperWindow.screen, mouse.x, mouse.y, false)
+            onClicked: mouse => PopoutService.desktopMenu()?.open(wallpaperWindow.screen, mouse.x, mouse.y, false)
         }
 
         Loader {
@@ -79,7 +79,7 @@ Variants {
                 MouseArea {
                     anchors.fill: parent
                     acceptedButtons: Qt.RightButton
-                    onClicked: mouse => PopoutService.desktopContextMenu?.open(wallpaperWindow.screen, mouse.x, mouse.y, false)
+                    onClicked: mouse => PopoutService.desktopMenu()?.open(wallpaperWindow.screen, mouse.x, mouse.y, false)
                 }
             }
         }
@@ -187,8 +187,9 @@ Variants {
             readonly property bool showsBackdrop: !source || isColorSource || currentWallpaper.status === Image.Error
 
             readonly property bool fullscreenOnScreen: isVideoSource && CompositorService.fullscreenToplevelOnScreen(modelData)
-            // Nothing decodes while the video cannot be seen.
-            readonly property bool videoShouldPlay: isVideoSource && wallpaperWindow.visible && !IdleService.isShellLocked && !IdleService.monitorsOff && !overviewBlurActive && !fullscreenOnScreen
+            readonly property bool pausedOnBattery: SettingsData.pauseVideoWallpaperOnBattery && BatteryService.batteryAvailable && !BatteryService.isPluggedIn
+            // Nothing decodes while the video cannot be seen or while paused on battery.
+            readonly property bool videoShouldPlay: isVideoSource && wallpaperWindow.visible && !IdleService.isShellLocked && !IdleService.monitorsOff && !overviewBlurActive && !fullscreenOnScreen && !pausedOnBattery
             readonly property bool videoRendering: videoLoader.item?.rendering ?? false
 
             function invalidate() {
@@ -683,7 +684,7 @@ Variants {
 
             Timer {
                 id: transitionDelayTimer
-                interval: 16
+                interval: Timing.frame
                 repeat: false
                 onTriggered: transitionAnimation.start()
             }

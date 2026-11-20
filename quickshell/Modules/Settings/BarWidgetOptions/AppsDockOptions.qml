@@ -69,6 +69,13 @@ Column {
         }
 
         SettingsToggleRow {
+            text: I18n.tr("Show running apps", "Dock setting: also show open apps that are not pinned")
+            visible: root.dockHosted
+            checked: root.apps.get("showRunningApps")
+            onToggled: checked => root.apps.set("showRunningApps", checked)
+        }
+
+        SettingsToggleRow {
             text: I18n.tr("Group by app")
             visible: root.dockHosted
             checked: root.apps.get("groupByApp")
@@ -77,7 +84,7 @@ Column {
 
         SettingsToggleRow {
             text: I18n.tr("Separate pinned and running apps")
-            visible: root.dockHosted
+            visible: root.dockHosted && root.apps.get("showRunningApps")
             checked: root.apps.get("separatePinnedAndRunningApps")
             onToggled: checked => root.apps.set("separatePinnedAndRunningApps", checked)
         }

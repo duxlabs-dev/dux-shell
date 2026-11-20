@@ -28,6 +28,13 @@ DPopout {
 
     onBackgroundClicked: close()
 
+    readonly property bool credentialsPromptOpen: NetworkService.credentialsRequested
+
+    onCredentialsPromptOpenChanged: {
+        if (credentialsPromptOpen && shouldBeVisible)
+            close();
+    }
+
     content: Component {
         Rectangle {
             id: content

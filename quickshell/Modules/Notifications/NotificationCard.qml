@@ -41,6 +41,8 @@ Rectangle {
     readonly property string contentImageSource: notificationData?.hasDisplayImage ? notificationData?.displayImage || "" : ""
     readonly property bool hasContentImage: contentImageSource.length > 0 && contentImage.status !== Image.Error
     readonly property bool contentVisible: !headerOnly && (!privacyMode || descriptionExpanded)
+    // Layout keys off this, never Item.visible (false while the surface is hidden) or the async decode
+    readonly property bool contentImageShown: contentVisible && hasContentImage
     // A screenshot is the one case where the full image is the content; others keep the thumbnail
     readonly property bool isScreenshot: notificationData?.summary === "Screenshot captured" && (notificationData?.appName === "DMS" || notificationData?.appName === "niri")
     readonly property bool largeImage: descriptionExpanded && isScreenshot
@@ -105,7 +107,7 @@ Rectangle {
         enabled: root.animateHeight && NotificationMetrics.animationsEnabled
         NumberAnimation {
             id: heightAnimation
-            duration: root.descriptionExpanded ? Theme.notificationInlineExpandDuration : Theme.notificationInlineCollapseDuration
+            duration: NotificationMetrics.expandDuration
             easing.type: Easing.BezierSpline
             easing.bezierCurve: NotificationMetrics.expandCurve
         }
@@ -182,7 +184,7 @@ Rectangle {
         AppIconRenderer {
             anchors.fill: parent
             visible: !appImage.visible
-            iconValue: root.dmsIcon ? "svg:" + Theme.shellDir + "/assets/danklogonormal.svg" : NotificationService.notificationFallbackIcon(root.notificationData?.image || "", root.appIcon)
+            iconValue: root.dmsIcon ? "svg:" + Theme.shellDir + "/assets/duxlogo.svg" : NotificationService.notificationFallbackIcon(root.notificationData?.image || "", root.appIcon)
             iconSize: NotificationMetrics.appIconSize
             iconColor: Theme.onSurfaceVariant
             colorOverride: root.dmsIcon ? Theme.primary : "transparent"
@@ -205,11 +207,11 @@ Rectangle {
 
         Item {
             id: messageBlock
-            readonly property real thumbnailReserve: !root.largeImage && imagePreview.visible ? imagePreview.width + Theme.spacingM : 0
+            readonly property real thumbnailReserve: !root.largeImage && root.contentImageShown ? NotificationMetrics.thumbnailSize + Theme.spacingM : 0
             readonly property real thumbnailTop: header.height + Theme.spacingS
             readonly property real textHeight: header.height + (root.headerOnly ? 0 : NotificationMetrics.contentSpacing + messageText.implicitHeight)
             width: parent.width
-            height: root.largeImage ? textHeight + (imagePreview.visible ? NotificationMetrics.contentSpacing + imagePreview.height : 0) : Math.max(textHeight, imagePreview.visible ? thumbnailTop + imagePreview.height : 0)
+            height: root.largeImage ? textHeight + (root.contentImageShown ? NotificationMetrics.contentSpacing + imagePreview.height : 0) : Math.max(textHeight, root.contentImageShown ? thumbnailTop + NotificationMetrics.thumbnailSize : 0)
 
             Item {
                 id: header
@@ -240,55 +242,72 @@ Rectangle {
                     Behavior on opacity {
                         enabled: NotificationMetrics.animationsEnabled
                         NumberAnimation {
-                            duration: Theme.shortDuration
-                            easing.type: Theme.standardEasing
+                            duration: Theme.expressiveDurations.expressiveFastEffects
+                            easing.type: Easing.BezierSpline
+                            easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
                         }
                     }
 
-                    Rectangle {
-                        visible: !root.interactive && root.groupCount > 1
-                        width: notificationCount.implicitWidth + Theme.spacingS * 2
-                        height: Theme.iconSize
-                        radius: Theme.fullRadius(width, height)
-                        color: root.chipColor
+                    Loader {
+                        active: !root.interactive && root.groupCount > 1
+                        visible: active
 
-                        StyledText {
-                            id: notificationCount
-                            anchors.centerIn: parent
+                        sourceComponent: Rectangle {
+                            width: notificationCount.implicitWidth + Theme.spacingS * 2
+                            height: Theme.iconSize
+                            radius: Theme.fullRadius(width, height)
+                            color: root.chipColor
+
+                            StyledText {
+                                id: notificationCount
+                                anchors.centerIn: parent
+                                text: root.groupCount.toString()
+                                font.pixelSize: Theme.fontSizeSmall
+                                color: Theme.onSurfaceVariant
+                            }
+                        }
+                    }
+
+                    Loader {
+                        active: root.interactive && root.groupCount > 1
+                        visible: active
+
+                        sourceComponent: DButton {
                             text: root.groupCount.toString()
-                            font.pixelSize: Theme.fontSizeSmall
-                            color: Theme.onSurfaceVariant
+                            iconName: root.groupExpanded ? "expand_less" : "expand_more"
+                            buttonHeight: NotificationMetrics.controlSize
+                            horizontalPadding: Theme.spacingS
+                            backgroundColor: root.chipColor
+                            textColor: Theme.onSurfaceVariant
+                            Accessible.name: root.groupExpanded ? I18n.tr("Collapse") : I18n.tr("Expand")
+                            onClicked: root.groupToggleRequested()
                         }
                     }
 
-                    DButton {
-                        visible: root.interactive && root.groupCount > 1
-                        text: root.groupCount.toString()
-                        iconName: root.groupExpanded ? "expand_less" : "expand_more"
-                        buttonHeight: NotificationMetrics.controlSize
-                        horizontalPadding: Theme.spacingS
-                        backgroundColor: root.chipColor
-                        textColor: Theme.onSurfaceVariant
-                        Accessible.name: root.groupExpanded ? I18n.tr("Collapse") : I18n.tr("Expand")
-                        onClicked: root.groupToggleRequested()
+                    Loader {
+                        active: root.interactive && root.canExpand && root.groupCount <= 1
+                        visible: active
+
+                        sourceComponent: DActionButton {
+                            iconName: root.descriptionExpanded ? "expand_less" : "expand_more"
+                            buttonSize: NotificationMetrics.controlSize
+                            iconSize: Theme.iconSizeSmall
+                            Accessible.name: root.descriptionExpanded ? I18n.tr("Collapse") : I18n.tr("Expand")
+                            onClicked: root.expandRequested()
+                        }
                     }
 
-                    DActionButton {
-                        visible: root.interactive && root.canExpand && root.groupCount <= 1
-                        iconName: root.descriptionExpanded ? "expand_less" : "expand_more"
-                        buttonSize: NotificationMetrics.controlSize
-                        iconSize: Theme.iconSizeSmall
-                        Accessible.name: root.descriptionExpanded ? I18n.tr("Collapse") : I18n.tr("Expand")
-                        onClicked: root.expandRequested()
-                    }
+                    Loader {
+                        active: root.interactive && root.showClose
+                        visible: active
 
-                    DActionButton {
-                        visible: root.interactive && root.showClose
-                        iconName: "close"
-                        buttonSize: NotificationMetrics.controlSize
-                        iconSize: Theme.iconSizeSmall
-                        Accessible.name: I18n.tr("Dismiss")
-                        onClicked: root.closeRequested()
+                        sourceComponent: DActionButton {
+                            iconName: "close"
+                            buttonSize: NotificationMetrics.controlSize
+                            iconSize: Theme.iconSizeSmall
+                            Accessible.name: I18n.tr("Dismiss")
+                            onClicked: root.closeRequested()
+                        }
                     }
                 }
             }
@@ -373,7 +392,7 @@ Rectangle {
                 height: width / contentImage.aspectRatio
                 radius: Theme.cornerRadiusM
                 color: "transparent"
-                visible: root.contentVisible && contentImage.implicitWidth > 0 && contentImage.status !== Image.Error
+                visible: root.contentImageShown
 
                 Image {
                     id: contentImage

@@ -138,9 +138,7 @@ Item {
                     }
                 }
 
-                Rectangle {
-                    width: parent.width
-                    height: 1
+                DDivider {
                     color: Theme.outlineHeavy
                 }
 
@@ -571,6 +569,14 @@ Item {
                                 {
                                     keys: ["Ctrl+P"],
                                     label: I18n.tr("Preview", "verb, clipboard entry action button tooltip", true)
+                                },
+                                {
+                                    keys: ["Ctrl++"],
+                                    label: I18n.tr("Increase font size", "notepad keyboard shortcut hint")
+                                },
+                                {
+                                    keys: ["Ctrl+-"],
+                                    label: I18n.tr("Decrease font size", "notepad keyboard shortcut hint")
                                 },
                                 {
                                     keys: ["Escape"],

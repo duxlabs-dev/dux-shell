@@ -425,7 +425,7 @@ Singleton {
 
     Timer {
         id: sortDebounceTimer
-        interval: 100
+        interval: Timing.debounceShort
         repeat: false
         onTriggered: {
             _sortScheduled = false;

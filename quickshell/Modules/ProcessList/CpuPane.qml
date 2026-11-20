@@ -21,7 +21,6 @@ DevicePane {
     }
     readonly property real clockMHz: meanMHz > 0 ? meanMHz : DgopService.cpuFrequency
     readonly property int threads: info?.count ?? 0
-    property var threadHistory: []
     readonly property bool perThread: ProcessListMetrics.cpuPerThread && DgopService.perCoreCpuUsage.length > 0
 
     function ghz(mhz) {
@@ -125,7 +124,7 @@ DevicePane {
         width: parent.width
         height: Math.max(root.chartCardHeight, threadGrid.implicitHeight + Theme.spacingL * 2)
         radius: Theme.cornerRadiusL
-        color: Theme.surfaceContainerLow
+        color: ProcessListMetrics.cardColor
 
         Grid {
             id: threadGrid
@@ -154,14 +153,14 @@ DevicePane {
                     width: threadGrid.cellWidth
                     height: threadGrid.cellHeight
                     radius: Theme.cornerRadiusS
-                    color: Theme.surfaceContainer
+                    color: ProcessListMetrics.cardInsetColor
                     clip: true
 
                     MetricChart {
                         anchors.fill: parent
                         anchors.topMargin: threadLabel.height
                         compact: true
-                        values: root.threadHistory[thread.index] ?? []
+                        values: DgopService.history("cpu", "thread" + thread.index)
                         maximum: 100
                         historyLength: DgopService.historySize
                     }

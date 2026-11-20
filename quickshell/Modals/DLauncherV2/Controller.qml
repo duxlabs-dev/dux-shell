@@ -65,9 +65,11 @@ Item {
         }
         const members = FolderModel.folderMembers(folder, itemsById);
         // Cached members can retain search highlights.
-        _applyHighlights([{
+        _applyHighlights([
+            {
                 items: members
-            }], "");
+            }
+        ], "");
         return members;
     }
     readonly property int folderColumns: Math.min(LauncherMetrics.folderMaxColumns, Math.max(1, folderMembers.length))
@@ -623,7 +625,7 @@ Item {
 
     Timer {
         id: searchDebounce
-        interval: 60
+        interval: Timing.debounceFast
         onTriggered: {
             if (!root._searchPending)
                 return;
@@ -635,7 +637,7 @@ Item {
     // Each search rescans every item received so far, so searching per socket read is quadratic.
     Timer {
         id: dmenuStreamSearch
-        interval: 100
+        interval: Timing.debounceShort
         onTriggered: {
             if (root.searchMode === "dmenu")
                 root.performSearch();
@@ -644,7 +646,7 @@ Item {
 
     Timer {
         id: pluginPhaseTimer
-        interval: 16
+        interval: Timing.frame
         onTriggered: {
             if (!root._pluginPhasePending)
                 return;
@@ -658,7 +660,7 @@ Item {
 
     Timer {
         id: fileSearchDebounce
-        interval: 200
+        interval: Timing.debounceLong
         onTriggered: root.performFileSearch()
     }
 
@@ -2540,9 +2542,8 @@ Item {
                     type: it.type,
                     name: it.name || "",
                     subtitle: it.subtitle || "",
-                    icon: it.icon || "",
+                    icon: it.isCore ? "" : it.icon || "",
                     iconType: it.iconType || "image",
-                    iconFull: it.iconFull || "",
                     section: it.section || "",
                     isCore: it.isCore || false,
                     isBuiltInLauncher: it.isBuiltInLauncher || false,
@@ -2641,7 +2642,6 @@ Item {
                     subtitle: it.subtitle || "",
                     icon: it.icon || "",
                     iconType: it.iconType || "image",
-                    iconFull: it.iconFull || "",
                     section: it.section || "",
                     source: it.source || "",
                     data: {

@@ -5,17 +5,21 @@ import (
 	"context"
 	"encoding/binary"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/duxlabs-dev/dux-go/qtbase"
 	"os"
 	"path/filepath"
 	"runtime/debug"
+	"strconv"
 	"strings"
 
 	"github.com/duxlabs-dev/dux-shell/core/internal/notify"
 	"github.com/duxlabs-dev/dux-shell/core/internal/qsipc"
 	"github.com/duxlabs-dev/dux-shell/core/internal/screenshot"
+	"github.com/duxlabs-dev/dux-shell/core/internal/utils"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 var (
@@ -30,6 +34,7 @@ var (
 	ssClipFile    bool
 	ssNoNotify    bool
 	ssNoConfirm   bool
+	ssAnnotate    bool
 	ssReset       bool
 	ssStdout      bool
 	ssJSON        bool
@@ -87,7 +92,8 @@ Examples:
   dms screenshot --allow-multiple    # Skip the one-selector-at-a-time guard
   dms screenshot -g                  # Print selected region geometry (X,Y WxH) to stdout
   dms screenshot scroll              # Scroll capture, Enter finishes / Esc cancels
-  dms screenshot scroll --interval 250`,
+  dms screenshot scroll --interval 250
+  dms screenshot draw                # Select a region and draw on it before saving`,
 }
 
 var ssRegionCmd = &cobra.Command{
@@ -152,6 +158,25 @@ Rotated outputs are not supported.`,
 	Run: runScreenshotScroll,
 }
 
+var ssDrawCmd = &cobra.Command{
+	Use:   "draw",
+	Short: "Select a region and draw on it on screen",
+	Long: `Freeze the screen, select a region, then annotate it in place. Resize the
+region with its handles or move it with the grip on its edge. Enter finishes
+using the usual clipboard/file/notify flags, Ctrl+C copies only, Ctrl+S saves
+only, Esc cancels. Requires a running DMS shell; falls back to the plain
+region selector otherwise.`,
+	Run: runScreenshotDraw,
+}
+
+// The draw overlay hands its capture here, to share the output path of every other mode.
+var ssFinishCmd = &cobra.Command{
+	Use:    "finish <confirm|copy|save> <capture.ppm>",
+	Hidden: true,
+	Args:   cobra.ExactArgs(2),
+	Run:    runScreenshotFinish,
+}
+
 var ssListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List available outputs",
@@ -178,6 +203,7 @@ func init() {
 	screenshotCmd.PersistentFlags().BoolVar(&ssClipFile, "clipboard-file", false, "Copy the saved file (path, URI and image) instead of only the image")
 	screenshotCmd.PersistentFlags().BoolVar(&ssNoNotify, "no-notify", false, "Don't show notification")
 	screenshotCmd.PersistentFlags().BoolVar(&ssNoConfirm, "no-confirm", false, "Region mode: capture on mouse release without Enter/Space confirmation")
+	screenshotCmd.PersistentFlags().BoolVar(&ssAnnotate, "annotate", false, "Region mode: draw on the selected region before it is saved")
 	screenshotCmd.PersistentFlags().BoolVar(&ssReset, "reset", false, "Reset saved last-region preselection before capturing")
 	screenshotCmd.PersistentFlags().BoolVar(&ssStdout, "stdout", false, "Output image to stdout (for piping to swappy, etc.)")
 	screenshotCmd.PersistentFlags().BoolVar(&ssJSON, "json", false, "Print capture metadata as JSON")
@@ -195,8 +221,84 @@ func init() {
 	screenshotCmd.AddCommand(ssLastCmd)
 	screenshotCmd.AddCommand(ssWindowCmd)
 	screenshotCmd.AddCommand(ssListCmd)
+	screenshotCmd.AddCommand(ssDrawCmd)
+	screenshotCmd.AddCommand(ssFinishCmd)
 
 	screenshotCmd.Run = runScreenshotRegion
+	screenshotCmd.PersistentPreRun = func(cmd *cobra.Command, _ []string) {
+		applyScreenshotSettings(shellSettings(), cmd.Flags())
+	}
+}
+
+type screenshotSettings struct {
+	Dir            *string `json:"screenshotDir"`
+	Format         *string `json:"screenshotFormat"`
+	Quality        *int    `json:"screenshotQuality"`
+	Cursor         *bool   `json:"screenshotCursor"`
+	Clipboard      *bool   `json:"screenshotClipboard"`
+	ClipboardFile  *bool   `json:"screenshotClipboardFile"`
+	SaveFile       *bool   `json:"screenshotSaveFile"`
+	Notify         *bool   `json:"screenshotNotify"`
+	ConfirmRegion  *bool   `json:"screenshotConfirmRegion"`
+	Annotate       *bool   `json:"screenshotAnnotate"`
+	HUD            *string `json:"screenshotHud"`
+	ScrollInterval *int    `json:"screenshotScrollInterval"`
+}
+
+func applyScreenshotSettings(data []byte, flags *pflag.FlagSet) {
+	var s screenshotSettings
+	if len(data) == 0 || json.Unmarshal(data, &s) != nil {
+		return
+	}
+	set := func(name, value string) {
+		if flags.Lookup(name) == nil || flags.Changed(name) {
+			return
+		}
+		_ = flags.Set(name, value)
+	}
+	setBool := func(name string, v *bool, invert bool) {
+		if v == nil {
+			return
+		}
+		set(name, strconv.FormatBool(*v != invert))
+	}
+
+	if s.Dir != nil && *s.Dir != "" {
+		if dir, err := utils.ExpandPath(*s.Dir); err == nil {
+			set("dir", dir)
+		}
+	}
+	if s.Format != nil && *s.Format != "" {
+		set("format", *s.Format)
+	}
+	if s.Quality != nil {
+		set("quality", strconv.Itoa(*s.Quality))
+	}
+	if s.Cursor != nil && *s.Cursor {
+		set("cursor", "on")
+	}
+	if s.HUD != nil && *s.HUD != "" {
+		set("hud", *s.HUD)
+	}
+	if s.ScrollInterval != nil {
+		set("interval", strconv.Itoa(*s.ScrollInterval))
+	}
+	// A bind that turns one output off keeps the other, whatever the settings say.
+	explicitlyOff := func(name string) bool {
+		f := flags.Lookup(name)
+		return f != nil && flags.Changed(name) && f.Value.String() == "true"
+	}
+	noFile, noClipboard := explicitlyOff("no-file"), explicitlyOff("no-clipboard")
+	if !noFile {
+		setBool("no-clipboard", s.Clipboard, true)
+	}
+	if !noClipboard {
+		setBool("no-file", s.SaveFile, true)
+	}
+	setBool("clipboard-file", s.ClipboardFile, false)
+	setBool("no-notify", s.Notify, true)
+	setBool("no-confirm", s.ConfirmRegion, true)
+	setBool("annotate", s.Annotate, false)
 }
 
 func getScreenshotConfig(mode screenshot.Mode) screenshot.Config {
@@ -370,6 +472,10 @@ func runScreenshot(config screenshot.Config) {
 		os.Exit(0)
 	}
 
+	deliverScreenshot(config, result)
+}
+
+func deliverScreenshot(config screenshot.Config, result *screenshot.CaptureResult) {
 	if result.Buffer != nil {
 		defer result.Buffer.Close()
 
@@ -405,6 +511,9 @@ func runScreenshot(config screenshot.Config) {
 		}
 
 		filePath = filepath.Join(outputDir, filename)
+		if err := os.MkdirAll(filepath.Dir(filePath), 0o755); err != nil {
+			exitScreenshotError(" creating directory", err)
+		}
 		if err := screenshot.WriteToFileWithFormat(result.Buffer, filePath, config.Format, config.Quality, result.Format, result.CICP); err != nil {
 			exitScreenshotError(" writing file", err)
 		}
@@ -484,6 +593,8 @@ func writeImageToStdout(buf *screenshot.ShmBuffer, format screenshot.Format, qua
 	switch format {
 	case screenshot.FormatJPEG:
 		return screenshot.EncodeBufferJPEG(os.Stdout, buf, pixelFormat, quality)
+	case screenshot.FormatPPM:
+		return screenshot.EncodePPM(os.Stdout, screenshot.BufferToImageWithFormat(buf, pixelFormat))
 	default:
 		return screenshot.EncodeBufferPNG(os.Stdout, buf, pixelFormat, cicp)
 	}
@@ -556,6 +667,11 @@ func bufferToRGBAThumbnail(buf *screenshot.ShmBuffer, maxSize int, pixelFormat u
 
 func runScreenshotRegion(cmd *cobra.Command, args []string) {
 	config := getScreenshotConfig(screenshot.ModeRegion)
+	// Piped and geometry output have no editor step.
+	if ssAnnotate && !config.Stdout && !config.Geometry && !ssJSON && (config.SaveFile || config.Clipboard) {
+		runScreenshotDraw(cmd, args)
+		return
+	}
 	runScreenshot(config)
 }
 
@@ -595,6 +711,88 @@ func runScreenshotLast(cmd *cobra.Command, args []string) {
 func runScreenshotWindow(cmd *cobra.Command, args []string) {
 	config := getScreenshotConfig(screenshot.ModeWindow)
 	runScreenshot(config)
+}
+
+func runScreenshotDraw(cmd *cobra.Command, args []string) {
+	config := getScreenshotConfig(screenshot.ModeRegion)
+	switch {
+	case config.Stdout || config.Geometry || ssJSON:
+		fmt.Fprintln(os.Stderr, "Error: draw does not support --stdout, --geometry or --json")
+		os.Exit(1)
+	case !config.SaveFile && !config.Clipboard:
+		fmt.Fprintln(os.Stderr, "Error: draw needs a file or clipboard destination")
+		os.Exit(1)
+	}
+	if err := openDrawOverlay(config); err != nil {
+		fmt.Fprintf(os.Stderr, "Draw overlay unavailable, using region select: %v\n", err)
+		runScreenshot(config)
+	}
+}
+
+func openDrawOverlay(config screenshot.Config) error {
+	pid, ok := shellApp.SessionPID()
+	if !ok {
+		return errors.New("DMS shell is not running")
+	}
+	outputDir := config.OutputDir
+	if outputDir == "" {
+		outputDir = screenshot.GetOutputDir()
+	}
+	// `finish` runs from the shell, which shares neither this working directory nor its environment.
+	outputDir, err := filepath.Abs(outputDir)
+	if err != nil {
+		return err
+	}
+	opts, err := json.Marshal(map[string]any{
+		"cursor": config.Cursor == screenshot.CursorOn,
+		"finish": []string{
+			"--format=" + ssFormat,
+			"--quality=" + strconv.Itoa(ssQuality),
+			"--dir=" + outputDir,
+			"--filename=" + ssFilename,
+			"--no-file=" + strconv.FormatBool(ssNoFile),
+			"--no-clipboard=" + strconv.FormatBool(ssNoClipboard),
+			"--clipboard-file=" + strconv.FormatBool(ssClipFile),
+			"--no-notify=" + strconv.FormatBool(ssNoNotify),
+		},
+	})
+	if err != nil {
+		return err
+	}
+	res, _, err := qsipc.Call(qsipc.SocketPathForPID(pid), "screenshot", "draw", []string{string(opts)})
+	switch {
+	case err != nil:
+		return err
+	case res == "DRAW_BUSY":
+		// Already open: a second Print press should not stack a plain selector on top.
+		return nil
+	case res != "DRAW_OPENED":
+		return fmt.Errorf("shell could not open the draw overlay: %s", res)
+	}
+	return nil
+}
+
+func runScreenshotFinish(cmd *cobra.Command, args []string) {
+	config := getScreenshotConfig(screenshot.ModeRegion)
+	switch args[0] {
+	case "confirm":
+	case "copy":
+		config.SaveFile, config.Clipboard = false, true
+	case "save":
+		config.SaveFile, config.Clipboard = true, false
+	default:
+		exitScreenshotError("", fmt.Errorf("unknown finish mode %q", args[0]))
+	}
+
+	debug.SetGCPercent(-1)
+	debug.SetMemoryLimit(1 << 30)
+
+	buf, err := screenshot.ReadPPM(args[1])
+	os.Remove(args[1])
+	if err != nil {
+		exitScreenshotError(" reading the capture", err)
+	}
+	deliverScreenshot(config, &screenshot.CaptureResult{Buffer: buf, Format: uint32(buf.Format)})
 }
 
 func runScreenshotList(cmd *cobra.Command, args []string) {

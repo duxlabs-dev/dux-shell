@@ -36,6 +36,7 @@ function create(id, name) {
         openOnOverview: false,
         groupByApp: false,
         separatePinnedAndRunningApps: false,
+        showRunningApps: true,
         restoreSpecialWorkspaceOnClick: false,
         isolateDisplays: false,
         indicatorStyle: "circle",

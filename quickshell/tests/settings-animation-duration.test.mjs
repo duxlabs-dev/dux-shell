@@ -4,48 +4,35 @@ import { loadScript } from "./qml-script.mjs";
 
 const store = loadScript(new URL("../Common/settings/SettingsStore.js", import.meta.url));
 
-const removedKeys = ["animationSpeed", "customAnimationDuration", "popoutAnimationSpeed", "popoutCustomAnimationDuration", "modalAnimationSpeed", "modalCustomAnimationDuration", "notificationAnimationSpeed", "notificationCustomAnimationDuration"];
+const removedKeys = ["animationSpeed", "customAnimationDuration", "animationDuration", "syncComponentAnimationSpeeds", "popoutAnimationDuration", "modalAnimationDuration", "notificationAnimationDuration"];
 
-function load(settings) {
-    const root = { settingsConfigVersion: 26 };
-    store.parse(root, Object.assign({ configVersion: 25 }, settings));
-    return root;
+function step(settings) {
+    const root = { settingsConfigVersion: 45 };
+    store.parse(root, settings);
+    return root.motionDuration;
 }
 
-test("speed presets become their preset duration", () => {
-    const root = load({ animationSpeed: 3, popoutAnimationSpeed: 2, modalAnimationSpeed: 0, notificationAnimationSpeed: 3 });
-    assert.equal(root.animationDuration, 750);
-    assert.equal(root.popoutAnimationDuration, 300);
-    assert.equal(root.modalAnimationDuration, 0);
-    assert.equal(root.notificationAnimationDuration, 600);
-    for (const key of removedKeys)
-        assert.equal(key in root, false, key);
+test("each millisecond duration lands on the step with the nearest duration", () => {
+    const expected = [[0, -1], [100, 0], [250, 0], [320, 1], [375, 1], [500, 2], [600, 2], [750, 3], [900, 4], [1000, 4]];
+    for (const [ms, motionDuration] of expected)
+        assert.equal(step({ configVersion: 42, animationDuration: ms }), motionDuration, `${ms} ms`);
 });
 
-test("custom speed keeps the custom duration", () => {
-    const root = load({ animationSpeed: 4, customAnimationDuration: 320, notificationAnimationSpeed: 4, notificationCustomAnimationDuration: 550 });
-    assert.equal(root.animationDuration, 320);
-    assert.equal(root.notificationAnimationDuration, 550);
+test("a config that never stored a duration keeps the old 250 ms default", () => {
+    assert.equal(step({ configVersion: 42 }), 0);
 });
 
-test("custom speed without a stored duration falls back to the old custom default", () => {
-    const root = load({ animationSpeed: 4, popoutAnimationSpeed: 4, modalAnimationSpeed: 4, notificationAnimationSpeed: 4 });
-    assert.equal(root.animationDuration, 500);
-    assert.equal(root.popoutAnimationDuration, 150);
-    assert.equal(root.modalAnimationDuration, 150);
-    assert.equal(root.notificationAnimationDuration, 400);
+test("legacy speed presets map through their preset duration", () => {
+    assert.equal(step({ configVersion: 25, animationSpeed: 0 }), -1);
+    assert.equal(step({ configVersion: 25, animationSpeed: 2 }), 2);
+    assert.equal(step({ configVersion: 25, animationSpeed: 4, customAnimationDuration: 320 }), 1);
 });
 
-test("a custom duration without custom speed is dropped", () => {
-    const root = load({ customAnimationDuration: 900 });
-    assert.equal(root.animationDuration, store.SpecModule.SPEC.animationDuration.def);
-});
-
-test("saved settings keep only changed durations and no speed keys", () => {
-    const saved = store.toJson(load({ animationSpeed: 1, modalAnimationSpeed: 3 }), new Set());
-    assert.equal(saved.modalAnimationDuration, 500);
-    assert.equal(saved.animationDuration ?? store.SpecModule.SPEC.animationDuration.def, 250);
+test("the old duration keys are gone after a save", () => {
+    const root = { settingsConfigVersion: 45 };
+    store.parse(root, { configVersion: 42, animationDuration: 750, popoutAnimationDuration: 300, syncComponentAnimationSpeeds: false, notificationAnimationDuration: 400 });
+    const saved = store.toJson(root, new Set());
+    assert.equal(saved.motionDuration, 3);
     for (const key of removedKeys)
         assert.equal(key in saved, false, key);
-    assert.equal(saved.configVersion, 26);
 });

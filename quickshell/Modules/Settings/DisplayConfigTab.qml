@@ -95,207 +95,210 @@ Item {
             visibleCondition: DisplayConfigState.hasOutputBackend
         }
 
-        SettingsCard {
-            width: parent.width
-            iconName: "tune"
-            title: I18n.tr("Profiles", "card title for display configuration profiles")
-            visible: DisplayConfigState.hasOutputBackend
+        SettingsDeferred {
+            when: DisplayConfigState.hasOutputBackend
 
-            SettingsToggleRow {
-                settingKey: "displayProfileAutoSelect"
-                text: I18n.tr("Auto")
-                description: I18n.tr("Applies the saved profile that matches the connected displays", "display profile auto select toggle description")
-                checked: SettingsData.displayProfileAutoSelect
-                onToggled: checked => {
-                    SettingsData.displayProfileAutoSelect = checked;
-                    if (!checked)
-                        SessionData.setActiveDisplayProfile(CompositorService.compositor, "");
-                    SettingsData.saveSettings();
-                    if (checked)
-                        DisplayConfigState.applyAutoConfig();
-                }
-            }
+            SettingsCard {
+                width: parent.width
+                iconName: "tune"
+                title: I18n.tr("Profiles", "card title for display configuration profiles")
 
-            SettingsRow {
-                visible: !root.showNewProfileDialog && !root.showDeleteConfirmDialog && !root.showRenameDialog && !root.showEditMonitorsDialog
-                subtitle: SettingsData.displayProfileAutoSelect ? I18n.tr("Disabled by Auto", "display profiles row, Auto is the profile auto select toggle above it") : ""
-                body: Row {
-                    width: parent.width
-                    spacing: Theme.spacingS
-                    opacity: SettingsData.displayProfileAutoSelect ? 0.4 : 1.0
-
-                    DDropdown {
-                        id: profileDropdown
-                        downKeyOpens: false
-                        backgroundColor: SettingsMetrics.controlSurface
-                        width: parent.width - newButton.width - editMonitorsButton.width - deleteButton.width - Theme.spacingS * 3
-                        compactMode: true
-                        dropdownWidth: width
-                        options: root.getProfileOptions()
-                        emptyText: I18n.tr("No profiles")
-                        enabled: !SettingsData.displayProfileAutoSelect
-                        onValueChanged: value => {
-                            const profileId = root.getProfileIdByName(value);
-                            if (profileId && profileId !== root.selectedProfileId)
-                                DisplayConfigState.activateProfile(profileId);
-                        }
-                    }
-
-                    Binding {
-                        target: profileDropdown
-                        property: "currentValue"
-                        value: SettingsData.displayProfileAutoSelect ? I18n.tr("Auto") : root.getProfileNameById(root.selectedProfileId)
-                    }
-
-                    DButton {
-                        id: newButton
-                        tooltipText: I18n.tr("New profile")
-                        iconName: "add"
-                        text: ""
-                        horizontalPadding: Theme.spacingM
-                        backgroundColor: SettingsMetrics.controlSurface
-                        textColor: Theme.surfaceText
-                        enabled: !SettingsData.displayProfileAutoSelect
-                        onClicked: {
-                            root.newProfileName = "";
-                            root.showNewProfileDialog = true;
-                        }
-                    }
-
-                    DButton {
-                        id: editMonitorsButton
-                        tooltipText: I18n.tr("Edit monitors")
-                        iconName: "edit"
-                        text: ""
-                        horizontalPadding: Theme.spacingM
-                        backgroundColor: SettingsMetrics.controlSurface
-                        textColor: Theme.surfaceText
-                        enabled: root.selectedProfileId !== "" && !SettingsData.displayProfileAutoSelect
-                        onClicked: root.openEditMonitorsDialog()
-                    }
-
-                    DButton {
-                        id: deleteButton
-                        Accessible.name: I18n.tr("Delete profile")
-                        iconName: "delete"
-                        text: ""
-                        horizontalPadding: Theme.spacingM
-                        backgroundColor: SettingsMetrics.controlSurface
-                        textColor: Theme.error
-                        enabled: root.selectedProfileId !== "" && !SettingsData.displayProfileAutoSelect
-                        onClicked: root.showDeleteConfirmDialog = true
+                SettingsToggleRow {
+                    settingKey: "displayProfileAutoSelect"
+                    text: I18n.tr("Auto")
+                    description: I18n.tr("Applies the saved profile that matches the connected displays", "display profile auto select toggle description")
+                    checked: SettingsData.displayProfileAutoSelect
+                    onToggled: checked => {
+                        SettingsData.displayProfileAutoSelect = checked;
+                        if (!checked)
+                            SessionData.setActiveDisplayProfile(CompositorService.compositor, "");
+                        SettingsData.saveSettings();
+                        if (checked)
+                            DisplayConfigState.applyAutoConfig();
                     }
                 }
-            }
 
-            SettingsRow {
-                visible: root.showNewProfileDialog
-                body: Row {
-                    width: parent.width
-                    spacing: Theme.spacingS
+                SettingsRow {
+                    visible: !root.showNewProfileDialog && !root.showDeleteConfirmDialog && !root.showRenameDialog && !root.showEditMonitorsDialog
+                    subtitle: SettingsData.displayProfileAutoSelect ? I18n.tr("Disabled by Auto", "display profiles row, Auto is the profile auto select toggle above it") : ""
+                    body: Row {
+                        width: parent.width
+                        spacing: Theme.spacingS
+                        opacity: SettingsData.displayProfileAutoSelect ? 0.4 : 1.0
 
-                    DTextField {
-                        id: newProfileField
-                        outlined: true
-                        leftIconName: "badge"
-                        labelText: I18n.tr("Profile name")
-                        width: parent.width - createButton.width - cancelNewButton.width - Theme.spacingS * 2
-                        text: root.newProfileName
-                        onTextChanged: root.newProfileName = text
-                        onAccepted: {
-                            if (text.trim())
-                                DisplayConfigState.createProfile(text.trim());
-                            root.showNewProfileDialog = false;
+                        DDropdown {
+                            id: profileDropdown
+                            downKeyOpens: false
+                            backgroundColor: SettingsMetrics.controlSurface
+                            width: parent.width - newButton.width - editMonitorsButton.width - deleteButton.width - Theme.spacingS * 3
+                            compactMode: true
+                            dropdownWidth: width
+                            options: root.getProfileOptions()
+                            emptyText: I18n.tr("No profiles")
+                            enabled: !SettingsData.displayProfileAutoSelect
+                            onValueChanged: value => {
+                                const profileId = root.getProfileIdByName(value);
+                                if (profileId && profileId !== root.selectedProfileId)
+                                    DisplayConfigState.activateProfile(profileId);
+                            }
                         }
-                        Component.onCompleted: forceActiveFocus()
+
+                        Binding {
+                            target: profileDropdown
+                            property: "currentValue"
+                            value: SettingsData.displayProfileAutoSelect ? I18n.tr("Auto") : root.getProfileNameById(root.selectedProfileId)
+                        }
+
+                        DButton {
+                            id: newButton
+                            tooltipText: I18n.tr("New profile")
+                            iconName: "add"
+                            text: ""
+                            horizontalPadding: Theme.spacingM
+                            backgroundColor: SettingsMetrics.controlSurface
+                            textColor: Theme.surfaceText
+                            enabled: !SettingsData.displayProfileAutoSelect
+                            onClicked: {
+                                root.newProfileName = "";
+                                root.showNewProfileDialog = true;
+                            }
+                        }
+
+                        DButton {
+                            id: editMonitorsButton
+                            tooltipText: I18n.tr("Edit monitors")
+                            iconName: "edit"
+                            text: ""
+                            horizontalPadding: Theme.spacingM
+                            backgroundColor: SettingsMetrics.controlSurface
+                            textColor: Theme.surfaceText
+                            enabled: root.selectedProfileId !== "" && !SettingsData.displayProfileAutoSelect
+                            onClicked: root.openEditMonitorsDialog()
+                        }
+
+                        DButton {
+                            id: deleteButton
+                            Accessible.name: I18n.tr("Delete profile")
+                            iconName: "delete"
+                            text: ""
+                            horizontalPadding: Theme.spacingM
+                            backgroundColor: SettingsMetrics.controlSurface
+                            textColor: Theme.error
+                            enabled: root.selectedProfileId !== "" && !SettingsData.displayProfileAutoSelect
+                            onClicked: root.showDeleteConfirmDialog = true
+                        }
                     }
+                }
+
+                SettingsRow {
+                    visible: root.showNewProfileDialog
+                    body: Row {
+                        width: parent.width
+                        spacing: Theme.spacingS
+
+                        DTextField {
+                            id: newProfileField
+                            outlined: true
+                            leftIconName: "badge"
+                            labelText: I18n.tr("Profile name")
+                            width: parent.width - createButton.width - cancelNewButton.width - Theme.spacingS * 2
+                            text: root.newProfileName
+                            onTextChanged: root.newProfileName = text
+                            onAccepted: {
+                                if (text.trim())
+                                    DisplayConfigState.createProfile(text.trim());
+                                root.showNewProfileDialog = false;
+                            }
+                            Component.onCompleted: forceActiveFocus()
+                        }
+
+                        DButton {
+                            id: createButton
+                            text: I18n.tr("Create")
+                            enabled: root.newProfileName.trim() !== ""
+                            onClicked: {
+                                DisplayConfigState.createProfile(root.newProfileName.trim());
+                                root.showNewProfileDialog = false;
+                            }
+                        }
+
+                        DButton {
+                            id: cancelNewButton
+                            text: I18n.tr("Cancel")
+                            backgroundColor: "transparent"
+                            textColor: Theme.surfaceText
+                            onClicked: root.showNewProfileDialog = false
+                        }
+                    }
+                }
+
+                SettingsRow {
+                    visible: root.showDeleteConfirmDialog
+                    title: I18n.tr("Delete profile \"%1\"?", "delete confirmation, %1 is the display profile name").arg(root.getProfileNameById(root.selectedProfileId))
 
                     DButton {
-                        id: createButton
-                        text: I18n.tr("Create")
-                        enabled: root.newProfileName.trim() !== ""
+                        text: I18n.tr("Delete")
+                        danger: true
                         onClicked: {
-                            DisplayConfigState.createProfile(root.newProfileName.trim());
-                            root.showNewProfileDialog = false;
+                            DisplayConfigState.deleteProfile(root.selectedProfileId);
+                            root.showDeleteConfirmDialog = false;
                         }
                     }
 
                     DButton {
-                        id: cancelNewButton
                         text: I18n.tr("Cancel")
                         backgroundColor: "transparent"
                         textColor: Theme.surfaceText
-                        onClicked: root.showNewProfileDialog = false
-                    }
-                }
-            }
-
-            SettingsRow {
-                visible: root.showDeleteConfirmDialog
-                title: I18n.tr("Delete profile \"%1\"?", "delete confirmation, %1 is the display profile name").arg(root.getProfileNameById(root.selectedProfileId))
-
-                DButton {
-                    text: I18n.tr("Delete")
-                    danger: true
-                    onClicked: {
-                        DisplayConfigState.deleteProfile(root.selectedProfileId);
-                        root.showDeleteConfirmDialog = false;
+                        onClicked: root.showDeleteConfirmDialog = false
                     }
                 }
 
-                DButton {
-                    text: I18n.tr("Cancel")
-                    backgroundColor: "transparent"
-                    textColor: Theme.surfaceText
-                    onClicked: root.showDeleteConfirmDialog = false
-                }
-            }
-
-            SettingsRow {
-                visible: root.showEditMonitorsDialog
-                title: I18n.tr("Displays in \"%1\"", "monitor list heading, %1 is the display profile name").arg(root.getProfileNameById(root.selectedProfileId)) + ":"
-            }
-
-            Repeater {
-                model: Object.keys(DisplayConfigState.allOutputs || {})
-
-                delegate: SettingsToggleRow {
-                    required property string modelData
-
+                SettingsRow {
                     visible: root.showEditMonitorsDialog
-                    text: {
-                        const od = DisplayConfigState.allOutputs[modelData];
-                        return DisplayConfigState.getOutputDisplayName(od, modelData);
-                    }
-                    description: DisplayConfigState.allOutputs[modelData]?.connected ? I18n.tr("Connected") : I18n.tr("Disconnected")
-                    descriptionColor: DisplayConfigState.allOutputs[modelData]?.connected ? Theme.success : Theme.surfaceVariantText
-                    checked: root.editMonitorSelection[modelData] ?? false
-                    onToggled: checked => {
-                        const sel = Object.assign({}, root.editMonitorSelection);
-                        sel[modelData] = checked;
-                        root.editMonitorSelection = sel;
-                    }
+                    title: I18n.tr("Displays in \"%1\"", "monitor list heading, %1 is the display profile name").arg(root.getProfileNameById(root.selectedProfileId)) + ":"
                 }
-            }
 
-            SettingsRow {
-                visible: root.showEditMonitorsDialog
+                Repeater {
+                    model: Object.keys(DisplayConfigState.allOutputs || {})
 
-                DButton {
-                    text: I18n.tr("Save")
-                    enabled: Object.values(root.editMonitorSelection).some(v => v)
-                    onClicked: {
-                        const enabled = Object.keys(root.editMonitorSelection).filter(k => root.editMonitorSelection[k]);
-                        DisplayConfigState.updateProfileMonitors(root.selectedProfileId, enabled);
-                        root.showEditMonitorsDialog = false;
+                    delegate: SettingsToggleRow {
+                        required property string modelData
+
+                        visible: root.showEditMonitorsDialog
+                        text: {
+                            const od = DisplayConfigState.allOutputs[modelData];
+                            return DisplayConfigState.getOutputDisplayName(od, modelData);
+                        }
+                        description: DisplayConfigState.allOutputs[modelData]?.connected ? I18n.tr("Connected") : I18n.tr("Disconnected")
+                        descriptionColor: DisplayConfigState.allOutputs[modelData]?.connected ? Theme.success : Theme.surfaceVariantText
+                        checked: root.editMonitorSelection[modelData] ?? false
+                        onToggled: checked => {
+                            const sel = Object.assign({}, root.editMonitorSelection);
+                            sel[modelData] = checked;
+                            root.editMonitorSelection = sel;
+                        }
                     }
                 }
 
-                DButton {
-                    text: I18n.tr("Cancel")
-                    backgroundColor: "transparent"
-                    textColor: Theme.surfaceText
-                    onClicked: root.showEditMonitorsDialog = false
+                SettingsRow {
+                    visible: root.showEditMonitorsDialog
+
+                    DButton {
+                        text: I18n.tr("Save")
+                        enabled: Object.values(root.editMonitorSelection).some(v => v)
+                        onClicked: {
+                            const enabled = Object.keys(root.editMonitorSelection).filter(k => root.editMonitorSelection[k]);
+                            DisplayConfigState.updateProfileMonitors(root.selectedProfileId, enabled);
+                            root.showEditMonitorsDialog = false;
+                        }
+                    }
+
+                    DButton {
+                        text: I18n.tr("Cancel")
+                        backgroundColor: "transparent"
+                        textColor: Theme.surfaceText
+                        onClicked: root.showEditMonitorsDialog = false
+                    }
                 }
             }
         }
@@ -379,15 +382,18 @@ Item {
                 return keys.filter(k => DisplayConfigState.allOutputs[k]?.connected);
             }
 
-            delegate: OutputCard {
+            delegate: SettingsDeferred {
                 required property string modelData
-                outputName: modelData
-                outputData: DisplayConfigState.allOutputs[modelData]
-                onRequestICCBrowse: name => {
-                    root.pendingICCOutput = name;
-                    iccFileBrowser.open();
+
+                OutputCard {
+                    outputName: modelData
+                    outputData: DisplayConfigState.allOutputs[modelData]
+                    onRequestICCBrowse: name => {
+                        root.pendingICCOutput = name;
+                        iccFileBrowser.open();
+                    }
+                    onRequestICCInfo: name => iccInfoModal.showProfile(name)
                 }
-                onRequestICCInfo: name => iccInfoModal.showProfile(name)
             }
         }
 

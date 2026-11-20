@@ -26,6 +26,7 @@ Item {
     readonly property real badgeIconRatio: 0.6
     readonly property bool showHostname: options.hostname !== false && UserInfoService.hostname !== ""
     readonly property bool showCompositor: options.compositor !== false && compositorName !== ""
+    readonly property bool compositorInline: showCompositor && !stacked
     readonly property bool showUptime: options.uptime !== false
     readonly property bool showBadge: options.badge !== false
     readonly property string compositorName: CompositorService.displayName
@@ -123,7 +124,7 @@ Item {
             Row {
                 id: compositorDetails
                 spacing: Theme.spacingXS
-                visible: root.showCompositor && !root.stacked
+                visible: root.compositorInline
 
                 DIcon {
                     anchors.verticalCenter: parent.verticalCenter
@@ -142,7 +143,8 @@ Item {
             }
 
             Row {
-                readonly property real remaining: parent.width - (compositorDetails.visible ? compositorDetails.width + parent.spacing : 0)
+                // Not compositorDetails.visible: that reads false while the surface is hidden and wraps this row until the next layout.
+                readonly property real remaining: parent.width - (root.compositorInline ? compositorDetails.width + parent.spacing : 0)
 
                 width: root.tall && !root.stacked ? Math.min(uptimeIcon.width + spacing + uptimeLabel.implicitWidth, parent.width) : Math.max(0, remaining)
                 spacing: Theme.spacingXS

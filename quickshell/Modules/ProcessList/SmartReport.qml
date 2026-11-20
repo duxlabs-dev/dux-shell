@@ -4,7 +4,7 @@ import qs.Services
 import qs.Widgets
 import qs.Modules.Settings.Widgets
 import qs.DCommon.Widgets
-import "Drives.js" as Drives
+import "../../Services/Drives.js" as Drives
 
 // A drive's full SMART report. It is read through the unlocked root helper, so one password prompt covers every drive.
 Column {
@@ -108,6 +108,7 @@ Column {
         SettingsGroup {
             id: group
             required property var modelData
+            slotColor: Theme.chipSurface
             width: parent.width
             customPaddingV: 0
             customPaddingH: 0

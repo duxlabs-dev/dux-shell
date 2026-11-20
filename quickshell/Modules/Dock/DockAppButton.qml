@@ -47,19 +47,6 @@ Item {
             return appData.windowCount > 0;
         return appData.isRunning;
     }
-    readonly property string coreIconColorOverride: root.options.launcherLogoColorOverride
-    readonly property bool coreIconHasCustomColor: coreIconColorOverride !== "" && coreIconColorOverride !== "primary" && coreIconColorOverride !== "surface"
-    readonly property color effectiveCoreIconColor: {
-        if (coreIconColorOverride === "primary")
-            return Theme.primary;
-        if (coreIconColorOverride === "surface")
-            return Theme.surfaceText;
-        if (coreIconColorOverride !== "")
-            return coreIconColorOverride;
-        return Theme.surfaceText;
-    }
-    readonly property real effectiveCoreIconBrightness: coreIconHasCustomColor ? root.options.launcherLogoBrightness : 0.0
-    readonly property real effectiveCoreIconContrast: coreIconHasCustomColor ? root.options.launcherLogoContrast : 0.0
 
     function updateDesktopEntry() {
         dockApps?.refreshDesktopEntries();
@@ -252,7 +239,7 @@ Item {
     Timer {
         id: longPressTimer
 
-        interval: 500
+        interval: Timing.longPress
         repeat: false
         onTriggered: {
             if (appData && appData.isPinned) {
@@ -489,24 +476,35 @@ Item {
             anchors.fill: parent
             scale: root.options?.enlargeOnHover && root.isHovered ? (root.options?.enlargePercentage ?? 125) / 100 : 1
 
-            AppIconRenderer {
+            Loader {
                 id: coreIcon
 
+                readonly property string iconValue: appData && appData.isCoreApp && appData.coreAppData ? (appData.coreAppData.icon || "") : ""
+
                 anchors.centerIn: parent
-                iconSize: actualIconSize
-                iconValue: appData && appData.isCoreApp && appData.coreAppData ? (appData.coreAppData.icon || "") : ""
-                colorOverride: effectiveCoreIconColor
-                brightnessOverride: effectiveCoreIconBrightness
-                contrastOverride: effectiveCoreIconContrast
-                fallbackText: "?"
-                visible: iconValue !== ""
+                active: iconValue !== ""
+                visible: active
+                sourceComponent: AppIconRenderer {
+                    width: actualIconSize
+                    height: actualIconSize
+                    iconSize: actualIconSize
+                    iconValue: coreIcon.iconValue
+                    fallbackText: "?"
+                }
             }
 
             Image {
                 id: iconImg
 
                 readonly property real displaySize: appData && Paths.isDmsAppId(appData.appId) ? actualIconSize * 0.85 : actualIconSize
+                // A theme change swaps the file; the old picture stays up until the new one is decoded.
+                property bool drawn: false
 
+                retainWhileLoading: true
+                onStatusChanged: {
+                    if (status !== Image.Loading)
+                        drawn = status === Image.Ready;
+                }
                 anchors.centerIn: parent
                 width: displaySize
                 height: displaySize
@@ -524,7 +522,7 @@ Item {
                 mipmap: true
                 smooth: true
                 asynchronous: true
-                visible: status === Image.Ready && !coreIcon.visible
+                visible: drawn && !coreIcon.active
                 opacity: root.isMinimized ? 0.4 : 1
                 layer.enabled: appData && Paths.isDmsAppId(appData.appId)
                 layer.smooth: true
@@ -536,45 +534,50 @@ Item {
                 }
             }
 
-            Rectangle {
-                width: actualIconSize
-                height: actualIconSize
+            Loader {
+                readonly property bool missing: !coreIcon.active && !iconImg.drawn && !!appData?.appId
                 anchors.centerIn: parent
-                visible: !coreIcon.visible && iconImg.status !== Image.Ready && appData && appData.appId && !Paths.isSteamApp(appData.appId)
-                opacity: root.isMinimized ? 0.4 : 1
-                color: Theme.surfaceLight
-                radius: Theme.cornerRadius
-                border.width: 1
-                border.color: Theme.primarySelected
+                active: missing && !Paths.isSteamApp(appData.appId)
+                sourceComponent: Rectangle {
+                    width: actualIconSize
+                    height: actualIconSize
+                    opacity: root.isMinimized ? 0.4 : 1
+                    color: Theme.surfaceLight
+                    radius: Theme.cornerRadius
+                    border.width: 1
+                    border.color: Theme.primarySelected
 
-                StyledText {
-                    anchors.centerIn: parent
-                    text: {
-                        if (!appData || !appData.appId) {
-                            return "?";
-                        }
+                    StyledText {
+                        anchors.centerIn: parent
+                        text: {
+                            if (!appData || !appData.appId) {
+                                return "?";
+                            }
 
-                        let appName;
-                        if (appData.isCoreApp && appData.coreAppData) {
-                            appName = appData.coreAppData.name || appData.appId;
-                        } else {
-                            appName = Paths.getAppName(appData.appId, cachedDesktopEntry);
+                            let appName;
+                            if (appData.isCoreApp && appData.coreAppData) {
+                                appName = appData.coreAppData.name || appData.appId;
+                            } else {
+                                appName = Paths.getAppName(appData.appId, cachedDesktopEntry);
+                            }
+                            return appName.charAt(0).toUpperCase();
                         }
-                        return appName.charAt(0).toUpperCase();
+                        font.pixelSize: Math.max(8, parent.width * 0.35)
+                        color: Theme.primary
+                        font.weight: Theme.fontWeightMedium
                     }
-                    font.pixelSize: Math.max(8, parent.width * 0.35)
-                    color: Theme.primary
-                    font.weight: Theme.fontWeightMedium
                 }
             }
 
-            DIcon {
+            Loader {
                 anchors.centerIn: parent
-                size: actualIconSize
-                name: "sports_esports"
-                color: Theme.surfaceText
-                visible: !coreIcon.visible && iconImg.status !== Image.Ready && appData && appData.appId && Paths.isSteamApp(appData.appId)
-                opacity: root.isMinimized ? 0.4 : 1
+                active: !coreIcon.active && !iconImg.drawn && !!appData?.appId && Paths.isSteamApp(appData.appId)
+                sourceComponent: DIcon {
+                    size: actualIconSize
+                    name: "sports_esports"
+                    color: Theme.surfaceText
+                    opacity: root.isMinimized ? 0.4 : 1
+                }
             }
         }
 
@@ -649,13 +652,16 @@ Item {
 
                     Behavior on width {
                         NumberAnimation {
-                            duration: Theme.shortDuration
-                            easing.type: Easing.OutCubic
+                            duration: Theme.expressiveDurations.expressiveDefaultSpatial
+                            easing.type: Easing.BezierSpline
+                            easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
                         }
                     }
                     Behavior on color {
                         ColorAnimation {
-                            duration: Theme.shortDuration
+                            duration: Theme.expressiveDurations.expressiveFastEffects
+                            easing.type: Easing.BezierSpline
+                            easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
                         }
                     }
                 }
@@ -709,13 +715,16 @@ Item {
 
                     Behavior on height {
                         NumberAnimation {
-                            duration: Theme.shortDuration
-                            easing.type: Easing.OutCubic
+                            duration: Theme.expressiveDurations.expressiveDefaultSpatial
+                            easing.type: Easing.BezierSpline
+                            easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
                         }
                     }
                     Behavior on color {
                         ColorAnimation {
-                            duration: Theme.shortDuration
+                            duration: Theme.expressiveDurations.expressiveFastEffects
+                            easing.type: Easing.BezierSpline
+                            easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
                         }
                     }
                 }

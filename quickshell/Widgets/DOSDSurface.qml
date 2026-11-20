@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell.Wayland
 import qs.Common
+import "../Common/PopoutBounds.js" as PopoutBounds
 
 DIdleSurface {
     id: root
@@ -9,7 +10,27 @@ DIdleSurface {
     readonly property var activeHost: hostCount > 0 ? (hostItem.children[hostCount - 1].host ?? null) : null
     readonly property alias hostItem: hostItem
 
+    requestedBounds: {
+        if (!boundsSupported || !active)
+            return Qt.rect(0, 0, 0, 0);
+        let bounds = {
+            x: 0,
+            y: 0,
+            width: 0,
+            height: 0
+        };
+        for (const child of hostItem.children) {
+            const host = child.host;
+            if (!host || host.expanded)
+                return Qt.rect(0, 0, screenWidth, screenHeight);
+            bounds = PopoutBounds.unite(bounds, host.renderBounds);
+        }
+        return Qt.rect(bounds.x, bounds.y, bounds.width, bounds.height);
+    }
+
     kind: "osd"
+    // Maps per show, so it stacks above overlay surfaces mapped since the last one.
+    keepMapped: false
     active: hostCount > 0
     maskItem: activeHost?.maskItem ?? null
 
@@ -22,10 +43,11 @@ DIdleSurface {
     WlrLayershell.keyboardFocus: activeHost?.surfaceKeyboardFocus ?? WlrKeyboardFocus.None
     BackgroundEffect.blurRegion: activeHost?.blurRegion ?? null
 
-
-
     Item {
         id: hostItem
-        anchors.fill: parent
+        x: -root.bandX
+        y: -root.bandY
+        width: root.screenWidth
+        height: root.screenHeight
     }
 }

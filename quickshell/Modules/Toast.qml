@@ -11,6 +11,11 @@ DIdleSurface {
     id: root
 
     WlrLayershell.namespace: "dms:toast"
+    // Maps per show, so it stacks above overlay surfaces mapped since the last one.
+    keepMapped: false
+    // Covers the level-3 shadow and the copy tooltips centered on edge buttons.
+    readonly property real renderPadding: Theme.elevationRenderPadding(Theme.elevationLevel3, Theme.elevationLightDirection, 6, Theme.spacingS, Theme.spacingL)
+    requestedBounds: Qt.rect(surfaceX + shadowBuffer - renderPadding, surfaceY + shadowBuffer - renderPadding, toastWidth + renderPadding * 2, toastHeight + renderPadding * 2)
 
     property var modelData
     property bool shouldBeVisible: false
@@ -38,7 +43,7 @@ DIdleSurface {
 
     Timer {
         id: closeTimer
-        interval: Theme.mediumDuration + 50
+        interval: Theme.expressiveDurations.expressiveSlowEffects + 50
     }
 
     screen: modelData
@@ -78,8 +83,8 @@ DIdleSurface {
             }
         }
 
-        x: root.surfaceX + root.shadowBuffer
-        y: root.surfaceY + root.shadowBuffer
+        x: root.surfaceX + root.shadowBuffer - root.bandX
+        y: root.surfaceY + root.shadowBuffer - root.bandY
         width: root.toastWidth
         height: root.toastHeight
         readonly property color surfaceColor: {
@@ -305,7 +310,7 @@ DIdleSurface {
 
                             Timer {
                                 id: detailsTooltipTimer
-                                interval: 1500
+                                interval: Timing.holdShort
                                 onTriggered: copyDetailsButton.showTooltip = false
                             }
 
@@ -389,7 +394,7 @@ DIdleSurface {
 
                             Timer {
                                 id: tooltipTimer
-                                interval: 1500
+                                interval: Timing.holdShort
                                 onTriggered: copyButton.showTooltip = false
                             }
 
@@ -435,8 +440,9 @@ DIdleSurface {
 
         Behavior on opacity {
             NumberAnimation {
-                duration: Theme.mediumDuration
-                easing.type: Theme.emphasizedEasing
+                duration: Theme.expressiveDurations.expressiveSlowEffects
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: Theme.expressiveCurves.expressiveSlowEffects
             }
         }
 

@@ -54,15 +54,17 @@ Grid {
                 Behavior on x {
                     enabled: root.bar && !root.bar.suppressShiftAnimation && !root.popupUsesVerticalLine
                     NumberAnimation {
-                        duration: Theme.shortDuration
-                        easing.type: Easing.OutCubic
+                        duration: Theme.expressiveDurations.expressiveFastSpatial
+                        easing.type: Easing.BezierSpline
+                        easing.bezierCurve: Theme.expressiveCurves.expressiveFastSpatial
                     }
                 }
                 Behavior on y {
                     enabled: root.bar && !root.bar.suppressShiftAnimation && root.popupUsesVerticalLine
                     NumberAnimation {
-                        duration: Theme.shortDuration
-                        easing.type: Easing.OutCubic
+                        duration: Theme.expressiveDurations.expressiveFastSpatial
+                        easing.type: Easing.BezierSpline
+                        easing.bezierCurve: Theme.expressiveCurves.expressiveFastSpatial
                     }
                 }
             }
@@ -72,9 +74,7 @@ Grid {
                 style: root.bar ? BarMetrics.widgetStyle(root.bar.barConfig) : "pills"
                 pressed: itemArea.pressed
                 radiusOverride: root.bar ? -1 : Theme.fullRadius(width, height)
-                color: itemArea.pressed
-                    ? Theme.withAlpha(root.bar ? Theme.onSurface : Theme.surfaceText, Theme.stateLayerPressed)
-                    : (itemArea.containsMouse ? (root.bar ? Theme.withAlpha(Theme.onSurface, Theme.stateLayerHover) : Theme.surfaceTextHover) : "transparent")
+                color: itemArea.pressed ? Theme.withAlpha(root.bar ? Theme.onSurface : Theme.surfaceText, Theme.stateLayerPressed) : (itemArea.containsMouse ? (root.bar ? Theme.withAlpha(Theme.onSurface, Theme.stateLayerHover) : Theme.surfaceTextHover) : "transparent")
                 border.width: popupDragHandler.dragging ? Theme.outlineWidthFocused : 0
                 border.color: Theme.primary
                 opacity: popupDragHandler.dragging ? 0.8 : 1.0
@@ -90,7 +90,7 @@ Grid {
 
                 Timer {
                     id: popupLongPressTimer
-                    interval: 400
+                    interval: Timing.longPress
                     repeat: false
                     onTriggered: popupDragHandler.longPressing = true
                 }

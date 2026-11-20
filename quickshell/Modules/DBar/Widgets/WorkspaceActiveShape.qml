@@ -46,7 +46,7 @@ Item {
         if (!target)
             return;
         travelAnimation.stop();
-        if (!goal || SettingsData.reduceMotion) {
+        if (!goal || Theme.reduceMotion) {
             goal = target;
             travel = 1;
             return;

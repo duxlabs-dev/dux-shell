@@ -84,7 +84,7 @@ Item {
             width: root.gutter / 2
             height: root.height
             radius: Theme.fullRadius(width, height)
-            color: Theme.withAlpha(Theme.primary, Theme.stateLayerHover)
+            color: Theme.foregroundColor(Theme.chipSurface)
             opacity: shown ? 1 : 0
             visible: opacity > 0
 
@@ -121,14 +121,14 @@ Item {
                 width: parent.width
                 height: parent.height * rail.fill
                 radius: Theme.fullRadius(width, height)
-                color: Theme.withAlpha(Theme.primary, Theme.stateLayerDrag)
+                color: Theme.primary
             }
 
             DIcon {
                 anchors.centerIn: parent
                 name: rail.leftSide ? "chevron_left" : "chevron_right"
                 size: root.gutter
-                color: Theme.primary
+                color: rail.fill >= 0.5 ? Theme.onPrimary : Theme.primary
             }
         }
     }

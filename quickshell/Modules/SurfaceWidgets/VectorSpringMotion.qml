@@ -9,13 +9,14 @@ QtObject {
     property bool enabled: true
     property bool running: false
     property bool reducedMotion: false
+    readonly property bool snaps: reducedMotion || DC.Style.motionOff
 
     property real stiffness: 560
     property real damping: 37
     property real mass: 1
     property real positionEpsilon: 0.035
     property real velocityEpsilon: 0.035
-    readonly property real timeConstantMs: reducedMotion ? 0 : 2000 * mass / Math.max(1, damping)
+    readonly property real timeConstantMs: snaps ? 0 : 2000 * mass / Math.max(1, damping)
 
     property real currentWidth: 176
     property real currentHeight: 42
@@ -67,7 +68,7 @@ QtObject {
             velocityOffsetCross = seedVelocity.offsetCross ?? velocityOffsetCross;
         }
 
-        if (reducedMotion) {
+        if (snaps) {
             settle();
             return;
         }
@@ -136,7 +137,7 @@ QtObject {
     }
 
     function advance(rawFrameTime) {
-        if (!enabled || !running || reducedMotion)
+        if (!enabled || !running || snaps)
             return;
 
         if (rawFrameTime <= 0)
@@ -186,13 +187,13 @@ QtObject {
             settle();
     }
 
-    onReducedMotionChanged: {
-        if (reducedMotion)
+    onSnapsChanged: {
+        if (snaps)
             settle();
     }
 
     property FrameAnimation frameAnimation: FrameAnimation {
-        running: root.enabled && root.running && !root.reducedMotion
+        running: root.enabled && root.running && !root.snaps
         onTriggered: root.advance(frameTime)
     }
 }

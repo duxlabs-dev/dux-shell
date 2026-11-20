@@ -158,193 +158,213 @@ GridLayout {
                     border.color: Theme.outline
                     anchors.horizontalCenter: parent.horizontalCenter
 
-                    BarSegment {
-                        visible: root.widgetStyle
+                    // One picker shows one kind of preview, so only that kind is built
+                    Loader {
                         anchors.centerIn: parent
-                        scale: (screenPreview.width - screenPreview.edgePad * 2 - Theme.spacingS) / (Theme.iconSizeLarge * 3 + Theme.spacingXS * 2)
-                        spacing: modeCard.modelData.key === "segments" ? BarMetrics.segmentGap : Theme.spacingXS
+                        active: root.widgetStyle
+                        sourceComponent: BarSegment {
+                            scale: (screenPreview.width - screenPreview.edgePad * 2 - Theme.spacingS) / (Theme.iconSizeLarge * 3 + Theme.spacingXS * 2)
+                            spacing: modeCard.modelData.key === "segments" ? BarMetrics.segmentGap : Theme.spacingXS
 
-                        Repeater {
-                            model: 3
-                            BarPillSurface {
-                                required property int index
-                                width: Theme.iconSizeLarge
-                                height: Theme.iconSizeLarge
-                                thickness: Theme.iconSizeLarge
-                                style: modeCard.modelData.key
-                                joinedStart: style === "segments" && index > 0
-                                joinedEnd: style === "segments" && index < 2
-                                color: index === 1 ? Theme.primary : Theme.primaryContainer
+                            Repeater {
+                                model: 3
+                                BarPillSurface {
+                                    required property int index
+                                    width: Theme.iconSizeLarge
+                                    height: Theme.iconSizeLarge
+                                    thickness: Theme.iconSizeLarge
+                                    style: modeCard.modelData.key
+                                    joinedStart: style === "segments" && index > 0
+                                    joinedEnd: style === "segments" && index < 2
+                                    color: index === 1 ? Theme.primary : Theme.primaryContainer
+                                }
                             }
                         }
                     }
 
-                    Row {
-                        id: indicatorPreview
-                        readonly property real thickness: Theme.iconSizeLarge
-                        readonly property string style: modeCard.modelData.key
-                        visible: root.indicatorStyle
+                    Loader {
                         anchors.centerIn: parent
-                        spacing: Theme.spacingXS
-                        scale: Math.min(1, (screenPreview.width - screenPreview.edgePad * 2 - Theme.spacingS) / Math.max(1, implicitWidth))
+                        active: root.indicatorStyle
+                        sourceComponent: Row {
+                            id: indicatorPreview
+                            readonly property real thickness: Theme.iconSizeLarge
+                            readonly property string style: modeCard.modelData.key
+                            spacing: Theme.spacingXS
+                            scale: Math.min(1, (screenPreview.width - screenPreview.edgePad * 2 - Theme.spacingS) / Math.max(1, implicitWidth))
 
-                        Repeater {
-                            model: 3
-                            BarPillSurface {
-                                required property int index
-                                readonly property bool active: index === 1
-                                readonly property bool outlined: indicatorPreview.style === "cards" && !active
-                                readonly property bool expressive: indicatorPreview.style === "expressive"
-                                readonly property real dotScale: expressive && !active ? BarMetrics.indicatorDotRatio : 1
-                                anchors.verticalCenter: parent.verticalCenter
-                                width: indicatorPreview.thickness * BarMetrics.indicatorRatio(indicatorPreview.style, active ? "active" : expressive ? "slim" : "compact", root.indicatorCompact) * dotScale
-                                height: indicatorPreview.thickness * BarMetrics.indicatorRatio(indicatorPreview.style, active ? "activeSlim" : "slim", root.indicatorCompact) * dotScale
-                                thickness: Math.min(width, height)
-                                radiusOverride: BarMetrics.indicatorRadius(indicatorPreview.style, thickness, root.indicatorRoundness)
-                                color: outlined || (expressive && active) ? "transparent" : active ? Theme.primary : Theme.primaryContainer
-                                border.width: outlined ? Theme.outlineWidth : 0
-                                border.color: Theme.primaryContainer
+                            Repeater {
+                                model: 3
+                                BarPillSurface {
+                                    required property int index
+                                    readonly property bool active: index === 1
+                                    readonly property bool outlined: indicatorPreview.style === "cards" && !active
+                                    readonly property bool expressive: indicatorPreview.style === "expressive"
+                                    readonly property real dotScale: expressive && !active ? BarMetrics.indicatorDotRatio : 1
+                                    // A Repeater delegate has no parent while its bindings are first evaluated
+                                    y: (indicatorPreview.height - height) / 2
+                                    width: indicatorPreview.thickness * BarMetrics.indicatorRatio(indicatorPreview.style, active ? "active" : expressive ? "slim" : "compact", root.indicatorCompact) * dotScale
+                                    height: indicatorPreview.thickness * BarMetrics.indicatorRatio(indicatorPreview.style, active ? "activeSlim" : "slim", root.indicatorCompact) * dotScale
+                                    thickness: Math.min(width, height)
+                                    radiusOverride: BarMetrics.indicatorRadius(indicatorPreview.style, thickness, root.indicatorRoundness)
+                                    color: outlined || (expressive && active) ? "transparent" : active ? Theme.primary : Theme.primaryContainer
+                                    border.width: outlined ? Theme.outlineWidth : 0
+                                    border.color: Theme.primaryContainer
 
-                                Loader {
-                                    anchors.fill: parent
-                                    active: parent.expressive && parent.active
-                                    sourceComponent: DMaterialShape {
-                                        shape: BarMetrics.indicatorShapes[0]
-                                        color: Theme.primary
+                                    Loader {
+                                        anchors.fill: parent
+                                        active: parent.expressive && parent.active
+                                        sourceComponent: DMaterialShape {
+                                            shape: BarMetrics.indicatorShapes[0]
+                                            color: Theme.primary
+                                        }
                                     }
                                 }
                             }
                         }
                     }
 
-                    Rectangle {
+                    Loader {
                         readonly property int edge: Number(modeCard.modelData.key)
                         readonly property bool vertical: edge === SettingsData.Position.Left || edge === SettingsData.Position.Right
-                        visible: root.edgePlacement
                         x: edge === SettingsData.Position.Right ? parent.width - width - screenPreview.edgePad : screenPreview.edgePad
                         y: edge === SettingsData.Position.Bottom ? parent.height - height - screenPreview.edgePad : screenPreview.edgePad
                         width: vertical ? screenPreview.stripSize : parent.width - screenPreview.edgePad * 2
                         height: vertical ? parent.height - screenPreview.edgePad * 2 : screenPreview.stripSize
-                        radius: Theme.fullRadius(width, height)
-                        color: Theme.primary
+                        active: root.edgePlacement
+                        sourceComponent: Rectangle {
+                            radius: Theme.fullRadius(width, height)
+                            color: Theme.primary
+                        }
                     }
 
-                    Rectangle {
+                    Loader {
                         readonly property real span: root.lengthPreviewRatios[modeCard.modelData.key] ?? 1
                         readonly property real extent: (root.vertical ? parent.height : parent.width) - screenPreview.edgePad * 2
-                        visible: root.barLength
                         x: root.vertical ? screenPreview.edgePad : Math.round((parent.width - width) / 2)
                         y: root.vertical ? Math.round((parent.height - height) / 2) : screenPreview.edgePad
                         width: root.vertical ? screenPreview.stripSize : Math.round(extent * span)
                         height: root.vertical ? Math.round(extent * span) : screenPreview.stripSize
-                        radius: Theme.fullRadius(width, height)
-                        color: Theme.primary
-                    }
-
-                    Rectangle {
-                        visible: !root.widgetStyle && !root.edgePlacement && modeCard.modelData.key === "standard"
-                        anchors.top: parent.top
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        anchors.margins: screenPreview.edgePad
-                        height: screenPreview.stripSize
-                        radius: Theme.fullRadius(width, height)
-                        color: Theme.primary
-                    }
-
-                    Rectangle {
-                        visible: !root.widgetStyle && modeCard.modelData.key === "frame"
-                        anchors.fill: parent
-                        anchors.margins: screenPreview.edgePad
-                        radius: screenPreview.radius
-                        color: "transparent"
-                        border.width: Math.max(Theme.outlineWidthFocused, Math.round(screenPreview.stripSize * root.previewStripRatio))
-                        border.color: Theme.primary
-                    }
-
-                    Rectangle {
-                        visible: !root.widgetStyle && modeCard.modelData.key === "frame"
-                        anchors.top: parent.top
-                        anchors.left: parent.left
-                        anchors.right: parent.right
-                        anchors.margins: screenPreview.edgePad
-                        height: screenPreview.stripSize
-                        radius: screenPreview.radius
-                        color: Theme.primary
-                    }
-
-                    BatteryMeter {
-                        visible: root.statusStyle && modeCard.modelData.key !== "connectivity"
-                        anchors.centerIn: parent
-                        thickness: Theme.iconSizeLarge
-                        meterStyle: modeCard.modelData.key
-                    }
-
-                    Row {
-                        visible: root.statusStyle && modeCard.modelData.key === "connectivity"
-                        anchors.centerIn: parent
-                        spacing: Theme.spacingXS
-
-                        DIcon {
-                            name: "wifi"
-                            size: Theme.iconSize
-                            color: Theme.primary
-                        }
-
-                        DIcon {
-                            name: "bluetooth"
-                            size: Theme.iconSize
-                            color: Theme.primary
-                        }
-                    }
-
-                    Item {
-                        id: shapePreview
-                        readonly property bool notch: modeCard.modelData.key === "notch"
-                        readonly property real seamOverlap: 1
-                        visible: root.islandShape
-                        anchors.fill: parent
-
-                        Rectangle {
-                            id: shapeBody
-                            x: Math.round((parent.width - width) / 2)
-                            y: shapePreview.notch ? 0 : screenPreview.edgePad
-                            width: Math.round(parent.width * root.previewIslandRatio)
-                            height: Math.round(screenPreview.stripSize * 1.5)
+                        active: root.barLength
+                        sourceComponent: Rectangle {
                             radius: Theme.fullRadius(width, height)
-                            topLeftRadius: shapePreview.notch ? 0 : radius
-                            topRightRadius: shapePreview.notch ? 0 : radius
                             color: Theme.primary
-                        }
-
-                        GothCorner {
-                            visible: shapePreview.notch
-                            radius: screenPreview.stripSize
-                            color: Theme.primary
-                            corner: "bottomLeft"
-                            x: shapeBody.x - radius + shapePreview.seamOverlap
-                            y: 0
-                        }
-
-                        GothCorner {
-                            visible: shapePreview.notch
-                            radius: screenPreview.stripSize
-                            color: Theme.primary
-                            corner: "bottomRight"
-                            x: shapeBody.x + shapeBody.width - shapePreview.seamOverlap
-                            y: 0
                         }
                     }
 
-                    Rectangle {
-                        visible: !root.widgetStyle && modeCard.modelData.key === "island"
+                    Loader {
+                        anchors.top: parent.top
+                        anchors.left: parent.left
+                        anchors.right: parent.right
+                        anchors.margins: screenPreview.edgePad
+                        height: screenPreview.stripSize
+                        active: !root.widgetStyle && !root.edgePlacement && modeCard.modelData.key === "standard"
+                        sourceComponent: Rectangle {
+                            radius: Theme.fullRadius(width, height)
+                            color: Theme.primary
+                        }
+                    }
+
+                    Loader {
+                        anchors.fill: parent
+                        anchors.margins: screenPreview.edgePad
+                        active: !root.widgetStyle && modeCard.modelData.key === "frame"
+                        sourceComponent: Rectangle {
+                            radius: screenPreview.radius
+                            color: "transparent"
+                            border.width: Math.max(Theme.outlineWidthFocused, Math.round(screenPreview.stripSize * root.previewStripRatio))
+                            border.color: Theme.primary
+
+                            Rectangle {
+                                anchors.top: parent.top
+                                anchors.left: parent.left
+                                anchors.right: parent.right
+                                height: screenPreview.stripSize
+                                radius: screenPreview.radius
+                                color: Theme.primary
+                            }
+                        }
+                    }
+
+                    Loader {
+                        anchors.centerIn: parent
+                        active: root.statusStyle && modeCard.modelData.key !== "connectivity"
+                        sourceComponent: BatteryMeter {
+                            thickness: Theme.iconSizeLarge
+                            meterStyle: modeCard.modelData.key
+                        }
+                    }
+
+                    Loader {
+                        anchors.centerIn: parent
+                        active: root.statusStyle && modeCard.modelData.key === "connectivity"
+                        sourceComponent: Row {
+                            spacing: Theme.spacingXS
+
+                            DIcon {
+                                name: "wifi"
+                                size: Theme.iconSize
+                                color: Theme.primary
+                            }
+
+                            DIcon {
+                                name: "bluetooth"
+                                size: Theme.iconSize
+                                color: Theme.primary
+                            }
+                        }
+                    }
+
+                    Loader {
+                        anchors.fill: parent
+                        active: root.islandShape
+                        sourceComponent: Item {
+                            id: shapePreview
+                            readonly property bool notch: modeCard.modelData.key === "notch"
+                            readonly property real seamOverlap: 1
+
+                            Rectangle {
+                                id: shapeBody
+                                x: Math.round((parent.width - width) / 2)
+                                y: shapePreview.notch ? 0 : screenPreview.edgePad
+                                width: Math.round(parent.width * root.previewIslandRatio)
+                                height: Math.round(screenPreview.stripSize * 1.5)
+                                radius: Theme.fullRadius(width, height)
+                                topLeftRadius: shapePreview.notch ? 0 : radius
+                                topRightRadius: shapePreview.notch ? 0 : radius
+                                color: Theme.primary
+                            }
+
+                            GothCorner {
+                                visible: shapePreview.notch
+                                radius: screenPreview.stripSize
+                                color: Theme.primary
+                                corner: "bottomLeft"
+                                x: shapeBody.x - radius + shapePreview.seamOverlap
+                                y: 0
+                            }
+
+                            GothCorner {
+                                visible: shapePreview.notch
+                                radius: screenPreview.stripSize
+                                color: Theme.primary
+                                corner: "bottomRight"
+                                x: shapeBody.x + shapeBody.width - shapePreview.seamOverlap
+                                y: 0
+                            }
+                        }
+                    }
+
+                    Loader {
                         anchors.top: parent.top
                         anchors.topMargin: screenPreview.edgePad
                         anchors.horizontalCenter: parent.horizontalCenter
                         width: Math.round(parent.width * root.previewIslandRatio)
                         height: screenPreview.stripSize
-                        radius: Theme.fullRadius(width, height)
-                        color: Theme.primary
+                        active: !root.widgetStyle && modeCard.modelData.key === "island"
+                        sourceComponent: Rectangle {
+                            radius: Theme.fullRadius(width, height)
+                            color: Theme.primary
+                        }
                     }
                 }
 

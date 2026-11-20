@@ -77,6 +77,7 @@ Item {
 
                         leading: CcAppIcon {
                             appId: row.appId
+                            window: row.modelData
                             iconSize: Theme.iconSizeLarge
                         }
 

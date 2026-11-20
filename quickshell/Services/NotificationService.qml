@@ -94,7 +94,7 @@ Singleton {
 
     Timer {
         id: historySaveTimer
-        interval: 200
+        interval: Timing.debounceLong
         onTriggered: root.performSaveHistory()
     }
 
@@ -634,7 +634,7 @@ Singleton {
 
     Timer {
         id: addGate
-        interval: 80
+        interval: Timing.settleShort
         running: false
         repeat: false
         onTriggered: {
@@ -668,21 +668,13 @@ Singleton {
     // clock above so bindings calling this refresh every minute. Single home
     // for the translated duration strings; "" once the timestamp passes.
     function formatRuleRemaining(expiresAt) {
-        return Format.formatRemaining(expiresAt - notificationRuleNowMs, "", I18n.tr("%1 min", "timed duration, %1 is a number of minutes"), I18n.tr("%1 h", "timed duration, %1 is a number of hours"), I18n.tr("%1 h %2 m", "timed duration, %1 is a number of hours, %2 is a number of minutes"));
+        return Format.formatRemaining(expiresAt - notificationRuleNowMs, "", I18n.tr("%1m", "timed duration, %1 is a number of minutes"), I18n.tr("%1h", "timed duration, %1 is a number of hours"), I18n.tr("%1h %2m", "timed duration, %1 is a number of hours, %2 is a number of minutes"));
     }
 
-    // Clears lapsed timed mutes (SettingsData.addMuteRuleForApp with
-    // expiresAt) from the persisted rules. Matching already ignores them;
-    // this keeps the stored list and the settings UI truthful. Runs only
-    // while timed rules exist, and fires on start so mutes that lapsed while
-    // the shell was offline are cleared at launch.
-    Timer {
-        id: expiredRuleSweeper
-        interval: 60000
-        repeat: true
-        running: SettingsData.hasTimedNotificationRules
-        triggeredOnStart: true
-        onTriggered: SettingsData.pruneExpiredNotificationRules()
+    // Deferred: pruning inside the change handler re-enters the binding it came from.
+    onNotificationRuleNowMsChanged: {
+        if (notificationRuleNowMs > 0)
+            Qt.callLater(SettingsData.pruneExpiredNotificationRules);
     }
 
     Timer {
@@ -712,7 +704,7 @@ Singleton {
 
     Timer {
         id: groupsDebounce
-        interval: 16
+        interval: Timing.frame
         repeat: false
         onTriggered: _recomputeGroups()
     }
@@ -1151,7 +1143,7 @@ Singleton {
     property Timer testNotifTimer1
 
     testNotifTimer1: Timer {
-        interval: 400
+        interval: Timing.settleLong
         repeat: false
         onTriggered: root.sendTestNotification(1)
     }
@@ -1159,7 +1151,7 @@ Singleton {
     property Timer testNotifTimer2
 
     testNotifTimer2: Timer {
-        interval: 800
+        interval: Timing.settleSlow
         repeat: false
         onTriggered: root.sendTestNotification(2)
     }

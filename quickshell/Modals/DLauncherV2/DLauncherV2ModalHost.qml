@@ -33,11 +33,11 @@ Item {
     RectSpringMotion {
         id: fluidMotion
         enabled: root.connectedFluidMotion && root.animationsEnabled && contentWindow.visible
-        reducedMotion: root.launcherAnimationDuration <= 0 || SettingsData.reduceMotion
+        reducedMotion: root.launcherAnimationDuration <= 0 || Theme.reduceMotion
         positionEpsilon: 0.25 / root.dpr
         velocityEpsilon: positionEpsilon * damping / Math.max(0.001, 2 * mass)
-        stiffness: Theme.springPreset("default", root.launcherAnimationDuration).stiffness
-        damping: Theme.springPreset("default", root.launcherAnimationDuration).damping
+        stiffness: Theme.springPreset("defaultSpatial").stiffness
+        damping: Theme.springPreset("defaultSpatial").damping
         onRunningChanged: root._finishFluidClose()
     }
 
@@ -47,8 +47,8 @@ Item {
         reducedMotion: root.launcherAnimationDuration <= 0
         positionEpsilon: 0.001
         velocityEpsilon: 0.001
-        stiffness: Theme.springPreset("default", root.launcherAnimationDuration).stiffness
-        damping: Theme.springPreset("default", root.launcherAnimationDuration).damping
+        stiffness: root._morphSpringParams.stiffness
+        damping: root._morphSpringParams.damping
 
         Component.onCompleted: snapTo(0)
     }
@@ -184,8 +184,9 @@ Item {
 
     readonly property bool connectedSurfaceOverride: frameOwnsConnectedChrome
     readonly property int launcherAnimationDuration: frameOwnsConnectedChrome ? Theme.popoutAnimationDuration : Theme.modalAnimationDuration
-    readonly property list<real> launcherEnterCurve: frameOwnsConnectedChrome ? Theme.variantPopoutEnterCurve : Theme.variantModalEnterCurve
-    readonly property list<real> launcherExitCurve: frameOwnsConnectedChrome ? Theme.variantPopoutExitCurve : Theme.variantModalExitCurve
+    readonly property var launcherAnimationCurve: frameOwnsConnectedChrome ? Theme.expressiveCurves.expressiveEffects : Theme.expressiveCurves.expressiveFastEffects
+    readonly property bool _standardMotion: !connected && !Theme.isDirectionalEffect && !Theme.isDepthEffect && !_fluidMotionActive
+    readonly property var _morphSpringParams: Theme.springPreset(_standardMotion ? "fastSpatial" : "defaultSpatial")
     readonly property color backgroundColor: connectedSurfaceOverride ? Theme.connectedSurfaceColor : Theme.floatingWindowSurface
     readonly property real cornerRadius: connectedSurfaceOverride ? Theme.connectedSurfaceRadius : spotlight ? LauncherMetrics.spotlightRadius(modalWidth) : Theme.windowRadius
     readonly property real frameBottomRadius: spotlight && !connectedSurfaceOverride ? LauncherMetrics.spotlightBottomRadius(modalWidth, _contentImplicitH) : cornerRadius
@@ -670,7 +671,7 @@ Item {
 
     Timer {
         id: _edgeRetractGrace
-        interval: 150
+        interval: Timing.debounce
         repeat: false
         onTriggered: {
             if (root._edgeRetractEnabled && root._edgeArmed && !root._edgeBodyHover)
@@ -1050,8 +1051,8 @@ Item {
                                 enabled: root.animationsEnabled && !root._fluidMotionActive && (!Theme.isDirectionalEffect || Theme.isConnectedEffect)
                                 NumberAnimation {
                                     easing.type: Easing.BezierSpline
-                                    duration: Math.round(Theme.variantDuration(root.launcherAnimationDuration, root.launcherMotionVisible) * Theme.variantOpacityDurationScale)
-                                    easing.bezierCurve: root.launcherMotionVisible ? root.launcherEnterCurve : root.launcherExitCurve
+                                    duration: root.launcherAnimationDuration
+                                    easing.bezierCurve: root.launcherAnimationCurve
                                     onRunningChanged: if (!running && !root.launcherMotionVisible)
                                         root._renderActive = false
                                 }
@@ -1093,8 +1094,6 @@ Item {
             readonly property Item contentSlot: contentClip.contentItem
             readonly property int openDuration: root.spotlight ? root._openDuration : Theme.modalAnimationDuration
             readonly property int closeDuration: root.spotlight ? root._closeDuration : Theme.modalAnimationDuration
-            readonly property list<real> enterCurve: root.spotlight ? [0.0, 0.0, 0.2, 1.0, 1.0, 1.0] : Theme.expressiveCurves.expressiveDefaultSpatial
-            readonly property list<real> exitCurve: root.spotlight ? [0.4, 0.0, 1.0, 1.0, 1.0, 1.0] : Theme.expressiveCurves.emphasized
 
             WindowBlur {
                 targetWindow: contentWindow
@@ -1140,7 +1139,7 @@ Item {
                     NumberAnimation {
                         easing.type: Easing.BezierSpline
                         duration: root.contentVisible ? chrome.openDuration : chrome.closeDuration
-                        easing.bezierCurve: root.contentVisible ? chrome.enterCurve : chrome.exitCurve
+                        easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
                     }
                 }
             }
@@ -1176,7 +1175,7 @@ Item {
                     NumberAnimation {
                         easing.type: Easing.BezierSpline
                         duration: root.contentVisible ? chrome.openDuration : chrome.closeDuration
-                        easing.bezierCurve: root.contentVisible ? chrome.enterCurve : chrome.exitCurve
+                        easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
                         onRunningChanged: if (!running && !root.contentVisible)
                             root._renderActive = false
                     }
@@ -1187,7 +1186,7 @@ Item {
                     NumberAnimation {
                         duration: root._motionDuration
                         easing.type: Easing.BezierSpline
-                        easing.bezierCurve: root.contentVisible ? [0.2, 0.0, 0.0, 1.0, 1.0, 1.0] : [0.4, 0.0, 1.0, 1.0, 1.0, 1.0]
+                        easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
                     }
                 }
 

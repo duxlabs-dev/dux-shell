@@ -14,7 +14,7 @@ RowLayout {
         icon: "memory"
         value: DgopService.cpuUsage.toFixed(1) + "%"
         extraInfo: DgopService.cpuTemperature > 0 ? DgopService.cpuTemperature.toFixed(0) + "°C" : ""
-        history: DgopService.cpuHistory
+        history: DgopService.history("cpu", "usage")
         accentColor: Theme.primary
     }
 
@@ -26,7 +26,7 @@ RowLayout {
         icon: "developer_board"
         value: DgopService.formatSystemMemory(DgopService.usedMemoryKB) + " / " + DgopService.formatSystemMemory(DgopService.totalMemoryKB)
         extraInfo: DgopService.totalSwapKB > 0 ? I18n.tr("Swap", "swap memory label in system monitor") + ": " + DgopService.formatSystemMemory(DgopService.usedSwapKB) : ""
-        history: DgopService.memoryHistory
+        history: DgopService.history("memory", "used")
         accentColor: Theme.secondary
     }
 }

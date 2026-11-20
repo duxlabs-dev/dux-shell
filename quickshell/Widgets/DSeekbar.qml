@@ -109,7 +109,7 @@ Item {
     property real handleHeight: isSeeking ? handleDragHeight : handleSize
 
     Behavior on handleWidth {
-        enabled: !SettingsData.reduceMotion && Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
+        enabled: !Theme.reduceMotion
         NumberAnimation {
             duration: Theme.expressiveDurations.expressiveEffects
             easing.type: Easing.BezierSpline
@@ -118,7 +118,7 @@ Item {
     }
 
     Behavior on handleHeight {
-        enabled: !SettingsData.reduceMotion && Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
+        enabled: !Theme.reduceMotion
         NumberAnimation {
             duration: Theme.expressiveDurations.expressiveEffects
             easing.type: Easing.BezierSpline
@@ -229,7 +229,7 @@ Item {
 
     Timer {
         id: previewSettleTimer
-        interval: 80
+        interval: Timing.settleShort
         repeat: true
         onTriggered: {
             if (root.isSeeking || root.committedSeekRatio < 0) {
@@ -316,7 +316,7 @@ Item {
                 id: flatBar
 
                 property real lineWidth: root.showHandle ? root.waveLineWidth : 3
-                property color trackColor: root.showHandle ? root.shownTrack : Theme.withAlpha(Theme.surfaceVariant, 0.40)
+                property color trackColor: root.showHandle ? root.shownTrack : Theme.onSurface_12
                 property color fillColor: root.shownAccent
                 property color playheadColor: root.shownAccent
                 property color actualProgressColor: Theme.onSurface_38

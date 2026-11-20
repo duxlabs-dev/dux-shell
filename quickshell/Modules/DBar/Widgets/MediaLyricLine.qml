@@ -1,6 +1,5 @@
 import QtQuick
 import qs.Common
-import qs.Services
 import qs.DCommon.Widgets
 import "../../../Common/LyricLayout.js" as LyricLayout
 import "../../DDash/Media/LyricsModel.js" as LyricsModel
@@ -15,7 +14,7 @@ Item {
     property alias font: measure.font
     property color color: Theme.surfaceText
     property bool live: true
-    property bool scroll: true
+    property bool scroll: false
     property bool playing: true
     // Fills each word across its sung time instead of at once, like the dash's smooth highlight.
     property bool sweep: false
@@ -34,12 +33,12 @@ Item {
     property real holdStartMs: 1200
     property real pxPerMs: 1 / 20
     property real overscroll: 5
-    property int stepInterval: 60
     property var scrollMotion: null
-    property bool scrollMoving: false
 
-    readonly property bool scrollEnabled: scroll && !SettingsData.reduceMotion
+    readonly property bool scrollEnabled: scroll && !Theme.reduceMotion
     readonly property real maxScrollOffset: Math.max(0, pageWidth - width + overscroll)
+    // Whole pixels repaint only when the text moves; the sweep repaints every frame already.
+    readonly property real shownScrollOffset: sweep ? scrollOffset : Math.round(scrollOffset)
     readonly property bool scrollable: scrollEnabled && width > 0 && pageWidth > width && current.text !== ""
     readonly property bool scrollActive: scrollable && playing && controller.rate > 0 && live && visible && (Window.window?.visible ?? false)
 
@@ -77,19 +76,28 @@ Item {
         const paged = key + "/" + width + "/" + fontKey + "/" + scrollEnabled + "/" + sweep;
         if (paged !== pagedKey) {
             pagedKey = paged;
-            const chunks = next.w.length > 0 ? next.w.map(word => word.x) : (flat(next.x).match(/\S+\s*/g) ?? [flat(next.x)]);
-            pages = scrollEnabled ? [{
-                first: 0,
-                last: chunks.length - 1,
-                text: flat(next.x)
-            }] : paginate(chunks);
+            const cues = next.w.map(word => word.x);
+            pages = scrollEnabled ? [
+                {
+                    first: 0,
+                    last: Math.max(0, cues.length - 1),
+                    text: flat(next.x)
+                }
+            ] : paginate(cues.length > 0 ? cues : tokens(flat(next.x)));
             cueSpans = next.w.length > 0 && (scrollEnabled || sweep) ? LyricsModel.cueSpans(next) : [];
         }
         if (next.w.length > 0) {
             placeWords(key, next, at);
         } else {
             placeLine(key, next, at);
-            scrollMotion = { start: next.t, end: next.e, from: 0, to: maxScrollOffset, hold: holdStartMs / 1000, speed: pxPerMs * 1000 };
+            scrollMotion = {
+                start: next.t,
+                end: next.e,
+                from: 0,
+                to: maxScrollOffset,
+                hold: holdStartMs / 1000,
+                speed: pxPerMs * 1000
+            };
         }
         syncScroll();
     }
@@ -102,7 +110,12 @@ Item {
         const span = index < page.first ? null : cueSpans[index];
         const before = !span || index <= page.first ? 0 : widthOf(flat(line.w.slice(page.first, index).map(word => word.x).join("")));
         scrollMotion = span ? {
-            start: span.t, end: span.e, from: before - width * 0.75, to: sung - width * 0.75, hold: 0, speed: pxPerMs * 1000
+            start: span.t,
+            end: span.e,
+            from: before - width * 0.75,
+            to: sung - width * 0.75,
+            hold: 0,
+            speed: pxPerMs * 1000
         } : null;
         if (!sweep || index < page.first) {
             turnTo(key + "/" + page.first, page.text, sung);
@@ -111,7 +124,7 @@ Item {
         const duration = span.e - span.t;
         const progress = Number.isFinite(duration) && duration > 0 ? Math.max(0, Math.min(1, (at - span.t) / duration)) : 1;
         turnTo(key + "/" + page.first, page.text, before + (sung - before) * progress);
-        if (progress >= 1 || !live || !controller.playing || controller.rate <= 0 || SettingsData.reduceMotion)
+        if (progress >= 1 || !live || !controller.playing || controller.rate <= 0 || Theme.reduceMotion)
             return;
         sweepMotion.to = sung;
         sweepMotion.duration = Math.max(1, Math.min(2147483647, (span.e - at) * 1000 / controller.rate));
@@ -142,6 +155,19 @@ Item {
         return index;
     }
 
+    // Unspaced scripts have no word breaks, so a token wider than the slot pages between characters.
+    function tokens(text) {
+        const result = [];
+        for (const token of text.match(/\S+\s*/g) ?? [text]) {
+            if (widthOf(token) <= width) {
+                result.push(token);
+                continue;
+            }
+            result.push(...Array.from(token));
+        }
+        return result;
+    }
+
     function paginate(chunks) {
         const words = [];
         for (let i = 0; i < chunks.length; i++) {
@@ -159,9 +185,22 @@ Item {
             }
             words[words.length - 1].closed = /\s$/.test(text);
         }
+        const units = [];
+        for (const word of words) {
+            if (widthOf(word.text) <= width) {
+                units.push(word);
+                continue;
+            }
+            for (let i = word.first; i <= word.last; i++)
+                units.push({
+                    first: i,
+                    last: i,
+                    text: flat(chunks[i])
+                });
+        }
         const result = [];
         let page = null;
-        for (const word of words) {
+        for (const word of units) {
             if (page && widthOf(page.text + word.text) > width) {
                 result.push(page);
                 page = null;
@@ -184,6 +223,7 @@ Item {
 
     function turnTo(key, text, sung) {
         const previousOffset = current.offset;
+        const previousScrolls = current.scrolls;
         if (current.text !== text || measuredFontKey !== fontKey) {
             pageWidth = widthOf(text);
             measuredFontKey = fontKey;
@@ -195,10 +235,11 @@ Item {
         pageKey = key;
         slide.stop();
         resetScroll();
-        const animate = live && !SettingsData.reduceMotion && current.text !== "";
+        const animate = live && !Theme.reduceMotion && current.text !== "";
         outgoing.text = animate ? current.text : "";
         outgoing.fill = current.fill;
         outgoing.offset = animate ? previousOffset : 0;
+        outgoing.scrolls = animate && previousScrolls;
         snap(text, sung);
         shift = animate ? 1 : 0;
         if (animate)
@@ -206,26 +247,34 @@ Item {
     }
 
     function resetScroll() {
-        scrollTick.stop();
+        scrollWake.stop();
+        scrollRun.stop();
         scrollOffset = 0;
-        scrollMoving = false;
     }
 
-    function syncScroll(cava = false) {
-        scrollTick.stop();
+    function playbackMs(seconds) {
+        return Math.max(1, Math.min(2147483647, seconds * 1000 / controller.rate));
+    }
+
+    function syncScroll() {
+        scrollWake.stop();
+        scrollRun.stop();
         if (!scrollable) {
             scrollOffset = 0;
-            scrollMoving = false;
             return;
         }
         const state = LyricLayout.scrollState(scrollMotion, controller.shownTime(), maxScrollOffset);
         scrollOffset = state.offset;
-        scrollMoving = state.wait === 0;
-        if (!scrollActive || controller.rate <= 0 || !Number.isFinite(state.wait))
+        if (!scrollActive || !Number.isFinite(state.wait))
             return;
-        // Cava defers the fallback; no second clock wakes while those frames keep arriving (#2863).
-        scrollTick.interval = Math.max(cava ? 150 : stepInterval, Math.min(2147483647, state.wait * 1000 / controller.rate));
-        scrollTick.start();
+        if (state.wait > 0) {
+            scrollWake.interval = playbackMs(state.wait);
+            scrollWake.start();
+            return;
+        }
+        scrollRun.to = state.to;
+        scrollRun.duration = playbackMs(state.left);
+        scrollRun.start();
     }
 
     function clearLine() {
@@ -257,14 +306,15 @@ Item {
     }
 
     Timer {
-        id: scrollTick
+        id: scrollWake
         onTriggered: root.syncScroll()
     }
 
-    Connections {
-        target: CavaService
-        enabled: root.scrollActive && root.scrollMoving && SettingsData.audioVisualizerEnabled && CavaService.cavaAvailable
-        function onValuesChanged() { root.syncScroll(true); }
+    // Stepped on a timer this jumps ~5px at a time under the per-frame fill.
+    NumberAnimation {
+        id: scrollRun
+        target: root
+        property: "scrollOffset"
     }
 
     NumberAnimation {
@@ -272,9 +322,9 @@ Item {
         target: root
         property: "shift"
         to: 0
-        duration: Theme.mediumDuration
+        duration: Theme.expressiveDurations.expressiveFastSpatial
         easing.type: Easing.BezierSpline
-        easing.bezierCurve: Theme.expressiveCurves.emphasizedDecel
+        easing.bezierCurve: Theme.expressiveCurves.expressiveFastSpatial
         onFinished: outgoing.text = ""
     }
 
@@ -297,17 +347,18 @@ Item {
         property real fill: 0
         property real offset: 0
         readonly property bool rtl: LyricsModel.isRtl(text)
+        property bool scrolls: false
         readonly property real textX: rtl && dim.implicitWidth > width ? width - dim.implicitWidth + offset : -offset
 
         width: root.width
         height: root.height
 
         Behavior on fill {
-            enabled: root.live && !root.snapping && !root.sweep && !SettingsData.reduceMotion
+            enabled: root.live && !root.snapping && !root.sweep && !Theme.reduceMotion
             NumberAnimation {
-                duration: Theme.shortDuration
+                duration: Theme.expressiveDurations.expressiveFastEffects
                 easing.type: Easing.BezierSpline
-                easing.bezierCurve: Theme.expressiveCurves.emphasizedDecel
+                easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
             }
         }
 
@@ -321,7 +372,7 @@ Item {
             wrapMode: Text.NoWrap
             elide: Text.ElideNone
             // Fractional offsets under NativeRendering quantise glyph positions and stutter.
-            renderType: root.scrollable ? Text.QtRendering : resolvedRenderType
+            renderType: face.scrolls ? Text.QtRendering : resolvedRenderType
             Accessible.name: face.text
         }
 
@@ -339,7 +390,7 @@ Item {
                 color: root.color
                 wrapMode: Text.NoWrap
                 elide: Text.ElideNone
-                renderType: root.scrollable ? Text.QtRendering : resolvedRenderType
+                renderType: face.scrolls ? Text.QtRendering : resolvedRenderType
                 Accessible.ignored: true
             }
         }
@@ -356,6 +407,7 @@ Item {
         id: current
         y: root.shift * root.height
         opacity: 1 - root.shift
-        offset: root.scrollable ? Math.min(root.scrollOffset, root.maxScrollOffset) : 0
+        offset: root.scrollable ? Math.min(root.shownScrollOffset, root.maxScrollOffset) : 0
+        scrolls: root.scrollable
     }
 }

@@ -45,6 +45,7 @@ BasePill {
     readonly property var defaultControlCenterGroupOrder: ["network", "vpn", "bluetooth", "audio", "microphone", "brightness", "battery", "printer", "screenSharing", "idleInhibitor", "doNotDisturb"]
     readonly property var effectiveControlCenterGroupOrder: getEffectiveControlCenterGroupOrder()
     readonly property var controlCenterRenderModel: getControlCenterRenderModel()
+    readonly property var visibleControlGroups: controlCenterRenderModel.filter(entry => entry.visible)
 
     onIsVerticalOrientationChanged: root.clearInteractionRefs()
 
@@ -433,7 +434,7 @@ BasePill {
 
     content: Component {
         Item {
-            implicitWidth: root.isVerticalOrientation ? root.contentThickness : controlIndicators.implicitWidth
+            implicitWidth: root.isVerticalOrientation ? Math.max(root.contentThickness, root.vIconSize) : controlIndicators.implicitWidth
             implicitHeight: root.isVerticalOrientation ? controlColumn.implicitHeight : root.contentThickness
 
             Component.onCompleted: {
@@ -450,7 +451,7 @@ BasePill {
                 spacing: Theme.spacingXS
 
                 Repeater {
-                    model: root.controlCenterRenderModel
+                    model: root.isVerticalOrientation ? root.visibleControlGroups : []
                     Item {
                         id: verticalGroupItem
                         required property var modelData
@@ -632,7 +633,7 @@ BasePill {
                 spacing: Theme.spacingXS
 
                 Repeater {
-                    model: root.controlCenterRenderModel
+                    model: root.isVerticalOrientation ? [] : root.visibleControlGroups
 
                     Item {
                         id: horizontalGroupItem
@@ -653,7 +654,7 @@ BasePill {
                             }
                         }
                         implicitWidth: width
-                        height: root.contentThickness
+                        height: Math.max(root.contentThickness, root.getControlCenterIconSize())
                         visible: modelData.visible
 
                         Component.onCompleted: {

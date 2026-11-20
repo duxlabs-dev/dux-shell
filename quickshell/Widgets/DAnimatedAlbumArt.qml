@@ -13,9 +13,9 @@ Item {
 
     Behavior on opacity {
         NumberAnimation {
-            duration: Theme.shortDuration
+            duration: Theme.expressiveDurations.expressiveFastEffects
             easing.type: Easing.BezierSpline
-            easing.bezierCurve: Theme.expressiveCurves.expressiveEffects
+            easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
         }
     }
 

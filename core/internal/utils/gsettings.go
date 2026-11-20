@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 )
 
@@ -36,10 +37,19 @@ func GsettingsGet(schema, key string) (string, error) {
 
 // GsettingsSet writes a desktop setting to dconf, falling back to gsettings.
 func GsettingsSet(schema, key, value string) error {
+	return gsettingsWrite(schema, key, "'"+value+"'", value)
+}
+
+func GsettingsSetBool(schema, key string, value bool) error {
+	literal := strconv.FormatBool(value)
+	return gsettingsWrite(schema, key, literal, literal)
+}
+
+func gsettingsWrite(schema, key, dconfValue, gsettingsValue string) error {
 	if dconfSelected() {
-		if err := exec.Command("dconf", "write", dconfPath(schema, key), "'"+value+"'").Run(); err == nil {
+		if err := exec.Command("dconf", "write", dconfPath(schema, key), dconfValue).Run(); err == nil {
 			return nil
 		}
 	}
-	return exec.Command("gsettings", "set", schema, key, value).Run()
+	return exec.Command("gsettings", "set", schema, key, gsettingsValue).Run()
 }

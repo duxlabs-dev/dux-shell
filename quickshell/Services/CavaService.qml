@@ -49,7 +49,7 @@ Singleton {
 
     Timer {
         id: lingerTimer
-        interval: 30000
+        interval: Timing.timeoutLong
     }
 
     Process {

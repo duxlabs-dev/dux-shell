@@ -144,7 +144,7 @@ Singleton {
     }
 
     Timer {
-        interval: 15000
+        interval: Timing.poll
         repeat: true
         running: root.isBSD && root.batteries.length === 0 && root.freebsdBatteryAvailable && root.refCount > 0
 
@@ -153,7 +153,7 @@ Singleton {
 
     Timer {
         id: startupTimer
-        interval: 500
+        interval: Timing.settleLong
         repeat: false
         running: true
 
@@ -503,7 +503,6 @@ Singleton {
 
                 sendAlert(I18n.tr("Low Battery"), I18n.tr("Battery is at %1% - Consider charging soon", "low battery notification body, %1 is the battery percentage").arg(Math.round(batteryAlertLevel)), "warning", "material:battery_0_bar", SettingsData.batteryLowNotificationType);
             }
-
         }
 
         if (isLowBattery && SettingsData.batteryAutoPowerSaver && PowerProfileWatcher.available) {

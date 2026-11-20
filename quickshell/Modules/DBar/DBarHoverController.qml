@@ -28,6 +28,10 @@ Item {
     property var _pendingHoverHit: null
     property string _pendingHoverTrigger: ""
     property string _hoverReopenSuppressedTrigger: ""
+    // Set when the island takes the pointer: the last bar point is stale unless a popout reported a newer one since.
+    property bool _pointerOnIsland: false
+    property real _islandEntryX: 0
+    property real _islandEntryY: 0
 
     property bool _candidateCacheValid: false
     property var _candidateCache: []
@@ -49,6 +53,7 @@ Item {
         cancelQueuedHitTest();
         _cancelPendingHover();
         _hoverCloseTimer.stop();
+        _pointerOnIsland = false;
         if (hasOpenHoverSurface() && !isActiveHoverSurfacePinned())
             closeHoverSurfaces();
         activeHoverTrigger = "";
@@ -120,12 +125,13 @@ Item {
     // Grace timer to prevent flicker when crossing gaps.
     Timer {
         id: _hoverCloseTimer
-        interval: 120
+        interval: Timing.debounce
         repeat: false
         onTriggered: root._commitHoverClose()
     }
 
     function queueHoverPoint(gx, gy) {
+        _pointerOnIsland = false;
         _lastHoverGlobalX = gx;
         _lastHoverGlobalY = gy;
         _barHovered = true;
@@ -137,6 +143,7 @@ Item {
     function updateBarHovered(hovered) {
         _barHovered = hovered;
         if (hovered) {
+            _pointerOnIsland = false;
             _hoverCloseTimer.stop();
             return;
         }
@@ -146,6 +153,19 @@ Item {
         _hoverReopenSuppressedTrigger = "";
         if (!hoverPopoutsEnabled || isActiveHoverSurfacePinned())
             return;
+        _hoverCloseTimer.restart();
+    }
+
+    function pointerMovedToIsland() {
+        if (!hoverPopoutsEnabled)
+            return;
+        if (!hasOpenHoverSurface())
+            return;
+        cancelQueuedHitTest();
+        _cancelPendingHover();
+        _pointerOnIsland = true;
+        _islandEntryX = PopoutManager.hoverCursorGlobalX;
+        _islandEntryY = PopoutManager.hoverCursorGlobalY;
         _hoverCloseTimer.restart();
     }
 
@@ -162,6 +182,7 @@ Item {
         cancelQueuedHitTest();
         _cancelPendingHover();
         _hoverCloseTimer.stop();
+        _pointerOnIsland = false;
         _hoverReopenSuppressedTrigger = "";
         barContent.cancelQueuedWidgetPopout();
 
@@ -932,8 +953,14 @@ Item {
     function _commitHoverClose() {
         const gx = PopoutManager.hoverCursorGlobalX;
         const gy = PopoutManager.hoverCursorGlobalY;
+        const onIsland = _pointerOnIsland;
+        _pointerOnIsland = false;
         if (isActiveHoverSurfacePinned())
             return;
+        if (onIsland && gx === _islandEntryX && gy === _islandEntryY) {
+            closeHoverSurfaces();
+            return;
+        }
         // A popout surface mapping can pull pointer focus off the bar on Hyprland; a leave
         // with the cursor still resting on the trigger widget is not a real exit (#3248).
         if (_cursorRestsOnActiveTrigger(gx, gy))

@@ -32,7 +32,7 @@ Singleton {
         case "noTool":
             return I18n.tr("Requires %1", "missing program", true).arg("efibootmgr");
         case "error":
-            return errorText || I18n.tr("efibootmgr failed", "error, efibootmgr is a program name and stays untranslated");
+            return errorText || I18n.tr("Failed: %1", "error status, %1 is an error message or the command that failed").arg("efibootmgr");
         default:
             return "";
         }

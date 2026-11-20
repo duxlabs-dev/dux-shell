@@ -255,6 +255,7 @@ BasePill {
                 root._appIdSubstitutionsTrigger;
                 return Paths.moddedAppId(appId);
             }
+            readonly property string coreIcon: AppSearchService.windowIcon(appId, toplevelData)
             property string windowTitle: toplevelData ? (toplevelData.title || "(Unnamed)") : "(Unnamed)"
             property var toplevelObject: toplevelData
             property int windowCount: isGrouped ? groupWindows.length : 1
@@ -305,6 +306,8 @@ BasePill {
                     source: {
                         root._desktopEntriesUpdateTrigger;
                         root._appIdSubstitutionsTrigger;
+                        if (coreIcon)
+                            return coreIcon;
                         if (!effectiveAppId)
                             return "";
                         const desktopEntry = DesktopEntries.heuristicLookup(effectiveAppId);
@@ -315,7 +318,7 @@ BasePill {
                     asynchronous: true
                     visible: status === Image.Ready
                     opacity: delegateItem.isMinimized ? 0.4 : 1
-                    layer.enabled: Paths.isDmsAppId(appId)
+                    layer.enabled: !coreIcon && Paths.isDmsAppId(appId)
                     layer.smooth: true
                     layer.mipmap: true
                     layer.effect: MultiEffect {

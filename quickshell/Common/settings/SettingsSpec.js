@@ -528,20 +528,11 @@ var LOCAL_SPEC = {
     windSpeedUnit: {
         def: "kmh"
     },
-    syncComponentAnimationSpeeds: {
-        def: true
-    },
     qmlCacheEnabled: {
         def: true
     },
     renderControlEnabled: {
         def: true
-    },
-    popoutAnimationDuration: {
-        def: 150
-    },
-    modalAnimationDuration: {
-        def: 150
     },
     reduceMotion: {
         def: false
@@ -624,6 +615,9 @@ var LOCAL_SPEC = {
     blurWallpaperOnOverview: {
         def: false
     },
+    pauseVideoWallpaperOnBattery: {
+        def: false
+    },
     systemTrayIconTintMode: {
         def: "none"
     },
@@ -635,6 +629,10 @@ var LOCAL_SPEC = {
     },
     controlCenterColumns: {
         def: 8
+    },
+    controlCenterRows: {
+        def: 0,
+        coerce: v => Number.isInteger(v) && v >= 0 ? v : undefined
     },
     controlCenterIconScale: {
         def: 1.0
@@ -918,6 +916,9 @@ var LOCAL_SPEC = {
     dankLauncherV2ShowAppIcons: {
         def: true
     },
+    dankLauncherV2ShowAppDescriptions: {
+        def: true
+    },
     dankLauncherV2BorderEnabled: {
         def: false
     },
@@ -953,6 +954,9 @@ var LOCAL_SPEC = {
     },
     keybindsFloatingWindow: {
         def: false
+    },
+    keybindsModifierStyle: {
+        def: "windows"
     },
     dashTabPosition: {
         def: "auto"
@@ -1045,6 +1049,22 @@ var LOCAL_SPEC = {
         onChange: "applyStoredIconTheme"
     },
     iconThemePerMode: {
+        def: false,
+        onChange: "applyStoredIconTheme"
+    },
+    iconFolderRecolor: {
+        def: false,
+        onChange: "applyStoredIconTheme"
+    },
+    iconMonoApps: {
+        def: false,
+        onChange: "applyStoredIconTheme"
+    },
+    iconShape: {
+        def: "squircle",
+        onChange: "applyStoredIconTheme"
+    },
+    iconGradient: {
         def: false,
         onChange: "applyStoredIconTheme"
     },
@@ -1478,9 +1498,6 @@ var LOCAL_SPEC = {
     notificationPopupPosition: {
         def: 0
     },
-    notificationAnimationDuration: {
-        def: 200
-    },
     notificationHistoryEnabled: {
         def: true
     },
@@ -1777,6 +1794,42 @@ var LOCAL_SPEC = {
     },
     clipboardVisibleEntryActions: {
         def: ["pin", "edit", "delete"]
+    },
+    screenshotDir: {
+        def: ""
+    },
+    screenshotFormat: {
+        def: "png"
+    },
+    screenshotQuality: {
+        def: 90
+    },
+    screenshotCursor: {
+        def: false
+    },
+    screenshotClipboard: {
+        def: true
+    },
+    screenshotClipboardFile: {
+        def: false
+    },
+    screenshotSaveFile: {
+        def: true
+    },
+    screenshotNotify: {
+        def: true
+    },
+    screenshotConfirmRegion: {
+        def: true
+    },
+    screenshotAnnotate: {
+        def: false
+    },
+    screenshotHud: {
+        def: "auto"
+    },
+    screenshotScrollInterval: {
+        def: 45
     },
     launcherPluginVisibility: {
         def: {}

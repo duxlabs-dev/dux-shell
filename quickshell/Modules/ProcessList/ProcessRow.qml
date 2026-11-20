@@ -28,6 +28,7 @@ DListItem {
 
     signal actionRequested(string action)
     signal groupToggled
+    signal expansionSettled
 
     readonly property real leadWidth: ProcessListMetrics.expanderWidth + (member ? ProcessListMetrics.appIconSize : 0) + ProcessListMetrics.appIconSize + Theme.spacingS
     readonly property real cellsWidth: columns.reduce((sum, id) => sum + cellWidth(id) + Theme.spacingXS, 0)
@@ -48,15 +49,17 @@ DListItem {
 
     // Opening one strip closes another; animating both shows where the selection went.
     Behavior on height {
-        enabled: Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
         NumberAnimation {
             id: heightSlide
             duration: Theme.expressiveDurations.expressiveDefaultSpatial
             easing.type: Easing.BezierSpline
             easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
             onRunningChanged: {
-                if (!running)
-                    Qt.callLater(details.release);
+                if (running)
+                    return;
+                Qt.callLater(details.release);
+                if (root.isExpanded)
+                    root.expansionSettled();
             }
         }
     }
@@ -127,7 +130,7 @@ DListItem {
                 anchors.fill: appIcon
                 visible: !appIcon.visible
                 radius: Theme.cornerRadiusXS
-                color: Theme.surfaceContainerHighest
+                color: Theme.chipSurfaceNested
 
                 StyledText {
                     anchors.centerIn: parent
@@ -249,7 +252,6 @@ DListItem {
         opacity: root.isExpanded ? 1 : 0
 
         Behavior on opacity {
-            enabled: Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
             NumberAnimation {
                 duration: Theme.expressiveDurations.expressiveDefaultSpatial
                 easing.type: Easing.BezierSpline

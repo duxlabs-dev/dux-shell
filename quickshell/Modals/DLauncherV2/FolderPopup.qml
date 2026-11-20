@@ -21,7 +21,7 @@ Item {
 
     signal dismissed
     signal memberRightClicked(var item, real sceneX, real sceneY)
-    signal memberDragPressed(Item tile, int memberIndex, real sceneX, real sceneY)
+    signal memberDragPressed(Item tile, int memberIndex, real sceneX, real sceneY, bool fromMouse)
     signal memberDragMoved(real sceneX, real sceneY)
     signal memberDragReleased(real sceneX, real sceneY)
     signal memberDragCanceled
@@ -42,7 +42,7 @@ Item {
     readonly property string liveName: controller?.activeFolder?.name ?? ""
     readonly property bool renamePending: controller?.folderRenamePending ?? false
     readonly property int selectedIndex: controller?.folderSelectedIndex ?? -1
-    readonly property bool animate: animationsEnabled && Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None && !SettingsData.reduceMotion
+    readonly property bool animate: animationsEnabled && !Theme.reduceMotion
     readonly property bool transitioning: enterPending || enterAnimation.running || exitAnimation.running
 
     readonly property real padding: Theme.spacingL
@@ -365,7 +365,7 @@ Item {
 
                             onClicked: root.controller?.executeItem(cell.modelData)
                             onRightClicked: (sceneX, sceneY) => root.memberRightClicked(cell.modelData, sceneX, sceneY)
-                            onDragPressed: (sceneX, sceneY) => root.memberDragPressed(tile, cell.index, sceneX, sceneY)
+                            onDragPressed: (sceneX, sceneY, fromMouse) => root.memberDragPressed(tile, cell.index, sceneX, sceneY, fromMouse)
                             onDragMoved: (sceneX, sceneY) => root.memberDragMoved(sceneX, sceneY)
                             onDragReleased: (sceneX, sceneY) => root.memberDragReleased(sceneX, sceneY)
                             onDragCanceled: root.memberDragCanceled()

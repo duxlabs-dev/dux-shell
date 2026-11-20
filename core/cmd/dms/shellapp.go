@@ -93,10 +93,34 @@ func shellSettings() []byte {
 	if err != nil {
 		return nil
 	}
-	data, err := os.ReadFile(filepath.Join(configDir, "dms", "settings.json"))
-	if err != nil {
+	return mergedSettings(filepath.Join(configDir, "dms"))
+}
+
+// Same order as SettingsData: settings.json, then config.d/*.json by name, later files win.
+func mergedSettings(dir string) []byte {
+	extra, _ := filepath.Glob(filepath.Join(dir, "config.d", "*.json"))
+	merged := map[string]json.RawMessage{}
+	for _, path := range append([]string{filepath.Join(dir, "settings.json")}, extra...) {
+		// FolderListModel skips hidden files, so .backup.json is not a settings file.
+		if strings.HasPrefix(filepath.Base(path), ".") {
+			continue
+		}
+		data, err := os.ReadFile(path)
+		if err != nil {
+			continue
+		}
+		var keys map[string]json.RawMessage
+		if json.Unmarshal(data, &keys) != nil {
+			continue
+		}
+		for key, value := range keys {
+			merged[key] = value
+		}
+	}
+	if len(merged) == 0 {
 		return nil
 	}
+	data, _ := json.Marshal(merged)
 	return data
 }
 

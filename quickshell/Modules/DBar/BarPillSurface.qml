@@ -27,7 +27,7 @@ Rectangle {
     bottomRightRadius: endRadius
 
     Behavior on pressProgress {
-        enabled: !Theme.reduceMotion && !Theme.springMotionDisabled
+        enabled: !Theme.reduceMotion
         NumberAnimation {
             duration: Theme.expressiveDurations.expressiveFastSpatial
             easing.type: Easing.BezierSpline
@@ -36,7 +36,7 @@ Rectangle {
     }
 
     Behavior on joinedStartProgress {
-        enabled: !Theme.reduceMotion && !Theme.springMotionDisabled
+        enabled: !Theme.reduceMotion
         NumberAnimation {
             duration: Theme.expressiveDurations.expressiveFastSpatial
             easing.type: Easing.BezierSpline
@@ -45,7 +45,7 @@ Rectangle {
     }
 
     Behavior on joinedEndProgress {
-        enabled: !Theme.reduceMotion && !Theme.springMotionDisabled
+        enabled: !Theme.reduceMotion
         NumberAnimation {
             duration: Theme.expressiveDurations.expressiveFastSpatial
             easing.type: Easing.BezierSpline

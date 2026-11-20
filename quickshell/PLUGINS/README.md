@@ -961,7 +961,7 @@ PluginSettings {
 
 ### Step 5: Enable Plugin
 
-1. Run the shell: `qs -p $CONFIGPATH/quickshell/dms/shell.qml`
+1. Run the shell: `dms qs -p $CONFIGPATH/quickshell/dms/shell.qml`
 2. Open Settings (Ctrl+,)
 3. Navigate to Plugins tab
 4. Click "Scan for Plugins"
@@ -1230,7 +1230,7 @@ Item {
 View plugin logs:
 
 ```bash
-qs -v -p $CONFIGPATH/quickshell/dms/shell.qml
+dms qs -v -p $CONFIGPATH/quickshell/dms/shell.qml
 ```
 
 Look for lines prefixed with:

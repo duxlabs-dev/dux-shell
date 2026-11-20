@@ -158,13 +158,13 @@ Singleton {
 
     Timer {
         id: syncTimer
-        interval: 1000
+        interval: Timing.settleSlow
         onTriggered: root._sync()
     }
 
     Timer {
         id: captureTimer
-        interval: 250
+        interval: Timing.debounceLong
         onTriggered: root._runCapture()
     }
 

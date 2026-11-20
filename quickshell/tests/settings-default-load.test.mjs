@@ -39,10 +39,10 @@ test("a root at every default persists nothing but its version", () => {
 
 test("a key is persisted while it differs and dropped once it matches again", () => {
     const root = defaultRoot();
-    root.animationDuration = 700;
-    assert.equal(store.toJson(root, new Set()).animationDuration, 700);
-    root.animationDuration = SPEC.animationDuration.def;
-    assert.equal("animationDuration" in store.toJson(root, new Set()), false);
+    root.motionDuration = 4;
+    assert.equal(store.toJson(root, new Set()).motionDuration, 4);
+    root.motionDuration = SPEC.motionDuration.def;
+    assert.equal("motionDuration" in store.toJson(root, new Set()), false);
 });
 
 test("a coerced key normalises a percentage and leaves a unit value alone", () => {

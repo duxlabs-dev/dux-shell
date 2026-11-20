@@ -1,6 +1,6 @@
 import QtQuick
 import qs.Common
-import "Drives.js" as Drives
+import "../../Services/Drives.js" as Drives
 
 QtObject {
     property string level: ""

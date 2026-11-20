@@ -77,7 +77,7 @@ Item {
 
     Timer {
         id: horizontalBarChangeDebounce
-        interval: 500
+        interval: Timing.settleLong
         repeat: false
         onTriggered: {
             const verticalBars = SettingsData.getBarKindConfigs().filter(cfg => {

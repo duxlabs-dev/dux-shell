@@ -175,7 +175,7 @@ QtObject {
     }
 
     property Timer displayFieldClearTimer: Timer {
-        interval: 400
+        interval: Timing.settleLong
         onTriggered: root.clearDisplayFields()
     }
 

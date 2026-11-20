@@ -23,184 +23,188 @@ Item {
     }
 
     SettingsPage {
-        SettingsToggleCard {
-            tab: "theme"
-            tags: ["elevation", "shadow", "lift", "m3", "material", "intensity", "blur", "opacity", "color", "direction", "light"]
-            settingKey: "m3ElevationEnabled"
-            title: I18n.tr("Shadows", "noun, settings page name and toggle for surface shadows")
-            checked: SettingsData.m3ElevationEnabled ?? true
-            onToggled: checked => SettingsData.set("m3ElevationEnabled", checked)
-
-            SettingsSliderRow {
+        SettingsDeferred {
+            SettingsToggleCard {
                 tab: "theme"
-                tags: ["elevation", "shadow", "intensity", "blur", "m3"]
-                settingKey: "m3ElevationIntensity"
-                text: I18n.tr("Intensity")
-                value: SettingsData.m3ElevationIntensity ?? 12
-                minimum: 0
-                maximum: 100
-                unit: ""
-                onSliderValueChanged: newValue => SettingsData.set("m3ElevationIntensity", newValue)
-            }
+                tags: ["elevation", "shadow", "lift", "m3", "material", "intensity", "blur", "opacity", "color", "direction", "light"]
+                settingKey: "m3ElevationEnabled"
+                title: I18n.tr("Shadows", "noun, settings page name and toggle for surface shadows")
+                checked: SettingsData.m3ElevationEnabled ?? true
+                onToggled: checked => SettingsData.set("m3ElevationEnabled", checked)
 
-            SettingsSliderRow {
-                tab: "theme"
-                tags: ["elevation", "shadow", "opacity", "transparency", "m3"]
-                settingKey: "m3ElevationOpacity"
-                text: I18n.tr("Opacity")
-                value: SettingsData.m3ElevationOpacity ?? 30
-                minimum: 0
-                maximum: 100
-                onSliderValueChanged: newValue => SettingsData.set("m3ElevationOpacity", newValue)
-            }
+                SettingsSliderRow {
+                    tab: "theme"
+                    tags: ["elevation", "shadow", "intensity", "blur", "m3"]
+                    settingKey: "m3ElevationIntensity"
+                    text: I18n.tr("Intensity")
+                    value: SettingsData.m3ElevationIntensity ?? 12
+                    minimum: 0
+                    maximum: 100
+                    unit: ""
+                    onSliderValueChanged: newValue => SettingsData.set("m3ElevationIntensity", newValue)
+                }
 
-            SettingsDropdownRow {
-                tab: "theme"
-                tags: ["elevation", "shadow", "color", "m3"]
-                settingKey: "m3ElevationColorMode"
-                resetKeys: ["m3ElevationColorMode", "m3ElevationCustomColor"]
-                text: I18n.tr("Color")
-                options: [I18n.tr("Default (Black)", "shadow color option"), I18n.tr("Text Color", "shadow color option"), I18n.tr("Primary", "shadow color option"), I18n.tr("Surface Variant", "shadow color option"), I18n.tr("Custom", "shadow color option")]
-                optionColorMap: ({
-                        [I18n.tr("Default (Black)", "shadow color option")]: "#000000",
-                        [I18n.tr("Text Color", "shadow color option")]: Theme.surfaceText,
-                        [I18n.tr("Primary", "shadow color option")]: Theme.primary,
-                        [I18n.tr("Surface Variant", "shadow color option")]: Theme.surfaceVariant,
-                        [I18n.tr("Custom", "shadow color option")]: SettingsData.m3ElevationCustomColor ?? "#000000"
-                    })
-                currentValue: {
-                    switch (SettingsData.m3ElevationColorMode) {
-                    case "text":
-                        return I18n.tr("Text Color", "shadow color option");
-                    case "primary":
-                        return I18n.tr("Primary", "shadow color option");
-                    case "surfaceVariant":
-                        return I18n.tr("Surface Variant", "shadow color option");
-                    case "custom":
-                        return I18n.tr("Custom", "shadow color option");
-                    default:
-                        return I18n.tr("Default (Black)", "shadow color option");
+                SettingsSliderRow {
+                    tab: "theme"
+                    tags: ["elevation", "shadow", "opacity", "transparency", "m3"]
+                    settingKey: "m3ElevationOpacity"
+                    text: I18n.tr("Opacity")
+                    value: SettingsData.m3ElevationOpacity ?? 30
+                    minimum: 0
+                    maximum: 100
+                    onSliderValueChanged: newValue => SettingsData.set("m3ElevationOpacity", newValue)
+                }
+
+                SettingsDropdownRow {
+                    tab: "theme"
+                    tags: ["elevation", "shadow", "color", "m3"]
+                    settingKey: "m3ElevationColorMode"
+                    resetKeys: ["m3ElevationColorMode", "m3ElevationCustomColor"]
+                    text: I18n.tr("Color")
+                    options: [I18n.tr("Default (Black)", "shadow color option"), I18n.tr("Text Color", "shadow color option"), I18n.tr("Primary", "shadow color option"), I18n.tr("Surface Variant", "shadow color option"), I18n.tr("Custom", "shadow color option")]
+                    optionColorMap: ({
+                            [I18n.tr("Default (Black)", "shadow color option")]: "#000000",
+                            [I18n.tr("Text Color", "shadow color option")]: Theme.surfaceText,
+                            [I18n.tr("Primary", "shadow color option")]: Theme.primary,
+                            [I18n.tr("Surface Variant", "shadow color option")]: Theme.surfaceVariant,
+                            [I18n.tr("Custom", "shadow color option")]: SettingsData.m3ElevationCustomColor ?? "#000000"
+                        })
+                    currentValue: {
+                        switch (SettingsData.m3ElevationColorMode) {
+                        case "text":
+                            return I18n.tr("Text Color", "shadow color option");
+                        case "primary":
+                            return I18n.tr("Primary", "shadow color option");
+                        case "surfaceVariant":
+                            return I18n.tr("Surface Variant", "shadow color option");
+                        case "custom":
+                            return I18n.tr("Custom", "shadow color option");
+                        default:
+                            return I18n.tr("Default (Black)", "shadow color option");
+                        }
+                    }
+                    onValueChanged: value => {
+                        switch (value) {
+                        case I18n.tr("Primary", "shadow color option"):
+                            SettingsData.set("m3ElevationColorMode", "primary");
+                            return;
+                        case I18n.tr("Surface Variant", "shadow color option"):
+                            SettingsData.set("m3ElevationColorMode", "surfaceVariant");
+                            return;
+                        case I18n.tr("Text Color", "shadow color option"):
+                            SettingsData.set("m3ElevationColorMode", "text");
+                            return;
+                        case I18n.tr("Custom", "shadow color option"):
+                            SettingsData.set("m3ElevationColorMode", "custom");
+                            root.openShadowColorPicker();
+                            return;
+                        }
+                        SettingsData.set("m3ElevationColorMode", "default");
                     }
                 }
-                onValueChanged: value => {
-                    switch (value) {
-                    case I18n.tr("Primary", "shadow color option"):
-                        SettingsData.set("m3ElevationColorMode", "primary");
-                        return;
-                    case I18n.tr("Surface Variant", "shadow color option"):
-                        SettingsData.set("m3ElevationColorMode", "surfaceVariant");
-                        return;
-                    case I18n.tr("Text Color", "shadow color option"):
-                        SettingsData.set("m3ElevationColorMode", "text");
-                        return;
-                    case I18n.tr("Custom", "shadow color option"):
-                        SettingsData.set("m3ElevationColorMode", "custom");
-                        root.openShadowColorPicker();
-                        return;
-                    }
-                    SettingsData.set("m3ElevationColorMode", "default");
-                }
-            }
 
-            SettingsRow {
-                title: I18n.tr("Custom color")
-                visible: SettingsData.m3ElevationColorMode === "custom"
-                resetKeys: ["m3ElevationCustomColor"]
-                clickable: true
-                onClicked: root.openShadowColorPicker()
+                SettingsRow {
+                    title: I18n.tr("Custom color")
+                    visible: SettingsData.m3ElevationColorMode === "custom"
+                    resetKeys: ["m3ElevationCustomColor"]
+                    clickable: true
+                    onClicked: root.openShadowColorPicker()
 
-                DColorSwatch {
-                    width: Theme.iconSizeMedium
-                    height: width
-                    swatchColor: SettingsData.m3ElevationCustomColor ?? "#000000"
-                    anchors.verticalCenter: parent.verticalCenter
-                }
-            }
-
-            SettingsDropdownRow {
-                tab: "theme"
-                tags: ["elevation", "shadow", "direction", "light", "advanced", "m3"]
-                settingKey: "m3ElevationLightDirection"
-                text: I18n.tr("Light direction")
-                options: [I18n.tr("Auto (Bar-aware)", "shadow direction option"), I18n.tr("Top (Default)", "shadow direction option"), I18n.tr("Top Left", "shadow direction option"), I18n.tr("Top Right", "shadow direction option"), I18n.tr("Bottom", "shadow direction option")]
-                currentValue: {
-                    switch (SettingsData.m3ElevationLightDirection) {
-                    case "autoBar":
-                        return I18n.tr("Auto (Bar-aware)", "shadow direction option");
-                    case "topLeft":
-                        return I18n.tr("Top Left", "shadow direction option");
-                    case "topRight":
-                        return I18n.tr("Top Right", "shadow direction option");
-                    case "bottom":
-                        return I18n.tr("Bottom", "shadow direction option");
-                    default:
-                        return I18n.tr("Top (Default)", "shadow direction option");
+                    DColorSwatch {
+                        width: Theme.iconSizeMedium
+                        height: width
+                        swatchColor: SettingsData.m3ElevationCustomColor ?? "#000000"
+                        anchors.verticalCenter: parent.verticalCenter
                     }
                 }
-                onValueChanged: value => {
-                    switch (value) {
-                    case I18n.tr("Auto (Bar-aware)", "shadow direction option"):
-                        SettingsData.set("m3ElevationLightDirection", "autoBar");
-                        return;
-                    case I18n.tr("Top Left", "shadow direction option"):
-                        SettingsData.set("m3ElevationLightDirection", "topLeft");
-                        return;
-                    case I18n.tr("Top Right", "shadow direction option"):
-                        SettingsData.set("m3ElevationLightDirection", "topRight");
-                        return;
-                    case I18n.tr("Bottom", "shadow direction option"):
-                        SettingsData.set("m3ElevationLightDirection", "bottom");
-                        return;
+
+                SettingsDropdownRow {
+                    tab: "theme"
+                    tags: ["elevation", "shadow", "direction", "light", "advanced", "m3"]
+                    settingKey: "m3ElevationLightDirection"
+                    text: I18n.tr("Light direction")
+                    options: [I18n.tr("Auto (Bar-aware)", "shadow direction option"), I18n.tr("Top (Default)", "shadow direction option"), I18n.tr("Top Left", "shadow direction option"), I18n.tr("Top Right", "shadow direction option"), I18n.tr("Bottom", "shadow direction option")]
+                    currentValue: {
+                        switch (SettingsData.m3ElevationLightDirection) {
+                        case "autoBar":
+                            return I18n.tr("Auto (Bar-aware)", "shadow direction option");
+                        case "topLeft":
+                            return I18n.tr("Top Left", "shadow direction option");
+                        case "topRight":
+                            return I18n.tr("Top Right", "shadow direction option");
+                        case "bottom":
+                            return I18n.tr("Bottom", "shadow direction option");
+                        default:
+                            return I18n.tr("Top (Default)", "shadow direction option");
+                        }
                     }
-                    SettingsData.set("m3ElevationLightDirection", "top");
+                    onValueChanged: value => {
+                        switch (value) {
+                        case I18n.tr("Auto (Bar-aware)", "shadow direction option"):
+                            SettingsData.set("m3ElevationLightDirection", "autoBar");
+                            return;
+                        case I18n.tr("Top Left", "shadow direction option"):
+                            SettingsData.set("m3ElevationLightDirection", "topLeft");
+                            return;
+                        case I18n.tr("Top Right", "shadow direction option"):
+                            SettingsData.set("m3ElevationLightDirection", "topRight");
+                            return;
+                        case I18n.tr("Bottom", "shadow direction option"):
+                            SettingsData.set("m3ElevationLightDirection", "bottom");
+                            return;
+                        }
+                        SettingsData.set("m3ElevationLightDirection", "top");
+                    }
                 }
             }
         }
 
-        SettingsCard {
-            tab: "theme"
-            tags: ["elevation", "shadow", "modal", "dialog", "popout", "popup", "osd", "bar", "panel", "m3"]
-            title: I18n.tr("Apply to")
-            settingKey: "m3ElevationTargets"
-
-            SettingsToggleRow {
+        SettingsDeferred {
+            SettingsCard {
                 tab: "theme"
-                tags: ["elevation", "shadow", "modal", "dialog", "m3"]
-                settingKey: "modalElevationEnabled"
-                text: I18n.tr("Modals")
-                enabled: SettingsData.m3ElevationEnabled ?? true
-                checked: SettingsData.modalElevationEnabled ?? true
-                onToggled: checked => SettingsData.set("modalElevationEnabled", checked)
-            }
+                tags: ["elevation", "shadow", "modal", "dialog", "popout", "popup", "osd", "bar", "panel", "m3"]
+                title: I18n.tr("Apply to")
+                settingKey: "m3ElevationTargets"
 
-            SettingsToggleRow {
-                tab: "theme"
-                tags: ["elevation", "shadow", "popout", "popup", "osd", "dropdown", "m3"]
-                settingKey: "popoutElevationEnabled"
-                text: I18n.tr("Popouts")
-                enabled: SettingsData.m3ElevationEnabled ?? true
-                checked: SettingsData.popoutElevationEnabled ?? true
-                onToggled: checked => SettingsData.set("popoutElevationEnabled", checked)
-            }
+                SettingsToggleRow {
+                    tab: "theme"
+                    tags: ["elevation", "shadow", "modal", "dialog", "m3"]
+                    settingKey: "modalElevationEnabled"
+                    text: I18n.tr("Modals")
+                    enabled: SettingsData.m3ElevationEnabled ?? true
+                    checked: SettingsData.modalElevationEnabled ?? true
+                    onToggled: checked => SettingsData.set("modalElevationEnabled", checked)
+                }
 
-            SettingsToggleRow {
-                tab: "theme"
-                tags: ["elevation", "shadow", "notification", "popup", "m3"]
-                settingKey: "notificationPopupShadowEnabled"
-                text: I18n.tr("Notifications")
-                enabled: SettingsData.m3ElevationEnabled ?? true
-                checked: SettingsData.notificationPopupShadowEnabled
-                onToggled: checked => SettingsData.set("notificationPopupShadowEnabled", checked)
-            }
+                SettingsToggleRow {
+                    tab: "theme"
+                    tags: ["elevation", "shadow", "popout", "popup", "osd", "dropdown", "m3"]
+                    settingKey: "popoutElevationEnabled"
+                    text: I18n.tr("Popouts")
+                    enabled: SettingsData.m3ElevationEnabled ?? true
+                    checked: SettingsData.popoutElevationEnabled ?? true
+                    onToggled: checked => SettingsData.set("popoutElevationEnabled", checked)
+                }
 
-            SettingsToggleRow {
-                tab: "theme"
-                tags: ["elevation", "shadow", "bar", "panel", "navigation", "m3"]
-                settingKey: "barElevationEnabled"
-                text: I18n.tr("Bars")
-                enabled: SettingsData.m3ElevationEnabled ?? true
-                checked: SettingsData.barElevationEnabled ?? true
-                onToggled: checked => SettingsData.set("barElevationEnabled", checked)
+                SettingsToggleRow {
+                    tab: "theme"
+                    tags: ["elevation", "shadow", "notification", "popup", "m3"]
+                    settingKey: "notificationPopupShadowEnabled"
+                    text: I18n.tr("Notifications")
+                    enabled: SettingsData.m3ElevationEnabled ?? true
+                    checked: SettingsData.notificationPopupShadowEnabled
+                    onToggled: checked => SettingsData.set("notificationPopupShadowEnabled", checked)
+                }
+
+                SettingsToggleRow {
+                    tab: "theme"
+                    tags: ["elevation", "shadow", "bar", "panel", "navigation", "m3"]
+                    settingKey: "barElevationEnabled"
+                    text: I18n.tr("Bars")
+                    enabled: SettingsData.m3ElevationEnabled ?? true
+                    checked: SettingsData.barElevationEnabled ?? true
+                    onToggled: checked => SettingsData.set("barElevationEnabled", checked)
+                }
             }
         }
 

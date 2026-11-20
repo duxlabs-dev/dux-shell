@@ -3,6 +3,7 @@ import QtQuick.Layouts
 import qs.Common
 import qs.Services
 import qs.DCommon.Widgets
+import "../../Services/SysmonHistory.js" as SysmonHistory
 
 Rectangle {
     id: card
@@ -66,14 +67,21 @@ Rectangle {
             let max = card.maxValue;
             if (max <= 0) {
                 max = 1;
-                for (let k = 0; k < hist.length; k++)
-                    max = Math.max(max, hist[k]);
+                for (let k = 0; k < hist.length; k++) {
+                    if (isFinite(hist[k]))
+                        max = Math.max(max, hist[k]);
+                }
                 if (hist2) {
-                    for (let l = 0; l < hist2.length; l++)
-                        max = Math.max(max, hist2[l]);
+                    for (let l = 0; l < hist2.length; l++) {
+                        if (isFinite(hist2[l]))
+                            max = Math.max(max, hist2[l]);
+                    }
                 }
                 max *= 1.1;
             }
+
+            const step = width / (hist.length - 1);
+            const yOf = v => height - (v / max) * height * 0.8;
 
             const c = card.accentColor;
             const grad = ctx.createLinearGradient(0, 0, 0, height);
@@ -82,24 +90,13 @@ Rectangle {
 
             ctx.fillStyle = grad;
             ctx.beginPath();
-            ctx.moveTo(0, height);
-            for (let i = 0; i < hist.length; i++) {
-                const x = (width / (DgopService.historySize - 1)) * i;
-                const y = height - (hist[i] / max) * height * 0.8;
-                ctx.lineTo(x, y);
-            }
-            ctx.lineTo((width / (DgopService.historySize - 1)) * (hist.length - 1), height);
-            ctx.closePath();
+            SysmonHistory.traceRuns(ctx, hist, step, yOf, height);
             ctx.fill();
 
             ctx.strokeStyle = Theme.withAlpha(c, 0.8);
             ctx.lineWidth = 2;
             ctx.beginPath();
-            for (let j = 0; j < hist.length; j++) {
-                const px = (width / (DgopService.historySize - 1)) * j;
-                const py = height - (hist[j] / max) * height * 0.8;
-                j === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
-            }
+            SysmonHistory.traceRuns(ctx, hist, step, yOf);
             ctx.stroke();
 
             if (hist2 && hist2.length >= 2 && card.showSecondary) {
@@ -107,11 +104,7 @@ Rectangle {
                 ctx.lineWidth = 1.5;
                 ctx.setLineDash([4, 4]);
                 ctx.beginPath();
-                for (let m = 0; m < hist2.length; m++) {
-                    const sx = (width / (DgopService.historySize - 1)) * m;
-                    const sy = height - (hist2[m] / max) * height * 0.8;
-                    m === 0 ? ctx.moveTo(sx, sy) : ctx.lineTo(sx, sy);
-                }
+                SysmonHistory.traceRuns(ctx, hist2, step, yOf);
                 ctx.stroke();
                 ctx.setLineDash([]);
             }

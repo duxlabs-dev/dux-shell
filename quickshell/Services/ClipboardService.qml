@@ -53,7 +53,7 @@ Singleton {
 
     Timer {
         id: pasteTimer
-        interval: 200
+        interval: Timing.settle
         repeat: false
         onTriggered: root.sendPasteKeystroke()
     }

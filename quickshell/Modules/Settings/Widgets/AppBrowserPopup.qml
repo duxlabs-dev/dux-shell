@@ -183,7 +183,7 @@ DFloatingWindow {
                                 ColorAnimation {
                                     duration: Theme.expressiveDurations.expressiveFastEffects
                                     easing.type: Easing.BezierSpline
-                                    easing.bezierCurve: Theme.expressiveCurves.expressiveEffects
+                                    easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
                                 }
                             }
                         }

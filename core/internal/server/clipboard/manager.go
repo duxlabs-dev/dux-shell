@@ -109,6 +109,7 @@ func NewManager(wlCtx wlcontext.WaylandContext, config Config) (*Manager, error)
 		}
 	}
 	m.pruneStore(strayMaxAge)
+	cleanupExpiredDragFiles(dragTempDir())
 
 	m.alive = true
 	m.updateState()
@@ -1056,6 +1057,7 @@ func (m *Manager) DeleteEntry(id uint64) error {
 	})
 
 	if err == nil {
+		removeDragFilesForEntry(dragTempDir(), id)
 		m.updateState()
 		m.notifySubscribers()
 	}
@@ -1100,6 +1102,7 @@ func (m *Manager) deleteUnpinnedWhere(pred entryMatcher) (int, error) {
 	}
 
 	if deleted > 0 {
+		clearDragTempDir(dragTempDir())
 		m.updateState()
 		m.notifySubscribers()
 	}
@@ -1173,6 +1176,7 @@ func (m *Manager) ClearHistory() {
 		}
 	}
 	m.pruneStore(0)
+	clearDragTempDir(dragTempDir())
 
 	m.updateState()
 	m.notifySubscribers()
@@ -1958,6 +1962,7 @@ func (m *Manager) PinEntry(id uint64) error {
 	})
 
 	if err == nil {
+		removeDragFilesForEntry(dragTempDir(), id)
 		m.updateState()
 		m.notifySubscribers()
 	}
@@ -1995,6 +2000,7 @@ func (m *Manager) UnpinEntry(id uint64) error {
 	})
 
 	if err == nil {
+		removeDragFilesForEntry(dragTempDir(), id)
 		m.updateState()
 		m.notifySubscribers()
 	}
@@ -2163,6 +2169,30 @@ func (m *Manager) EntryToFile(entry *Entry) string {
 		return ""
 	}
 	return pathFromFileURI(uri)
+}
+
+// A uri-list is served as plain paths because browsers treat any uri-list
+// offer as dropped files, which text-only editors paste as nothing.
+func textOnlyPayload(entry *Entry) ([]byte, string) {
+	if entry.AltMimeType != "" {
+		return entry.AltData, entry.AltMimeType
+	}
+	if entry.MimeType != "text/uri-list" {
+		return entry.Data, entry.MimeType
+	}
+
+	var lines []string
+	for line := range strings.Lines(string(entry.Data)) {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		if path := pathFromFileURI(line); path != "" {
+			line = path
+		}
+		lines = append(lines, line)
+	}
+	return []byte(strings.Join(lines, "\n")), "text/plain;charset=utf-8"
 }
 
 func (m *Manager) dbusConnForFlatpak() (*dbus.Conn, error) {

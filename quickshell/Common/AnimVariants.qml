@@ -14,30 +14,12 @@ Singleton {
     readonly property var _effectScaleCollapsed: [0.96, 1.0, 0.88, 0.96]
     readonly property var _effectAnimOffsets: [16, 144, 56, 16]
 
-    readonly property list<real> variantEnterCurve: Anims.expressiveDefaultSpatial
-    readonly property list<real> variantExitCurve: Anims.emphasized
-
-    readonly property list<real> variantModalEnterCurve: variantEnterCurve
-    readonly property list<real> variantModalExitCurve: variantExitCurve
-
-    readonly property list<real> variantPopoutEnterCurve: isDirectionalEffect ? Anims.standardDecel : variantEnterCurve
-    readonly property list<real> variantPopoutExitCurve: variantExitCurve
-    readonly property list<real> variantPopoutResizeCurve: Anims.emphasized
-
-    readonly property real variantEnterDurationFactor: 1.0
-    readonly property real variantExitDurationFactor: 1.0
-    readonly property real variantOpacityDurationScale: 1.0
-
-    function variantDuration(baseDuration, entering) {
-        return Math.max(0, Math.round(baseDuration));
-    }
-
     function variantExitCleanupPadding() {
         return _cleanupPaddings[_effect] !== undefined ? _cleanupPaddings[_effect] : 50;
     }
 
     function variantCloseInterval(baseDuration) {
-        return variantDuration(baseDuration, false) + variantExitCleanupPadding();
+        return Math.max(0, Math.round(baseDuration)) + variantExitCleanupPadding();
     }
 
     readonly property bool isDirectionalEffect: isConnectedEffect || _effect === SettingsData.AnimationEffect.Directional

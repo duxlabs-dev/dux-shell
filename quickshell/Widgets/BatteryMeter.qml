@@ -38,7 +38,7 @@ Item {
         if (root.colorOverride.a > 0)
             return root.colorOverride;
         if (!BatteryService.batteryAvailable)
-            return Theme.surfaceVariant;
+            return Theme.onSurface_38;
         if (root.levelColors)
             return BatteryService.levelColor;
         if (root.lowState)
@@ -52,7 +52,7 @@ Item {
         if (root.ring)
             return Theme.withAlpha(root.fillColor, root.hovered ? 0.4 : 0.26);
         if (root.outlined)
-            return root.hovered ? Theme.withAlpha(Theme.surfaceVariant, 0.45) : "transparent";
+            return root.hovered ? Theme.onSurface_12 : "transparent";
         return root.dimColor;
     }
     readonly property color inkColor: {
@@ -165,8 +165,9 @@ Item {
 
             Behavior on sweep {
                 NumberAnimation {
-                    duration: Theme.mediumDuration
-                    easing.type: Theme.standardEasing
+                    duration: Theme.expressiveDurations.expressiveSlowEffects
+                    easing.type: Easing.BezierSpline
+                    easing.bezierCurve: Theme.expressiveCurves.expressiveSlowEffects
                 }
             }
 
@@ -355,16 +356,18 @@ Item {
             Behavior on width {
                 enabled: !root.vertical
                 NumberAnimation {
-                    duration: Theme.mediumDuration
-                    easing.type: Theme.standardEasing
+                    duration: Theme.expressiveDurations.expressiveSlowEffects
+                    easing.type: Easing.BezierSpline
+                    easing.bezierCurve: Theme.expressiveCurves.expressiveSlowEffects
                 }
             }
 
             Behavior on height {
                 enabled: root.vertical
                 NumberAnimation {
-                    duration: Theme.mediumDuration
-                    easing.type: Theme.standardEasing
+                    duration: Theme.expressiveDurations.expressiveSlowEffects
+                    easing.type: Easing.BezierSpline
+                    easing.bezierCurve: Theme.expressiveCurves.expressiveSlowEffects
                 }
             }
         }

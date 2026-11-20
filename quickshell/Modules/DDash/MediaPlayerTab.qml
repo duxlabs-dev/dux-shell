@@ -21,8 +21,11 @@ Item {
     readonly property bool lyricsEnabled: (options?.lyrics ?? MediaOptions.defaults.lyrics) && DMSService.capabilities.includes("lyrics")
     readonly property bool smoothLyrics: options?.smoothLyrics ?? MediaOptions.defaults.smoothLyrics
     property bool lyricsOpen: false
+    // Up while the tab brings its lyrics back, so the art view takes them without the toggle transition.
+    property bool lyricsRestoring: false
     property Item lyricsFocusTarget: null
     property Item lyricsOpener: null
+    property Item lyricsSourceButton: null
     readonly property var presentation: mediaPresentation.current
     readonly property bool idle: !presentation
     property bool wallpaperEnabled: MediaOptions.albumArtBackdrop
@@ -88,8 +91,11 @@ Item {
     }
 
     onLyricsOpenChanged: {
-        if (!lyricsOpen)
-            lyricsFocusTimer.restart();
+        if (lyricsOpen)
+            return;
+        lyricsFocusTimer.restart();
+        if (panel === "lyrics")
+            panel = "";
     }
 
     Timer {
@@ -115,13 +121,6 @@ Item {
     MediaPresentation {
         id: mediaPresentation
         player: root
-    }
-
-    Timer {
-        interval: DashMetrics.mediaPositionPollInterval
-        running: root.live && root.activePlayer?.playbackState === MprisPlaybackState.Playing && !root.isSeeking
-        repeat: true
-        onTriggered: MprisController.refreshPosition(root.activePlayer)
     }
 
     function syncAudioRef(wanted) {
@@ -180,8 +179,11 @@ Item {
     }
 
     function restoreLyrics() {
-        if (live && lyricsEnabled && CacheData.mediaLyricsOpen)
-            lyricsOpen = true;
+        if (!live || !lyricsEnabled || !CacheData.mediaLyricsOpen)
+            return;
+        lyricsRestoring = true;
+        lyricsOpen = true;
+        lyricsRestoring = false;
     }
 
     // A plain Item's activeFocus stays false while a child holds focus.

@@ -1,20 +1,8 @@
 .pragma library
+.import "../../../Common/ControlCenterLayout.js" as PanelLayout
 
-function pageOf(widget) {
-    const page = widget?.page;
-    return Number.isInteger(page) && page > 0 ? page : 0;
-}
-
-function withPage(widget, page) {
-    if (pageOf(widget) === page)
-        return widget;
-    const next = Object.assign({}, widget);
-    if (page > 0)
-        next.page = page;
-    else
-        delete next.page;
-    return next;
-}
+var pageOf = PanelLayout.pageOf;
+var withPage = PanelLayout.withPage;
 
 // Members of a group that no longer exists fall back to the grid.
 function groupOf(widgets, widget) {

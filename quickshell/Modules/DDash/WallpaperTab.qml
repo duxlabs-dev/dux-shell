@@ -1,7 +1,6 @@
 import Qt.labs.folderlistmodel
 import QtQuick
 import Quickshell
-import Quickshell.Widgets
 import qs.Common
 import qs.Services
 import qs.Modals.FileBrowser
@@ -254,8 +253,7 @@ Item {
                 "keepOpen": true,
                 "action": () => WallpaperLibraryService.clearSelection()
             },
-            separator
-        ].concat(folderRows, folderRows.length > 0 ? [separator] : [], actions);
+            separator].concat(folderRows, folderRows.length > 0 ? [separator] : [], actions);
     }
 
     function openFolderMenu(fromKeyboard) {
@@ -809,7 +807,7 @@ Item {
                     id: pagerSnapAnim
                     target: pager
                     property: "contentY"
-                    duration: root.enableAnimation && DashMetrics.animationsEnabled ? DashMetrics.transitionDuration : 0
+                    duration: root.enableAnimation && DashMetrics.animationsEnabled ? DashMetrics.fadeDuration : 0
                     easing.type: Easing.BezierSpline
                     easing.bezierCurve: Theme.expressiveCurves.expressiveEffects
                 }
@@ -1064,9 +1062,9 @@ Item {
                         Behavior on width {
                             enabled: DashMetrics.animationsEnabled
                             NumberAnimation {
-                                duration: DashMetrics.transitionDuration
+                                duration: Theme.expressiveDurations.expressiveDefaultSpatial
                                 easing.type: Easing.BezierSpline
-                                easing.bezierCurve: Theme.expressiveCurves.standard
+                                easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
                             }
                         }
 

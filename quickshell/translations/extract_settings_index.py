@@ -48,6 +48,7 @@ ABBREVIATIONS = {
     "gamma": ["color temperature", "night light", "blue light", "redshift"],
     "media player": ["mpris", "music", "audio", "playback"],
     "clipboard": ["copy", "paste", "cliphist", "history"],
+    "screenshot": ["capture", "screen capture", "snip", "print screen"],
     "updater": ["updates", "upgrade", "packages"],
     "plugins": ["extensions", "addons", "widgets"],
     "spacing": ["gap", "gaps", "margin", "margins", "padding"],
@@ -74,7 +75,7 @@ CATEGORY_KEYWORDS = {
     "Lock screen": ["security", "login", "password"],
     "Plugins": ["extend", "addon"],
     "About": ["info", "version", "credits", "help"],
-    "Fonts & motion": ["fonts", "animation", "text"],
+    "Motion": ["animation"],
     "Sounds": ["audio", "sfx", "effects"],
     "Media player": ["music", "spotify", "mpris"],
     "Notifications": ["alerts", "messages", "toast"],
@@ -101,6 +102,7 @@ TAB_INDEX_MAP = {
     "WeatherSettingsTab.qml": 56,
     "KeybindsTab.qml": 2,
     "DBarTab.qml": 3,
+    "WidgetsTab.qml": 22,
     "DDashTab.qml": 43,
     "DigitalWellbeingTab.qml": 67,
     "CompositorLayoutTab.qml": 37,
@@ -116,9 +118,9 @@ TAB_INDEX_MAP = {
     "NetworkStatusTab.qml": 7,
     "NetworkEthernetTab.qml": 39,
     "NetworkWifiTab.qml": 40,
-    "NetworkHotspotTab.qml": 75,
+    "NetworkHotspotTab.qml": 82,
     "NetworkVpnTab.qml": 41,
-    "NetworkTailscaleTab.qml": 73,
+    "NetworkTailscaleTab.qml": 80,
     "NetworkCellularTab.qml": 47,
     "PrinterTab.qml": 8,
     "LauncherTab.qml": 9,
@@ -136,7 +138,7 @@ TAB_INDEX_MAP = {
     "ProfileEditTab.qml": 76,
     "ProfileInspectTab.qml": 77,
     "AboutTab.qml": 13,
-    "TypographyMotionTab.qml": 14,
+    "MotionTab.qml": 14,
     "SoundsTab.qml": 15,
     "MediaPlayerTab.qml": 16,
     "NotificationRulesTab.qml": 55,
@@ -144,12 +146,13 @@ TAB_INDEX_MAP = {
     "RunningAppsTab.qml": 19,
     "SoftwareUpdatesTab.qml": 20,
     "ChangelogTab.qml": 66,
-    "NetworkConnectionsTab.qml": 71,
-    "NetworkConnectionTab.qml": 72,
-    "NetworkWifiConnectTab.qml": 74,
-    "NetworkTailscaleAddTab.qml": 76,
+    "NetworkConnectionsTab.qml": 84,
+    "NetworkConnectionTab.qml": 85,
+    "NetworkWifiConnectTab.qml": 81,
+    "NetworkTailscaleAddTab.qml": 83,
     "PowerSleepTab.qml": 21,
     "ClipboardTab.qml": 23,
+    "ScreenshotTab.qml": 79,
     "DisplayConfigTab.qml": 24,
     "GammaControlTab.qml": 25,
     "DisplayWidgetsTab.qml": 26,
@@ -171,6 +174,7 @@ TAB_INDEX_MAP = {
     "KeyboardTab.qml": 45,
     "Fcitx5Tab.qml": 68,
     "Fcitx5AddonTab.qml": 69,
+    "GlobalShortcutsTab.qml": 78,
 }
 
 # Extra sidebar tabIndexes that reuse a file already in TAB_INDEX_MAP.
@@ -181,6 +185,7 @@ UNSEARCHABLE_TABS = {76, 77}
 
 SIDEBAR_GATE_CONDITIONS = [
     ("shortcutsOnly", "keybindsAvailable"),
+    ("globalShortcutsOnly", "globalShortcutsAvailable"),
     ("soundsOnly", "soundsAvailable"),
     ("cupsOnly", "cupsAvailable"),
     ("greeterOnly", "greeterAvailable"),
@@ -203,13 +208,15 @@ SIDEBAR_GATE_CONDITIONS = [
 FILE_PAGE_MAP = {
     "WallpaperColorsTab.qml": "personalization",
     "ThemeSurfacesTab.qml": "theme_surfaces",
-    "WidgetsTab.qml": "dankbar_widgets",
     "NotificationsTab.qml": "notifications",
     "UserAccountsTab.qml": "user_accounts",
     "BarHubHeader.qml": "dankbar",
     "DockHubHeader.qml": "dock",
     "PluginsHubHeader.qml": "plugins",
 }
+
+# The Appearance page's rows stay findable by what the page holds, which its name no longer says
+PAGE_TAGS = {"personalization": "wallpaper colors"}
 
 TAB_META_DEFAULT = ("Settings", None, None)
 
@@ -377,6 +384,18 @@ def extract_property(block, prop_name):
     if match:
         return match.group(1).strip()
     return None
+
+
+DEFERRED_WHEN = re.compile(r"SettingsDeferred\s*\{\s*\n\s*when:\s*([^\n]+)\n\s*$")
+
+
+def own_visible(content, start, own):
+    """A component's own visible binding, or the `when` of the SettingsDeferred wrapped directly around it."""
+    visible = extract_property(own, "visible")
+    if visible:
+        return visible
+    wrapper = DEFERRED_WHEN.search(content[:start])
+    return wrapper.group(1).strip() if wrapper else None
 
 
 def own_scope(block):
@@ -564,7 +583,7 @@ def find_settings_components(content, filename, wrappers, tab_meta, hub_meta):
                 description = extract_i18n_string(desc_raw)
                 description_args = literal_args(desc_raw)
 
-            visible_raw = extract_property(own_scope(block), "visible")
+            visible_raw = own_visible(content, match.start(), own)
             page_meta = hub_meta.get(file_page) if file_page else None
             condition_key = page_meta[2] if page_meta else tab_meta.get(tab_index, TAB_META_DEFAULT)[2]
             if visible_raw:
@@ -629,12 +648,14 @@ def find_settings_components(content, filename, wrappers, tab_meta, hub_meta):
             if filename == "DDotTab.qml" and not condition_key and setting_key != "dotEnabled":
                 condition_key = "dotEnabled"
             if component == "SettingsCard":
-                card_conditions.append((match.start(), block_end, condition_key if extract_property(own, "visible") else None))
+                card_conditions.append((match.start(), block_end, condition_key if visible_raw else None))
             elif not condition_key:
                 condition_key = next((cond for start, end, cond in card_conditions if start < match.start() < end), None)
 
             category, parent_label, _ = page_meta if page_meta else tab_meta.get(tab_index, TAB_META_DEFAULT)
-            enriched_keywords = enrich_keywords(label, apply_args(description, description_args) if description else description, category, tags, parent_label)
+            page_phrase = PAGE_TAGS.get(file_page, "")
+            page_tags = page_phrase.split() + sorted(alias_keywords(page_phrase))
+            enriched_keywords = enrich_keywords(label, apply_args(description, description_args) if description else description, category, tags + page_tags, parent_label)
 
             entry = {
                 "section": setting_key,
@@ -897,7 +918,7 @@ def extract_settings_index(root_dir, tab_meta, hub_meta):
             {
                 "section": "islandHomeLayout",
                 "label": "Island widgets",
-                "tabIndex": -1,
+                "tabIndex": 22,
                 "category": "Bar widgets",
                 "keywords": enrich_keywords(
                     "Island widgets",
@@ -905,7 +926,6 @@ def extract_settings_index(root_dir, tab_meta, hub_meta):
                     "Bar widgets",
                     ["home", "compact", "layout", "groups", "order", "activities", "media", "launcher", "weather", "battery", "volume", "brightness", "notifications", "clock"],
                 ),
-                "page": "dankbar_widgets",
                 "icon": "view_in_ar",
                 "conditionKey": "islandEnabled",
             }
@@ -966,6 +986,9 @@ def validate(all_entries, leaves, hubs, sidebar_file, root_dir):
     for page_id, count in seen_ids.items():
         if count > 1:
             errors.append(f"page id '{page_id}' is declared {count} times")
+    for tab_index, count in Counter(leaf["tabIndex"] for leaf in leaves).items():
+        if count > 1:
+            errors.append(f"tabIndex {tab_index} is used by {count} pages")
     for tab_file in sorted(settings_dir.glob("*Tab.qml")):
         if tab_file.name not in TAB_INDEX_MAP and tab_file.name not in FILE_PAGE_MAP:
             errors.append(f"{tab_file.name} missing from TAB_INDEX_MAP")

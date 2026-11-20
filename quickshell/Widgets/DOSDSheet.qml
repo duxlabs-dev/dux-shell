@@ -20,11 +20,11 @@ Item {
     anchors.fill: parent
 
     Behavior on shownSheetHeight {
-        enabled: root.opened && !root.closing && !morph.running && root.animationDuration > 0 && !SettingsData.reduceMotion
+        enabled: root.opened && !root.closing && !morph.running && !Theme.reduceMotion
         NumberAnimation {
-            duration: root.animationDuration
+            duration: Theme.expressiveDurations.expressiveDefaultSpatial
             easing.type: Easing.BezierSpline
-            easing.bezierCurve: Theme.variantPopoutResizeCurve
+            easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
         }
     }
 
@@ -54,8 +54,7 @@ Item {
 
     readonly property rect sheetRect: Qt.rect(Theme.snap(sheetX, dpr), Theme.snap(sheetY, dpr), sheetWidth, shownSheetHeight)
 
-    readonly property int animationDuration: Theme.popoutAnimationDuration
-    readonly property var springParams: Theme.springPreset("default", animationDuration)
+    readonly property var springParams: Theme.springPreset("defaultSpatial")
     readonly property real morphTravelPx: Math.max(1, Math.abs(sheetRect.x - compact.x), Math.abs(sheetRect.y - compact.y), Math.abs(sheetRect.width - compact.width), Math.abs(sheetRect.height - compact.height))
     readonly property bool morphSettled: !morph.running || Math.abs(morph.value - morph.target) < Theme.morphLayerEpsilon
     // A fully transparent surface renders no frames, so the spring would never advance to settle.
@@ -120,8 +119,7 @@ Item {
 
     SpringMotion {
         id: morph
-        enabled: !Theme.springMotionDisabled
-        reducedMotion: root.animationDuration <= 0 || SettingsData.reduceMotion
+        reducedMotion: Theme.reduceMotion
         positionEpsilon: Math.max(0.001, 0.25 / root.dpr / root.morphTravelPx)
         velocityEpsilon: positionEpsilon * damping / Math.max(0.001, 2 * mass)
         stiffness: root.springParams.stiffness
@@ -143,7 +141,8 @@ Item {
     }
 
     DFocusGrab {
-        windows: [root.host.surface].concat(KeyboardFocus.barWindows, KeyboardFocus.grabPeerWindows)
+        keyboardWindow: root.host.surface
+        peerWindows: [].concat(KeyboardFocus.barWindows, KeyboardFocus.grabPeerWindows)
         wanted: KeyboardFocus.wantsGrab(root.opened && !root.closing)
         onCleared: root.close()
     }
@@ -220,6 +219,12 @@ Item {
                     width: root.sheetWidth
                     height: root.sheetHeight
                     sourceComponent: root.host.sheet
+                    Component.onCompleted: {
+                        if (root.host.sheetSource.toString() !== "")
+                            setSource(root.host.sheetSource, {
+                                osd: root.host
+                            });
+                    }
                     opacity: FluidGeometry.contentOpacity(root.body, root.sheetRect)
                     visible: opacity > 0
                     focus: true

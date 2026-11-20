@@ -6,10 +6,22 @@
 .import "../../DCommon/Common/settings/SpecUtil.js" as SpecUtil
 
 var CATEGORIES = [
-    { id: "theme", groups: ["colors", "wallpaper", "dark_mode", "app_theming", "interface_style", "shadows"] },
-    { id: "layout", groups: ["bar", "frame", "dock", "desktop_widgets", "control_center", "dashboard", "compositor", "displays"] },
-    { id: "appearance", groups: ["fonts_motion", "icons", "cursor"] },
-    { id: "other", groups: ["time_weather", "lock_screen", "launcher", "notifications", "osd", "sound_media", "plugins", "general"] }
+    {
+        id: "theme",
+        groups: ["colors", "wallpaper", "dark_mode", "app_theming", "interface_style", "shadows"]
+    },
+    {
+        id: "layout",
+        groups: ["bar", "frame", "dock", "desktop_widgets", "control_center", "dashboard", "compositor", "displays"]
+    },
+    {
+        id: "appearance",
+        groups: ["fonts_motion", "icons", "cursor"]
+    },
+    {
+        id: "other",
+        groups: ["time_weather", "lock_screen", "launcher", "notifications", "osd", "sound_media", "plugins", "general"]
+    }
 ];
 
 var GROUPS = CATEGORIES.reduce((all, c) => all.concat(c.groups), []);
@@ -18,235 +30,41 @@ var PLUGIN_GROUP = "plugins";
 
 // Every persisted settings key and every session key belongs to exactly one list; tests enforce it.
 var SETTINGS_MAP = {
-    colors: [
-        "currentThemeName", "customThemeFile", "registryThemeVariants", "currentThemeCategory", "matugenScheme",
-        "matugenSmartMode", "matugenSourceMode", "matugenContrast", "matugenSeedColor", "matugenSpec",
-        "generateThemeAtStartup"
-    ],
-    wallpaper: [
-        "wallpaperFillMode", "wallpaperBackgroundColorMode", "wallpaperBackgroundCustomColor",
-        "lockScreenWallpaperPath", "lockScreenWallpaperFillMode", "blurredWallpaperLayer", "blurWallpaperOnOverview"
-    ],
-    app_theming: [
-        "runUserMatugenTemplates", "syncModeWithPortal", "terminalsAlwaysDark", "terminalOpacity", "terminalPalette",
-        "runDmsMatugenTemplates", "matugenTemplateGtk", "matugenTemplateNiri", "matugenTemplateHyprland",
-        "matugenTemplateMangowc", "matugenTemplateQt5ct", "matugenTemplateQt6ct", "matugenTemplateFcitx5",
-        "matugenTemplateQtengine", "matugenTemplateFirefox", "matugenTemplatePywalfox", "matugenTemplateZenBrowser",
-        "matugenTemplateVesktop", "matugenTemplateVencord", "matugenTemplateEquibop", "matugenTemplateGhostty",
-        "matugenTemplateKitty", "matugenTemplateFoot", "matugenTemplateAlacritty", "matugenTemplateNeovim",
-        "matugenTemplateWezterm", "matugenTemplateDgop", "matugenTemplateKcolorscheme", "matugenTemplateVscode",
-        "matugenTemplateEmacs", "matugenTemplateZed", "matugenTemplateNeovimSettings",
-        "matugenTemplateNeovimSetBackground"
-    ],
-    interface_style: [
-        "radiusStrength", "radiusMode", "fixedRadius", "scrollbarsEnabled", "blurBorderEnabled", "blurBorderColor",
-        "blurBorderCustomColor", "blurBorderOpacity", "popupTransparency", "floatingWindowSyncGlobal",
-        "floatingWindowTitleBars", "floatingWindowTransparency", "floatingWindowForegroundLayers",
-        "floatingWindowForegroundTransparency", "hostSurfaceColor", "hostSurfaceCustomColor", "cardSurfaceColor",
-        "cardSurfaceCustomColor", "chipSurfaceColor", "chipSurfaceCustomColor", "chipSurfaceNestedColor",
-        "chipSurfaceNestedCustomColor", "widgetBackgroundColor", "widgetBackgroundCustomColor",
-        "widgetBackgroundCustomStrength", "widgetColorMode", "controlCenterTileColorMode", "buttonColorMode",
-        "containerSaturation", "blurEnabled", "blurStrength", "blurForegroundLayers", "foregroundLayerTransparency",
-        "blurLayerOutlineOpacity", "focusRingEnabled", "focusRingWidth", "focusRingColor", "controlCenterIconScale",
-        "systemTrayIconTintMode", "systemTrayIconTintSaturation", "systemTrayIconTintStrength",
-        "dankLauncherV2BorderEnabled", "dankLauncherV2BorderThickness", "dankLauncherV2BorderColor", "avatarRing",
-        "modalDarkenBackground", "lockScreenInactiveColor", "notificationForegroundLayers", "density", "interfaceStyle",
-        "sectionDividerOpacity", "tooltipSurfaceColor", "tooltipSurfaceCustomColor"
-    ],
-    shadows: [
-        "popoutElevationEnabled", "m3ElevationEnabled", "m3ElevationIntensity", "m3ElevationOpacity",
-        "m3ElevationColorMode", "m3ElevationLightDirection", "m3ElevationCustomColor", "modalElevationEnabled",
-        "barElevationEnabled", "notificationPopupShadowEnabled"
-    ],
-    bar: [
-        "barConfigs", "barInsetPaddingShared", "barInsetPaddingSyncAll", "workspaceNameIcons"
-    ],
-    frame: [
-        "connectedFrameBarStyleBackups", "frameEnabled", "frameThickness", "frameRounding", "frameBarSize",
-        "frameShowOnOverview", "frameBlurEnabled", "frameCloseGaps", "frameLauncherEmergeSide",
-        "frameLauncherArcExtender", "frameLauncherEdgeHover", "frameMode", "frameBarInsetPadding"
-    ],
-    dock: [
-        "dockConfigs"
-    ],
-    desktop_widgets: [
-        "desktopWidgetInstances", "desktopWidgetGroups", "desktopContextMenu"
-    ],
-    control_center: [
-        "controlCenterWidgets", "controlCenterColumns", "controlCenterEditLayout"
-    ],
-    dashboard: [
-        "dashTabs", "dashCards", "dashTabPosition", "dashTabsEvenlySpaced", "dashOptions"
-    ],
-    compositor: [
-        "niriLayoutGapsOverride", "niriLayoutRadiusOverride", "niriLayoutBorderSize", "hyprlandLayoutGapsOverride",
-        "hyprlandLayoutGapsOutOverride", "hyprlandLayoutRadiusOverride", "hyprlandLayoutBorderSize",
-        "hyprlandResizeOnBorder", "hyprlandWindowOpacity", "hyprlandBorderGrabArea", "hyprlandBlurVariant",
-        "hyprlandBlurAcrylicClarity", "hyprlandBlurAuroraIntensity", "hyprlandBlurAuroraSpeed",
-        "hyprlandBlurHazeIntensity", "hyprlandBlurHazeIridescence", "hyprlandBlurRippleStrength",
-        "hyprlandBlurWaterStrength", "hyprlandGlowEnabled", "hyprlandGlowRange", "hyprlandGlowRenderPower",
-        "hyprlandWobbleEnabled", "hyprlandWobbleIntensity", "hyprlandWobbleStiffness", "hyprlandMotionBlurEnabled",
-        "hyprlandMotionBlurSamples", "hyprlandGroupbarBlur", "hyprlandGroupbarTextPadding",
-        "hyprlandGroupbarMiddleClickClose", "hyprlandGroupbarDisableWhenOnly", "hyprlandTilingLayout",
-        "hyprlandDwindlePreserveSplit", "hyprlandDwindleSmartSplit", "hyprlandDwindleForceSplit",
-        "hyprlandMasterOrientation", "hyprlandMasterNewStatus", "hyprlandMasterNewOnTop", "hyprlandMasterSize",
-        "hyprlandScrollingDirection", "hyprlandScrollingColumnWidth", "hyprlandScrollingFullscreenOneColumn",
-        "hyprlandScrollingFollowFocus", "mangoLayoutGapsOverride", "mangoLayoutGapsOutOverride",
-        "mangoLayoutRadiusOverride", "mangoLayoutBorderSize", "closeNiriOverviewOnWindowFocus",
-        "hyprlandBlurDropsSpeed", "hyprlandBlurHeatShimmerSpeed", "hyprlandBlurProportional", "hyprlandWobbleDamping",
-        "hyprlandWobbleMass", "hyprlandWobbleMesh", "hyprlandDragCenterWindow", "hyprlandWorkspaceBackAndForth",
-        "hyprlandExitWindowRetainsFullscreen", "hyprlandBellSound", "hyprlandSwallowFocusClick", "hyprlandTabletEnabled",
-        "compositorAnimationPreset", "compositorAnimationSlowdown", "compositorAnimationOverrides"
-    ],
-    displays: [
-        "screenPreferences", "showOnLastDisplay", "frameScreenPreferences"
-    ],
-    fonts_motion: [
-        "fontFamily", "monoFontFamily", "displayFontFamily", "fontWeight", "fontScale", "textRenderType",
-        "textRenderQuality", "animationDuration", "enableRippleEffects", "popoutAnimationDuration",
-        "modalAnimationDuration", "syncComponentAnimationSpeeds", "reduceMotion", "springBounce", "motionEffect",
-        "notificationAnimationDuration"
-    ],
-    icons: [
-        "iconThemeDark", "iconThemeLight", "iconThemePerMode"
-    ],
-    cursor: [
-        "cursorSettings"
-    ],
-    time_weather: [
-        "clockFormat", "showSeconds", "padHours12Hour", "useFahrenheit", "lockDateFormat", "useAutoLocation",
-        "weatherEnabled", "firstDayOfWeek", "showWeekNumber", "windSpeedUnit", "clockDateFormat", "weatherProviders",
-        "showAmPm"
-    ],
-    lock_screen: [
-        "lockScreenWidgetInstances", "lockScreenShowPowerActions", "lockScreenShowProfileImage",
-        "lockScreenShowWeather", "lockScreenFontFamily", "lockScreenVideoEnabled", "lockScreenVideoCycling"
-    ],
-    launcher: [
-        "browserPickerViewMode", "appPickerViewMode", "sortAppsAlphabetically", "appLauncherGridColumns", "appLauncherIconColumns",
-        "rememberLastQuery", "rememberLastMode", "spotlightSectionViewModes",
-        "appDrawerSectionViewModes", "niriOverviewOverlayEnabled", "niriOverviewLauncherStyle", "dankLauncherV2Size",
-        "dankLauncherV2ShowSourceBadges", "dankLauncherV2ShowAppIcons", "dankLauncherV2ShowFooter", "dankLauncherV2UnloadOnClose",
-        "dankLauncherV2IncludeFilesInAll", "dankLauncherV2IncludeFoldersInAll", "launcherUseOverlayLayer",
-        "launcherStyle", "spotlightBarShowModeChips", "launcherPluginVisibility", "launcherPluginOrder",
-        "launcherKeybinds", "launcherEnterAction"
-    ],
-    notifications: [
-        "notificationSummaryFontSize", "notificationBodyFontSize", "notificationOverlayEnabled",
-        "notificationPopupPrivacyMode", "notificationPopupBodyInvokesAction", "notificationTimeoutLow",
-        "notificationTimeoutNormal", "notificationTimeoutCritical", "notificationIgnoreAppTimeout",
-        "notificationCompactMode", "notificationShowTimeoutBar", "notificationDedupeEnabled",
-        "notificationPopupPosition", "notificationHistorySaveLow", "notificationHistorySaveNormal",
-        "notificationHistorySaveCritical", "notificationRules", "notificationDndAllowCritical",
-        "notificationDndWhileScreenSharing", "notificationFocusedMonitor", "notificationLeadingShortcut",
-        "notificationTrailingShortcut", "notificationPopupAvoidPopouts"
-    ],
-    osd: [
-        "osdAlwaysShowValue", "osdPosition", "osdVolumeEnabled", "osdMediaVolumeEnabled", "osdMediaPlaybackEnabled",
-        "osdBrightnessEnabled", "osdIdleInhibitorEnabled", "osdMicMuteEnabled", "osdMicVolumeEnabled",
-        "osdCapsLockEnabled", "osdTouchpadEnabled", "osdAirplaneModeEnabled", "osdPowerProfileEnabled", "osdAudioOutputEnabled",
-        "osdWorkspaceEnabled", "osdNumLockEnabled", "osdKeyboardLayoutEnabled", "osdInputMethodEnabled",
-        "osdDoNotDisturbEnabled"
-    ],
-    sound_media: [
-        "audioShowStreamDevices", "audioMono", "scrollTitleEnabled", "audioVisualizerEnabled",
-        "audioWheelScrollAmount", "bluetoothMprisEnabled", "mediaLyricsProviders", "soundsEnabled",
-        "useSystemSoundTheme", "soundLogin", "soundNewNotification", "soundVolumeChanged", "soundPluggedIn",
-        "muteSoundsWhenMediaPlaying"
-    ],
-    plugins: [
-        "builtInPluginSettings"
-    ],
-    general: [
-        "powerActionConfirm", "powerActionHoldDuration", "powerMenuActions", "powerMenuDefaultAction",
-        "powerMenuGridLayout", "appIdSubstitutions", "centeringMode", "keybindsFloatingWindow", "wellbeingEnabled",
-        "wellbeingDailyLimit", "notepadUseMonospace", "notepadFontFamily", "notepadFontSize",
-        "notepadShowLineNumbers", "notepadAutoSave", "notepadSlideoutSide", "notepadDefaultMode",
-        "notepadTransparencyOverride", "notepadLastCustomTransparency", "notepadUseCompositorGap", "notepadEdgeGap",
-        "muxSessionFilter", "updaterCheckOnStart", "updaterIntervalSeconds", "updaterNotify",
-        "updaterPauseOnBattery", "updaterNotifyMinSeconds", "updaterReopenAfterUpgrade", "updaterUpgradeInWindow",
-        "clipboardClickToPaste", "clipboardEnterToPaste", "clipboardRememberTypeFilter", "clipboardUseOverlayLayer",
-        "clipboardSize", "clipboardTypeFilter", "clipboardVisibleEntryActions", "powerMenuFirmwareSetup"
-    ],
-    never: [
-        "touchpadPinchSensitivity", "batteryScaleToChargeLimit", "batteryScaleAlertThresholds", "keepAwakeBlocksSleep",
-        "greeterWidgetInstances", "displayNameMode", "greeterRememberLastSession", "greeterRememberLastUser",
-        "greeterEnableFprint", "greeterEnableU2f", "dmsWindowsFloatingSeeded", "focusFollowsMouse",
-        "mouseAccelProfile", "mouseAccelSpeed", "mouseLeftHanded", "mouseMiddleEmulation", "mouseNaturalScroll",
-        "mouseScrollFactor", "mouseScrollMethod", "touchpadAccelProfile", "touchpadAccelSpeed",
-        "touchpadClickMethod", "touchpadDisableOnExternalMouse", "touchpadDisableWhileTyping", "touchpadDragLock",
-        "touchpadMiddleEmulation", "touchpadNaturalScroll", "touchpadScrollFactor", "touchpadScrollMethod",
-        "touchpadTapAndDrag", "touchpadTapToClick", "keyboardLayouts", "keyboardVariants", "keyboardModel",
-        "keyboardOptions", "keyboardKeymapFile", "keyboardTrackLayout", "keyboardRepeatDelay", "keyboardRepeatRate",
-        "keyboardNumlock", "blurBorderSeeded", "greeterAutoLogin", "greeterFollowLockScreen",
-        "greeterPamExternallyManaged", "acMonitorTimeout", "acLockTimeout", "acSuspendTimeout", "acSuspendBehavior",
-        "acProfileName", "acPostLockMonitorTimeout", "batteryMonitorTimeout", "batteryLockTimeout",
-        "batterySuspendTimeout", "batterySuspendBehavior", "batteryProfileName", "batteryPostLockMonitorTimeout",
-        "batteryChargeLimit", "batteryNotifyChargeLimit", "batteryCriticalThreshold", "batteryCriticalAnimation",
-        "batteryNotifyCritical", "batteryLowThreshold", "batteryNotifyLow", "batteryChargeLimitNotificationType",
-        "batteryLowNotificationType", "batteryCriticalNotificationType", "batteryAutoPowerSaver",
-        "lowerDisplayRefreshRateOnBattery", "lockBeforeSuspend", "loginctlLockIntegration", "fadeToLockEnabled",
-        "fadeToLockGracePeriod", "fadeToDpmsEnabled", "fadeToDpmsGracePeriod", "lockAtStartup", "enableFprint",
-        "maxFprintTries", "enableU2f", "u2fMode", "lockPamPath", "lockScreenSecurityKeyShortcut",
-        "lockScreenSecurityKeyShortcutEnabled", "lockPamInlineFprint", "lockPamInlineU2f",
-        "lockPamExternallyManaged", "lockU2fPamPath", "displayProfiles", "displayPreviousRefreshModes",
-        "displayProfileAutoSelect", "displayShowDisconnected", "displaySnapToEdge", "matugenTargetMonitor",
-        "lockScreenPowerOffMonitorsOnLock", "networkPreference", "calendarBackend", "defaultTaskCalendarId",
-        "launchPrefix", "muxType", "muxUseCustomCommand", "muxCustomCommand", "updaterUseCustomCommand",
-        "updaterCustomCommand", "updaterTerminalAdditionalParams", "updaterIncludeFlatpak", "updaterAllowAUR",
-        "lockScreenVideoPath", "customPowerActionLock", "customPowerActionLogout", "customPowerActionSuspend",
-        "customPowerActionHibernate", "customPowerActionReboot", "customPowerActionPowerOff", "customPowerButtons",
-        "powerMenuBootEntries", "wellbeingAppLimits", "mediaExcludePlayers", "updaterIgnoredPackages",
-        "nightModeExcludedApps", "osdPositionOverrides", "nightModeExcludeFullscreen", "launcherHistoryEnabled",
-        "notificationHistoryEnabled", "notificationHistoryMaxCount", "notificationHistoryMaxAgeDays",
-        "qmlCacheEnabled", "renderControlEnabled"
-    ]
+    colors: ["currentThemeName", "customThemeFile", "registryThemeVariants", "currentThemeCategory", "matugenScheme", "matugenSmartMode", "matugenSourceMode", "matugenContrast", "matugenSeedColor", "matugenSpec", "generateThemeAtStartup"],
+    wallpaper: ["wallpaperFillMode", "wallpaperBackgroundColorMode", "wallpaperBackgroundCustomColor", "lockScreenWallpaperPath", "lockScreenWallpaperFillMode", "blurredWallpaperLayer", "blurWallpaperOnOverview", "pauseVideoWallpaperOnBattery"],
+    app_theming: ["runUserMatugenTemplates", "syncModeWithPortal", "terminalsAlwaysDark", "terminalOpacity", "terminalPalette", "runDmsMatugenTemplates", "matugenTemplateGtk", "matugenTemplateNiri", "matugenTemplateHyprland", "matugenTemplateMangowc", "matugenTemplateQt5ct", "matugenTemplateQt6ct", "matugenTemplateFcitx5", "matugenTemplateQtengine", "matugenTemplateFirefox", "matugenTemplatePywalfox", "matugenTemplateZenBrowser", "matugenTemplateVesktop", "matugenTemplateVencord", "matugenTemplateEquibop", "matugenTemplateGhostty", "matugenTemplateKitty", "matugenTemplateFoot", "matugenTemplateAlacritty", "matugenTemplateNeovim", "matugenTemplateWezterm", "matugenTemplateDgop", "matugenTemplateKcolorscheme", "matugenTemplateVscode", "matugenTemplateEmacs", "matugenTemplateZed", "matugenTemplateNeovimSettings", "matugenTemplateNeovimSetBackground"],
+    interface_style: ["radiusStrength", "radiusMode", "fixedRadius", "scrollbarsEnabled", "scrollShadowsEnabled", "blurBorderEnabled", "blurBorderColor", "blurBorderCustomColor", "blurBorderOpacity", "popupTransparency", "floatingWindowSyncGlobal", "floatingWindowTitleBars", "floatingWindowTransparency", "floatingWindowForegroundLayers", "floatingWindowForegroundTransparency", "hostSurfaceColor", "hostSurfaceCustomColor", "cardSurfaceColor", "cardSurfaceCustomColor", "chipSurfaceColor", "chipSurfaceCustomColor", "chipSurfaceNestedColor", "chipSurfaceNestedCustomColor", "widgetBackgroundColor", "widgetBackgroundCustomColor", "widgetBackgroundCustomStrength", "widgetColorMode", "controlCenterTileColorMode", "buttonColorMode", "containerSaturation", "blurEnabled", "blurStrength", "blurForegroundLayers", "foregroundLayerTransparency", "blurLayerOutlineOpacity", "focusRingEnabled", "focusRingWidth", "focusRingColor", "controlCenterIconScale", "systemTrayIconTintMode", "systemTrayIconTintSaturation", "systemTrayIconTintStrength", "dankLauncherV2BorderEnabled", "dankLauncherV2BorderThickness", "dankLauncherV2BorderColor", "avatarRing", "modalDarkenBackground", "lockScreenInactiveColor", "notificationForegroundLayers", "density", "interfaceStyle", "sectionDividerOpacity", "tooltipSurfaceColor", "tooltipSurfaceCustomColor"],
+    shadows: ["popoutElevationEnabled", "m3ElevationEnabled", "m3ElevationIntensity", "m3ElevationOpacity", "m3ElevationColorMode", "m3ElevationLightDirection", "m3ElevationCustomColor", "modalElevationEnabled", "barElevationEnabled", "notificationPopupShadowEnabled"],
+    bar: ["barConfigs", "barInsetPaddingShared", "barInsetPaddingSyncAll", "workspaceNameIcons"],
+    frame: ["connectedFrameBarStyleBackups", "frameEnabled", "frameThickness", "frameRounding", "frameBarSize", "frameShowOnOverview", "frameBlurEnabled", "frameCloseGaps", "frameLauncherEmergeSide", "frameLauncherArcExtender", "frameLauncherEdgeHover", "frameMode", "frameBarInsetPadding"],
+    dock: ["dockConfigs"],
+    desktop_widgets: ["desktopWidgetInstances", "desktopWidgetGroups", "desktopContextMenu"],
+    control_center: ["controlCenterWidgets", "controlCenterColumns", "controlCenterRows", "controlCenterEditLayout"],
+    dashboard: ["dashTabs", "dashCards", "dashTabPosition", "dashTabsEvenlySpaced", "dashOptions"],
+    compositor: ["niriLayoutGapsOverride", "niriLayoutRadiusOverride", "niriLayoutBorderSize", "hyprlandLayoutGapsOverride", "hyprlandLayoutGapsOutOverride", "hyprlandLayoutRadiusOverride", "hyprlandLayoutBorderSize", "hyprlandResizeOnBorder", "hyprlandWindowOpacity", "hyprlandBorderGrabArea", "hyprlandBlurVariant", "hyprlandBlurAcrylicClarity", "hyprlandBlurAuroraIntensity", "hyprlandBlurAuroraSpeed", "hyprlandBlurHazeIntensity", "hyprlandBlurHazeIridescence", "hyprlandBlurRippleStrength", "hyprlandBlurWaterStrength", "hyprlandGlowEnabled", "hyprlandGlowRange", "hyprlandGlowRenderPower", "hyprlandWobbleEnabled", "hyprlandWobbleIntensity", "hyprlandWobbleStiffness", "hyprlandMotionBlurEnabled", "hyprlandMotionBlurSamples", "hyprlandGroupbarBlur", "hyprlandGroupbarTextPadding", "hyprlandGroupbarMiddleClickClose", "hyprlandGroupbarDisableWhenOnly", "hyprlandTilingLayout", "hyprlandDwindlePreserveSplit", "hyprlandDwindleSmartSplit", "hyprlandDwindleForceSplit", "hyprlandMasterOrientation", "hyprlandMasterNewStatus", "hyprlandMasterNewOnTop", "hyprlandMasterSize", "hyprlandScrollingDirection", "hyprlandScrollingColumnWidth", "hyprlandScrollingFullscreenOneColumn", "hyprlandScrollingFollowFocus", "mangoLayoutGapsOverride", "mangoLayoutGapsOutOverride", "mangoLayoutRadiusOverride", "mangoLayoutBorderSize", "closeNiriOverviewOnWindowFocus", "hyprlandBlurDropsSpeed", "hyprlandBlurHeatShimmerSpeed", "hyprlandBlurProportional", "hyprlandWobbleDamping", "hyprlandWobbleMass", "hyprlandWobbleMesh", "hyprlandDragCenterWindow", "hyprlandWorkspaceBackAndForth", "hyprlandExitWindowRetainsFullscreen", "hyprlandBellSound", "hyprlandSwallowFocusClick", "hyprlandTabletEnabled", "compositorAnimationPreset", "compositorAnimationSlowdown", "compositorAnimationOverrides"],
+    displays: ["screenPreferences", "showOnLastDisplay", "frameScreenPreferences"],
+    fonts_motion: ["fontFamily", "monoFontFamily", "displayFontFamily", "fontWeight", "fontScale", "textRenderType", "textRenderQuality", "motionDuration", "enableRippleEffects", "reduceMotion", "springBounce", "motionEffect"],
+    icons: ["iconThemeDark", "iconThemeLight", "iconThemePerMode", "iconFolderRecolor", "iconMonoApps", "iconShape", "iconGradient"],
+    cursor: ["cursorSettings"],
+    time_weather: ["clockFormat", "showSeconds", "padHours12Hour", "useFahrenheit", "lockDateFormat", "useAutoLocation", "weatherEnabled", "firstDayOfWeek", "showWeekNumber", "windSpeedUnit", "clockDateFormat", "weatherProviders", "showAmPm"],
+    lock_screen: ["lockScreenWidgetInstances", "lockScreenShowPowerActions", "lockScreenShowProfileImage", "lockScreenShowWeather", "lockScreenFontFamily", "lockScreenVideoEnabled", "lockScreenVideoCycling"],
+    launcher: ["browserPickerViewMode", "appPickerViewMode", "sortAppsAlphabetically", "appLauncherGridColumns", "appLauncherIconColumns", "rememberLastQuery", "rememberLastMode", "spotlightSectionViewModes", "appDrawerSectionViewModes", "niriOverviewOverlayEnabled", "niriOverviewLauncherStyle", "dankLauncherV2Size", "dankLauncherV2ShowSourceBadges", "dankLauncherV2ShowAppIcons", "dankLauncherV2ShowAppDescriptions", "dankLauncherV2ShowFooter", "dankLauncherV2UnloadOnClose", "dankLauncherV2IncludeFilesInAll", "dankLauncherV2IncludeFoldersInAll", "launcherUseOverlayLayer", "launcherStyle", "spotlightBarShowModeChips", "launcherPluginVisibility", "launcherPluginOrder", "launcherKeybinds", "launcherEnterAction"],
+    notifications: ["notificationSummaryFontSize", "notificationBodyFontSize", "notificationOverlayEnabled", "notificationPopupPrivacyMode", "notificationPopupBodyInvokesAction", "notificationTimeoutLow", "notificationTimeoutNormal", "notificationTimeoutCritical", "notificationIgnoreAppTimeout", "notificationCompactMode", "notificationShowTimeoutBar", "notificationDedupeEnabled", "notificationPopupPosition", "notificationHistorySaveLow", "notificationHistorySaveNormal", "notificationHistorySaveCritical", "notificationRules", "notificationDndAllowCritical", "notificationDndWhileScreenSharing", "notificationFocusedMonitor", "notificationLeadingShortcut", "notificationTrailingShortcut", "notificationPopupAvoidPopouts"],
+    osd: ["osdAlwaysShowValue", "osdPosition", "osdVolumeEnabled", "osdMediaVolumeEnabled", "osdMediaPlaybackEnabled", "osdBrightnessEnabled", "osdIdleInhibitorEnabled", "osdMicMuteEnabled", "osdMicVolumeEnabled", "osdCapsLockEnabled", "osdTouchpadEnabled", "osdAirplaneModeEnabled", "osdPowerProfileEnabled", "osdAudioOutputEnabled", "osdWorkspaceEnabled", "osdNumLockEnabled", "osdKeyboardLayoutEnabled", "osdInputMethodEnabled", "osdDoNotDisturbEnabled"],
+    sound_media: ["audioShowStreamDevices", "audioMono", "scrollTitleEnabled", "audioVisualizerEnabled", "audioWheelScrollAmount", "bluetoothMprisEnabled", "mediaLyricsProviders", "soundsEnabled", "useSystemSoundTheme", "soundLogin", "soundNewNotification", "soundVolumeChanged", "soundPluggedIn", "muteSoundsWhenMediaPlaying"],
+    plugins: ["builtInPluginSettings"],
+    general: ["powerActionConfirm", "powerActionHoldDuration", "powerMenuActions", "powerMenuDefaultAction", "powerMenuGridLayout", "appIdSubstitutions", "centeringMode", "keybindsFloatingWindow", "keybindsModifierStyle", "wellbeingEnabled", "wellbeingDailyLimit", "notepadUseMonospace", "notepadFontFamily", "notepadFontSize", "notepadShowLineNumbers", "notepadAutoSave", "notepadSlideoutSide", "notepadDefaultMode", "notepadTransparencyOverride", "notepadLastCustomTransparency", "notepadUseCompositorGap", "notepadEdgeGap", "muxSessionFilter", "updaterCheckOnStart", "updaterIntervalSeconds", "updaterNotify", "updaterPauseOnBattery", "updaterNotifyMinSeconds", "updaterReopenAfterUpgrade", "updaterUpgradeInWindow", "clipboardClickToPaste", "clipboardEnterToPaste", "clipboardRememberTypeFilter", "clipboardUseOverlayLayer", "clipboardSize", "clipboardTypeFilter", "clipboardVisibleEntryActions", "powerMenuFirmwareSetup", "screenshotFormat", "screenshotQuality", "screenshotCursor", "screenshotClipboard", "screenshotClipboardFile", "screenshotSaveFile", "screenshotNotify", "screenshotConfirmRegion", "screenshotAnnotate", "screenshotHud", "screenshotScrollInterval"],
+    never: ["screenshotDir", "touchpadPinchSensitivity", "batteryScaleToChargeLimit", "batteryScaleAlertThresholds", "keepAwakeBlocksSleep", "greeterWidgetInstances", "displayNameMode", "greeterRememberLastSession", "greeterRememberLastUser", "greeterEnableFprint", "greeterEnableU2f", "dmsWindowsFloatingSeeded", "focusFollowsMouse", "mouseAccelProfile", "mouseAccelSpeed", "mouseLeftHanded", "mouseMiddleEmulation", "mouseNaturalScroll", "mouseScrollFactor", "mouseScrollMethod", "touchpadAccelProfile", "touchpadAccelSpeed", "touchpadClickMethod", "touchpadDisableOnExternalMouse", "touchpadDisableWhileTyping", "touchpadDragLock", "touchpadMiddleEmulation", "touchpadNaturalScroll", "touchpadScrollFactor", "touchpadScrollMethod", "touchpadTapAndDrag", "touchpadTapToClick", "keyboardLayouts", "keyboardVariants", "keyboardModel", "keyboardOptions", "keyboardKeymapFile", "keyboardTrackLayout", "keyboardRepeatDelay", "keyboardRepeatRate", "keyboardNumlock", "blurBorderSeeded", "greeterAutoLogin", "greeterFollowLockScreen", "greeterPamExternallyManaged", "acMonitorTimeout", "acLockTimeout", "acSuspendTimeout", "acSuspendBehavior", "acProfileName", "acPostLockMonitorTimeout", "batteryMonitorTimeout", "batteryLockTimeout", "batterySuspendTimeout", "batterySuspendBehavior", "batteryProfileName", "batteryPostLockMonitorTimeout", "batteryChargeLimit", "batteryNotifyChargeLimit", "batteryCriticalThreshold", "batteryCriticalAnimation", "batteryNotifyCritical", "batteryLowThreshold", "batteryNotifyLow", "batteryChargeLimitNotificationType", "batteryLowNotificationType", "batteryCriticalNotificationType", "batteryAutoPowerSaver", "lowerDisplayRefreshRateOnBattery", "lockBeforeSuspend", "loginctlLockIntegration", "fadeToLockEnabled", "fadeToLockGracePeriod", "fadeToDpmsEnabled", "fadeToDpmsGracePeriod", "lockAtStartup", "enableFprint", "maxFprintTries", "enableU2f", "u2fMode", "lockPamPath", "lockScreenSecurityKeyShortcut", "lockScreenSecurityKeyShortcutEnabled", "lockPamInlineFprint", "lockPamInlineU2f", "lockPamExternallyManaged", "lockU2fPamPath", "displayProfiles", "displayPreviousRefreshModes", "displayProfileAutoSelect", "displayShowDisconnected", "displaySnapToEdge", "matugenTargetMonitor", "lockScreenPowerOffMonitorsOnLock", "networkPreference", "calendarBackend", "defaultTaskCalendarId", "launchPrefix", "muxType", "muxUseCustomCommand", "muxCustomCommand", "updaterUseCustomCommand", "updaterCustomCommand", "updaterTerminalAdditionalParams", "updaterIncludeFlatpak", "updaterAllowAUR", "lockScreenVideoPath", "customPowerActionLock", "customPowerActionLogout", "customPowerActionSuspend", "customPowerActionHibernate", "customPowerActionReboot", "customPowerActionPowerOff", "customPowerButtons", "powerMenuBootEntries", "wellbeingAppLimits", "mediaExcludePlayers", "updaterIgnoredPackages", "nightModeExcludedApps", "osdPositionOverrides", "nightModeExcludeFullscreen", "launcherHistoryEnabled", "notificationHistoryEnabled", "notificationHistoryMaxCount", "notificationHistoryMaxAgeDays", "qmlCacheEnabled", "renderControlEnabled"]
 };
 
 var SESSION_MAP = {
-    wallpaper: [
-        "materialWallpapers", "materialWallpaperProfiles", "wallpaperPath", "perMonitorWallpaper",
-        "perModeWallpaper", "monitorWallpapers", "monitorWallpaperFillModes", "wallpaperPathLight",
-        "wallpaperPathDark", "monitorWallpapersLight", "monitorWallpapersDark", "wallpaperTransition",
-        "includedTransitions", "wallpaperCyclingEnabled", "wallpaperCyclingRandom", "wallpaperCyclingRecursive",
-        "wallpaperCyclingMode", "wallpaperCyclingInterval", "wallpaperCyclingTime", "wallpaperCyclingFolderPath",
-        "monitorCyclingSettings", "wallpaperCyclingVideoEnd", "wallpaperHideMismatched"
-    ],
-    dark_mode: [
-        "isLightMode", "themeModeAutoEnabled", "themeModeAutoMode", "themeModeStartHour", "themeModeStartMinute",
-        "themeModeEndHour", "themeModeEndMinute", "themeModeShareGammaSettings"
-    ],
-    bar: [
-        "barPinnedApps", "hiddenTrayIds", "trayItemOrder", "islandFreePositions"
-    ],
-    dock: [
-        "dockPins"
-    ],
-    desktop_widgets: [
-        "desktopWidgetInstancePositions", "desktopWidgetGridSettings"
-    ],
-    lock_screen: [
-        "lockScreenAutoPositions", "lockScreenWidgetGridSettings"
-    ],
-    never: [
-        "repoMoveNoticeVersion", "wallpaperFolders", "wallpaperFolderSelection", "weatherLocation", "weatherCoordinates", "greeterAutoPositions", "doNotDisturb", "doNotDisturbUntil",
-        "doNotDisturbHeldByScreenShare", "screenShareDndDismissed", "screenShareDismissedIds", "idleInhibited",
-        "idleInhibitedUntil", "updaterNotifiedUnix", "updaterNotifiedCount",
-        "terminalOverride", "nightModeEnabled", "nightModeTemperature", "nightModeHighTemperature",
-        "nightModeAutoEnabled", "nightModeAutoMode", "nightModeStartHour", "nightModeStartMinute",
-        "nightModeEndHour", "nightModeEndMinute", "nightModeTransitionMinutes", "displayGamma", "displayContrast",
-        "latitude", "longitude", "nightModeUseIPLocation", "nightModeLocationName", "recentColors",
-        "showThirdPartyPlugins", "pluginBrowserInstalledFirst", "pluginBrowserSortMode", "lastBrightnessDevice",
-        "brightnessExponentialDevices", "brightnessUserSetValues", "brightnessExponentValues",
-        "nvidiaGpuTempEnabled", "nonNvidiaGpuTempEnabled", "enabledGpuPciIds", "wifiDeviceOverride", "hiddenApps",
-        "appOverrides", "launcherFolders", "searchAppActions", "vpnLastConnected", "bluetoothAdapterOverride", "lastPlayerIdentity",
-        "pinnedPlayerIdentity", "deviceMaxVolumes", "hiddenOutputDeviceNames", "hiddenInputDeviceNames", "locale",
-        "timeLocale", "notepadLastMode", "niriOutputSettings", "hyprlandOutputSettings", "activeConfigProfile",
-        "activeDisplayProfile", "activeDisplayProfileModes", "builtInPluginState", "greeterSyncPending",
-        "greeterSyncBaseline", "lastAppliedIconTheme", "launcherLastMode", "launcherLastFileSearchType",
-        "launcherLastQuery", "launcherQueryHistory", "appDrawerLastMode", "niriOverviewLastMode",
-        "showConfigReloadToast"
-    ]
+    wallpaper: ["materialWallpapers", "materialWallpaperProfiles", "wallpaperPath", "perMonitorWallpaper", "perModeWallpaper", "monitorWallpapers", "monitorWallpaperFillModes", "wallpaperPathLight", "wallpaperPathDark", "monitorWallpapersLight", "monitorWallpapersDark", "wallpaperTransition", "includedTransitions", "wallpaperCyclingEnabled", "wallpaperCyclingRandom", "wallpaperCyclingRecursive", "wallpaperCyclingMode", "wallpaperCyclingInterval", "wallpaperCyclingTime", "wallpaperCyclingFolderPath", "monitorCyclingSettings", "wallpaperCyclingVideoEnd", "wallpaperHideMismatched"],
+    dark_mode: ["isLightMode", "themeModeAutoEnabled", "themeModeAutoMode", "themeModeStartHour", "themeModeStartMinute", "themeModeEndHour", "themeModeEndMinute", "themeModeShareGammaSettings"],
+    bar: ["barPinnedApps", "hiddenTrayIds", "trayItemOrder", "islandFreePositions"],
+    dock: ["dockPins"],
+    desktop_widgets: ["desktopWidgetInstancePositions", "desktopWidgetGridSettings"],
+    lock_screen: ["lockScreenAutoPositions", "lockScreenWidgetGridSettings"],
+    never: ["repoMoveNoticeVersion", "wallpaperFolders", "wallpaperFolderSelection", "weatherLocation", "weatherCoordinates", "greeterAutoPositions", "doNotDisturb", "doNotDisturbUntil", "doNotDisturbHeldByScreenShare", "screenShareDndDismissed", "screenShareDismissedIds", "idleInhibited", "idleInhibitedUntil", "updaterNotifiedUnix", "updaterNotifiedCount", "terminalOverride", "nightModeEnabled", "nightModeTemperature", "nightModeHighTemperature", "nightModeAutoEnabled", "nightModeAutoMode", "nightModeStartHour", "nightModeStartMinute", "nightModeEndHour", "nightModeEndMinute", "nightModeTransitionMinutes", "displayGamma", "displayContrast", "latitude", "longitude", "nightModeUseIPLocation", "nightModeLocationName", "recentColors", "showThirdPartyPlugins", "pluginBrowserInstalledFirst", "pluginBrowserSortMode", "lastBrightnessDevice", "brightnessExponentialDevices", "brightnessUserSetValues", "brightnessExponentValues", "nvidiaGpuTempEnabled", "nonNvidiaGpuTempEnabled", "enabledGpuPciIds", "wifiDeviceOverride", "hiddenApps", "appOverrides", "launcherFolders", "searchAppActions", "vpnLastConnected", "bluetoothAdapterOverride", "lastPlayerIdentity", "pinnedPlayerIdentity", "deviceMaxVolumes", "hiddenOutputDeviceNames", "hiddenInputDeviceNames", "locale", "timeLocale", "notepadLastMode", "niriOutputSettings", "hyprlandOutputSettings", "activeConfigProfile", "activeDisplayProfile", "activeDisplayProfileModes", "builtInPluginState", "greeterSyncPending", "greeterSyncBaseline", "lastAppliedIconTheme", "iconFoldersPresent", "launcherLastMode", "launcherLastFileSearchType", "launcherLastQuery", "launcherQueryHistory", "appDrawerLastMode", "niriOverviewLastMode", "showConfigReloadToast"]
 };
 
 function normalize(groups) {
@@ -333,7 +151,12 @@ function diff(profile, current) {
         const changes = [];
         const add = (source, key, c, s) => {
             if (SpecUtil.stableStringify(c) !== SpecUtil.stableStringify(s))
-                changes.push({ key, source, current: SpecUtil.cloneDef(c), stored: SpecUtil.cloneDef(s) });
+                changes.push({
+                    key,
+                    source,
+                    current: SpecUtil.cloneDef(c),
+                    stored: SpecUtil.cloneDef(s)
+                });
         };
         for (const key of SETTINGS_MAP[group] || [])
             add("settings", key, setting(cur.settings, key), setting(stored.settings, key));
@@ -347,7 +170,10 @@ function diff(profile, current) {
         }
         if (changes.length) {
             changes.sort((a, b) => a.key < b.key ? -1 : a.key > b.key ? 1 : 0);
-            result.push({ group, changes });
+            result.push({
+                group,
+                changes
+            });
         }
     }
     return result;
@@ -367,8 +193,12 @@ function migrate(profile, settingsVersion, sessionVersion) {
     if (!settingsOld && !sessionOld)
         return null;
     const out = SpecUtil.cloneDef(profile);
-    const settings = settingsOld ? SettingsStore.migrateToVersion(Object.assign({ configVersion: profile.configVersion || 0 }, profile.settings), settingsVersion) : profile.settings;
-    const session = sessionOld ? SessionStore.migrateToVersion(Object.assign({ configVersion: profile.sessionConfigVersion || 0 }, profile.session), sessionVersion, null) : profile.session;
+    const settings = settingsOld ? SettingsStore.migrateToVersion(Object.assign({
+        configVersion: profile.configVersion || 0
+    }, profile.settings), settingsVersion) : profile.settings;
+    const session = sessionOld ? SessionStore.migrateToVersion(Object.assign({
+        configVersion: profile.sessionConfigVersion || 0
+    }, profile.session), sessionVersion, null) : profile.session;
     out.settings = pick(settings, settingsKeys(profile.groups));
     out.session = pick(session, sessionKeys(profile.groups));
     out.configVersion = settingsVersion;

@@ -152,7 +152,7 @@ Item {
 
     Timer {
         id: delayTimer
-        interval: 2000
+        interval: Timing.hold
         repeat: false
         onTriggered: {
             root.isReloadingAudio = false;
@@ -162,352 +162,162 @@ Item {
 
     ConfirmDialogOverlay {
         id: disableCardConfirm
-        parent: root.parentModal?.modalFocusScope ?? root
+        parent: root.parentModal?.dialogHostFor(root) ?? root
     }
 
     SettingsPage {
         id: mainColumn
 
-        SettingsCard {
-            tab: "audio"
-            tags: ["audio", "accessibility", "mono"]
-            title: I18n.tr("Mono Audio", "Audio settings: mono audio toggle")
-            settingKey: "audioMono"
-            iconName: "a11y"
-
-            SettingsToggleRow {
+        SettingsDeferred {
+            SettingsCard {
                 tab: "audio"
-                tags: ["audio", "mono"]
+                tags: ["audio", "accessibility", "mono"]
+                title: I18n.tr("Mono Audio", "Audio settings: mono audio toggle")
                 settingKey: "audioMono"
-                text: I18n.tr("Mono Audio", "Audio settings: mono audio toggle")
-                description: I18n.tr("Mix all stereo content into a single channel", "Audio settings mono description")
-                enabled: AudioService.monoSettingSupported
-                checked: SettingsData.audioMono
-                onToggled: checked => {
-                    SettingsData.set("audioMono", checked);
-                    AudioService.setMonoSetting(checked, (ok, message) => {
-                        if (!ok) {
-                            SettingsData.set("audioMono", !checked);
-                        }
-                    });
+                iconName: "a11y"
+
+                SettingsToggleRow {
+                    tab: "audio"
+                    tags: ["audio", "mono"]
+                    settingKey: "audioMono"
+                    text: I18n.tr("Mono Audio", "Audio settings: mono audio toggle")
+                    description: I18n.tr("Mix all stereo content into a single channel", "Audio settings mono description")
+                    enabled: AudioService.monoSettingSupported
+                    checked: SettingsData.audioMono
+                    onToggled: checked => {
+                        SettingsData.set("audioMono", checked);
+                        AudioService.setMonoSetting(checked, (ok, message) => {
+                            if (!ok) {
+                                SettingsData.set("audioMono", !checked);
+                            }
+                        });
+                    }
                 }
             }
         }
 
-        SettingsCard {
-            tab: "audio"
-            tags: ["audio", "device", "output", "speaker"]
-            title: I18n.tr("Output devices")
-            settingKey: "audioOutputDevices"
-            iconName: "volume_up"
-
-            SettingsToggleRow {
+        SettingsDeferred {
+            SettingsCard {
                 tab: "audio"
-                tags: ["audio", "virtual", "stream", "obs", "loopback", "device", "sink"]
-                settingKey: "audioShowStreamDevices"
-                text: I18n.tr("Show virtual devices")
-                checked: SettingsData.audioShowStreamDevices
-                onToggled: checked => SettingsData.set("audioShowStreamDevices", checked)
-            }
+                tags: ["audio", "device", "output", "speaker"]
+                title: I18n.tr("Output devices")
+                settingKey: "audioOutputDevices"
+                iconName: "volume_up"
 
-            SettingsRow {
-                body: StyledText {
-                    width: parent.width
-                    text: I18n.tr("Set custom names for your audio output devices", "Audio settings description")
-                    font.pixelSize: Theme.fontSizeSmall
-                    color: Theme.surfaceVariantText
-                    wrapMode: Text.WordWrap
-                    horizontalAlignment: Text.AlignLeft
+                SettingsToggleRow {
+                    tab: "audio"
+                    tags: ["audio", "virtual", "stream", "obs", "loopback", "device", "sink"]
+                    settingKey: "audioShowStreamDevices"
+                    text: I18n.tr("Show virtual devices")
+                    checked: SettingsData.audioShowStreamDevices
+                    onToggled: checked => SettingsData.set("audioShowStreamDevices", checked)
                 }
-            }
 
-            Repeater {
-                model: root.shownOutputDevices
-
-                delegate: Column {
-                    required property var modelData
-                    width: parent?.width ?? 0
-                    spacing: 0
-
-                    DeviceAliasRow {
-                        id: outputRow
-
-                        readonly property var card: AudioService.cardForSink(modelData)
-
-                        deviceNode: modelData
-                        deviceType: "output"
-                        showHideButton: true
-
-                        onEditRequested: device => root.openRenameDialog(device, "output")
-
-                        onHideRequested: device => {
-                            root.persistHiddenOutputDeviceNames([...root.hiddenOutputDeviceNames, device.name]);
-                        }
-
-                        DActionButton {
-                            visible: outputRow.card !== null
-                            iconName: "power_settings_new"
-                            iconSize: Theme.iconSizeMedium
-                            iconColor: Theme.error
-                            tooltipText: I18n.tr("Disable card", "audio settings button that turns a sound card off")
-                            onClicked: root.confirmDisableCard(outputRow.card)
-                        }
-                    }
-
-                    Item {
+                SettingsRow {
+                    body: StyledText {
                         width: parent.width
-                        height: maxVolSlider.height
-
-                        StyledText {
-                            id: maxVolLabel
-                            text: I18n.tr("Max volume") + " · " + maxVolSlider.value + "%"
-                            anchors.left: parent.left
-                            anchors.leftMargin: Theme.spacingM + Theme.iconSize + Theme.spacingM
-                            anchors.verticalCenter: parent.verticalCenter
-                            font.pixelSize: Theme.fontSizeSmall
-                            color: Theme.surfaceVariantText
-                            horizontalAlignment: Text.AlignLeft
-                        }
-
-                        DSlider {
-                            id: maxVolSlider
-                            upDownKeysStep: false
-                            anchors.left: maxVolLabel.right
-                            anchors.leftMargin: Theme.spacingS
-                            anchors.right: parent.right
-                            anchors.rightMargin: Theme.spacingM
-                            anchors.verticalCenter: parent.verticalCenter
-                            minimum: 100
-                            maximum: 200
-                            step: 5
-                            showValue: true
-                            wheelEnabled: false
-                            centerMinimum: true
-                            onSliderValueChanged: newValue => {
-                                SessionData.setDeviceMaxVolume(modelData.name, newValue);
-                            }
-                        }
-
-                        Binding {
-                            target: maxVolSlider
-                            property: "value"
-                            value: SessionData.deviceMaxVolumes[modelData.name] ?? 100
-                            when: !maxVolSlider.isDragging
-                        }
-                    }
-                }
-            }
-
-            SettingsRow {
-                visible: root.shownOutputDevices.length === 0 && root.hiddenOutputDevices.length === 0 && AudioService.disabledOutputCards.length === 0
-                body: StyledText {
-                    width: parent.width
-                    text: I18n.tr("No output devices found", "Audio settings empty state")
-                    font.pixelSize: Theme.fontSizeSmall
-                    color: Theme.surfaceVariantText
-                    horizontalAlignment: Text.AlignHCenter
-                    topPadding: Theme.spacingM
-                }
-            }
-
-            SettingsRow {
-                visible: root.hiddenOutputDevices.length > 0
-                body: Column {
-                    width: parent.width
-                    spacing: 0
-
-                    Item {
-                        width: parent.width
-                        height: 36
-
-                        Row {
-                            anchors.left: parent.left
-                            anchors.verticalCenter: parent.verticalCenter
-                            spacing: Theme.spacingS
-
-                            DIcon {
-                                name: "visibility_off"
-                                size: Theme.iconSizeMedium
-                                color: Theme.surfaceVariantText
-                                anchors.verticalCenter: parent.verticalCenter
-                            }
-
-                            StyledText {
-                                text: I18n.tr("Hidden (%1)", "count of hidden audio devices").arg(root.hiddenOutputDevices.length)
-                                font.pixelSize: Theme.fontSizeSmall
-                                color: Theme.surfaceVariantText
-                                anchors.verticalCenter: parent.verticalCenter
-                            }
-                        }
-
-                        DIcon {
-                            name: root.showHiddenOutputDevices ? "expand_less" : "expand_more"
-                            size: Theme.iconSizeMedium
-                            color: Theme.surfaceVariantText
-                            anchors.right: parent.right
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
-
-                        MouseArea {
-                            anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: root.showHiddenOutputDevices = !root.showHiddenOutputDevices
-                        }
-                    }
-
-                    Column {
-                        width: parent.width
-                        spacing: 0
-                        visible: root.showHiddenOutputDevices
-
-                        Repeater {
-                            model: root.hiddenOutputDevices
-
-                            delegate: DeviceAliasRow {
-                                required property var modelData
-                                deviceNode: modelData
-                                deviceType: "output"
-                                isHidden: true
-                                showHideButton: true
-
-                                onHideRequested: device => {
-                                    root.persistHiddenOutputDeviceNames(root.hiddenOutputDeviceNames.filter(n => n !== device.name));
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            SettingsRow {
-                visible: AudioService.disabledOutputCards.length > 0
-                body: Column {
-                    width: parent.width
-                    spacing: 0
-
-                    Item {
-                        width: parent.width
-                        height: 36
-
-                        Row {
-                            anchors.left: parent.left
-                            anchors.verticalCenter: parent.verticalCenter
-                            spacing: Theme.spacingS
-
-                            DIcon {
-                                name: "power_off"
-                                size: Theme.iconSizeMedium
-                                color: Theme.surfaceVariantText
-                                anchors.verticalCenter: parent.verticalCenter
-                            }
-
-                            StyledText {
-                                text: I18n.tr("Disabled (%1)", "count of disabled audio output cards").arg(AudioService.disabledOutputCards.length)
-                                font.pixelSize: Theme.fontSizeSmall
-                                color: Theme.surfaceVariantText
-                                anchors.verticalCenter: parent.verticalCenter
-                            }
-                        }
-
-                        DIcon {
-                            name: root.showDisabledOutputCards ? "expand_less" : "expand_more"
-                            size: Theme.iconSizeMedium
-                            color: Theme.surfaceVariantText
-                            anchors.right: parent.right
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
-
-                        MouseArea {
-                            anchors.fill: parent
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: root.showDisabledOutputCards = !root.showDisabledOutputCards
-                        }
-                    }
-
-                    Column {
-                        width: parent.width
-                        spacing: 0
-                        visible: root.showDisabledOutputCards
-
-                        Repeater {
-                            model: AudioService.disabledOutputCards
-
-                            delegate: SettingsRow {
-                                required property var modelData
-
-                                iconName: "speaker"
-                                title: modelData.cardDescription
-                                subtitle: modelData.cardName
-
-                                DActionButton {
-                                    iconName: "power_settings_new"
-                                    iconSize: Theme.iconSizeMedium
-                                    tooltipText: I18n.tr("Enable card", "audio settings button that turns a disabled sound card back on")
-                                    onClicked: AudioService.setCardProfile(modelData.cardName, modelData.profile, (ok, message) => {
-                                        if (!ok)
-                                            ToastService.showToast(message, ToastService.levelError);
-                                    })
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        SettingsCard {
-            tab: "audio"
-            tags: ["audio", "device", "input", "microphone"]
-            title: I18n.tr("Input devices")
-            settingKey: "audioInputDevices"
-            iconName: "mic"
-
-            SettingsRow {
-                body: Column {
-                    width: parent.width
-                    spacing: Theme.spacingM
-
-                    StyledText {
-                        width: parent.width
-                        text: I18n.tr("Set custom names for your audio input devices", "Audio settings description")
+                        text: I18n.tr("Set custom names for your audio output devices", "Audio settings description")
                         font.pixelSize: Theme.fontSizeSmall
                         color: Theme.surfaceVariantText
                         wrapMode: Text.WordWrap
                         horizontalAlignment: Text.AlignLeft
                     }
+                }
 
-                    Repeater {
-                        model: root.shownInputDevices
+                Repeater {
+                    model: root.shownOutputDevices
 
-                        delegate: DeviceAliasRow {
-                            required property var modelData
+                    delegate: Column {
+                        required property var modelData
+                        width: parent?.width ?? 0
+                        spacing: 0
+
+                        DeviceAliasRow {
+                            id: outputRow
+
+                            readonly property var card: AudioService.cardForSink(modelData)
 
                             deviceNode: modelData
-                            deviceType: "input"
+                            deviceType: "output"
                             showHideButton: true
 
-                            onEditRequested: device => root.openRenameDialog(device, "input")
+                            onEditRequested: device => root.openRenameDialog(device, "output")
 
                             onHideRequested: device => {
-                                root.persistHiddenInputDeviceNames([...root.hiddenInputDeviceNames, device.name]);
+                                root.persistHiddenOutputDeviceNames([...root.hiddenOutputDeviceNames, device.name]);
+                            }
+
+                            DActionButton {
+                                visible: outputRow.card !== null
+                                iconName: "power_settings_new"
+                                iconSize: Theme.iconSizeMedium
+                                iconColor: Theme.error
+                                tooltipText: I18n.tr("Disable card", "audio settings button that turns a sound card off")
+                                onClicked: root.confirmDisableCard(outputRow.card)
+                            }
+                        }
+
+                        Item {
+                            width: parent.width
+                            height: maxVolSlider.height
+
+                            StyledText {
+                                id: maxVolLabel
+                                text: I18n.tr("Max volume") + " · " + maxVolSlider.value + "%"
+                                anchors.left: parent.left
+                                anchors.leftMargin: Theme.spacingM + Theme.iconSize + Theme.spacingM
+                                anchors.verticalCenter: parent.verticalCenter
+                                font.pixelSize: Theme.fontSizeSmall
+                                color: Theme.surfaceVariantText
+                                horizontalAlignment: Text.AlignLeft
+                            }
+
+                            DSlider {
+                                id: maxVolSlider
+                                upDownKeysStep: false
+                                anchors.left: maxVolLabel.right
+                                anchors.leftMargin: Theme.spacingS
+                                anchors.right: parent.right
+                                anchors.rightMargin: Theme.spacingM
+                                anchors.verticalCenter: parent.verticalCenter
+                                minimum: 100
+                                maximum: 200
+                                step: 5
+                                showValue: true
+                                wheelEnabled: false
+                                centerMinimum: true
+                                onSliderValueChanged: newValue => {
+                                    SessionData.setDeviceMaxVolume(modelData.name, newValue);
+                                }
+                            }
+
+                            Binding {
+                                target: maxVolSlider
+                                property: "value"
+                                value: SessionData.deviceMaxVolumes[modelData.name] ?? 100
+                                when: !maxVolSlider.isDragging
                             }
                         }
                     }
+                }
 
-                    StyledText {
+                SettingsRow {
+                    visible: root.shownOutputDevices.length === 0 && root.hiddenOutputDevices.length === 0 && AudioService.disabledOutputCards.length === 0
+                    body: StyledText {
                         width: parent.width
-                        text: I18n.tr("No input devices found", "Audio settings empty state")
+                        text: I18n.tr("No output devices found", "Audio settings empty state")
                         font.pixelSize: Theme.fontSizeSmall
                         color: Theme.surfaceVariantText
                         horizontalAlignment: Text.AlignHCenter
-                        visible: root.shownInputDevices.length === 0 && root.hiddenInputDevices.length === 0
                         topPadding: Theme.spacingM
                     }
+                }
 
-                    Column {
+                SettingsRow {
+                    visible: root.hiddenOutputDevices.length > 0
+                    body: Column {
                         width: parent.width
                         spacing: 0
-                        visible: root.hiddenInputDevices.length > 0
 
                         Item {
                             width: parent.width
@@ -526,7 +336,7 @@ Item {
                                 }
 
                                 StyledText {
-                                    text: I18n.tr("Hidden (%1)", "count of hidden audio devices").arg(root.hiddenInputDevices.length)
+                                    text: I18n.tr("Hidden (%1)", "count of hidden audio devices").arg(root.hiddenOutputDevices.length)
                                     font.pixelSize: Theme.fontSizeSmall
                                     color: Theme.surfaceVariantText
                                     anchors.verticalCenter: parent.verticalCenter
@@ -534,7 +344,7 @@ Item {
                             }
 
                             DIcon {
-                                name: root.showHiddenInputDevices ? "expand_less" : "expand_more"
+                                name: root.showHiddenOutputDevices ? "expand_less" : "expand_more"
                                 size: Theme.iconSizeMedium
                                 color: Theme.surfaceVariantText
                                 anchors.right: parent.right
@@ -544,27 +354,223 @@ Item {
                             MouseArea {
                                 anchors.fill: parent
                                 cursorShape: Qt.PointingHandCursor
-                                onClicked: root.showHiddenInputDevices = !root.showHiddenInputDevices
+                                onClicked: root.showHiddenOutputDevices = !root.showHiddenOutputDevices
                             }
                         }
 
                         Column {
                             width: parent.width
                             spacing: 0
-                            visible: root.showHiddenInputDevices
+                            visible: root.showHiddenOutputDevices
 
                             Repeater {
-                                model: root.hiddenInputDevices
+                                model: root.hiddenOutputDevices
 
                                 delegate: DeviceAliasRow {
                                     required property var modelData
                                     deviceNode: modelData
-                                    deviceType: "input"
+                                    deviceType: "output"
                                     isHidden: true
                                     showHideButton: true
 
                                     onHideRequested: device => {
-                                        root.persistHiddenInputDeviceNames(root.hiddenInputDeviceNames.filter(n => n !== device.name));
+                                        root.persistHiddenOutputDeviceNames(root.hiddenOutputDeviceNames.filter(n => n !== device.name));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                SettingsRow {
+                    visible: AudioService.disabledOutputCards.length > 0
+                    body: Column {
+                        width: parent.width
+                        spacing: 0
+
+                        Item {
+                            width: parent.width
+                            height: 36
+
+                            Row {
+                                anchors.left: parent.left
+                                anchors.verticalCenter: parent.verticalCenter
+                                spacing: Theme.spacingS
+
+                                DIcon {
+                                    name: "power_off"
+                                    size: Theme.iconSizeMedium
+                                    color: Theme.surfaceVariantText
+                                    anchors.verticalCenter: parent.verticalCenter
+                                }
+
+                                StyledText {
+                                    text: I18n.tr("Disabled (%1)", "count of disabled audio output cards").arg(AudioService.disabledOutputCards.length)
+                                    font.pixelSize: Theme.fontSizeSmall
+                                    color: Theme.surfaceVariantText
+                                    anchors.verticalCenter: parent.verticalCenter
+                                }
+                            }
+
+                            DIcon {
+                                name: root.showDisabledOutputCards ? "expand_less" : "expand_more"
+                                size: Theme.iconSizeMedium
+                                color: Theme.surfaceVariantText
+                                anchors.right: parent.right
+                                anchors.verticalCenter: parent.verticalCenter
+                            }
+
+                            MouseArea {
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: root.showDisabledOutputCards = !root.showDisabledOutputCards
+                            }
+                        }
+
+                        Column {
+                            width: parent.width
+                            spacing: 0
+                            visible: root.showDisabledOutputCards
+
+                            Repeater {
+                                model: AudioService.disabledOutputCards
+
+                                delegate: SettingsRow {
+                                    required property var modelData
+
+                                    iconName: "speaker"
+                                    title: modelData.cardDescription
+                                    subtitle: modelData.cardName
+
+                                    DActionButton {
+                                        iconName: "power_settings_new"
+                                        iconSize: Theme.iconSizeMedium
+                                        tooltipText: I18n.tr("Enable card", "audio settings button that turns a disabled sound card back on")
+                                        onClicked: AudioService.setCardProfile(modelData.cardName, modelData.profile, (ok, message) => {
+                                            if (!ok)
+                                                ToastService.showToast(message, ToastService.levelError);
+                                        })
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        SettingsDeferred {
+            SettingsCard {
+                tab: "audio"
+                tags: ["audio", "device", "input", "microphone"]
+                title: I18n.tr("Input devices")
+                settingKey: "audioInputDevices"
+                iconName: "mic"
+
+                SettingsRow {
+                    body: Column {
+                        width: parent.width
+                        spacing: Theme.spacingM
+
+                        StyledText {
+                            width: parent.width
+                            text: I18n.tr("Set custom names for your audio input devices", "Audio settings description")
+                            font.pixelSize: Theme.fontSizeSmall
+                            color: Theme.surfaceVariantText
+                            wrapMode: Text.WordWrap
+                            horizontalAlignment: Text.AlignLeft
+                        }
+
+                        Repeater {
+                            model: root.shownInputDevices
+
+                            delegate: DeviceAliasRow {
+                                required property var modelData
+
+                                deviceNode: modelData
+                                deviceType: "input"
+                                showHideButton: true
+
+                                onEditRequested: device => root.openRenameDialog(device, "input")
+
+                                onHideRequested: device => {
+                                    root.persistHiddenInputDeviceNames([...root.hiddenInputDeviceNames, device.name]);
+                                }
+                            }
+                        }
+
+                        StyledText {
+                            width: parent.width
+                            text: I18n.tr("No input devices found", "Audio settings empty state")
+                            font.pixelSize: Theme.fontSizeSmall
+                            color: Theme.surfaceVariantText
+                            horizontalAlignment: Text.AlignHCenter
+                            visible: root.shownInputDevices.length === 0 && root.hiddenInputDevices.length === 0
+                            topPadding: Theme.spacingM
+                        }
+
+                        Column {
+                            width: parent.width
+                            spacing: 0
+                            visible: root.hiddenInputDevices.length > 0
+
+                            Item {
+                                width: parent.width
+                                height: 36
+
+                                Row {
+                                    anchors.left: parent.left
+                                    anchors.verticalCenter: parent.verticalCenter
+                                    spacing: Theme.spacingS
+
+                                    DIcon {
+                                        name: "visibility_off"
+                                        size: Theme.iconSizeMedium
+                                        color: Theme.surfaceVariantText
+                                        anchors.verticalCenter: parent.verticalCenter
+                                    }
+
+                                    StyledText {
+                                        text: I18n.tr("Hidden (%1)", "count of hidden audio devices").arg(root.hiddenInputDevices.length)
+                                        font.pixelSize: Theme.fontSizeSmall
+                                        color: Theme.surfaceVariantText
+                                        anchors.verticalCenter: parent.verticalCenter
+                                    }
+                                }
+
+                                DIcon {
+                                    name: root.showHiddenInputDevices ? "expand_less" : "expand_more"
+                                    size: Theme.iconSizeMedium
+                                    color: Theme.surfaceVariantText
+                                    anchors.right: parent.right
+                                    anchors.verticalCenter: parent.verticalCenter
+                                }
+
+                                MouseArea {
+                                    anchors.fill: parent
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: root.showHiddenInputDevices = !root.showHiddenInputDevices
+                                }
+                            }
+
+                            Column {
+                                width: parent.width
+                                spacing: 0
+                                visible: root.showHiddenInputDevices
+
+                                Repeater {
+                                    model: root.hiddenInputDevices
+
+                                    delegate: DeviceAliasRow {
+                                        required property var modelData
+                                        deviceNode: modelData
+                                        deviceType: "input"
+                                        isHidden: true
+                                        showHideButton: true
+
+                                        onHideRequested: device => {
+                                            root.persistHiddenInputDeviceNames(root.hiddenInputDeviceNames.filter(n => n !== device.name));
+                                        }
                                     }
                                 }
                             }
@@ -617,7 +623,7 @@ Item {
 
     SettingsRenameDialog {
         id: renameDialog
-        parent: root.parentModal?.modalFocusScope ?? root
+        parent: root.parentModal?.dialogHostFor(root) ?? root
         title: I18n.tr("Set custom device name")
         supportingText: root.editingDevice?.name ?? ""
         labelText: I18n.tr("Custom name")

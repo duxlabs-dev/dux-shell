@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQuick
+import Quickshell
 import qs.Common
 import qs.Services
 import qs.DCommon.Widgets
@@ -132,99 +133,101 @@ Item {
     }
 
     SettingsPage {
-        SettingsCard {
-            width: parent.width
-            visible: dock.hasConfig
-            iconName: "widgets"
-            settingKey: "dockWidgets"
-            tags: ["dock", "widgets", "apps", "add", "remove", "order"]
+        SettingsDeferred {
+            when: dock.hasConfig
 
-            SettingsButtonGroupRow {
-                resetStore: dock
-                resetKeys: ["widgetExpansion"]
-                readonly property var modes: ["popout", "inline"]
+            SettingsCard {
+                width: parent.width
+                iconName: "widgets"
+                settingKey: "dockWidgets"
+                tags: ["dock", "widgets", "apps", "add", "remove", "order"]
 
-                text: I18n.tr("Open widgets")
-                model: [I18n.tr("Popout"), I18n.tr("Inline", "adjective, dock widgets open inside the dock instead of a popout")]
-                currentIndex: Math.max(0, modes.indexOf(dock.config?.widgetExpansion ?? "popout"))
-                onSelectionChanged: (index, selected) => {
-                    if (!selected)
-                        return;
-                    dock.setOption("widgetExpansion", modes[index]);
-                }
-            }
+                SettingsButtonGroupRow {
+                    resetStore: dock
+                    resetKeys: ["widgetExpansion"]
+                    readonly property var modes: ["popout", "inline"]
 
-            SettingsReorderList {
-                id: widgetList
-
-                model: root.orderedWidgets
-                onReordered: indices => root.reorderWidgets(indices)
-
-                delegate: SettingsReorderRow {
-                    id: widgetRow
-
-                    required property var modelData
-
-                    reorderList: widgetList
-                    readonly property string slotOption: root.slotOptions[modelData.widgetId] ?? ""
-                    readonly property bool shown: slotOption ? dock.config[slotOption] === true : modelData.enabled !== false
-
-                    title: root.widgetName(modelData.widgetId)
-                    iconName: root.widgetIcon(modelData.widgetId)
-                    subtitle: removeButton.confirming ? I18n.tr("Confirm Delete") : ""
-                    subtitleColor: Theme.error
-                    body: SettingsSliderRow {
-                        width: parent.width
-                        visible: widgetRow.modelData.widgetId === "spacer"
-                        height: visible ? implicitHeight : 0
-                        text: I18n.tr("Size")
-                        minimum: 0
-                        maximum: 200
-                        value: widgetRow.modelData.size ?? 20
-                        onSliderValueChanged: value => SettingsData.updateDockWidget(dock.selectedDockId, widgetRow.modelData.id, {
-                                size: value
-                            })
+                    text: I18n.tr("Open widgets")
+                    model: [I18n.tr("Popout"), I18n.tr("Inline", "adjective, dock widgets open inside the dock instead of a popout")]
+                    currentIndex: Math.max(0, modes.indexOf(dock.config?.widgetExpansion ?? "popout"))
+                    onSelectionChanged: (index, selected) => {
+                        if (!selected)
+                            return;
+                        dock.setOption("widgetExpansion", modes[index]);
                     }
+                }
 
-                    Row {
-                        spacing: Theme.spacingXS
+                SettingsReorderList {
+                    id: widgetList
 
-                        DActionButton {
-                            iconName: "settings"
-                            visible: widgetRow.modelData.widgetId !== "appsDock" && !!BarWidgetCatalog.optionsFile(widgetRow.modelData.widgetId)
-                            Accessible.name: I18n.tr("Settings")
-                            onClicked: root.configureWidget(widgetRow.modelData)
+                    model: root.orderedWidgets
+                    onReordered: indices => root.reorderWidgets(indices)
+
+                    delegate: SettingsReorderRow {
+                        id: widgetRow
+
+                        required property var modelData
+
+                        reorderList: widgetList
+                        readonly property string slotOption: root.slotOptions[modelData.widgetId] ?? ""
+                        readonly property bool shown: slotOption ? dock.config[slotOption] === true : modelData.enabled !== false
+
+                        title: root.widgetName(modelData.widgetId)
+                        iconName: root.widgetIcon(modelData.widgetId)
+                        subtitle: removeButton.confirming ? I18n.tr("Confirm Delete") : ""
+                        subtitleColor: Theme.error
+                        body: SettingsSliderRow {
+                            width: parent.width
+                            visible: widgetRow.modelData.widgetId === "spacer"
+                            height: visible ? implicitHeight : 0
+                            text: I18n.tr("Size")
+                            minimum: 0
+                            maximum: 200
+                            value: widgetRow.modelData.size ?? 20
+                            onSliderValueChanged: value => SettingsData.updateDockWidget(dock.selectedDockId, widgetRow.modelData.id, {
+                                    size: value
+                                })
                         }
 
-                        DActionButton {
-                            iconName: widgetRow.shown ? "visibility" : "visibility_off"
-                            Accessible.name: widgetRow.shown ? I18n.tr("Hide") : I18n.tr("Show")
-                            onClicked: {
-                                if (widgetRow.slotOption) {
-                                    dock.setOption(widgetRow.slotOption, !widgetRow.shown);
-                                    return;
-                                }
-                                SettingsData.updateDockWidget(dock.selectedDockId, widgetRow.modelData.id, {
-                                    enabled: !widgetRow.shown
-                                });
+                        Row {
+                            spacing: Theme.spacingXS
+
+                            DActionButton {
+                                iconName: "settings"
+                                visible: widgetRow.modelData.widgetId !== "appsDock" && !!BarWidgetCatalog.optionsFile(widgetRow.modelData.widgetId)
+                                Accessible.name: I18n.tr("Settings")
+                                onClicked: root.configureWidget(widgetRow.modelData)
                             }
-                        }
 
-                        SettingsDeleteButton {
-                            id: removeButton
-                            visible: !widgetRow.slotOption
-                            onDeleteRequested: root.updateWidgets(dock.config.widgets.filter(item => item.id !== widgetRow.modelData.id))
+                            DActionButton {
+                                iconName: widgetRow.shown ? "visibility" : "visibility_off"
+                                Accessible.name: widgetRow.shown ? I18n.tr("Hide") : I18n.tr("Show")
+                                onClicked: {
+                                    if (widgetRow.slotOption) {
+                                        dock.setOption(widgetRow.slotOption, !widgetRow.shown);
+                                        return;
+                                    }
+                                    SettingsData.updateDockWidget(dock.selectedDockId, widgetRow.modelData.id, {
+                                        enabled: !widgetRow.shown
+                                    });
+                                }
+                            }
+
+                            SettingsDeleteButton {
+                                id: removeButton
+                                visible: !widgetRow.slotOption
+                                onDeleteRequested: root.updateWidgets(dock.config.widgets.filter(item => item.id !== widgetRow.modelData.id))
+                            }
                         }
                     }
                 }
             }
         }
 
-        Loader {
-            width: parent.width
-            active: root.appsEntry !== null
-            visible: active
-            sourceComponent: AppsDockOptions {
+        SettingsDeferred {
+            when: root.appsEntry !== null
+
+            AppsDockOptions {
                 page: root
             }
         }
@@ -236,23 +239,27 @@ Item {
                 text: I18n.tr("Add widget")
                 iconName: "add"
                 onClicked: {
-                    picker.widgets = root.widgetChoices.filter(widget => widget.id !== "appsDock" || !dock.config.widgets.some(item => item.widgetId === "appsDock"));
-                    picker.show();
+                    pickerLoader.active = true;
+                    pickerLoader.item.widgets = root.widgetChoices.filter(widget => widget.id !== "appsDock" || !dock.config.widgets.some(item => item.widgetId === "appsDock"));
+                    pickerLoader.item.show();
                 }
             }
         }
     }
 
-    WidgetSelectionPopup {
-        id: picker
+    LazyLoader {
+        id: pickerLoader
+        active: false
 
-        parentModal: root.parentModal
-        onWidgetSelected: widgetId => root.updateWidgets(dock.config.widgets.concat([
-                {
-                    id: dock.selectedDockId + "_" + Date.now(),
-                    widgetId,
-                    enabled: true
-                }
-            ]))
+        WidgetSelectionPopup {
+            parentModal: root.parentModal
+            onWidgetSelected: widgetId => root.updateWidgets(dock.config.widgets.concat([
+                    {
+                        id: dock.selectedDockId + "_" + Date.now(),
+                        widgetId,
+                        enabled: true
+                    }
+                ]))
+        }
     }
 }

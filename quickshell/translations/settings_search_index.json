@@ -1,34 +1,5 @@
 [
   {
-    "section": "wallpaperAdvanced",
-    "label": "Advanced",
-    "tabIndex": -1,
-    "category": "Wallpaper & colors",
-    "keywords": [
-      "advanced",
-      "background",
-      "bg",
-      "blur",
-      "colors",
-      "colour",
-      "colours",
-      "desktop",
-      "disable",
-      "external",
-      "hue",
-      "hyprpaper",
-      "image",
-      "layer",
-      "palette",
-      "picture",
-      "swaybg",
-      "swww",
-      "tint",
-      "wallpaper"
-    ],
-    "page": "personalization"
-  },
-  {
     "section": "notificationDndAllowCritical",
     "label": "Allow critical",
     "tabIndex": -1,
@@ -52,30 +23,6 @@
     ],
     "page": "notifications",
     "description": "Critical notifications still pop up"
-  },
-  {
-    "section": "notificationAnimationDuration",
-    "label": "Animation duration",
-    "tabIndex": -1,
-    "category": "Notifications",
-    "keywords": [
-      "alert",
-      "alerts",
-      "animate",
-      "animation",
-      "animations",
-      "duration",
-      "messages",
-      "motion",
-      "notif",
-      "notification",
-      "notifications",
-      "notifs",
-      "speed",
-      "toast",
-      "transition"
-    ],
-    "page": "notifications"
   },
   {
     "section": "notificationAppearance",
@@ -125,7 +72,7 @@
     "section": "wallpaper",
     "label": "Appearance",
     "tabIndex": -1,
-    "category": "Wallpaper & colors",
+    "category": "Appearance",
     "keywords": [
       "appearance",
       "background",
@@ -181,8 +128,9 @@
     "section": "wallpaperCyclingEnabled",
     "label": "Automatic cycling",
     "tabIndex": -1,
-    "category": "Wallpaper & colors",
+    "category": "Appearance",
     "keywords": [
+      "appearance",
       "automatic",
       "background",
       "bg",
@@ -287,8 +235,9 @@
     "section": "wallpaperBackgroundColorMode",
     "label": "Background color",
     "tabIndex": -1,
-    "category": "Wallpaper & colors",
+    "category": "Appearance",
     "keywords": [
+      "appearance",
       "background",
       "bg",
       "color",
@@ -317,14 +266,20 @@
     "keywords": [
       "appearance",
       "bar",
+      "components",
+      "dashboard",
       "dot",
       "general",
       "layout",
+      "modules",
       "panel",
       "position",
+      "settings",
       "statusbar",
       "taskbar",
-      "topbar"
+      "topbar",
+      "widget",
+      "widgets"
     ],
     "icon": "toolbar",
     "description": "Layout, position, appearance"
@@ -376,8 +331,9 @@
     "section": "blurredWallpaperLayer",
     "label": "Blur layer",
     "tabIndex": -1,
-    "category": "Wallpaper & colors",
+    "category": "Appearance",
     "keywords": [
+      "appearance",
       "background",
       "bg",
       "blur",
@@ -411,8 +367,9 @@
     "section": "blurWallpaperOnOverview",
     "label": "Blur on overview",
     "tabIndex": -1,
-    "category": "Wallpaper & colors",
+    "category": "Appearance",
     "keywords": [
+      "appearance",
       "background",
       "bg",
       "blur",
@@ -524,8 +481,9 @@
     "section": "cardSurfaceColor",
     "label": "Cards",
     "tabIndex": -1,
-    "category": "Wallpaper & colors",
+    "category": "Appearance",
     "keywords": [
+      "appearance",
       "background",
       "bg",
       "card",
@@ -551,8 +509,9 @@
     "section": "chipSurfaceColor",
     "label": "Chip",
     "tabIndex": -1,
-    "category": "Wallpaper & colors",
+    "category": "Appearance",
     "keywords": [
+      "appearance",
       "background",
       "bg",
       "chip",
@@ -798,8 +757,9 @@
     "section": "cursorTheme",
     "label": "Cursor",
     "tabIndex": -1,
-    "category": "Wallpaper & colors",
+    "category": "Appearance",
     "keywords": [
+      "appearance",
       "background",
       "bg",
       "colors",
@@ -822,14 +782,16 @@
       "typing",
       "wallpaper"
     ],
-    "page": "personalization"
+    "page": "personalization",
+    "icon": "delete"
   },
   {
     "section": "cursorHideAfterInactive",
     "label": "Cursor auto-hide timeout",
     "tabIndex": -1,
-    "category": "Wallpaper & colors",
+    "category": "Appearance",
     "keywords": [
+      "appearance",
       "auto",
       "background",
       "bg",
@@ -854,8 +816,9 @@
     "section": "themeScheduleNav",
     "label": "Dark mode",
     "tabIndex": -1,
-    "category": "Wallpaper & colors",
+    "category": "Appearance",
     "keywords": [
+      "appearance",
       "automatic",
       "background",
       "bg",
@@ -884,7 +847,7 @@
     "section": "iconThemeDark",
     "label": "Dark mode theme",
     "tabIndex": -1,
-    "category": "Wallpaper & colors",
+    "category": "Appearance",
     "keywords": [
       "appearance",
       "background",
@@ -936,8 +899,9 @@
     "section": "selectedMonitor",
     "label": "Display",
     "tabIndex": -1,
-    "category": "Wallpaper & colors",
+    "category": "Appearance",
     "keywords": [
+      "appearance",
       "background",
       "bg",
       "colors",
@@ -953,6 +917,38 @@
       "picture",
       "screen",
       "tint",
+      "wallpaper"
+    ],
+    "page": "personalization"
+  },
+  {
+    "section": "displayFontFamily",
+    "label": "Display family",
+    "tabIndex": -1,
+    "category": "Appearance",
+    "keywords": [
+      "appearance",
+      "background",
+      "bg",
+      "colors",
+      "colour",
+      "colours",
+      "desktop",
+      "display",
+      "family",
+      "font",
+      "headline",
+      "hue",
+      "image",
+      "monitor",
+      "output",
+      "palette",
+      "picture",
+      "screen",
+      "serif",
+      "stylistic",
+      "tint",
+      "title",
       "wallpaper"
     ],
     "page": "personalization"
@@ -1131,11 +1127,39 @@
     "description": "Where the widget list sits while editing the Control Center"
   },
   {
+    "section": "fontFamily",
+    "label": "Family",
+    "tabIndex": -1,
+    "category": "Appearance",
+    "keywords": [
+      "appearance",
+      "background",
+      "bg",
+      "colors",
+      "colour",
+      "colours",
+      "desktop",
+      "family",
+      "font",
+      "fonts",
+      "hue",
+      "image",
+      "normal",
+      "palette",
+      "picture",
+      "text",
+      "tint",
+      "wallpaper"
+    ],
+    "page": "personalization"
+  },
+  {
     "section": "wallpaperFillMode",
     "label": "Fill mode",
     "tabIndex": -1,
-    "category": "Wallpaper & colors",
+    "category": "Appearance",
     "keywords": [
+      "appearance",
       "background",
       "bg",
       "colors",
@@ -1223,6 +1247,38 @@
     "page": "notifications"
   },
   {
+    "section": "iconFolderRecolor",
+    "label": "Folder match theme colors",
+    "tabIndex": -1,
+    "category": "Appearance",
+    "keywords": [
+      "appearance",
+      "background",
+      "bg",
+      "color",
+      "colors",
+      "colour",
+      "colours",
+      "desktop",
+      "dynamic",
+      "folder",
+      "hue",
+      "icon",
+      "image",
+      "look",
+      "match",
+      "matugen",
+      "palette",
+      "picture",
+      "recolor",
+      "style",
+      "theme",
+      "tint",
+      "wallpaper"
+    ],
+    "page": "personalization"
+  },
+  {
     "section": "blurForegroundLayers",
     "label": "Foreground layers",
     "tabIndex": -1,
@@ -1292,8 +1348,9 @@
     "section": "cursorHideOnTouch",
     "label": "Hide cursor on touch",
     "tabIndex": -1,
-    "category": "Wallpaper & colors",
+    "category": "Appearance",
     "keywords": [
+      "appearance",
       "background",
       "bg",
       "colors",
@@ -1317,8 +1374,9 @@
     "section": "cursorHideWhenTyping",
     "label": "Hide cursor when typing",
     "tabIndex": -1,
-    "category": "Wallpaper & colors",
+    "category": "Appearance",
     "keywords": [
+      "appearance",
       "background",
       "bg",
       "colors",
@@ -1343,8 +1401,9 @@
     "section": "wallpaperHideMismatched",
     "label": "Hide wallpapers that don't fit the display",
     "tabIndex": -1,
-    "category": "Wallpaper & colors",
+    "category": "Appearance",
     "keywords": [
+      "appearance",
       "aspect",
       "background",
       "bg",
@@ -1420,8 +1479,9 @@
     "section": "hostSurfaceColor",
     "label": "Host",
     "tabIndex": -1,
-    "category": "Wallpaper & colors",
+    "category": "Appearance",
     "keywords": [
+      "appearance",
       "background",
       "bar",
       "bg",
@@ -1448,8 +1508,9 @@
     "section": "materialSeedHue",
     "label": "Hue",
     "tabIndex": -1,
-    "category": "Wallpaper & colors",
+    "category": "Appearance",
     "keywords": [
+      "appearance",
       "around",
       "background",
       "bg",
@@ -1494,11 +1555,45 @@
     "page": "theme_surfaces"
   },
   {
+    "section": "iconShape",
+    "label": "Icon shape",
+    "tabIndex": -1,
+    "category": "Appearance",
+    "keywords": [
+      "appearance",
+      "background",
+      "badge",
+      "bg",
+      "circle",
+      "clover",
+      "colors",
+      "colour",
+      "colours",
+      "cookie",
+      "desktop",
+      "dux",
+      "hexagon",
+      "hue",
+      "icon",
+      "image",
+      "palette",
+      "picture",
+      "rounded",
+      "shape",
+      "square",
+      "squircle",
+      "tint",
+      "wallpaper"
+    ],
+    "page": "personalization"
+  },
+  {
     "section": "iconTheme",
     "label": "Icons",
     "tabIndex": -1,
-    "category": "Wallpaper & colors",
+    "category": "Appearance",
     "keywords": [
+      "appearance",
       "background",
       "bg",
       "colors",
@@ -1516,7 +1611,8 @@
       "tint",
       "wallpaper"
     ],
-    "page": "personalization"
+    "page": "personalization",
+    "icon": "delete"
   },
   {
     "section": "notificationIgnoreAppTimeout",
@@ -1553,6 +1649,7 @@
       "bindings",
       "extensions",
       "framework",
+      "global",
       "hotkeys",
       "input",
       "keybinds",
@@ -1595,40 +1692,6 @@
     "page": "theme_surfaces"
   },
   {
-    "section": "islandHomeLayout",
-    "label": "Island widgets",
-    "tabIndex": -1,
-    "category": "Bar widgets",
-    "keywords": [
-      "activities",
-      "bar",
-      "battery",
-      "brightness",
-      "clock",
-      "compact",
-      "components",
-      "groups",
-      "home",
-      "island",
-      "launcher",
-      "layout",
-      "media",
-      "modules",
-      "notifications",
-      "order",
-      "panel",
-      "statusbar",
-      "taskbar",
-      "topbar",
-      "volume",
-      "weather",
-      "widgets"
-    ],
-    "page": "dankbar_widgets",
-    "icon": "view_in_ar",
-    "conditionKey": "islandEnabled"
-  },
-  {
     "section": "blurLayerOutline",
     "label": "Layer outline",
     "tabIndex": -1,
@@ -1659,7 +1722,7 @@
     "section": "iconThemeLight",
     "label": "Light mode theme",
     "tabIndex": -1,
-    "category": "Wallpaper & colors",
+    "category": "Appearance",
     "keywords": [
       "appearance",
       "background",
@@ -1753,11 +1816,80 @@
     "page": "notifications"
   },
   {
+    "section": "cursorThemeLibrary",
+    "label": "Manage themes",
+    "tabIndex": -1,
+    "category": "Appearance",
+    "keywords": [
+      "appearance",
+      "archive",
+      "background",
+      "bg",
+      "colors",
+      "colour",
+      "colours",
+      "cursor",
+      "delete",
+      "desktop",
+      "hue",
+      "image",
+      "install",
+      "look",
+      "manage",
+      "palette",
+      "picture",
+      "preview",
+      "remove",
+      "style",
+      "theme",
+      "themes",
+      "tint",
+      "wallpaper"
+    ],
+    "page": "personalization",
+    "icon": "delete"
+  },
+  {
+    "section": "iconThemeLibrary",
+    "label": "Manage themes",
+    "tabIndex": -1,
+    "category": "Appearance",
+    "keywords": [
+      "appearance",
+      "archive",
+      "background",
+      "bg",
+      "colors",
+      "colour",
+      "colours",
+      "delete",
+      "desktop",
+      "hue",
+      "icon",
+      "image",
+      "install",
+      "look",
+      "manage",
+      "palette",
+      "picture",
+      "preview",
+      "remove",
+      "style",
+      "theme",
+      "themes",
+      "tint",
+      "wallpaper"
+    ],
+    "page": "personalization",
+    "icon": "delete"
+  },
+  {
     "section": "materialPresets",
     "label": "Material",
     "tabIndex": -1,
-    "category": "Wallpaper & colors",
+    "category": "Appearance",
     "keywords": [
+      "appearance",
       "background",
       "bg",
       "bloom",
@@ -1787,7 +1919,7 @@
     "section": "matugenTargetMonitor",
     "label": "Matugen source display",
     "tabIndex": -1,
-    "category": "Wallpaper & colors",
+    "category": "Appearance",
     "keywords": [
       "appearance",
       "background",
@@ -1845,11 +1977,40 @@
     "page": "notifications"
   },
   {
+    "section": "monoFontFamily",
+    "label": "Monospace family",
+    "tabIndex": -1,
+    "category": "Appearance",
+    "keywords": [
+      "appearance",
+      "background",
+      "bg",
+      "code",
+      "colors",
+      "colour",
+      "colours",
+      "desktop",
+      "family",
+      "font",
+      "hue",
+      "image",
+      "monospace",
+      "palette",
+      "picture",
+      "process",
+      "terminal",
+      "tint",
+      "wallpaper"
+    ],
+    "page": "personalization"
+  },
+  {
     "section": "chipSurfaceNestedColor",
     "label": "Nested chip",
     "tabIndex": -1,
-    "category": "Wallpaper & colors",
+    "category": "Appearance",
     "keywords": [
+      "appearance",
       "background",
       "bg",
       "chip",
@@ -2085,8 +2246,9 @@
     "section": "paletteStyleNav",
     "label": "Palette style",
     "tabIndex": -1,
-    "category": "Wallpaper & colors",
+    "category": "Appearance",
     "keywords": [
+      "appearance",
       "background",
       "bg",
       "colors",
@@ -2104,6 +2266,62 @@
       "style",
       "tint",
       "vibrant",
+      "wallpaper"
+    ],
+    "page": "personalization"
+  },
+  {
+    "section": "pauseVideoWallpaperOnBattery",
+    "label": "Pause video wallpaper on battery",
+    "tabIndex": -1,
+    "category": "Appearance",
+    "keywords": [
+      "animated",
+      "appearance",
+      "background",
+      "battery",
+      "bg",
+      "charge",
+      "charging",
+      "colors",
+      "colour",
+      "colours",
+      "desktop",
+      "hue",
+      "image",
+      "palette",
+      "pause",
+      "picture",
+      "power",
+      "tint",
+      "video",
+      "wallpaper"
+    ],
+    "page": "personalization"
+  },
+  {
+    "section": "shellPerformance",
+    "label": "Performance",
+    "tabIndex": -1,
+    "category": "Appearance",
+    "keywords": [
+      "appearance",
+      "background",
+      "bg",
+      "cache",
+      "colors",
+      "colour",
+      "colours",
+      "control",
+      "desktop",
+      "hue",
+      "image",
+      "palette",
+      "performance",
+      "picture",
+      "render",
+      "startup",
+      "tint",
       "wallpaper"
     ],
     "page": "personalization"
@@ -2258,8 +2476,9 @@
     "section": "configProfiles",
     "label": "Profiles",
     "tabIndex": -1,
-    "category": "Wallpaper & colors",
+    "category": "Appearance",
     "keywords": [
+      "appearance",
       "background",
       "bg",
       "colors",
@@ -2281,6 +2500,32 @@
     ],
     "page": "personalization",
     "icon": "style"
+  },
+  {
+    "section": "textRenderQuality",
+    "label": "Quality",
+    "tabIndex": -1,
+    "category": "Appearance",
+    "keywords": [
+      "appearance",
+      "background",
+      "bg",
+      "colors",
+      "colour",
+      "colours",
+      "desktop",
+      "hue",
+      "image",
+      "level",
+      "palette",
+      "picture",
+      "quality",
+      "render",
+      "text",
+      "tint",
+      "wallpaper"
+    ],
+    "page": "personalization"
   },
   {
     "section": "radiusStrength",
@@ -2308,6 +2553,71 @@
     "description": "50 uses Material shapes. Lower values reduce rounding; higher values increase it."
   },
   {
+    "section": "renderControlEnabled",
+    "label": "Render control",
+    "tabIndex": -1,
+    "category": "Appearance",
+    "keywords": [
+      "appearance",
+      "background",
+      "bg",
+      "colors",
+      "colour",
+      "colours",
+      "control",
+      "damage",
+      "desktop",
+      "gpu",
+      "hue",
+      "image",
+      "memory",
+      "palette",
+      "performance",
+      "picture",
+      "render",
+      "requires",
+      "restart",
+      "tint",
+      "vram",
+      "wallpaper"
+    ],
+    "page": "personalization",
+    "description": "Requires restart"
+  },
+  {
+    "section": "textRenderType",
+    "label": "Renderer",
+    "tabIndex": -1,
+    "category": "Appearance",
+    "keywords": [
+      "appearance",
+      "background",
+      "bg",
+      "colors",
+      "colour",
+      "colours",
+      "curve",
+      "desktop",
+      "distance-field",
+      "freetype",
+      "hue",
+      "image",
+      "native",
+      "palette",
+      "picture",
+      "qt",
+      "rasterizer",
+      "render",
+      "renderer",
+      "rendering",
+      "text",
+      "tint",
+      "type",
+      "wallpaper"
+    ],
+    "page": "personalization"
+  },
+  {
     "section": "notificationHistoryMaxAgeDays",
     "label": "Retention",
     "tabIndex": -1,
@@ -2328,6 +2638,59 @@
       "toast"
     ],
     "page": "notifications"
+  },
+  {
+    "section": "fontScale",
+    "label": "Scale",
+    "tabIndex": -1,
+    "category": "Appearance",
+    "keywords": [
+      "appearance",
+      "background",
+      "bg",
+      "colors",
+      "colour",
+      "colours",
+      "desktop",
+      "font",
+      "hue",
+      "image",
+      "palette",
+      "picture",
+      "scale",
+      "size",
+      "tint",
+      "wallpaper",
+      "zoom"
+    ],
+    "page": "personalization"
+  },
+  {
+    "section": "scrollShadowsEnabled",
+    "label": "Scroll shadows",
+    "tabIndex": -1,
+    "category": "Interface style",
+    "keywords": [
+      "bottom",
+      "content",
+      "edge",
+      "edges",
+      "fade",
+      "fades",
+      "interface",
+      "launcher",
+      "list",
+      "page",
+      "scroll",
+      "scrollable",
+      "shadow",
+      "shadows",
+      "style",
+      "views"
+    ],
+    "page": "theme_surfaces",
+    "icon": "tonality",
+    "description": "Fades content at the top and bottom of scrollable views"
   },
   {
     "section": "scrollbarsEnabled",
@@ -2387,8 +2750,9 @@
     "section": "materialSeedColor",
     "label": "Seed color",
     "tabIndex": -1,
-    "category": "Wallpaper & colors",
+    "category": "Appearance",
     "keywords": [
+      "appearance",
       "background",
       "bg",
       "color",
@@ -2412,8 +2776,9 @@
     "section": "perModeWallpaper",
     "label": "Separate light and dark",
     "tabIndex": -1,
-    "category": "Wallpaper & colors",
+    "category": "Appearance",
     "keywords": [
+      "appearance",
       "background",
       "bg",
       "colors",
@@ -2442,7 +2807,7 @@
     "section": "iconThemePerMode",
     "label": "Separate light and dark themes",
     "tabIndex": -1,
-    "category": "Wallpaper & colors",
+    "category": "Appearance",
     "keywords": [
       "appearance",
       "background",
@@ -2477,8 +2842,9 @@
     "section": "perMonitorWallpaper",
     "label": "Separate per display",
     "tabIndex": -1,
-    "category": "Wallpaper & colors",
+    "category": "Appearance",
     "keywords": [
+      "appearance",
       "background",
       "bg",
       "colors",
@@ -2497,6 +2863,36 @@
       "picture",
       "screen",
       "separate",
+      "tint",
+      "wallpaper"
+    ],
+    "page": "personalization"
+  },
+  {
+    "section": "iconGradient",
+    "label": "Shaded icons",
+    "tabIndex": -1,
+    "category": "Appearance",
+    "keywords": [
+      "appearance",
+      "background",
+      "badge",
+      "bg",
+      "colors",
+      "colour",
+      "colours",
+      "desktop",
+      "dux",
+      "gradient",
+      "hue",
+      "icon",
+      "icons",
+      "image",
+      "palette",
+      "picture",
+      "shade",
+      "shaded",
+      "shading",
       "tint",
       "wallpaper"
     ],
@@ -2523,8 +2919,9 @@
     "section": "cursorSize",
     "label": "Size",
     "tabIndex": -1,
-    "category": "Wallpaper & colors",
+    "category": "Appearance",
     "keywords": [
+      "appearance",
       "background",
       "bg",
       "colors",
@@ -2563,6 +2960,37 @@
       "sounds"
     ],
     "icon": "volume_up"
+  },
+  {
+    "section": "qmlCacheEnabled",
+    "label": "Startup cache",
+    "tabIndex": -1,
+    "category": "Appearance",
+    "keywords": [
+      "appearance",
+      "background",
+      "bg",
+      "cache",
+      "colors",
+      "colour",
+      "colours",
+      "desktop",
+      "disk",
+      "hue",
+      "image",
+      "palette",
+      "performance",
+      "picture",
+      "qml",
+      "requires",
+      "restart",
+      "start",
+      "startup",
+      "tint",
+      "wallpaper"
+    ],
+    "page": "personalization",
+    "description": "Requires restart"
   },
   {
     "section": "interfaceStyle",
@@ -2631,8 +3059,9 @@
     "section": "surfaceRoles",
     "label": "Surfaces",
     "tabIndex": -1,
-    "category": "Wallpaper & colors",
+    "category": "Appearance",
     "keywords": [
+      "appearance",
       "background",
       "bar",
       "bg",
@@ -2694,6 +3123,7 @@
     "keywords": [
       "animate",
       "animations",
+      "capture",
       "clipboard",
       "cliphist",
       "copy",
@@ -2707,9 +3137,13 @@
       "notes",
       "paste",
       "print",
+      "print screen",
       "printers",
       "printing",
       "release",
+      "screen capture",
+      "screenshot",
+      "snip",
       "software",
       "system",
       "transition",
@@ -2719,10 +3153,36 @@
     "description": "Updates, clipboard, %1"
   },
   {
+    "section": "textRendering",
+    "label": "Text rendering",
+    "tabIndex": -1,
+    "category": "Appearance",
+    "keywords": [
+      "appearance",
+      "background",
+      "bg",
+      "colors",
+      "colour",
+      "colours",
+      "desktop",
+      "hue",
+      "image",
+      "palette",
+      "picture",
+      "quality",
+      "render",
+      "rendering",
+      "text",
+      "tint",
+      "wallpaper"
+    ],
+    "page": "personalization"
+  },
+  {
     "section": "themeNav",
     "label": "Theme & colors",
     "tabIndex": -1,
-    "category": "Wallpaper & colors",
+    "category": "Appearance",
     "keywords": [
       "appearance",
       "background",
@@ -2752,7 +3212,7 @@
     "section": "materialSeed",
     "label": "Theme color",
     "tabIndex": -1,
-    "category": "Wallpaper & colors",
+    "category": "Appearance",
     "keywords": [
       "appearance",
       "background",
@@ -2778,6 +3238,36 @@
     ],
     "page": "personalization",
     "icon": "colorize"
+  },
+  {
+    "section": "iconMonoApps",
+    "label": "Themed app icons",
+    "tabIndex": -1,
+    "category": "Appearance",
+    "keywords": [
+      "app",
+      "appearance",
+      "background",
+      "bg",
+      "color",
+      "colors",
+      "colour",
+      "colours",
+      "desktop",
+      "dux",
+      "dynamic",
+      "hue",
+      "icon",
+      "icons",
+      "image",
+      "monochrome",
+      "palette",
+      "picture",
+      "themed",
+      "tint",
+      "wallpaper"
+    ],
+    "page": "personalization"
   },
   {
     "section": "focusRingWidth",
@@ -2899,8 +3389,9 @@
     "section": "tooltipSurfaceColor",
     "label": "Tooltip",
     "tabIndex": -1,
-    "category": "Wallpaper & colors",
+    "category": "Appearance",
     "keywords": [
+      "appearance",
       "background",
       "bg",
       "color",
@@ -2926,9 +3417,10 @@
     "section": "wallpaperTransition",
     "label": "Transition",
     "tabIndex": -1,
-    "category": "Wallpaper & colors",
+    "category": "Appearance",
     "keywords": [
       "animation",
+      "appearance",
       "background",
       "bg",
       "change",
@@ -2948,11 +3440,42 @@
     "page": "personalization"
   },
   {
+    "section": "typography",
+    "label": "Typography",
+    "tabIndex": -1,
+    "category": "Appearance",
+    "keywords": [
+      "appearance",
+      "background",
+      "bg",
+      "colors",
+      "colour",
+      "colours",
+      "desktop",
+      "family",
+      "font",
+      "fonts",
+      "hue",
+      "image",
+      "monospace",
+      "palette",
+      "picture",
+      "text",
+      "tint",
+      "typeface",
+      "typography",
+      "wallpaper"
+    ],
+    "page": "personalization",
+    "icon": "text_fields"
+  },
+  {
     "section": "disableWallpapers",
     "label": "Use external manager",
     "tabIndex": -1,
-    "category": "Wallpaper & colors",
+    "category": "Appearance",
     "keywords": [
+      "appearance",
       "background",
       "bg",
       "colors",
@@ -2988,8 +3511,9 @@
     "section": "wallpaperOptions",
     "label": "Wallpaper",
     "tabIndex": -1,
-    "category": "Wallpaper & colors",
+    "category": "Appearance",
     "keywords": [
+      "appearance",
       "background",
       "bg",
       "colors",
@@ -3012,11 +3536,41 @@
     "icon": "restore"
   },
   {
+    "section": "wallpaperAdvanced",
+    "label": "Wallpaper layer",
+    "tabIndex": -1,
+    "category": "Appearance",
+    "keywords": [
+      "appearance",
+      "background",
+      "bg",
+      "blur",
+      "colors",
+      "colour",
+      "colours",
+      "desktop",
+      "disable",
+      "external",
+      "hue",
+      "hyprpaper",
+      "image",
+      "layer",
+      "palette",
+      "picture",
+      "swaybg",
+      "swww",
+      "tint",
+      "wallpaper"
+    ],
+    "page": "personalization"
+  },
+  {
     "section": "wallpaperFolders",
     "label": "Wallpapers",
     "tabIndex": -1,
-    "category": "Wallpaper & colors",
+    "category": "Appearance",
     "keywords": [
+      "appearance",
       "background",
       "bg",
       "colors",
@@ -3041,8 +3595,9 @@
     "section": "cursorWarpOnMonitorChange",
     "label": "Warp on display change",
     "tabIndex": -1,
-    "category": "Wallpaper & colors",
+    "category": "Appearance",
     "keywords": [
+      "appearance",
       "background",
       "bg",
       "change",
@@ -3069,6 +3624,32 @@
     "conditionKey": "isHyprland"
   },
   {
+    "section": "fontWeight",
+    "label": "Weight",
+    "tabIndex": -1,
+    "category": "Appearance",
+    "keywords": [
+      "appearance",
+      "background",
+      "bg",
+      "bold",
+      "colors",
+      "colour",
+      "colours",
+      "desktop",
+      "font",
+      "hue",
+      "image",
+      "light",
+      "palette",
+      "picture",
+      "tint",
+      "wallpaper",
+      "weight"
+    ],
+    "page": "personalization"
+  },
+  {
     "section": "blurXrayLink",
     "label": "Xray options are in Compositor → Layout",
     "tabIndex": -1,
@@ -3087,10 +3668,10 @@
   },
   {
     "section": "_hub_personalization",
-    "label": "Wallpaper & colors",
+    "label": "Appearance",
     "tabIndex": 0,
     "page": "personalization",
-    "category": "Wallpaper & colors",
+    "category": "Appearance",
     "keywords": [
       "app",
       "appearance",
@@ -3106,6 +3687,8 @@
       "dark mode",
       "desktop",
       "folder",
+      "font",
+      "fonts",
       "hue",
       "image",
       "injected",
@@ -3118,14 +3701,17 @@
       "profile",
       "profiles",
       "style",
+      "text",
       "theme",
       "theming",
       "tint",
+      "typeface",
+      "typography",
       "wallpaper",
       "wallpapers"
     ],
     "icon": "wallpaper",
-    "description": "Theme, palette, dark mode"
+    "description": "Wallpaper, colors, typography"
   },
   {
     "section": "clockDateFormat",
@@ -6045,6 +6631,7 @@
       "colors",
       "colour",
       "compact",
+      "hue",
       "island",
       "look",
       "panel",
@@ -6052,10 +6639,11 @@
       "style",
       "taskbar",
       "theme",
+      "tint",
       "topbar"
     ],
     "parentLabel": "Bar",
-    "description": "Theme colour behind the collapsed island",
+    "description": "Theme color behind the collapsed island",
     "conditionKey": "islandEnabled"
   },
   {
@@ -6136,17 +6724,13 @@
     "category": "Appearance",
     "keywords": [
       "appearance",
-      "attached",
       "bar",
       "corner",
       "corners",
-      "edge",
-      "flush",
       "panel",
       "radius",
       "round",
       "rounded",
-      "screen",
       "square",
       "statusbar",
       "style",
@@ -6214,6 +6798,7 @@
       "colors",
       "colour",
       "expanded",
+      "hue",
       "island",
       "look",
       "panel",
@@ -6221,10 +6806,11 @@
       "style",
       "taskbar",
       "theme",
+      "tint",
       "topbar"
     ],
     "parentLabel": "Bar",
-    "description": "Theme colour behind the expanded island",
+    "description": "Theme color behind the expanded island",
     "conditionKey": "islandEnabled"
   },
   {
@@ -6691,6 +7277,28 @@
     "parentLabel": "Bar",
     "description": "Use fully rounded ends for the collapsed island",
     "conditionKey": "islandEnabled"
+  },
+  {
+    "section": "barEdgePlacement",
+    "label": "Placement",
+    "tabIndex": 6,
+    "category": "Appearance",
+    "keywords": [
+      "appearance",
+      "attached",
+      "bar",
+      "edge",
+      "floating",
+      "flush",
+      "gap",
+      "panel",
+      "placement",
+      "screen",
+      "statusbar",
+      "taskbar",
+      "topbar"
+    ],
+    "parentLabel": "Bar"
   },
   {
     "section": "islandSatellitePosition",
@@ -7851,6 +8459,29 @@
     "icon": "search"
   },
   {
+    "section": "dankLauncherV2ShowAppDescriptions",
+    "label": "Show app descriptions",
+    "tabIndex": 9,
+    "category": "Launcher",
+    "keywords": [
+      "app",
+      "app drawer",
+      "app menu",
+      "appearance",
+      "applications",
+      "description",
+      "descriptions",
+      "drawer",
+      "hide",
+      "launcher",
+      "menu",
+      "show",
+      "start",
+      "start menu",
+      "subtitle"
+    ]
+  },
+  {
     "section": "dankLauncherV2ShowAppIcons",
     "label": "Show app icons",
     "tabIndex": 9,
@@ -8098,27 +8729,21 @@
     "category": "Theme & colors",
     "keywords": [
       "appearance",
-      "background",
-      "bg",
       "colors",
       "colour",
       "colours",
       "contrast",
-      "desktop",
       "dynamic",
       "hue",
-      "image",
       "look",
       "matugen",
       "palette",
-      "picture",
       "scheme",
       "style",
       "theme",
-      "tint",
-      "wallpaper"
+      "tint"
     ],
-    "parentLabel": "Wallpaper & colors"
+    "parentLabel": "Appearance"
   },
   {
     "section": "matugenSeedColor",
@@ -8127,8 +8752,6 @@
     "category": "Theme & colors",
     "keywords": [
       "appearance",
-      "background",
-      "bg",
       "builds",
       "color",
       "colors",
@@ -8136,24 +8759,20 @@
       "colours",
       "custom",
       "derived",
-      "desktop",
       "dynamic",
       "eyedropper",
       "hue",
-      "image",
       "look",
       "matugen",
       "palette",
       "pick",
-      "picture",
       "scheme",
       "seed",
       "style",
       "theme",
-      "tint",
-      "wallpaper"
+      "tint"
     ],
-    "parentLabel": "Wallpaper & colors",
+    "parentLabel": "Appearance",
     "description": "Custom builds the palette from a color you pick"
   },
   {
@@ -8163,24 +8782,19 @@
     "category": "Theme & colors",
     "keywords": [
       "appearance",
-      "background",
-      "bg",
       "changed",
       "colors",
       "colour",
       "colours",
-      "desktop",
       "dynamic",
       "even",
       "generate",
       "hue",
-      "image",
       "look",
       "material",
       "matugen",
       "nothing",
       "palette",
-      "picture",
       "regenerate",
       "scheme",
       "starts",
@@ -8188,10 +8802,9 @@
       "style",
       "theme",
       "tint",
-      "wallpaper",
       "wallpaper colors"
     ],
-    "parentLabel": "Wallpaper & colors",
+    "parentLabel": "Appearance",
     "description": "Regenerate matugen colors when DMS starts, even if nothing changed.",
     "conditionKey": "matugenAvailable"
   },
@@ -8202,32 +8815,26 @@
     "category": "Theme & colors",
     "keywords": [
       "appearance",
-      "background",
-      "bg",
       "bold",
       "colors",
       "colour",
       "colours",
-      "desktop",
       "dynamic",
       "expressive",
       "hue",
-      "image",
       "look",
       "material",
       "matugen",
       "palette",
-      "picture",
       "saturated",
       "scheme",
       "spec",
       "style",
       "theme",
       "tint",
-      "vivid",
-      "wallpaper"
+      "vivid"
     ],
-    "parentLabel": "Wallpaper & colors"
+    "parentLabel": "Appearance"
   },
   {
     "section": "matugenScheme",
@@ -8237,28 +8844,22 @@
     "keywords": [
       "algorithm",
       "appearance",
-      "background",
-      "bg",
       "colors",
       "colour",
       "colours",
-      "desktop",
       "dynamic",
       "hue",
-      "image",
       "look",
       "material",
       "matugen",
       "palette",
-      "picture",
       "scheme",
       "style",
       "theme",
       "tint",
-      "wallpaper",
       "wallpaper colors"
     ],
-    "parentLabel": "Wallpaper & colors"
+    "parentLabel": "Appearance"
   },
   {
     "section": "matugenSourceMode",
@@ -8290,7 +8891,7 @@
       "tint",
       "wallpaper"
     ],
-    "parentLabel": "Wallpaper & colors",
+    "parentLabel": "Appearance",
     "description": "Which wallpaper color the palette is built from"
   },
   {
@@ -8300,28 +8901,22 @@
     "category": "Theme & colors",
     "keywords": [
       "appearance",
-      "background",
       "behavior",
-      "bg",
       "colors",
       "colour",
       "colours",
-      "desktop",
       "hue",
-      "image",
       "look",
       "matugen",
       "palette",
-      "picture",
       "scheme",
       "startup",
       "style",
       "theme",
       "theming",
-      "tint",
-      "wallpaper"
+      "tint"
     ],
-    "parentLabel": "Wallpaper & colors",
+    "parentLabel": "Appearance",
     "icon": "power_settings_new",
     "conditionKey": "matugenAvailable"
   },
@@ -8332,25 +8927,19 @@
     "category": "Theme & colors",
     "keywords": [
       "appearance",
-      "background",
-      "bg",
       "color",
       "colors",
       "colour",
       "colours",
-      "desktop",
       "hue",
-      "image",
       "look",
       "palette",
-      "picture",
       "scheme",
       "style",
       "theme",
-      "tint",
-      "wallpaper"
+      "tint"
     ],
-    "parentLabel": "Wallpaper & colors",
+    "parentLabel": "Appearance",
     "icon": "palette"
   },
   {
@@ -8360,18 +8949,14 @@
     "category": "Theme & colors",
     "keywords": [
       "appearance",
-      "background",
-      "bg",
       "colors",
       "colour",
       "colours",
       "dark",
       "dark mode",
       "day",
-      "desktop",
       "dynamic",
       "hue",
-      "image",
       "light",
       "light mode",
       "look",
@@ -8379,16 +8964,14 @@
       "matugen",
       "night",
       "palette",
-      "picture",
       "scheme",
       "style",
       "theme",
       "tint",
-      "wallpaper",
       "wallpaper colors"
     ],
     "icon": "format_paint",
-    "parentLabel": "Wallpaper & colors",
+    "parentLabel": "Appearance",
     "description": "Theme, light and dark, matugen"
   },
   {
@@ -8954,43 +9537,21 @@
     "description": "Version, links, diagnostics"
   },
   {
-    "section": "typographyAdvanced",
-    "label": "Advanced",
-    "tabIndex": 14,
-    "category": "Fonts & motion",
-    "keywords": [
-      "advanced",
-      "animation",
-      "duration",
-      "fonts",
-      "modal",
-      "motion",
-      "popout",
-      "quality",
-      "render",
-      "rendering",
-      "sync",
-      "text"
-    ]
-  },
-  {
     "section": "compositorAnimationsLink",
     "label": "Compositor animations",
     "tabIndex": 14,
-    "category": "Fonts & motion",
+    "category": "Motion",
     "keywords": [
       "animate",
       "animation",
       "animations",
       "bounce",
       "compositor",
-      "fonts",
       "hyprland",
       "mango",
       "motion",
       "niri",
       "spring",
-      "text",
       "transition",
       "window"
     ],
@@ -8998,275 +9559,92 @@
     "conditionKey": "animationsCapable"
   },
   {
-    "section": "displayFontFamily",
-    "label": "Display family",
-    "tabIndex": 14,
-    "category": "Fonts & motion",
-    "keywords": [
-      "animation",
-      "display",
-      "family",
-      "font",
-      "fonts",
-      "headline",
-      "monitor",
-      "motion",
-      "output",
-      "screen",
-      "serif",
-      "stylistic",
-      "text",
-      "title"
-    ]
-  },
-  {
-    "section": "animationDuration",
+    "section": "motionDuration",
     "label": "Duration",
     "tabIndex": 14,
-    "category": "Fonts & motion",
+    "category": "Motion",
     "keywords": [
       "animation",
+      "disable",
       "duration",
-      "fonts",
+      "fast",
+      "longer",
       "motion",
-      "speed",
-      "text"
+      "none",
+      "off",
+      "shorter",
+      "slow",
+      "speed"
     ]
-  },
-  {
-    "section": "fontFamily",
-    "label": "Family",
-    "tabIndex": 14,
-    "category": "Fonts & motion",
-    "keywords": [
-      "animation",
-      "family",
-      "font",
-      "fonts",
-      "motion",
-      "normal",
-      "text"
-    ]
-  },
-  {
-    "section": "typography",
-    "label": "Font",
-    "tabIndex": 14,
-    "category": "Fonts & motion",
-    "keywords": [
-      "animation",
-      "family",
-      "font",
-      "fonts",
-      "monospace",
-      "motion",
-      "text",
-      "typography"
-    ],
-    "icon": "text_fields"
   },
   {
     "section": "_tab_14",
-    "label": "Fonts & motion",
+    "label": "Motion",
     "tabIndex": 14,
-    "category": "Fonts & motion",
+    "category": "Motion",
     "keywords": [
       "animate",
       "animation",
       "animations",
-      "fonts",
       "motion",
-      "scale",
-      "text",
       "transition"
     ],
-    "icon": "text_fields",
-    "description": "Fonts, scale, animations"
-  },
-  {
-    "section": "modalAnimationDuration",
-    "label": "Modals",
-    "tabIndex": 14,
-    "category": "Fonts & motion",
-    "keywords": [
-      "animation",
-      "duration",
-      "fonts",
-      "modal",
-      "modals",
-      "motion",
-      "speed",
-      "text"
-    ]
-  },
-  {
-    "section": "monoFontFamily",
-    "label": "Monospace family",
-    "tabIndex": 14,
-    "category": "Fonts & motion",
-    "keywords": [
-      "animation",
-      "code",
-      "family",
-      "font",
-      "fonts",
-      "monospace",
-      "motion",
-      "process",
-      "terminal",
-      "text"
-    ]
+    "icon": "animation",
+    "description": "Animations and motion"
   },
   {
     "section": "motionEffect",
     "label": "Panel motion",
     "tabIndex": 14,
-    "category": "Fonts & motion",
+    "category": "Motion",
     "keywords": [
       "animation",
       "depth",
       "directional",
       "effect",
       "fluid",
-      "fonts",
       "motion",
       "panel",
       "panels",
       "physics",
       "slide",
-      "spring",
-      "text"
-    ]
-  },
-  {
-    "section": "popoutAnimationDuration",
-    "label": "Popouts",
-    "tabIndex": 14,
-    "category": "Fonts & motion",
-    "keywords": [
-      "animation",
-      "duration",
-      "fonts",
-      "motion",
-      "popout",
-      "popouts",
-      "speed",
-      "text"
-    ]
-  },
-  {
-    "section": "textRenderQuality",
-    "label": "Quality",
-    "tabIndex": 14,
-    "category": "Fonts & motion",
-    "keywords": [
-      "animation",
-      "fonts",
-      "level",
-      "motion",
-      "quality",
-      "render",
-      "text"
+      "spring"
     ]
   },
   {
     "section": "reduceMotion",
     "label": "Reduce motion",
     "tabIndex": 14,
-    "category": "Fonts & motion",
+    "category": "Motion",
     "keywords": [
       "accessibility",
       "animation",
-      "fonts",
       "motion",
       "physics",
       "reduce",
-      "spring",
-      "text"
-    ]
-  },
-  {
-    "section": "renderControlEnabled",
-    "label": "Render control",
-    "tabIndex": 14,
-    "category": "Fonts & motion",
-    "keywords": [
-      "animation",
-      "control",
-      "damage",
-      "fonts",
-      "gpu",
-      "memory",
-      "motion",
-      "performance",
-      "render",
-      "requires",
-      "restart",
-      "text",
-      "vram"
-    ],
-    "description": "Requires restart"
-  },
-  {
-    "section": "textRenderType",
-    "label": "Renderer",
-    "tabIndex": 14,
-    "category": "Fonts & motion",
-    "keywords": [
-      "animation",
-      "curve",
-      "distance-field",
-      "fonts",
-      "freetype",
-      "motion",
-      "native",
-      "qt",
-      "rasterizer",
-      "render",
-      "renderer",
-      "rendering",
-      "text",
-      "type"
+      "spring"
     ]
   },
   {
     "section": "enableRippleEffects",
     "label": "Ripple effects",
     "tabIndex": 14,
-    "category": "Fonts & motion",
+    "category": "Motion",
     "keywords": [
       "animation",
       "click",
       "effect",
       "effects",
-      "fonts",
       "material",
       "motion",
-      "ripple",
-      "text"
-    ]
-  },
-  {
-    "section": "fontScale",
-    "label": "Scale",
-    "tabIndex": 14,
-    "category": "Fonts & motion",
-    "keywords": [
-      "animation",
-      "font",
-      "fonts",
-      "motion",
-      "scale",
-      "size",
-      "text",
-      "zoom"
+      "ripple"
     ]
   },
   {
     "section": "animations",
     "label": "Shell animations",
     "tabIndex": 14,
-    "category": "Fonts & motion",
+    "category": "Motion",
     "keywords": [
       "accessibility",
       "animate",
@@ -9275,14 +9653,12 @@
       "bounce",
       "duration",
       "fluid",
-      "fonts",
       "motion",
       "physics",
       "ripple",
       "shell",
       "speed",
       "spring",
-      "text",
       "transition"
     ],
     "icon": "auto_awesome_motion"
@@ -9291,77 +9667,14 @@
     "section": "springBounce",
     "label": "Spring",
     "tabIndex": 14,
-    "category": "Fonts & motion",
+    "category": "Motion",
     "keywords": [
       "animation",
       "bounce",
-      "fonts",
       "motion",
       "overshoot",
       "physics",
-      "spring",
-      "text"
-    ]
-  },
-  {
-    "section": "qmlCacheEnabled",
-    "label": "Startup cache",
-    "tabIndex": 14,
-    "category": "Fonts & motion",
-    "keywords": [
-      "animation",
-      "cache",
-      "disk",
-      "fonts",
-      "motion",
-      "performance",
-      "qml",
-      "requires",
-      "restart",
-      "start",
-      "startup",
-      "text"
-    ],
-    "description": "Requires restart"
-  },
-  {
-    "section": "syncComponentAnimationSpeeds",
-    "label": "Sync popouts and modals",
-    "tabIndex": 14,
-    "category": "Fonts & motion",
-    "keywords": [
-      "animate",
-      "animation",
-      "animations",
-      "duration",
-      "fonts",
-      "global",
-      "main",
-      "modal",
-      "modals",
-      "motion",
-      "popout",
-      "popouts",
-      "sync",
-      "text",
-      "transition"
-    ],
-    "description": "Popouts and modals use the main animation duration"
-  },
-  {
-    "section": "fontWeight",
-    "label": "Weight",
-    "tabIndex": 14,
-    "category": "Fonts & motion",
-    "keywords": [
-      "animation",
-      "bold",
-      "font",
-      "fonts",
-      "light",
-      "motion",
-      "text",
-      "weight"
+      "spring"
     ]
   },
   {
@@ -9794,7 +10107,8 @@
       "rfkill",
       "screen",
       "wifi"
-    ]
+    ],
+    "icon": "airplanemode_active"
   },
   {
     "section": "osdAlwaysShowValue",
@@ -9826,7 +10140,8 @@
       "popup",
       "screen",
       "switch"
-    ]
+    ],
+    "icon": "speaker"
   },
   {
     "section": "osdBrightnessEnabled",
@@ -9843,7 +10158,8 @@
       "osd",
       "popup",
       "screen"
-    ]
+    ],
+    "icon": "brightness_6"
   },
   {
     "section": "osdCapsLockEnabled",
@@ -9858,7 +10174,8 @@
       "osd",
       "popup",
       "screen"
-    ]
+    ],
+    "icon": "keyboard_capslock"
   },
   {
     "section": "osdDoNotDisturbEnabled",
@@ -9874,7 +10191,8 @@
       "osd",
       "popup",
       "screen"
-    ]
+    ],
+    "icon": "do_not_disturb_on"
   },
   {
     "section": "osdIdleInhibitorEnabled",
@@ -9893,7 +10211,8 @@
       "screen",
       "screensaver",
       "timeout"
-    ]
+    ],
+    "icon": "coffee"
   },
   {
     "section": "osdInputMethodEnabled",
@@ -9908,7 +10227,8 @@
       "osd",
       "popup",
       "screen"
-    ]
+    ],
+    "icon": "language"
   },
   {
     "section": "osdKeyboardLayoutEnabled",
@@ -9923,7 +10243,8 @@
       "osd",
       "popup",
       "screen"
-    ]
+    ],
+    "icon": "keyboard"
   },
   {
     "section": "osdMediaPlaybackEnabled",
@@ -9938,7 +10259,8 @@
       "playback",
       "popup",
       "screen"
-    ]
+    ],
+    "icon": "play_arrow"
   },
   {
     "section": "osdMediaVolumeEnabled",
@@ -9957,7 +10279,8 @@
       "sound",
       "speaker",
       "volume"
-    ]
+    ],
+    "icon": "music_note"
   },
   {
     "section": "osdMicMuteEnabled",
@@ -9972,7 +10295,8 @@
       "osd",
       "popup",
       "screen"
-    ]
+    ],
+    "icon": "mic_off"
   },
   {
     "section": "osdMicVolumeEnabled",
@@ -9991,7 +10315,8 @@
       "sound",
       "speaker",
       "volume"
-    ]
+    ],
+    "icon": "mic"
   },
   {
     "section": "osdNumLockEnabled",
@@ -10006,7 +10331,8 @@
       "osd",
       "popup",
       "screen"
-    ]
+    ],
+    "icon": "dialpad"
   },
   {
     "section": "osd",
@@ -10054,7 +10380,8 @@
       "shutdown",
       "sleep",
       "suspend"
-    ]
+    ],
+    "icon": "bolt"
   },
   {
     "section": "osdEvents",
@@ -10072,7 +10399,8 @@
       "screen",
       "show",
       "wifi"
-    ]
+    ],
+    "icon": "volume_up"
   },
   {
     "section": "osdTouchpadEnabled",
@@ -10087,6 +10415,7 @@
       "screen",
       "touchpad"
     ],
+    "icon": "touchpad_mouse",
     "conditionKey": "isNiri"
   },
   {
@@ -10105,7 +10434,8 @@
       "sound",
       "speaker",
       "volume"
-    ]
+    ],
+    "icon": "volume_up"
   },
   {
     "section": "osdWorkspaceEnabled",
@@ -10122,7 +10452,8 @@
       "switch",
       "virtual",
       "workspace"
-    ]
+    ],
+    "icon": "view_carousel"
   },
   {
     "section": "appIdSubstitutions",
@@ -11067,7 +11398,7 @@
     "parentLabel": "Power & battery"
   },
   {
-    "section": "barWidgetOption:AppsDockOptions.qml:23",
+    "section": "barWidgetOption:AppsDockOptions.qml:24",
     "label": "Active color",
     "tabIndex": 22,
     "keywords": [],
@@ -11179,10 +11510,9 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "_hub_dankbar_widgets",
+    "section": "_tab_22",
     "label": "Bar widgets",
     "tabIndex": 22,
-    "page": "dankbar_widgets",
     "category": "Bar widgets",
     "keywords": [
       "bar",
@@ -11191,14 +11521,13 @@
       "modules",
       "panel",
       "reorder",
-      "settings",
       "statusbar",
       "taskbar",
       "topbar",
-      "widget",
       "widgets"
     ],
     "icon": "widgets",
+    "parentLabel": "Bar",
     "description": "Add, reorder, configure"
   },
   {
@@ -11226,7 +11555,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:AppsDockOptions.qml:15",
+    "section": "barWidgetOption:AppsDockOptions.qml:16",
     "label": "Brightness",
     "tabIndex": 22,
     "keywords": [],
@@ -11322,7 +11651,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:AppsDockOptions.qml:13",
+    "section": "barWidgetOption:AppsDockOptions.qml:14",
     "label": "Color override",
     "tabIndex": 22,
     "keywords": [],
@@ -11338,7 +11667,7 @@
     "optionFile": "LauncherButtonOptions.qml"
   },
   {
-    "section": "barWidgetOption:AppsDockOptions.qml:22",
+    "section": "barWidgetOption:AppsDockOptions.qml:23",
     "label": "Colorize active",
     "tabIndex": 22,
     "keywords": [],
@@ -11394,7 +11723,7 @@
     "optionFile": "RunningAppsOptions.qml"
   },
   {
-    "section": "barWidgetOption:AppsDockOptions.qml:16",
+    "section": "barWidgetOption:AppsDockOptions.qml:17",
     "label": "Contrast",
     "tabIndex": 22,
     "keywords": [],
@@ -11450,7 +11779,7 @@
     "optionFile": "RunningAppsOptions.qml"
   },
   {
-    "section": "barWidgetOption:AppsDockOptions.qml:12",
+    "section": "barWidgetOption:AppsDockOptions.qml:13",
     "label": "Custom",
     "tabIndex": 22,
     "keywords": [],
@@ -11466,7 +11795,7 @@
     "optionFile": "LauncherButtonOptions.qml"
   },
   {
-    "section": "barWidgetOption:AppsDockOptions.qml:19",
+    "section": "barWidgetOption:AppsDockOptions.qml:20",
     "label": "Custom command",
     "tabIndex": 22,
     "keywords": [],
@@ -11610,7 +11939,7 @@
     "optionFile": "WorkspaceSwitcherOptions.qml"
   },
   {
-    "section": "barWidgetOption:AppsDockOptions.qml:3",
+    "section": "barWidgetOption:AppsDockOptions.qml:4",
     "label": "Group by app",
     "tabIndex": 22,
     "keywords": [],
@@ -11690,7 +12019,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:AppsDockOptions.qml:11",
+    "section": "barWidgetOption:AppsDockOptions.qml:12",
     "label": "Icon",
     "tabIndex": 22,
     "keywords": [],
@@ -11722,7 +12051,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:AppsDockOptions.qml:25",
+    "section": "barWidgetOption:AppsDockOptions.qml:26",
     "label": "Icon size",
     "tabIndex": 22,
     "keywords": [],
@@ -11754,7 +12083,7 @@
     "optionFile": "WorkspaceSwitcherOptions.qml"
   },
   {
-    "section": "barWidgetOption:AppsDockOptions.qml:21",
+    "section": "barWidgetOption:AppsDockOptions.qml:22",
     "label": "Indicators",
     "tabIndex": 22,
     "keywords": [],
@@ -11768,6 +12097,39 @@
     "keywords": [],
     "runtimeType": "barWidgetOption",
     "optionFile": "ControlCenterOptions.qml"
+  },
+  {
+    "section": "islandHomeLayout",
+    "label": "Island widgets",
+    "tabIndex": 22,
+    "category": "Bar widgets",
+    "keywords": [
+      "activities",
+      "bar",
+      "battery",
+      "brightness",
+      "clock",
+      "compact",
+      "components",
+      "groups",
+      "home",
+      "island",
+      "launcher",
+      "layout",
+      "media",
+      "modules",
+      "notifications",
+      "order",
+      "panel",
+      "statusbar",
+      "taskbar",
+      "topbar",
+      "volume",
+      "weather",
+      "widgets"
+    ],
+    "icon": "view_in_ar",
+    "conditionKey": "islandEnabled"
   },
   {
     "section": "barWidgetOption:IslandOptions.qml:24",
@@ -11794,7 +12156,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:AppsDockOptions.qml:9",
+    "section": "barWidgetOption:AppsDockOptions.qml:10",
     "label": "Launcher button",
     "tabIndex": 22,
     "keywords": [],
@@ -11826,7 +12188,7 @@
     "optionFile": "MusicOptions.qml"
   },
   {
-    "section": "barWidgetOption:AppsDockOptions.qml:24",
+    "section": "barWidgetOption:AppsDockOptions.qml:25",
     "label": "Magnification",
     "tabIndex": 22,
     "keywords": [],
@@ -11842,7 +12204,7 @@
     "optionFile": "WorkspaceSwitcherOptions.qml"
   },
   {
-    "section": "barWidgetOption:AppsDockOptions.qml:6",
+    "section": "barWidgetOption:AppsDockOptions.qml:7",
     "label": "Max pinned apps",
     "tabIndex": 22,
     "keywords": [],
@@ -11850,7 +12212,7 @@
     "optionFile": "AppsDockOptions.qml"
   },
   {
-    "section": "barWidgetOption:AppsDockOptions.qml:7",
+    "section": "barWidgetOption:AppsDockOptions.qml:8",
     "label": "Max running apps",
     "tabIndex": 22,
     "keywords": [],
@@ -11986,7 +12348,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:AppsDockOptions.qml:18",
+    "section": "barWidgetOption:AppsDockOptions.qml:19",
     "label": "Open with",
     "tabIndex": 22,
     "keywords": [],
@@ -12002,7 +12364,7 @@
     "optionFile": "ClockOptions.qml"
   },
   {
-    "section": "barWidgetOption:AppsDockOptions.qml:5",
+    "section": "barWidgetOption:AppsDockOptions.qml:6",
     "label": "Overflow",
     "tabIndex": 22,
     "keywords": [],
@@ -12114,7 +12476,7 @@
     "optionFile": "MusicOptions.qml"
   },
   {
-    "section": "barWidgetOption:AppsDockOptions.qml:4",
+    "section": "barWidgetOption:AppsDockOptions.qml:5",
     "label": "Separate pinned and running apps",
     "tabIndex": 22,
     "keywords": [],
@@ -12122,7 +12484,7 @@
     "optionFile": "AppsDockOptions.qml"
   },
   {
-    "section": "barWidgetOption:AppsDockOptions.qml:10",
+    "section": "barWidgetOption:AppsDockOptions.qml:11",
     "label": "Show",
     "tabIndex": 22,
     "keywords": [],
@@ -12154,7 +12516,7 @@
     "optionFile": "WorkspaceSwitcherOptions.qml"
   },
   {
-    "section": "barWidgetOption:AppsDockOptions.qml:8",
+    "section": "barWidgetOption:AppsDockOptions.qml:9",
     "label": "Show badge",
     "tabIndex": 22,
     "keywords": [],
@@ -12234,6 +12596,14 @@
     "optionFile": "BatteryOptions.qml"
   },
   {
+    "section": "barWidgetOption:AppsDockOptions.qml:3",
+    "label": "Show running apps",
+    "tabIndex": 22,
+    "keywords": [],
+    "runtimeType": "barWidgetOption",
+    "optionFile": "AppsDockOptions.qml"
+  },
+  {
     "section": "barWidgetOption:WorkspaceSwitcherOptions.qml:11",
     "label": "Show scratchpads",
     "tabIndex": 22,
@@ -12290,7 +12660,7 @@
     "optionFile": "MusicOptions.qml"
   },
   {
-    "section": "barWidgetOption:AppsDockOptions.qml:14",
+    "section": "barWidgetOption:AppsDockOptions.qml:15",
     "label": "Size offset",
     "tabIndex": 22,
     "keywords": [],
@@ -12322,7 +12692,7 @@
     "optionFile": "SystemUpdateOptions.qml"
   },
   {
-    "section": "barWidgetOption:AppsDockOptions.qml:26",
+    "section": "barWidgetOption:AppsDockOptions.qml:27",
     "label": "Spacing",
     "tabIndex": 22,
     "keywords": [],
@@ -12426,7 +12796,7 @@
     "optionFile": "MusicOptions.qml"
   },
   {
-    "section": "barWidgetOption:AppsDockOptions.qml:17",
+    "section": "barWidgetOption:AppsDockOptions.qml:18",
     "label": "Trash",
     "tabIndex": 22,
     "keywords": [],
@@ -12466,7 +12836,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:AppsDockOptions.qml:20",
+    "section": "barWidgetOption:AppsDockOptions.qml:21",
     "label": "Visual effects",
     "tabIndex": 22,
     "keywords": [],
@@ -16043,14 +16413,20 @@
     "tabIndex": 43,
     "category": "Dashboard",
     "keywords": [
+      "bar",
       "climate",
       "dashboard",
       "forecast",
+      "panel",
+      "statusbar",
       "tabs",
+      "taskbar",
       "temperature",
+      "topbar",
       "weather"
     ],
     "icon": "space_dashboard",
+    "parentLabel": "Bar",
     "description": "Tabs and weather"
   },
   {
@@ -16059,10 +16435,16 @@
     "tabIndex": 43,
     "category": "Dashboard",
     "keywords": [
+      "bar",
       "dashboard",
       "digital",
+      "panel",
+      "statusbar",
+      "taskbar",
+      "topbar",
       "wellbeing"
     ],
+    "parentLabel": "Bar",
     "icon": "digital_wellbeing"
   },
   {
@@ -16071,13 +16453,19 @@
     "tabIndex": 43,
     "category": "Dashboard",
     "keywords": [
+      "bar",
       "dashboard",
       "evenly",
       "navigation",
+      "panel",
       "space",
       "spacing",
-      "tabs"
-    ]
+      "statusbar",
+      "tabs",
+      "taskbar",
+      "topbar"
+    ],
+    "parentLabel": "Bar"
   },
   {
     "section": "dashMediaSettings",
@@ -16086,13 +16474,19 @@
     "category": "Dashboard",
     "keywords": [
       "audio",
+      "bar",
       "dashboard",
       "media",
       "mpris",
       "music",
+      "panel",
       "playback",
-      "player"
+      "player",
+      "statusbar",
+      "taskbar",
+      "topbar"
     ],
+    "parentLabel": "Bar",
     "icon": "music_note"
   },
   {
@@ -16101,11 +16495,17 @@
     "tabIndex": 43,
     "category": "Dashboard",
     "keywords": [
+      "bar",
       "dashboard",
       "navigation",
+      "panel",
       "position",
-      "tabs"
-    ]
+      "statusbar",
+      "tabs",
+      "taskbar",
+      "topbar"
+    ],
+    "parentLabel": "Bar"
   },
   {
     "section": "dashTabs",
@@ -16113,11 +16513,17 @@
     "tabIndex": 43,
     "category": "Dashboard",
     "keywords": [
+      "bar",
       "dashboard",
       "navigation",
+      "panel",
       "position",
-      "tabs"
+      "statusbar",
+      "tabs",
+      "taskbar",
+      "topbar"
     ],
+    "parentLabel": "Bar",
     "icon": "refresh"
   },
   {
@@ -16126,12 +16532,18 @@
     "tabIndex": 43,
     "category": "Dashboard",
     "keywords": [
+      "bar",
       "climate",
       "dashboard",
       "forecast",
+      "panel",
+      "statusbar",
+      "taskbar",
       "temperature",
+      "topbar",
       "weather"
     ],
+    "parentLabel": "Bar",
     "icon": "partly_cloudy_day"
   },
   {
@@ -16821,24 +17233,13 @@
     "keywords": [
       "alacritty",
       "app",
-      "background",
-      "bg",
-      "colors",
-      "colour",
-      "colours",
-      "desktop",
-      "hue",
-      "image",
+      "appearance",
       "matugen",
-      "palette",
-      "picture",
       "template",
       "terminal",
-      "theming",
-      "tint",
-      "wallpaper"
+      "theming"
     ],
-    "parentLabel": "Wallpaper & colors",
+    "parentLabel": "Appearance",
     "conditionKey": "matugenAvailable"
   },
   {
@@ -16848,28 +17249,17 @@
     "category": "App theming",
     "keywords": [
       "app",
-      "background",
-      "bg",
-      "colors",
-      "colour",
-      "colours",
-      "desktop",
+      "appearance",
       "dynamic",
-      "hue",
-      "image",
       "material",
       "matugen",
-      "palette",
-      "picture",
       "portal",
       "templates",
       "theming",
-      "tint",
-      "wallpaper",
       "wallpaper colors"
     ],
     "icon": "apps",
-    "parentLabel": "Wallpaper & colors",
+    "parentLabel": "Appearance",
     "description": "GTK, Qt, portal, matugen templates"
   },
   {
@@ -16880,6 +17270,7 @@
     "keywords": [
       "ansi",
       "app",
+      "appearance",
       "background",
       "bg",
       "colors",
@@ -16896,7 +17287,7 @@
       "tint",
       "wallpaper"
     ],
-    "parentLabel": "Wallpaper & colors"
+    "parentLabel": "Appearance"
   },
   {
     "section": "matugenTemplateNeovimSettings",
@@ -16905,30 +17296,19 @@
     "category": "App theming",
     "keywords": [
       "app",
-      "background",
+      "appearance",
       "base",
-      "bg",
-      "colors",
-      "colour",
-      "colours",
       "dark",
       "dark mode",
-      "desktop",
-      "hue",
-      "image",
       "matugen",
       "mode",
       "neovim",
       "night",
-      "palette",
-      "picture",
       "template",
       "terminal",
-      "theming",
-      "tint",
-      "wallpaper"
+      "theming"
     ],
-    "parentLabel": "Wallpaper & colors",
+    "parentLabel": "Appearance",
     "conditionKey": "matugenAvailable"
   },
   {
@@ -16938,24 +17318,13 @@
     "category": "App theming",
     "keywords": [
       "app",
-      "background",
-      "bg",
-      "colors",
-      "colour",
-      "colours",
-      "desktop",
+      "appearance",
       "emacs",
-      "hue",
-      "image",
       "matugen",
-      "palette",
-      "picture",
       "template",
-      "theming",
-      "tint",
-      "wallpaper"
+      "theming"
     ],
-    "parentLabel": "Wallpaper & colors",
+    "parentLabel": "Appearance",
     "conditionKey": "matugenAvailable"
   },
   {
@@ -16965,25 +17334,14 @@
     "category": "App theming",
     "keywords": [
       "app",
-      "background",
-      "bg",
-      "colors",
-      "colour",
-      "colours",
-      "desktop",
+      "appearance",
       "fcitx5",
-      "hue",
-      "image",
       "input",
       "matugen",
-      "palette",
-      "picture",
       "template",
-      "theming",
-      "tint",
-      "wallpaper"
+      "theming"
     ],
-    "parentLabel": "Wallpaper & colors",
+    "parentLabel": "Appearance",
     "conditionKey": "matugenAvailable"
   },
   {
@@ -16993,24 +17351,13 @@
     "category": "App theming",
     "keywords": [
       "app",
-      "background",
-      "bg",
-      "colors",
-      "colour",
-      "colours",
-      "desktop",
+      "appearance",
       "firefox",
-      "hue",
-      "image",
       "matugen",
-      "palette",
-      "picture",
       "template",
-      "theming",
-      "tint",
-      "wallpaper"
+      "theming"
     ],
-    "parentLabel": "Wallpaper & colors",
+    "parentLabel": "Appearance",
     "conditionKey": "matugenAvailable"
   },
   {
@@ -17020,28 +17367,21 @@
     "category": "App theming",
     "keywords": [
       "app",
+      "appearance",
       "background",
-      "bg",
       "color",
-      "colors",
       "colour",
-      "colours",
-      "desktop",
       "dms",
       "follow",
       "hue",
-      "image",
       "matugen",
       "neovim",
-      "palette",
-      "picture",
       "template",
       "terminal",
       "theming",
-      "tint",
-      "wallpaper"
+      "tint"
     ],
-    "parentLabel": "Wallpaper & colors",
+    "parentLabel": "Appearance",
     "conditionKey": "matugenAvailable"
   },
   {
@@ -17051,24 +17391,13 @@
     "category": "App theming",
     "keywords": [
       "app",
-      "background",
-      "bg",
-      "colors",
-      "colour",
-      "colours",
-      "desktop",
+      "appearance",
       "gtk",
-      "hue",
-      "image",
       "matugen",
-      "palette",
-      "picture",
       "template",
-      "theming",
-      "tint",
-      "wallpaper"
+      "theming"
     ],
-    "parentLabel": "Wallpaper & colors",
+    "parentLabel": "Appearance",
     "conditionKey": "matugenAvailable"
   },
   {
@@ -17078,24 +17407,13 @@
     "category": "App theming",
     "keywords": [
       "app",
-      "background",
-      "bg",
-      "colors",
-      "colour",
-      "colours",
-      "desktop",
+      "appearance",
       "gtk",
-      "hue",
-      "image",
-      "palette",
-      "picture",
       "qt",
       "system",
-      "theming",
-      "tint",
-      "wallpaper"
+      "theming"
     ],
-    "parentLabel": "Wallpaper & colors",
+    "parentLabel": "Appearance",
     "icon": "brush",
     "conditionKey": "matugenAvailable"
   },
@@ -17106,25 +17424,14 @@
     "category": "App theming",
     "keywords": [
       "app",
-      "background",
-      "bg",
-      "colors",
-      "colour",
-      "colours",
-      "desktop",
+      "appearance",
       "ghostty",
-      "hue",
-      "image",
       "matugen",
-      "palette",
-      "picture",
       "template",
       "terminal",
-      "theming",
-      "tint",
-      "wallpaper"
+      "theming"
     ],
-    "parentLabel": "Wallpaper & colors",
+    "parentLabel": "Appearance",
     "conditionKey": "matugenAvailable"
   },
   {
@@ -17134,24 +17441,13 @@
     "category": "App theming",
     "keywords": [
       "app",
-      "background",
-      "bg",
-      "colors",
-      "colour",
-      "colours",
-      "desktop",
-      "hue",
+      "appearance",
       "hyprland",
-      "image",
       "matugen",
-      "palette",
-      "picture",
       "template",
-      "theming",
-      "tint",
-      "wallpaper"
+      "theming"
     ],
-    "parentLabel": "Wallpaper & colors",
+    "parentLabel": "Appearance",
     "conditionKey": "matugenAvailable"
   },
   {
@@ -17161,25 +17457,14 @@
     "category": "App theming",
     "keywords": [
       "app",
-      "background",
-      "bg",
-      "colors",
-      "colour",
-      "colours",
-      "desktop",
-      "hue",
-      "image",
+      "appearance",
       "kcolorscheme",
       "kde",
       "matugen",
-      "palette",
-      "picture",
       "template",
-      "theming",
-      "tint",
-      "wallpaper"
+      "theming"
     ],
-    "parentLabel": "Wallpaper & colors",
+    "parentLabel": "Appearance",
     "conditionKey": "matugenAvailable"
   },
   {
@@ -17189,26 +17474,15 @@
     "category": "App theming",
     "keywords": [
       "app",
-      "background",
-      "bg",
-      "colors",
-      "colour",
-      "colours",
-      "desktop",
+      "appearance",
       "dynamic",
-      "hue",
-      "image",
       "material",
       "matugen",
-      "palette",
-      "picture",
       "templates",
       "theming",
-      "tint",
-      "wallpaper",
       "wallpaper colors"
     ],
-    "parentLabel": "Wallpaper & colors",
+    "parentLabel": "Appearance",
     "icon": "auto_awesome",
     "conditionKey": "matugenAvailable"
   },
@@ -17220,27 +17494,17 @@
     "keywords": [
       "alacritty",
       "app",
+      "appearance",
       "background",
-      "bg",
-      "colors",
-      "colour",
-      "colours",
-      "desktop",
       "foot",
       "ghostty",
-      "hue",
-      "image",
       "kitty",
       "opacity",
-      "palette",
-      "picture",
       "terminal",
       "theming",
-      "tint",
-      "transparency",
-      "wallpaper"
+      "transparency"
     ],
-    "parentLabel": "Wallpaper & colors"
+    "parentLabel": "Appearance"
   },
   {
     "section": "applications",
@@ -17249,6 +17513,7 @@
     "category": "App theming",
     "keywords": [
       "app",
+      "appearance",
       "applications",
       "background",
       "bg",
@@ -17271,7 +17536,7 @@
       "toward",
       "wallpaper"
     ],
-    "parentLabel": "Wallpaper & colors",
+    "parentLabel": "Appearance",
     "icon": "apps",
     "description": "How far terminal colors shift toward the wallpaper color"
   },
@@ -17282,25 +17547,14 @@
     "category": "App theming",
     "keywords": [
       "app",
-      "background",
-      "bg",
-      "colors",
-      "colour",
-      "colours",
-      "desktop",
+      "appearance",
       "dms",
-      "hue",
-      "image",
       "matugen",
-      "palette",
-      "picture",
       "run",
       "templates",
-      "theming",
-      "tint",
-      "wallpaper"
+      "theming"
     ],
-    "parentLabel": "Wallpaper & colors",
+    "parentLabel": "Appearance",
     "conditionKey": "matugenAvailable"
   },
   {
@@ -17310,31 +17564,20 @@
     "category": "App theming",
     "keywords": [
       "app",
-      "background",
-      "bg",
-      "colors",
-      "colour",
-      "colours",
+      "appearance",
       "config",
-      "desktop",
       "dynamic",
-      "hue",
-      "image",
       "material",
       "matugen",
-      "palette",
-      "picture",
       "run",
       "runs",
       "templates",
       "theming",
-      "tint",
       "toml",
       "user",
-      "wallpaper",
       "wallpaper colors"
     ],
-    "parentLabel": "Wallpaper & colors",
+    "parentLabel": "Appearance",
     "description": "Also runs the templates in your %1",
     "descriptionArgs": [
       "matugen config.toml"
@@ -17348,35 +17591,27 @@
     "category": "App theming",
     "keywords": [
       "app",
-      "background",
-      "bg",
+      "appearance",
       "color",
-      "colors",
       "colour",
-      "colours",
       "dark",
       "dark mode",
       "day",
-      "desktop",
       "follow",
       "hue",
-      "image",
       "light",
       "light mode",
       "mode",
       "night",
-      "palette",
-      "picture",
       "portal",
       "scheme",
       "sync",
       "system",
       "theming",
       "tint",
-      "wallpaper",
       "xdg"
     ],
-    "parentLabel": "Wallpaper & colors",
+    "parentLabel": "Appearance",
     "description": "Light and dark mode follow and set the system color scheme"
   },
   {
@@ -17387,27 +17622,16 @@
     "keywords": [
       "always",
       "app",
-      "background",
-      "bg",
-      "colors",
-      "colour",
-      "colours",
+      "appearance",
       "dark",
       "dark mode",
-      "desktop",
-      "hue",
-      "image",
       "night",
-      "palette",
-      "picture",
       "scheme",
       "terminal",
       "terminals",
-      "theming",
-      "tint",
-      "wallpaper"
+      "theming"
     ],
-    "parentLabel": "Wallpaper & colors"
+    "parentLabel": "Appearance"
   },
   {
     "section": "matugenTemplateVscode",
@@ -17417,32 +17641,22 @@
     "keywords": [
       "app",
       "appearance",
-      "background",
-      "bg",
       "code",
       "colors",
       "colour",
-      "colours",
-      "desktop",
       "editor",
       "extension",
-      "hue",
-      "image",
       "look",
       "marketplace",
       "matugen",
-      "palette",
-      "picture",
       "requires",
       "style",
       "template",
       "theme",
       "theming",
-      "tint",
-      "vscode",
-      "wallpaper"
+      "vscode"
     ],
-    "parentLabel": "Wallpaper & colors",
+    "parentLabel": "Appearance",
     "description": "Requires the DMS Theme extension from the editor marketplace",
     "conditionKey": "matugenAvailable"
   },
@@ -17453,25 +17667,14 @@
     "category": "App theming",
     "keywords": [
       "app",
-      "background",
-      "bg",
-      "colors",
-      "colour",
-      "colours",
-      "desktop",
-      "hue",
-      "image",
+      "appearance",
       "matugen",
-      "palette",
-      "picture",
       "template",
       "terminal",
       "theming",
-      "tint",
-      "wallpaper",
       "wezterm"
     ],
-    "parentLabel": "Wallpaper & colors",
+    "parentLabel": "Appearance",
     "conditionKey": "matugenAvailable"
   },
   {
@@ -17481,24 +17684,13 @@
     "category": "App theming",
     "keywords": [
       "app",
-      "background",
-      "bg",
-      "colors",
-      "colour",
-      "colours",
-      "desktop",
-      "hue",
-      "image",
+      "appearance",
       "matugen",
-      "palette",
-      "picture",
       "template",
       "theming",
-      "tint",
-      "wallpaper",
       "zed"
     ],
-    "parentLabel": "Wallpaper & colors",
+    "parentLabel": "Appearance",
     "conditionKey": "matugenAvailable"
   },
   {
@@ -17508,24 +17700,13 @@
     "category": "App theming",
     "keywords": [
       "app",
-      "background",
-      "bg",
-      "colors",
-      "colour",
-      "colours",
-      "desktop",
+      "appearance",
       "dgop",
-      "hue",
-      "image",
       "matugen",
-      "palette",
-      "picture",
       "template",
-      "theming",
-      "tint",
-      "wallpaper"
+      "theming"
     ],
-    "parentLabel": "Wallpaper & colors",
+    "parentLabel": "Appearance",
     "conditionKey": "matugenAvailable"
   },
   {
@@ -17535,25 +17716,14 @@
     "category": "App theming",
     "keywords": [
       "app",
-      "background",
-      "bg",
-      "colors",
-      "colour",
-      "colours",
-      "desktop",
+      "appearance",
       "discord",
       "equibop",
-      "hue",
-      "image",
       "matugen",
-      "palette",
-      "picture",
       "template",
-      "theming",
-      "tint",
-      "wallpaper"
+      "theming"
     ],
-    "parentLabel": "Wallpaper & colors",
+    "parentLabel": "Appearance",
     "conditionKey": "matugenAvailable"
   },
   {
@@ -17563,25 +17733,14 @@
     "category": "App theming",
     "keywords": [
       "app",
-      "background",
-      "bg",
-      "colors",
-      "colour",
-      "colours",
-      "desktop",
+      "appearance",
       "foot",
-      "hue",
-      "image",
       "matugen",
-      "palette",
-      "picture",
       "template",
       "terminal",
-      "theming",
-      "tint",
-      "wallpaper"
+      "theming"
     ],
-    "parentLabel": "Wallpaper & colors",
+    "parentLabel": "Appearance",
     "conditionKey": "matugenAvailable"
   },
   {
@@ -17591,25 +17750,14 @@
     "category": "App theming",
     "keywords": [
       "app",
-      "background",
-      "bg",
-      "colors",
-      "colour",
-      "colours",
-      "desktop",
-      "hue",
-      "image",
+      "appearance",
       "kitty",
       "matugen",
-      "palette",
-      "picture",
       "template",
       "terminal",
-      "theming",
-      "tint",
-      "wallpaper"
+      "theming"
     ],
-    "parentLabel": "Wallpaper & colors",
+    "parentLabel": "Appearance",
     "conditionKey": "matugenAvailable"
   },
   {
@@ -17619,24 +17767,13 @@
     "category": "App theming",
     "keywords": [
       "app",
-      "background",
-      "bg",
-      "colors",
-      "colour",
-      "colours",
-      "desktop",
-      "hue",
-      "image",
+      "appearance",
       "mangowc",
       "matugen",
-      "palette",
-      "picture",
       "template",
-      "theming",
-      "tint",
-      "wallpaper"
+      "theming"
     ],
-    "parentLabel": "Wallpaper & colors",
+    "parentLabel": "Appearance",
     "conditionKey": "matugenAvailable"
   },
   {
@@ -17646,28 +17783,17 @@
     "category": "App theming",
     "keywords": [
       "app",
-      "background",
-      "bg",
-      "colors",
-      "colour",
-      "colours",
-      "desktop",
+      "appearance",
       "duxlabs",
       "github",
-      "hue",
-      "image",
       "matugen",
       "neovim",
-      "palette",
-      "picture",
       "required",
       "template",
       "terminal",
-      "theming",
-      "tint",
-      "wallpaper"
+      "theming"
     ],
-    "parentLabel": "Wallpaper & colors",
+    "parentLabel": "Appearance",
     "description": "Required plugin: %1",
     "descriptionArgs": [
       "https://github.com/duxlabs-dev/base46"
@@ -17681,24 +17807,13 @@
     "category": "App theming",
     "keywords": [
       "app",
-      "background",
-      "bg",
-      "colors",
-      "colour",
-      "colours",
-      "desktop",
-      "hue",
-      "image",
+      "appearance",
       "matugen",
       "niri",
-      "palette",
-      "picture",
       "template",
-      "theming",
-      "tint",
-      "wallpaper"
+      "theming"
     ],
-    "parentLabel": "Wallpaper & colors",
+    "parentLabel": "Appearance",
     "conditionKey": "matugenAvailable"
   },
   {
@@ -17708,24 +17823,13 @@
     "category": "App theming",
     "keywords": [
       "app",
-      "background",
-      "bg",
-      "colors",
-      "colour",
-      "colours",
-      "desktop",
-      "hue",
-      "image",
+      "appearance",
       "matugen",
-      "palette",
-      "picture",
       "pywalfox",
       "template",
-      "theming",
-      "tint",
-      "wallpaper"
+      "theming"
     ],
-    "parentLabel": "Wallpaper & colors",
+    "parentLabel": "Appearance",
     "conditionKey": "matugenAvailable"
   },
   {
@@ -17735,24 +17839,13 @@
     "category": "App theming",
     "keywords": [
       "app",
-      "background",
-      "bg",
-      "colors",
-      "colour",
-      "colours",
-      "desktop",
-      "hue",
-      "image",
+      "appearance",
       "matugen",
-      "palette",
-      "picture",
       "qt5ct",
       "template",
-      "theming",
-      "tint",
-      "wallpaper"
+      "theming"
     ],
-    "parentLabel": "Wallpaper & colors",
+    "parentLabel": "Appearance",
     "conditionKey": "matugenAvailable"
   },
   {
@@ -17762,24 +17855,13 @@
     "category": "App theming",
     "keywords": [
       "app",
-      "background",
-      "bg",
-      "colors",
-      "colour",
-      "colours",
-      "desktop",
-      "hue",
-      "image",
+      "appearance",
       "matugen",
-      "palette",
-      "picture",
       "qt6ct",
       "template",
-      "theming",
-      "tint",
-      "wallpaper"
+      "theming"
     ],
-    "parentLabel": "Wallpaper & colors",
+    "parentLabel": "Appearance",
     "conditionKey": "matugenAvailable"
   },
   {
@@ -17789,25 +17871,14 @@
     "category": "App theming",
     "keywords": [
       "app",
-      "background",
-      "bg",
-      "colors",
-      "colour",
-      "colours",
-      "desktop",
-      "hue",
-      "image",
+      "appearance",
       "matugen",
-      "palette",
-      "picture",
       "qt",
       "qtengine",
       "template",
-      "theming",
-      "tint",
-      "wallpaper"
+      "theming"
     ],
-    "parentLabel": "Wallpaper & colors",
+    "parentLabel": "Appearance",
     "conditionKey": "matugenAvailable"
   },
   {
@@ -17817,25 +17888,14 @@
     "category": "App theming",
     "keywords": [
       "app",
-      "background",
-      "bg",
-      "colors",
-      "colour",
-      "colours",
-      "desktop",
+      "appearance",
       "discord",
-      "hue",
-      "image",
       "matugen",
-      "palette",
-      "picture",
       "template",
       "theming",
-      "tint",
-      "vencord",
-      "wallpaper"
+      "vencord"
     ],
-    "parentLabel": "Wallpaper & colors",
+    "parentLabel": "Appearance",
     "conditionKey": "matugenAvailable"
   },
   {
@@ -17845,25 +17905,14 @@
     "category": "App theming",
     "keywords": [
       "app",
-      "background",
-      "bg",
-      "colors",
-      "colour",
-      "colours",
-      "desktop",
+      "appearance",
       "discord",
-      "hue",
-      "image",
       "matugen",
-      "palette",
-      "picture",
       "template",
       "theming",
-      "tint",
-      "vesktop",
-      "wallpaper"
+      "vesktop"
     ],
-    "parentLabel": "Wallpaper & colors",
+    "parentLabel": "Appearance",
     "conditionKey": "matugenAvailable"
   },
   {
@@ -17873,24 +17922,13 @@
     "category": "App theming",
     "keywords": [
       "app",
-      "background",
-      "bg",
-      "colors",
-      "colour",
-      "colours",
-      "desktop",
-      "hue",
-      "image",
+      "appearance",
       "matugen",
-      "palette",
-      "picture",
       "template",
       "theming",
-      "tint",
-      "wallpaper",
       "zenbrowser"
     ],
-    "parentLabel": "Wallpaper & colors",
+    "parentLabel": "Appearance",
     "conditionKey": "matugenAvailable"
   },
   {
@@ -17899,66 +17937,21 @@
     "tabIndex": 51,
     "category": "Dark mode",
     "keywords": [
+      "appearance",
       "automatic",
-      "background",
-      "bg",
-      "colors",
-      "colour",
-      "colours",
       "control",
       "dark",
       "dark mode",
-      "desktop",
-      "hue",
-      "image",
       "location",
       "matugen",
       "mode",
       "night",
-      "palette",
-      "picture",
       "schedule",
       "sunrise",
       "sunset",
-      "tint",
       "wallpaper"
     ],
-    "parentLabel": "Wallpaper & colors"
-  },
-  {
-    "section": "themeSchedule",
-    "label": "Dark mode",
-    "tabIndex": 51,
-    "category": "Dark mode",
-    "keywords": [
-      "appearance",
-      "automatic",
-      "background",
-      "bg",
-      "brightness",
-      "colors",
-      "colour",
-      "colours",
-      "dark",
-      "dark mode",
-      "desktop",
-      "hue",
-      "image",
-      "light",
-      "matugen",
-      "mode",
-      "night",
-      "palette",
-      "picture",
-      "schedule",
-      "smart",
-      "sunrise",
-      "sunset",
-      "tint",
-      "wallpaper"
-    ],
-    "parentLabel": "Wallpaper & colors",
-    "icon": "dark_mode"
+    "parentLabel": "Appearance"
   },
   {
     "section": "themeScheduleDarkMode",
@@ -17966,26 +17959,39 @@
     "tabIndex": 51,
     "category": "Dark mode",
     "keywords": [
-      "background",
-      "bg",
-      "colors",
-      "colour",
-      "colours",
+      "appearance",
       "dark",
       "dark mode",
-      "desktop",
-      "hue",
-      "image",
       "light",
       "mode",
+      "night"
+    ],
+    "parentLabel": "Appearance",
+    "icon": "dark_mode"
+  },
+  {
+    "section": "themeSchedule",
+    "label": "Schedule",
+    "tabIndex": 51,
+    "category": "Dark mode",
+    "keywords": [
+      "appearance",
+      "automatic",
+      "brightness",
+      "dark",
+      "dark mode",
+      "light",
+      "matugen",
+      "mode",
       "night",
-      "palette",
-      "picture",
-      "tint",
+      "schedule",
+      "smart",
+      "sunrise",
+      "sunset",
       "wallpaper"
     ],
-    "parentLabel": "Wallpaper & colors",
-    "icon": "dark_mode"
+    "parentLabel": "Appearance",
+    "icon": "schedule"
   },
   {
     "section": "themeModeShareGammaSettings",
@@ -17993,33 +17999,22 @@
     "tabIndex": 51,
     "category": "Dark mode",
     "keywords": [
-      "background",
-      "bg",
+      "appearance",
       "blue light",
       "color temperature",
-      "colors",
-      "colour",
-      "colours",
       "control",
       "dark",
       "dark mode",
-      "desktop",
       "gamma",
-      "hue",
-      "image",
       "mode",
       "night",
       "night light",
-      "palette",
-      "picture",
       "redshift",
       "schedule",
       "settings",
-      "share",
-      "tint",
-      "wallpaper"
+      "share"
     ],
-    "parentLabel": "Wallpaper & colors"
+    "parentLabel": "Appearance"
   },
   {
     "section": "wallpaperCyclingVideoEnd",
@@ -18028,31 +18023,26 @@
     "category": "Automatic cycling",
     "keywords": [
       "advance",
+      "appearance",
       "automatic",
       "background",
       "bg",
-      "colors",
-      "colour",
-      "colours",
       "cycling",
       "desktop",
       "end",
       "ends",
-      "hue",
       "image",
       "live",
       "next",
       "once",
-      "palette",
       "picture",
       "play",
       "shown",
-      "tint",
       "video",
       "wallpaper",
       "wallpapers"
     ],
-    "parentLabel": "Wallpaper & colors",
+    "parentLabel": "Appearance",
     "description": "Video wallpapers play once, then the next wallpaper is shown"
   },
   {
@@ -18061,30 +18051,19 @@
     "tabIndex": 52,
     "category": "Automatic cycling",
     "keywords": [
+      "appearance",
       "automatic",
-      "background",
-      "bg",
-      "colors",
-      "colour",
-      "colours",
       "cycling",
       "daily",
-      "desktop",
       "folder",
-      "hue",
-      "image",
       "interval",
-      "palette",
-      "picture",
       "random",
       "rotate",
       "shuffle",
       "slideshow",
-      "time",
-      "tint",
-      "wallpaper"
+      "time"
     ],
-    "parentLabel": "Wallpaper & colors",
+    "parentLabel": "Appearance",
     "icon": "skip_previous"
   },
   {
@@ -18093,24 +18072,13 @@
     "tabIndex": 52,
     "category": "Automatic cycling",
     "keywords": [
+      "appearance",
       "automatic",
-      "background",
-      "bg",
-      "colors",
-      "colour",
-      "colours",
       "cycling",
-      "desktop",
       "directory",
-      "folder",
-      "hue",
-      "image",
-      "palette",
-      "picture",
-      "tint",
-      "wallpaper"
+      "folder"
     ],
-    "parentLabel": "Wallpaper & colors"
+    "parentLabel": "Appearance"
   },
   {
     "section": "wallpaperCyclingRecursive",
@@ -18118,27 +18086,16 @@
     "tabIndex": 52,
     "category": "Automatic cycling",
     "keywords": [
+      "appearance",
       "automatic",
-      "background",
-      "bg",
-      "colors",
-      "colour",
-      "colours",
       "cycling",
-      "desktop",
       "directories",
       "folders",
-      "hue",
-      "image",
       "include",
-      "palette",
-      "picture",
       "recursive",
-      "subfolders",
-      "tint",
-      "wallpaper"
+      "subfolders"
     ],
-    "parentLabel": "Wallpaper & colors"
+    "parentLabel": "Appearance"
   },
   {
     "section": "wallpaperCyclingInterval",
@@ -18146,25 +18103,14 @@
     "tabIndex": 52,
     "category": "Automatic cycling",
     "keywords": [
+      "appearance",
       "automatic",
-      "background",
-      "bg",
-      "colors",
-      "colour",
-      "colours",
       "cycling",
-      "desktop",
       "frequency",
-      "hue",
-      "image",
       "interval",
-      "palette",
-      "picture",
-      "time",
-      "tint",
-      "wallpaper"
+      "time"
     ],
-    "parentLabel": "Wallpaper & colors"
+    "parentLabel": "Appearance"
   },
   {
     "section": "wallpaperCyclingMode",
@@ -18172,26 +18118,15 @@
     "tabIndex": 52,
     "category": "Automatic cycling",
     "keywords": [
+      "appearance",
       "automatic",
-      "background",
-      "bg",
-      "colors",
-      "colour",
-      "colours",
       "cycling",
       "daily",
-      "desktop",
-      "hue",
-      "image",
       "interval",
       "mode",
-      "palette",
-      "picture",
-      "time",
-      "tint",
-      "wallpaper"
+      "time"
     ],
-    "parentLabel": "Wallpaper & colors"
+    "parentLabel": "Appearance"
   },
   {
     "section": "wallpaperCyclingRandom",
@@ -18199,25 +18134,14 @@
     "tabIndex": 52,
     "category": "Automatic cycling",
     "keywords": [
+      "appearance",
       "automatic",
-      "background",
-      "bg",
-      "colors",
-      "colour",
-      "colours",
       "cycling",
-      "desktop",
-      "hue",
-      "image",
       "order",
-      "palette",
-      "picture",
       "random",
-      "shuffle",
-      "tint",
-      "wallpaper"
+      "shuffle"
     ],
-    "parentLabel": "Wallpaper & colors"
+    "parentLabel": "Appearance"
   },
   {
     "section": "m3ElevationTargets",
@@ -18496,8 +18420,6 @@
     "keywords": [
       "background",
       "bar",
-      "components",
-      "modules",
       "panel",
       "pill",
       "settings",
@@ -18505,10 +18427,9 @@
       "taskbar",
       "topbar",
       "transparent",
-      "widget",
-      "widgets"
+      "widget"
     ],
-    "parentLabel": "Bar widgets",
+    "parentLabel": "Bar",
     "icon": "SettingsUiState.selectedWidgetIcon"
   },
   {
@@ -19413,28 +19334,18 @@
     "tabIndex": 64,
     "category": "Injected palettes",
     "keywords": [
-      "background",
-      "bg",
+      "appearance",
       "color",
-      "colors",
-      "colour",
-      "colours",
       "command",
-      "desktop",
-      "hue",
-      "image",
       "inject",
       "injected",
       "matugen",
       "namespace",
       "palette",
       "palettes",
-      "picture",
-      "template",
-      "tint",
-      "wallpaper"
+      "template"
     ],
-    "parentLabel": "Wallpaper & colors",
+    "parentLabel": "Appearance",
     "icon": "colorize",
     "conditionKey": "matugenAvailable"
   },
@@ -19697,6 +19608,7 @@
       "colour",
       "compact",
       "dot",
+      "hue",
       "island",
       "look",
       "panel",
@@ -19704,10 +19616,11 @@
       "style",
       "taskbar",
       "theme",
+      "tint",
       "topbar"
     ],
     "parentLabel": "Bar",
-    "description": "Theme colour behind the collapsed island",
+    "description": "Theme color behind the collapsed island",
     "conditionKey": "dotEnabled"
   },
   {
@@ -19956,6 +19869,7 @@
       "colour",
       "dot",
       "expanded",
+      "hue",
       "island",
       "look",
       "panel",
@@ -19963,10 +19877,11 @@
       "style",
       "taskbar",
       "theme",
+      "tint",
       "topbar"
     ],
     "parentLabel": "Bar",
-    "description": "Theme colour behind the expanded island",
+    "description": "Theme color behind the expanded island",
     "conditionKey": "dotEnabled"
   },
   {
@@ -21162,70 +21077,23 @@
     "conditionKey": "fcitx5Available"
   },
   {
-    "section": "networkConnections",
-    "label": "Connections",
-    "tabIndex": 71,
-    "category": "Connections",
-    "keywords": [
-      "802.1x",
-      "apn",
-      "bluetooth",
-      "bond",
-      "bridge",
-      "connection",
-      "connections",
-      "connectivity",
-      "dns",
-      "dsl",
-      "ethernet",
-      "firewall",
-      "gateway",
-      "internet",
-      "ipv4",
-      "ipv6",
-      "mac",
-      "metered",
-      "mobile broadband",
-      "mtu",
-      "network",
-      "online",
-      "ports",
-      "pppoe",
-      "profiles",
-      "routes",
-      "static ip",
-      "vlan",
-      "wi-fi",
-      "wifi",
-      "wired",
-      "wireless",
-      "zone"
-    ],
-    "parentLabel": "Network",
-    "conditionKey": "connectionEditorAvailable"
-  },
-  {
     "section": "wallpaperFolderList",
     "label": "Folders",
     "tabIndex": 71,
-    "category": "Connections",
+    "category": "Wallpapers",
     "keywords": [
-      "connection",
-      "connections",
-      "connectivity",
+      "appearance",
+      "background",
+      "bg",
+      "desktop",
       "directories",
-      "ethernet",
       "folders",
-      "internet",
+      "image",
       "library",
-      "network",
-      "online",
-      "wi-fi",
-      "wifi",
-      "wireless"
+      "picture",
+      "wallpapers"
     ],
-    "parentLabel": "Network",
-    "conditionKey": "connectionEditorAvailable"
+    "parentLabel": "Appearance"
   },
   {
     "section": "_tab_71",
@@ -21233,23 +21101,17 @@
     "tabIndex": 71,
     "category": "Wallpapers",
     "keywords": [
+      "appearance",
       "background",
       "bg",
-      "colors",
-      "colour",
-      "colours",
       "desktop",
       "folders",
-      "hue",
       "image",
-      "palette",
       "picture",
-      "tint",
-      "wallpaper",
       "wallpapers"
     ],
     "icon": "wallpaper",
-    "parentLabel": "Wallpaper & colors",
+    "parentLabel": "Appearance",
     "description": "Folders"
   },
   {
@@ -21422,32 +21284,6 @@
     "conditionKey": "animationsCapable"
   },
   {
-    "section": "networkTailscale",
-    "label": "Tailscale",
-    "tabIndex": 73,
-    "category": "Animations",
-    "keywords": [
-      "account",
-      "animate",
-      "animations",
-      "exit node",
-      "integrations",
-      "login",
-      "magicdns",
-      "motion",
-      "ssh",
-      "subnet",
-      "system",
-      "tailnet",
-      "tailscale",
-      "transition",
-      "vpn"
-    ],
-    "parentLabel": "System & integrations",
-    "icon": "hub",
-    "conditionKey": "animationsCapable"
-  },
-  {
     "section": "compositorAnimationWorkspace",
     "label": "Workspace",
     "tabIndex": 73,
@@ -21499,9 +21335,456 @@
     "conditionKey": "isHyprlandOrNiri"
   },
   {
+    "section": "_tab_75",
+    "label": "Profiles",
+    "tabIndex": 75,
+    "category": "Profiles",
+    "keywords": [
+      "appearance",
+      "preset",
+      "profiles",
+      "setup",
+      "snapshot"
+    ],
+    "icon": "style",
+    "parentLabel": "Appearance"
+  },
+  {
+    "section": "_tab_78",
+    "label": "Global shortcuts",
+    "tabIndex": 78,
+    "category": "Global shortcuts",
+    "keywords": [
+      "apps",
+      "global",
+      "input",
+      "shortcuts",
+      "window"
+    ],
+    "icon": "app_shortcut",
+    "parentLabel": "Input",
+    "description": "Shortcuts apps use from any window",
+    "conditionKey": "globalShortcutsAvailable"
+  },
+  {
+    "section": "screenshotAfterCapture",
+    "label": "After capture",
+    "tabIndex": 79,
+    "category": "Screenshot",
+    "keywords": [
+      "after",
+      "capture",
+      "clipboard",
+      "copy",
+      "integrations",
+      "notification",
+      "print screen",
+      "screen capture",
+      "screenshot",
+      "snip",
+      "system"
+    ],
+    "parentLabel": "System & integrations",
+    "icon": "task_alt"
+  },
+  {
+    "section": "screenshotAnnotate",
+    "label": "Annotate region captures",
+    "tabIndex": 79,
+    "category": "Screenshot",
+    "keywords": [
+      "annotate",
+      "arrow",
+      "before",
+      "capture",
+      "captures",
+      "draw",
+      "editor",
+      "highlight",
+      "integrations",
+      "markup",
+      "print screen",
+      "region",
+      "saved",
+      "screen capture",
+      "screenshot",
+      "snip",
+      "system",
+      "text"
+    ],
+    "parentLabel": "System & integrations",
+    "description": "Draw, highlight and add text on a region before it is saved"
+  },
+  {
+    "section": "screenshotCapture",
+    "label": "Capture",
+    "tabIndex": 79,
+    "category": "Screenshot",
+    "keywords": [
+      "capture",
+      "cursor",
+      "integrations",
+      "print screen",
+      "region",
+      "screen capture",
+      "screenshot",
+      "selector",
+      "snip",
+      "system"
+    ],
+    "parentLabel": "System & integrations",
+    "icon": "screenshot_region"
+  },
+  {
+    "section": "screenshotConfirmRegion",
+    "label": "Confirm region",
+    "tabIndex": 79,
+    "category": "Screenshot",
+    "keywords": [
+      "capture",
+      "captures",
+      "confirm",
+      "enter",
+      "integrations",
+      "mouse",
+      "press",
+      "print screen",
+      "region",
+      "release",
+      "released",
+      "screen capture",
+      "screenshot",
+      "snip",
+      "space",
+      "system"
+    ],
+    "parentLabel": "System & integrations",
+    "description": "Press Enter or Space to capture. Off captures when the mouse is released."
+  },
+  {
+    "section": "screenshotClipboardFile",
+    "label": "Copy as file",
+    "tabIndex": 79,
+    "category": "Screenshot",
+    "keywords": [
+      "capture",
+      "clipboard",
+      "copy",
+      "file",
+      "integrations",
+      "managers",
+      "paste",
+      "path",
+      "print screen",
+      "saved",
+      "screen capture",
+      "screenshot",
+      "snip",
+      "system",
+      "terminal",
+      "terminals",
+      "uri"
+    ],
+    "parentLabel": "System & integrations",
+    "description": "Terminals and file managers paste the saved file"
+  },
+  {
+    "section": "screenshotClipboard",
+    "label": "Copy to clipboard",
+    "tabIndex": 79,
+    "category": "Screenshot",
+    "keywords": [
+      "capture",
+      "clipboard",
+      "cliphist",
+      "copy",
+      "history",
+      "integrations",
+      "paste",
+      "print screen",
+      "screen capture",
+      "screenshot",
+      "snip",
+      "system"
+    ],
+    "parentLabel": "System & integrations"
+  },
+  {
+    "section": "screenshotDir",
+    "label": "Folder",
+    "tabIndex": 79,
+    "category": "Screenshot",
+    "keywords": [
+      "capture",
+      "directory",
+      "folder",
+      "integrations",
+      "location",
+      "path",
+      "print screen",
+      "screen capture",
+      "screenshot",
+      "snip",
+      "system"
+    ],
+    "parentLabel": "System & integrations",
+    "icon": "folder_open"
+  },
+  {
+    "section": "screenshotFormat",
+    "label": "Format",
+    "tabIndex": 79,
+    "category": "Screenshot",
+    "keywords": [
+      "capture",
+      "format",
+      "integrations",
+      "jpeg",
+      "jpg",
+      "png",
+      "ppm",
+      "print screen",
+      "screen capture",
+      "screenshot",
+      "snip",
+      "system"
+    ],
+    "parentLabel": "System & integrations"
+  },
+  {
+    "section": "screenshotCursor",
+    "label": "Include cursor",
+    "tabIndex": 79,
+    "category": "Screenshot",
+    "keywords": [
+      "capture",
+      "cursor",
+      "include",
+      "integrations",
+      "mouse",
+      "pointer",
+      "print screen",
+      "screen capture",
+      "screenshot",
+      "snip",
+      "system"
+    ],
+    "parentLabel": "System & integrations"
+  },
+  {
+    "section": "screenshotShortcuts",
+    "label": "Keyboard shortcuts",
+    "tabIndex": 79,
+    "category": "Screenshot",
+    "keywords": [
+      "bind",
+      "bindings",
+      "capture",
+      "hotkey",
+      "hotkeys",
+      "integrations",
+      "keybinds",
+      "keyboard",
+      "keys",
+      "print screen",
+      "screen capture",
+      "screenshot",
+      "shortcuts",
+      "snip",
+      "system"
+    ],
+    "parentLabel": "System & integrations",
+    "icon": "keyboard_command_key",
+    "conditionKey": "keybindsAvailable"
+  },
+  {
+    "section": "screenshotQuality",
+    "label": "Quality",
+    "tabIndex": 79,
+    "category": "Screenshot",
+    "keywords": [
+      "capture",
+      "compression",
+      "integrations",
+      "jpeg",
+      "jpg",
+      "print screen",
+      "quality",
+      "screen capture",
+      "screenshot",
+      "snip",
+      "system"
+    ],
+    "parentLabel": "System & integrations"
+  },
+  {
+    "section": "screenshotSaveFile",
+    "label": "Save to file",
+    "tabIndex": 79,
+    "category": "Screenshot",
+    "keywords": [
+      "capture",
+      "disk",
+      "file",
+      "integrations",
+      "print screen",
+      "save",
+      "screen capture",
+      "screenshot",
+      "snip",
+      "system"
+    ],
+    "parentLabel": "System & integrations"
+  },
+  {
+    "section": "screenshotSaving",
+    "label": "Saving",
+    "tabIndex": 79,
+    "category": "Screenshot",
+    "keywords": [
+      "capture",
+      "directory",
+      "file",
+      "folder",
+      "format",
+      "integrations",
+      "print screen",
+      "save",
+      "saving",
+      "screen capture",
+      "screenshot",
+      "snip",
+      "system"
+    ],
+    "parentLabel": "System & integrations",
+    "icon": "save"
+  },
+  {
+    "section": "_tab_79",
+    "label": "Screenshot",
+    "tabIndex": 79,
+    "category": "Screenshot",
+    "keywords": [
+      "behavior",
+      "capture",
+      "format",
+      "integrations",
+      "location",
+      "print screen",
+      "save",
+      "screen capture",
+      "screenshot",
+      "snip",
+      "system"
+    ],
+    "icon": "screenshot_region",
+    "parentLabel": "System & integrations",
+    "description": "Save location, format, capture behavior"
+  },
+  {
+    "section": "screenshotScrollInterval",
+    "label": "Scroll capture interval",
+    "tabIndex": 79,
+    "category": "Screenshot",
+    "keywords": [
+      "capture",
+      "faster",
+      "integrations",
+      "interval",
+      "keeps",
+      "long",
+      "lower",
+      "more",
+      "print screen",
+      "screen capture",
+      "screenshot",
+      "scroll",
+      "scrolling",
+      "snip",
+      "system",
+      "tall",
+      "uses"
+    ],
+    "parentLabel": "System & integrations",
+    "description": "Lower keeps up with faster scrolling but uses more CPU"
+  },
+  {
+    "section": "screenshotHud",
+    "label": "Shortcut hints",
+    "tabIndex": 79,
+    "category": "Screenshot",
+    "keywords": [
+      "capture",
+      "hints",
+      "hud",
+      "integrations",
+      "keybinds",
+      "overlay",
+      "print screen",
+      "screen capture",
+      "screenshot",
+      "shortcut",
+      "shortcuts",
+      "snip",
+      "system"
+    ],
+    "parentLabel": "System & integrations"
+  },
+  {
+    "section": "screenshotNotify",
+    "label": "Show notification",
+    "tabIndex": 79,
+    "category": "Screenshot",
+    "keywords": [
+      "alert",
+      "capture",
+      "integrations",
+      "notif",
+      "notification",
+      "notify",
+      "popup",
+      "print screen",
+      "screen capture",
+      "screenshot",
+      "show",
+      "snip",
+      "system"
+    ],
+    "parentLabel": "System & integrations"
+  },
+  {
+    "section": "networkTailscale",
+    "label": "Tailscale",
+    "tabIndex": 80,
+    "category": "Tailscale",
+    "keywords": [
+      "account",
+      "connection",
+      "connectivity",
+      "ethernet",
+      "exit node",
+      "internet",
+      "login",
+      "magicdns",
+      "network",
+      "online",
+      "ssh",
+      "subnet",
+      "tailnet",
+      "tailscale",
+      "vpn",
+      "wi-fi",
+      "wifi",
+      "wireless"
+    ],
+    "parentLabel": "Network",
+    "icon": "hub",
+    "conditionKey": "tailscaleAvailable"
+  },
+  {
     "section": "networkHotspot",
     "label": "Hotspot",
-    "tabIndex": 75,
+    "tabIndex": 82,
     "category": "Hotspot",
     "keywords": [
       "access point",
@@ -21528,29 +21811,46 @@
     "conditionKey": "hotspotAvailable"
   },
   {
-    "section": "_tab_75",
-    "label": "Profiles",
-    "tabIndex": 75,
-    "category": "Profiles",
+    "section": "networkConnections",
+    "label": "Connections",
+    "tabIndex": 84,
+    "category": "Connections",
     "keywords": [
-      "background",
-      "bg",
-      "colors",
-      "colour",
-      "colours",
-      "desktop",
-      "hue",
-      "image",
-      "palette",
-      "picture",
-      "preset",
+      "802.1x",
+      "apn",
+      "bluetooth",
+      "bond",
+      "bridge",
+      "connection",
+      "connections",
+      "connectivity",
+      "dns",
+      "dsl",
+      "ethernet",
+      "firewall",
+      "gateway",
+      "internet",
+      "ipv4",
+      "ipv6",
+      "mac",
+      "metered",
+      "mobile broadband",
+      "mtu",
+      "network",
+      "online",
+      "ports",
+      "pppoe",
       "profiles",
-      "setup",
-      "snapshot",
-      "tint",
-      "wallpaper"
+      "routes",
+      "static ip",
+      "vlan",
+      "wi-fi",
+      "wifi",
+      "wired",
+      "wireless",
+      "zone"
     ],
-    "icon": "style",
-    "parentLabel": "Wallpaper & colors"
+    "parentLabel": "Network",
+    "conditionKey": "connectionEditorAvailable"
   }
 ]

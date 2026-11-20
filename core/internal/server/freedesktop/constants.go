@@ -10,6 +10,14 @@ const (
 	dbusPortalPath              = "/org/freedesktop/portal/desktop"
 	dbusPortalSettingsInterface = "org.freedesktop.portal.Settings"
 
+	portalAppearanceNamespace = "org.freedesktop.appearance"
+	portalColorSchemeKey      = "color-scheme"
+
+	gnomeInterfaceSchema     = "org.gnome.desktop.interface"
+	gnomeA11yInterfaceSchema = "org.gnome.desktop.a11y.interface"
+	gnomeAnimationsKey       = "enable-animations"
+	gnomeReducedMotionKey    = "reduced-motion"
+
 	dbusPropsInterface = "org.freedesktop.DBus.Properties"
 
 	dbusScreensaverName      = "org.freedesktop.ScreenSaver"

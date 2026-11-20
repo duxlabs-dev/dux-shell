@@ -73,7 +73,7 @@ DModal {
 
     Timer {
         id: genTimer
-        interval: 200
+        interval: Timing.debounceLong
         repeat: false
         onTriggered: root.generateQR(root._pendingPayload)
     }
@@ -196,8 +196,9 @@ DModal {
 
                     Behavior on opacity {
                         NumberAnimation {
-                            duration: 80
-                            easing.type: Easing.OutCubic
+                            duration: Theme.expressiveDurations.expressiveFastEffects
+                            easing.type: Easing.BezierSpline
+                            easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
                         }
                     }
 

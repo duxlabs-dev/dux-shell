@@ -30,6 +30,10 @@ Column {
     property var uninstallErrors: ({})
     property var updateErrors: ({})
     property string updatingPluginId: ""
+    readonly property bool updating: updatingPluginId !== "" || pluginUpdatesDialogItem.isUpdating
+    // A plugin unloads and loads again while it updates; the snapshot keeps its row and toggle still
+    property var heldLoadedPlugins: null
+    readonly property var loadedPlugins: (updating && heldLoadedPlugins) || PluginService.loadedPlugins
     readonly property string pendingRevealPluginId: PluginService.pendingSettingsRevealPluginId
     readonly property var sortOptions: [I18n.tr("Name"), I18n.tr("Author", "installed plugins sort option, plugin author"), I18n.tr("Last modified", "plugin directory modification time")]
     readonly property var filterOptions: [I18n.tr("All"), I18n.tr("Enabled"), I18n.tr("Disabled"), I18n.tr("Update available", "plugin row badge")]
@@ -48,7 +52,7 @@ Column {
     }
 
     readonly property var filteredPlugins: plugins.filter(row => {
-        const loaded = PluginService.loadedPlugins[row.pluginId] !== undefined;
+        const loaded = loadedPlugins[row.pluginId] !== undefined;
         if (filterIndex === 1 && !loaded)
             return false;
         if (filterIndex === 2 && loaded)
@@ -74,6 +78,8 @@ Column {
         return a.text.localeCompare(b.text) || a.pluginId.localeCompare(b.pluginId);
     })
 
+    readonly property var shownPluginIds: filteredPlugins.map(row => row.pluginId)
+
     readonly property var plugins: SettingsTabs.pluginHubRows
     readonly property var updateCheckErrors: (DMSService.installedPlugins || []).filter(plugin => plugin.updateError).reduce((errors, plugin) => {
         errors[plugin.id] = plugin.updateError;
@@ -92,6 +98,7 @@ Column {
     spacing: Theme.spacingL
 
     onPendingRevealPluginIdChanged: revealTimer.restart()
+    onUpdatingChanged: heldLoadedPlugins = updating ? PluginService.loadedPlugins : null
     onVisibleChanged: {
         if (!visible)
             filterOverride = "";
@@ -125,8 +132,10 @@ Column {
                 return;
             if (!PluginService.availablePlugins[root.pendingRevealPluginId])
                 return;
-            root.searchQuery = "";
-            root.filterOverride = "all";
+            if (!root.shownPluginIds.includes(root.pendingRevealPluginId)) {
+                root.searchQuery = "";
+                root.filterOverride = "all";
+            }
             const key = "installedPlugin:" + root.pendingRevealPluginId;
             const entry = SettingsSearchService.registeredCards[key];
             if (!entry)
@@ -171,7 +180,7 @@ Column {
 
     ConfirmDialogOverlay {
         id: updateConfirm
-        parent: root.parentModal?.modalFocusScope ?? root.parent
+        parent: root.parentModal?.dialogHostFor(root) ?? root.parent
     }
 
     function updatePlugin(row) {
@@ -256,7 +265,7 @@ Column {
 
     ConfirmDialogOverlay {
         id: uninstallConfirm
-        parent: root.parentModal?.modalFocusScope ?? root.parent
+        parent: root.parentModal?.dialogHostFor(root) ?? root.parent
     }
 
     function showPluginBrowser() {
@@ -364,7 +373,6 @@ Column {
         width: parent.width
         operationsBlocked: Object.keys(root.uninstalling).length > 0 || root.updatingPluginId !== ""
         onUpdatesRequested: plugins => root.confirmUpdates(plugins)
-        onPluginUpdated: pluginId => root.revealPlugin(pluginId)
     }
 
     SettingsCard {
@@ -657,188 +665,197 @@ Column {
         rowSpacing: Theme.spacingM
 
         Repeater {
-            model: root.filteredPlugins
+            model: ScriptModel {
+                values: root.shownPluginIds
+            }
 
-            DCard {
-                id: installedCard
-                required property var modelData
-                readonly property bool loaded: PluginService.loadedPlugins[modelData.pluginId] !== undefined
-                readonly property var plugin: PluginService.availablePlugins[modelData.pluginId] || ({})
-                readonly property var loadError: PluginService.pluginLoadErrors[modelData.pluginId]
-                readonly property bool compatible: PluginService.checkPluginCompatibility(plugin.requires_dms)
-                readonly property string problem: root.uninstallErrors[modelData.pluginId] || root.updateErrors[modelData.pluginId] || root.updateCheckErrors[modelData.pluginId] || (loadError ? [loadError.title, loadError.details].filter(Boolean).join("\n") : !compatible ? I18n.tr("Requires %1", "version requirement").arg(plugin.requires_dms) : "")
+            SettingsDeferred {
+                id: installedSlot
+
+                required property string modelData
+
                 Layout.fillWidth: true
                 Layout.minimumWidth: 0
                 Layout.preferredWidth: (installedGrid.width - installedGrid.columnSpacing * (installedGrid.columns - 1)) / installedGrid.columns
                 Layout.fillHeight: true
-                implicitHeight: cardContent.implicitHeight + pad * 2
-                pad: Theme.spacingL
-                radius: Theme.cornerRadiusM
-                readonly property string highlightKey: "installedPlugin:" + modelData.pluginId
-                color: SettingsSearchService.highlightSection === highlightKey ? Theme.blend(SettingsMetrics.rowColor, Theme.primary, SettingsMetrics.highlightBlend) : SettingsMetrics.rowColor
-                clickable: true
-                Accessible.name: modelData.text
-                onClicked: keyboard => root.parentModal?.navigateTo(modelData.id, keyboard)
 
-                Timer {
-                    interval: 0
-                    running: true
-                    onTriggered: {
-                        const flickable = QmlUtils.findParentFlickable(installedCard.parent);
-                        if (!flickable)
-                            return;
-                        SettingsSearchService.registerCard(installedCard.highlightKey, installedCard, flickable);
-                        revealTimer.restart();
-                    }
-                }
-                Component.onDestruction: SettingsSearchService.unregisterCard(highlightKey, installedCard)
+                DCard {
+                    id: installedCard
+                    readonly property var modelData: SettingsTabs.pluginPage(installedSlot.modelData)
+                    readonly property bool loaded: root.loadedPlugins[modelData.pluginId] !== undefined
+                    readonly property var plugin: PluginService.availablePlugins[modelData.pluginId] || ({})
+                    readonly property var loadError: PluginService.pluginLoadErrors[modelData.pluginId]
+                    readonly property bool compatible: PluginService.checkPluginCompatibility(plugin.requires_dms)
+                    readonly property string problem: root.uninstallErrors[modelData.pluginId] || root.updateErrors[modelData.pluginId] || root.updateCheckErrors[modelData.pluginId] || (loadError ? [loadError.title, loadError.details].filter(Boolean).join("\n") : !compatible ? I18n.tr("Requires %1", "version requirement").arg(plugin.requires_dms) : "")
+                    implicitHeight: cardContent.implicitHeight + pad * 2
+                    pad: Theme.spacingL
+                    radius: Theme.cornerRadiusM
+                    readonly property string highlightKey: "installedPlugin:" + modelData.pluginId
+                    color: SettingsSearchService.highlightSection === highlightKey ? Theme.blend(SettingsMetrics.rowColor, Theme.primary, SettingsMetrics.highlightBlend) : SettingsMetrics.rowColor
+                    clickable: true
+                    Accessible.name: modelData.text
+                    onClicked: keyboard => root.parentModal?.navigateTo(modelData.id, keyboard)
 
-                ColumnLayout {
-                    id: cardContent
-                    anchors.fill: parent
-                    spacing: Theme.spacingS
-
-                    RowLayout {
-                        Layout.fillWidth: true
-                        Layout.fillHeight: false
-                        Layout.minimumHeight: Math.ceil(pluginTitleMetrics.height) * 2 + Theme.spacingXXS + pluginMetadata.implicitHeight
-                        Layout.maximumHeight: Layout.minimumHeight
-                        spacing: Theme.spacingS
-                        DIcon {
-                            id: pluginIcon
-                            Layout.alignment: Qt.AlignTop
-                            Layout.topMargin: Math.max(0, (pluginTitle.implicitHeight - height) / 2)
-                            name: installedCard.modelData.icon
-                            size: Theme.iconSize
-                            color: Theme.primary
+                    Timer {
+                        interval: 0
+                        running: true
+                        onTriggered: {
+                            const flickable = QmlUtils.findParentFlickable(installedCard.parent);
+                            if (!flickable)
+                                return;
+                            SettingsSearchService.registerCard(installedCard.highlightKey, installedCard, flickable);
+                            revealTimer.restart();
                         }
-                        ColumnLayout {
+                    }
+                    Component.onDestruction: SettingsSearchService.unregisterCard(highlightKey, installedCard)
+
+                    ColumnLayout {
+                        id: cardContent
+                        anchors.fill: parent
+                        spacing: Theme.spacingS
+
+                        RowLayout {
                             Layout.fillWidth: true
-                            Layout.alignment: Qt.AlignTop
-                            Layout.topMargin: Math.max(0, (pluginIcon.height - pluginTitle.implicitHeight) / 2)
-                            spacing: Theme.spacingXXS
-
-                            StyledText {
-                                id: pluginTitle
-                                Layout.fillWidth: true
-                                text: installedCard.modelData.text
-                                maximumLineCount: 2
-                                wrapMode: Text.Wrap
-                                font.pixelSize: Theme.fontSizeMedium
-                                font.weight: Theme.fontWeightMedium
-                                color: Theme.onSurface
-                                elide: Text.ElideRight
-                                verticalAlignment: Text.AlignTop
+                            Layout.fillHeight: false
+                            Layout.minimumHeight: Math.ceil(pluginTitleMetrics.height) * 2 + Theme.spacingXXS + pluginMetadata.implicitHeight
+                            Layout.maximumHeight: Layout.minimumHeight
+                            spacing: Theme.spacingS
+                            DIcon {
+                                id: pluginIcon
+                                Layout.alignment: Qt.AlignTop
+                                Layout.topMargin: Math.max(0, (pluginTitle.implicitHeight - height) / 2)
+                                name: installedCard.modelData.icon
+                                size: Theme.iconSize
+                                color: Theme.primary
                             }
-                            Item {
-                                id: pluginMetadata
+                            ColumnLayout {
                                 Layout.fillWidth: true
-                                Layout.minimumWidth: 0
-                                implicitHeight: Math.max(Theme.spacingL, Math.ceil(pluginDescriptionMetrics.height), versionBadge.implicitHeight)
-
-                                DBadge {
-                                    id: versionBadge
-                                    anchors.left: parent.left
-                                    anchors.top: parent.top
-                                    text: installedCard.plugin.version || ""
-                                    visible: text !== ""
-                                    maximumWidth: parent.width
-                                    color: installedCard.chipColor
-                                    textColor: Theme.onSurfaceVariant
-                                    Accessible.name: I18n.tr("Version %1", "accessible name of plugin version badge, %1 is the version number").arg(text)
-                                }
+                                Layout.alignment: Qt.AlignTop
+                                Layout.topMargin: Math.max(0, (pluginIcon.height - pluginTitle.implicitHeight) / 2)
+                                spacing: Theme.spacingXXS
 
                                 StyledText {
-                                    anchors.left: versionBadge.visible ? versionBadge.right : parent.left
-                                    anchors.leftMargin: versionBadge.visible ? Theme.spacingXS : 0
-                                    anchors.baseline: versionBadge.visible ? versionBadge.baseline : undefined
-                                    width: Math.max(0, parent.width - (versionBadge.visible ? versionBadge.width + Theme.spacingXS : 0))
-                                    visible: root.sortKeys[root.sortIndex] === "author"
-                                    text: I18n.tr("by %1", "author attribution").arg(installedCard.plugin.author || I18n.tr("Unknown", "unknown author"))
-                                    font.pixelSize: Theme.fontSizeSmall
-                                    color: Theme.onSurfaceVariant
-                                    wrapMode: Text.NoWrap
+                                    id: pluginTitle
+                                    Layout.fillWidth: true
+                                    text: installedCard.modelData.text
+                                    maximumLineCount: 2
+                                    wrapMode: Text.Wrap
+                                    font.pixelSize: Theme.fontSizeMedium
+                                    font.weight: Theme.fontWeightMedium
+                                    color: Theme.onSurface
                                     elide: Text.ElideRight
+                                    verticalAlignment: Text.AlignTop
+                                }
+                                Item {
+                                    id: pluginMetadata
+                                    Layout.fillWidth: true
+                                    Layout.minimumWidth: 0
+                                    implicitHeight: Math.max(Theme.spacingL, Math.ceil(pluginDescriptionMetrics.height), versionBadge.implicitHeight)
+
+                                    DBadge {
+                                        id: versionBadge
+                                        anchors.left: parent.left
+                                        anchors.top: parent.top
+                                        text: installedCard.plugin.version || ""
+                                        visible: text !== ""
+                                        maximumWidth: parent.width
+                                        color: installedCard.chipColor
+                                        textColor: Theme.onSurfaceVariant
+                                        Accessible.name: I18n.tr("Version %1", "accessible name of plugin version badge, %1 is the version number").arg(text)
+                                    }
+
+                                    StyledText {
+                                        anchors.left: versionBadge.visible ? versionBadge.right : parent.left
+                                        anchors.leftMargin: versionBadge.visible ? Theme.spacingXS : 0
+                                        anchors.baseline: versionBadge.visible ? versionBadge.baseline : undefined
+                                        width: Math.max(0, parent.width - (versionBadge.visible ? versionBadge.width + Theme.spacingXS : 0))
+                                        visible: root.sortKeys[root.sortIndex] === "author"
+                                        text: I18n.tr("by %1", "author attribution").arg(installedCard.plugin.author || I18n.tr("Unknown", "unknown author"))
+                                        font.pixelSize: Theme.fontSizeSmall
+                                        color: Theme.onSurfaceVariant
+                                        wrapMode: Text.NoWrap
+                                        elide: Text.ElideRight
+                                    }
                                 }
                             }
-                        }
-                        DToggle {
-                            Layout.alignment: Qt.AlignTop
-                            enabled: !root.updatingPluginId && !pluginUpdatesDialogItem.isUpdating && !root.uninstalling[installedCard.modelData.pluginId]
-                            checked: installedCard.loaded
-                            Accessible.name: installedCard.modelData.text
-                            onToggled: value => root.setEnabled(installedCard.modelData, value)
-                        }
-                    }
-                    StyledText {
-                        Layout.fillWidth: true
-                        Layout.minimumHeight: Math.ceil(pluginDescriptionMetrics.height) * 2
-                        Layout.maximumHeight: Layout.minimumHeight
-                        text: installedCard.modelData.hint
-                        wrapMode: Text.Wrap
-                        maximumLineCount: 2
-                        color: Theme.onSurfaceVariant
-                        font.pixelSize: Theme.fontSizeSmall
-                        elide: Text.ElideRight
-                        verticalAlignment: Text.AlignTop
-                    }
-                    RowLayout {
-                        Layout.fillWidth: true
-                        Layout.fillHeight: false
-                        visible: installedCard.problem !== "" || !!root.uninstalling[installedCard.modelData.pluginId]
-                        spacing: Theme.spacingS
-                        DActionButton {
-                            visible: installedCard.problem !== ""
-                            buttonSize: Theme.buttonHeightXS
-                            iconName: "error"
-                            iconColor: Theme.error
-                            tooltipText: installedCard.problem
-                            onClicked: root.actionError = installedCard.modelData.text + ": " + installedCard.problem
+                            DToggle {
+                                Layout.alignment: Qt.AlignTop
+                                enabled: !root.updatingPluginId && !pluginUpdatesDialogItem.isUpdating && !root.uninstalling[installedCard.modelData.pluginId]
+                                checked: installedCard.loaded
+                                Accessible.name: installedCard.modelData.text
+                                onToggled: value => root.setEnabled(installedCard.modelData, value)
+                            }
                         }
                         StyledText {
                             Layout.fillWidth: true
-                            text: root.uninstalling[installedCard.modelData.pluginId] ? I18n.tr("Uninstalling: %1", "uninstallation progress").arg(installedCard.modelData.text) : installedCard.problem
-                            color: installedCard.problem ? Theme.error : Theme.onSurfaceVariant
-                            font.pixelSize: Theme.fontSizeSmall
+                            Layout.minimumHeight: Math.ceil(pluginDescriptionMetrics.height) * 2
+                            Layout.maximumHeight: Layout.minimumHeight
+                            text: installedCard.modelData.hint
                             wrapMode: Text.Wrap
                             maximumLineCount: 2
+                            color: Theme.onSurfaceVariant
+                            font.pixelSize: Theme.fontSizeSmall
                             elide: Text.ElideRight
-                            Accessible.description: installedCard.problem
+                            verticalAlignment: Text.AlignTop
                         }
-                    }
-                    Item {
-                        Layout.fillWidth: true
-                        implicitHeight: Math.max(settingsButton.implicitHeight, cardActions.implicitHeight)
-
-                        DIconButton {
-                            id: settingsButton
-                            anchors.left: parent.left
-                            anchors.verticalCenter: parent.verticalCenter
-                            iconName: "settings"
-                            variant: "tonal"
-                            Accessible.name: I18n.tr("Settings")
-                            onClicked: keyboard => root.parentModal?.navigateTo(installedCard.modelData.id, keyboard)
-                        }
-                        Row {
-                            id: cardActions
-                            anchors.right: parent.right
-                            anchors.verticalCenter: parent.verticalCenter
-                            spacing: Theme.spacingXS
-
-                            DIconButton {
-                                iconName: "download"
-                                variant: "tonal"
-                                tooltipText: root.updatingPluginId === installedCard.modelData.pluginId ? I18n.tr("Updating...", "plugin update button tooltip while the update runs") : I18n.tr("Update available", "plugin row badge")
-                                visible: root.hasUpdate(installedCard.modelData) || root.updatingPluginId === installedCard.modelData.pluginId
-                                enabled: DMSService.dmsAvailable && !root.checkingUpdates && !pluginUpdatesDialogItem.isUpdating && !root.updatingPluginId && !root.uninstalling[installedCard.modelData.pluginId]
-                                onClicked: root.requestUpdate(installedCard.modelData)
+                        RowLayout {
+                            Layout.fillWidth: true
+                            Layout.fillHeight: false
+                            visible: installedCard.problem !== "" || !!root.uninstalling[installedCard.modelData.pluginId]
+                            spacing: Theme.spacingS
+                            DActionButton {
+                                visible: installedCard.problem !== ""
+                                buttonSize: Theme.buttonHeightXS
+                                iconName: "error"
+                                iconColor: Theme.error
+                                tooltipText: installedCard.problem
+                                onClicked: root.actionError = installedCard.modelData.text + ": " + installedCard.problem
                             }
+                            StyledText {
+                                Layout.fillWidth: true
+                                text: root.uninstalling[installedCard.modelData.pluginId] ? I18n.tr("Uninstalling: %1", "uninstallation progress").arg(installedCard.modelData.text) : installedCard.problem
+                                color: installedCard.problem ? Theme.error : Theme.onSurfaceVariant
+                                font.pixelSize: Theme.fontSizeSmall
+                                wrapMode: Text.Wrap
+                                maximumLineCount: 2
+                                elide: Text.ElideRight
+                                Accessible.description: installedCard.problem
+                            }
+                        }
+                        Item {
+                            Layout.fillWidth: true
+                            implicitHeight: Math.max(settingsButton.implicitHeight, cardActions.implicitHeight)
+
                             DIconButton {
-                                iconName: "delete"
-                                Accessible.name: I18n.tr("Uninstall")
-                                visible: installedCard.plugin.source !== "system"
-                                enabled: DMSService.dmsAvailable && !pluginUpdatesDialogItem.isUpdating && !root.updatingPluginId && !root.uninstalling[installedCard.modelData.pluginId]
-                                onClicked: root.requestUninstall(installedCard.modelData)
+                                id: settingsButton
+                                anchors.left: parent.left
+                                anchors.verticalCenter: parent.verticalCenter
+                                iconName: "settings"
+                                variant: "tonal"
+                                Accessible.name: I18n.tr("Settings")
+                                onClicked: keyboard => root.parentModal?.navigateTo(installedCard.modelData.id, keyboard)
+                            }
+                            Row {
+                                id: cardActions
+                                anchors.right: parent.right
+                                anchors.verticalCenter: parent.verticalCenter
+                                spacing: Theme.spacingXS
+
+                                DIconButton {
+                                    iconName: "download"
+                                    variant: "tonal"
+                                    tooltipText: root.updatingPluginId === installedCard.modelData.pluginId ? I18n.tr("Updating...", "plugin update button tooltip while the update runs") : I18n.tr("Update available", "plugin row badge")
+                                    visible: root.hasUpdate(installedCard.modelData) || root.updatingPluginId === installedCard.modelData.pluginId
+                                    enabled: DMSService.dmsAvailable && !root.checkingUpdates && !pluginUpdatesDialogItem.isUpdating && !root.updatingPluginId && !root.uninstalling[installedCard.modelData.pluginId]
+                                    onClicked: root.requestUpdate(installedCard.modelData)
+                                }
+                                DIconButton {
+                                    iconName: "delete"
+                                    Accessible.name: I18n.tr("Uninstall")
+                                    visible: installedCard.plugin.source !== "system"
+                                    enabled: DMSService.dmsAvailable && !pluginUpdatesDialogItem.isUpdating && !root.updatingPluginId && !root.uninstalling[installedCard.modelData.pluginId]
+                                    onClicked: root.requestUninstall(installedCard.modelData)
+                                }
                             }
                         }
                     }

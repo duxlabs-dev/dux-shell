@@ -14,6 +14,7 @@ DFocusGrab {
     readonly property var maskItem: root.host && !root.host.inputSuspended ? root.host.inputMaskItem : null
     readonly property var fittsStripItem: root.host && !root.host.inputSuspended ? root.host.fittsStripItem : null
 
-    windows: [root.window].concat(root.host?.dismissWindow ?? [], root.host?.transientFocusWindows ?? [], KeyboardFocus.grabPeerWindows)
+    keyboardWindow: root.window
+    peerWindows: [].concat(root.host?.dismissWindow ?? [], root.host?.transientFocusWindows ?? [], KeyboardFocus.grabPeerWindows)
     wanted: root.host?.wantsFocusGrab ?? false
 }

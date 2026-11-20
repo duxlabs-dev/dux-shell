@@ -168,8 +168,8 @@ Item {
     VectorSpringMotion {
         id: motion
 
-        readonly property var preset: Theme.springPreset("default", Theme.shortDuration)
-        reducedMotion: Theme.springMotionDisabled || SettingsData.reduceMotion
+        readonly property var preset: Theme.springPreset("fastSpatial")
+        reducedMotion: Theme.reduceMotion
         stiffness: preset.stiffness
         damping: preset.damping
         mass: preset.mass

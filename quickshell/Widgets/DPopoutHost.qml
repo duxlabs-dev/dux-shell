@@ -28,26 +28,33 @@ Item {
     readonly property var surface: IdleSurfaces.surfaceFor("popout", _attachedScreenName)
     readonly property bool attached: _attachedScreenName !== ""
     readonly property var contentWindow: attached ? surface : null
-    readonly property Item maskItem: (shouldBeVisible && backgroundInteractive) ? backgroundDismissalMask : contentMaskRect
-    readonly property int surfaceKeyboardFocus: KeyboardFocus.keyboardFocus(shouldBeVisible && (_keyboardReady || !connected), customKeyboardFocus)
-    readonly property var blurRegion: chromeLoader.item?.blur?.effectiveRegion ?? null
+    readonly property bool dragPassthrough: popoutHandle?.dragPassthrough ?? false
+    onDragPassthroughChanged: {
+        if (frameOwnsConnectedChrome)
+            _publishConnectedChromeState(false);
+    }
+    readonly property Item maskItem: dragPassthrough ? null : ((shouldBeVisible && backgroundInteractive) ? backgroundDismissalMask : contentMaskRect)
+    readonly property int surfaceKeyboardFocus: dragPassthrough ? WlrKeyboardFocus.None : KeyboardFocus.keyboardFocus(shouldBeVisible && (_keyboardReady || !connected), customKeyboardFocus)
+    readonly property var blurRegion: dragPassthrough ? null : (chromeLoader.item?.blur?.effectiveRegion ?? null)
     // The frame blurs what it owns from below; this window's own blur does not show above the frame.
     readonly property bool frameBlursSide: frameOwnsConnectedChrome && !joinsBar
     readonly property Item sideBlurShown: shouldBeVisible && !frameBlursSide ? sideBlurItem : null
     readonly property rect sideBodyRect: sideBlurItem ? Qt.rect(sideBlurItem.x, sideBlurItem.y, sideBlurItem.width, sideBlurItem.height) : Qt.rect(0, 0, 0, 0)
     property real popupWidth: popoutHandle.popupWidth
     property real popupHeight: popoutHandle.popupHeight
-    property list<real> resizeCurve: popoutHandle.resizeCurve
-    property int resizeDuration: popoutHandle.resizeDuration
     property bool resizeMotion: popoutHandle.resizeMotion
     property bool resizing: popoutHandle.resizing
     property real bottomOverflow: popoutHandle.bottomOverflow
     property real topOverflow: popoutHandle.topOverflow
     property real leftOverflow: popoutHandle.leftOverflow
     property real rightOverflow: popoutHandle.rightOverflow
+    property real sideTopOverflow: popoutHandle.sideTopOverflow
+    property real sideBottomOverflow: popoutHandle.sideBottomOverflow
     property Item sideBlurItem: popoutHandle.sideBlurItem
     property real sideBlurRadius: popoutHandle.sideBlurRadius
     property real inputMargin: popoutHandle.inputMargin
+    property real minimumSurfaceWidth: popoutHandle.minimumSurfaceWidth
+    property bool _surfaceFitOwed: false
     property real triggerX: popoutHandle.triggerX
     property real triggerY: popoutHandle.triggerY
     property real triggerWidth: popoutHandle.triggerWidth
@@ -56,8 +63,6 @@ Item {
     property int animationDuration: popoutHandle.animationDuration
     property real animationScaleCollapsed: popoutHandle.animationScaleCollapsed
     property real animationOffset: popoutHandle.animationOffset
-    property list<real> animationEnterCurve: popoutHandle.animationEnterCurve
-    property list<real> animationExitCurve: popoutHandle.animationExitCurve
     property bool suspendShadowWhileResizing: popoutHandle.suspendShadowWhileResizing
     property bool shouldBeVisible: false
     property bool _presentPending: false
@@ -69,11 +74,13 @@ Item {
         if (_travelFromHandoff)
             return Qt.rect(0, 0, screenWidth, screenHeight);
         const padding = Theme.elevationRenderPadding(shadowLevel, effectiveShadowDirection, shadowFallbackOffset, Theme.connectedCornerRadius + inputMargin, Theme.spacingL) + Theme.fluidOvershootLimit;
+        const reservedWidth = Theme.px(Math.min(minimumSurfaceWidth, screenWidth), dpr);
+        const reserved = reservedWidth > alignedWidth;
         const body = {
-            x: alignedX - leftOverflow,
-            y: alignedY - topOverflow,
-            width: alignedWidth + leftOverflow + rightOverflow,
-            height: alignedHeight + topOverflow + bottomOverflow
+            x: (reserved ? alignedXFor(reservedWidth) : alignedX) - leftOverflow,
+            y: alignedY - topOverflow - sideTopOverflow,
+            width: (reserved ? reservedWidth : alignedWidth) + leftOverflow + rightOverflow,
+            height: alignedHeight + topOverflow + bottomOverflow + sideTopOverflow + sideBottomOverflow
         };
         const area = PopoutBounds.motion(screenWidth, screenHeight, body, _surfaceMotionOrigin, _fluidMotionActive ? 0 : contentContainer.offsetX, _fluidMotionActive ? 0 : contentContainer.offsetY, _fluidMotionActive ? 1 : animationScaleCollapsed, padding, _geometrySpringParams);
         return Qt.rect(area.x, area.y, area.width, area.height);
@@ -84,7 +91,6 @@ Item {
     // Keyboard focus grabbed one tick after emerge starts, to avoid stalling first frames.
     property bool _keyboardReady: false
     readonly property bool contentActive: focusHelper.Window.active
-    property bool _resizeActive: false
     property real _chromeAnimTravelX: 1
     property real _chromeAnimTravelY: 1
     property bool _fullSyncQueued: false
@@ -252,8 +258,8 @@ Item {
 
     function _connectedChromeState(visibleOverride) {
         // Track intent rather than the transient wl_surface state during remap.
-        const visible = visibleOverride !== undefined ? !!visibleOverride : (root.attached || root.shouldBeVisible);
-        const presented = root.attached || root.shouldBeVisible;
+        const visible = visibleOverride !== undefined ? !!visibleOverride : ((root.attached || root.shouldBeVisible) && !root.dragPassthrough);
+        const presented = (root.attached || root.shouldBeVisible) && !root.dragPassthrough;
         const phase = root.isClosing ? "closing" : (!presented ? "hidden" : (!root.attached && root.shouldBeVisible ? "opening" : "open"));
         const bodyX = Theme.snap(root.pubBodyX, root.dpr);
         const bodyY = Theme.snap(root.pubBodyY, root.dpr);
@@ -525,7 +531,7 @@ Item {
     // A bar that can't answer must not cost the popout its open.
     Timer {
         id: barRoomWait
-        interval: 200
+        interval: Timing.settle
         onTriggered: root._open()
     }
 
@@ -616,7 +622,7 @@ Item {
             instantClose();
             return;
         }
-        if (!connected && _fluidMotionActive && (SettingsData.reduceMotion || animationDuration <= 0)) {
+        if (!connected && _fluidMotionActive && (Theme.reduceMotion || animationDuration <= 0)) {
             instantClose();
             return;
         }
@@ -672,7 +678,7 @@ Item {
 
     Timer {
         id: contentRetention
-        interval: 3000
+        interval: Timing.holdMedium
         onTriggered: {
             if (!root.shouldBeVisible && !root.attached)
                 root._retainedContent = false;
@@ -835,7 +841,7 @@ Item {
     OpacityMotion {
         id: contentFade
         enabled: root.animationsEnabled && root._fadeWithOpacity
-        duration: root._supersededClose && !root.shouldBeVisible ? Theme.shorterDuration : root.animationDuration
+        duration: root._supersededClose && !root.shouldBeVisible ? Theme.expressiveDurations.expressiveFastEffects : root.animationDuration
         target: root.shouldBeVisible ? 1 : 0
         onRunningChanged: root._finishContentFade()
         onValueChanged: root._finishContentFade()
@@ -849,7 +855,7 @@ Item {
     }
 
     readonly property bool _standardMotion: !connected && !root.directionalRevealActive && !Theme.isDepthEffect && !_fluidMotionActive
-    readonly property var _geometrySpringParams: Theme.springPreset(_standardMotion ? "fastSpatial" : "defaultSpatial", _standardMotion ? root.animationDuration * 2 : root.animationDuration)
+    readonly property var _geometrySpringParams: Theme.springPreset(_standardMotion ? "fastSpatial" : "defaultSpatial")
 
     readonly property real renderedAlignedX: alignedXFor(renderedAlignedWidth)
     property real renderedAlignedY: alignedY
@@ -857,21 +863,36 @@ Item {
     property real renderedAlignedHeight: alignedHeight
     // Snap rendered geometry while the entrance morph runs so it doesn't ride a second animation.
     readonly property bool _settlingToOpen: shouldBeVisible && (morph.running || travelSpring.running)
-    readonly property bool _geometryMotion: animationsEnabled && !SettingsData.reduceMotion && resizeDuration > 0 && root.attached && shouldBeVisible && !_settlingToOpen && !resizing
+    readonly property bool _geometryMotion: animationsEnabled && !Theme.reduceMotion && root.attached && shouldBeVisible && !_settlingToOpen && !resizing
     property bool _bodyBatch: false
-    readonly property var _resizeSpringParams: Theme.springPreset("defaultSpatial", root.resizeDuration)
+    readonly property var _resizeSpringParams: Theme.springPreset("defaultSpatial")
 
     RectSpringMotion {
         id: bodySpring
-        reducedMotion: SettingsData.reduceMotion || root.resizeDuration <= 0
+        reducedMotion: Theme.reduceMotion
         stiffness: root._resizeSpringParams.stiffness
         damping: root._resizeSpringParams.damping
         positionEpsilon: 0.25 / root.dpr
         velocityEpsilon: positionEpsilon * damping / (2 * mass)
+        onRunningChanged: root._fitSurface()
         onValueChanged: {
             if (root._geometryMotion)
                 root._setBody(value.y, root.resizeMotion ? value.width : root.alignedWidth, value.height);
         }
+    }
+
+    onMinimumSurfaceWidthChanged: {
+        if (minimumSurfaceWidth > 0)
+            return;
+        _surfaceFitOwed = true;
+        Qt.callLater(_fitSurface);
+    }
+
+    function _fitSurface() {
+        if (!_surfaceFitOwed || minimumSurfaceWidth > 0 || bodySpring.running)
+            return;
+        _surfaceFitOwed = false;
+        surface?.fitBounds();
     }
 
     // One notification per body change: travelTarget would otherwise fire once per component write.
@@ -935,11 +956,11 @@ Item {
     RectSpringMotion {
         id: travelSpring
         enabled: root.morphTravelEnabled && root.animationsEnabled
-        reducedMotion: root.animationDuration <= 0 || SettingsData.reduceMotion
+        reducedMotion: root.animationDuration <= 0 || Theme.reduceMotion
         positionEpsilon: 0.25 / root.dpr
         velocityEpsilon: positionEpsilon * damping / Math.max(0.001, 2 * mass)
-        stiffness: Theme.springPreset(root._travelSpringPreset, root.animationDuration).stiffness
-        damping: Theme.springPreset(root._travelSpringPreset, root.animationDuration).damping
+        stiffness: Theme.springPreset(root._travelSpringPreset).stiffness
+        damping: Theme.springPreset(root._travelSpringPreset).damping
         onValueChanged: root._syncPopoutBody()
         onRunningChanged: root._finishMorphTravel()
     }
@@ -957,7 +978,11 @@ Item {
     onTravelTargetChanged: _bodyChanged()
 
     function _retargetMorphTravel() {
-        travelSpring.retarget(_fluidMotionActive && !shouldBeVisible ? fluidCollapsedRect : travelTarget);
+        const target = _fluidMotionActive && !shouldBeVisible ? fluidCollapsedRect : travelTarget;
+        if (resizing && shouldBeVisible)
+            travelSpring.snapTo(target);
+        else
+            travelSpring.retarget(target);
         _finishMorphTravel();
     }
 
@@ -1074,30 +1099,15 @@ Item {
 
     onAlignedHeightChanged: {
         _retargetBody();
-        if (suspendShadowWhileResizing && shouldBeVisible) {
-            _resizeActive = true;
-            resizeSettleTimer.restart();
-        }
         _queueFullSync();
     }
     onShouldBeVisibleChanged: {
-        if (shouldBeVisible) {
+        if (shouldBeVisible)
             _contentRenderActive = true;
-            return;
-        }
-        _resizeActive = false;
-        resizeSettleTimer.stop();
     }
     on_ContentRenderActiveChanged: {
         if (!_contentRenderActive && isClosing && !shouldBeVisible)
             closeAnimationFinished();
-    }
-
-    Timer {
-        id: resizeSettleTimer
-        interval: 80
-        repeat: false
-        onTriggered: root._resizeActive = false
     }
 
     function _connectedAlignedXFor(width) {
@@ -1123,7 +1133,7 @@ Item {
         }
     }
 
-    function _connectedAlignedY(overTop, overBottom) {
+    function _connectedAlignedY(overTop, overBottom, height) {
         const popupGap = _popupGapValue();
         const edgeGapTop = _edgeGapFor("top", popupGap);
         const edgeGapBottom = _edgeGapFor("bottom", popupGap);
@@ -1131,15 +1141,15 @@ Item {
 
         switch (effectiveBarPosition) {
         case SettingsData.Position.Bottom:
-            return Math.max(edgeGapTop + overTop, Math.min(screenHeight - popupHeight - overBottom - popupGap, anchorY - popupHeight - overBottom));
+            return Math.max(edgeGapTop + overTop, Math.min(screenHeight - height - overBottom - popupGap, anchorY - height - overBottom));
         case SettingsData.Position.Top:
-            return Math.max(popupGap + overTop, Math.min(screenHeight - popupHeight - overBottom - edgeGapBottom, anchorY + overTop));
+            return Math.max(popupGap + overTop, Math.min(screenHeight - height - overBottom - edgeGapBottom, anchorY + overTop));
         default:
-            const rawY = triggerY - (popupHeight / 2);
+            const rawY = triggerY - (height / 2);
             const clearTop = adjacentBarClearance(adjacentBarInfo.topBar);
             const clearBottom = adjacentBarClearance(adjacentBarInfo.bottomBar);
             const minY = Math.max(edgeGapTop, clearTop) + overTop;
-            const maxY = screenHeight - popupHeight - overBottom - Math.max(edgeGapBottom, clearBottom);
+            const maxY = screenHeight - height - overBottom - Math.max(edgeGapBottom, clearBottom);
             return _snapNearFrameBound(Math.max(minY, Math.min(maxY, rawY)), minY, maxY, edgeGapTop >= clearTop, edgeGapBottom >= clearBottom);
         }
     }
@@ -1168,20 +1178,20 @@ Item {
         }
     }
 
-    function _standaloneAlignedY(overTop, overBottom) {
+    function _standaloneAlignedY(overTop, overBottom, height) {
         const popupGap = _standalonePopupGap();
         const topGap = _edgeClearance("top", popupGap, adjacentBarInfo.topBar > 0 ? adjacentBarInfo.topBar : 0);
         const bottomGap = _edgeClearance("bottom", popupGap, adjacentBarInfo.bottomBar > 0 ? adjacentBarInfo.bottomBar : 0);
 
         switch (effectiveBarPosition) {
         case SettingsData.Position.Bottom:
-            return Math.max(topGap + overTop, Math.min(screenHeight - popupHeight - overBottom - bottomGap, triggerY - popupHeight - overBottom));
+            return Math.max(topGap + overTop, Math.min(screenHeight - height - overBottom - bottomGap, triggerY - height - overBottom));
         case SettingsData.Position.Top:
-            return Math.max(topGap + overTop, Math.min(screenHeight - popupHeight - overBottom - bottomGap, triggerY + overTop));
+            return Math.max(topGap + overTop, Math.min(screenHeight - height - overBottom - bottomGap, triggerY + overTop));
         default:
-            const rawY = triggerY - (popupHeight / 2);
+            const rawY = triggerY - (height / 2);
             const minY = topGap + overTop;
-            const maxY = screenHeight - popupHeight - overBottom - bottomGap;
+            const maxY = screenHeight - height - overBottom - bottomGap;
             return Math.max(minY, Math.min(maxY, rawY));
         }
     }
@@ -1192,11 +1202,11 @@ Item {
 
     readonly property real alignedX: alignedXFor(popupWidth)
 
-    function alignedYFor(overTop, overBottom) {
-        return Theme.snap(connected ? _connectedAlignedY(overTop, overBottom) : _standaloneAlignedY(overTop, overBottom), dpr);
+    function alignedYFor(overTop, overBottom, height = popupHeight) {
+        return Theme.snap(connected ? _connectedAlignedY(overTop, overBottom, height) : _standaloneAlignedY(overTop, overBottom, height), dpr);
     }
 
-    readonly property real alignedY: alignedYFor(topOverflow, bottomOverflow)
+    readonly property real alignedY: alignedYFor(topOverflow + sideTopOverflow, bottomOverflow + sideBottomOverflow)
 
     function _maxBodyWidthFor(startGap, endGap, anchorX) {
         switch (effectiveBarPosition) {
@@ -1233,7 +1243,6 @@ Item {
     }
 
     readonly property real maxBodyWidth: Math.max(0, _maxBodyWidthFor(_startGapX, _endGapX, connected && usesConnectedSurfaceChrome ? connectedAnchorX : triggerX))
-
 
     function roomLeftFor(width) {
         return Math.max(0, alignedXFor(width) - _startGapX);
@@ -1335,7 +1344,7 @@ Item {
             globalOffsetY: root.surface?.bandY ?? 0
             anchors.fill: parent
             dismissEnabled: root.hoverDismissEnabled
-            dismissSuspended: root.hoverDismissSuspended
+            dismissSuspended: root.hoverDismissSuspended || root.dragPassthrough
             surfaceVisible: root.shouldBeVisible
             onDismissRequested: root.closeFromHoverDismiss()
         }
@@ -1354,9 +1363,9 @@ Item {
             id: contentMaskRect
             visible: false
             x: contentContainer.x - contentContainer.horizontalConnectorExtent - root.inputMargin - root.leftOverflow
-            y: contentContainer.y - contentContainer.verticalConnectorExtent - root.inputMargin
+            y: contentContainer.y - contentContainer.verticalConnectorExtent - root.inputMargin - root.sideTopOverflow
             width: root.shouldBeVisible ? root.renderedAlignedWidth + contentContainer.horizontalConnectorExtent * 2 + root.inputMargin * 2 + root.leftOverflow + root.rightOverflow : 0
-            height: root.shouldBeVisible ? root.renderedAlignedHeight + contentContainer.verticalConnectorExtent * 2 + root.inputMargin * 2 : 0
+            height: root.shouldBeVisible ? root.renderedAlignedHeight + contentContainer.verticalConnectorExtent * 2 + root.inputMargin * 2 + root.sideTopOverflow + root.sideBottomOverflow : 0
         }
 
         Loader {
@@ -1373,14 +1382,14 @@ Item {
                     x: 0
                     y: 0
                     width: parent.width
-                    height: Math.max(0, root.renderedAlignedY - root.topOverflow)
+                    height: Math.max(0, root.renderedAlignedY - root.topOverflow - root.sideTopOverflow)
                     enabled: parent.enabled
                     acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
                     onClicked: root.backgroundClicked()
                 }
                 MouseArea {
                     x: 0
-                    y: root.renderedAlignedY + root.renderedAlignedHeight + root.bottomOverflow
+                    y: root.renderedAlignedY + root.renderedAlignedHeight + root.bottomOverflow + root.sideBottomOverflow
                     width: parent.width
                     height: Math.max(0, parent.height - y)
                     enabled: parent.enabled
@@ -1389,19 +1398,38 @@ Item {
                 }
                 MouseArea {
                     x: 0
-                    y: root.renderedAlignedY - root.topOverflow
+                    y: root.renderedAlignedY - root.topOverflow - root.sideTopOverflow
                     width: Math.max(0, root.renderedAlignedX - root.leftOverflow)
-                    height: root.renderedAlignedHeight + root.topOverflow + root.bottomOverflow
+                    height: root.renderedAlignedHeight + root.topOverflow + root.bottomOverflow + root.sideTopOverflow + root.sideBottomOverflow
                     enabled: parent.enabled
                     acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
                     onClicked: root.backgroundClicked()
                 }
                 MouseArea {
                     x: root.renderedAlignedX + root.renderedAlignedWidth + root.rightOverflow
-                    y: root.renderedAlignedY - root.topOverflow
+                    y: root.renderedAlignedY - root.topOverflow - root.sideTopOverflow
                     width: Math.max(0, parent.width - x)
-                    height: root.renderedAlignedHeight + root.topOverflow + root.bottomOverflow
+                    height: root.renderedAlignedHeight + root.topOverflow + root.bottomOverflow + root.sideTopOverflow + root.sideBottomOverflow
                     enabled: parent.enabled
+                    acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
+                    onClicked: root.backgroundClicked()
+                }
+                // Beside a side column that outreaches the body, the room off the body's end still dismisses.
+                MouseArea {
+                    x: root.renderedAlignedX
+                    y: root.renderedAlignedY - root.topOverflow - root.sideTopOverflow
+                    width: root.renderedAlignedWidth
+                    height: root.sideTopOverflow
+                    enabled: parent.enabled && root.sideTopOverflow > 0
+                    acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
+                    onClicked: root.backgroundClicked()
+                }
+                MouseArea {
+                    x: root.renderedAlignedX
+                    y: root.renderedAlignedY + root.renderedAlignedHeight + root.bottomOverflow
+                    width: root.renderedAlignedWidth
+                    height: root.sideBottomOverflow
+                    enabled: parent.enabled && root.sideBottomOverflow > 0
                     acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
                     onClicked: root.backgroundClicked()
                 }
@@ -1410,6 +1438,7 @@ Item {
 
         Item {
             id: contentContainer
+            opacity: root.dragPassthrough ? 0 : 1
             readonly property real surfaceOriginX: root.surface?.bandX ?? 0
             readonly property real surfaceOriginY: root.surface?.bandY ?? 0
             clip: root.morphTravelEnabled
@@ -1684,7 +1713,7 @@ Item {
                         bottomRightRadius: chrome.surfaceBottomRightRadius
                         // Shadow only; contentWrapper paints the fill.
                         targetColor: "transparent"
-                        shadowEnabled: Theme.elevationEnabled && SettingsData.popoutElevationEnabled && Quickshell.env("DMS_DISABLE_LAYER") !== "true" && Quickshell.env("DMS_DISABLE_LAYER") !== "1" && !(root.suspendShadowWhileResizing && root._resizeActive) && !root.frameOwnsConnectedChrome
+                        shadowEnabled: Theme.elevationEnabled && SettingsData.popoutElevationEnabled && Quickshell.env("DMS_DISABLE_LAYER") !== "true" && Quickshell.env("DMS_DISABLE_LAYER") !== "1" && !(root.suspendShadowWhileResizing && bodySpring.running) && !root.frameOwnsConnectedChrome
                     }
 
                     Item {
@@ -1694,7 +1723,7 @@ Item {
                         readonly property real extraLeft: (contentContainer.barTop || contentContainer.barBottom) ? Theme.connectedCornerRadius : 0
                         readonly property real extraTop: (contentContainer.barLeft || contentContainer.barRight) ? Theme.connectedCornerRadius : 0
 
-                        readonly property bool shadowsOn: Theme.elevationEnabled && SettingsData.popoutElevationEnabled && Quickshell.env("DMS_DISABLE_LAYER") !== "true" && Quickshell.env("DMS_DISABLE_LAYER") !== "1" && !(root.suspendShadowWhileResizing && root._resizeActive)
+                        readonly property bool shadowsOn: Theme.elevationEnabled && SettingsData.popoutElevationEnabled && Quickshell.env("DMS_DISABLE_LAYER") !== "true" && Quickshell.env("DMS_DISABLE_LAYER") !== "1" && !(root.suspendShadowWhileResizing && bodySpring.running)
                         readonly property real shadowBlurPx: root.shadowLevel && root.shadowLevel.blurPx !== undefined ? root.shadowLevel.blurPx : 0
                         readonly property real shadowSpreadPx: root.shadowLevel && root.shadowLevel.spreadPx !== undefined ? root.shadowLevel.spreadPx : 0
                         readonly property real shadowOffsetX: Theme.elevationOffsetXFor(root.shadowLevel, root.effectiveShadowDirection, root.shadowFallbackOffset)
@@ -1840,8 +1869,8 @@ Item {
                 revealY: chrome.revealY
                 revealWidth: chrome.revealWidth
                 revealHeight: chrome.revealHeight
-                topOverflow: root.topOverflow
-                bottomOverflow: root.bottomOverflow
+                topOverflow: root.topOverflow + root.sideTopOverflow
+                bottomOverflow: root.bottomOverflow + root.sideBottomOverflow
                 leftOverflow: root.leftOverflow
                 rightOverflow: root.rightOverflow
 
@@ -1860,7 +1889,7 @@ Item {
                     fallbackOffset: root.shadowFallbackOffset
                     targetRadius: Theme.windowRadius
                     targetColor: root._fluidMotionActive ? Theme.readableSurface : "transparent"
-                    shadowEnabled: Theme.elevationEnabled && SettingsData.popoutElevationEnabled && Quickshell.env("DMS_DISABLE_LAYER") !== "true" && Quickshell.env("DMS_DISABLE_LAYER") !== "1" && !(root.suspendShadowWhileResizing && root._resizeActive)
+                    shadowEnabled: Theme.elevationEnabled && SettingsData.popoutElevationEnabled && Quickshell.env("DMS_DISABLE_LAYER") !== "true" && Quickshell.env("DMS_DISABLE_LAYER") !== "1" && !(root.suspendShadowWhileResizing && bodySpring.running)
                 }
 
                 DLayer {

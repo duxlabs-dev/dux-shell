@@ -15,6 +15,6 @@ MetricCard {
     badgeIcon: "upload"
     trendMaximum: 0
     showTrend: options.trend === true
-    trend: DgopService.networkHistory.rx
-    secondaryTrend: DgopService.networkHistory.tx
+    trend: showTrend && live ? DgopService.history("net", "down").map(v => v / 1024) : []
+    secondaryTrend: showTrend && live ? DgopService.history("net", "up").map(v => v / 1024) : []
 }

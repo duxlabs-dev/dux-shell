@@ -64,7 +64,7 @@ Item {
 
     readonly property color surfaceColor: {
         if (root.highContrast)
-            return Theme.surfaceContainerHighest;
+            return Theme.highContrastSurface;
         switch (root.palette) {
         case "bright":
             return Theme.surfaceBright;
@@ -95,7 +95,7 @@ Item {
     readonly property color effectiveSurfaceColor: {
         if (root.ownColor)
             return Theme.withAlpha(root.controller.roleFill(root.surfaceRole), root.islandOpacity);
-        return root.embedded ? root.bandColor : root.highContrast ? Theme.surfaceContainerHighest : Theme.withAlpha(root.surfaceColor, root.islandOpacity);
+        return root.embedded ? root.bandColor : root.highContrast ? Theme.highContrastSurface : Theme.withAlpha(root.surfaceColor, root.islandOpacity);
     }
     readonly property real surfaceOpacity: root.effectiveSurfaceColor.a
     readonly property bool shadowEnabled: !root.chromeless && root.surfaceOpacity > 0 && Theme.elevationEnabled && SettingsData.barElevationEnabled
@@ -170,6 +170,20 @@ Item {
         readonly property real renderedX: root.currentScreenX
         readonly property real renderedY: root.currentScreenY
 
+        function controlCenterXFor(width) {
+            const target = root.resolveTarget(root.controller.controlCenterTargetFor(width));
+            if (!root.isVertical)
+                return Math.round((root.alongExtent - target.width) / 2 + target.offsetAlong) + root.hostOriginX;
+            return (root.farEdge ? root.crossExtent - Math.round(target.offsetCross) - target.width : Math.round(target.offsetCross)) + root.hostOriginX;
+        }
+
+        function controlCenterYFor(height) {
+            const target = root.resolveTarget(root.controller.controlCenterTargetFor(root.controller.controlCenterSheetWidth + root.controller.controlCenterSheetInset, height));
+            if (root.isVertical)
+                return Math.round((root.alongExtent - target.height) / 2 + target.offsetAlong) + root.hostOriginY;
+            return (root.farEdge ? root.crossExtent - Math.round(target.offsetCross) - target.height : Math.round(target.offsetCross)) + root.hostOriginY;
+        }
+
         function screenXFor(width) {
             if (!root.isVertical)
                 return Math.round((root.alongExtent - width) / 2 + (root.embedded ? root.clampAnchored(root.controller.alongOffset + root.anchorAlong, width) : motion.targetOffsetAlong)) + root.hostOriginX;
@@ -241,9 +255,14 @@ Item {
                 "height": target.height + (root.isVertical ? 0 : inset)
             });
         }
-        if (!root.freeMode)
-            return target;
-        const x = root.clampFree(root.anchor.x - target.width / 2, target.width, root.width);
+        if (!root.freeMode) {
+            if (target.centerOffsetX === undefined || root.isVertical)
+                return target;
+            return Object.assign({}, target, {
+                "offsetAlong": root.clampAnchored(target.offsetAlong, target.width)
+            });
+        }
+        const x = root.clampFree(root.anchor.x - target.width / 2 + (target.centerOffsetX ?? 0), target.width, root.width);
         const y = root.clampFree(root.anchor.y - target.height / 2, target.height, root.height);
         return Object.assign({}, target, {
             "offsetAlong": root.isVertical ? y + target.height / 2 - root.height / 2 : x + target.width / 2 - root.width / 2,
@@ -358,7 +377,7 @@ Item {
     VectorSpringMotion {
         id: motion
 
-        reducedMotion: root.reducedMotion
+        reducedMotion: root.reducedMotion || root.controller.controlCenterResizing
         stiffness: root.springStiffness
         damping: root.springDamping
         mass: root.springMass
@@ -371,6 +390,8 @@ Item {
     Item {
         id: inputEnvelope
 
+        readonly property real editPadding: root.controller.editingActivity === "controlcenter" ? PopoutMetrics.editOverflow : 0
+        readonly property real inputPadding: overshootBudget + editPadding
         readonly property real overshootBudget: {
             if (!motion.running)
                 return 0;
@@ -385,10 +406,11 @@ Item {
             return Math.ceil(span * Math.exp(-Math.PI * zeta / Math.sqrt(1 - zeta * zeta)));
         }
 
-        x: (motion.running ? Math.min(root.motionStartBounds.x, root.targetVisualX) : root.targetVisualX) - overshootBudget
-        y: (motion.running ? Math.min(root.motionStartBounds.y, root.targetVisualY) : root.targetVisualY) - overshootBudget
-        width: (motion.running ? Math.max(root.motionStartBounds.x + root.motionStartBounds.width, root.targetVisualX + motion.targetWidth) : root.targetVisualX + motion.targetWidth) + overshootBudget - x
-        height: (motion.running ? Math.max(root.motionStartBounds.y + root.motionStartBounds.height, root.targetVisualY + motion.targetHeight) : root.targetVisualY + motion.targetHeight) + overshootBudget - y
+        // Keep the grab inside the Wayland input region while it travels beyond either resize edge.
+        x: root.controller.controlCenterResizing ? -root.hostOriginX : (motion.running ? Math.min(root.motionStartBounds.x, root.targetVisualX) : root.targetVisualX) - inputPadding
+        y: root.controller.controlCenterResizing ? -root.hostOriginY : (motion.running ? Math.min(root.motionStartBounds.y, root.targetVisualY) : root.targetVisualY) - inputPadding
+        width: root.controller.controlCenterResizing ? (root.effectiveScreen?.width ?? root.width) : (motion.running ? Math.max(root.motionStartBounds.x + root.motionStartBounds.width, root.targetVisualX + motion.targetWidth) : root.targetVisualX + motion.targetWidth) + inputPadding - x
+        height: root.controller.controlCenterResizing ? (root.effectiveScreen?.height ?? root.height) : (motion.running ? Math.max(root.motionStartBounds.y + root.motionStartBounds.height, root.targetVisualY + motion.targetHeight) : root.targetVisualY + motion.targetHeight) + inputPadding - y
     }
 
     Loader {
@@ -413,15 +435,17 @@ Item {
 
         Behavior on color {
             ColorAnimation {
-                duration: root.reducedMotion ? 0 : Theme.shortDuration
-                easing.type: Easing.OutCubic
+                duration: root.reducedMotion ? 0 : Theme.expressiveDurations.expressiveFastEffects
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
             }
         }
 
         Behavior on border.color {
             ColorAnimation {
-                duration: root.reducedMotion ? 0 : Theme.shortDuration
-                easing.type: Easing.OutCubic
+                duration: root.reducedMotion ? 0 : Theme.expressiveDurations.expressiveFastEffects
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
             }
         }
 
