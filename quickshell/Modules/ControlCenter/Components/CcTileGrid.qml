@@ -124,7 +124,9 @@ DEditableGrid {
             const slot = tileRepeater.itemAt(i) as CcTileSlot;
             if (i === excludeIndex || !slot?.enabled || slot.widgetData.id !== WidgetUtils.GROUP_ID)
                 continue;
-            if (slot.contains(slot.mapFromItem(null, scenePoint.x, scenePoint.y)))
+            const local = slot.mapFromItem(null, scenePoint.x, scenePoint.y);
+            const pad = hoverGroup !== "" && hoverGroup === slot.tileItem?.groupId ? Theme.spacingS : 0;
+            if (local.x >= -pad && local.x < slot.width + pad && local.y >= -pad && local.y < slot.height + pad)
                 return slot.tileItem;
         }
         return null;

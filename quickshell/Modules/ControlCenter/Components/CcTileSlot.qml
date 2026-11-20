@@ -154,16 +154,43 @@ DEditableGridSlot {
         onTapped: root.forceActiveFocus()
     }
 
+    readonly property var hoveredGroup: (dragging && grid.hoverGroup !== "") ? grid.groupAt(grid.dragScenePoint, index) : null
+    readonly property bool inGroupHover: hoveredGroup !== null && WidgetUtils.canGroup(widgetData)
+    readonly property point _hoverLocal: inGroupHover ? mapFromItem(null, grid.dragScenePoint.x, grid.dragScenePoint.y) : Qt.point(0, 0)
+
     CcTileLoader {
         id: tileLoader
-        anchors.fill: parent
+
+        x: root.inGroupHover ? Math.max(0, Math.min(root.width - width, root._hoverLocal.x - width / 2)) : 0
+        y: root.inGroupHover ? Math.max(0, Math.min(root.height - height, root._hoverLocal.y - height / 2)) : 0
+        width: root.inGroupHover ? (root.tileItem?.quickWidth ?? CcMetrics.iconBoxSize) : root.width
+        height: root.inGroupHover ? CcMetrics.iconBoxSize : root.height
         grid: root.grid
         widgetData: root.widgetData
         savedIndex: root.grid.savedIndex(root.index)
-        columns: root.cols
-        rows: root.rows
-        compact: root.compact
-        small: root.small
+        columns: root.inGroupHover ? 1 : root.cols
+        rows: root.inGroupHover ? 1 : root.rows
+        compact: root.inGroupHover ? true : root.compact
+        small: root.inGroupHover ? true : root.small
+        bare: root.inGroupHover ? (root.hoveredGroup?.membersBare ?? false) : false
+
+        Behavior on width {
+            enabled: CcMetrics.animationsEnabled && root.dragging
+            NumberAnimation {
+                duration: Theme.expressiveDurations.expressiveFastSpatial
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: Theme.expressiveCurves.expressiveFastSpatial
+            }
+        }
+
+        Behavior on height {
+            enabled: CcMetrics.animationsEnabled && root.dragging
+            NumberAnimation {
+                duration: Theme.expressiveDurations.expressiveFastSpatial
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: Theme.expressiveCurves.expressiveFastSpatial
+            }
+        }
     }
 
     // A same-column insertion otherwise covers the outgoing pill with the dock's drag preview.
@@ -210,7 +237,7 @@ DEditableGridSlot {
 
         sourceComponent: CcEditChrome {
             id: chrome
-            visible: root.editing && (root.chromeShown || chrome.keyboardFocused)
+            visible: root.editing && !root.inGroupHover && (root.chromeShown || chrome.keyboardFocused)
             enabled: root.interactionEnabled
             widgetData: root.widgetData
             passthrough: root.passthrough
