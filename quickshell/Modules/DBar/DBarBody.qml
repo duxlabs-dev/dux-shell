@@ -113,6 +113,10 @@ Item {
         scrollArea.processWheel(wheel);
     }
 
+    function dismissHoverSurfaces() {
+        topBarContent.dismissHoverSurfaces();
+    }
+
     property var controlCenterButtonRef: null
     property var clockButtonRef: null
     property var systemUpdateButtonRef: null

@@ -35,7 +35,7 @@ Item {
     property color bandColor: Theme.hostSurface
     property Item anchorItem: null
     property Item slotItem: null
-    property Item barBody: null
+    property DBarBody barBody: null
     property var leadingSectionRect: null
     property var centerSectionRect: null
     property var trailingSectionRect: null
@@ -369,6 +369,23 @@ Item {
         onTriggered: root.keyboardReclaiming = false
     }
 
+    // Once the island takes the pointer, the bar only knows its last point on the bar, so it can't close its hover popouts itself.
+    Timer {
+        id: hoverPopoutDismissTimer
+
+        interval: Timing.debounce
+        onTriggered: {
+            if (!controller.pointerInside)
+                return;
+            if (root.barBody) {
+                root.barBody.dismissHoverSurfaces();
+                return;
+            }
+            PopoutManager.dismissHoverPopoutForScreen(root.screen);
+            TrayMenuManager.closeHoverMenus();
+        }
+    }
+
     Connections {
         target: PopoutManager
 
@@ -390,6 +407,10 @@ Item {
         id: controller
 
         onKeyboardDismissRequestedChanged: root.requestKeyboardFocus()
+        onPointerInsideChanged: {
+            if (pointerInside)
+                hoverPopoutDismissTimer.restart();
+        }
         onKeyboardYieldedChanged: {
             if (keyboardYielded || !keyboardDismissRequested)
                 return;

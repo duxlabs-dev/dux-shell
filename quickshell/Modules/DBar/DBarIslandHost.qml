@@ -2,7 +2,7 @@ import QtQuick
 import qs.Modules.DIsland
 
 IslandBarHost {
-    required property Item body
+    required property DBarBody body
     required property Item originItem
     required property Item slotLoader
     required property Item bandItem

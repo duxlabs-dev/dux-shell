@@ -417,6 +417,11 @@ Item {
         hoverController.updateBarHovered(hovered);
     }
 
+    function dismissHoverSurfaces() {
+        if (!hoverController.isActiveHoverSurfacePinned())
+            hoverController.closeHoverSurfaces();
+    }
+
     function invalidateHoverCandidateCache() {
         hoverController.invalidateCandidateCache();
     }
