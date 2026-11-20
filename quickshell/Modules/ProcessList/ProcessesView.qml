@@ -589,7 +589,7 @@ Rectangle {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
                 clip: true
-                reuseItems: true
+                // No reuseItems: with ScriptModel updates, pooled rows can stay painted over the live ones.
                 cacheBuffer: Math.round(height)
                 activeFocusOnTab: true
                 focus: true
