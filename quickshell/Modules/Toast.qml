@@ -11,8 +11,8 @@ DIdleSurface {
     id: root
 
     WlrLayershell.namespace: "dms:toast"
-    // A full-screen surface is blacked out whole by compositor capture rules matching this namespace.
-    compactWhenIdle: true
+    // Maps per show, so it stacks above overlay surfaces mapped since the last one.
+    keepMapped: false
     // Covers the level-3 shadow and the copy tooltips centered on edge buttons.
     readonly property real renderPadding: Theme.elevationRenderPadding(Theme.elevationLevel3, Theme.elevationLightDirection, 6, Theme.spacingS, Theme.spacingL)
     requestedBounds: Qt.rect(surfaceX + shadowBuffer - renderPadding, surfaceY + shadowBuffer - renderPadding, toastWidth + renderPadding * 2, toastHeight + renderPadding * 2)
