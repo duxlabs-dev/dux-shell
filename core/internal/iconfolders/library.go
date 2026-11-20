@@ -197,7 +197,7 @@ func ListThemes(o Options) []ThemeInfo {
 // from anywhere in its tree, as the installer lets a theme do.
 func (l *library) needs(user *shelf, dir string) bool {
 	for _, sh := range l.chain(user, "") {
-		if sh.path == dir {
+		if sh.path == dir || slices.Contains(sh.inherits, filepath.Base(dir)) {
 			return true
 		}
 		// Only a neighbor's relative links reach dir: Papirus-Dark holds its larger sizes as links into Papirus.
@@ -266,7 +266,13 @@ func removePack(o Options, name string, inUse []string, match func(string) bool)
 			users = append(users, u.label)
 			continue
 		}
-		if sh := lib.shelf(u.theme); sh != nil && lib.needs(sh, dir) {
+		sh := lib.shelf(u.theme)
+		if sh == nil && u.theme != "" && u.theme == filepath.Base(u.theme) {
+			if candidate := filepath.Join(o.IconsDir, u.theme); hasCursors(candidate) {
+				sh = &shelf{path: candidate}
+			}
+		}
+		if sh != nil && lib.needs(sh, dir) {
 			users = append(users, u.label)
 		}
 	}

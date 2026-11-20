@@ -118,3 +118,144 @@ func TestListCursorsFindsEachThemesPointer(t *testing.T) {
 		"Loop": "", "Broken": "", "Pipe": "",
 	}, found, "a theme with no cursors directory is not a cursor theme")
 }
+
+func TestListCursorsRemovableAndSymlinked(t *testing.T) {
+	e := newEnv(t)
+	pointer := string(xcursor("Xcur", solid(8, 8, 5, 5, 5, 255)))
+	put(t, e.sys, map[string]string{
+		"SysCursor/cursors/left_ptr": pointer,
+	})
+	put(t, e.icons, map[string]string{
+		"UserCursor/cursors/left_ptr": pointer,
+		"LinkedTarget/left_ptr":       pointer,
+		"LinkedCursor/cursors":        "->../LinkedTarget",
+	})
+
+	found := map[string]CursorInfo{}
+	for _, c := range ListCursors(e.opts("")) {
+		found[c.Name] = c
+	}
+	assert.False(t, found["SysCursor"].Removable)
+	assert.True(t, found["UserCursor"].Removable)
+	require.Contains(t, found, "LinkedCursor")
+	assert.True(t, found["LinkedCursor"].Removable)
+	assert.True(t, strings.HasPrefix(found["LinkedCursor"].Pointer, "data:image/png;base64,iVBOR"))
+}
+
+func TestInstallCursor(t *testing.T) {
+	e := newEnv(t)
+	pointer := string(xcursor("Xcur", solid(8, 8, 5, 5, 5, 255)))
+
+	// Direct cursor-only tarball (no index.theme).
+	pack := tarball(t, t.TempDir(), entry{name: "Pack/cursors/left_ptr", body: pointer})
+	names, err := InstallCursor(e.opts(""), pack, false)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"Pack"}, names)
+	assert.FileExists(t, filepath.Join(e.icons, "Pack/cursors/left_ptr"))
+
+	// Reinstall fails without replace, succeeds with replace.
+	_, err = InstallCursor(e.opts(""), pack, false)
+	var refusal *LibraryError
+	require.ErrorAs(t, err, &refusal)
+	assert.Equal(t, CodeExists, refusal.Code)
+	assert.Equal(t, []string{"Pack"}, refusal.Themes)
+
+	names, err = InstallCursor(e.opts(""), pack, true)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"Pack"}, names)
+
+	// Single-wrapper release archive.
+	wrapped := tarball(t, t.TempDir(), entry{name: "release/Wrapped/cursors/left_ptr", body: pointer})
+	names, err = InstallCursor(e.opts(""), wrapped, false)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"Wrapped"}, names)
+	assert.FileExists(t, filepath.Join(e.icons, "Wrapped/cursors/left_ptr"))
+
+	// Plain folder source.
+	folderSrc := filepath.Join(t.TempDir(), "FolderPack")
+	put(t, folderSrc, map[string]string{"cursors/left_ptr": pointer})
+	names, err = InstallCursor(e.opts(""), folderSrc, false)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"FolderPack"}, names)
+	assert.FileExists(t, filepath.Join(e.icons, "FolderPack/cursors/left_ptr"))
+
+	// Icon-only archive without cursors/ is rejected with CodeNoTheme.
+	iconOnly := tarball(t, t.TempDir(),
+		entry{name: "Icons/index.theme", body: index("")},
+		entry{name: "Icons/48x48/places/a.png", body: "x"},
+	)
+	_, err = InstallCursor(e.opts(""), iconOnly, false)
+	require.ErrorAs(t, err, &refusal)
+	assert.Equal(t, CodeNoTheme, refusal.Code)
+}
+
+func TestRemoveCursorGuards(t *testing.T) {
+	setup := func(t *testing.T) env {
+		e := newEnv(t)
+		put(t, e.sys, map[string]string{
+			"System/cursors/left_ptr": "x",
+		})
+		put(t, e.icons, map[string]string{
+			"Plain/cursors/left_ptr":            "x",
+			"Indexed/index.theme":               index(""),
+			"Indexed/cursors/left_ptr":          "x",
+			"IndexedParent/index.theme":         index(""),
+			"IndexedParent/cursors/left_ptr":    "x",
+			"IndexlessParent/cursors/left_ptr":  "x",
+			"Mid/index.theme":                   index("IndexlessParent"),
+			"Mid/cursors/left_ptr":              "x",
+			"Child/index.theme":                 index("IndexedParent"),
+			"Child/cursors/left_ptr":            "x",
+			"ChildOfIndexless/index.theme":      index("IndexlessParent"),
+			"ChildOfIndexless/cursors/left_ptr": "x",
+			"GrandChild/index.theme":            index("Mid"),
+			"GrandChild/cursors/left_ptr":       "x",
+			"Linked/cursors/left_ptr":           "->../../Plain/cursors/left_ptr",
+			"NoCursors/index.theme":             index(""),
+			"hicolor/cursors/left_ptr":          "x",
+		})
+		return e
+	}
+
+	tests := []struct {
+		name   string
+		cursor string
+		inUse  []string
+		code   string
+		users  []string
+	}{
+		{name: "a cursor outside the user's directory", cursor: "System", code: CodeNotRemovable},
+		{name: "a path", cursor: "../sys/System", code: CodeNotRemovable},
+		{name: "an empty name", cursor: "", code: CodeNotRemovable},
+		{name: "a folder without cursors", cursor: "NoCursors", code: CodeNotRemovable},
+		{name: "the shared fallback", cursor: "hicolor", code: CodeNotRemovable},
+		{name: "an indexless cursor in use", cursor: "Plain", inUse: []string{"Plain"}, code: CodeInUse, users: []string{"Plain"}},
+		{name: "an indexed cursor in use", cursor: "Indexed", inUse: []string{"Indexed"}, code: CodeInUse, users: []string{"Indexed"}},
+		{name: "an indexed parent inherited by in-use cursor", cursor: "IndexedParent", inUse: []string{"Child"}, code: CodeInUse, users: []string{"Child"}},
+		{name: "an indexless parent inherited directly by in-use cursor", cursor: "IndexlessParent", inUse: []string{"ChildOfIndexless"}, code: CodeInUse, users: []string{"ChildOfIndexless"}},
+		{name: "an indexless parent inherited transitively by in-use cursor", cursor: "IndexlessParent", inUse: []string{"GrandChild"}, code: CodeInUse, users: []string{"GrandChild"}},
+		{name: "a cursor linked into by an indexless in-use cursor", cursor: "Plain", inUse: []string{"Linked"}, code: CodeInUse, users: []string{"Linked"}},
+		{name: "an unused cursor", cursor: "Plain", inUse: []string{"Indexed", "Child"}},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			e := setup(t)
+			before := e.generated()
+
+			err := RemoveCursor(e.opts(""), tc.cursor, tc.inUse)
+			if tc.code == "" {
+				require.NoError(t, err)
+				assert.NotContains(t, e.generated(), tc.cursor)
+				assert.Len(t, e.generated(), len(before)-1)
+				return
+			}
+			var refusal *LibraryError
+			require.ErrorAs(t, err, &refusal)
+			assert.Equal(t, tc.code, refusal.Code)
+			assert.Equal(t, tc.users, refusal.Themes)
+			assert.Equal(t, before, e.generated())
+			assert.FileExists(t, filepath.Join(e.sys, "System/cursors/left_ptr"))
+		})
+	}
+}

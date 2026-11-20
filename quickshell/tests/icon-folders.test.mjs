@@ -490,12 +490,17 @@ test("every badge shape has an outline to preview it with", () => {
     }
 });
 
-test("cursor pointers are kept only as PNG data URLs", () => {
+test("cursor library keeps removable flags and PNG data URL pointers", () => {
     const png = "data:image/png;base64,iVBORw0KGgo=";
-    const text = JSON.stringify({ themes: [], cursors: [{ name: "Adwaita", pointer: png }, { name: "Hypr", pointer: "" }, { name: "File", pointer: "/usr/share/x.png" }, { pointer: png }, { name: "Bad", pointer: 3 }, null] });
-    assert.deepEqual(plain(IconFolders.parsePointers(text)), { Adwaita: png });
+    const text = JSON.stringify({ themes: [], cursors: [{ name: "Adwaita", removable: true, pointer: png }, { name: "Hypr", removable: false, pointer: "" }, { name: "File", pointer: "/usr/share/x.png" }, { pointer: png }, { name: "Bad", pointer: 3 }, null] });
+    assert.deepEqual(plain(IconFolders.parseCursorLibrary(text)), {
+        Adwaita: { removable: true, pointer: png },
+        Hypr: { removable: false, pointer: "" },
+        File: { removable: false, pointer: "" },
+        Bad: { removable: false, pointer: "" },
+    });
     for (const broken of ["", "{", "null", '{"cursors":3}', '{"themes":[]}'])
-        assert.deepEqual(plain(IconFolders.parsePointers(broken)), {});
+        assert.deepEqual(plain(IconFolders.parseCursorLibrary(broken)), {});
 });
 
 test("an install or remove reply carries its themes, and a refusal its code", () => {
