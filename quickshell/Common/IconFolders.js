@@ -215,16 +215,21 @@ function parseLibrary(text) {
     return themes;
 }
 
-// The same command's cursor themes: each one's name mapped to its default pointer, a PNG data URL.
-function parsePointers(text) {
-    const pointers = {};
+// `dms icon-theme list`: each cursor theme mapped to whether it can be removed and its default pointer.
+function parseCursorLibrary(text) {
+    const cursors = {};
     try {
         for (const cursor of JSON.parse(text).cursors) {
-            if (cursor && typeof cursor.name === "string" && typeof cursor.pointer === "string" && cursor.pointer.startsWith("data:image/png;base64,"))
-                pointers[cursor.name] = cursor.pointer;
+            if (cursor && typeof cursor.name === "string") {
+                const pointer = typeof cursor.pointer === "string" && cursor.pointer.startsWith("data:image/png;base64,") ? cursor.pointer : "";
+                cursors[cursor.name] = {
+                    removable: cursor.removable === true,
+                    pointer: pointer
+                };
+            }
         }
     } catch (e) {}
-    return pointers;
+    return cursors;
 }
 
 // `dms icon-theme install|remove`: the themes it touched, or a refusal's code with the themes in the way.

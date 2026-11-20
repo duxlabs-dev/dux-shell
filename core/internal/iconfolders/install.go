@@ -252,7 +252,7 @@ func (s *stager) tree(src, as string) error {
 	})
 }
 
-func (s *stager) unpack(src string) error {
+func (s *stager) unpack(src string, match func(string) bool) error {
 	src, err := filepath.EvalSymlinks(src)
 	if err != nil {
 		return err
@@ -262,11 +262,11 @@ func (s *stager) unpack(src string) error {
 		return err
 	}
 	if info.IsDir() {
-		if hasIndex(src) {
+		if match(src) {
 			return s.tree(src, filepath.Base(src))
 		}
 		// Only theme folders are copied, never whatever else the picked folder holds.
-		for _, name := range themeDirs(src) {
+		for _, name := range matchingDirs(src, match) {
 			if err := s.tree(filepath.Join(src, name), name); err != nil {
 				return err
 			}
@@ -321,11 +321,11 @@ func hasIndex(dir string) bool {
 	return err == nil && info.Mode().IsRegular()
 }
 
-func themeDirs(dir string) []string {
+func matchingDirs(dir string, match func(string) bool) []string {
 	var names []string
 	entries, _ := os.ReadDir(dir)
 	for _, entry := range entries {
-		if entry.IsDir() && !reserved(entry.Name()) && hasIndex(filepath.Join(dir, entry.Name())) {
+		if entry.IsDir() && !reserved(entry.Name()) && match(filepath.Join(dir, entry.Name())) {
 			names = append(names, entry.Name())
 		}
 	}
@@ -385,9 +385,19 @@ func discard(dir string) {
 	os.RemoveAll(dir)
 }
 
-// InstallTheme copies the themes in src, an archive or a folder, into the user's icon directory.
+// InstallTheme copies the icon themes in src, an archive or a folder, into the user's icon directory.
 // Nothing from src is run, and a theme already there is replaced only when asked.
 func InstallTheme(o Options, src string, replace bool) ([]string, error) {
+	return installPack(o, src, replace, hasIndex, "no icon theme found")
+}
+
+// InstallCursor copies the cursor themes in src, an archive or a folder, into the user's icon directory.
+// Nothing from src is run, and a theme already there is replaced only when asked.
+func InstallCursor(o Options, src string, replace bool) ([]string, error) {
+	return installPack(o, src, replace, hasCursors, "no cursor theme found")
+}
+
+func installPack(o Options, src string, replace bool, match func(string) bool, noThemeMsg string) ([]string, error) {
 	o.defaults()
 	if err := os.MkdirAll(o.IconsDir, 0o755); err != nil {
 		return nil, err
@@ -415,17 +425,17 @@ func InstallTheme(o Options, src string, replace bool) ([]string, error) {
 	}
 
 	s := &stager{root: fresh, dirs: map[string]bool{}}
-	if err := s.unpack(src); err != nil {
+	if err := s.unpack(src, match); err != nil {
 		return nil, bad(err)
 	}
-	root, names := fresh, themeDirs(fresh)
+	root, names := fresh, matchingDirs(fresh, match)
 	// Release archives wrap their themes in one folder. A link in its place could name any directory.
 	if entries, _ := os.ReadDir(fresh); len(names) == 0 && len(entries) == 1 && entries[0].IsDir() {
 		root = filepath.Join(fresh, entries[0].Name())
-		names = themeDirs(root)
+		names = matchingDirs(root, match)
 	}
 	if len(names) == 0 {
-		return nil, &LibraryError{Code: CodeNoTheme, Reason: "no icon theme found"}
+		return nil, &LibraryError{Code: CodeNoTheme, Reason: noThemeMsg}
 	}
 
 	var taken []string

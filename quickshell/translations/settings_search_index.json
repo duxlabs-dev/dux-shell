@@ -782,7 +782,8 @@
       "typing",
       "wallpaper"
     ],
-    "page": "personalization"
+    "page": "personalization",
+    "icon": "delete"
   },
   {
     "section": "cursorHideAfterInactive",
@@ -1746,6 +1747,40 @@
       "toast"
     ],
     "page": "notifications"
+  },
+  {
+    "section": "cursorThemeLibrary",
+    "label": "Manage themes",
+    "tabIndex": -1,
+    "category": "Appearance",
+    "keywords": [
+      "appearance",
+      "archive",
+      "background",
+      "bg",
+      "colors",
+      "colour",
+      "colours",
+      "cursor",
+      "delete",
+      "desktop",
+      "hue",
+      "image",
+      "install",
+      "look",
+      "manage",
+      "palette",
+      "picture",
+      "preview",
+      "remove",
+      "style",
+      "theme",
+      "themes",
+      "tint",
+      "wallpaper"
+    ],
+    "page": "personalization",
+    "icon": "delete"
   },
   {
     "section": "iconThemeLibrary",
