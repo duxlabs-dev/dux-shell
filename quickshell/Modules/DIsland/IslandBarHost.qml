@@ -35,7 +35,7 @@ Item {
     property color bandColor: Theme.hostSurface
     property Item anchorItem: null
     property Item slotItem: null
-    property Item barBody: null
+    property DBarBody barBody: null
     property var leadingSectionRect: null
     property var centerSectionRect: null
     property var trailingSectionRect: null
@@ -390,6 +390,10 @@ Item {
         id: controller
 
         onKeyboardDismissRequestedChanged: root.requestKeyboardFocus()
+        onPointerInsideChanged: {
+            if (pointerInside)
+                root.barBody?.pointerMovedToIsland();
+        }
         onKeyboardYieldedChanged: {
             if (keyboardYielded || !keyboardDismissRequested)
                 return;

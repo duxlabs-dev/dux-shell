@@ -417,6 +417,10 @@ Item {
         hoverController.updateBarHovered(hovered);
     }
 
+    function pointerMovedToIsland() {
+        hoverController.pointerMovedToIsland();
+    }
+
     function invalidateHoverCandidateCache() {
         hoverController.invalidateCandidateCache();
     }
