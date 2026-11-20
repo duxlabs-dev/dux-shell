@@ -21,7 +21,7 @@ QML-based desktop shell interface for Dux Modular Shell providing panels, widget
 
 **Run the shell:**
 ```bash
-quickshell -p quickshell/
+dms qs -p quickshell/
 ```
 
 **Code formatting:**

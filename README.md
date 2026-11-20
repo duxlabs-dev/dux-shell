@@ -174,7 +174,7 @@ make duxinstall   # Build installer
 **Shell:**
 
 ```bash
-quickshell -p quickshell/
+dms qs -p quickshell/
 ```
 
 **NixOS:**
