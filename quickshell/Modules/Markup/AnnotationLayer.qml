@@ -447,7 +447,7 @@ Item {
 
                     onPositionChanged: mouse => {
                         // Undo or redo mid-drag can put another shape at this index.
-                        if (!startBox || root.shapes[root.selectedIndex] !== startShape)
+                        if (!pressed || !startBox || root.shapes[root.selectedIndex] !== startShape)
                             return;
                         const p = mapToItem(root, mouse.x, mouse.y);
                         const f = cornerHandle.modelData;
@@ -463,6 +463,12 @@ Item {
 
                     onReleased: {
                         root.commitMove();
+                        startShape = null;
+                        startBox = null;
+                    }
+
+                    onCanceled: {
+                        root.moving = null;
                         startShape = null;
                         startBox = null;
                     }

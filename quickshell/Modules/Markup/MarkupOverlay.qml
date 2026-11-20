@@ -269,12 +269,15 @@ Scope {
                             return (p.x === p.y) ? Qt.SizeFDiagCursor : Qt.SizeBDiagCursor;
                         }
 
-                        onPressed: {
+                        onPressed: mouse => {
+                            mouse.accepted = true;
                             layer.commitText();
                             startSelection = layer.crop;
                         }
 
                         onPositionChanged: mouse => {
+                            if (!pressed || !startSelection)
+                                return;
                             const s = startSelection;
                             const p = mapToItem(content, mouse.x, mouse.y);
                             const f = handle.modelData;
@@ -288,8 +291,14 @@ Scope {
                         onReleased: {
                             const sel = win.pendingSelection;
                             win.pendingSelection = null;
+                            startSelection = null;
                             if (sel && sel.width >= 4 && sel.height >= 4)
                                 layer.commit(layer.shapes, sel);
+                        }
+
+                        onCanceled: {
+                            win.pendingSelection = null;
+                            startSelection = null;
                         }
                     }
                 }
@@ -361,7 +370,7 @@ Scope {
                     }
 
                     onPositionChanged: mouse => {
-                        if (!startSelection)
+                        if (!pressed || !startSelection)
                             return;
                         const p = mapToItem(content, mouse.x, mouse.y);
                         const dx = p.x - start.x;
@@ -380,6 +389,11 @@ Scope {
                         const unchanged = s && sel && sel.x === s.x && sel.y === s.y && sel.width === s.width && sel.height === s.height;
                         if (sel && sel.width >= 4 && sel.height >= 4 && !unchanged)
                             layer.commit(layer.shapes, sel);
+                    }
+
+                    onCanceled: {
+                        win.pendingSelection = null;
+                        startSelection = null;
                     }
                 }
             }
