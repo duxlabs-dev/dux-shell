@@ -668,10 +668,10 @@ Singleton {
             "children": [
                 {
                     "id": "time_weather",
-                    "text": I18n.tr("Time & weather"),
+                    "text": I18n.tr("Time"),
                     "icon": "schedule",
                     "tabIndex": 1,
-                    "hint": I18n.tr("Clock format, calendar, weather location")
+                    "hint": I18n.tr("Clock format, calendar")
                 },
                 {
                     "id": "weather",

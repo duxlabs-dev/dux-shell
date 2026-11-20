@@ -53,7 +53,7 @@ Singleton {
             "fonts_motion": I18n.tr("Fonts & motion"),
             "icons": I18n.tr("Icons"),
             "cursor": I18n.tr("Cursor"),
-            "time_weather": I18n.tr("Time & weather"),
+            "time_weather": I18n.tr("Time"),
             "lock_screen": I18n.tr("Lock screen"),
             "launcher": I18n.tr("Launcher"),
             "notifications": I18n.tr("Notifications"),
