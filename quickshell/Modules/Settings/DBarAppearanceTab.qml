@@ -577,7 +577,7 @@ Item {
 
                 SettingsToggleRow {
                     settingKey: "islandSatellitesEnabled"
-                    tags: ["island", "satellites", "widgets", "left", "right"]
+                    tags: ["island", "satellite", "widgets", "left", "right"]
                     text: I18n.tr("Show Satellite", "island settings: satellite widgets toggle")
                     checked: bar.islandSetting("islandSatellitesEnabled")
                     onToggled: checked => bar.apply("islandSatellitesEnabled", checked)
