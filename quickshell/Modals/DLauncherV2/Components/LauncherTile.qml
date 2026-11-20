@@ -24,6 +24,7 @@ Rectangle {
     property bool externalHighlight: false
     property bool bare: false
     property bool dragSource: false
+    property bool holdGrab: false
     property bool receiving: false
     readonly property bool tintedTarget: receiving && !isFolder && !imageTile && !bare
     readonly property color contentColor: isSelected ? Theme.onSelectedContainer : tintedTarget ? Theme.onPrimaryContainer : Theme.onSurface
@@ -36,7 +37,7 @@ Rectangle {
     signal clicked
     signal rightClicked(real mouseX, real mouseY)
     signal pointerMoved
-    signal dragPressed(real sceneX, real sceneY)
+    signal dragPressed(real sceneX, real sceneY, bool fromMouse)
     signal dragMoved(real sceneX, real sceneY)
     signal dragReleased(real sceneX, real sceneY)
     signal dragCanceled
@@ -219,14 +220,16 @@ Rectangle {
         hoverEnabled: true
         cursorShape: root.dragSource ? Qt.DragMoveCursor : Qt.PointingHandCursor
         acceptedButtons: Qt.LeftButton | Qt.RightButton
-        preventStealing: root.dragSource
+        preventStealing: root.dragSource || root.holdGrab
 
         property bool swallowClick: false
 
         onPressed: mouse => {
             if (mouse.button !== Qt.LeftButton) {
-                if (!(pressedButtons & Qt.LeftButton))
+                if (!(pressedButtons & Qt.LeftButton)) {
+                    swallowClick = false;
                     return;
+                }
                 swallowClick = true;
                 root.dragCanceled();
                 return;
@@ -234,7 +237,7 @@ Rectangle {
             swallowClick = false;
             rippleLayer.trigger(mouse.x, mouse.y);
             const scenePos = mapToItem(null, mouse.x, mouse.y);
-            root.dragPressed(scenePos.x, scenePos.y);
+            root.dragPressed(scenePos.x, scenePos.y, mouse.source === Qt.MouseEventNotSynthesized);
         }
         onReleased: mouse => {
             if (mouse.button !== Qt.LeftButton)
