@@ -7,6 +7,8 @@ import qs.Common
 import qs.Services
 import "../Common/GSettings.js" as GSettings // qmllint disable unused-imports
 import "../Common/IconFolders.js" as IconFolders
+import "../Common/BuiltInIcons.js" as BuiltInIcons
+import "../DCommon/Common/Hct.js" as Hct
 
 Singleton {
     id: root
@@ -30,6 +32,11 @@ Singleton {
         revision;
         return Quickshell.iconFile("dev.duxlabs.shell.settings") !== "";
     }
+    readonly property var builtInTones: {
+        const hct = Hct.toHct(Theme.primary);
+        return [96, 80, 32, 59, 27].map(tone => String(Hct.fromHct(hct.hue, hct.chroma, tone)));
+    }
+    readonly property bool tintsDuxApps: !drawsShellEntries && (Theme.currentTheme === Theme.dynamic || Theme.availableThemeNames.includes(Theme.currentTheme))
     property string systemProbedTheme: ""
     readonly property string managedTheme: settingsTheme || systemProbedTheme
     // Upstream quickshell has no icon index; icons then come from Qt's own theme lookup.
@@ -85,6 +92,9 @@ printf '%s' "$v" | tr -d "'\\""`;
     }
 
     function resolve(name) {
+        const tinted = tintsDuxApps ? BuiltInIcons.duxAppUrl(name, builtInTones) : "";
+        if (tinted)
+            return tinted;
         const recolored = IconFolders.iconUrl(folderIcons, name);
         if (recolored)
             return recolored;

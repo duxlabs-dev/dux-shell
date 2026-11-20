@@ -8,7 +8,6 @@ import qs.Common
 import qs.Services
 import "../Common/BuiltInIcons.js" as BuiltInIcons
 import "../Common/SearchMatch.js" as SearchMatch
-import "../DCommon/Common/Hct.js" as Hct
 
 Singleton {
     id: root
@@ -193,15 +192,9 @@ Singleton {
         });
     }
 
-    // Fixed tones of the theme color, so the icons look the same in dark and light mode.
-    readonly property var _builtInTones: {
-        const hct = Hct.toHct(Theme.primary);
-        return [96, 80, 32].map(tone => String(Hct.fromHct(hct.hue, hct.chroma, tone)));
-    }
-
     // A theme icon is held by name: a file path into a generated theme is gone two generations later.
     function _builtInIcon(name) {
-        return IconThemeService.drawsShellEntries ? "dev.duxlabs.shell." + name : "svg:" + BuiltInIcons.url(name, _builtInTones);
+        return IconThemeService.drawsShellEntries ? "dev.duxlabs.shell." + name : "svg:" + BuiltInIcons.url(name, IconThemeService.builtInTones);
     }
 
     // DMS windows share one app id, so the title tells them apart, as in the dock. Empty for any other window.

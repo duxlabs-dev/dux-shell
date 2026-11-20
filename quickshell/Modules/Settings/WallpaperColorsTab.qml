@@ -1243,7 +1243,6 @@ Column {
                 tags: ["icon", "app", "monochrome", "themed", "tint", "color", "dux", "dynamic"]
                 settingKey: "iconMonoApps"
                 text: I18n.tr("Themed app icons", "Dux Icons toggle, paints app icons in tones of the theme colors")
-                description: root.selfBuiltIconsMissing ? I18n.tr("Install the %1 command so the icons follow the theme", "Dux Icons toggle, disabled while its build command is missing, %1 is a command name").arg("dux-icons") : I18n.tr("App icons take the theme colors in place of their own", "Dux Icons toggle description")
                 enabled: !root.selfBuiltIconsMissing
                 checked: SettingsData.iconMonoApps
                 onToggled: checked => SettingsData.set("iconMonoApps", checked)
@@ -1255,7 +1254,6 @@ Column {
                 tags: ["icon", "gradient", "shade", "shading", "badge", "dux"]
                 settingKey: "iconGradient"
                 text: I18n.tr("Shaded icons", "Dux Icons toggle, fills each icon badge with a soft top-to-bottom gradient")
-                description: I18n.tr("Icon backgrounds fade from light to dark", "Dux Icons gradient toggle description")
                 enabled: !root.selfBuiltIconsMissing
                 checked: SettingsData.iconGradient
                 onToggled: checked => SettingsData.set("iconGradient", checked)
@@ -1266,9 +1264,7 @@ Column {
                 tab: "theme"
                 tags: ["icon", "folder", "color", "recolor", "theme", "matugen", "dynamic"]
                 settingKey: "iconFolderRecolor"
-                text: I18n.tr("Match folder colors to theme", "icon theme toggle, recolors the picked icon pack's folders with the theme colors")
-                description: root.iconFolderBlocker || I18n.tr("Folders follow wallpaper and theme changes", "folder recolor toggle description")
-                // Stays clickable while on, so it can always be turned off.
+                text: I18n.tr("Folder match theme colors", "icon theme toggle, recolors the picked icon pack's folders with the theme colors")
                 enabled: SettingsData.iconFolderRecolor || root.iconFolderBlocker === ""
                 toggling: root.iconFolderEnabling
                 checked: SettingsData.iconFolderRecolor
@@ -1404,6 +1400,31 @@ Column {
                 onSliderValueChanged: newValue => SettingsData.setCursorSize(newValue)
             }
 
+            SettingsToggleSliderRow {
+                readonly property int timeout: {
+                    if (CompositorService.isNiri)
+                        return SettingsData.cursorSettings.niri?.hideAfterInactiveMs || 0;
+                    if (CompositorService.isHyprland)
+                        return SettingsData.cursorSettings.hyprland?.inactiveTimeout || 0;
+                    return SettingsData.cursorSettings.mango?.cursorHideTimeout || 0;
+                }
+
+                tab: "theme"
+                tags: ["cursor", "hide", "timeout", "inactive"]
+                settingKey: "cursorHideAfterInactive"
+                text: I18n.tr("Cursor auto-hide timeout")
+                checked: timeout > 0
+                value: timeout
+                // Timeout 0 means off, so the slider starts above it.
+                minimum: CompositorService.isNiri ? 100 : 1
+                maximum: CompositorService.isNiri ? 5000 : 10
+                unit: CompositorService.isNiri ? "ms" : "s"
+                modified: checked
+                onResetRequested: root.setCursorHideTimeout(0)
+                onToggled: checked => root.setCursorHideTimeout(checked ? (CompositorService.isNiri ? 1000 : 3) : 0)
+                onSliderDragFinished: finalValue => root.setCursorHideTimeout(finalValue)
+            }
+
             SettingsToggleRow {
                 tab: "theme"
                 tags: ["cursor", "hide", "typing", "keyboard"]
@@ -1458,28 +1479,6 @@ Column {
                         return;
                     root.setHyprlandCursorWarp(modes[index]);
                 }
-            }
-
-            SettingsSliderRow {
-                tab: "theme"
-                tags: ["cursor", "hide", "timeout", "inactive"]
-                settingKey: "cursorHideAfterInactive"
-                text: I18n.tr("Cursor auto-hide timeout")
-                minimumLabel: I18n.tr("Off")
-                visible: CompositorService.supportsCursorConfig
-                value: {
-                    if (CompositorService.isNiri)
-                        return SettingsData.cursorSettings.niri?.hideAfterInactiveMs || 0;
-                    if (CompositorService.isHyprland)
-                        return SettingsData.cursorSettings.hyprland?.inactiveTimeout || 0;
-                    return SettingsData.cursorSettings.mango?.cursorHideTimeout || 0;
-                }
-                minimum: 0
-                maximum: CompositorService.isNiri ? 5000 : 10
-                unit: CompositorService.isNiri ? "ms" : "s"
-                modified: value !== 0
-                onResetRequested: root.setCursorHideTimeout(0)
-                onSliderValueChanged: newValue => root.setCursorHideTimeout(newValue)
             }
 
             SettingsFoldRow {
