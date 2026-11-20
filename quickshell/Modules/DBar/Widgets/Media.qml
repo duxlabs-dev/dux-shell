@@ -256,7 +256,7 @@ BasePill {
                     return 0;
                 if (!root.adaptiveWidthEnabled)
                     return root.maxTextWidth;
-                const rawWidth = root.lyricActive ? lyricLine.pageWidth : (textContainer.displayText.length > 0 ? mediaText.implicitTextWidth : 0);
+                const rawWidth = root.lyricActive ? lyricLine.naturalWidth : (textContainer.displayText.length > 0 ? mediaText.implicitTextWidth : 0);
                 if (!isFinite(rawWidth) || rawWidth <= 0)
                     return 0;
                 return Math.min(root.maxTextWidth, Math.ceil(rawWidth));
