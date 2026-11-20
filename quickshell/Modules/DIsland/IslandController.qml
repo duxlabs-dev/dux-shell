@@ -1250,15 +1250,42 @@ QtObject {
 
     onSlotHoveredChanged: {
         if (slotHovered) {
-            hoverOpenTimer.stop();
+            if (!safeZoneHeld)
+                hoverOpenTimer.stop();
             return;
         }
         if (pointerInside && hoverExpandEnabled && !expanded)
             hoverOpenTimer.restart();
     }
 
-    function updatePointerInside(inside) {
+    // The bar's open hover popout owns the pointer inside its safe zone until it stops on the pill or leaves the zone.
+    property var inHoverSafeZone: (gx, gy) => false
+    property bool safeZoneHeld: false
+    signal safeZoneLeft
+
+    function releaseSafeZone() {
+        safeZoneHeld = false;
+        safeZoneLeft();
+    }
+
+    function pointerMoved(gx, gy) {
+        if (!safeZoneHeld || !pointerInside)
+            return;
+        if (inHoverSafeZone(gx, gy)) {
+            hoverOpenTimer.restart();
+            return;
+        }
+        releaseSafeZone();
+        if (hoverExpandEnabled && !expanded && !slotHovered)
+            hoverOpenTimer.restart();
+    }
+
+    function updatePointerInside(inside, gx, gy) {
+        const wasHeld = safeZoneHeld;
+        safeZoneHeld = inside === true && inHoverSafeZone(gx, gy);
         pointerInside = inside === true;
+        if (wasHeld && !safeZoneHeld)
+            safeZoneLeft();
         syncNotificationTimeout(!pointerInside);
         syncTransientTimeout(!pointerInside);
         if (!pointerInside) {
@@ -1270,14 +1297,21 @@ QtObject {
             return;
         }
         hoverCloseTimer.stop();
-        if (hoverExpandEnabled && !expanded && !slotHovered)
+        if (safeZoneHeld || (hoverExpandEnabled && !expanded && !slotHovered))
             hoverOpenTimer.restart();
     }
 
     property Timer hoverOpenTimer: Timer {
         interval: root.hoverOpenDelay
         onTriggered: {
-            if (!root.pointerInside || !root.hoverExpandEnabled || root.inputSuspended || root.slotHovered)
+            if (!root.pointerInside)
+                return;
+            const held = root.safeZoneHeld;
+            if (held)
+                root.releaseSafeZone();
+            if (held && root.expanded)
+                return;
+            if (!root.hoverExpandEnabled || root.inputSuspended || root.slotHovered)
                 return;
             root.requestHoverExpand();
         }

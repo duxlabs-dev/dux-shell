@@ -11,7 +11,7 @@ Item {
     required property bool surfaceVisible
 
     property int graceInterval: 150
-    property var inBarCorridor: (gx, gy) => false
+    property var hoverSafeContains: (gx, gy) => false
     property bool bodyHovered: false
     // A closed transient surface leaves bodyHovered stale; sway sends no enter until the pointer moves.
     property bool pointerUnknown: false
@@ -73,7 +73,7 @@ Item {
         onTriggered: {
             if (!root.dismissEnabled || root.dismissSuspended || !root.surfaceVisible || root.bodyHovered)
                 return;
-            if (PopoutManager.cursorOverBar(PopoutManager.hoverCursorGlobalX, PopoutManager.hoverCursorGlobalY) || root.inBarCorridor(PopoutManager.hoverCursorGlobalX, PopoutManager.hoverCursorGlobalY))
+            if (PopoutManager.cursorOverBar(PopoutManager.hoverCursorGlobalX, PopoutManager.hoverCursorGlobalY) || (hoverTracker.hovered && root.hoverSafeContains(PopoutManager.hoverCursorGlobalX, PopoutManager.hoverCursorGlobalY)))
                 return;
             root.dismissRequested();
         }

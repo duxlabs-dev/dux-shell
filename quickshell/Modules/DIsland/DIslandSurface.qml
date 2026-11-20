@@ -527,6 +527,7 @@ Item {
             id: islandHover
 
             onHoveredChanged: root.updateFittsPointerInside()
+            onPointChanged: root.updatePointer(point.scenePosition)
         }
 
         // Above the content so the face takes focus before the pressed control; a handler on the parent runs after it.
@@ -544,7 +545,12 @@ Item {
     }
 
     function updateFittsPointerInside() {
-        root.controller.updatePointerInside(islandHover.hovered || stripHover.hovered);
+        const p = (islandHover.hovered ? islandHover : stripHover).point.scenePosition;
+        root.controller.updatePointerInside(islandHover.hovered || stripHover.hovered, p.x + root.controller.sectionOriginX, p.y + root.controller.sectionOriginY);
+    }
+
+    function updatePointer(p) {
+        root.controller.pointerMoved(p.x + root.controller.sectionOriginX, p.y + root.controller.sectionOriginY);
     }
 
     // Fitts zone from the island edge to the screen edge — hover/click count as island.
@@ -569,6 +575,7 @@ Item {
             id: stripHover
 
             onHoveredChanged: root.updateFittsPointerInside()
+            onPointChanged: root.updatePointer(point.scenePosition)
         }
 
         MouseArea {
