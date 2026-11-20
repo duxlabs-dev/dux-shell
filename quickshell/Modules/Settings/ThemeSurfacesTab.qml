@@ -322,7 +322,7 @@ Column {
                 tab: "theme"
                 tags: ["corner", "radius", "rounded", "screen", "fullscreen"]
                 settingKey: "screenCornerMode"
-                text: I18n.tr("Screen corners")
+                text: I18n.tr("Screen corners", "screen corners: settings row label")
                 model: [I18n.tr("Off"), I18n.tr("On"), I18n.tr("Except fullscreen", "screen corners: hidden while a fullscreen window is active")]
                 currentIndex: SettingsData.screenCornerMode === "always" ? 1 : SettingsData.screenCornerMode === "unlessFullscreen" ? 2 : 0
                 onSelectionChanged: (index, selected) => {
