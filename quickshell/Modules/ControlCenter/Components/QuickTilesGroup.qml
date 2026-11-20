@@ -86,7 +86,7 @@ Item {
     function moveLifted(member, scenePoint) {
         const point = mapFromItem(null, scenePoint.x, scenePoint.y);
         liftPoint = Qt.point(point.x - member.grabOffset.x, point.y - member.grabOffset.y);
-        if (contains(point)) {
+        if (point.x >= 0 && point.x < width && point.y >= 0 && point.y < height) {
             dropSlot = slotAt(point.x);
             host.clearExternal();
             return;
@@ -177,6 +177,10 @@ Item {
                 required property var modelData
                 required property int index
                 readonly property bool lifted: root.liftedIndex === modelData.index
+                readonly property bool outside: lifted && root.dropSlot < 0 && root.host !== null
+                readonly property var outsideSize: WidgetUtils.clampSize(modelData.widget, root.host?.columns ?? CcMetrics.gridColumns, root.host?.maximumRows ?? 1)
+                readonly property real outsideWidth: outsideSize.w * (root.host?.cellWidth ?? 0) - CcMetrics.gridGap
+                readonly property real outsideHeight: WidgetUtils.isSmall(modelData.widget, outsideSize.h) ? CcMetrics.smallRowHeight : outsideSize.h * (root.host?.slotLayout?.rowUnit ?? 0) + (outsideSize.h - 1) * CcMetrics.gridGap
                 readonly property int position: index - (root.liftedIndex >= 0 && index > root.members.findIndex(other => other.index === root.liftedIndex) ? 1 : 0)
                 readonly property bool gapBefore: !lifted && root.gapSlot === position
                 readonly property real ownWidth: loader.item?.quickWidth ?? CcMetrics.iconBoxSize
@@ -209,15 +213,35 @@ Item {
                     parent: member.lifted ? root : member
                     z: member.lifted ? 1 : 0
                     x: {
+                        if (member.outside)
+                            return root.liftPoint.x + member.grabOffset.x - width / 2;
                         if (member.lifted)
                             return root.liftPoint.x;
                         if (I18n.isRtl)
                             return root.gap;
                         return member.gapBefore ? root.gapWidth + root.gap : 0;
                     }
-                    y: member.lifted ? root.liftPoint.y : 0
-                    width: member.ownWidth
-                    height: memberRow.height
+                    y: member.outside ? root.liftPoint.y + member.grabOffset.y - height / 2 : member.lifted ? root.liftPoint.y : 0
+                    width: member.outside ? Math.max(member.ownWidth, member.outsideWidth) : member.ownWidth
+                    height: member.outside ? Math.max(memberRow.height, member.outsideHeight) : memberRow.height
+
+                    Behavior on width {
+                        enabled: CcMetrics.animationsEnabled && member.lifted
+                        NumberAnimation {
+                            duration: Theme.expressiveDurations.expressiveFastSpatial
+                            easing.type: Easing.BezierSpline
+                            easing.bezierCurve: Theme.expressiveCurves.expressiveFastSpatial
+                        }
+                    }
+
+                    Behavior on height {
+                        enabled: CcMetrics.animationsEnabled && member.lifted
+                        NumberAnimation {
+                            duration: Theme.expressiveDurations.expressiveFastSpatial
+                            easing.type: Easing.BezierSpline
+                            easing.bezierCurve: Theme.expressiveCurves.expressiveFastSpatial
+                        }
+                    }
 
                     Behavior on x {
                         enabled: CcMetrics.animationsEnabled && !member.lifted
@@ -235,9 +259,11 @@ Item {
                         grid: root.host
                         widgetData: member.modelData.widget
                         savedIndex: member.modelData.index
-                        compact: true
-                        small: true
-                        bare: root.membersBare
+                        columns: member.outside ? member.outsideSize.w : 1
+                        rows: member.outside ? member.outsideSize.h : 1
+                        compact: member.outside ? (member.outsideSize.w <= 2 && member.outsideSize.h === 1) : true
+                        small: member.outside ? WidgetUtils.isSmall(member.modelData.widget, member.outsideSize.h) : true
+                        bare: member.outside ? false : root.membersBare
                     }
 
                     DragHandler {

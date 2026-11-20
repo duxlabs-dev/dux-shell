@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Compares `dms ipc call` (direct socket) against `qs ipc call` on the same call.
+# Compares `dms ipc call` (direct socket) against `dms qs ipc call` on the same call.
 #   ITERATIONS=50 WARMUPS=3 CALL="lock isLocked" scripts/benchmark-ipc.sh
 set -euo pipefail
 
@@ -7,9 +7,11 @@ ITERATIONS="${ITERATIONS:-50}"
 WARMUPS="${WARMUPS:-3}"
 CALL="${CALL:-lock isLocked}"
 DMS_BIN="${DMS_BIN:-dms}"
-QS_BIN="${QS_BIN:-qs}"
+QS_BIN="${QS_BIN:-dms qs}"
 
-for bin in "$DMS_BIN" "$QS_BIN"; do
+# shellcheck disable=SC2206
+qs_cmd=($QS_BIN)
+for bin in "$DMS_BIN" "${qs_cmd[0]}"; do
     command -v "$bin" >/dev/null 2>&1 || { echo "not found: $bin" >&2; exit 1; }
 done
 
@@ -26,7 +28,7 @@ else
 fi
 
 run_dms() { "$DMS_BIN" ipc call "${call[@]}"; }
-run_qs() { "$QS_BIN" "${qs_args[@]}" ipc call "${call[@]}"; }
+run_qs() { "${qs_cmd[@]}" "${qs_args[@]}" ipc call "${call[@]}"; }
 
 dms_out="$(run_dms)" || { echo "dms ipc call failed" >&2; exit 1; }
 qs_out="$(run_qs)" || { echo "qs ipc call failed" >&2; exit 1; }
@@ -39,10 +41,10 @@ fi
 
 measure() {
     local fn="$1" i start end
-    for ((i = 0; i < WARMUPS; i++)); do "$fn" >/dev/null; done
+    for ((i = 0; i < WARMUPS; i++)); do "$fn" >/dev/null 2>&1; done
     for ((i = 0; i < ITERATIONS; i++)); do
         start=$(date +%s%N)
-        "$fn" >/dev/null
+        "$fn" >/dev/null 2>&1
         end=$(date +%s%N)
         echo $((end - start))
     done
@@ -67,5 +69,5 @@ Output: $dms_out
 | Command | Min (ms) | Median (ms) | Average (ms) |
 |---|---:|---:|---:|
 | dms ipc call | $dms_stats |
-| qs ${qs_args[*]} ipc call | $qs_stats |
+| ${qs_cmd[*]} ${qs_args[*]} ipc call | $qs_stats |
 TABLE

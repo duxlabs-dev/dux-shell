@@ -7,11 +7,32 @@
     "comment": "notification menu, %1 = remaining time until a timed mute expires"
   },
   {
+    "term": "%1 %2",
+    "translation": "",
+    "context": "%1 %2",
+    "reference": "",
+    "comment": "dash card name followed by its copy number, e.g. Clock 2"
+  },
+  {
     "term": "%1 (+%2 more)",
     "translation": "",
     "context": "%1 (+%2 more)",
     "reference": "",
     "comment": "window rule summary, %1 is first match, %2 is remaining count"
+  },
+  {
+    "term": "%1 (UI)",
+    "translation": "",
+    "context": "%1 (UI)",
+    "reference": "",
+    "comment": "process list row of an app's user interface process, %1 is the app name"
+  },
+  {
+    "term": "%1 (recommended)",
+    "translation": "",
+    "context": "%1 (recommended)",
+    "reference": "",
+    "comment": "suggested Tailscale exit node"
   },
   {
     "term": "%1 DMS bind may be overridden by config binds that come after the include.",
@@ -98,6 +119,20 @@
     "comment": "dock conflict warning toast, %1 is a bar or dock name"
   },
   {
+    "term": "%1 app",
+    "translation": "",
+    "context": "%1 app",
+    "reference": "",
+    "comment": "launcher folder member count, singular, %1 is 1"
+  },
+  {
+    "term": "%1 apps",
+    "translation": "",
+    "context": "%1 apps",
+    "reference": "",
+    "comment": "launcher folder member count, plural, %1 is a number"
+  },
+  {
     "term": "%1 before",
     "translation": "",
     "context": "%1 before",
@@ -117,6 +152,13 @@
     "context": "%1 breaking",
     "reference": "",
     "comment": "release counts, %1 is a number of breaking changes"
+  },
+  {
+    "term": "%1 can use these shortcuts from any window. Change them later in Settings.",
+    "translation": "",
+    "context": "%1 can use these shortcuts from any window. Change them later in Settings.",
+    "reference": "",
+    "comment": "global shortcuts permission dialog, %1 is an app name"
   },
   {
     "term": "%1 character",
@@ -159,6 +201,13 @@
     "context": "%1 cores, %2 threads",
     "reference": "",
     "comment": "CPU core and thread count"
+  },
+  {
+    "term": "%1 could not be read",
+    "translation": "",
+    "context": "%1 could not be read",
+    "reference": "",
+    "comment": "folder recolor toggle, %1 is an icon theme name"
   },
   {
     "term": "%1 day",
@@ -266,6 +315,13 @@
     "comment": "time remaining on a timed mode, %1 is hours"
   },
   {
+    "term": "%1 has no folders that can be recolored",
+    "translation": "",
+    "context": "%1 has no folders that can be recolored",
+    "reference": "",
+    "comment": "folder recolor toggle, %1 is an icon theme name"
+  },
+  {
     "term": "%1 holds this edge, so the dock stays hidden there",
     "translation": "",
     "context": "%1 holds this edge, so the dock stays hidden there",
@@ -301,11 +357,32 @@
     "comment": "notepad large file prompt, file name then size"
   },
   {
+    "term": "%1 is already installed. Replace it?",
+    "translation": "",
+    "context": "%1 is already installed. Replace it?",
+    "reference": "",
+    "comment": "icon theme install confirmation, %1 is a list of icon theme names"
+  },
+  {
+    "term": "%1 is not installed",
+    "translation": "",
+    "context": "%1 is not installed",
+    "reference": "",
+    "comment": "folder recolor toggle, %1 is an icon theme name"
+  },
+  {
     "term": "%1 is not installed. Install the package to manage the greeter.",
     "translation": "",
     "context": "%1 is not installed. Install the package to manage the greeter.",
     "reference": "",
     "comment": "greeter status placeholder, %1 is the dms-greeter binary"
+  },
+  {
+    "term": "%1 is not supported",
+    "translation": "",
+    "context": "%1 is not supported",
+    "reference": "",
+    "comment": "folder recolor toggle, %1 is an icon theme name"
   },
   {
     "term": "%1 is now included in config",
@@ -320,6 +397,13 @@
     "context": "%1 is running and will create duplicate Bluetooth players. Disable it with: %2",
     "reference": "",
     "comment": "Warning shown when the legacy BlueZ MPRIS proxy conflicts with DMS Bluetooth media controls, %1 is the service name, %2 a shell command"
+  },
+  {
+    "term": "%1 is still included",
+    "translation": "",
+    "context": "%1 is still included",
+    "reference": "",
+    "comment": "stop managing failed, %1 is a dms config file"
   },
   {
     "term": "%1 issue found",
@@ -368,7 +452,7 @@
     "translation": "",
     "context": "%1 min",
     "reference": "",
-    "comment": "short duration chip, %1 is a number of minutes | timed duration, %1 is a number of minutes"
+    "comment": "chart time span, %1 is a number of minutes | short duration chip, %1 is a number of minutes | timed duration, %1 is a number of minutes"
   },
   {
     "term": "%1 min left",
@@ -410,7 +494,7 @@
     "translation": "",
     "context": "%1 not available",
     "reference": "",
-    "comment": "%1 is a tool or environment variable name"
+    "comment": "%1 is a folder name | %1 is a tool or environment variable name"
   },
   {
     "term": "%1 not available - lock integration requires the DMS socket connection",
@@ -432,6 +516,13 @@
     "context": "%1 not found",
     "reference": "",
     "comment": "missing program, %1 is a program name | plugin dependency missing, %1 is a program name"
+  },
+  {
+    "term": "%1 not removed",
+    "translation": "",
+    "context": "%1 not removed",
+    "reference": "",
+    "comment": "icon theme remove error toast title, %1 is an icon theme name"
   },
   {
     "term": "%1 notifications",
@@ -544,6 +635,13 @@
     "context": "duration, 2 to 4 form (2, 3, 4, 22, 23, ...) for languages that need one, %1 is a number; leave empty to reuse the plural",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "%1 still uses it",
+    "translation": "",
+    "context": "%1 still uses it",
+    "reference": "",
+    "comment": "icon theme remove error, %1 is a list of icon theme names"
   },
   {
     "term": "%1 tasks",
@@ -782,6 +880,13 @@
     "context": "50 uses Material shapes. Lower values reduce rounding; higher values increase it.",
     "reference": "",
     "comment": "radius strength slider description"
+  },
+  {
+    "term": "6 GHz",
+    "translation": "",
+    "context": "6 GHz",
+    "reference": "",
+    "comment": "WiFi band option"
   },
   {
     "term": "A custom seed color overrides this",
@@ -1071,6 +1176,41 @@
     "comment": ""
   },
   {
+    "term": "Activity colors",
+    "translation": "",
+    "context": "Activity colors",
+    "reference": "",
+    "comment": "island activity settings"
+  },
+  {
+    "term": "Activity icon animation",
+    "translation": "",
+    "context": "Activity icon animation",
+    "reference": "",
+    "comment": "island activity settings"
+  },
+  {
+    "term": "Activity position",
+    "translation": "",
+    "context": "Activity position",
+    "reference": "",
+    "comment": "island activity settings"
+  },
+  {
+    "term": "Activity sources",
+    "translation": "",
+    "context": "Activity sources",
+    "reference": "",
+    "comment": "island activity settings: per-source overrides card title"
+  },
+  {
+    "term": "Ad-hoc",
+    "translation": "",
+    "context": "Ad-hoc",
+    "reference": "",
+    "comment": "Wi-Fi mode"
+  },
+  {
     "term": "Adapters",
     "translation": "",
     "context": "Adapters",
@@ -1103,7 +1243,7 @@
     "translation": "",
     "context": "Add",
     "reference": "",
-    "comment": "verb, button that adds a new item to a list"
+    "comment": "add a wallpaper folder button | verb, button that adds a new item to a list"
   },
   {
     "term": "Add \"%1\" to the %2 group?",
@@ -1134,11 +1274,32 @@
     "comment": ""
   },
   {
+    "term": "Add a profile in Settings",
+    "translation": "",
+    "context": "Add a profile in Settings",
+    "reference": "",
+    "comment": "VPN empty state hint, the button below opens Settings"
+  },
+  {
     "term": "Add a task...",
     "translation": "",
     "context": "Add a task...",
     "reference": "",
     "comment": "placeholder in the new-task input field"
+  },
+  {
+    "term": "Add a widget here",
+    "translation": "",
+    "context": "Add a widget here",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Add account",
+    "translation": "",
+    "context": "Add account",
+    "reference": "",
+    "comment": "Tailscale: add another account"
   },
   {
     "term": "Add by address",
@@ -1153,6 +1314,13 @@
     "context": "Add condition",
     "reference": "",
     "comment": "button in the notification rule editor, adds another match condition"
+  },
+  {
+    "term": "Add connection",
+    "translation": "",
+    "context": "Add connection",
+    "reference": "",
+    "comment": "settings page title while creating a new network connection profile"
   },
   {
     "term": "Add entry",
@@ -1204,6 +1372,13 @@
     "comment": ""
   },
   {
+    "term": "Add routes for allowed IPs",
+    "translation": "",
+    "context": "Add routes for allowed IPs",
+    "reference": "",
+    "comment": "WireGuard option"
+  },
+  {
     "term": "Add rule",
     "translation": "",
     "context": "Add rule",
@@ -1223,6 +1398,13 @@
     "context": "Add substitution",
     "reference": "",
     "comment": "running apps settings button, adds an app name or icon substitution"
+  },
+  {
+    "term": "Add to %1",
+    "translation": "",
+    "context": "Add to %1",
+    "reference": "",
+    "comment": ""
   },
   {
     "term": "Add to autostart",
@@ -1281,6 +1463,13 @@
     "comment": "launcher launch prefix field description"
   },
   {
+    "term": "Address generation",
+    "translation": "",
+    "context": "Address generation",
+    "reference": "",
+    "comment": "IPv6 interface identifier mode"
+  },
+  {
     "term": "Adds a compositor window rule so DMS windows such as Settings open floating",
     "translation": "",
     "context": "Adds a compositor window rule so DMS windows such as Settings open floating",
@@ -1334,7 +1523,7 @@
     "translation": "",
     "context": "Advanced",
     "reference": "",
-    "comment": "adjective, settings section title for advanced options"
+    "comment": "adjective, settings section title options"
   },
   {
     "term": "Advanced Matching",
@@ -1351,6 +1540,13 @@
     "comment": ""
   },
   {
+    "term": "Advanced options",
+    "translation": "",
+    "context": "Advanced options",
+    "reference": "",
+    "comment": "settings button at the bottom of a page that reveals rarely used options"
+  },
+  {
     "term": "After %1",
     "translation": "",
     "context": "After %1",
@@ -1358,11 +1554,25 @@
     "comment": "overflow button position option, %1 is a widget name"
   },
   {
+    "term": "After capture",
+    "translation": "",
+    "context": "After capture",
+    "reference": "",
+    "comment": "screenshot settings card title, what happens once a screenshot is taken"
+  },
+  {
     "term": "Afternoon",
     "translation": "",
     "context": "Afternoon",
     "reference": "",
     "comment": "time of day period name in weather view"
+  },
+  {
+    "term": "Airplane mode",
+    "translation": "",
+    "context": "Airplane mode",
+    "reference": "",
+    "comment": "OSD toggle for airplane mode / rfkill indicator | island system face: airplane mode title"
   },
   {
     "term": "Album art backdrop",
@@ -1397,7 +1607,7 @@
     "translation": "",
     "context": "All",
     "reference": "",
-    "comment": "Tailscale filter: all devices | notification history filter | plugin browser category filter"
+    "comment": "Tailscale filter: all devices | notification history filter | plugin browser category filter | wallpaper folder menu option"
   },
   {
     "term": "All checks passed",
@@ -1405,6 +1615,13 @@
     "context": "All checks passed",
     "reference": "",
     "comment": "greeter doctor page success"
+  },
+  {
+    "term": "All connections",
+    "translation": "",
+    "context": "All connections",
+    "reference": "",
+    "comment": "settings link to the list of every saved network connection"
   },
   {
     "term": "All day",
@@ -1463,6 +1680,13 @@
     "comment": "Tailscale allow LAN access toggle"
   },
   {
+    "term": "Allow TLS 1.0 and 1.1",
+    "translation": "",
+    "context": "Allow TLS 1.0 and 1.1",
+    "reference": "",
+    "comment": "802.1X advanced option"
+  },
+  {
     "term": "Allow critical",
     "translation": "",
     "context": "Allow critical",
@@ -1489,6 +1713,20 @@
     "context": "Allow in Do Not Disturb",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Allow incoming connections",
+    "translation": "",
+    "context": "Allow incoming connections",
+    "reference": "",
+    "comment": "Tailscale setting"
+  },
+  {
+    "term": "Allowed IPs",
+    "translation": "",
+    "context": "Allowed IPs",
+    "reference": "",
+    "comment": "WireGuard peer field"
   },
   {
     "term": "Allowed cores",
@@ -1659,13 +1897,6 @@
     "comment": "noun, screen corner or edge a floating window position is relative to"
   },
   {
-    "term": "Animation duration",
-    "translation": "",
-    "context": "Animation duration",
-    "reference": "",
-    "comment": ""
-  },
-  {
     "term": "Animation style",
     "translation": "",
     "context": "Animation style",
@@ -1677,7 +1908,21 @@
     "translation": "",
     "context": "Animations",
     "reference": "",
-    "comment": "settings card title"
+    "comment": ""
+  },
+  {
+    "term": "Animations and motion",
+    "translation": "",
+    "context": "Animations and motion",
+    "reference": "",
+    "comment": "settings sidebar hint for the motion page"
+  },
+  {
+    "term": "Annotate region captures",
+    "translation": "",
+    "context": "Annotate region captures",
+    "reference": "",
+    "comment": "screenshot settings toggle, open the drawing editor on a selected region before it is saved"
   },
   {
     "term": "Anonymous",
@@ -1810,7 +2055,7 @@
     "translation": "",
     "context": "Appearance",
     "reference": "",
-    "comment": "settings page and section title for visual options"
+    "comment": "island settings: shape, colour and opacity card title | settings page and section title for visual options"
   },
   {
     "term": "Apple Music animated covers",
@@ -1946,6 +2191,13 @@
     "comment": "keybind option tooltip, niri allow inhibiting"
   },
   {
+    "term": "Apps that register global shortcuts appear here.",
+    "translation": "",
+    "context": "Apps that register global shortcuts appear here.",
+    "reference": "",
+    "comment": "global shortcuts settings page empty state"
+  },
+  {
     "term": "Apps with notification popups muted. Unmute or delete to remove.",
     "translation": "",
     "context": "Apps with notification popups muted. Unmute or delete to remove.",
@@ -1958,6 +2210,13 @@
     "context": "Arc extender",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Archive",
+    "translation": "",
+    "context": "Archive",
+    "reference": "",
+    "comment": "button, picks an archive file to install a cursor theme from | button, picks an archive file to install an icon theme from"
   },
   {
     "term": "Archive manager",
@@ -1981,6 +2240,13 @@
     "comment": "injected palette command arguments field label"
   },
   {
+    "term": "Arrange dock items",
+    "translation": "",
+    "context": "Arrange dock items",
+    "reference": "",
+    "comment": "dock settings row title for entering dock edit mode"
+  },
+  {
     "term": "Arrangement",
     "translation": "",
     "context": "Arrangement",
@@ -1993,6 +2259,13 @@
     "context": "Arrangement, resolution, scale, profiles",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Arrow",
+    "translation": "",
+    "context": "Arrow",
+    "reference": "",
+    "comment": "screenshot markup tool, draws an arrow"
   },
   {
     "term": "Artwork",
@@ -2014,6 +2287,13 @@
     "context": "Asleep",
     "reference": "",
     "comment": "drive is in standby and was not woken"
+  },
+  {
+    "term": "At least one group must remain selected",
+    "translation": "",
+    "context": "At least one group must remain selected",
+    "reference": "",
+    "comment": "config profile editor: shown when the user turns off the last settings group"
   },
   {
     "term": "At least one output must remain enabled",
@@ -2237,7 +2517,7 @@
     "translation": "",
     "context": "Auto",
     "reference": "",
-    "comment": "automatic PAM authentication source option | calendar backend option | hotspot device or band option | theme category option"
+    "comment": "automatic PAM authentication source option | calendar backend option | hotspot device or band option | screenshot shortcut hints option, size follows the display scale | system monitor bars orientation: follow the widget shape | theme category option"
   },
   {
     "term": "Auto (Bar-aware)",
@@ -2280,6 +2560,13 @@
     "context": "Auto follows bar spacing, Off keeps your %1 config",
     "reference": "",
     "comment": "gaps mode description, %1 is the compositor name"
+  },
+  {
+    "term": "Auto height",
+    "translation": "",
+    "context": "Auto height",
+    "reference": "",
+    "comment": ""
   },
   {
     "term": "Auto location",
@@ -2422,6 +2709,13 @@
     "comment": ""
   },
   {
+    "term": "Automatic DNS",
+    "translation": "",
+    "context": "Automatic DNS",
+    "reference": "",
+    "comment": "network IP setting: use DNS servers from DHCP"
+  },
+  {
     "term": "Automatic control",
     "translation": "",
     "context": "Automatic control",
@@ -2441,6 +2735,13 @@
     "context": "Automatic placement",
     "reference": "",
     "comment": "lock screen clock placement"
+  },
+  {
+    "term": "Automatic routes",
+    "translation": "",
+    "context": "Automatic routes",
+    "reference": "",
+    "comment": "network IP setting: use routes from DHCP"
   },
   {
     "term": "Automatically enable while screen sharing",
@@ -2520,11 +2821,25 @@
     "comment": ""
   },
   {
+    "term": "Available to all users",
+    "translation": "",
+    "context": "Available to all users",
+    "reference": "",
+    "comment": "network connection editor note, connection is shared with every user of the computer"
+  },
+  {
     "term": "Avatar ring",
     "translation": "",
     "context": "Avatar ring",
     "reference": "",
     "comment": "user accounts dropdown, colored ring around the profile picture"
+  },
+  {
+    "term": "Avoid open popouts",
+    "translation": "",
+    "context": "Avoid open popouts",
+    "reference": "",
+    "comment": "notification setting"
   },
   {
     "term": "BIOS",
@@ -2559,7 +2874,7 @@
     "translation": "",
     "context": "Background",
     "reference": "",
-    "comment": "island settings: satellite background toggle"
+    "comment": "desktop widget background style | island settings: satellite background toggle"
   },
   {
     "term": "Background Effect",
@@ -2709,6 +3024,13 @@
     "comment": "plural noun, the shell bars or panels, settings title"
   },
   {
+    "term": "Bars",
+    "translation": "",
+    "context": "system monitor layout option: bar meters, not the shell bars",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Base clock",
     "translation": "",
     "context": "Base clock",
@@ -2784,6 +3106,13 @@
     "context": "Bento style only",
     "reference": "",
     "comment": "Hint under a media player option that only affects the Bento player style"
+  },
+  {
+    "term": "Bind keys to region, screen, window and scroll captures",
+    "translation": "",
+    "context": "Bind keys to region, screen, window and scroll captures",
+    "reference": "",
+    "comment": "screenshot settings row that opens the keyboard shortcuts page filtered to screenshot binds"
   },
   {
     "term": "Bind the %1 IPC action in your compositor config.",
@@ -3087,6 +3416,20 @@
     "comment": ""
   },
   {
+    "term": "Bounce",
+    "translation": "",
+    "context": "Bounce",
+    "reference": "",
+    "comment": "animation slider, how far motion overshoots"
+  },
+  {
+    "term": "Brackets",
+    "translation": "",
+    "context": "Brackets",
+    "reference": "",
+    "comment": "system monitor bars style option"
+  },
+  {
     "term": "Bright",
     "translation": "",
     "context": "Bright",
@@ -3133,7 +3476,7 @@
     "translation": "",
     "context": "Browse",
     "reference": "",
-    "comment": "Browse | theme category option"
+    "comment": "Browse | theme category option | wallpaper folder menu option"
   },
   {
     "term": "Browse Files",
@@ -3227,18 +3570,18 @@
     "comment": ""
   },
   {
+    "term": "CA certificate",
+    "translation": "",
+    "context": "CA certificate",
+    "reference": "",
+    "comment": "network authentication certificate file field"
+  },
+  {
     "term": "CPU",
     "translation": "",
     "context": "CPU",
     "reference": "",
     "comment": "processor label in system monitor"
-  },
-  {
-    "term": "CPU graph",
-    "translation": "",
-    "context": "CPU graph",
-    "reference": "",
-    "comment": ""
   },
   {
     "term": "CPU temperature",
@@ -3364,7 +3707,7 @@
     "translation": "",
     "context": "Cancel",
     "reference": "",
-    "comment": "cancel hotspot editing action"
+    "comment": "cancel hotspot editing action | screenshot draw, closes without capturing"
   },
   {
     "term": "Cancel all jobs for \"%1\"?",
@@ -3393,6 +3736,13 @@
     "context": "Candidates per page",
     "reference": "",
     "comment": "Option on the fcitx5 config page."
+  },
+  {
+    "term": "Cannot delete the active profile",
+    "translation": "",
+    "context": "Cannot delete the active profile",
+    "reference": "",
+    "comment": "config profile: shown instead of the delete confirmation"
   },
   {
     "term": "Cannot delete the only administrator",
@@ -3472,6 +3822,20 @@
     "comment": "island system face: caps lock title"
   },
   {
+    "term": "Capture",
+    "translation": "",
+    "context": "Capture",
+    "reference": "",
+    "comment": "screenshot settings card title, how screenshots are taken"
+  },
+  {
+    "term": "Card",
+    "translation": "",
+    "context": "Card",
+    "reference": "",
+    "comment": "desktop widget background option"
+  },
+  {
     "term": "Card backgrounds",
     "translation": "",
     "context": "Card backgrounds",
@@ -3532,7 +3896,7 @@
     "translation": "",
     "context": "Center",
     "reference": "",
-    "comment": "noun, taskbar dock alignment option between start and end"
+    "comment": "island activity settings | noun, taskbar dock alignment option between start and end"
   },
   {
     "term": "Center Tiling",
@@ -3553,7 +3917,7 @@
     "translation": "",
     "context": "Center section",
     "reference": "",
-    "comment": "widgets settings: bar section replaced by the island"
+    "comment": ""
   },
   {
     "term": "Center single column",
@@ -3582,6 +3946,13 @@
     "context": "Change Volume",
     "reference": "",
     "comment": "media scroll wheel option"
+  },
+  {
+    "term": "Change where an activity sits, what it shows when collapsed and what a click opens",
+    "translation": "",
+    "context": "Change where an activity sits, what it shows when collapsed and what a click opens",
+    "reference": "",
+    "comment": "island activity settings: per-source overrides description"
   },
   {
     "term": "Changes save to %1",
@@ -3794,6 +4165,13 @@
     "comment": ""
   },
   {
+    "term": "Choose screenshot folder",
+    "translation": "",
+    "context": "Choose screenshot folder",
+    "reference": "",
+    "comment": "screenshot folder file browser title"
+  },
+  {
     "term": "Choose wallpaper folder",
     "translation": "",
     "context": "Choose wallpaper folder",
@@ -3833,7 +4211,7 @@
     "translation": "",
     "context": "Circle",
     "reference": "",
-    "comment": "dock indicator style option | island settings: circular battery meter style"
+    "comment": "dock indicator style option | icon shape | island settings: circular battery meter style"
   },
   {
     "term": "Clarity",
@@ -3868,7 +4246,7 @@
     "translation": "",
     "context": "Classic",
     "reference": "",
-    "comment": "interface style option with one corner radius on controls and no shape change on press"
+    "comment": "interface style option with one corner radius on controls and no shape change on press | system monitor tile style option"
   },
   {
     "term": "Clear",
@@ -3952,7 +4330,7 @@
     "translation": "",
     "context": "Click action",
     "reference": "",
-    "comment": "clock widget option: what clicking the clock opens"
+    "comment": "clock widget option: what clicking the clock opens | island activity settings"
   },
   {
     "term": "Click actions",
@@ -3979,6 +4357,13 @@
     "term": "Click through",
     "translation": "",
     "context": "Click through",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Click to add, or drag into place",
+    "translation": "",
+    "context": "Click to add, or drag into place",
     "reference": "",
     "comment": ""
   },
@@ -4032,11 +4417,25 @@
     "comment": "workspace switcher move to this display toggle description"
   },
   {
+    "term": "Clicking or hovering the home face opens this tab",
+    "translation": "",
+    "context": "Clicking or hovering the home face opens this tab",
+    "reference": "",
+    "comment": "island settings: default dashboard tab description"
+  },
+  {
     "term": "Clicks on empty bar space reach the windows below",
     "translation": "",
     "context": "Clicks on empty bar space reach the windows below",
     "reference": "",
     "comment": "bar click through toggle description"
+  },
+  {
+    "term": "Client certificate",
+    "translation": "",
+    "context": "Client certificate",
+    "reference": "",
+    "comment": "network authentication certificate file field"
   },
   {
     "term": "Client fullscreen state",
@@ -4064,7 +4463,7 @@
     "translation": "",
     "context": "Clipboard",
     "reference": "",
-    "comment": "noun, settings page name and launcher section title"
+    "comment": "island activity settings | noun, settings page name and launcher section title"
   },
   {
     "term": "Clipboard History",
@@ -4130,6 +4529,13 @@
     "comment": "settings sidebar hint for the desktop widgets page"
   },
   {
+    "term": "Cloned MAC address",
+    "translation": "",
+    "context": "Cloned MAC address",
+    "reference": "",
+    "comment": "network hardware setting"
+  },
+  {
     "term": "Close",
     "translation": "",
     "context": "Close",
@@ -4165,6 +4571,13 @@
     "comment": ""
   },
   {
+    "term": "Clover",
+    "translation": "",
+    "context": "Clover",
+    "reference": "",
+    "comment": "icon shape, a square with rounded lobes at its corners"
+  },
+  {
     "term": "Codec switched successfully",
     "translation": "",
     "context": "Codec switched successfully",
@@ -4191,6 +4604,20 @@
     "context": "Collapse",
     "reference": "",
     "comment": "verb, button that collapses an expanded item or section"
+  },
+  {
+    "term": "Collapsed background",
+    "translation": "",
+    "context": "Collapsed background",
+    "reference": "",
+    "comment": "island activity settings"
+  },
+  {
+    "term": "Collapsed content",
+    "translation": "",
+    "context": "Collapsed content",
+    "reference": "",
+    "comment": "island activity settings"
   },
   {
     "term": "Color",
@@ -4354,6 +4781,13 @@
     "comment": ""
   },
   {
+    "term": "Comma-separated plugin or IPC source IDs that never show here",
+    "translation": "",
+    "context": "Comma-separated plugin or IPC source IDs that never show here",
+    "reference": "",
+    "comment": "island activity settings"
+  },
+  {
     "term": "Command",
     "translation": "",
     "context": "Command",
@@ -4410,6 +4844,13 @@
     "comment": ""
   },
   {
+    "term": "Compare",
+    "translation": "",
+    "context": "Compare",
+    "reference": "",
+    "comment": "config profile: page and link row showing what applying the profile would change"
+  },
+  {
     "term": "Completed",
     "translation": "",
     "context": "Completed",
@@ -4438,6 +4879,13 @@
     "comment": ""
   },
   {
+    "term": "Compositor animations",
+    "translation": "",
+    "context": "Compositor animations",
+    "reference": "",
+    "comment": "settings link to the compositor animations page"
+  },
+  {
     "term": "Compression",
     "translation": "",
     "context": "Compression",
@@ -4457,6 +4905,13 @@
     "context": "Config action: %1",
     "reference": "",
     "comment": "keybind conflict notice, %1 is the action from the compositor config"
+  },
+  {
+    "term": "Config files DMS writes, stop managing",
+    "translation": "",
+    "context": "Config files DMS writes, stop managing",
+    "reference": "",
+    "comment": "settings sidebar hint for the managed compositor files page"
   },
   {
     "term": "Config validation failed",
@@ -4533,7 +4988,7 @@
     "translation": "",
     "context": "Confirm Delete",
     "reference": "",
-    "comment": ""
+    "comment": "remove wallpaper folder tooltip"
   },
   {
     "term": "Confirm Display Changes",
@@ -4555,6 +5010,13 @@
     "context": "Confirm password",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Confirm region",
+    "translation": "",
+    "context": "Confirm region",
+    "reference": "",
+    "comment": "screenshot settings toggle, require Enter or Space before capturing a selected region"
   },
   {
     "term": "Confirmation",
@@ -4613,6 +5075,13 @@
     "comment": "bluetooth status"
   },
   {
+    "term": "Connected popouts",
+    "translation": "",
+    "context": "Connected popouts",
+    "reference": "",
+    "comment": "bar settings: popouts join the bar or satellite background"
+  },
+  {
     "term": "Connected to %1",
     "translation": "",
     "context": "Connected to %1",
@@ -4659,7 +5128,7 @@
     "translation": "",
     "context": "Connections",
     "reference": "",
-    "comment": "process column: number of open internet connections"
+    "comment": "process column: number of open internet connections | settings page listing saved network connection profiles"
   },
   {
     "term": "Connections and autoconnect",
@@ -4667,6 +5136,13 @@
     "context": "Connections and autoconnect",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Connectivity checking",
+    "translation": "",
+    "context": "Connectivity checking",
+    "reference": "",
+    "comment": "NetworkManager periodically checks internet access and captive portals"
   },
   {
     "term": "Connects to the internet",
@@ -4736,7 +5212,7 @@
     "translation": "",
     "context": "Control Center",
     "reference": "",
-    "comment": "Control Center | greeter feature card title | island compact face: control center label | island settings: battery or control center slot row | plugin browser type filter chip"
+    "comment": "Control Center | greeter feature card title | island activity settings | island compact face: control center label | island settings: battery or control center slot row | plugin browser type filter chip"
   },
   {
     "term": "Control group",
@@ -4774,6 +5250,13 @@
     "comment": "computer chassis type: laptop that turns into a tablet"
   },
   {
+    "term": "Cookie",
+    "translation": "",
+    "context": "Cookie",
+    "reference": "",
+    "comment": "icon shape, a circle with a scalloped edge"
+  },
+  {
     "term": "Cooldown",
     "translation": "",
     "context": "Cooldown",
@@ -4795,6 +5278,13 @@
     "comment": "toast feedback after copying text to clipboard"
   },
   {
+    "term": "Copies the saved file too, so terminals paste its path",
+    "translation": "",
+    "context": "Copies the saved file too, so terminals paste its path",
+    "reference": "",
+    "comment": "keybind screenshot option tooltip"
+  },
+  {
     "term": "Copies the screenshot to the clipboard",
     "translation": "",
     "context": "Copies the screenshot to the clipboard",
@@ -4806,7 +5296,7 @@
     "translation": "",
     "context": "Copy",
     "reference": "",
-    "comment": "Copy to clipboard"
+    "comment": "Copy to clipboard | screenshot markup, copies the annotated image to the clipboard"
   },
   {
     "term": "Copy %1",
@@ -4814,6 +5304,13 @@
     "context": "Copy %1",
     "reference": "",
     "comment": "%1 is a color value"
+  },
+  {
+    "term": "Copy App ID",
+    "translation": "",
+    "context": "Copy App ID",
+    "reference": "",
+    "comment": "tooltip in the focused window popout, copies the window's app ID"
   },
   {
     "term": "Copy Full Command",
@@ -4851,6 +5348,20 @@
     "comment": ""
   },
   {
+    "term": "Copy Title",
+    "translation": "",
+    "context": "Copy Title",
+    "reference": "",
+    "comment": "tooltip in the focused window popout, copies the window title"
+  },
+  {
+    "term": "Copy as file",
+    "translation": "",
+    "context": "Copy as file",
+    "reference": "",
+    "comment": "screenshot settings toggle, copy the saved file instead of only the image"
+  },
+  {
     "term": "Copy path",
     "translation": "",
     "context": "Copy path",
@@ -4877,6 +5388,13 @@
     "context": "Copy target (%1)",
     "reference": "",
     "comment": "app picker copy target button tooltip"
+  },
+  {
+    "term": "Copy to clipboard",
+    "translation": "",
+    "context": "Copy to clipboard",
+    "reference": "",
+    "comment": ""
   },
   {
     "term": "Core clock",
@@ -5173,6 +5691,13 @@
     "comment": ""
   },
   {
+    "term": "Cursor theme not installed",
+    "translation": "",
+    "context": "Cursor theme not installed",
+    "reference": "",
+    "comment": "cursor theme install error toast title"
+  },
+  {
     "term": "Curve",
     "translation": "",
     "context": "Curve",
@@ -5292,9 +5817,23 @@
     "comment": ""
   },
   {
+    "term": "Custom, based on %1",
+    "translation": "",
+    "context": "Custom, based on %1",
+    "reference": "",
+    "comment": "animation style description, %1 is the base style name"
+  },
+  {
     "term": "Customizable empty space",
     "translation": "",
     "context": "Customizable empty space",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Cut",
+    "translation": "",
+    "context": "Cut",
     "reference": "",
     "comment": ""
   },
@@ -5395,6 +5934,20 @@
     "context": "DMS stops drawing wallpapers on every display",
     "reference": "",
     "comment": "use external wallpaper manager toggle description"
+  },
+  {
+    "term": "DMS will then manage %1 animations and override animation settings in your config.",
+    "translation": "",
+    "context": "DMS will then manage %1 animations and override animation settings in your config.",
+    "reference": "",
+    "comment": "animations include setup warning, %1 is the compositor name"
+  },
+  {
+    "term": "DNS",
+    "translation": "",
+    "context": "DNS",
+    "reference": "",
+    "comment": "network IP setting label"
   },
   {
     "term": "Daemon",
@@ -5520,7 +6073,14 @@
     "translation": "",
     "context": "Dashboard",
     "reference": "",
-    "comment": "settings page name for the dank dash popout"
+    "comment": "island activity settings | settings page name for the dank dash popout"
+  },
+  {
+    "term": "Dashboard opens to",
+    "translation": "",
+    "context": "Dashboard opens to",
+    "reference": "",
+    "comment": "island settings: dash tab the home face expands into"
   },
   {
     "term": "Dashboard tabs",
@@ -5642,11 +6202,18 @@
     "comment": "verb, minus button next to a settings slider"
   },
   {
+    "term": "Decrease font size",
+    "translation": "",
+    "context": "Decrease font size",
+    "reference": "",
+    "comment": "notepad keyboard shortcut hint"
+  },
+  {
     "term": "Default",
     "translation": "",
     "context": "Default",
     "reference": "",
-    "comment": "Default | island settings: default surface tone | notification rule action option | notification rule urgency option | surface color option | widget background color option | widget style option | workspace color option"
+    "comment": "Default | island settings: default surface tone | name of the first config profile | notification rule action option | notification rule urgency option | surface color option | widget background color option | widget style option | workspace color option"
   },
   {
     "term": "Default (Black)",
@@ -5744,7 +6311,7 @@
     "translation": "",
     "context": "Delete \"%1\"?",
     "reference": "",
-    "comment": "delete confirmation, %1 is a vpn profile or printer name"
+    "comment": "delete confirmation, %1 is a config profile name | delete confirmation, %1 is a vpn profile or printer name"
   },
   {
     "term": "Delete Saved Item?",
@@ -5985,6 +6552,13 @@
     "comment": "plugin search, introduces plugins with a close name"
   },
   {
+    "term": "Different length",
+    "translation": "",
+    "context": "Different length",
+    "reference": "",
+    "comment": "Lyrics were timed for a recording of another length than the playing track"
+  },
+  {
     "term": "Digital",
     "translation": "",
     "context": "Digital",
@@ -6048,6 +6622,20 @@
     "comment": "audio settings confirmation title, %1 is the sound card name"
   },
   {
+    "term": "Disable All",
+    "translation": "",
+    "context": "Disable All",
+    "reference": "",
+    "comment": "disable all active plugins"
+  },
+  {
+    "term": "Disable TLS 1.3",
+    "translation": "",
+    "context": "Disable TLS 1.3",
+    "reference": "",
+    "comment": "802.1X advanced option"
+  },
+  {
     "term": "Disable autoconnect",
     "translation": "",
     "context": "Disable autoconnect",
@@ -6079,6 +6667,13 @@
     "term": "Disable while typing",
     "translation": "",
     "context": "Disable while typing",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Disable wireless radios",
+    "translation": "",
+    "context": "Disable wireless radios",
     "reference": "",
     "comment": ""
   },
@@ -6116,6 +6711,13 @@
     "context": "Disabled by Click through",
     "reference": "",
     "comment": "bar hover popouts card, Click through is the Advanced toggle name"
+  },
+  {
+    "term": "Disabled by Connected popouts",
+    "translation": "",
+    "context": "Disabled by Connected popouts",
+    "reference": "",
+    "comment": "bar popouts card, Connected popouts is the Appearance toggle name"
   },
   {
     "term": "Disabled by Frame Mode",
@@ -6206,7 +6808,7 @@
     "translation": "",
     "context": "Disk",
     "reference": "",
-    "comment": ""
+    "comment": "system monitor device picker"
   },
   {
     "term": "Disk read",
@@ -6398,6 +7000,13 @@
     "comment": ""
   },
   {
+    "term": "Dissolve folder",
+    "translation": "",
+    "context": "Dissolve folder",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Distribution",
     "translation": "",
     "context": "Distribution",
@@ -6465,7 +7074,7 @@
     "translation": "",
     "context": "Docked",
     "reference": "",
-    "comment": "island settings: island reserves its edge strip"
+    "comment": "control center edit layout option, widget list beside the panel | island settings: island reserves its edge strip"
   },
   {
     "term": "Docks",
@@ -6489,9 +7098,9 @@
     "comment": "Documents"
   },
   {
-    "term": "Domain (optional)",
+    "term": "Does not fit here. Drag to another spot.",
     "translation": "",
-    "context": "Domain (optional)",
+    "context": "Does not fit here. Drag to another spot.",
     "reference": "",
     "comment": ""
   },
@@ -6615,11 +7224,25 @@
     "comment": ""
   },
   {
+    "term": "Drag widgets in, or click one to add it",
+    "translation": "",
+    "context": "Drag widgets in, or click one to add it",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Dragged displays line up with neighboring edges without overlapping",
     "translation": "",
     "context": "Dragged displays line up with neighboring edges without overlapping",
     "reference": "",
     "comment": "display arrangement snap toggle description"
+  },
+  {
+    "term": "Draw, highlight and add text on a region before it is saved",
+    "translation": "",
+    "context": "Draw, highlight and add text on a region before it is saved",
+    "reference": "",
+    "comment": "screenshot settings description for the annotate toggle"
   },
   {
     "term": "Driver",
@@ -6676,6 +7299,13 @@
     "context": "Duo",
     "reference": "",
     "comment": "battery meter style: open battery arc around the network glyph"
+  },
+  {
+    "term": "Duplex",
+    "translation": "",
+    "context": "Duplex",
+    "reference": "",
+    "comment": "Ethernet link setting"
   },
   {
     "term": "Duplicate",
@@ -6895,6 +7525,13 @@
     "comment": ""
   },
   {
+    "term": "Edit layout",
+    "translation": "",
+    "context": "Edit layout",
+    "reference": "",
+    "comment": "control center edit mode widget list placement"
+  },
+  {
     "term": "Edit mode",
     "translation": "",
     "context": "Edit mode",
@@ -7000,11 +7637,11 @@
     "comment": "workspace switcher minimum workspaces description"
   },
   {
-    "term": "Enable Wi-Fi before starting the hotspot.",
+    "term": "Empty space",
     "translation": "",
-    "context": "Enable Wi-Fi before starting the hotspot.",
+    "context": "Empty space",
     "reference": "",
-    "comment": "hotspot WiFi requirement message"
+    "comment": ""
   },
   {
     "term": "Enable autoconnect",
@@ -7077,6 +7714,13 @@
     "comment": "process action: quit the process and every process it started"
   },
   {
+    "term": "Endpoint",
+    "translation": "",
+    "context": "Endpoint",
+    "reference": "",
+    "comment": "WireGuard peer address and port"
+  },
+  {
     "term": "Enter 6-digit passkey",
     "translation": "",
     "context": "Enter 6-digit passkey",
@@ -7131,6 +7775,13 @@
     "context": "Enter custom top bar format (e.g., ddd MMM d)",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Enter edit mode on the dock to rearrange or remove items",
+    "translation": "",
+    "context": "Enter edit mode on the dock to rearrange or remove items",
+    "reference": "",
+    "comment": "dock settings row description for the edit mode button"
   },
   {
     "term": "Enter launch prefix (e.g., 'uwsm-app')",
@@ -7215,6 +7866,13 @@
     "context": "Environment Variables",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Eraser",
+    "translation": "",
+    "context": "Eraser",
+    "reference": "",
+    "comment": "screenshot markup tool, removes a whole annotation"
   },
   {
     "term": "Error",
@@ -7350,6 +8008,20 @@
     "comment": "island settings: expanded notification toggle"
   },
   {
+    "term": "Expanded background",
+    "translation": "",
+    "context": "Expanded background",
+    "reference": "",
+    "comment": "island activity settings"
+  },
+  {
+    "term": "Expanded opacity",
+    "translation": "",
+    "context": "Expanded opacity",
+    "reference": "",
+    "comment": "island activity settings: custom opacity for the expanded island"
+  },
+  {
     "term": "Expansion mode",
     "translation": "",
     "context": "Expansion mode",
@@ -7383,6 +8055,13 @@
     "context": "Exponential",
     "reference": "",
     "comment": "adjective, toggle for an exponential brightness curve per device"
+  },
+  {
+    "term": "Export",
+    "translation": "",
+    "context": "Export",
+    "reference": "",
+    "comment": "config profile action: save the profile as an archive file | save a connection profile to a file"
   },
   {
     "term": "Expose the arcs",
@@ -7469,6 +8148,13 @@
     "comment": ""
   },
   {
+    "term": "Fades content at the top and bottom of scrollable views",
+    "translation": "",
+    "context": "Fades content at the top and bottom of scrollable views",
+    "reference": "",
+    "comment": "scroll shadows setting description"
+  },
+  {
     "term": "Fades the screen out first. Input during the fade cancels it",
     "translation": "",
     "context": "Fades the screen out first. Input during the fade cancels it",
@@ -7539,6 +8225,13 @@
     "comment": "toast title, %1 is a process name"
   },
   {
+    "term": "Failed to check connectivity",
+    "translation": "",
+    "context": "Failed to check connectivity",
+    "reference": "",
+    "comment": "toast title when the NetworkManager internet check fails"
+  },
+  {
     "term": "Failed to configure hotspot",
     "translation": "",
     "context": "Failed to configure hotspot",
@@ -7595,6 +8288,13 @@
     "comment": ""
   },
   {
+    "term": "Failed to delete profile",
+    "translation": "",
+    "context": "Failed to delete profile",
+    "reference": "",
+    "comment": "toast title, config profile"
+  },
+  {
     "term": "Failed to disable job acceptance",
     "translation": "",
     "context": "Failed to disable job acceptance",
@@ -7616,6 +8316,13 @@
     "comment": "plugin error message, %1 is the plugin name"
   },
   {
+    "term": "Failed to disconnect",
+    "translation": "",
+    "context": "Failed to disconnect",
+    "reference": "",
+    "comment": "toast title when disconnecting a network connection fails"
+  },
+  {
     "term": "Failed to disconnect VPN",
     "translation": "",
     "context": "Failed to disconnect VPN",
@@ -7635,6 +8342,13 @@
     "context": "Failed to disconnect WiFi",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Failed to duplicate %1",
+    "translation": "",
+    "context": "Failed to duplicate %1",
+    "reference": "",
+    "comment": "toast title, %1 is a network connection name"
   },
   {
     "term": "Failed to empty trash",
@@ -7679,6 +8393,20 @@
     "comment": "plugin error message, %1 is the plugin name or id"
   },
   {
+    "term": "Failed to export",
+    "translation": "",
+    "context": "Failed to export",
+    "reference": "",
+    "comment": "toast title when exporting a network connection fails"
+  },
+  {
+    "term": "Failed to export profile",
+    "translation": "",
+    "context": "Failed to export profile",
+    "reference": "",
+    "comment": "toast title, config profile archive"
+  },
+  {
     "term": "Failed to extract theme",
     "translation": "",
     "context": "Failed to extract theme",
@@ -7693,11 +8421,25 @@
     "comment": "error toast, %1 is the error details"
   },
   {
+    "term": "Failed to forget %1",
+    "translation": "",
+    "context": "Failed to forget %1",
+    "reference": "",
+    "comment": "toast title, %1 is a network connection name"
+  },
+  {
     "term": "Failed to generate QR code: %1",
     "translation": "",
     "context": "Failed to generate QR code: %1",
     "reference": "",
     "comment": "error toast, %1 is the error details"
+  },
+  {
+    "term": "Failed to generate key",
+    "translation": "",
+    "context": "Failed to generate key",
+    "reference": "",
+    "comment": "toast title when generating a WireGuard key pair fails"
   },
   {
     "term": "Failed to generate systemd override",
@@ -7719,6 +8461,13 @@
     "context": "Failed to import VPN",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Failed to import profile",
+    "translation": "",
+    "context": "Failed to import profile",
+    "reference": "",
+    "comment": "toast title when importing a WiFi profile file fails | toast title, config profile archive"
   },
   {
     "term": "Failed to load VPN config",
@@ -7921,7 +8670,21 @@
     "translation": "",
     "context": "Failed to save profile",
     "reference": "",
-    "comment": ""
+    "comment": "toast title when saving a network or display profile fails"
+  },
+  {
+    "term": "Failed to save screenshot",
+    "translation": "",
+    "context": "Failed to save screenshot",
+    "reference": "",
+    "comment": "error toast, screenshot markup"
+  },
+  {
+    "term": "Failed to send file",
+    "translation": "",
+    "context": "Failed to send file",
+    "reference": "",
+    "comment": "Phone Connect error"
   },
   {
     "term": "Failed to set brightness",
@@ -7929,6 +8692,13 @@
     "context": "Failed to set brightness",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Failed to set network preference",
+    "translation": "",
+    "context": "Failed to set network preference",
+    "reference": "",
+    "comment": "toast title when switching between Ethernet and WiFi preference fails"
   },
   {
     "term": "Failed to set next boot entry",
@@ -8022,6 +8792,13 @@
     "comment": "audio sink port switch failure message"
   },
   {
+    "term": "Failed to toggle airplane mode",
+    "translation": "",
+    "context": "Failed to toggle airplane mode",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Failed to toggle cellular",
     "translation": "",
     "context": "Failed to toggle cellular",
@@ -8069,6 +8846,13 @@
     "context": "Failed to update clipboard",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Failed to update connectivity checking",
+    "translation": "",
+    "context": "Failed to update connectivity checking",
+    "reference": "",
+    "comment": "toast title when turning NetworkManager internet checks on or off fails"
   },
   {
     "term": "Failed to write autostart entry",
@@ -8313,7 +9097,7 @@
     "translation": "",
     "context": "Finish",
     "reference": "",
-    "comment": "greeter finish button"
+    "comment": "greeter finish button | screenshot draw, captures the selection"
   },
   {
     "term": "Fires even when an app inhibits shortcuts",
@@ -8335,6 +9119,13 @@
     "context": "Fires with any modifiers held",
     "reference": "",
     "comment": "keybind option tooltip, hyprland ignore mods flag"
+  },
+  {
+    "term": "Firewall zone",
+    "translation": "",
+    "context": "Firewall zone",
+    "reference": "",
+    "comment": "network connection setting"
   },
   {
     "term": "Firmware",
@@ -8391,6 +9182,13 @@
     "context": "Fixed",
     "reference": "",
     "comment": "corner style: one radius for every corner"
+  },
+  {
+    "term": "Fixed height",
+    "translation": "",
+    "context": "Fixed height",
+    "reference": "",
+    "comment": ""
   },
   {
     "term": "Flat",
@@ -8628,7 +9426,21 @@
     "translation": "",
     "context": "Folder",
     "reference": "",
-    "comment": "noun, launcher result type label for a directory"
+    "comment": "button, picks a folder to install a cursor theme from | button, picks a folder to install an icon theme from | noun, launcher result type label for a directory | noun, screenshot settings label for the save directory | wallpaper folder settings card title | wallpaper folder settings tab"
+  },
+  {
+    "term": "Folder already added",
+    "translation": "",
+    "context": "Folder already added",
+    "reference": "",
+    "comment": "toast when adding a wallpaper folder that is already listed"
+  },
+  {
+    "term": "Folder match theme colors",
+    "translation": "",
+    "context": "Folder match theme colors",
+    "reference": "",
+    "comment": "icon theme toggle, recolors the picked icon pack's folders with the theme colors"
   },
   {
     "term": "Folder, interval, daily time",
@@ -8642,7 +9454,7 @@
     "translation": "",
     "context": "Folders",
     "reference": "",
-    "comment": "launcher file search section title and filter option"
+    "comment": "launcher file search section title and filter option | wallpaper folders card title | wallpaper folders settings tab hint"
   },
   {
     "term": "Follow DMS background color",
@@ -8691,7 +9503,7 @@
     "translation": "",
     "context": "Font",
     "reference": "",
-    "comment": "noun, typography settings card title and font dropdown label"
+    "comment": ""
   },
   {
     "term": "Font Family",
@@ -8720,13 +9532,6 @@
     "context": "Fonts & motion",
     "reference": "",
     "comment": ""
-  },
-  {
-    "term": "Fonts, scale, animations",
-    "translation": "",
-    "context": "Fonts, scale, animations",
-    "reference": "",
-    "comment": "settings sidebar hint for the fonts and motion page"
   },
   {
     "term": "For %1",
@@ -8880,7 +9685,7 @@
     "translation": "",
     "context": "Format",
     "reference": "",
-    "comment": "noun, time or date format setting label"
+    "comment": "noun, screenshot image file format setting label | noun, time or date format setting label"
   },
   {
     "term": "Format legend",
@@ -8930,6 +9735,13 @@
     "context": "From %1",
     "reference": "",
     "comment": "Weather wind origin, followed by a cardinal direction"
+  },
+  {
+    "term": "From an archive or a folder. Nothing inside it is run.",
+    "translation": "",
+    "context": "From an archive or a folder. Nothing inside it is run.",
+    "reference": "",
+    "comment": "icon theme install row description"
   },
   {
     "term": "From wallpaper",
@@ -9034,7 +9846,7 @@
     "translation": "",
     "context": "GPU",
     "reference": "",
-    "comment": ""
+    "comment": "system monitor device picker"
   },
   {
     "term": "GPU %1",
@@ -9177,6 +9989,13 @@
     "comment": "Material wallpaper preset"
   },
   {
+    "term": "Gateway",
+    "translation": "",
+    "context": "Gateway",
+    "reference": "",
+    "comment": "network IP setting label"
+  },
+  {
     "term": "Gaussian",
     "translation": "",
     "context": "Gaussian",
@@ -9189,6 +10008,13 @@
     "context": "General",
     "reference": "",
     "comment": "adjective, settings page and section title for general options"
+  },
+  {
+    "term": "Generate",
+    "translation": "",
+    "context": "Generate",
+    "reference": "",
+    "comment": "create a new WireGuard key pair"
   },
   {
     "term": "Generate Theme at Startup",
@@ -9247,6 +10073,13 @@
     "comment": ""
   },
   {
+    "term": "Global shortcuts",
+    "translation": "",
+    "context": "Global shortcuts",
+    "reference": "",
+    "comment": "settings page name, shortcuts apps register through the desktop portal"
+  },
+  {
     "term": "Globally",
     "translation": "",
     "context": "Globally",
@@ -9303,6 +10136,13 @@
     "comment": ""
   },
   {
+    "term": "Grant permission",
+    "translation": "",
+    "context": "Grant permission",
+    "reference": "",
+    "comment": "Tailscale: button to grant operator permission"
+  },
+  {
     "term": "Granted administrator privileges",
     "translation": "",
     "context": "Granted administrator privileges",
@@ -9315,6 +10155,13 @@
     "context": "Granted greeter login access",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Graph",
+    "translation": "",
+    "context": "Graph",
+    "reference": "",
+    "comment": "system monitor tile style option | system monitor: per-metric chart switch"
   },
   {
     "term": "Graph time range",
@@ -9336,6 +10183,13 @@
     "context": "Graphics driver",
     "reference": "",
     "comment": "GPU kernel driver and Mesa version"
+  },
+  {
+    "term": "Graphs",
+    "translation": "",
+    "context": "Graphs",
+    "reference": "",
+    "comment": "system monitor layout option"
   },
   {
     "term": "Green",
@@ -9485,6 +10339,13 @@
     "comment": ""
   },
   {
+    "term": "Half",
+    "translation": "",
+    "context": "Half",
+    "reference": "",
+    "comment": "half duplex"
+  },
+  {
     "term": "Hardware",
     "translation": "",
     "context": "Hardware",
@@ -9583,6 +10444,13 @@
     "comment": "color picker field label for the hexadecimal color code"
   },
   {
+    "term": "Hexagon",
+    "translation": "",
+    "context": "Hexagon",
+    "reference": "",
+    "comment": "icon shape"
+  },
+  {
     "term": "Hibernate",
     "translation": "",
     "context": "Hibernate",
@@ -9609,6 +10477,13 @@
     "context": "Hidden (%1)",
     "reference": "",
     "comment": "count of hidden audio devices | island settings: hidden groups divider, %1 is count"
+  },
+  {
+    "term": "Hidden activity sources",
+    "translation": "",
+    "context": "Hidden activity sources",
+    "reference": "",
+    "comment": "island activity settings"
   },
   {
     "term": "Hidden apps",
@@ -9821,6 +10696,13 @@
     "comment": ""
   },
   {
+    "term": "Highlighter",
+    "translation": "",
+    "context": "Highlighter",
+    "reference": "",
+    "comment": "screenshot markup tool, translucent marker"
+  },
+  {
     "term": "History",
     "translation": "",
     "context": "History",
@@ -9895,7 +10777,7 @@
     "translation": "",
     "context": "Horizontal",
     "reference": "",
-    "comment": "island settings: free island orientation"
+    "comment": "island settings: free island orientation | system monitor bars orientation"
   },
   {
     "term": "Horizontal offset",
@@ -9937,7 +10819,7 @@
     "translation": "",
     "context": "Hotspot",
     "reference": "",
-    "comment": "hotspot control label | hotspot settings card title"
+    "comment": "hotspot control label | settings page title for the Wi-Fi hotspot"
   },
   {
     "term": "Hotspot",
@@ -9996,11 +10878,32 @@
     "comment": ""
   },
   {
+    "term": "How far a wiggle tilts or a pulse grows",
+    "translation": "",
+    "context": "How far a wiggle tilts or a pulse grows",
+    "reference": "",
+    "comment": "island activity settings: icon animation intensity description"
+  },
+  {
     "term": "How far terminal colors shift toward the wallpaper color",
     "translation": "",
     "context": "How far terminal colors shift toward the wallpaper color",
     "reference": "",
     "comment": "terminal wallpaper colors intensity description"
+  },
+  {
+    "term": "How long a new activity stays open before the island returns to its usual content",
+    "translation": "",
+    "context": "How long a new activity stays open before the island returns to its usual content",
+    "reference": "",
+    "comment": "island activity settings"
+  },
+  {
+    "term": "How long the title stays after a track change",
+    "translation": "",
+    "context": "How long the title stays after a track change",
+    "reference": "",
+    "comment": "media widget title duration description"
   },
   {
     "term": "Hue",
@@ -10129,11 +11032,18 @@
     "comment": "hotspot IP configuration failure message, %1 is a package name"
   },
   {
+    "term": "IPv4",
+    "translation": "",
+    "context": "IPv4",
+    "reference": "",
+    "comment": "network IP version"
+  },
+  {
     "term": "IPv6",
     "translation": "",
     "context": "IPv6",
     "reference": "",
-    "comment": "network IPv6 address"
+    "comment": "network IP version | network IPv6 address"
   },
   {
     "term": "ISO date",
@@ -10147,7 +11057,28 @@
     "translation": "",
     "context": "Icon",
     "reference": "",
-    "comment": "battery widget: system battery glyph | island settings: level shown as icon only"
+    "comment": "battery widget: system battery glyph | island activity settings | island settings: level shown as icon only | notification rule island summary settings | system monitor tile style option"
+  },
+  {
+    "term": "Icon animation intensity",
+    "translation": "",
+    "context": "Icon animation intensity",
+    "reference": "",
+    "comment": "island activity settings"
+  },
+  {
+    "term": "Icon animation speed",
+    "translation": "",
+    "context": "Icon animation speed",
+    "reference": "",
+    "comment": "island activity settings"
+  },
+  {
+    "term": "Icon columns",
+    "translation": "",
+    "context": "Icon columns",
+    "reference": "",
+    "comment": ""
   },
   {
     "term": "Icon scale",
@@ -10155,6 +11086,13 @@
     "context": "Icon scale",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Icon shape",
+    "translation": "",
+    "context": "Icon shape",
+    "reference": "",
+    "comment": "Dux Icons setting, the outline of the badge behind every icon"
   },
   {
     "term": "Icon size",
@@ -10176,6 +11114,13 @@
     "context": "Icon theme changed outside DMS; switched to System Default",
     "reference": "",
     "comment": "shown when an external tool overrides the icon theme DMS applied"
+  },
+  {
+    "term": "Icon theme not installed",
+    "translation": "",
+    "context": "Icon theme not installed",
+    "reference": "",
+    "comment": "icon theme install error toast title"
   },
   {
     "term": "Icons",
@@ -10203,7 +11148,7 @@
     "translation": "",
     "context": "Idle",
     "reference": "",
-    "comment": "noun, settings card title for idle timeout settings | process state"
+    "comment": "device state | noun, settings card title for idle timeout settings | process state"
   },
   {
     "term": "Idle",
@@ -10259,7 +11204,7 @@
     "translation": "",
     "context": "Ignore",
     "reference": "",
-    "comment": "verb, window rule on-activation choice, niri ignores the activation request"
+    "comment": "leave as the driver or system configured it | verb, window rule on-activation choice, niri ignores the activation request"
   },
   {
     "term": "Ignore Completely",
@@ -10329,7 +11274,7 @@
     "translation": "",
     "context": "Image",
     "reference": "",
-    "comment": "noun, clipboard entry type and filter option"
+    "comment": "config profile thumbnail | noun, clipboard entry type and filter option"
   },
   {
     "term": "Image copied to clipboard",
@@ -10367,6 +11312,13 @@
     "comment": ""
   },
   {
+    "term": "In use",
+    "translation": "",
+    "context": "In use",
+    "reference": "",
+    "comment": "cursor theme list badge, the theme currently applied | icon theme list badge, the theme currently applied"
+  },
+  {
     "term": "Inactive display color",
     "translation": "",
     "context": "Inactive display color",
@@ -10388,6 +11340,13 @@
     "comment": ""
   },
   {
+    "term": "Include cursor",
+    "translation": "",
+    "context": "Include cursor",
+    "reference": "",
+    "comment": "screenshot settings toggle, draw the mouse pointer into captures"
+  },
+  {
     "term": "Include files in All tab",
     "translation": "",
     "context": "Include files in All tab",
@@ -10406,7 +11365,7 @@
     "translation": "",
     "context": "Include subfolders",
     "reference": "",
-    "comment": ""
+    "comment": "wallpaper folder option"
   },
   {
     "term": "Include transitions",
@@ -10451,6 +11410,13 @@
     "comment": "verb, plus button next to a settings slider"
   },
   {
+    "term": "Increase font size",
+    "translation": "",
+    "context": "Increase font size",
+    "reference": "",
+    "comment": "notepad keyboard shortcut hint"
+  },
+  {
     "term": "Index centering",
     "translation": "",
     "context": "Index centering",
@@ -10491,6 +11457,13 @@
     "context": "Info",
     "reference": "",
     "comment": "greeter doctor page status card"
+  },
+  {
+    "term": "Infrastructure",
+    "translation": "",
+    "context": "Infrastructure",
+    "reference": "",
+    "comment": "Wi-Fi mode: client of an access point"
   },
   {
     "term": "Inherit",
@@ -10560,7 +11533,7 @@
     "translation": "",
     "context": "Inline",
     "reference": "",
-    "comment": "adjective, dock widgets open inside the dock instead of a popout"
+    "comment": "adjective, dock widgets open inside the dock instead of a popout | system monitor chart legend option"
   },
   {
     "term": "Inner authentication",
@@ -10668,6 +11641,13 @@
     "comment": "theme installation dialog title"
   },
   {
+    "term": "Install a theme",
+    "translation": "",
+    "context": "Install a theme",
+    "reference": "",
+    "comment": "cursor theme manager row title | icon theme manager row title"
+  },
+  {
     "term": "Install color themes from the DMS theme registry",
     "translation": "",
     "context": "Install color themes from the DMS theme registry",
@@ -10675,11 +11655,25 @@
     "comment": "theme browser description"
   },
   {
+    "term": "Install cursor theme",
+    "translation": "",
+    "context": "Install cursor theme",
+    "reference": "",
+    "comment": "cursor theme file browser title"
+  },
+  {
     "term": "Install failed: %1",
     "translation": "",
     "context": "Install failed: %1",
     "reference": "",
     "comment": "installation error"
+  },
+  {
+    "term": "Install icon theme",
+    "translation": "",
+    "context": "Install icon theme",
+    "reference": "",
+    "comment": "icon theme file browser title"
   },
   {
     "term": "Install plugin '%1' from the DMS registry?",
@@ -10745,6 +11739,13 @@
     "comment": "adjective, plugin or theme is already installed, button state and filter chip"
   },
   {
+    "term": "Installed %1",
+    "translation": "",
+    "context": "Installed %1",
+    "reference": "",
+    "comment": "theme install toast, %1 is a list of theme names"
+  },
+  {
     "term": "Installed %1, still running %2",
     "translation": "",
     "context": "Installed %1, still running %2",
@@ -10801,11 +11802,18 @@
     "comment": ""
   },
   {
+    "term": "Interact with windows",
+    "translation": "",
+    "context": "Interact with windows",
+    "reference": "",
+    "comment": "live annotation, lets clicks through to the desktop"
+  },
+  {
     "term": "Interface",
     "translation": "",
     "context": "Interface",
     "reference": "",
-    "comment": "noun, wifi network interface name label"
+    "comment": "noun, wifi network interface name label | system monitor device picker"
   },
   {
     "term": "Interface density",
@@ -10904,6 +11912,34 @@
     "context": "Island",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Island activities",
+    "translation": "",
+    "context": "Island activities",
+    "reference": "",
+    "comment": "island widgets settings: category of widgets rebuilt for the island"
+  },
+  {
+    "term": "Island summary",
+    "translation": "",
+    "context": "Island summary",
+    "reference": "",
+    "comment": "notification rule island summary settings"
+  },
+  {
+    "term": "Island widgets",
+    "translation": "",
+    "context": "Island widgets",
+    "reference": "",
+    "comment": "bar widget settings: widgets in the collapsed island"
+  },
+  {
+    "term": "Island widgets above the clock sit before it, the rest after it",
+    "translation": "",
+    "context": "Island widgets above the clock sit before it, the rest after it",
+    "reference": "",
+    "comment": "widgets settings: island widget order hint"
   },
   {
     "term": "Isolate displays",
@@ -11060,6 +12096,13 @@
     "comment": "lock screen security key shortcut key combination setting"
   },
   {
+    "term": "Key style",
+    "translation": "",
+    "context": "Key style",
+    "reference": "",
+    "comment": "modifier icon style toggle label"
+  },
+  {
     "term": "Keybinds",
     "translation": "",
     "context": "Keybinds",
@@ -11156,6 +12199,13 @@
     "context": "LabWC website",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Label",
+    "translation": "",
+    "context": "Label",
+    "reference": "",
+    "comment": "island activity settings"
   },
   {
     "term": "Label overrides",
@@ -11344,7 +12394,7 @@
     "translation": "",
     "context": "Launcher",
     "reference": "",
-    "comment": "island compact face: launcher label | island settings: button to launcher tab | plugin browser type filter chip"
+    "comment": "island compact face: launcher label | plugin browser type filter chip"
   },
   {
     "term": "Launcher button",
@@ -11470,7 +12520,7 @@
     "translation": "",
     "context": "Left",
     "reference": "",
-    "comment": "screen edge position"
+    "comment": "island activity settings | screen edge position"
   },
   {
     "term": "Left Center",
@@ -11494,6 +12544,20 @@
     "comment": "mouse toggle, swap primary and secondary buttons"
   },
   {
+    "term": "Legend",
+    "translation": "",
+    "context": "Legend",
+    "reference": "",
+    "comment": "system monitor chart legend placement"
+  },
+  {
+    "term": "Length of one animation cycle",
+    "translation": "",
+    "context": "Length of one animation cycle",
+    "reference": "",
+    "comment": "island activity settings: icon animation speed description"
+  },
+  {
     "term": "Length padding",
     "translation": "",
     "context": "Length padding",
@@ -11501,11 +12565,32 @@
     "comment": ""
   },
   {
+    "term": "Let activities tint their slot and highlight warnings and errors",
+    "translation": "",
+    "context": "Let activities tint their slot and highlight warnings and errors",
+    "reference": "",
+    "comment": "island activity settings"
+  },
+  {
+    "term": "Let plugins and IPC clients show progress, timers and other live updates in the island",
+    "translation": "",
+    "context": "Let plugins and IPC clients show progress, timers and other live updates in the island",
+    "reference": "",
+    "comment": "island activity settings"
+  },
+  {
     "term": "Level",
     "translation": "",
     "context": "Level",
     "reference": "",
     "comment": "battery settings: charge level indicator colors"
+  },
+  {
+    "term": "Library",
+    "translation": "",
+    "context": "Library",
+    "reference": "",
+    "comment": ""
   },
   {
     "term": "Light",
@@ -11606,11 +12691,25 @@
     "comment": "charge limit toast detail, %1 is a percentage number"
   },
   {
+    "term": "Limited connectivity",
+    "translation": "",
+    "context": "Limited connectivity",
+    "reference": "",
+    "comment": "connected to a network without internet access"
+  },
+  {
     "term": "Line",
     "translation": "",
     "context": "Line",
     "reference": "",
     "comment": "dock indicator style option"
+  },
+  {
+    "term": "Line synced",
+    "translation": "",
+    "context": "Line synced",
+    "reference": "",
+    "comment": "Lyrics are timed per line"
   },
   {
     "term": "Line: %1",
@@ -11641,6 +12740,13 @@
     "comment": "plugin browser, link copied to clipboard"
   },
   {
+    "term": "Link negotiation",
+    "translation": "",
+    "context": "Link negotiation",
+    "reference": "",
+    "comment": "Ethernet link setting"
+  },
+  {
     "term": "Link your DMS settings so the login screen follows them.",
     "translation": "",
     "context": "Link your DMS settings so the login screen follows them.",
@@ -11653,6 +12759,13 @@
     "context": "Link your DMS settings so the login screen follows them. Administrator access is required.",
     "reference": "",
     "comment": "greeter status"
+  },
+  {
+    "term": "Link-local",
+    "translation": "",
+    "context": "Link-local",
+    "reference": "",
+    "comment": "network IP method option"
   },
   {
     "term": "Linked",
@@ -11669,11 +12782,25 @@
     "comment": "greeter status, login screen reads a copy of DMS settings"
   },
   {
+    "term": "Linux",
+    "translation": "",
+    "context": "Linux",
+    "reference": "",
+    "comment": "keyboard keycap style name"
+  },
+  {
     "term": "List",
     "translation": "",
     "context": "List",
     "reference": "",
     "comment": "noun, list view mode option"
+  },
+  {
+    "term": "Listen port",
+    "translation": "",
+    "context": "Listen port",
+    "reference": "",
+    "comment": "WireGuard interface field"
   },
   {
     "term": "Listening",
@@ -11697,11 +12824,25 @@
     "comment": "workspace switcher follow display focus toggle description"
   },
   {
+    "term": "Live activities",
+    "translation": "",
+    "context": "Live activities",
+    "reference": "",
+    "comment": "island activity settings"
+  },
+  {
     "term": "Live activities that grow out of the bar",
     "translation": "",
     "context": "Live activities that grow out of the bar",
     "reference": "",
     "comment": "bar widget catalog: island widget description"
+  },
+  {
+    "term": "Live activity",
+    "translation": "",
+    "context": "Live activity",
+    "reference": "",
+    "comment": "island activity settings"
   },
   {
     "term": "Lively palette with saturated accents.",
@@ -11716,6 +12857,13 @@
     "context": "Load Average",
     "reference": "",
     "comment": "system info label"
+  },
+  {
+    "term": "Loading",
+    "translation": "",
+    "context": "Loading",
+    "reference": "",
+    "comment": ""
   },
   {
     "term": "Loading codecs...",
@@ -11858,6 +13006,20 @@
     "comment": "adjective, hyprland bind flag toggle, bind works on lock screen"
   },
   {
+    "term": "Log in",
+    "translation": "",
+    "context": "Log in",
+    "reference": "",
+    "comment": "Tailscale: start login button"
+  },
+  {
+    "term": "Log in to network",
+    "translation": "",
+    "context": "Log in to network",
+    "reference": "",
+    "comment": "captive portal: open the login page"
+  },
+  {
     "term": "Log out",
     "translation": "",
     "context": "Log out",
@@ -11890,7 +13052,7 @@
     "translation": "",
     "context": "Long",
     "reference": "",
-    "comment": "date format option"
+    "comment": "animation duration option | date format option"
   },
   {
     "term": "Long Text",
@@ -11905,6 +13067,20 @@
     "context": "Long press",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Longer",
+    "translation": "",
+    "context": "Longer",
+    "reference": "",
+    "comment": "animation duration option"
+  },
+  {
+    "term": "Longer titles scroll inside this width",
+    "translation": "",
+    "context": "Longer titles scroll inside this width",
+    "reference": "",
+    "comment": "media widget title width description"
   },
   {
     "term": "Longitude",
@@ -11956,6 +13132,13 @@
     "comment": ""
   },
   {
+    "term": "Lower keeps up with faster scrolling but uses more CPU",
+    "translation": "",
+    "context": "Lower keeps up with faster scrolling but uses more CPU",
+    "reference": "",
+    "comment": "screenshot settings description for the scroll capture interval"
+  },
+  {
     "term": "Lower only if a mode fails for lack of bandwidth",
     "translation": "",
     "context": "Lower only if a mode fails for lack of bandwidth",
@@ -11991,11 +13174,18 @@
     "comment": "Lyrics source priority settings"
   },
   {
+    "term": "M3 Expressive motion sized by surface",
+    "translation": "",
+    "context": "M3 Expressive motion sized by surface",
+    "reference": "",
+    "comment": "animation style description"
+  },
+  {
     "term": "MAC address",
     "translation": "",
     "context": "MAC address",
     "reference": "",
-    "comment": "network hardware address"
+    "comment": "network hardware address | network hardware setting"
   },
   {
     "term": "MIT License",
@@ -12012,6 +13202,20 @@
     "comment": "network maximum transmission unit"
   },
   {
+    "term": "Mac",
+    "translation": "",
+    "context": "Mac",
+    "reference": "",
+    "comment": "keyboard keycap style name"
+  },
+  {
+    "term": "Magic packet",
+    "translation": "",
+    "context": "Magic packet",
+    "reference": "",
+    "comment": "Wake on LAN option"
+  },
+  {
     "term": "Magnification",
     "translation": "",
     "context": "Magnification",
@@ -12024,6 +13228,13 @@
     "context": "Mail",
     "reference": "",
     "comment": "Mail"
+  },
+  {
+    "term": "Main value",
+    "translation": "",
+    "context": "Main value",
+    "reference": "",
+    "comment": "system monitor: value shown large"
   },
   {
     "term": "Major page faults",
@@ -12045,6 +13256,27 @@
     "context": "Manage Registries",
     "reference": "",
     "comment": "plugin registry management"
+  },
+  {
+    "term": "Manage all connections",
+    "translation": "",
+    "context": "Manage all connections",
+    "reference": "",
+    "comment": "settings link on the network overview to the list of every saved network connection"
+  },
+  {
+    "term": "Manage profiles",
+    "translation": "",
+    "context": "Manage profiles",
+    "reference": "",
+    "comment": "link row opening the page that creates, edits and deletes config profiles"
+  },
+  {
+    "term": "Manage themes",
+    "translation": "",
+    "context": "Manage themes",
+    "reference": "",
+    "comment": "settings row that expands to the installed cursor themes | settings row that expands to the installed icon themes"
   },
   {
     "term": "Managed by Frame in Connected Mode",
@@ -12073,6 +13305,13 @@
     "context": "Managed by the primary PAM source",
     "reference": "",
     "comment": "factor managed by PAM source status"
+  },
+  {
+    "term": "Managed files",
+    "translation": "",
+    "context": "Managed files",
+    "reference": "",
+    "comment": "settings page name, compositor config files dms writes"
   },
   {
     "term": "Mango Options",
@@ -12247,7 +13486,7 @@
     "translation": "",
     "context": "Match type",
     "reference": "",
-    "comment": "notification rule dropdown label, how the pattern is compared"
+    "comment": "802.1X server name match, exact or suffix | notification rule dropdown label, how the pattern is compared"
   },
   {
     "term": "Matches player identity or desktop file name, case-insensitive",
@@ -12255,6 +13494,13 @@
     "context": "Matches player identity or desktop file name, case-insensitive",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Matches the current settings",
+    "translation": "",
+    "context": "Matches the current settings",
+    "reference": "",
+    "comment": "config profile compare page: applying would change nothing"
   },
   {
     "term": "Material",
@@ -12467,11 +13713,18 @@
     "comment": ""
   },
   {
+    "term": "Maximum title width",
+    "translation": "",
+    "context": "Maximum title width",
+    "reference": "",
+    "comment": "media widget settings"
+  },
+  {
     "term": "Media",
     "translation": "",
     "context": "Media",
     "reference": "",
-    "comment": "dashboard media player tab name | launcher app category for audio and video apps"
+    "comment": "dashboard media player tab name | island activity settings | launcher app category for audio and video apps"
   },
   {
     "term": "Media / Launcher",
@@ -12541,7 +13794,7 @@
     "translation": "",
     "context": "Medium",
     "reference": "",
-    "comment": "bar widget size option | font style"
+    "comment": "animation duration option | bar widget size option | font style"
   },
   {
     "term": "Memory",
@@ -12565,13 +13818,6 @@
     "comment": "GPU memory controller busy percentage"
   },
   {
-    "term": "Memory graph",
-    "translation": "",
-    "context": "Memory graph",
-    "reference": "",
-    "comment": ""
-  },
-  {
     "term": "Memory usage",
     "translation": "",
     "context": "Memory usage",
@@ -12591,6 +13837,41 @@
     "context": "Message Content",
     "reference": "",
     "comment": "notification privacy mode placeholder"
+  },
+  {
+    "term": "Meter",
+    "translation": "",
+    "context": "Meter",
+    "reference": "",
+    "comment": "system monitor tile style option"
+  },
+  {
+    "term": "Metered",
+    "translation": "",
+    "context": "Metered",
+    "reference": "",
+    "comment": "network connection setting"
+  },
+  {
+    "term": "Method",
+    "translation": "",
+    "context": "Method",
+    "reference": "",
+    "comment": "IP configuration method"
+  },
+  {
+    "term": "Metric",
+    "translation": "",
+    "context": "Metric",
+    "reference": "",
+    "comment": "route metric"
+  },
+  {
+    "term": "Metrics",
+    "translation": "",
+    "context": "Metrics",
+    "reference": "",
+    "comment": "system monitor settings section title for the shown devices"
   },
   {
     "term": "Microphone",
@@ -12653,7 +13934,7 @@
     "translation": "",
     "context": "Middle section",
     "reference": "",
-    "comment": "widgets settings: bar section replaced by the island"
+    "comment": ""
   },
   {
     "term": "Middle-click action",
@@ -12751,7 +14032,7 @@
     "translation": "",
     "context": "Modals",
     "reference": "",
-    "comment": "plural noun, shell modal dialogs, animation and shadow setting label"
+    "comment": ""
   },
   {
     "term": "Mode",
@@ -12808,6 +14089,13 @@
     "context": "Monitor",
     "reference": "",
     "comment": "noun, display output field in window rule editor"
+  },
+  {
+    "term": "Monitoring can keep it from sleeping",
+    "translation": "",
+    "context": "Monitoring can keep it from sleeping",
+    "reference": "",
+    "comment": "system monitor: reading a GPU can stop it from suspending"
   },
   {
     "term": "Monitoring off",
@@ -12891,7 +14179,7 @@
     "translation": "",
     "context": "More",
     "reference": "",
-    "comment": "hub group of rarely used pages"
+    "comment": ""
   },
   {
     "term": "More in %1",
@@ -12954,7 +14242,7 @@
     "translation": "",
     "context": "Motion",
     "reference": "",
-    "comment": "island settings: spring motion card title"
+    "comment": "island settings: spring motion card title | settings page name for animation options"
   },
   {
     "term": "Motion blur",
@@ -12999,6 +14287,13 @@
     "comment": "dock mouse settings card title"
   },
   {
+    "term": "Move notification popups below an open bar popout instead of covering it",
+    "translation": "",
+    "context": "Move notification popups below an open bar popout instead of covering it",
+    "reference": "",
+    "comment": "notification setting description"
+  },
+  {
     "term": "Move out of scratchpad",
     "translation": "",
     "context": "Move out of scratchpad",
@@ -13025,6 +14320,20 @@
     "context": "Move workspace to this display",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Movement",
+    "translation": "",
+    "context": "Movement",
+    "reference": "",
+    "comment": "animation group, window move, resize and column scrolling"
+  },
+  {
+    "term": "Moves an activity's icon to draw attention to it",
+    "translation": "",
+    "context": "Moves an activity's icon to draw attention to it",
+    "reference": "",
+    "comment": "island activity settings: icon animation description"
   },
   {
     "term": "Moves focus along with the column",
@@ -13192,7 +14501,7 @@
     "translation": "",
     "context": "Names",
     "reference": "",
-    "comment": "toggle to show workspace names"
+    "comment": "system monitor bars: show device names | toggle to show workspace names"
   },
   {
     "term": "Native",
@@ -13230,6 +14539,13 @@
     "comment": "plugin detail section, introduces the programs a plugin depends on"
   },
   {
+    "term": "Needs Plugin activities on and the workspace source shown",
+    "translation": "",
+    "context": "Needs Plugin activities on and the workspace source shown",
+    "reference": "",
+    "comment": "island settings: workspace OSD unavailable hint"
+  },
+  {
     "term": "Nested chip",
     "translation": "",
     "context": "Nested chip",
@@ -13241,7 +14557,7 @@
     "translation": "",
     "context": "Network",
     "reference": "",
-    "comment": "noun, settings page and widget title | printer device class, a network printer"
+    "comment": "noun, settings page and widget title | printer device class, a network printer | route destination network"
   },
   {
     "term": "Network Info",
@@ -13272,23 +14588,9 @@
     "comment": ""
   },
   {
-    "term": "Network graph",
-    "translation": "",
-    "context": "Network graph",
-    "reference": "",
-    "comment": ""
-  },
-  {
     "term": "Network speed monitor",
     "translation": "",
     "context": "Network speed monitor",
-    "reference": "",
-    "comment": ""
-  },
-  {
-    "term": "Networks, saved networks, hotspot",
-    "translation": "",
-    "context": "Networks, saved networks, hotspot",
     "reference": "",
     "comment": ""
   },
@@ -13741,6 +15043,13 @@
     "comment": ""
   },
   {
+    "term": "No cursor theme found there",
+    "translation": "",
+    "context": "No cursor theme found there",
+    "reference": "",
+    "comment": "cursor theme install error, the picked archive or folder holds no theme"
+  },
+  {
     "term": "No custom theme file",
     "translation": "",
     "context": "No custom theme file",
@@ -13872,6 +15181,13 @@
     "context": "No human user accounts found.",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "No icon theme found there",
+    "translation": "",
+    "context": "No icon theme found there",
+    "reference": "",
+    "comment": "icon theme install error, the picked archive or folder holds no theme"
   },
   {
     "term": "No info items",
@@ -14228,7 +15544,7 @@
     "translation": "",
     "context": "No wallpapers",
     "reference": "",
-    "comment": ""
+    "comment": "empty wallpaper folder"
   },
   {
     "term": "No warnings",
@@ -14280,6 +15596,13 @@
     "comment": ""
   },
   {
+    "term": "No wireless devices available",
+    "translation": "",
+    "context": "No wireless devices available",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "No wobble",
     "translation": "",
     "context": "No wobble",
@@ -14319,7 +15642,7 @@
     "translation": "",
     "context": "None",
     "reference": "",
-    "comment": "Tailscale exit node: none selected | bar click action | wallpaper transition option | workspace color option"
+    "comment": "Tailscale exit node: none selected | bar click action | desktop widget background option | island activity settings | wallpaper transition option | workspace color option"
   },
   {
     "term": "None active",
@@ -14410,7 +15733,7 @@
     "translation": "",
     "context": "Not connected",
     "reference": "",
-    "comment": "network status"
+    "comment": "Tailscale connection switch description | network status"
   },
   {
     "term": "Not detected",
@@ -14441,6 +15764,13 @@
     "comment": "greeter status, no greeter slot for this user"
   },
   {
+    "term": "Not managed, set up from its page",
+    "translation": "",
+    "context": "Not managed, set up from its page",
+    "reference": "",
+    "comment": "compositor include status, the page has a Setup button"
+  },
+  {
     "term": "Not on click",
     "translation": "",
     "context": "Not on click",
@@ -14467,6 +15797,13 @@
     "context": "Not shown on this bar, so its section widgets stay hidden",
     "reference": "",
     "comment": "widgets settings: island satellites are not rendered on this bar"
+  },
+  {
+    "term": "Not supported in Settings",
+    "translation": "",
+    "context": "Not supported in Settings",
+    "reference": "",
+    "comment": "network connection list and editor: this connection type can only be edited in another tool"
   },
   {
     "term": "Notch",
@@ -14550,7 +15887,7 @@
     "translation": "",
     "context": "Notifications",
     "reference": "",
-    "comment": "greeter settings link | island compact face: notification center label | island settings: notification badge slot row | island settings: notifications card title"
+    "comment": "greeter settings link | island activity settings | island compact face: notification center label | island settings: notification badge slot row | island settings: notifications card title"
   },
   {
     "term": "Notifies when today's screen time passes the limit",
@@ -14662,7 +15999,7 @@
     "translation": "",
     "context": "Off",
     "reference": "",
-    "comment": "bluetooth status"
+    "comment": "bluetooth status | screenshot shortcut hints option, hide the hints | system monitor chart legend option"
   },
   {
     "term": "Off keeps the bar hidden until turned back on or shown over IPC",
@@ -14677,6 +16014,13 @@
     "context": "Off lets the compositor decorate DMS windows. Open windows update when reopened.",
     "reference": "",
     "comment": "theme floating windows section, title bars toggle description"
+  },
+  {
+    "term": "Off matches the bar's opacity",
+    "translation": "",
+    "context": "Off matches the bar's opacity",
+    "reference": "",
+    "comment": "island activity settings: expanded opacity toggle description"
   },
   {
     "term": "Office",
@@ -14735,6 +16079,20 @@
     "comment": ""
   },
   {
+    "term": "On change",
+    "translation": "",
+    "context": "On change",
+    "reference": "",
+    "comment": "media widget title option"
+  },
+  {
+    "term": "On change shows the song title for a moment when the track changes",
+    "translation": "",
+    "context": "On change shows the song title for a moment when the track changes",
+    "reference": "",
+    "comment": "media widget title mode description"
+  },
+  {
     "term": "On indefinitely",
     "translation": "",
     "context": "On indefinitely",
@@ -14775,6 +16133,13 @@
     "context": "Once a week",
     "reference": "",
     "comment": "update notification frequency option"
+  },
+  {
+    "term": "Ongoing activities kept as small icons beside the island content. 0 hides them",
+    "translation": "",
+    "context": "Ongoing activities kept as small icons beside the island content. 0 hides them",
+    "reference": "",
+    "comment": "island activity settings"
   },
   {
     "term": "Online",
@@ -14819,6 +16184,13 @@
     "comment": "toast body when restarting another user's process"
   },
   {
+    "term": "Only themes in your own icon folder can be removed",
+    "translation": "",
+    "context": "Only themes in your own icon folder can be removed",
+    "reference": "",
+    "comment": "icon theme remove error"
+  },
+  {
     "term": "Opacity",
     "translation": "",
     "context": "Opacity",
@@ -14845,6 +16217,13 @@
     "context": "network security type",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Open Appearance",
+    "translation": "",
+    "context": "Open Appearance",
+    "reference": "",
+    "comment": "settings: button that opens the bar Appearance tab"
   },
   {
     "term": "Open Frame",
@@ -14882,6 +16261,13 @@
     "comment": ""
   },
   {
+    "term": "Open and close",
+    "translation": "",
+    "context": "Open and close",
+    "reference": "",
+    "comment": "animation group, windows opening and closing"
+  },
+  {
     "term": "Open as window",
     "translation": "",
     "context": "Open as window",
@@ -14915,6 +16301,13 @@
     "context": "Open folder",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Open in %1",
+    "translation": "",
+    "context": "Open in %1",
+    "reference": "",
+    "comment": "%1 is an application name"
   },
   {
     "term": "Open in terminal",
@@ -14964,6 +16357,13 @@
     "context": "Open with",
     "reference": "",
     "comment": "app picker title, followed by a list of apps | trash setting label, which file manager opens the trash"
+  },
+  {
+    "term": "OpenSSL ciphers",
+    "translation": "",
+    "context": "OpenSSL ciphers",
+    "reference": "",
+    "comment": "802.1X advanced option"
   },
   {
     "term": "Opening GitHub to remove the upvote",
@@ -15020,6 +16420,13 @@
     "context": "Operating system",
     "reference": "",
     "comment": "system info label"
+  },
+  {
+    "term": "Operator permission needed",
+    "translation": "",
+    "context": "Operator permission needed",
+    "reference": "",
+    "comment": "Tailscale settings note, followed by a grant button and a terminal command"
   },
   {
     "term": "Optional description",
@@ -15096,7 +16503,7 @@
     "translation": "",
     "context": "Orientation",
     "reference": "",
-    "comment": "island settings: horizontal or vertical row for a free island"
+    "comment": "island settings: horizontal or vertical row for a free island | system monitor bars: horizontal or vertical bars"
   },
   {
     "term": "Original: %1",
@@ -15246,6 +16653,13 @@
     "comment": "bar section dropdown label"
   },
   {
+    "term": "Overflow moves to the next page",
+    "translation": "",
+    "context": "Overflow moves to the next page",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Overflow priority",
     "translation": "",
     "context": "Overflow priority",
@@ -15313,7 +16727,7 @@
     "translation": "",
     "context": "Overrides",
     "reference": "",
-    "comment": "noun plural, keybind category of user overridden shortcuts"
+    "comment": "island activity settings: per-source overrides row | noun plural, keybind category of user overridden shortcuts"
   },
   {
     "term": "Overview",
@@ -15356,6 +16770,13 @@
     "context": "PDF reader",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "PEAP version",
+    "translation": "",
+    "context": "PEAP version",
+    "reference": "",
+    "comment": "802.1X advanced option"
   },
   {
     "term": "PID",
@@ -15419,6 +16840,13 @@
     "context": "Padding",
     "reference": "",
     "comment": "noun, spacing setting label"
+  },
+  {
+    "term": "Page %1 of %2",
+    "translation": "",
+    "context": "Page %1 of %2",
+    "reference": "",
+    "comment": "control center page indicator, %1 is the page number, %2 the page count"
   },
   {
     "term": "Page faults",
@@ -15538,6 +16966,13 @@
     "context": "Parents",
     "reference": "",
     "comment": "chain of processes that started this one"
+  },
+  {
+    "term": "Partial apply",
+    "translation": "",
+    "context": "Partial apply",
+    "reference": "",
+    "comment": "config profile menu: open Compare to apply only some groups"
   },
   {
     "term": "Partition table",
@@ -15680,6 +17115,13 @@
     "comment": "night mode excluded apps field description"
   },
   {
+    "term": "Pause video wallpaper on battery",
+    "translation": "",
+    "context": "Pause video wallpaper on battery",
+    "reference": "",
+    "comment": "Settings toggle: stop video wallpaper playback while running on battery power"
+  },
+  {
     "term": "Paused",
     "translation": "",
     "context": "Paused",
@@ -15692,6 +17134,20 @@
     "context": "Peak",
     "reference": "",
     "comment": "highest resident memory so far"
+  },
+  {
+    "term": "Peers",
+    "translation": "",
+    "context": "Peers",
+    "reference": "",
+    "comment": "WireGuard peers"
+  },
+  {
+    "term": "Pen",
+    "translation": "",
+    "context": "Pen",
+    "reference": "",
+    "comment": "screenshot markup tool, freehand drawing"
   },
   {
     "term": "Pending",
@@ -15757,6 +17213,13 @@
     "comment": "power profile option"
   },
   {
+    "term": "Permanent",
+    "translation": "",
+    "context": "Permanent",
+    "reference": "",
+    "comment": "cloned MAC: the hardware address"
+  },
+  {
     "term": "Permanently delete %1 item(s)? This cannot be undone.",
     "translation": "",
     "context": "Permanently delete %1 item(s)? This cannot be undone.",
@@ -15769,6 +17232,20 @@
     "context": "Permission denied to set profile image.",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Persistent activity slots",
+    "translation": "",
+    "context": "Persistent activity slots",
+    "reference": "",
+    "comment": "island activity settings"
+  },
+  {
+    "term": "Persistent keepalive",
+    "translation": "",
+    "context": "Persistent keepalive",
+    "reference": "",
+    "comment": "WireGuard peer field"
   },
   {
     "term": "Petal",
@@ -15797,6 +17274,13 @@
     "context": "Pick an app from the list above or the dashboard tab",
     "reference": "",
     "comment": "app limits empty state description"
+  },
+  {
+    "term": "Pick an icon theme first",
+    "translation": "",
+    "context": "Pick an icon theme first",
+    "reference": "",
+    "comment": "folder recolor toggle, disabled while System Default is selected"
   },
   {
     "term": "Pick how long to pause notifications",
@@ -15832,6 +17316,13 @@
     "context": "Pill",
     "reference": "",
     "comment": "lock screen password field style"
+  },
+  {
+    "term": "Pill shape",
+    "translation": "",
+    "context": "Pill shape",
+    "reference": "",
+    "comment": "island activity settings"
   },
   {
     "term": "Pills",
@@ -15939,6 +17430,13 @@
     "comment": "section label above per-app audio playback streams"
   },
   {
+    "term": "Playback controls",
+    "translation": "",
+    "context": "Playback controls",
+    "reference": "",
+    "comment": "island settings: transport buttons in the media face toggle"
+  },
+  {
     "term": "Playback error: %1",
     "translation": "",
     "context": "Playback error: %1",
@@ -16021,6 +17519,13 @@
     "context": "Plugin Source Code",
     "reference": "",
     "comment": "plugin settings page, plugin details"
+  },
+  {
+    "term": "Plugin activities",
+    "translation": "",
+    "context": "Plugin activities",
+    "reference": "",
+    "comment": "island activity settings"
   },
   {
     "term": "Plugin dependency missing",
@@ -16146,14 +17651,7 @@
     "translation": "",
     "context": "Popouts",
     "reference": "",
-    "comment": "plural noun, shell popout panels, animation and shadow setting label"
-  },
-  {
-    "term": "Popouts and modals use the main animation duration",
-    "translation": "",
-    "context": "Popouts and modals use the main animation duration",
-    "reference": "",
-    "comment": "sync popout and modal animation toggle description"
+    "comment": ""
   },
   {
     "term": "Popular",
@@ -16387,6 +17885,13 @@
     "comment": ""
   },
   {
+    "term": "Power saving",
+    "translation": "",
+    "context": "Power saving",
+    "reference": "",
+    "comment": "WiFi setting"
+  },
+  {
     "term": "Power source",
     "translation": "",
     "context": "Power source",
@@ -16406,6 +17911,13 @@
     "context": "Pre-release",
     "reference": "",
     "comment": "badge on a release that is not a stable version"
+  },
+  {
+    "term": "Pre-shared key",
+    "translation": "",
+    "context": "Pre-shared key",
+    "reference": "",
+    "comment": "WireGuard peer field"
   },
   {
     "term": "Precipitation",
@@ -16441,6 +17953,13 @@
     "context": "Presentation",
     "reference": "",
     "comment": "default app selector label for slide presentation program, not presentation mode"
+  },
+  {
+    "term": "Preserve",
+    "translation": "",
+    "context": "Preserve",
+    "reference": "",
+    "comment": "cloned MAC: keep the current address"
   },
   {
     "term": "Preserve split",
@@ -16485,6 +18004,13 @@
     "comment": "Audio device rename dialog hint"
   },
   {
+    "term": "Press Enter or Space to capture. Off captures when the mouse is released.",
+    "translation": "",
+    "context": "Press Enter or Space to capture. Off captures when the mouse is released.",
+    "reference": "",
+    "comment": "screenshot settings description for the confirm region toggle"
+  },
+  {
     "term": "Press key...",
     "translation": "",
     "context": "Press key...",
@@ -16518,6 +18044,27 @@
     "context": "verb, clipboard entry action button tooltip",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Preview duration",
+    "translation": "",
+    "context": "Preview duration",
+    "reference": "",
+    "comment": "island activity settings"
+  },
+  {
+    "term": "Preview, install and remove cursor themes",
+    "translation": "",
+    "context": "Preview, install and remove cursor themes",
+    "reference": "",
+    "comment": "cursor theme manager row description"
+  },
+  {
+    "term": "Preview, install and remove icon themes",
+    "translation": "",
+    "context": "Preview, install and remove icon themes",
+    "reference": "",
+    "comment": "icon theme manager row description"
   },
   {
     "term": "Preview: %1",
@@ -16695,6 +18242,13 @@
     "comment": ""
   },
   {
+    "term": "Private key",
+    "translation": "",
+    "context": "Private key",
+    "reference": "",
+    "comment": "WireGuard interface private key field | network authentication key file field"
+  },
+  {
     "term": "Process",
     "translation": "",
     "context": "Process",
@@ -16839,7 +18393,7 @@
     "translation": "",
     "context": "Profiles",
     "reference": "",
-    "comment": "card title for display configuration profiles"
+    "comment": "card title for display configuration profiles | settings page for saved setups of DMS settings"
   },
   {
     "term": "Protection",
@@ -16854,6 +18408,20 @@
     "context": "Protocol",
     "reference": "",
     "comment": "Label for printer protocol selector, e.g. ipp, ipps, lpd, socket"
+  },
+  {
+    "term": "Public key",
+    "translation": "",
+    "context": "Public key",
+    "reference": "",
+    "comment": "WireGuard key field"
+  },
+  {
+    "term": "Pulse",
+    "translation": "",
+    "context": "Pulse",
+    "reference": "",
+    "comment": "island activity settings"
   },
   {
     "term": "Pulse animation",
@@ -16916,7 +18484,7 @@
     "translation": "",
     "context": "Quality",
     "reference": "",
-    "comment": "text render quality dropdown label"
+    "comment": "screenshot JPEG quality slider label | text render quality dropdown label"
   },
   {
     "term": "Queue depth",
@@ -16961,6 +18529,13 @@
     "comment": "control center widget that holds small tiles in one row"
   },
   {
+    "term": "Quick with a slight bounce on movement",
+    "translation": "",
+    "context": "Quick with a slight bounce on movement",
+    "reference": "",
+    "comment": "animation style description"
+  },
+  {
     "term": "Quit",
     "translation": "",
     "context": "Quit",
@@ -16980,6 +18555,13 @@
     "context": "Quit or restart",
     "reference": "",
     "comment": "process menu: opens the quit, force quit, end tree and restart actions"
+  },
+  {
+    "term": "R",
+    "translation": "",
+    "context": "R",
+    "reference": "",
+    "comment": "system monitor bars: short marker for disk read"
   },
   {
     "term": "Radius",
@@ -17050,6 +18632,13 @@
     "context": "Reach local network devices while using an exit node",
     "reference": "",
     "comment": "Tailscale allow LAN access description"
+  },
+  {
+    "term": "Read",
+    "translation": "",
+    "context": "Read",
+    "reference": "",
+    "comment": "system monitor list card label, short for disk read"
   },
   {
     "term": "Read the blog post",
@@ -17227,11 +18816,32 @@
     "comment": "launcher history toggle description"
   },
   {
+    "term": "Rectangle",
+    "translation": "",
+    "context": "Rectangle",
+    "reference": "",
+    "comment": "screenshot markup tool, draws an outlined box"
+  },
+  {
     "term": "Red",
     "translation": "",
     "context": "Red",
     "reference": "",
     "comment": "seed color hue"
+  },
+  {
+    "term": "Redo",
+    "translation": "",
+    "context": "Redo",
+    "reference": "",
+    "comment": "screenshot markup, reapplies the last undone edit"
+  },
+  {
+    "term": "Redraws only what changed on screen",
+    "translation": "",
+    "context": "Redraws only what changed on screen",
+    "reference": "",
+    "comment": "render control toggle description"
   },
   {
     "term": "Reduce motion",
@@ -17441,7 +19051,7 @@
     "translation": "",
     "context": "Remove",
     "reference": "",
-    "comment": "verb, button that removes an item from a list"
+    "comment": "remove wallpaper folder tooltip | verb, button that removes an item from a list"
   },
   {
     "term": "Remove \"%1\" from the %2 group?",
@@ -17449,6 +19059,13 @@
     "context": "Remove \"%1\" from the %2 group?",
     "reference": "",
     "comment": "confirm dialog message, %1 is the username, %2 is the group name"
+  },
+  {
+    "term": "Remove '%1' from your icon folder?",
+    "translation": "",
+    "context": "Remove '%1' from your icon folder?",
+    "reference": "",
+    "comment": "icon theme remove confirmation, %1 is an icon theme name"
   },
   {
     "term": "Remove Shortcut?",
@@ -17465,11 +19082,39 @@
     "comment": ""
   },
   {
+    "term": "Remove all shortcuts",
+    "translation": "",
+    "context": "Remove all shortcuts",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Remove condition",
     "translation": "",
     "context": "Remove condition",
     "reference": "",
     "comment": "button in the notification rule editor, removes this match condition"
+  },
+  {
+    "term": "Remove cursor theme",
+    "translation": "",
+    "context": "Remove cursor theme",
+    "reference": "",
+    "comment": "cursor theme remove dialog title"
+  },
+  {
+    "term": "Remove every global shortcut %1 has registered?",
+    "translation": "",
+    "context": "Remove every global shortcut %1 has registered?",
+    "reference": "",
+    "comment": "remove global shortcuts confirmation, %1 is an app name"
+  },
+  {
+    "term": "Remove from folder",
+    "translation": "",
+    "context": "Remove from folder",
+    "reference": "",
+    "comment": ""
   },
   {
     "term": "Remove from recent colors",
@@ -17491,6 +19136,20 @@
     "context": "Remove greeter login access",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Remove icon theme",
+    "translation": "",
+    "context": "Remove icon theme",
+    "reference": "",
+    "comment": "icon theme remove dialog title"
+  },
+  {
+    "term": "Remove its include from your compositor config by hand.",
+    "translation": "",
+    "context": "Remove its include from your compositor config by hand.",
+    "reference": "",
+    "comment": "stop managing failed toast body"
   },
   {
     "term": "Remove match",
@@ -17563,6 +19222,13 @@
     "comment": ""
   },
   {
+    "term": "Render control",
+    "translation": "",
+    "context": "Render control",
+    "reference": "",
+    "comment": "toggle for the shell's own render loop"
+  },
+  {
     "term": "Renderer",
     "translation": "",
     "context": "Renderer",
@@ -17626,11 +19292,39 @@
     "comment": "keybind option tooltip"
   },
   {
+    "term": "Replace",
+    "translation": "",
+    "context": "Replace",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Replace a displayed layout label with custom text, e.g. \"am-phonetic-alt\" → \"am\"",
     "translation": "",
     "context": "Replace a displayed layout label with custom text, e.g. \"am-phonetic-alt\" → \"am\"",
     "reference": "",
     "comment": "explains the keyboard layout label override list"
+  },
+  {
+    "term": "Replace cursor theme",
+    "translation": "",
+    "context": "Replace cursor theme",
+    "reference": "",
+    "comment": "cursor theme install dialog title"
+  },
+  {
+    "term": "Replace icon theme",
+    "translation": "",
+    "context": "Replace icon theme",
+    "reference": "",
+    "comment": "icon theme install dialog title"
+  },
+  {
+    "term": "Replace settings of profile \"%1\"?",
+    "translation": "",
+    "context": "Replace settings of profile \"%1\"?",
+    "reference": "",
+    "comment": "confirm dialog message, %1 is the config profile name"
   },
   {
     "term": "Replacement",
@@ -17645,6 +19339,13 @@
     "context": "Report",
     "reference": "",
     "comment": "noun, printer state reason severity"
+  },
+  {
+    "term": "Required",
+    "translation": "",
+    "context": "Required",
+    "reference": "",
+    "comment": "connection fails if this IP version can't be configured"
   },
   {
     "term": "Required plugin: %1",
@@ -17759,6 +19460,13 @@
     "comment": ""
   },
   {
+    "term": "Reset to %1",
+    "translation": "",
+    "context": "Reset to %1",
+    "reference": "",
+    "comment": "animation groups reset button, %1 is the selected style name"
+  },
+  {
     "term": "Reset to default",
     "translation": "",
     "context": "Reset to default",
@@ -17833,7 +19541,7 @@
     "translation": "",
     "context": "Restore",
     "reference": "",
-    "comment": "verb, action restoring a minimized window"
+    "comment": "re-enable plugins disabled by Disable All | verb, action restoring a minimized window"
   },
   {
     "term": "Restore special workspace",
@@ -17850,6 +19558,13 @@
     "comment": "process action: continue a paused process (SIGCONT) | verb, button that resumes a paused printer"
   },
   {
+    "term": "Resume drawing",
+    "translation": "",
+    "context": "Resume drawing",
+    "reference": "",
+    "comment": "live annotation, takes the pointer back to draw"
+  },
+  {
     "term": "Retention",
     "translation": "",
     "context": "Retention",
@@ -17862,6 +19577,13 @@
     "context": "Retry",
     "reference": "",
     "comment": "retry failed action button"
+  },
+  {
+    "term": "Reuses the compiled interface from the last start",
+    "translation": "",
+    "context": "Reuses the compiled interface from the last start",
+    "reference": "",
+    "comment": "startup cache toggle description"
   },
   {
     "term": "Reverse scroll direction",
@@ -17878,11 +19600,18 @@
     "comment": "verb, undo display changes in confirmation dialog"
   },
   {
+    "term": "Revision",
+    "translation": "",
+    "context": "Revision",
+    "reference": "",
+    "comment": "about page runtime build revision"
+  },
+  {
     "term": "Right",
     "translation": "",
     "context": "Right",
     "reference": "",
-    "comment": "screen edge position"
+    "comment": "island activity settings | screen edge position"
   },
   {
     "term": "Right Center",
@@ -17916,6 +19645,13 @@
     "term": "Right-click a notification and choose \"Allow in Do Not Disturb\" to add an app",
     "translation": "",
     "context": "Right-click a notification and choose \"Allow in Do Not Disturb\" to add an app",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Right-click a widget for options",
+    "translation": "",
+    "context": "Right-click a widget for options",
     "reference": "",
     "comment": ""
   },
@@ -17959,7 +19695,7 @@
     "translation": "",
     "context": "Ring",
     "reference": "",
-    "comment": "noun, battery widget ring gauge style option"
+    "comment": "noun, battery widget ring gauge style option | system monitor tile style option"
   },
   {
     "term": "Ripple",
@@ -17997,11 +19733,25 @@
     "comment": "bar corner style option"
   },
   {
+    "term": "Rounded square",
+    "translation": "",
+    "context": "Rounded square",
+    "reference": "",
+    "comment": "icon shape"
+  },
+  {
     "term": "Route Bluetooth headset controls to the active DMS media player",
     "translation": "",
     "context": "Route Bluetooth headset controls to the active DMS media player",
     "reference": "",
     "comment": "Description of how Bluetooth headset media buttons select a player"
+  },
+  {
+    "term": "Routes",
+    "translation": "",
+    "context": "Routes",
+    "reference": "",
+    "comment": "network IP setting label"
   },
   {
     "term": "Routes launcher, dash, control center and notification shortcuts. Bar widget clicks always open their own popout",
@@ -18015,7 +19765,7 @@
     "translation": "",
     "context": "Rows",
     "reference": "",
-    "comment": "number of rows in the wallpaper grid option"
+    "comment": "number of rows in the wallpaper grid option | system monitor list style option"
   },
   {
     "term": "Rule",
@@ -18088,6 +19838,13 @@
     "comment": ""
   },
   {
+    "term": "Run Tailscale SSH server",
+    "translation": "",
+    "context": "Run Tailscale SSH server",
+    "reference": "",
+    "comment": "Tailscale setting"
+  },
+  {
     "term": "Run a program (e.g., firefox, kitty)",
     "translation": "",
     "context": "Run a program (e.g., firefox, kitty)",
@@ -18107,6 +19864,13 @@
     "context": "Run an external command on each wallpaper change and merge its JSON palette into %1 under a namespace, so templates can use e.g. %2. The command receives the wallpaper as %3 and the mode as %4.",
     "reference": "",
     "comment": "injected palettes settings description, %1 is matugen, %2 a template placeholder, %3 and %4 placeholder and variable pairs"
+  },
+  {
+    "term": "Run as exit node",
+    "translation": "",
+    "context": "Run as exit node",
+    "reference": "",
+    "comment": "Tailscale setting"
   },
   {
     "term": "Run full sync",
@@ -18165,6 +19929,13 @@
     "comment": "system update confirmation, the upgrade opens a terminal window"
   },
   {
+    "term": "Runs past the end",
+    "translation": "",
+    "context": "Runs past the end",
+    "reference": "",
+    "comment": "Lyrics have lines timed after the playing track ends"
+  },
+  {
     "term": "Runs programs on your computer",
     "translation": "",
     "context": "Runs programs on your computer",
@@ -18177,6 +19948,13 @@
     "context": "Runs shell commands",
     "reference": "",
     "comment": "plugin permission"
+  },
+  {
+    "term": "Runtime",
+    "translation": "",
+    "context": "Runtime",
+    "reference": "",
+    "comment": ""
   },
   {
     "term": "S",
@@ -18253,7 +20031,7 @@
     "translation": "",
     "context": "Save",
     "reference": "",
-    "comment": "save hotspot configuration action"
+    "comment": "save hotspot configuration action | screenshot markup, saves the annotated image to a file"
   },
   {
     "term": "Save & Start",
@@ -18305,11 +20083,32 @@
     "comment": ""
   },
   {
+    "term": "Save location, format, capture behavior",
+    "translation": "",
+    "context": "Save location, format, capture behavior",
+    "reference": "",
+    "comment": "settings sidebar hint for the screenshot page"
+  },
+  {
     "term": "Save password",
     "translation": "",
     "context": "Save password",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Save permanently",
+    "translation": "",
+    "context": "Save permanently",
+    "reference": "",
+    "comment": "network connection editor: keep the connection after reboot"
+  },
+  {
+    "term": "Save to file",
+    "translation": "",
+    "context": "Save to file",
+    "reference": "",
+    "comment": "screenshot settings toggle, write each capture to the save folder"
   },
   {
     "term": "Save your work first. Open apps will close.",
@@ -18380,6 +20179,13 @@
     "context": "Saves its state",
     "reference": "",
     "comment": "plugin permission"
+  },
+  {
+    "term": "Saving",
+    "translation": "",
+    "context": "Saving",
+    "reference": "",
+    "comment": "screenshot settings card title, where and how captures are written to disk"
   },
   {
     "term": "Saving...",
@@ -18494,6 +20300,13 @@
     "comment": "settings row title, stored screen time data"
   },
   {
+    "term": "Screenshot",
+    "translation": "",
+    "context": "Screenshot",
+    "reference": "",
+    "comment": "noun, settings page name for screenshot defaults"
+  },
+  {
     "term": "Screenshot unavailable",
     "translation": "",
     "context": "Screenshot unavailable",
@@ -18522,11 +20335,32 @@
     "comment": ""
   },
   {
+    "term": "Scroll capture interval",
+    "translation": "",
+    "context": "Scroll capture interval",
+    "reference": "",
+    "comment": "screenshot settings slider, time between frames while capturing a scrolling region"
+  },
+  {
+    "term": "Scroll lyrics",
+    "translation": "",
+    "context": "Scroll lyrics",
+    "reference": "",
+    "comment": "Media player option that moves a lyric line too wide for the pill instead of clipping it"
+  },
+  {
     "term": "Scroll method",
     "translation": "",
     "context": "Scroll method",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Scroll shadows",
+    "translation": "",
+    "context": "Scroll shadows",
+    "reference": "",
+    "comment": "theme settings toggle, fade content at the edges of scrollable views"
   },
   {
     "term": "Scroll song title",
@@ -18590,6 +20424,13 @@
     "context": "Search devices...",
     "reference": "",
     "comment": "Tailscale device search placeholder"
+  },
+  {
+    "term": "Search domains",
+    "translation": "",
+    "context": "Search domains",
+    "reference": "",
+    "comment": "network DNS setting"
   },
   {
     "term": "Search or press a shortcut...",
@@ -18785,7 +20626,14 @@
     "translation": "",
     "context": "Select",
     "reference": "",
-    "comment": "verb, dropdown placeholder or option that opens a picker | verb, primary action label for a launcher plugin item"
+    "comment": "screenshot draw tool, select and move annotations | verb, dropdown placeholder or option that opens a picker | verb, primary action label for a launcher plugin item"
+  },
+  {
+    "term": "Select All",
+    "translation": "",
+    "context": "Select All",
+    "reference": "",
+    "comment": ""
   },
   {
     "term": "Select Application",
@@ -18921,11 +20769,25 @@
     "comment": "network status"
   },
   {
+    "term": "Select settings to import",
+    "translation": "",
+    "context": "Select settings to import",
+    "reference": "",
+    "comment": "config profile editor note, shown right after importing a profile"
+  },
+  {
     "term": "Selected image file not found.",
     "translation": "",
     "context": "Selected image file not found.",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Sending file to %1...",
+    "translation": "",
+    "context": "Sending file to %1...",
+    "reference": "",
+    "comment": "Phone Connect share action"
   },
   {
     "term": "Sends the playing artist and album name to Apple",
@@ -19023,7 +20885,14 @@
     "translation": "",
     "context": "Server",
     "reference": "",
-    "comment": "computer chassis type"
+    "comment": "Tailscale login server URL field label | computer chassis type"
+  },
+  {
+    "term": "Server is not verified without a CA certificate",
+    "translation": "",
+    "context": "Server is not verified without a CA certificate",
+    "reference": "",
+    "comment": "802.1X warning when no CA certificate is set"
   },
   {
     "term": "Service",
@@ -19052,6 +20921,13 @@
     "context": "Session switching requires loginctl/elogind",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Set by activity",
+    "translation": "",
+    "context": "Set by activity",
+    "reference": "",
+    "comment": "island activity settings"
   },
   {
     "term": "Set custom device name",
@@ -19142,7 +21018,7 @@
     "translation": "",
     "context": "Settings",
     "reference": "",
-    "comment": "settings window title"
+    "comment": "settings window title | wallpaper folder menu option"
   },
   {
     "term": "Settings are read-only. Changes will not persist.",
@@ -19173,11 +21049,18 @@
     "comment": "verb, button that creates the dms include config file"
   },
   {
+    "term": "Shaded icons",
+    "translation": "",
+    "context": "Shaded icons",
+    "reference": "",
+    "comment": "Dux Icons toggle, fills each icon badge with a soft top-to-bottom gradient"
+  },
+  {
     "term": "Shadow",
     "translation": "",
     "context": "Shadow",
     "reference": "",
-    "comment": "bar shadow settings card"
+    "comment": "bar shadow settings card | desktop widget text halo when there is no background"
   },
   {
     "term": "Shadow Color",
@@ -19192,6 +21075,13 @@
     "context": "Shadows",
     "reference": "",
     "comment": "noun, settings page name and toggle for surface shadows"
+  },
+  {
+    "term": "Shape of the album cover in the pill",
+    "translation": "",
+    "context": "Shape of the album cover in the pill",
+    "reference": "",
+    "comment": "media widget artwork shape description"
   },
   {
     "term": "Shapes use the %1 theme's colors",
@@ -19219,7 +21109,7 @@
     "translation": "",
     "context": "Shared",
     "reference": "",
-    "comment": "RAM shared between processes (shmem) | resident shared memory (shmem)"
+    "comment": "IP method: share this connection with other computers | RAM shared between processes (shmem) | resident shared memory (shmem)"
   },
   {
     "term": "Shared memory",
@@ -19236,11 +21126,25 @@
     "comment": "island settings dropdown label, which island handles global shortcuts"
   },
   {
+    "term": "Sheet",
+    "translation": "",
+    "context": "Sheet",
+    "reference": "",
+    "comment": "control center edit layout option, widget list in a sheet over the panel"
+  },
+  {
     "term": "Shell",
     "translation": "",
     "context": "Shell",
     "reference": "",
     "comment": "command line shell, e.g. zsh | noun, keybind editor field label for a shell command"
+  },
+  {
+    "term": "Shell animations",
+    "translation": "",
+    "context": "Shell animations",
+    "reference": "",
+    "comment": "settings card title, motion of DMS surfaces"
   },
   {
     "term": "Shift+Enter to copy",
@@ -19261,7 +21165,7 @@
     "translation": "",
     "context": "Short",
     "reference": "",
-    "comment": "date format option"
+    "comment": "animation duration option | date format option"
   },
   {
     "term": "Shortcut",
@@ -19278,6 +21182,13 @@
     "comment": "singular, keybind list heading, %1 is 1"
   },
   {
+    "term": "Shortcut hints",
+    "translation": "",
+    "context": "Shortcut hints",
+    "reference": "",
+    "comment": "screenshot settings dropdown, size of the key hints shown while selecting a region"
+  },
+  {
     "term": "Shortcuts",
     "translation": "",
     "context": "Shortcuts",
@@ -19290,6 +21201,13 @@
     "context": "Shortcuts (%1)",
     "reference": "",
     "comment": "plural, keybind list heading, %1 is a count"
+  },
+  {
+    "term": "Shortcuts apps use from any window",
+    "translation": "",
+    "context": "Shortcuts apps use from any window",
+    "reference": "",
+    "comment": "settings sidebar hint for the global shortcuts page"
   },
   {
     "term": "Shortcuts, keyboard, mouse",
@@ -19306,11 +21224,18 @@
     "comment": "bar length padding slider description"
   },
   {
+    "term": "Shorter",
+    "translation": "",
+    "context": "Shorter",
+    "reference": "",
+    "comment": "animation duration option"
+  },
+  {
     "term": "Show",
     "translation": "",
     "context": "Show",
     "reference": "",
-    "comment": "island settings: satellite widgets toggle | island settings: show home group"
+    "comment": "island settings: satellite widgets toggle | island settings: show home group | system monitor: values shown for a metric | wallpaper folder option"
   },
   {
     "term": "Show \"config reloaded\" toast",
@@ -19325,6 +21250,13 @@
     "context": "Show AM/PM",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Show Edit widgets in app context menu",
+    "translation": "",
+    "context": "Show Edit widgets in app context menu",
+    "reference": "",
+    "comment": "dock setting to show or hide the Edit widgets action in an app's context menu"
   },
   {
     "term": "Show I/O",
@@ -19360,6 +21292,34 @@
     "context": "Show all tags",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Show an icon and title in the island; keep the original notification in the notification center",
+    "translation": "",
+    "context": "Show an icon and title in the island; keep the original notification in the notification center",
+    "reference": "",
+    "comment": "notification rule island summary settings"
+  },
+  {
+    "term": "Show app descriptions",
+    "translation": "",
+    "context": "Show app descriptions",
+    "reference": "",
+    "comment": "Toggle descriptions in launcher list results"
+  },
+  {
+    "term": "Show app icons",
+    "translation": "",
+    "context": "Show app icons",
+    "reference": "",
+    "comment": "Toggle icons in launcher list and grid results"
+  },
+  {
+    "term": "Show app name",
+    "translation": "",
+    "context": "Show app name",
+    "reference": "",
+    "comment": "focused window bar widget option"
   },
   {
     "term": "Show apps",
@@ -19558,6 +21518,13 @@
     "comment": "toggle in control center disk usage widget to turn mount path display on or off"
   },
   {
+    "term": "Show notification",
+    "translation": "",
+    "context": "Show notification",
+    "reference": "",
+    "comment": "screenshot settings toggle, show a notification after each capture"
+  },
+  {
     "term": "Show occupied only",
     "translation": "",
     "context": "Show occupied only",
@@ -19654,6 +21621,13 @@
     "context": "Show restart DMS",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Show running apps",
+    "translation": "",
+    "context": "Show running apps",
+    "reference": "",
+    "comment": "Dock setting: also show open apps that are not pinned"
   },
   {
     "term": "Show scratchpads",
@@ -19773,6 +21747,20 @@
     "context": "Show window",
     "reference": "",
     "comment": "button, brings back the floating system update window"
+  },
+  {
+    "term": "Show window title",
+    "translation": "",
+    "context": "Show window title",
+    "reference": "",
+    "comment": "focused window bar widget option"
+  },
+  {
+    "term": "Show workspace changes in the island instead of the regular OSD",
+    "translation": "",
+    "context": "Show workspace changes in the island instead of the regular OSD",
+    "reference": "",
+    "comment": "island settings: workspace OSD toggle description"
   },
   {
     "term": "Shown only while the microphone, camera or screen sharing is in use",
@@ -19971,6 +21959,13 @@
     "comment": "memory slots with a module installed, of all slots"
   },
   {
+    "term": "Slowdown",
+    "translation": "",
+    "context": "Slowdown",
+    "reference": "",
+    "comment": "animation slider, global duration multiplier"
+  },
+  {
     "term": "Small",
     "translation": "",
     "context": "Small",
@@ -20160,6 +22155,20 @@
     "comment": ""
   },
   {
+    "term": "Space reserved for editing\nFinish to apply the selected height.",
+    "translation": "",
+    "context": "Space reserved for editing\nFinish to apply the selected height.",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Space reserved for stable page height",
+    "translation": "",
+    "context": "Space reserved for stable page height",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Space-separated; {image} and {mode} are substituted",
     "translation": "",
     "context": "Space-separated; {image} and {mode} are substituted",
@@ -20221,6 +22230,13 @@
     "context": "Speed, scrolling, tap to click",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Spin",
+    "translation": "",
+    "context": "Spin",
+    "reference": "",
+    "comment": "island activity settings"
   },
   {
     "term": "Spin-up time",
@@ -20318,14 +22334,28 @@
     "translation": "",
     "context": "Square",
     "reference": "",
-    "comment": "bar corner style option"
+    "comment": "bar corner style option | icon shape"
+  },
+  {
+    "term": "Squircle",
+    "translation": "",
+    "context": "Squircle",
+    "reference": "",
+    "comment": "icon shape"
   },
   {
     "term": "Stable",
     "translation": "",
     "context": "Stable",
     "reference": "",
-    "comment": "release channel"
+    "comment": "cloned MAC: stable per network | release channel"
+  },
+  {
+    "term": "Stable privacy",
+    "translation": "",
+    "context": "Stable privacy",
+    "reference": "",
+    "comment": "IPv6 address generation mode"
   },
   {
     "term": "Stack",
@@ -20426,6 +22456,13 @@
     "comment": "theme settings card title, what happens to the dynamic theme when DMS starts"
   },
   {
+    "term": "Startup cache",
+    "translation": "",
+    "context": "Startup cache",
+    "reference": "",
+    "comment": "toggle for the compiled interface cache"
+  },
+  {
     "term": "State",
     "translation": "",
     "context": "State",
@@ -20437,7 +22474,7 @@
     "translation": "",
     "context": "Status",
     "reference": "",
-    "comment": "noun, settings row or section title showing current state"
+    "comment": "Tailscale connection switch title | noun, settings row or section title showing current state"
   },
   {
     "term": "Stay awake with the lid closed",
@@ -20461,6 +22498,13 @@
     "comment": "bar hide when windows open toggle description"
   },
   {
+    "term": "Stock %1 animations",
+    "translation": "",
+    "context": "Stock %1 animations",
+    "reference": "",
+    "comment": "animation style description, %1 is the compositor name"
+  },
+  {
     "term": "Stop",
     "translation": "",
     "context": "Stop",
@@ -20473,6 +22517,20 @@
     "context": "Stop ignoring %1",
     "reference": "",
     "comment": "system updater button tooltip, %1 is the package name"
+  },
+  {
+    "term": "Stop managing",
+    "translation": "",
+    "context": "Stop managing",
+    "reference": "",
+    "comment": "button, dms stops including its config file in the compositor config"
+  },
+  {
+    "term": "Stop managing comments out the include in your %1 config and keeps the DMS file, so your own settings take over. Setup on the page turns it back on.",
+    "translation": "",
+    "context": "Stop managing comments out the include in your %1 config and keeps the DMS file, so your own settings take over. Setup on the page turns it back on.",
+    "reference": "",
+    "comment": "compositor includes page note, %1 is the compositor name"
   },
   {
     "term": "Stopped",
@@ -20494,6 +22552,13 @@
     "context": "Stopping",
     "reference": "",
     "comment": "printer state reason"
+  },
+  {
+    "term": "Stopping...",
+    "translation": "",
+    "context": "Stopping...",
+    "reference": "",
+    "comment": "button state while dms stops managing a compositor config file"
   },
   {
     "term": "Stops syncing your DMS settings to the greeter. Set up links them again.",
@@ -20545,6 +22610,13 @@
     "comment": "settings sidebar hint for the launcher page"
   },
   {
+    "term": "Style, speed, bounce",
+    "translation": "",
+    "context": "Style, speed, bounce",
+    "reference": "",
+    "comment": "settings sidebar hint for the compositor animations page"
+  },
+  {
     "term": "Styles outside of Default use more GPU",
     "translation": "",
     "context": "Styles outside of Default use more GPU",
@@ -20552,11 +22624,32 @@
     "comment": "Hyprland blur variant dropdown description"
   },
   {
+    "term": "Subnet routes",
+    "translation": "",
+    "context": "Subnet routes",
+    "reference": "",
+    "comment": "routes this device advertises to the tailnet"
+  },
+  {
     "term": "Success",
     "translation": "",
     "context": "Success",
     "reference": "",
     "comment": "noun, theme color name in active color dropdown"
+  },
+  {
+    "term": "Suffix",
+    "translation": "",
+    "context": "Suffix",
+    "reference": "",
+    "comment": "server name match type"
+  },
+  {
+    "term": "Summarize matching notifications",
+    "translation": "",
+    "context": "Summarize matching notifications",
+    "reference": "",
+    "comment": "notification rule island summary settings"
   },
   {
     "term": "Summary",
@@ -20762,6 +22855,13 @@
     "comment": ""
   },
   {
+    "term": "Switch between saved setups",
+    "translation": "",
+    "context": "Switch between saved setups",
+    "reference": "",
+    "comment": "control center widget description for config profiles"
+  },
+  {
     "term": "Switch between the first input method and the active one",
     "translation": "",
     "context": "Switch between the first input method and the active one",
@@ -20811,6 +22911,13 @@
     "comment": "verb, button that copies settings to the login greeter"
   },
   {
+    "term": "Sync changes to this profile",
+    "translation": "",
+    "context": "Sync changes to this profile",
+    "reference": "",
+    "comment": "config profile toggle: write later setting changes into this profile"
+  },
+  {
     "term": "Sync completed successfully.",
     "translation": "",
     "context": "Sync completed successfully.",
@@ -20839,13 +22946,6 @@
     "comment": ""
   },
   {
-    "term": "Sync popouts and modals",
-    "translation": "",
-    "context": "Sync popouts and modals",
-    "reference": "",
-    "comment": ""
-  },
-  {
     "term": "Sync position across displays",
     "translation": "",
     "context": "Sync position across displays",
@@ -20858,6 +22958,13 @@
     "context": "Sync with portal",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Synchronized",
+    "translation": "",
+    "context": "Synchronized",
+    "reference": "",
+    "comment": "config profile, screen reader: setting changes are saved into the active profile"
   },
   {
     "term": "Syncing...",
@@ -21105,6 +23212,13 @@
     "comment": "Warning when Tailscale service is not running"
   },
   {
+    "term": "Take screenshot",
+    "translation": "",
+    "context": "Take screenshot",
+    "reference": "",
+    "comment": "config profile image: take a screenshot of the current screen"
+  },
+  {
     "term": "Tap and drag",
     "translation": "",
     "context": "Tap and drag",
@@ -21138,6 +23252,13 @@
     "context": "Teal",
     "reference": "",
     "comment": "seed color hue"
+  },
+  {
+    "term": "Temp",
+    "translation": "",
+    "context": "Temp",
+    "reference": "",
+    "comment": "system monitor list card label, short for temperature"
   },
   {
     "term": "Temperature",
@@ -21189,6 +23310,13 @@
     "comment": ""
   },
   {
+    "term": "Terminals and file managers paste the saved file",
+    "translation": "",
+    "context": "Terminals and file managers paste the saved file",
+    "reference": "",
+    "comment": "screenshot settings description for copying the saved file"
+  },
+  {
     "term": "Tertiary",
     "translation": "",
     "context": "Tertiary",
@@ -21235,7 +23363,7 @@
     "translation": "",
     "context": "Text",
     "reference": "",
-    "comment": "text color"
+    "comment": "screenshot markup tool, adds a text label | text color"
   },
   {
     "term": "Text Color",
@@ -21250,6 +23378,13 @@
     "context": "Text editor",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Text rendering",
+    "translation": "",
+    "context": "Text rendering",
+    "reference": "",
+    "comment": "settings card title for the text renderer options"
   },
   {
     "term": "Text style",
@@ -21399,6 +23534,13 @@
     "comment": "greeter unlink confirmation"
   },
   {
+    "term": "The new profile uses your current settings for the groups selected below",
+    "translation": "",
+    "context": "The new profile uses your current settings for the groups selected below",
+    "reference": "",
+    "comment": "config profile editor note, shown when creating a profile"
+  },
+  {
     "term": "The next enabled provider is used when one fails.",
     "translation": "",
     "context": "The next enabled provider is used when one fails.",
@@ -21483,6 +23625,20 @@
     "comment": "matugen source display dropdown description"
   },
   {
+    "term": "Theme colour behind the collapsed island",
+    "translation": "",
+    "context": "Theme colour behind the collapsed island",
+    "reference": "",
+    "comment": "island activity settings"
+  },
+  {
+    "term": "Theme colour behind the expanded island",
+    "translation": "",
+    "context": "Theme colour behind the expanded island",
+    "reference": "",
+    "comment": "island activity settings"
+  },
+  {
     "term": "Theme extracted to: %1",
     "translation": "",
     "context": "Theme extracted to: %1",
@@ -21511,11 +23667,11 @@
     "comment": ""
   },
   {
-    "term": "Theme, palette, dark mode",
+    "term": "Themed app icons",
     "translation": "",
-    "context": "Theme, palette, dark mode",
+    "context": "Themed app icons",
     "reference": "",
-    "comment": "settings sidebar hint for the wallpaper and colors page"
+    "comment": "Dux Icons toggle, paints app icons in tones of the theme colors"
   },
   {
     "term": "Themes",
@@ -21567,6 +23723,13 @@
     "comment": "third-party plugin warning, %1 is the product name"
   },
   {
+    "term": "This Wi-Fi adapter can't host a WPA3 hotspot. Use WPA2.",
+    "translation": "",
+    "context": "This Wi-Fi adapter can't host a WPA3 hotspot. Use WPA2.",
+    "reference": "",
+    "comment": "hotspot WPA3 activation failure message"
+  },
+  {
     "term": "This bar is the Island",
     "translation": "",
     "context": "This bar is the Island",
@@ -21579,6 +23742,20 @@
     "context": "This bind is overridden by %1",
     "reference": "",
     "comment": "keybind conflict notice, %1 is the compositor config file"
+  },
+  {
+    "term": "This command has options the editor doesn't manage, so edit them in your config file",
+    "translation": "",
+    "context": "This command has options the editor doesn't manage, so edit them in your config file",
+    "reference": "",
+    "comment": "keybind editor notice for a hand-written screenshot bind with extra options"
+  },
+  {
+    "term": "This connection is temporary and is lost on reboot.",
+    "translation": "",
+    "context": "This connection is temporary and is lost on reboot.",
+    "reference": "",
+    "comment": "network connection editor note"
   },
   {
     "term": "This device",
@@ -21735,6 +23912,13 @@
     "comment": ""
   },
   {
+    "term": "Tiles",
+    "translation": "",
+    "context": "Tiles",
+    "reference": "",
+    "comment": "system monitor layout and style option"
+  },
+  {
     "term": "Tiling",
     "translation": "",
     "context": "Tiling",
@@ -21760,7 +23944,7 @@
     "translation": "",
     "context": "Time & weather",
     "reference": "",
-    "comment": "island settings: button to weather tab"
+    "comment": ""
   },
   {
     "term": "Time and date",
@@ -21866,6 +24050,13 @@
     "context": "Title regex (optional)",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Title template",
+    "translation": "",
+    "context": "Title template",
+    "reference": "",
+    "comment": "notification rule island summary settings"
   },
   {
     "term": "To Full",
@@ -22309,6 +24500,13 @@
     "comment": "lock screen hide until typing behavior"
   },
   {
+    "term": "Typography",
+    "translation": "",
+    "context": "Typography",
+    "reference": "",
+    "comment": "settings card title for font options"
+  },
+  {
     "term": "URL",
     "translation": "",
     "context": "URL",
@@ -22341,7 +24539,7 @@
     "translation": "",
     "context": "Undo",
     "reference": "",
-    "comment": "reinstall the plugin that was just uninstalled"
+    "comment": "reinstall the plugin that was just uninstalled | screenshot markup, reverts the last edit"
   },
   {
     "term": "Unfocused color",
@@ -22426,13 +24624,6 @@
     "context": "Unknown Artist",
     "reference": "",
     "comment": "island media face: fallback artist"
-  },
-  {
-    "term": "Unknown Config",
-    "translation": "",
-    "context": "Unknown Config",
-    "reference": "",
-    "comment": ""
   },
   {
     "term": "Unknown Device",
@@ -22694,6 +24885,13 @@
     "comment": "plugin update error, %1 is the error message"
   },
   {
+    "term": "Update from current settings",
+    "translation": "",
+    "context": "Update from current settings",
+    "reference": "",
+    "comment": "config profile action: overwrite the profile with the current setup"
+  },
+  {
     "term": "Update plugin",
     "translation": "",
     "context": "Update plugin",
@@ -22820,6 +25018,20 @@
     "comment": ""
   },
   {
+    "term": "Use Tailscale DNS settings",
+    "translation": "",
+    "context": "Use Tailscale DNS settings",
+    "reference": "",
+    "comment": "Tailscale setting"
+  },
+  {
+    "term": "Use Tailscale subnets",
+    "translation": "",
+    "context": "Use Tailscale subnets",
+    "reference": "",
+    "comment": "Tailscale setting"
+  },
+  {
     "term": "Use a security key for lock screen authentication",
     "translation": "",
     "context": "Use a security key for lock screen authentication",
@@ -22869,6 +25081,13 @@
     "comment": "lock screen fingerprint setting"
   },
   {
+    "term": "Use fully rounded ends for the collapsed island",
+    "translation": "",
+    "context": "Use fully rounded ends for the collapsed island",
+    "reference": "",
+    "comment": "island activity settings"
+  },
+  {
     "term": "Use inline expansion",
     "translation": "",
     "context": "Use inline expansion",
@@ -22881,6 +25100,13 @@
     "context": "Use keys 1-3 or arrows, Enter/Space to select",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Use only for resources on its network",
+    "translation": "",
+    "context": "Use only for resources on its network",
+    "reference": "",
+    "comment": "network IP setting: never use this connection as the default route"
   },
   {
     "term": "Use overlay layer",
@@ -22911,11 +25137,25 @@
     "comment": "system PAM policy toggle"
   },
   {
+    "term": "Use system certificates",
+    "translation": "",
+    "context": "Use system certificates",
+    "reference": "",
+    "comment": "802.1X CA certificate source option"
+  },
+  {
     "term": "Use the scaled battery level for alert thresholds and percentages",
     "translation": "",
     "context": "Use the scaled battery level for alert thresholds and percentages",
     "reference": "",
     "comment": "battery settings: explains that low and critical alerts trigger and report percentages on the scaled battery level"
+  },
+  {
+    "term": "Use {summary}, {body}, or {appName} to insert notification text",
+    "translation": "",
+    "context": "Use {summary}, {body}, or {appName} to insert notification text",
+    "reference": "",
+    "comment": "notification rule island summary settings"
   },
   {
     "term": "Used",
@@ -23174,7 +25414,7 @@
     "translation": "",
     "context": "Vertical",
     "reference": "",
-    "comment": "island settings: free island orientation"
+    "comment": "island settings: free island orientation | system monitor bars orientation"
   },
   {
     "term": "Vertical Deck",
@@ -23408,11 +25648,11 @@
     "comment": "West compass direction"
   },
   {
-    "term": "WPA2 password",
+    "term": "W",
     "translation": "",
-    "context": "WPA2 password",
+    "context": "system monitor bars: short marker for disk write",
     "reference": "",
-    "comment": "hotspot security summary"
+    "comment": ""
   },
   {
     "term": "WWN",
@@ -23427,6 +25667,13 @@
     "context": "Waiting",
     "reference": "",
     "comment": "process state: uninterruptible wait, usually for disk"
+  },
+  {
+    "term": "Wake on LAN",
+    "translation": "",
+    "context": "Wake on LAN",
+    "reference": "",
+    "comment": "Ethernet setting"
   },
   {
     "term": "Wallpaper",
@@ -23457,6 +25704,13 @@
     "comment": ""
   },
   {
+    "term": "Wallpaper layer",
+    "translation": "",
+    "context": "Wallpaper layer",
+    "reference": "",
+    "comment": "settings card title for how the wallpaper surface is drawn"
+  },
+  {
     "term": "Wallpaper processing failed",
     "translation": "",
     "context": "Wallpaper processing failed",
@@ -23471,11 +25725,18 @@
     "comment": "wallpaper error"
   },
   {
+    "term": "Wallpaper, colors, typography",
+    "translation": "",
+    "context": "Wallpaper, colors, typography",
+    "reference": "",
+    "comment": "settings sidebar hint for the appearance page"
+  },
+  {
     "term": "Wallpapers",
     "translation": "",
     "context": "Wallpapers",
     "reference": "",
-    "comment": "dashboard tab name"
+    "comment": "dashboard tab name | wallpaper folders settings row | wallpaper folders settings tab"
   },
   {
     "term": "Warning",
@@ -23597,6 +25858,13 @@
     "comment": ""
   },
   {
+    "term": "Where the widget list sits while editing the Control Center",
+    "translation": "",
+    "context": "Where the widget list sits while editing the Control Center",
+    "reference": "",
+    "comment": "control center edit layout setting description"
+  },
+  {
     "term": "Which PAM service the lock screen uses to authenticate",
     "translation": "",
     "context": "Which PAM service the lock screen uses to authenticate",
@@ -23623,6 +25891,20 @@
     "context": "While download and upload are both under 1 KB/s",
     "reference": "",
     "comment": "network speed widget option description for hide when idle"
+  },
+  {
+    "term": "While playing",
+    "translation": "",
+    "context": "While playing",
+    "reference": "",
+    "comment": "media widget visualizer option"
+  },
+  {
+    "term": "While playing hides the meter when paused, so the pill narrows",
+    "translation": "",
+    "context": "While playing hides the meter when paused, so the pill narrows",
+    "reference": "",
+    "comment": "media widget visualizer mode description"
   },
   {
     "term": "White",
@@ -23672,13 +25954,6 @@
     "context": "Wi-Fi is disabled",
     "reference": "",
     "comment": "hotspot start error title"
-  },
-  {
-    "term": "Wi-Fi is disabled. You can still edit and save hotspot settings, but starting the hotspot requires Wi-Fi to be enabled.",
-    "translation": "",
-    "context": "Wi-Fi is disabled. You can still edit and save hotspot settings, but starting the hotspot requires Wi-Fi to be enabled.",
-    "reference": "",
-    "comment": "hotspot WiFi requirement explanation"
   },
   {
     "term": "Wi-Fi network",
@@ -23819,6 +26094,13 @@
     "context": "Width",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Wiggle",
+    "translation": "",
+    "context": "Wiggle",
+    "reference": "",
+    "comment": "island activity settings"
   },
   {
     "term": "Will disconnect \"%1\"",
@@ -23968,6 +26250,13 @@
     "comment": "default app selector label for word processor program"
   },
   {
+    "term": "Word synced",
+    "translation": "",
+    "context": "Word synced",
+    "reference": "",
+    "comment": "Lyrics are timed per word"
+  },
+  {
     "term": "Working directory",
     "translation": "",
     "context": "Working directory",
@@ -24057,6 +26346,13 @@
     "context": "Wrap the app command. %command% is replaced with the actual executable",
     "reference": "",
     "comment": "autostart command field hint, keep %command% verbatim"
+  },
+  {
+    "term": "Write",
+    "translation": "",
+    "context": "Write",
+    "reference": "",
+    "comment": "system monitor list card label, short for disk write"
   },
   {
     "term": "Write cache",
@@ -24157,6 +26453,13 @@
     "comment": "notification history filter"
   },
   {
+    "term": "You don't have permission to change this connection.",
+    "translation": "",
+    "context": "You don't have permission to change this connection.",
+    "reference": "",
+    "comment": "network connection editor note"
+  },
+  {
     "term": "You have unsaved changes. Save before continuing?",
     "translation": "",
     "context": "You have unsaved changes. Save before continuing?",
@@ -24211,13 +26514,6 @@
     "context": "Your hotspot is running.",
     "reference": "",
     "comment": "hotspot active status message"
-  },
-  {
-    "term": "Your hotspot profile is saved and ready to start.",
-    "translation": "",
-    "context": "Your hotspot profile is saved and ready to start.",
-    "reference": "",
-    "comment": "configured hotspot status message"
   },
   {
     "term": "Your keyboard layout puts %1 above the first level, so this bind will never fire. Pick a key the layout types without an extra layer.",
@@ -24455,7 +26751,7 @@
     "translation": "",
     "context": "leave empty for default",
     "reference": "",
-    "comment": ""
+    "comment": "Tailscale login server placeholder"
   },
   {
     "term": "loginctl activate failed (exit %1)",

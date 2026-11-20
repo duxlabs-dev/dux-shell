@@ -96,7 +96,7 @@ go work init ./core ../dankgo
 
 Everything under `quickshell/DCommon/` (core widgets, the file browser, scroll physics, bundled fonts) is shared across the DMS suite and lives in the `dux-qml-common` submodule. It is a normal git worktree:
 
-1. Edit files under `dux-qml-common/` (or through the `quickshell/DCommon` symlink — same files) and test in the running shell; hot reload works as usual. For isolated widget work, the library is its own runnable config with a gallery: `qs -c dux-qml-common`.
+1. Edit files under `dux-qml-common/` (or through the `quickshell/DCommon` symlink — same files) and test in the running shell; hot reload works as usual. For isolated widget work, the library is its own runnable config with a gallery: `dms qs -c dux-qml-common`.
 2. Commit and PR those changes in the `dux-qml-common` repo: `cd dux-qml-common && git switch -c my-change`, push, open the PR there.
 3. Once merged, bump the pointer here: `make update-common` (updates the submodule and the nix flake input together), then commit alongside any DMS-side changes. If you only bump the submodule, CI syncs `flake.lock` to it automatically on master.
 
