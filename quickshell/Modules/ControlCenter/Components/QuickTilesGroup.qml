@@ -80,6 +80,7 @@ Item {
         liftedWidth = member.ownWidth;
         liftedIndex = member.modelData.index;
         host.memberDragging = true;
+        dropSlot = 0;
         moveLifted(member, scenePoint);
     }
 
