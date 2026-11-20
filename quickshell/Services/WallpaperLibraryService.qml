@@ -13,6 +13,7 @@ Singleton {
     readonly property var log: Log.scoped("WallpaperLibraryService")
 
     property int refCount: 0
+    property int holders: 0
     readonly property bool held: refCount > 0
 
     readonly property int requiredApiVersion: 41
@@ -43,6 +44,14 @@ Singleton {
         requestId++;
         requestKey = "";
         store([], [], false);
+    }
+    // Each new holder lists the folders again, so files added while another holder kept the list show up.
+    onRefCountChanged: {
+        if (refCount > holders) {
+            requestKey = "";
+            Qt.callLater(refresh);
+        }
+        holders = refCount;
     }
     onEnabledChanged: Qt.callLater(refresh)
     onFoldersChanged: Qt.callLater(refresh)
