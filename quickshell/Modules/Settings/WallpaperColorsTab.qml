@@ -43,13 +43,12 @@ Column {
         return file ? "svg:" + file : "";
     })
     readonly property var iconThemeGlyphs: iconThemeImages.map(image => image ? "" : "palette")
-    // Cursor theme name -> its default pointer as a PNG data URL, from the same command.
-    property var cursorPointers: ({})
+    // Cursor theme name -> { removable, pointer }, from `dms icon-theme list`.
     property var cursorLibrary: ({})
     property bool cursorLibraryOpen: false
     property bool cursorInstalling: false
     property bool cursorInstallFolder: false
-    readonly property var cursorThemeImages: (cachedCursorThemes || []).map(name => cursorPointers[name] ? "svg:" + cursorPointers[name] : "")
+    readonly property var cursorThemeImages: (cachedCursorThemes || []).map(name => cursorLibrary[name]?.pointer ? "svg:" + cursorLibrary[name].pointer : "")
     readonly property var cursorThemeGlyphs: cursorThemeImages.map(image => image ? "" : "arrow_selector_tool")
     // A generation of Dux Icons is a new directory, so its preview files move with every rebuild.
     readonly property string iconGeneration: SettingsData.iconFolderState?.applied ?? ""
@@ -140,7 +139,6 @@ Column {
     function loadIconLibrary() {
         Proc.runCommand("iconLibrary", [Proc.dmsBin, "icon-theme", "list", "--state-dir", Theme.stateDir], (output, exitCode) => {
             root.iconLibrary = IconFolders.parseLibrary(output);
-            root.cursorPointers = IconFolders.parsePointers(output);
             root.cursorLibrary = IconFolders.parseCursorLibrary(output);
         }, 0, undefined, root);
     }
@@ -155,10 +153,10 @@ Column {
         loadIconLibrary();
     }
 
-    function iconRefusalText(reply) {
+    function iconRefusalText(reply, kind) {
         switch (reply.code) {
         case "no-theme":
-            return I18n.tr("No icon theme found there", "icon theme install error, the picked archive or folder holds no theme");
+            return kind === "cursor" ? I18n.tr("No cursor theme found there", "cursor theme install error, the picked archive or folder holds no theme") : I18n.tr("No icon theme found there", "icon theme install error, the picked archive or folder holds no theme");
         case "in-use":
             return I18n.tr("%1 still uses it", "icon theme remove error, %1 is a list of icon theme names").arg(reply.themes.map(IconFolders.label).join(", "));
         case "not-removable":
@@ -205,7 +203,7 @@ Column {
             }
             if (reply.code !== "exists") {
                 const title = isCursor ? I18n.tr("Cursor theme not installed", "cursor theme install error toast title") : I18n.tr("Icon theme not installed", "icon theme install error toast title");
-                ToastService.showError(title, root.iconRefusalText(reply));
+                ToastService.showError(title, root.iconRefusalText(reply, kind));
                 return;
             }
             profileConfirm.showWithOptions({
@@ -235,7 +233,7 @@ Column {
         const isCursor = kind === "cursor";
         const subcmd = isCursor ? "cursor-theme" : "icon-theme";
         const args = [Proc.dmsBin, subcmd, "remove", "--state-dir", Theme.stateDir];
-        for (const used of [SettingsData.iconThemeDark, SettingsData.iconThemeLight, SettingsData.systemDefaultIconTheme, SettingsData.cursorSettings?.theme]) {
+        for (const used of [SettingsData.iconThemeDark, SettingsData.iconThemeLight, SettingsData.systemDefaultIconTheme, SettingsData.cursorSettings?.theme, SettingsData.systemDefaultCursorTheme]) {
             if (used)
                 args.push("--in-use", used);
         }
@@ -246,7 +244,7 @@ Column {
                 else
                     root.refreshIconThemes();
             } else {
-                ToastService.showError(I18n.tr("%1 not removed", "icon theme remove error toast title, %1 is an icon theme name").arg(name), root.iconRefusalText(IconFolders.parseReply(output)));
+                ToastService.showError(I18n.tr("%1 not removed", "icon theme remove error toast title, %1 is an icon theme name").arg(name), root.iconRefusalText(IconFolders.parseReply(output), kind));
             }
         }, 0, Proc.noTimeout, root);
     }
@@ -1511,7 +1509,8 @@ Column {
 
                                 required property string modelData
                                 readonly property var info: root.cursorLibrary[modelData]
-                                readonly property bool picked: modelData === SettingsData.cursorSettings.theme
+                                readonly property string activeCursor: SettingsData.cursorSettings?.theme === "System Default" ? SettingsData.systemDefaultCursorTheme : (SettingsData.cursorSettings?.theme ?? "")
+                                readonly property bool picked: modelData === activeCursor
 
                                 title: cursorRow.modelData
                                 trailingBadge: picked ? I18n.tr("In use", "cursor theme list badge, the theme currently applied") : ""

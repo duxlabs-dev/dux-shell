@@ -47,7 +47,7 @@ func ListCursors(o Options) []CursorInfo {
 		entries, _ := os.ReadDir(base)
 		for _, entry := range entries {
 			name := entry.Name()
-			if seen[name] || !hasCursors(filepath.Join(base, name)) {
+			if info, err := os.Stat(filepath.Join(base, name, "cursors")); seen[name] || err != nil || !info.IsDir() {
 				continue
 			}
 			seen[name] = true
