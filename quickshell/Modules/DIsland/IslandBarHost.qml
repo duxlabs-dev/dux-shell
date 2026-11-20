@@ -450,8 +450,8 @@ Item {
         unreadNotificationCount: root.setting("islandNotificationBadgeClearOnOpen") ? NotificationService.unreadCount : NotificationService.notifications.length
         hoverOpenDelay: Math.max(0, Math.min(root.maxHoverDelay, root.setting("islandHoverOpenDelay")))
         hoverCloseDelay: Math.max(0, Math.min(root.maxHoverDelay, root.setting("islandHoverCloseDelay")))
-        // Like bar widgets, hover doesn't open the island over a popout opened with a click.
-        hoverExpandBlocked: (root.popoutRevision, PopoutManager.isActivePopoutPinned(root.screen))
+        // With hover popouts on, hover doesn't open the island over a popout opened with a click, like bar widgets.
+        hoverExpandBlocked: hoverExpandEnabled && (root.barConfig?.hoverPopouts ?? false) && (root.popoutRevision, PopoutManager.isActivePopoutPinned(root.screen))
         onBlockingPopoutDismissRequested: PopoutManager.closePopoutForScreen(root.screen)
     }
 
