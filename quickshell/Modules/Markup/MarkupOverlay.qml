@@ -165,10 +165,21 @@ Scope {
                         property point start
 
                         anchors.fill: parent
+                        acceptedButtons: Qt.LeftButton | Qt.BackButton | Qt.ForwardButton
                         enabled: win.ready && layer.crop === null
                         cursorShape: Qt.CrossCursor
 
                         onPressed: mouse => {
+                            if (mouse.button === Qt.BackButton) {
+                                root.owner?.layer.undo();
+                                mouse.accepted = true;
+                                return;
+                            }
+                            if (mouse.button === Qt.ForwardButton) {
+                                root.owner?.layer.redo();
+                                mouse.accepted = true;
+                                return;
+                            }
                             root.claim(win);
                             layer.commitText();
                             start = Qt.point(mouse.x, mouse.y);
@@ -176,10 +187,14 @@ Scope {
                         }
 
                         onPositionChanged: mouse => {
+                            if (!(mouse.buttons & Qt.LeftButton))
+                                return;
                             win.pendingSelection = layer.normalizedRect(start, Qt.point(mouse.x, mouse.y));
                         }
 
-                        onReleased: {
+                        onReleased: mouse => {
+                            if (mouse.button !== Qt.LeftButton)
+                                return;
                             const sel = win.pendingSelection;
                             win.pendingSelection = null;
                             if (sel && sel.width >= 4 && sel.height >= 4)
@@ -213,22 +228,38 @@ Scope {
 
                     required property point modelData
                     readonly property var sel: win.selection
+                    readonly property bool isHorizEdge: modelData.x === 0.5
+                    readonly property bool isVertEdge: modelData.y === 0.5
+                    readonly property bool isEdge: isHorizEdge || isVertEdge
 
                     visible: sel !== null && win.isOwner && !root.exporting
+                        && (!isHorizEdge || sel.width >= 48)
+                        && (!isVertEdge || sel.height >= 48)
                     x: (sel?.x ?? 0) + (sel?.width ?? 0) * modelData.x - width / 2
                     y: (sel?.y ?? 0) + (sel?.height ?? 0) * modelData.y - height / 2
-                    width: Theme.spacingM
-                    height: Theme.spacingM
-                    radius: width / 2
+                    width: isHorizEdge ? Theme.spacingL : (isVertEdge ? 6 : Theme.spacingM)
+                    height: isVertEdge ? Theme.spacingL : (isHorizEdge ? 6 : Theme.spacingM)
+                    radius: Math.min(width, height) / 2
                     color: Theme.primary
                     border.color: Theme.onPrimary
                     border.width: Theme.outlineWidthFocused
+                    scale: handleMouse.pressed ? 1.25 : (handleMouse.containsMouse ? 1.15 : 1)
+
+                    Behavior on scale {
+                        NumberAnimation {
+                            duration: Theme.shortDuration
+                            easing.type: Easing.OutCubic
+                        }
+                    }
 
                     MouseArea {
+                        id: handleMouse
+
                         property var startSelection: null
 
                         anchors.fill: parent
                         anchors.margins: -Theme.spacingS
+                        hoverEnabled: true
                         cursorShape: {
                             const p = handle.modelData;
                             if (p.x === 0.5)
@@ -238,12 +269,15 @@ Scope {
                             return (p.x === p.y) ? Qt.SizeFDiagCursor : Qt.SizeBDiagCursor;
                         }
 
-                        onPressed: {
+                        onPressed: mouse => {
+                            mouse.accepted = true;
                             layer.commitText();
                             startSelection = layer.crop;
                         }
 
                         onPositionChanged: mouse => {
+                            if (!pressed || !startSelection)
+                                return;
                             const s = startSelection;
                             const p = mapToItem(content, mouse.x, mouse.y);
                             const f = handle.modelData;
@@ -257,8 +291,14 @@ Scope {
                         onReleased: {
                             const sel = win.pendingSelection;
                             win.pendingSelection = null;
+                            startSelection = null;
                             if (sel && sel.width >= 4 && sel.height >= 4)
                                 layer.commit(layer.shapes, sel);
+                        }
+
+                        onCanceled: {
+                            win.pendingSelection = null;
+                            startSelection = null;
                         }
                     }
                 }
@@ -268,7 +308,7 @@ Scope {
                 id: regionDragHandle
 
                 readonly property var sel: win.selection
-                readonly property real gap: Theme.spacingXS
+                readonly property real gap: Theme.spacingM
                 readonly property bool fitsAbove: sel !== null && sel.y - height - gap >= 0
                 readonly property bool fitsBelow: sel !== null && sel.y + sel.height + height + gap <= win.height
                 readonly property bool toolbarIsBelow: sel !== null && sel.y + sel.height + Theme.spacingS + toolbar.height <= win.height
@@ -285,18 +325,32 @@ Scope {
                         return sel.y + gap;
                     return sel.y + sel.height + gap;
                 }
-                width: Theme.iconSize + Theme.spacingS
+                width: Theme.iconSize + Theme.spacingM
                 height: Theme.iconSizeSmall + Theme.spacingS
-                radius: Theme.cornerRadiusS
-                color: Theme.readableSurface
-                border.color: Theme.outlineVariant
+                radius: Theme.fullRadius(width, height)
+                color: regionDragArea.pressed ? Theme.primaryContainer : (regionDragArea.containsMouse ? Theme.readableSurfaceHigh : Theme.readableSurface)
+                border.color: regionDragArea.pressed || regionDragArea.containsMouse ? Theme.primary : Theme.outlineVariant
                 border.width: Theme.outlineWidth
+                scale: regionDragArea.pressed ? 0.96 : (regionDragArea.containsMouse ? 1.04 : 1)
+
+                Behavior on color {
+                    ColorAnimation {
+                        duration: Theme.shortDuration
+                    }
+                }
+
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: Theme.shortDuration
+                        easing.type: Easing.OutCubic
+                    }
+                }
 
                 DIcon {
                     anchors.centerIn: parent
                     name: "drag_pan"
                     size: Theme.iconSizeSmall
-                    color: Theme.surfaceText
+                    color: regionDragArea.pressed ? Theme.onPrimaryContainer : Theme.surfaceText
                 }
 
                 MouseArea {
@@ -306,6 +360,7 @@ Scope {
                     property var startSelection: null
 
                     anchors.fill: parent
+                    hoverEnabled: true
                     cursorShape: pressed ? Qt.ClosedHandCursor : Qt.OpenHandCursor
 
                     onPressed: mouse => {
@@ -315,7 +370,7 @@ Scope {
                     }
 
                     onPositionChanged: mouse => {
-                        if (!startSelection)
+                        if (!pressed || !startSelection)
                             return;
                         const p = mapToItem(content, mouse.x, mouse.y);
                         const dx = p.x - start.x;
@@ -334,6 +389,11 @@ Scope {
                         const unchanged = s && sel && sel.x === s.x && sel.y === s.y && sel.width === s.width && sel.height === s.height;
                         if (sel && sel.width >= 4 && sel.height >= 4 && !unchanged)
                             layer.commit(layer.shapes, sel);
+                    }
+
+                    onCanceled: {
+                        win.pendingSelection = null;
+                        startSelection = null;
                     }
                 }
             }
