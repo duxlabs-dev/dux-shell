@@ -1937,7 +1937,12 @@ Singleton {
         fi
         }
         update_qt_icon_theme ${_configDir}/qt5ct/qt5ct.conf '${qtThemeNameEscaped}'
-        update_qt_icon_theme ${_configDir}/qt6ct/qt6ct.conf '${qtThemeNameEscaped}'`;
+        update_qt_icon_theme ${_configDir}/qt6ct/qt6ct.conf '${qtThemeNameEscaped}'
+        for kwrite in kwriteconfig6 kwriteconfig5; do
+        command -v "$kwrite" >/dev/null 2>&1 || continue
+        "$kwrite" --file ${_configDir}/kdeglobals --group Icons --key Theme '${qtThemeNameEscaped}'
+        break
+        done`;
 
         Quickshell.execDetached(["sh", "-lc", script]);
 
