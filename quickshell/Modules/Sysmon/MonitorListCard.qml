@@ -17,6 +17,7 @@ Item {
     property string valueReserve: ""
     property color accentColor: Theme.primary
     property color cardColor: Theme.surfaceContainer
+    property real cardRadius: Theme.cornerRadiusL
     property color contentColor: Theme.surfaceText
     property color mutedColor: Theme.surfaceVariantText
     property bool halo: false
@@ -30,7 +31,7 @@ Item {
 
     Rectangle {
         anchors.fill: parent
-        radius: Theme.cornerRadiusL
+        radius: root.cardRadius
         color: root.cardColor
     }
 

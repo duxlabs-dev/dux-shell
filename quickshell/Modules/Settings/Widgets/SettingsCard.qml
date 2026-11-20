@@ -23,6 +23,7 @@ Column {
 
     default property alias content: contentGroup.content
     property alias headerActions: sectionLabel.actions
+    property alias slotColor: contentGroup.slotColor
 
     readonly property bool isHighlighted: settingKey !== "" && SettingsSearchService.highlightSection === settingKey
     readonly property bool collapsed: collapsible && !expanded

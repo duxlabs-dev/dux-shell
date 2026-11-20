@@ -804,7 +804,51 @@ function migrateToVersion(obj, targetVersion) {
         settings.configVersion = 46;
     }
 
+    if (currentVersion < 47 && targetVersion >= 47) {
+        migrateDashSystemMonitorCards(settings);
+        settings.configVersion = 47;
+    }
+
     return settings;
+}
+
+// Migration: can be removed after a few releases. v47: the CPU, Memory, Disk, Network and System Monitor dash cards become System monitor cards.
+function migrateDashSystemMonitorCards(settings) {
+    const optionsRoot = settings.dashOptions && typeof settings.dashOptions === "object" && !Array.isArray(settings.dashOptions) ? settings.dashOptions : {};
+    const optionsFor = id => optionsRoot[id] && typeof optionsRoot[id] === "object" && !Array.isArray(optionsRoot[id]) ? optionsRoot[id] : {};
+    const tiles = (id, metric) => {
+        const opts = optionsFor(id);
+        metric.graph = opts.trend !== false;
+        metric.on = true;
+        return { layout: "tiles", style: "icon", graphInterval: 300, metrics: [metric] };
+    };
+    const builders = {
+        cpu: () => tiles("cpu", { device: "cpu", vals: optionsFor("cpu").temperature !== false ? ["usage", "temp"] : ["usage"] }),
+        memory: () => tiles("memory", { device: "memory", vals: optionsFor("memory").swap === true ? ["used", "swap"] : ["used"] }),
+        network: () => tiles("network", { device: "net", vals: ["down", "up"] }),
+        disk: () => tiles("disk", { device: "disk", vals: optionsFor("disk").io === true ? ["space", "read"] : ["space"], mount: "/" }),
+        sysmon: () => ({
+            layout: "bars", style: "icon", metrics: [
+                { device: "cpu", vals: optionsFor("sysmon").temperature !== false ? ["usage", "temp"] : ["usage"], graph: false, on: true },
+                { device: "memory", vals: ["used"], graph: false, on: true }
+            ]
+        })
+    };
+    if (Array.isArray(settings.dashCards)) {
+        settings.dashCards = settings.dashCards.map((card, index) => {
+            if (!card || typeof card !== "object" || typeof card.id !== "string" || !Object.prototype.hasOwnProperty.call(builders, card.id))
+                return card;
+            if (card.id === "sysmon" && card.config && typeof card.config === "object")
+                return card;
+            const config = builders[card.id]();
+            const tone = optionsFor(card.id).tone;
+            if (tone === "primary" || tone === "secondary" || tone === "tertiary")
+                config.tone = tone;
+            return Object.assign({}, card, { id: "sysmon", instanceId: card.id + "-" + index, config: config });
+        });
+    }
+    for (const id of Object.keys(builders))
+        delete optionsRoot[id];
 }
 
 // v45: millisecond animation durations became steps of the M3 Expressive spec, -1 is off and 0..4 are 250/375/500/750/1000 ms
