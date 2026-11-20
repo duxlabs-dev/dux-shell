@@ -366,9 +366,9 @@ Singleton {
             "id": "weather",
             "icon": "wb_sunny",
             "text": I18n.tr("Weather", "island settings: weather slot row"),
-            "description": SettingsData.weatherEnabled ? "" : I18n.tr("Enable weather in Time & Weather to show this shortcut", "island settings: weather slot disabled hint"),
+            "description": SettingsData.weatherEnabled ? "" : I18n.tr("Enable weather in Weather to show this shortcut", "island settings: weather slot disabled hint"),
             "settings": {
-                "tab": "time_weather",
+                "tab": "weather",
                 "section": "weatherEnabled"
             }
         },
