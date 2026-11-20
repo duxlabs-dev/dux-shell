@@ -204,6 +204,13 @@ QtObject {
     property bool suspendedExpanded: false
     property bool suspendedKeyboardDismissRequested: false
     property int hoverOpenDelay: 150
+    property bool hoverExpandBlocked: false
+    // A click while hover is blocked only closes the blocking popout; hover can then open the island.
+    signal blockingPopoutDismissRequested
+    onHoverExpandBlockedChanged: {
+        if (!hoverExpandBlocked && pointerInside && hoverExpandEnabled && !expanded && !slotHovered)
+            hoverOpenTimer.restart();
+    }
     property int hoverCloseDelay: 150
     property int mediaReturnDelay: 1800
     readonly property real controlCenterMaxHeight: dashboardAvailableHeight
@@ -852,7 +859,7 @@ QtObject {
     }
 
     function requestHoverExpand() {
-        if (inputSuspended || hoverHeld || !hoverExpandEnabled || activeActivity === "powermenu")
+        if (inputSuspended || hoverHeld || !hoverExpandEnabled || hoverExpandBlocked || activeActivity === "powermenu")
             return false;
         if (notificationActive) {
             hoverExpanded = true;
