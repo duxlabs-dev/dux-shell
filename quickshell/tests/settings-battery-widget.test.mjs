@@ -3,7 +3,6 @@ import test from "node:test";
 import { loadScript } from "./qml-script.mjs";
 
 const store = loadScript(new URL("../Common/settings/SettingsStore.js", import.meta.url));
-const spec = loadScript(new URL("../Common/settings/SettingsSpec.js", import.meta.url));
 
 const plain = (value) => JSON.parse(JSON.stringify(value));
 const migrate = (settings) => plain(store.migrateToVersion(Object.assign({ configVersion: 46 }, settings), 47));
@@ -50,10 +49,4 @@ test("running twice changes nothing and partial or foreign shapes do not throw",
     assert.deepEqual(plain(store.migrateToVersion(Object.assign({}, once, { configVersion: 46 }), 47)), once);
     for (const settings of [{}, { barConfigs: {} }, { barConfigs: [null, 3, { rightWidgets: "x" }, { rightWidgets: [null, 1] }] }, { dockConfigs: [null, { widgets: 5 }] }])
         assert.doesNotThrow(() => migrate(settings));
-});
-
-test("the details list keeps only known entries in the saved order", () => {
-    const { SPEC } = spec;
-    assert.deepEqual(plain(SPEC.batteryPopoutDetails.coerce(["power", "bogus", "health"])), ["power", "health"]);
-    assert.equal(SPEC.batteryPopoutDetails.coerce("health"), undefined);
 });

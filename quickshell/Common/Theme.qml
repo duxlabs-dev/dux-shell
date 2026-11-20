@@ -1699,11 +1699,11 @@ Singleton {
     function getPowerProfileIcon(profile) {
         switch (profile) {
         case 0:
-            return "battery_saver";
+            return "eco";
         case 1:
-            return "battery_std";
+            return "balance";
         case 2:
-            return "flash_on";
+            return "speed";
         default:
             return "settings";
         }

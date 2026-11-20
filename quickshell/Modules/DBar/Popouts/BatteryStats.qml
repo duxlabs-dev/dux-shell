@@ -4,98 +4,157 @@ import QtQuick
 import QtQuick.Layouts
 import qs.Common
 import qs.DCommon.Widgets
-import "../../../Common/BatteryPopoutMetrics.js" as BatteryPopoutMetrics
 
 Item {
     id: root
 
     property var model: []
-    property var metrics: BatteryPopoutMetrics.metrics("comfortable")
     property bool active: false
+    property real topRadius: Theme.groupedListOuterRadius
+    property real bottomRadius: Theme.groupedListOuterRadius
+    property bool spread: false
 
     readonly property string layout: SettingsData.batteryPopoutDetailsLayout
     readonly property int count: model.length
-    readonly property bool tiled: layout === "grid" || layout === "compact"
-    readonly property bool sideBySide: layout === "compact"
-    readonly property int columns: Math.max(1, sideBySide && count === 4 ? 2 : count)
+    readonly property int columns: Math.max(1, count)
 
     LayoutMirroring.enabled: I18n.isRtl
     LayoutMirroring.childrenInherit: true
 
     visible: count > 0
-    implicitHeight: count === 0 ? 0 : tiled ? tileGrid.implicitHeight : layout === "chips" ? chipFlow.implicitHeight : listColumn.implicitHeight
+    implicitHeight: count === 0 ? 0 : body.implicitHeight
 
-    Grid {
-        id: tileGrid
+    Loader {
+        id: body
         width: parent.width
-        columns: root.columns
-        columnSpacing: Theme.groupedListGap
-        rowSpacing: Theme.groupedListGap
+        active: root.count > 0
+        sourceComponent: root.layout === "compact" ? summaryComp : root.layout === "grid" ? gridComp : root.layout === "chips" ? chipsComp : listComp
+    }
 
-        Repeater {
-            model: root.tiled ? root.model : []
+    Component {
+        id: summaryComp
 
-            StatTile {
-                required property var modelData
-                required property int index
-                readonly property int column: index % root.columns
-                readonly property bool lastInColumn: index + root.columns >= root.count
+        DCard {
+            id: summary
 
-                width: (tileGrid.width - tileGrid.columnSpacing * (root.columns - 1)) / root.columns
-                label: modelData.label
-                value: modelData.value
-                iconName: modelData.icon
-                ratio: modelData.ratio ?? -1
-                bad: modelData.bad === true
-                sideBySide: root.sideBySide
-                topStartLarge: index < root.columns && column === 0
-                topEndLarge: index < root.columns && (column === root.columns - 1 || index === root.count - 1)
-                bottomStartLarge: lastInColumn && column === 0
-                bottomEndLarge: lastInColumn && (column === root.columns - 1 || index === root.count - 1)
+            readonly property real innerWidth: width - pad * 2
+            readonly property real naturalWidth: {
+                let total = BatteryPopoutMetrics.statsGap * Math.max(0, root.count - 1);
+                for (let i = 0; i < summaryEntries.count; i++)
+                    total += summaryEntries.itemAt(i)?.implicitWidth ?? 0;
+                return total;
+            }
+            readonly property bool wrapped: root.count > 2 && naturalWidth > innerWidth
+            readonly property int columns: wrapped ? 2 : root.columns
+            readonly property bool cells: root.spread || wrapped
+
+            height: summaryGrid.implicitHeight + pad * 2
+            pad: BatteryPopoutMetrics.pad
+            restRadius: Theme.groupedListInnerRadius
+            topLeftRadius: root.topRadius
+            topRightRadius: root.topRadius
+            bottomLeftRadius: root.bottomRadius
+            bottomRightRadius: root.bottomRadius
+
+            Grid {
+                id: summaryGrid
+                anchors.horizontalCenter: parent.horizontalCenter
+                columns: summary.columns
+                columnSpacing: summary.cells ? 0 : BatteryPopoutMetrics.statsGap
+                rowSpacing: Theme.spacingM
+
+                Repeater {
+                    id: summaryEntries
+                    model: root.model
+
+                    SummaryEntry {
+                        required property var modelData
+
+                        width: summary.cells ? Math.floor(summary.innerWidth / summary.columns) : implicitWidth
+                        label: modelData.label
+                        value: modelData.value
+                        iconName: modelData.icon
+                        ratio: modelData.ratio ?? -1
+                        bad: modelData.bad === true
+                    }
+                }
             }
         }
     }
 
-    Flow {
-        id: chipFlow
-        width: parent.width
-        spacing: Theme.spacingXS
+    Component {
+        id: gridComp
 
-        Repeater {
-            model: root.layout === "chips" ? root.model : []
+        Grid {
+            id: tileGrid
+            columns: root.columns
+            columnSpacing: Theme.groupedListGap
+            rowSpacing: Theme.groupedListGap
 
-            BatteryChip {
-                required property var modelData
+            Repeater {
+                model: root.model
 
-                label: modelData.label
-                value: modelData.value
-                valueColor: modelData.bad === true ? Theme.error : Theme.surfaceText
-                implicitHeight: root.metrics.chip
-                maximumWidth: chipFlow.width
+                StatTile {
+                    required property var modelData
+                    required property int index
+
+                    width: (tileGrid.width - tileGrid.columnSpacing * (root.columns - 1)) / root.columns
+                    label: modelData.label
+                    value: modelData.value
+                    iconName: modelData.icon
+                    ratio: modelData.ratio ?? -1
+                    bad: modelData.bad === true
+                    radii: BatteryPopoutMetrics.cornerRadii(index, root.count, root.columns, root.topRadius, root.bottomRadius)
+                }
             }
         }
     }
 
-    Column {
-        id: listColumn
-        width: parent.width
-        spacing: Theme.groupedListGap
+    Component {
+        id: chipsComp
 
-        Repeater {
-            model: root.layout === "list" ? root.model : []
+        Flow {
+            id: chipFlow
+            spacing: Theme.spacingXS
 
-            StatRow {
-                required property var modelData
-                required property int index
+            Repeater {
+                model: root.model
 
-                width: listColumn.width
-                label: modelData.label
-                value: modelData.value
-                iconName: modelData.icon
-                ratio: modelData.ratio ?? -1
-                bad: modelData.bad === true
-                topRadius: index === 0 ? Theme.groupedListOuterRadius : Theme.groupedListInnerRadius
-                bottomRadius: index === root.count - 1 ? Theme.groupedListOuterRadius : Theme.groupedListInnerRadius
+                DDetailChip {
+                    required property var modelData
+
+                    label: modelData.label
+                    value: modelData.value
+                    valueColor: modelData.bad === true ? Theme.error : Theme.surfaceText
+                    implicitHeight: BatteryPopoutMetrics.chip
+                    maximumWidth: chipFlow.width
+                }
+            }
+        }
+    }
+
+    Component {
+        id: listComp
+
+        Column {
+            id: listColumn
+            spacing: Theme.groupedListGap
+
+            Repeater {
+                model: root.model
+
+                StatRow {
+                    required property var modelData
+                    required property int index
+
+                    width: listColumn.width
+                    label: modelData.label
+                    value: modelData.value
+                    iconName: modelData.icon
+                    ratio: modelData.ratio ?? -1
+                    bad: modelData.bad === true
+                    radii: BatteryPopoutMetrics.cornerRadii(index, root.count, 1, root.topRadius, root.bottomRadius)
+                }
             }
         }
     }
@@ -122,6 +181,65 @@ Item {
         }
     }
 
+    component SummaryEntry: Item {
+        id: entry
+        property string label: ""
+        property string value: ""
+        property string iconName: ""
+        property real ratio: -1
+        property bool bad: false
+
+        implicitWidth: entryGlyph.width + entryRow.spacing + Math.max(labelText.implicitWidth, valueText.implicitWidth)
+        implicitHeight: entryRow.implicitHeight
+        Accessible.role: Accessible.StaticText
+        Accessible.name: label + ": " + value
+
+        Row {
+            id: entryRow
+            anchors.horizontalCenter: parent.horizontalCenter
+            spacing: Theme.spacingM
+
+            StatGlyph {
+                id: entryGlyph
+                anchors.verticalCenter: parent.verticalCenter
+                implicitWidth: Theme.iconSizeLarge
+                iconName: entry.iconName
+                ratio: entry.ratio
+                bad: entry.bad
+            }
+
+            Column {
+                readonly property real room: entry.width - entryGlyph.width - entryRow.spacing
+                anchors.verticalCenter: parent.verticalCenter
+                width: Math.min(implicitWidth, room)
+
+                StyledText {
+                    id: labelText
+                    width: Math.min(implicitWidth, parent.room)
+                    text: entry.label
+                    font.pixelSize: Theme.fontSizeSmall
+                    color: Theme.onSurfaceVariant
+                    wrapMode: Text.NoWrap
+                    elide: Text.ElideRight
+                }
+
+                StyledText {
+                    id: valueText
+                    width: Math.min(implicitWidth, parent.room)
+                    text: entry.value
+                    font.pixelSize: Theme.fontSizeMedium
+                    font.weight: Theme.fontWeightMedium
+                    font.features: {
+                        "tnum": 1
+                    }
+                    color: entry.bad ? Theme.error : Theme.onSurface
+                    wrapMode: Text.NoWrap
+                    elide: Text.ElideRight
+                }
+            }
+        }
+    }
+
     component StatTile: DCard {
         id: tile
         property string label: ""
@@ -129,33 +247,25 @@ Item {
         property string iconName: ""
         property real ratio: -1
         property bool bad: false
-        property bool sideBySide: false
-        property bool topStartLarge: false
-        property bool topEndLarge: false
-        property bool bottomStartLarge: false
-        property bool bottomEndLarge: false
-        readonly property real horizontalPad: sideBySide ? root.metrics.tile : Theme.spacingXS
-        readonly property real verticalPad: root.metrics.tile
-        readonly property real largeRadius: Theme.groupedListOuterRadius
-        readonly property real smallRadius: Theme.groupedListInnerRadius
+        property var radii
+        readonly property real verticalPad: BatteryPopoutMetrics.tile
 
         pad: 0
-        height: (sideBySide ? tileRow.implicitHeight : tileColumn.implicitHeight) + verticalPad * 2
-        restRadius: smallRadius
-        topLeftRadius: (I18n.isRtl ? topEndLarge : topStartLarge) ? largeRadius : smallRadius
-        bottomLeftRadius: (I18n.isRtl ? bottomEndLarge : bottomStartLarge) ? largeRadius : smallRadius
-        topRightRadius: (I18n.isRtl ? topStartLarge : topEndLarge) ? largeRadius : smallRadius
-        bottomRightRadius: (I18n.isRtl ? bottomStartLarge : bottomEndLarge) ? largeRadius : smallRadius
+        height: tileColumn.implicitHeight + verticalPad * 2
+        restRadius: Theme.groupedListInnerRadius
+        topLeftRadius: radii?.topLeft ?? restRadius
+        topRightRadius: radii?.topRight ?? restRadius
+        bottomLeftRadius: radii?.bottomLeft ?? restRadius
+        bottomRightRadius: radii?.bottomRight ?? restRadius
         Accessible.role: Accessible.StaticText
         Accessible.name: label + ": " + value
 
         Column {
             id: tileColumn
-            x: tile.horizontalPad
+            x: Theme.spacingXS
             y: tile.verticalPad
-            width: parent.width - tile.horizontalPad * 2
+            width: parent.width - Theme.spacingXS * 2
             spacing: Theme.spacingXS
-            visible: !tile.sideBySide
 
             StatGlyph {
                 anchors.horizontalCenter: parent.horizontalCenter
@@ -188,50 +298,6 @@ Item {
                 elide: Text.ElideRight
             }
         }
-
-        Row {
-            id: tileRow
-            x: tile.horizontalPad
-            y: tile.verticalPad
-            width: parent.width - tile.horizontalPad * 2
-            spacing: Theme.spacingM
-            visible: tile.sideBySide
-
-            StatGlyph {
-                id: tileGlyph
-                anchors.verticalCenter: parent.verticalCenter
-                iconName: tile.iconName
-                ratio: tile.ratio
-                bad: tile.bad
-            }
-
-            Column {
-                anchors.verticalCenter: parent.verticalCenter
-                width: parent.width - tileGlyph.width - parent.spacing
-
-                StyledText {
-                    width: parent.width
-                    text: tile.value
-                    font.pixelSize: Theme.fontSizeMedium
-                    font.weight: Theme.fontWeightMedium
-                    font.features: {
-                        "tnum": 1
-                    }
-                    color: tile.bad ? Theme.error : Theme.onSurface
-                    wrapMode: Text.NoWrap
-                    elide: Text.ElideRight
-                }
-
-                StyledText {
-                    width: parent.width
-                    text: tile.label
-                    font.pixelSize: Theme.fontSizeSmall
-                    color: Theme.onSurfaceVariant
-                    wrapMode: Text.NoWrap
-                    elide: Text.ElideRight
-                }
-            }
-        }
     }
 
     component StatRow: DCard {
@@ -241,16 +307,15 @@ Item {
         property string iconName: ""
         property real ratio: -1
         property bool bad: false
-        property real topRadius: Theme.groupedListInnerRadius
-        property real bottomRadius: Theme.groupedListInnerRadius
+        property var radii
 
         pad: 0
-        height: Math.max(root.metrics.row, rowContent.implicitHeight + Theme.spacingXS * 2)
+        height: Math.max(BatteryPopoutMetrics.row, rowContent.implicitHeight + Theme.spacingXS * 2)
         restRadius: Theme.groupedListInnerRadius
-        topLeftRadius: topRadius
-        topRightRadius: topRadius
-        bottomLeftRadius: bottomRadius
-        bottomRightRadius: bottomRadius
+        topLeftRadius: radii?.topLeft ?? restRadius
+        topRightRadius: radii?.topRight ?? restRadius
+        bottomLeftRadius: radii?.bottomLeft ?? restRadius
+        bottomRightRadius: radii?.bottomRight ?? restRadius
         Accessible.role: Accessible.StaticText
         Accessible.name: label + ": " + value
 

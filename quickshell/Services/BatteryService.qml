@@ -820,6 +820,13 @@ Singleton {
             };
         });
     }
+    readonly property bool hasPeripherals: peripheralDevices.length > 0
+    // The lowest known reading; sleeping devices report 0 and never count as lowest.
+    readonly property var lowestPeripheral: peripheralDevices.reduce((lowest, dev) => {
+        if (dev.unknown)
+            return lowest;
+        return !lowest || dev.percentage < lowest.percentage ? dev : lowest;
+    }, null) ?? peripheralDevices[0] ?? null
 
     readonly property var bluetoothDevices: {
         if (refCount === 0)
@@ -867,8 +874,10 @@ Singleton {
             return 0;
 
         const rate = _smoothedChangeRate > 0 ? _smoothedChangeRate : changeRate;
+        const limitEnergy = batteryCapacity * SettingsData.batteryChargeLimit / 100;
+        const target = limitEnergy > batteryEnergy && limitEnergy < batteryCapacity ? limitEnergy : batteryCapacity;
 
-        const totalTime = isCharging ? ((batteryCapacity - batteryEnergy) / rate) : (batteryEnergy / rate);
+        const totalTime = isCharging ? ((target - batteryEnergy) / rate) : (batteryEnergy / rate);
 
         const seconds = Math.abs(totalTime * 3600);
 

@@ -8,7 +8,6 @@ import qs.Common
 import qs.Modules.Settings.Widgets
 import qs.Services
 import qs.DCommon.Widgets
-import "../../../Common/BatteryPopoutMetrics.js" as BatteryPopoutMetrics
 
 Item {
     id: root
@@ -18,7 +17,6 @@ Item {
     property string barId: ""
     property bool batteryRefHeld: false
     property real contentPadding: PopoutMetrics.contentPadding
-    readonly property var metrics: BatteryPopoutMetrics.metrics(SettingsData.density)
     readonly property var detailKeys: Array.from(SettingsData.batteryPopoutDetails ?? [])
     readonly property var historyDevice: BatteryService.usePreferred ? BatteryService.preferredDevice : BatteryService.device
     readonly property bool multipleBatteries: !BatteryService.usePreferred && BatteryService.batteries.length > 1
@@ -53,11 +51,11 @@ Item {
                 ratio: -1,
                 bad: false
             });
-        if (Math.abs(BatteryService.signedChangeRate) > 0.05)
+        if (root.powerRate(true) !== "")
             values.push({
                 key: "power",
                 label: I18n.tr("Power", "battery stat label, charge or discharge rate in watts", true),
-                value: (BatteryService.signedChangeRate > 0 ? "+" : "") + BatteryService.signedChangeRate.toFixed(1) + " W",
+                value: root.powerRate(true),
                 icon: "electrical_services",
                 ratio: -1,
                 bad: false
@@ -83,25 +81,20 @@ Item {
         return !SettingsData.batteryScaleToChargeLimit && limit > 0 && limit < 100 ? limit : 100;
     }
     readonly property var deviceList: SettingsData.batteryPopoutDevices ? BatteryService.peripheralDevices : []
-    readonly property var heroDevice: {
-        if (root.showBattery)
-            return null;
-        let lowest = null;
-        for (const device of root.deviceList) {
-            if (device.percentage > 0 && (!lowest || device.percentage < lowest.percentage))
-                lowest = device;
-        }
-        return lowest;
-    }
+    readonly property var heroDevice: root.showBattery || !SettingsData.batteryPopoutDevices ? null : BatteryService.lowestPeripheral
     readonly property var listedDevices: root.heroDevice ? root.deviceList.filter(device => device.key !== root.heroDevice.key) : root.deviceList
     readonly property bool hasHero: root.showBattery || root.heroDevice !== null
     readonly property bool showPower: SettingsData.batteryPopoutPower && PowerProfileWatcher.available
-    readonly property bool powerInHero: root.showPower && root.hasHero && SettingsData.batteryPopoutPowerPlacement === "overview"
-    readonly property bool factsBeside: SettingsData.batteryPopoutStyle === "ring" && SettingsData.batteryPopoutDetailsLayout === "list" && !root.metrics.compact
+    readonly property bool compactStyle: SettingsData.batteryPopoutStyle === "compact"
+    readonly property bool powerInHero: root.showPower && root.hasHero && !root.compactStyle && SettingsData.batteryPopoutPowerPlacement === "overview"
+    readonly property bool powerInList: root.showPower && !root.powerInHero
+    // Hidden until a device is listed during this open, so a laptop without peripherals gets no empty section
+    property bool devicesSeen: false
+    readonly property bool showDevices: root.devicesSeen && SettingsData.batteryPopoutDevices
+    readonly property bool factsBeside: SettingsData.batteryPopoutStyle === "ring" && SettingsData.batteryPopoutDetailsLayout === "list" && !BatteryPopoutMetrics.compact
     readonly property var heroSource: {
         if (root.showBattery) {
             const unknown = !BatteryService.hasBatteryReading;
-            const rate = Math.abs(BatteryService.signedChangeRate);
             return {
                 status: BatteryService.batteryStatus,
                 time: root.timeInfo,
@@ -111,7 +104,7 @@ Item {
                 charging: BatteryService.isCharging,
                 limit: root.chargeLimit,
                 icon: unknown ? "battery_unknown" : BatteryService.isCharging ? "bolt" : root.levelLow ? "battery_alert" : BatteryService.getBatteryIcon(),
-                rate: rate > 0.05 ? rate.toFixed(1) + " W" : ""
+                rate: root.powerRate(false)
             };
         }
         const device = root.heroDevice;
@@ -132,7 +125,7 @@ Item {
         const facts = [];
         if ((root.heroSource.time ?? "") !== "")
             facts.push({
-                icon: "schedule",
+                icon: root.showBattery ? "schedule" : root.heroSource.charging ? "bolt" : "battery_alert",
                 value: root.heroSource.time
             });
         if (root.showBattery)
@@ -161,12 +154,21 @@ Item {
         BatteryService.removeRef();
     }
 
+    onListedDevicesChanged: {
+        if (active && listedDevices.length > 0)
+            devicesSeen = true;
+    }
     onActiveChanged: {
         syncBatteryRef(active);
-        if (active)
-            focusTimer.restart();
+        if (!active)
+            return;
+        devicesSeen = listedDevices.length > 0;
+        focusTimer.restart();
     }
-    Component.onCompleted: syncBatteryRef(active)
+    Component.onCompleted: {
+        syncBatteryRef(active);
+        devicesSeen = active && listedDevices.length > 0;
+    }
     Component.onDestruction: syncBatteryRef(false)
     Keys.onEscapePressed: event => {
         dismissRequested();
@@ -186,6 +188,13 @@ Item {
 
     function formatPercent(value) {
         return Math.round(value) + "%";
+    }
+
+    function powerRate(signed) {
+        const rate = BatteryService.signedChangeRate;
+        if (Math.abs(rate) <= 0.05)
+            return "";
+        return (signed && rate > 0 ? "+" : "") + (signed ? rate : Math.abs(rate)).toFixed(1) + " W";
     }
 
     function formatCapacity(value) {
@@ -295,31 +304,68 @@ Item {
                 }
             }
 
-            BatteryHero {
+            Column {
                 width: parent.width
-                visible: root.hasHero
-                source: root.heroSource
-                facts: root.heroFacts
-                factsBeside: root.factsBeside
-                metrics: root.metrics
-                active: root.active
-                showEdit: root.showEdit
-                onSettingsRequested: root.openSettings()
-                onEditRequested: root.openWidgetSettings()
-                footer: root.powerInHero ? powerFooter : null
-            }
+                spacing: Theme.groupedListGap
 
-            BatteryPowerProfile {
-                visible: root.showPower && !root.powerInHero
-                metrics: root.metrics
-                active: root.active
-            }
+                BatteryHero {
+                    width: parent.width
+                    visible: root.hasHero
+                    source: root.heroSource
+                    facts: root.heroFacts
+                    factsBeside: root.factsBeside
+                    active: root.active
+                    showEdit: root.showEdit
+                    topRadius: Theme.groupedListOuterRadius
+                    bottomRadius: stats.visible || root.powerInList ? Theme.groupedListInnerRadius : Theme.groupedListOuterRadius
+                    onSettingsRequested: root.openSettings()
+                    onEditRequested: root.openWidgetSettings()
+                    footer: root.powerInHero ? powerFooter : null
+                }
 
-            BatteryStats {
-                width: parent.width
-                model: root.factsBeside && root.showBattery ? [] : root.shownStats
-                metrics: root.metrics
-                active: root.active
+                SectionLabel {
+                    visible: root.compactStyle && group.height > 0
+                    topPadding: root.hasHero ? Theme.spacingXL - Theme.groupedListGap : 0
+                    bottomPadding: Theme.spacingS - Theme.groupedListGap
+                    text: root.showBattery ? I18n.tr("Battery") : I18n.tr("Power profile")
+                }
+
+                // Compact: power above the details under one label; the card styles put the details first
+                Item {
+                    id: group
+                    readonly property bool heroCard: root.hasHero && !root.compactStyle
+                    readonly property real outer: Theme.groupedListOuterRadius
+                    readonly property real inner: Theme.groupedListInnerRadius
+                    readonly property real powerTop: root.compactStyle || !heroCard && !stats.visible ? outer : inner
+                    readonly property real powerBottom: root.compactStyle && stats.visible ? inner : outer
+
+                    width: parent.width
+                    height: (root.powerInList ? power.height : 0) + (stats.visible ? stats.height : 0) + (root.powerInList && stats.visible ? Theme.groupedListGap : 0)
+                    visible: height > 0
+
+                    BatteryPowerProfile {
+                        id: power
+                        y: root.compactStyle || !stats.visible ? 0 : stats.height + Theme.groupedListGap
+                        visible: root.powerInList
+                        showHeading: SettingsData.batteryPopoutPowerStyle === "slider"
+                        active: root.active
+                        topLeftRadius: group.powerTop
+                        topRightRadius: group.powerTop
+                        bottomLeftRadius: group.powerBottom
+                        bottomRightRadius: group.powerBottom
+                    }
+
+                    BatteryStats {
+                        id: stats
+                        y: root.compactStyle && root.powerInList ? power.height + Theme.groupedListGap : 0
+                        width: parent.width
+                        model: root.factsBeside && root.showBattery ? [] : root.shownStats
+                        active: root.active
+                        spread: !root.compactStyle
+                        topRadius: (root.compactStyle ? root.powerInList : group.heroCard) ? group.inner : group.outer
+                        bottomRadius: !root.compactStyle && root.powerInList ? group.inner : group.outer
+                    }
+                }
             }
 
             DCollapsibleSection {
@@ -419,16 +465,28 @@ Item {
                 }
             }
 
-            BatteryDeviceList {
+            Column {
                 width: parent.width
-                devices: root.listedDevices
-                metrics: root.metrics
+                visible: root.showDevices
+                spacing: Theme.spacingS
+
+                SectionLabel {
+                    visible: root.compactStyle
+                    topPadding: Theme.spacingXL - PopoutMetrics.contentGap
+                    text: I18n.tr("Devices")
+                }
+
+                BatteryDeviceList {
+                    width: parent.width
+                    visible: root.showDevices
+                    devices: root.listedDevices
+                }
             }
 
             StyledText {
                 width: parent.width
-                visible: !root.hasHero && !root.showPower && root.listedDevices.length === 0
-                text: PowerProfileWatcher.available ? I18n.tr("Power profile management available") : I18n.tr("power-profiles-daemon not available")
+                visible: !root.hasHero && !PowerProfileWatcher.available && !root.showDevices
+                text: I18n.tr("power-profiles-daemon not available")
                 font.pixelSize: Theme.fontSizeSmall
                 color: Theme.onSurfaceVariant
                 wrapMode: Text.WordWrap
@@ -436,7 +494,7 @@ Item {
 
             Item {
                 width: parent.width
-                height: root.metrics.button
+                height: BatteryPopoutMetrics.button
                 visible: !root.hasHero
 
                 Row {
@@ -446,7 +504,7 @@ Item {
                     DButton {
                         variant: "text"
                         text: I18n.tr("Settings", "battery popout button that opens the battery settings page")
-                        buttonHeight: root.metrics.button
+                        buttonHeight: BatteryPopoutMetrics.button
                         onClicked: root.openSettings()
                     }
 
@@ -454,7 +512,7 @@ Item {
                         visible: root.showEdit
                         anchors.verticalCenter: parent.verticalCenter
                         iconName: "edit"
-                        Accessible.name: I18n.tr("Widget settings", "battery popout button that opens the battery widget options")
+                        tooltipText: I18n.tr("Widget settings", "battery popout button that opens the battery widget options")
                         onClicked: root.openWidgetSettings()
                     }
                 }
@@ -472,10 +530,17 @@ Item {
                 id: embeddedPower
                 showHeading: false
                 framed: false
-                metrics: root.metrics
                 active: root.active
             }
         }
+    }
+
+    component SectionLabel: StyledText {
+        width: parent?.width ?? 0
+        font.pixelSize: Theme.fontSizeSmall
+        font.weight: Theme.fontWeightMedium
+        color: Theme.primary
+        elide: Text.ElideRight
     }
 
     component DetailValue: Column {

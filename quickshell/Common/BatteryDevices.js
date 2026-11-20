@@ -4,7 +4,7 @@
 var SYSTEM_ID = "system";
 
 // Charging or a healthy level is "success"; below twice the low threshold it is
-// "caution". A reading of 0 (unknown) falls into "caution" like it always did.
+// "caution". A reading of 0 (unknown) falls into "caution".
 function levelRamp(percentage, charging, lowThreshold, criticalThreshold) {
     if (charging)
         return "success";
@@ -19,6 +19,11 @@ function levelRamp(percentage, charging, lowThreshold, criticalThreshold) {
 
 function isLow(percentage, charging, lowThreshold) {
     return percentage > 0 && percentage <= lowThreshold && !charging;
+}
+
+// Low never comes with charging (isLow), so the order only matters for hand-made input.
+function badgeFor(device) {
+    return device.low ? "priority_high" : device.charging ? "bolt" : "";
 }
 
 function deviceKeys(devices) {
@@ -106,53 +111,41 @@ function resolveBarEntries(saved, system, devices) {
     return out;
 }
 
+// One editor row; an entry that was never saved starts switched off.
+function editorRow(id, raw, dev) {
+    const entry = normalizeEntry(raw || { id: id, on: false });
+    return {
+        id: id,
+        kind: id === SYSTEM_ID ? "system" : "device",
+        raw: raw,
+        name: dev ? dev.name : entry.name || "",
+        iconName: dev ? dev.icon : entry.iconName || "",
+        present: id === SYSTEM_ID || !!dev,
+        on: entry.on,
+        icon: entry.icon ?? true,
+        percent: entry.percent ?? true,
+        lowOnly: entry.lowOnly
+    };
+}
+
 function editorRows(saved, devices) {
     const live = liveById(devices);
     const rows = [];
     const listed = {};
     for (const raw of savedEntries(saved)) {
-        const entry = normalizeEntry(raw);
-        listed[entry.id] = true;
-        if (entry.id === SYSTEM_ID) {
-            rows.push({ id: SYSTEM_ID, kind: "system", raw: raw, name: "", iconName: "", present: true, on: entry.on, icon: true, percent: true, lowOnly: entry.lowOnly });
-            continue;
-        }
-        const dev = live[entry.id];
-        rows.push({
-            id: entry.id,
-            kind: "device",
-            raw: raw,
-            name: dev ? dev.name : entry.name,
-            iconName: dev ? dev.icon : entry.iconName,
-            present: !!dev,
-            on: entry.on,
-            icon: entry.icon,
-            percent: entry.percent,
-            lowOnly: entry.lowOnly
-        });
+        listed[raw.id] = true;
+        rows.push(editorRow(raw.id, raw, live[raw.id]));
     }
     if (!listed[SYSTEM_ID])
-        rows.unshift({ id: SYSTEM_ID, kind: "system", name: "", iconName: "", present: true, on: false, icon: true, percent: true, lowOnly: false });
+        rows.unshift(editorRow(SYSTEM_ID, null, null));
     for (const key of Object.keys(live)) {
-        if (listed[key])
-            continue;
-        const dev = live[key];
-        rows.push({ id: key, kind: "device", name: dev.name, iconName: dev.icon, present: true, on: false, icon: true, percent: true, lowOnly: false });
+        if (!listed[key])
+            rows.push(editorRow(key, null, live[key]));
     }
     return rows;
 }
 
 // Fields this module does not know stay on the saved entry (`raw`) and survive an edit.
 function entryForRow(row) {
-    if (row.id === SYSTEM_ID)
-        return Object.assign({}, row.raw, { id: SYSTEM_ID, on: flag(row.on, true), lowOnly: flag(row.lowOnly, false) });
-    return Object.assign({}, row.raw, {
-        id: row.id,
-        on: flag(row.on, true),
-        icon: flag(row.icon, true),
-        percent: flag(row.percent, true),
-        lowOnly: flag(row.lowOnly, false),
-        name: text(row.name),
-        iconName: text(row.iconName)
-    });
+    return Object.assign({}, row.raw, normalizeEntry(row));
 }

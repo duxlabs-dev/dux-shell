@@ -1,39 +1,30 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import Quickshell.Services.UPower
 import qs.Common
 import qs.Services
 import qs.DCommon.Widgets
 import qs.DCommon.Common as DCommon
-import "../../../Common/BatteryPopoutMetrics.js" as BatteryPopoutMetrics
 
 DCard {
     id: root
 
-    property var metrics: BatteryPopoutMetrics.metrics("comfortable")
     property bool active: false
-    // Heading (and the slider's current-profile tag) can be hidden when the section sits inside another card
     property bool showHeading: true
-    // Without the frame there is no card background and no padding
     property bool framed: true
 
     readonly property string style: SettingsData.batteryPopoutPowerStyle
+    readonly property bool slider: style === "slider"
     readonly property var profiles: PowerProfileWatcher.availableProfiles
     readonly property int currentIndex: profiles.indexOf(PowerProfileWatcher.currentProfile)
-    readonly property var profileIcons: ["eco", "balance", "speed"]
+    readonly property int focusIndex: Math.max(0, Math.min(currentIndex, profiles.length - 1))
     // Off until the first layout has settled, so nothing slides in when the popout opens
     property bool settled: false
     readonly property bool animate: active && settled && !Theme.reduceMotion
     // The cookie shapes draw into a texture this many times their size, which keeps their edges smooth
     readonly property int shapeSupersampling: 4
     readonly property real compactIconSize: Theme.iconSizeSmall + Theme.spacingXS
-    // A newly selected cookie grows and turns into place from these
-    readonly property real popScale: 0.7
-    readonly property real popRotation: -40
-
-    function profileIcon(profile) {
-        return profileIcons[profile] ?? "balance";
-    }
 
     // The leaf's vein breaks into dashes when it is filled at icon size
     function iconFilled(name, selected) {
@@ -44,7 +35,26 @@ DCard {
         const profile = profiles[index];
         if (profile === undefined || PowerProfileWatcher.applyProfile(profile))
             return;
-        ToastService.showError(PowerProfileWatcher.available ? I18n.tr("Failed to set power profile") : I18n.tr("power-profiles-daemon not available"));
+        ToastService.showError(I18n.tr("Failed to set power profile"));
+    }
+
+    function stepWithArrows(event, repeater) {
+        const count = profiles.length;
+        if (!enabled || (event.modifiers & ~Qt.KeypadModifier) !== Qt.NoModifier || count === 0)
+            return;
+        const forward = I18n.isRtl ? Qt.Key_Left : Qt.Key_Right;
+        const backward = I18n.isRtl ? Qt.Key_Right : Qt.Key_Left;
+        if (event.key !== forward && event.key !== backward)
+            return;
+        let from = focusIndex;
+        for (let i = 0; i < count; i++) {
+            if (repeater.itemAt(i)?.activeFocus)
+                from = i;
+        }
+        const next = (from + (event.key === forward ? 1 : count - 1)) % count;
+        repeater.itemAt(next)?.forceActiveFocus(Qt.TabFocusReason);
+        choose(next);
+        event.accepted = true;
     }
 
     component SpatialAnim: NumberAnimation {
@@ -55,17 +65,9 @@ DCard {
 
     component EffectsAnim: DCommon.DColorAnim {}
 
-    component SoftAnim: DCommon.DAnim {}
-
-    component FadeAnim: NumberAnimation {
-        duration: Theme.expressiveDurations.expressiveEffects
-        easing.type: Easing.BezierSpline
-        easing.bezierCurve: Theme.expressiveCurves.expressiveEffects
-    }
-
     width: parent?.width ?? 0
     height: body.implicitHeight + pad * 2
-    pad: framed ? metrics.pad : 0
+    pad: framed ? BatteryPopoutMetrics.pad : 0
     restRadius: Theme.cornerRadiusL
     color: framed ? surfaceColor : "transparent"
     border.width: framed ? Theme.layerOutlineWidth : 0
@@ -76,400 +78,184 @@ DCard {
     Column {
         id: body
         width: parent.width
-        spacing: root.metrics.gap
+        spacing: BatteryPopoutMetrics.gap
 
         Item {
             visible: root.showHeading
             width: parent.width
-            height: Math.max(headerLabel.implicitHeight, tag.visible ? tag.height : 0)
+            height: Math.max(headerLabel.implicitHeight, chip.visible ? chip.height : 0)
 
             StyledText {
                 id: headerLabel
                 anchors.left: parent.left
-                anchors.right: tag.visible ? tag.left : parent.right
-                anchors.rightMargin: tag.visible ? Theme.spacingS : 0
+                anchors.right: chip.visible ? chip.left : parent.right
+                anchors.rightMargin: chip.visible ? Theme.spacingS : 0
                 anchors.verticalCenter: parent.verticalCenter
                 text: I18n.tr("Power profile")
-                font.pixelSize: Theme.fontSizeSmall
+                font.pixelSize: root.slider ? Theme.fontSizeMedium : Theme.fontSizeSmall
                 font.weight: Theme.fontWeightMedium
-                color: Theme.primary
+                color: root.slider ? Theme.surfaceText : Theme.primary
                 elide: Text.ElideRight
             }
 
-            Rectangle {
-                id: tag
+            DDetailChip {
+                id: chip
+                readonly property bool saver: root.profiles[root.currentIndex] === PowerProfile.PowerSaver
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
-                visible: root.style === "slider" && root.currentIndex >= 0
-                width: tagText.implicitWidth + Theme.spacingS * 2
-                height: tagText.implicitHeight + Theme.spacingXXS * 2
-                radius: Theme.cornerRadiusS
-                color: Theme.primaryContainer
-
-                StyledText {
-                    id: tagText
-                    anchors.centerIn: parent
-                    text: Theme.getPowerProfileLabel(root.profiles[root.currentIndex])
-                    font.pixelSize: Theme.fontSizeSmall
-                    font.weight: Theme.fontWeightMedium
-                    color: Theme.onPrimaryContainer
-                }
+                visible: root.slider && root.currentIndex >= 0
+                value: Theme.getPowerProfileLabel(root.profiles[root.currentIndex])
+                color: saver ? Theme.tertiaryContainer : Theme.primaryContainer
+                valueColor: saver ? Theme.onTertiaryContainer : Theme.onPrimaryContainer
+                border.width: 0
+                radius: height / 2
             }
         }
 
         Loader {
             width: parent.width
-            sourceComponent: choicesComp
+            sourceComponent: root.style === "circle" ? circleComp : (root.slider ? sliderComp : groupComp)
         }
     }
 
     Component {
-        id: choicesComp
+        id: groupComp
 
-        Item {
-            id: choices
-
-            readonly property bool circle: root.style === "circle"
-            readonly property bool segments: root.style === "segments"
+        DButtonGroup {
             readonly property bool buttons: root.style === "buttons"
-            readonly property bool slider: root.style === "slider"
-            readonly property bool joined: buttons || segments
-            readonly property int count: root.profiles.length
-            readonly property int current: root.currentIndex
-            readonly property int focusIndex: Math.max(0, Math.min(current, count - 1))
-            readonly property real gap: joined ? Theme.groupedListGap : 0
-            // Buttons: shares of the row a selected, a pressed and every other button take
-            readonly property real selectedShares: 2.5
-            readonly property real pressedShares: 1.2
-            property int pressedIndex: -1
-            readonly property real totalShares: {
-                let total = 0;
-                for (let i = 0; i < count; i++)
-                    total += shares(i);
-                return total;
-            }
 
-            function shares(index) {
-                if (!buttons)
-                    return 1;
-                return index === current ? selectedShares : (index === pressedIndex ? pressedShares : 1);
-            }
-
-            function cellWidth(index) {
-                return (width - gap * (count - 1)) * shares(index) / Math.max(1, totalShares);
-            }
-
-            implicitHeight: row.implicitHeight
-            LayoutMirroring.enabled: I18n.isRtl
-            LayoutMirroring.childrenInherit: true
+            fillWidth: true
+            buttonHeight: BatteryPopoutMetrics.button
+            checkEnabled: false
+            selectedColor: Theme.primary
+            selectedContentColor: Theme.onPrimary
+            optionIconSize: root.compactIconSize
+            textSize: buttons ? Theme.fontSizeMedium : Theme.fontSizeSmall
+            labelOnlySelected: buttons
+            selectedWidthShare: buttons ? BatteryPopoutMetrics.selectedShare : 1
+            pressedWidthShare: buttons ? BatteryPopoutMetrics.pressedShare : 1
+            model: root.profiles.map(profile => ({
+                        "text": Theme.getPowerProfileLabel(profile),
+                        "icon": Theme.getPowerProfileIcon(profile),
+                        "filled": Theme.getPowerProfileIcon(profile) !== "eco"
+                    }))
+            currentIndex: root.currentIndex
             Accessible.role: Accessible.Grouping
             Accessible.name: I18n.tr("Power profile")
-            onCurrentChanged: {
-                if (slider && root.animate)
-                    thumbPop.restart();
+            onSelectionChanged: (index, selected) => {
+                if (selected)
+                    root.choose(index);
             }
+        }
+    }
 
-            Keys.onPressed: event => {
-                if (!root.enabled || (event.modifiers & ~Qt.KeypadModifier) !== Qt.NoModifier || count === 0)
-                    return;
-                const forward = I18n.isRtl ? Qt.Key_Left : Qt.Key_Right;
-                const backward = I18n.isRtl ? Qt.Key_Right : Qt.Key_Left;
-                if (event.key !== forward && event.key !== backward)
-                    return;
-                let from = focusIndex;
-                for (let i = 0; i < count; i++) {
-                    if (repeater.itemAt(i)?.activeFocus)
-                        from = i;
-                }
-                const next = (from + (event.key === forward ? 1 : count - 1)) % count;
-                repeater.itemAt(next)?.forceActiveFocus(Qt.TabFocusReason);
-                root.choose(next);
-                event.accepted = true;
-            }
+    Component {
+        id: circleComp
 
-            Rectangle {
-                id: track
-                visible: choices.slider
-                width: parent.width
-                height: root.metrics.powerButton
-                radius: height / 2
-                color: Theme.secondaryContainer
-            }
+        Row {
+            id: circles
 
-            DMaterialShape {
-                id: thumb
-                visible: choices.slider && choices.current >= 0
-                shape: "cookie9"
-                color: Theme.primary
-                width: root.metrics.powerButton
-                height: thumb.width
-                anchors.verticalCenter: track.verticalCenter
-                x: {
-                    const cell = row.width / Math.max(1, choices.count);
-                    const column = I18n.isRtl ? choices.count - 1 - choices.current : choices.current;
-                    return column * cell + (cell - thumb.width) / 2;
-                }
-                rotation: Math.max(0, choices.current) * 80
-                layer.enabled: visible
-                layer.smooth: true
-                layer.mipmap: true
-                layer.textureSize: Qt.size(Math.ceil(width * root.shapeSupersampling), Math.ceil(height * root.shapeSupersampling))
+            Accessible.role: Accessible.Grouping
+            Accessible.name: I18n.tr("Power profile")
+            LayoutMirroring.enabled: I18n.isRtl
+            LayoutMirroring.childrenInherit: true
+            Keys.onPressed: event => root.stepWithArrows(event, circleRepeater)
 
-                Behavior on x {
-                    enabled: root.animate
-                    SoftAnim {}
-                }
+            Repeater {
+                id: circleRepeater
+                model: root.profiles
 
-                Behavior on rotation {
-                    enabled: root.animate
-                    SoftAnim {}
-                }
+                StyledButton {
+                    id: cell
 
-                SequentialAnimation {
-                    id: thumbPop
-                    SpatialAnim {
-                        target: thumb
-                        property: "scale"
-                        from: root.popScale
-                        to: 1
+                    required property var modelData
+                    required property int index
+                    readonly property bool selected: index === root.currentIndex
+                    readonly property string iconName: Theme.getPowerProfileIcon(modelData)
+                    readonly property color iconColor: selected ? Theme.onPrimary : Theme.onSurfaceVariant
+
+                    width: circles.width / Math.max(1, root.profiles.length)
+                    height: face.height + Theme.spacingXS + cellLabel.implicitHeight
+                    focusPolicy: activeFocus || index === root.focusIndex ? Qt.StrongFocus : Qt.ClickFocus
+                    checkable: true
+                    checked: selected
+                    Accessible.role: Accessible.RadioButton
+                    Accessible.name: cellLabel.text
+                    onClicked: root.choose(index)
+                    onSelectedChanged: {
+                        if (selected && root.animate)
+                            cookiePop.restart();
                     }
-                }
-            }
 
-            Row {
-                id: row
-                width: parent.width
-                spacing: choices.gap
+                    Item {
+                        id: face
+                        width: BatteryPopoutMetrics.powerButton
+                        height: face.width
+                        x: (cell.width - width) / 2
+                        scale: cell.pressed ? BatteryPopoutMetrics.circlePressScale : 1
 
-                Repeater {
-                    id: repeater
-                    model: root.profiles
-
-                    StyledButton {
-                        id: cell
-
-                        required property var modelData
-                        required property int index
-                        readonly property bool selected: index === choices.current
-                        readonly property string profileLabel: Theme.getPowerProfileLabel(modelData)
-                        readonly property string iconName: root.profileIcon(modelData)
-                        readonly property color iconColor: selected ? Theme.onPrimary : (choices.circle ? Theme.onSurfaceVariant : Theme.onSecondaryContainer)
-                        readonly property bool joined: choices.joined
-                        readonly property real outerRadius: height / 2
-                        // Inner corners are small, round off for the selected one and drop to the smallest while pressed
-                        readonly property real joinRadius: pressed ? Theme.cornerRadiusXS : (selected ? outerRadius : Theme.cornerRadiusS)
-                        property real startRadius: joined ? (index === 0 ? outerRadius : joinRadius) : 0
-                        property real endRadius: joined ? (index === choices.count - 1 ? outerRadius : joinRadius) : 0
-
-                        width: choices.cellWidth(index)
-                        height: joined ? root.metrics.button : (choices.slider ? root.metrics.powerButton : root.metrics.powerButton + Theme.spacingXS + cellLabel.implicitHeight)
-                        clip: choices.buttons
-                        focusPolicy: activeFocus || index === choices.focusIndex ? Qt.StrongFocus : Qt.ClickFocus
-                        checkable: true
-                        checked: selected
-                        Accessible.role: Accessible.RadioButton
-                        Accessible.name: profileLabel
-                        onClicked: root.choose(index)
-                        onPressedChanged: {
-                            if (pressed)
-                                choices.pressedIndex = index;
-                            else if (choices.pressedIndex === index)
-                                choices.pressedIndex = -1;
-                        }
-                        onSelectedChanged: {
-                            if (selected && choices.circle && root.animate)
-                                cookiePop.restart();
-                        }
-
-                        color: joined ? (selected ? Theme.primary : Theme.secondaryContainer) : "transparent"
-                        topLeftRadius: Math.max(0, I18n.isRtl ? endRadius : startRadius)
-                        bottomLeftRadius: topLeftRadius
-                        topRightRadius: Math.max(0, I18n.isRtl ? startRadius : endRadius)
-                        bottomRightRadius: topRightRadius
-
-                        Behavior on startRadius {
+                        Behavior on scale {
                             enabled: root.animate
                             SpatialAnim {}
                         }
 
-                        Behavior on endRadius {
-                            enabled: root.animate
-                            SpatialAnim {}
-                        }
+                        Rectangle {
+                            anchors.fill: parent
+                            anchors.margins: Theme.spacingXS
+                            visible: !cell.selected
+                            radius: width / 2
+                            color: cell.hovered ? Theme.chipSurfaceNested : Theme.chipSurface
 
-                        Behavior on width {
-                            enabled: root.animate && choices.buttons
-                            SpatialAnim {}
-                        }
-
-                        Behavior on color {
-                            enabled: root.animate
-                            EffectsAnim {}
-                        }
-
-                        StateLayer {
-                            visible: cell.joined
-                            control: cell
-                            disabled: !cell.enabled
-                            stateColor: cell.iconColor
-                        }
-
-                        FocusRing {
-                            visible: cell.joined && cell.visualFocus
-                        }
-
-                        Row {
-                            visible: cell.joined
-                            anchors.centerIn: parent
-
-                            DIcon {
-                                name: cell.iconName
-                                size: root.compactIconSize
-                                color: cell.iconColor
-                                filled: root.iconFilled(cell.iconName, cell.selected)
-                                anchors.verticalCenter: parent.verticalCenter
-
-                                Behavior on color {
-                                    enabled: root.animate
-                                    EffectsAnim {}
-                                }
-                            }
-
-                            Item {
-                                id: labelBox
-                                // Buttons show the name only while selected; the box grows and the text fades with it
-                                readonly property real shown: choices.buttons ? (cell.selected ? 1 : 0) : 1
-                                readonly property real textWidth: Math.min(labelText.implicitWidth, Math.max(0, cell.width - root.compactIconSize - Theme.spacingM * 2 - Theme.spacingS))
-                                width: (textWidth + (choices.buttons ? Theme.spacingS : Theme.spacingXS)) * (cell.selected || !choices.buttons ? 1 : 0)
-                                height: labelText.implicitHeight
-                                opacity: shown
-                                clip: true
-                                anchors.verticalCenter: parent.verticalCenter
-
-                                Behavior on width {
-                                    enabled: root.animate
-                                    FadeAnim {}
-                                }
-
-                                Behavior on opacity {
-                                    enabled: root.animate
-                                    FadeAnim {}
-                                }
-
-                                StyledText {
-                                    id: labelText
-                                    anchors.left: parent.left
-                                    anchors.leftMargin: choices.buttons ? Theme.spacingS : Theme.spacingXS
-                                    width: labelBox.textWidth
-                                    text: cell.profileLabel
-                                    font.pixelSize: choices.buttons ? Theme.fontSizeMedium : Theme.fontSizeSmall
-                                    font.weight: Theme.fontWeightMedium
-                                    fontSizeMode: Text.HorizontalFit
-                                    minimumPixelSize: Math.round(font.pixelSize * 0.75)
-                                    color: cell.iconColor
-                                    elide: Text.ElideRight
-
-                                    Behavior on color {
-                                        enabled: root.animate
-                                        EffectsAnim {}
-                                    }
-                                }
-                            }
-                        }
-
-                        Item {
-                            id: face
-                            visible: !cell.joined
-                            width: root.metrics.powerButton
-                            height: face.width
-                            scale: cell.pressed ? (choices.slider ? 0.85 : 0.9) : 1
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            anchors.top: choices.circle ? parent.top : undefined
-                            anchors.verticalCenter: choices.circle ? undefined : parent.verticalCenter
-
-                            Behavior on scale {
+                            Behavior on color {
                                 enabled: root.animate
-                                SpatialAnim {}
+                                EffectsAnim {}
                             }
+                        }
 
-                            Rectangle {
-                                anchors.fill: parent
-                                anchors.margins: Theme.spacingXS
-                                visible: choices.circle && !cell.selected
-                                radius: width / 2
-                                color: cell.hovered ? Theme.chipSurfaceNested : Theme.chipSurface
+                        DMaterialShape {
+                            id: cookie
+                            anchors.fill: parent
+                            visible: cell.selected
+                            shape: "cookie9"
+                            color: Theme.primary
+                            layer.enabled: visible
+                            layer.smooth: true
+                            layer.mipmap: true
+                            layer.textureSize: Qt.size(Math.ceil(width * root.shapeSupersampling), Math.ceil(height * root.shapeSupersampling))
 
-                                Behavior on color {
-                                    enabled: root.animate
-                                    EffectsAnim {}
+                            ParallelAnimation {
+                                id: cookiePop
+                                SpatialAnim {
+                                    target: cookie
+                                    property: "scale"
+                                    from: BatteryPopoutMetrics.popScale
+                                    to: 1
                                 }
-                            }
-
-                            DMaterialShape {
-                                id: cookie
-                                anchors.fill: parent
-                                visible: choices.circle && cell.selected
-                                shape: "cookie9"
-                                color: Theme.primary
-                                layer.enabled: visible
-                                layer.smooth: true
-                                layer.mipmap: true
-                                layer.textureSize: Qt.size(Math.ceil(width * root.shapeSupersampling), Math.ceil(height * root.shapeSupersampling))
-
-                                ParallelAnimation {
-                                    id: cookiePop
-                                    SpatialAnim {
-                                        target: cookie
-                                        property: "scale"
-                                        from: root.popScale
-                                        to: 1
-                                    }
-                                    SpatialAnim {
-                                        target: cookie
-                                        property: "rotation"
-                                        from: root.popRotation
-                                        to: 0
-                                    }
-                                }
-                            }
-
-                            Rectangle {
-                                anchors.fill: parent
-                                radius: width / 2
-                                color: "transparent"
-
-                                FocusRing {
-                                    visible: cell.visualFocus
-                                }
-                            }
-
-                            DIcon {
-                                anchors.centerIn: parent
-                                name: cell.iconName
-                                size: Theme.iconSize
-                                color: cell.iconColor
-                                filled: root.iconFilled(cell.iconName, cell.selected)
-
-                                Behavior on color {
-                                    enabled: root.animate
-                                    EffectsAnim {}
+                                SpatialAnim {
+                                    target: cookie
+                                    property: "rotation"
+                                    from: BatteryPopoutMetrics.popRotation
+                                    to: 0
                                 }
                             }
                         }
 
-                        StyledText {
-                            id: cellLabel
-                            visible: choices.circle
-                            anchors.top: face.bottom
-                            anchors.topMargin: Theme.spacingXS
-                            anchors.left: parent.left
-                            anchors.right: parent.right
-                            horizontalAlignment: Text.AlignHCenter
-                            text: cell.profileLabel
-                            font.pixelSize: Theme.fontSizeSmall
-                            font.weight: Theme.fontWeightMedium
-                            color: cell.selected ? Theme.primary : Theme.onSurfaceVariant
-                            elide: Text.ElideRight
+                        Rectangle {
+                            anchors.fill: parent
+                            radius: width / 2
+                            color: "transparent"
+
+                            FocusRing {
+                                visible: cell.visualFocus
+                            }
+                        }
+
+                        DIcon {
+                            anchors.centerIn: parent
+                            name: cell.iconName
+                            size: Theme.iconSize
+                            color: cell.iconColor
+                            filled: root.iconFilled(cell.iconName, cell.selected)
 
                             Behavior on color {
                                 enabled: root.animate
@@ -477,6 +263,185 @@ DCard {
                             }
                         }
                     }
+
+                    StyledText {
+                        id: cellLabel
+                        y: face.height + Theme.spacingXS
+                        width: cell.width
+                        horizontalAlignment: Text.AlignHCenter
+                        text: Theme.getPowerProfileLabel(cell.modelData)
+                        font.pixelSize: Theme.fontSizeSmall
+                        font.weight: Theme.fontWeightMedium
+                        color: cell.selected ? Theme.primary : Theme.onSurfaceVariant
+                        elide: Text.ElideRight
+
+                        Behavior on color {
+                            enabled: root.animate
+                            EffectsAnim {}
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    Component {
+        id: sliderComp
+
+        Item {
+            id: slider
+
+            readonly property int count: root.profiles.length
+            readonly property int current: root.currentIndex
+            readonly property real cell: width / Math.max(1, count)
+            // The cell whose keyboard focus ring shows; the thumb draws it when that cell is under it
+            property int ringIndex: -1
+            property int settledIndex: -1
+            // The cell the thumb is sliding away from: its icon stays hidden until the thumb arrives.
+            property int leavingIndex: -1
+
+            implicitHeight: thumb.height
+            Accessible.role: Accessible.Grouping
+            Accessible.name: I18n.tr("Power profile")
+            LayoutMirroring.enabled: I18n.isRtl
+            LayoutMirroring.childrenInherit: true
+            Keys.onPressed: event => root.stepWithArrows(event, sliderRepeater)
+            Component.onCompleted: settledIndex = current
+            onCurrentChanged: {
+                leavingIndex = settledIndex;
+                settledIndex = current;
+                if (root.animate)
+                    thumbPop.restart();
+            }
+
+            Rectangle {
+                width: parent.width
+                height: BatteryPopoutMetrics.powerButton
+                anchors.verticalCenter: parent.verticalCenter
+                radius: height / 2
+                color: Theme.surfaceContainerHighest
+            }
+
+            Row {
+                anchors.fill: parent
+
+                Repeater {
+                    id: sliderRepeater
+                    model: root.profiles
+
+                    StyledButton {
+                        id: stop
+
+                        required property var modelData
+                        required property int index
+                        // Hidden while any part of the thumb overlaps it, or it peeks out beside the thumb as it slides.
+                        readonly property bool covered: thumb.visible && Math.abs(thumb.x + thumb.width / 2 - stop.x - stop.width / 2) < (thumb.width + Theme.iconSize) / 2
+
+                        width: slider.cell
+                        height: slider.height
+                        focusPolicy: activeFocus || index === root.focusIndex ? Qt.StrongFocus : Qt.ClickFocus
+                        checkable: true
+                        checked: index === slider.current
+                        Accessible.role: Accessible.RadioButton
+                        Accessible.name: Theme.getPowerProfileLabel(modelData)
+                        onClicked: root.choose(index)
+                        onVisualFocusChanged: {
+                            if (visualFocus)
+                                slider.ringIndex = index;
+                            else if (slider.ringIndex === index)
+                                slider.ringIndex = -1;
+                        }
+
+                        Rectangle {
+                            width: BatteryPopoutMetrics.powerButton
+                            height: width
+                            anchors.centerIn: parent
+                            radius: width / 2
+                            color: "transparent"
+
+                            FocusRing {
+                                visible: stop.visualFocus && stop.index !== slider.current
+                            }
+                        }
+
+                        DIcon {
+                            anchors.centerIn: parent
+                            visible: !stop.covered && !(thumbSlide.running && stop.index === slider.leavingIndex)
+                            name: Theme.getPowerProfileIcon(stop.modelData)
+                            size: Theme.iconSize
+                            color: Theme.onSurfaceVariant
+                            scale: stop.pressed ? BatteryPopoutMetrics.sliderPressScale : 1
+
+                            Behavior on scale {
+                                enabled: root.animate
+                                SpatialAnim {}
+                            }
+                        }
+                    }
+                }
+            }
+
+            Item {
+                id: thumb
+                readonly property string iconName: Theme.getPowerProfileIcon(root.profiles[slider.current])
+
+                visible: slider.current >= 0
+                width: Math.round(BatteryPopoutMetrics.powerButton * BatteryPopoutMetrics.sliderThumbRatio)
+                height: width
+                x: (I18n.isRtl ? slider.count - 1 - slider.current : slider.current) * slider.cell + (slider.cell - width) / 2
+
+                Behavior on x {
+                    enabled: root.animate
+                    DCommon.DAnim {
+                        id: thumbSlide
+                    }
+                }
+
+                SequentialAnimation {
+                    id: thumbPop
+                    NumberAnimation {
+                        target: thumb
+                        property: "scale"
+                        to: BatteryPopoutMetrics.popScale
+                        duration: Theme.expressiveDurations.expressiveEffects
+                        easing.type: Easing.BezierSpline
+                        easing.bezierCurve: Theme.expressiveCurves.expressiveEffects
+                    }
+                    SpatialAnim {
+                        target: thumb
+                        property: "scale"
+                        to: 1
+                    }
+                }
+
+                DMaterialShape {
+                    anchors.fill: parent
+                    shape: "clover4"
+                    color: Theme.primary
+                    // A clover4 repeats every 90 degrees, so each step turns it while it slides and it lands looking the same
+                    rotation: Math.max(0, slider.current) * 90
+                    layer.enabled: thumb.visible
+                    layer.smooth: true
+                    layer.mipmap: true
+                    layer.textureSize: Qt.size(Math.ceil(width * root.shapeSupersampling), Math.ceil(height * root.shapeSupersampling))
+
+                    Behavior on rotation {
+                        enabled: root.animate
+                        DCommon.DAnim {}
+                    }
+                }
+
+                FocusRing {
+                    radius: width / 2
+                    visible: slider.ringIndex >= 0 && slider.ringIndex === slider.current
+                }
+
+                DIcon {
+                    anchors.centerIn: parent
+                    name: thumb.iconName
+                    size: Theme.iconSize
+                    color: Theme.onPrimary
+                    filled: root.iconFilled(thumb.iconName, true)
                 }
             }
         }

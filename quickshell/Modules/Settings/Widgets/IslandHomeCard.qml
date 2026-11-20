@@ -144,12 +144,11 @@ SettingsCard {
         resetKeys: ["batteryColorMode"]
         text: I18n.tr("Color")
         visible: root.batteryShown && !root.hosted
-        model: [I18n.tr("Low and charging", "battery settings: red when low, green while charging"), I18n.tr("Level", "battery settings: charge level indicator colors")]
-        currentIndex: (root.store.config?.batteryColorMode ?? SettingsData.barConfigDefault("batteryColorMode")) === "level" ? 1 : 0
-        onSelectionChanged: (index, selected) => {
-            if (selected)
-                root.store.apply("batteryColorMode", index === 1 ? "level" : "lowcharging");
-        }
+        model: [I18n.tr("Theme", "battery settings: plain widget colors, like other bar widgets"), I18n.tr("Low and charging", "battery settings: red when low, green while charging"), I18n.tr("Level", "battery settings: charge level indicator colors")]
+        values: ["theme", "lowcharging", "level"]
+        value: root.store.config?.batteryColorMode ?? SettingsData.barConfigDefault("batteryColorMode")
+        fallbackValue: SettingsData.barConfigDefault("batteryColorMode")
+        onValueSelected: selected => root.store.apply("batteryColorMode", selected)
     }
 
     SettingsButtonGroupRow {

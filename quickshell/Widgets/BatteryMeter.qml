@@ -18,11 +18,15 @@ Item {
     property bool showNumber: true
     property bool showBolt: true
     property string meterStyle: "solid"
-    property bool levelColors: false
+    // A bar battery color mode ("theme", "lowcharging", "level"), or "primary": the accent, red when low.
+    property string colorMode: "primary"
+    property color neutralColor: Theme.isLightColor(Theme.primary) === Theme.isLightColor(Theme.surface) ? Theme.surfaceText : Theme.primary
     property real maxDiameter: 0
+    // Longest side the solid body may take; the thickness shrinks to fit.
+    property real maxLength: 0
     property bool hovered: false
     property color colorOverride: "transparent"
-    // One number in a single readable color over the whole solid body, instead of a second copy clipped to the fill.
+    // One number in a single readable color over the whole solid body.
     property bool singleTextColor: false
 
     readonly property bool outlined: root.meterStyle === "outline"
@@ -36,7 +40,8 @@ Item {
     readonly property real arcStart: root.duo ? 150 : root.arc ? (root.vertical ? 150 : 60) : -90
     readonly property real arcSpan: root.duo || root.arc ? 240 : 360
     readonly property real chargeTarget: SettingsData.batteryScaleToChargeLimit ? 100 : Math.max(root.level, Math.min(100, SettingsData.batteryChargeLimit))
-    readonly property real unit: root.thickness / 14
+    readonly property real lengthUnits: root.vertical ? 27.25 : 26 + 9 * 8 / 13
+    readonly property real unit: root.maxLength > 0 ? Math.min(root.thickness / 14, root.maxLength / root.lengthUnits) : root.thickness / 14
     readonly property real level: Math.max(0, Math.min(100, BatteryService.displayBatteryLevel))
     readonly property bool charging: BatteryService.batteryAvailable && BatteryService.isCharging
     readonly property bool lowState: BatteryService.batteryAvailable && BatteryService.isLowBattery && !BatteryService.isCharging
@@ -45,11 +50,9 @@ Item {
             return root.colorOverride;
         if (!BatteryService.batteryAvailable)
             return Theme.onSurface_38;
-        if (root.levelColors)
-            return BatteryService.levelColor;
-        if (root.lowState)
-            return Theme.error;
-        return Theme.isLightColor(Theme.primary) === Theme.isLightColor(Theme.surface) ? Theme.surfaceText : Theme.primary;
+        if (root.colorMode === "primary")
+            return root.lowState ? Theme.error : root.neutralColor;
+        return BatteryService.colorFor(root.colorMode, BatteryService.batteryLevel, root.charging, root.neutralColor);
     }
     readonly property color dimColor: Theme.withAlpha(root.fillColor, root.hovered ? 0.6 : 0.48)
     readonly property color trackColor: {

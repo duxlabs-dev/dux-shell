@@ -407,13 +407,13 @@ QtObject {
         },
         {
             "id": "battery",
-            "text": BatteryService.batteryAvailable || BatteryService.peripheralDevices.length > 0 || !PowerProfileWatcher.available ? I18n.tr("Battery") : I18n.tr("Power profile"),
+            "text": BatteryService.batteryAvailable || BatteryService.hasPeripherals || !PowerProfileWatcher.available ? I18n.tr("Battery") : I18n.tr("Power profile"),
             "description": I18n.tr("Battery and power management"),
             "icon": "battery_std",
             "type": "action",
             "category": "system",
-            "enabled": BatteryService.batteryAvailable || BatteryService.peripheralDevices.length > 0 || PowerProfileWatcher.available,
-            "warning": !BatteryService.batteryAvailable && BatteryService.peripheralDevices.length === 0 && !PowerProfileWatcher.available ? I18n.tr("No battery") : undefined
+            "enabled": BatteryService.batteryAvailable || BatteryService.hasPeripherals || PowerProfileWatcher.available,
+            "warning": !BatteryService.batteryAvailable && !BatteryService.hasPeripherals && !PowerProfileWatcher.available ? I18n.tr("No battery") : undefined
         },
         {
             "id": "diskUsage",

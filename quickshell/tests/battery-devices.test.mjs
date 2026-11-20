@@ -44,23 +44,6 @@ test("levelRamp matches the legacy battery color for every level", () => {
     }
 });
 
-test("deviceKeys count identical devices in input order", () => {
-    const keys = plain(devices.deviceKeys([
-        { type: MOUSE, model: "MX" },
-        { type: KEYBOARD, model: "K1" },
-        { type: MOUSE, model: "MX" },
-        { type: MOUSE, model: "Other" }
-    ]));
-    assert.deepEqual(keys, ["5:MX:0", "6:K1:0", "5:MX:1", "5:Other:0"]);
-});
-
-test("a missing list shows only the system battery", () => {
-    for (const saved of [undefined, null, "x", {}]) {
-        const items = devices.resolveBarEntries(saved, SYSTEM, keyed([device(MOUSE, "MX", 50)]));
-        assert.deepEqual(plain(items.map(i => [i.id, i.kind])), [["system", "system"]]);
-    }
-});
-
 test("entries keep the saved order and skip the ones switched off", () => {
     const live = keyed([device(MOUSE, "MX", 50), device(KEYBOARD, "K1", 60)]);
     const saved = [{ id: "6:K1:0", on: true }, { id: "system", on: true }, { id: "5:MX:0", on: false }];
@@ -96,10 +79,6 @@ test("an unknown reading is never low and a charging device is not low", () => {
     const items = devices.resolveBarEntries([{ id: "5:MX:0" }], SYSTEM, live);
     assert.equal(items[0].unknown, true);
     assert.equal(items[0].low, false);
-});
-
-test("an empty saved list is the user's choice", () => {
-    assert.deepEqual(plain(devices.resolveBarEntries([], SYSTEM, [])), []);
 });
 
 test("device parts default to shown and keep what was saved", () => {

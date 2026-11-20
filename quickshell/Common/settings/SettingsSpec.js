@@ -41,6 +41,11 @@ function subsetOf(values) {
 var BATTERY_POPOUT_DETAILS = ["health", "temperature", "capacity", "power"];
 var BATTERY_POPOUT_LAYOUTS = ["grid", "compact", "chips", "list"];
 var BATTERY_POPOUT_DEVICE_LAYOUTS = ["grid", "compact", "chips", "list", "bars"];
+var BATTERY_POPOUT_COLORS = ["primary", "theme", "lowcharging", "level"];
+var BATTERY_POPOUT_STYLES = ["compact", "line", "ring", "card"];
+var BATTERY_POPOUT_BADGES = ["shape", "ring"];
+var BATTERY_POPOUT_POWER_PLACEMENTS = ["card", "overview"];
+var BATTERY_POPOUT_POWER_STYLES = ["circle", "segments", "buttons", "slider"];
 
 var LOCAL_SPEC = {
     dockConfigs: {
@@ -1222,15 +1227,15 @@ var LOCAL_SPEC = {
     },
     batteryPopoutColor: {
         def: "primary",
-        coerce: oneOf(["primary", "theme", "lowcharging", "level"])
+        coerce: oneOf(BATTERY_POPOUT_COLORS)
     },
     batteryPopoutStyle: {
-        def: "line",
-        coerce: oneOf(["line", "ring", "card"])
+        def: "compact",
+        coerce: oneOf(BATTERY_POPOUT_STYLES)
     },
     batteryPopoutBadge: {
         def: "shape",
-        coerce: oneOf(["shape", "ring"])
+        coerce: oneOf(BATTERY_POPOUT_BADGES)
     },
     batteryPopoutWavy: {
         def: true
@@ -1243,7 +1248,7 @@ var LOCAL_SPEC = {
         coerce: oneOf(BATTERY_POPOUT_LAYOUTS)
     },
     batteryPopoutDetails: {
-        def: BATTERY_POPOUT_DETAILS.slice(),
+        def: ["health", "capacity", "power"],
         coerce: subsetOf(BATTERY_POPOUT_DETAILS)
     },
     batteryPopoutPower: {
@@ -1251,17 +1256,17 @@ var LOCAL_SPEC = {
     },
     batteryPopoutPowerPlacement: {
         def: "card",
-        coerce: oneOf(["card", "overview"])
+        coerce: oneOf(BATTERY_POPOUT_POWER_PLACEMENTS)
     },
     batteryPopoutPowerStyle: {
-        def: "circle",
-        coerce: oneOf(["circle", "segments", "buttons", "slider"])
+        def: "buttons",
+        coerce: oneOf(BATTERY_POPOUT_POWER_STYLES)
     },
     batteryPopoutDevices: {
         def: true
     },
     batteryPopoutDevicesLayout: {
-        def: "grid",
+        def: "bars",
         coerce: oneOf(BATTERY_POPOUT_DEVICE_LAYOUTS)
     },
     batteryNotifyLow: {

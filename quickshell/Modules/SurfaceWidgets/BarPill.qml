@@ -119,6 +119,25 @@ Item {
     signal rightClicked(real rootX, real rootY)
     signal wheel(var wheelEvent)
 
+    // Centers of the gaps between neighboring items along the bar, measured from the laid out items so RTL works.
+    function gapCenters(items, layout) {
+        const vertical = isVerticalOrientation;
+        const origin = horizontalPadding + (vertical ? layout.y : layout.x);
+        const out = [];
+        for (let i = 0; i + 1 < items.length; i++) {
+            const a = items[i];
+            const b = items[i + 1];
+            if (!a || !b)
+                return [];
+            const aStart = vertical ? a.y : a.x;
+            const aEnd = aStart + (vertical ? a.height : a.width);
+            const bStart = vertical ? b.y : b.x;
+            const bEnd = bStart + (vertical ? b.height : b.width);
+            out.push(origin + (aStart < bStart ? (aEnd + bStart) / 2 : (bEnd + aStart) / 2));
+        }
+        return out.sort((x, y) => x - y);
+    }
+
     function cornerRadius(joined, progress = pressProgress) {
         if (noBackground)
             return 0;
@@ -264,7 +283,10 @@ Item {
                 readonly property real pressProgress: !visualContent.split || index === root.pressedSegment ? root.pressProgress : 0
                 readonly property real startRadius: root.cornerRadius(first ? root.startJoined : root.splitJoined, pressProgress)
                 readonly property real endRadius: root.cornerRadius(last ? root.endJoined : root.splitJoined, pressProgress)
-                readonly property real blurRadius: Math.min(startRadius, endRadius)
+                readonly property real blurTopLeftRadius: fill.topLeftRadius
+                readonly property real blurTopRightRadius: fill.topRightRadius
+                readonly property real blurBottomLeftRadius: fill.bottomLeftRadius
+                readonly property real blurBottomRightRadius: fill.bottomRightRadius
 
                 x: root.isVerticalOrientation ? 0 : along
                 y: root.isVerticalOrientation ? along : 0

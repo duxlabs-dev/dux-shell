@@ -8,36 +8,36 @@ import qs.Services
 import qs.Widgets
 import qs.DCommon.Common
 import qs.DCommon.Widgets
-import "../../../Common/BatteryPopoutMetrics.js" as BatteryPopoutMetrics
 import "../../../DCommon/Common/Contrast.js" as Contrast
 
 Item {
     id: root
 
-    // { status, time, percentage, level, unknown, charging, limit, icon, rate }; level is the unscaled reading, percentage drives the fill and number
+    // level is the unscaled reading; percentage drives the fill and number
     property var source: ({})
-    // [{ icon, value }], shown beside the ring in the non-compact ring layout
     property var facts: []
     property bool factsBeside: false
     property bool showEdit: true
-    // Shown below the gauge inside the hero card, e.g. the power profile
     property Component footer: null
-    property var metrics: BatteryPopoutMetrics.metrics(SettingsData.density)
     property bool active: false
+    property real topRadius: Theme.cornerRadiusL
+    property real bottomRadius: Theme.cornerRadiusL
 
     signal settingsRequested
     signal editRequested
 
     readonly property string style: SettingsData.batteryPopoutStyle
     readonly property bool wavy: SettingsData.batteryPopoutWavy
-    readonly property bool compact: root.metrics.compact
+    readonly property bool compact: BatteryPopoutMetrics.compact
     readonly property bool unknown: root.source.unknown ?? false
     readonly property real percentage: root.unknown ? 0 : Math.max(0, Math.min(100, root.source.percentage ?? 0))
     readonly property real value: root.unknown ? -1 : root.percentage
     readonly property bool charging: root.source.charging ?? false
     readonly property real limit: root.source.limit ?? 100
-    readonly property bool limited: root.limit > 0 && root.limit < 100
-    readonly property string status: root.source.status ?? ""
+    // At or above the limit the gauges show the plain level.
+    readonly property bool limited: root.limit > 0 && root.limit < 100 && root.level < root.limit
+    readonly property bool towardLimit: root.charging && root.limited
+    readonly property string status: root.towardLimit ? I18n.tr("Charging to %1", "battery popout title while charging toward the charge limit, %1 is the limit like 80%").arg(Math.round(root.limit) + "%") : (root.source.status ?? "")
     readonly property string time: root.source.time ?? ""
     readonly property string timeLine: [root.time, root.source.rate ?? ""].filter(part => part !== "").join(" · ")
     readonly property bool besideFacts: root.factsBeside && !root.compact && root.style === "ring"
@@ -48,19 +48,18 @@ Item {
     readonly property bool lowTone: (root.colorMode === "primary" || root.colorMode === "lowcharging") && root.accent === Theme.error
     readonly property color badgeFill: root.lowTone ? Theme.errorContainer : root.colorMode === "theme" ? Theme.surfaceContainerHighest : Theme.primaryContainer
     readonly property color badgeInk: root.lowTone ? Theme.onErrorContainer : root.colorMode === "theme" ? Theme.surfaceText : Theme.onPrimaryContainer
-    readonly property real compactNumberSize: root.metrics.heroNumberSmall ? Theme.fontSizeXXLarge : Theme.fontSizeDisplay
-    readonly property real pastLimitShade: 0.28
-    readonly property real trackTintAmount: 0.26
-    readonly property real ringBadgeTrack: 0.3
     readonly property string badgeKind: SettingsData.batteryPopoutBadge === "ring" ? "ring" : "shape"
+    readonly property bool waveOn: BatteryPopoutMetrics.waveOn(root.wavy, root.charging, root.level)
 
     property real shownValue: Math.max(0, root.value)
 
     function pastLimit(color) {
-        return Contrast.mix(color, Qt.rgba(0, 0, 0, 1), root.pastLimitShade);
+        return Contrast.mix(color, Theme.scrimColor, BatteryPopoutMetrics.pastLimitShade);
     }
 
     implicitHeight: body.height
+    Accessible.role: Accessible.ProgressBar
+    Accessible.name: [root.status, root.value >= 0 ? Math.round(root.value) + "%" : "–"].filter(part => part !== "").join(": ")
     LayoutMirroring.enabled: I18n.isRtl
     LayoutMirroring.childrenInherit: true
 
@@ -71,6 +70,15 @@ Item {
             easing.type: Easing.BezierSpline
             easing.bezierCurve: Theme.expressiveCurves.expressiveSlowEffects
         }
+    }
+
+    component HeroCard: DCard {
+        pad: BatteryPopoutMetrics.pad
+        restRadius: Theme.cornerRadiusL
+        topLeftRadius: root.topRadius
+        topRightRadius: root.topRadius
+        bottomLeftRadius: root.bottomRadius
+        bottomRightRadius: root.bottomRadius
     }
 
     component HeroNumber: Item {
@@ -85,6 +93,7 @@ Item {
 
         StyledText {
             id: digits
+            Accessible.ignored: true
             anchors.left: parent.left
             anchors.verticalCenter: parent.verticalCenter
             text: number.value >= 0 ? Math.round(number.value).toString() : "–"
@@ -98,11 +107,13 @@ Item {
 
         StyledText {
             id: unit
+            Accessible.ignored: true
             anchors.left: digits.right
             anchors.baseline: digits.baseline
             visible: number.value >= 0
             text: "%"
             font.pixelSize: Math.round(number.pixelSize / 2)
+            font.weight: Theme.fontWeight
             color: number.color
         }
     }
@@ -114,6 +125,9 @@ Item {
         property string sub
         property color statusInk: Theme.surfaceText
         property color subInk: Theme.surfaceVariantText
+        property real statusSize: Theme.fontSizeMedium
+        property int statusWeight: Theme.fontWeightMedium
+        property int alignment: Text.AlignLeft
 
         spacing: Theme.spacingXXS
 
@@ -121,9 +135,10 @@ Item {
             width: parent.width
             text: label.status
             visible: text !== ""
+            horizontalAlignment: label.alignment
             elide: Text.ElideRight
-            font.pixelSize: Theme.fontSizeMedium
-            font.weight: Theme.fontWeightMedium
+            font.pixelSize: label.statusSize
+            font.weight: label.statusWeight
             color: label.statusInk
         }
 
@@ -131,9 +146,73 @@ Item {
             width: parent.width
             text: label.sub
             visible: text !== ""
+            horizontalAlignment: label.alignment
             wrapMode: Text.WordWrap
             font.pixelSize: Theme.fontSizeSmall
             color: label.subInk
+        }
+    }
+
+    component HeroLine: M3WaveProgress {
+        property bool hatch: false
+
+        implicitHeight: lineWidth + 2 * amp
+        value: root.shownValue / 100
+        limit: root.limit / 100
+        lineWidth: BatteryPopoutMetrics.heroStroke
+        wavelength: BatteryPopoutMetrics.wavelength
+        amp: BatteryPopoutMetrics.waveAmp
+        isPlaying: root.waveOn
+        trackGap: BatteryPopoutMetrics.trackGap
+        roundEnds: true
+        showPlayhead: false
+        showStopDot: true
+        pastLimit: hatch ? "hatch" : "dim"
+        hatchColor: Theme.withAlpha(Theme.onSurface, Theme.stateLayerHover)
+        hatchPeriod: BatteryPopoutMetrics.hatchPeriod
+        mirrored: I18n.isRtl
+        fillColor: root.unknown ? "transparent" : root.accent
+        stopDotColor: root.accent
+        trackColor: Theme.secondaryContainer
+    }
+
+    component HeroRing: DCircularWavyProgress {
+        progress: root.shownValue / 100
+        limit: root.limit / 100
+        showLimitMarker: true
+        wavy: root.waveOn
+        waveSpeed: root.active ? wavelength : 0
+        gapSize: BatteryPopoutMetrics.ringGap
+        strokeWidth: BatteryPopoutMetrics.gaugeStroke
+        trackStrokeWidth: BatteryPopoutMetrics.gaugeStroke
+        color: root.unknown ? "transparent" : root.accent
+        trackColor: Theme.secondaryContainer
+    }
+
+    component RingCenter: Column {
+        id: center
+
+        property real numberSize: Theme.fontSizeDisplayLarge
+        property bool beside: false
+
+        anchors.centerIn: parent
+        width: parent.width - 2 * (BatteryPopoutMetrics.gaugeStroke + Theme.spacingM)
+        spacing: Theme.spacingXXS
+
+        HeroNumber {
+            anchors.horizontalCenter: parent.horizontalCenter
+            value: root.value
+            pixelSize: center.numberSize
+            color: root.accent
+        }
+
+        HeroText {
+            width: parent.width
+            status: root.status
+            sub: center.beside ? "" : root.time
+            statusSize: center.beside ? Theme.fontSizeSmall : Theme.fontSizeMedium
+            statusWeight: center.beside ? Theme.fontWeight : Theme.fontWeightMedium
+            alignment: Text.AlignHCenter
         }
     }
 
@@ -149,8 +228,8 @@ Item {
         property color ringTrack
         readonly property bool ring: badge.kind === "ring"
 
-        implicitWidth: Theme.iconButtonSize
-        implicitHeight: Theme.iconButtonSize
+        implicitWidth: badge.ring ? BatteryPopoutMetrics.badge : Theme.iconButtonSize
+        implicitHeight: implicitWidth
 
         DMaterialShape {
             visible: !badge.ring
@@ -159,13 +238,14 @@ Item {
             color: badge.fill
         }
 
-        BatteryLevelRing {
+        DCircularWavyProgress {
             visible: badge.ring
             anchors.fill: parent
-            value: badge.value
+            progress: Math.max(0, badge.value) / 100
             wavy: false
-            moving: false
-            fillColor: badge.ringColor
+            strokeWidth: BatteryPopoutMetrics.gaugeStroke
+            trackStrokeWidth: BatteryPopoutMetrics.gaugeStroke
+            color: badge.value >= 0 ? badge.ringColor : "transparent"
             trackColor: badge.ringTrack
         }
 
@@ -179,43 +259,42 @@ Item {
     }
 
     component HeroFooter: Loader {
-        height: item ? item.implicitHeight : 0
+        height: (item as Item)?.implicitHeight ?? 0
         visible: item !== null
     }
 
     component HeroActions: Row {
         id: actions
 
-        property bool showEdit: true
-        property real buttonSize: Theme.iconButtonSize
+        property bool showEdit: root.showEdit
+        property real buttonSize: BatteryPopoutMetrics.button
         property color iconColor: Theme.onSurfaceVariant
-
-        signal settingsClicked
-        signal editClicked
+        // Over the card fill each button picks its own ink, since the fill edge can run between them.
+        property var inkFor: null
 
         spacing: Theme.spacingXXS
 
         DActionButton {
+            id: editButton
             visible: actions.showEdit
             iconName: "edit"
             iconSize: Theme.iconSize
             buttonSize: actions.buttonSize
-            iconColor: actions.iconColor
+            iconColor: actions.inkFor ? actions.inkFor(editButton) : actions.iconColor
             stateColor: Theme.onSurfaceVariant
             tooltipText: I18n.tr("Widget settings", "battery popout button that opens the battery widget options")
-            Accessible.name: I18n.tr("Widget settings", "battery popout button that opens the battery widget options")
-            onClicked: actions.editClicked()
+            onClicked: root.editRequested()
         }
 
         DActionButton {
+            id: settingsButton
             iconName: "settings"
             iconSize: Theme.iconSize
             buttonSize: actions.buttonSize
-            iconColor: actions.iconColor
+            iconColor: actions.inkFor ? actions.inkFor(settingsButton) : actions.iconColor
             stateColor: Theme.onSurfaceVariant
             tooltipText: I18n.tr("Settings")
-            Accessible.name: I18n.tr("Settings")
-            onClicked: actions.settingsClicked()
+            onClicked: root.settingsRequested()
         }
     }
 
@@ -302,6 +381,8 @@ Item {
         height: implicitHeight
         sourceComponent: {
             switch (root.style) {
+            case "compact":
+                return lineCompact;
             case "ring":
                 return root.compact ? ringCompact : (root.besideFacts ? ringBeside : ringFull);
             case "card":
@@ -315,15 +396,13 @@ Item {
     Component {
         id: lineFull
 
-        DCard {
-            pad: root.metrics.pad
-            restRadius: Theme.cornerRadiusL
+        HeroCard {
             implicitHeight: lineColumn.implicitHeight + pad * 2
 
             Column {
                 id: lineColumn
                 width: parent.width
-                spacing: root.metrics.gap
+                spacing: BatteryPopoutMetrics.gap
 
                 Item {
                     width: parent.width
@@ -331,13 +410,13 @@ Item {
 
                     StyledText {
                         anchors.left: parent.left
-                        anchors.right: lineActions.visible ? lineActions.left : lineBadge.left
+                        anchors.right: lineActions.left
                         anchors.rightMargin: Theme.spacingS
                         text: root.status
                         elide: Text.ElideRight
                         font.pixelSize: Theme.fontSizeMedium
                         font.weight: Theme.fontWeightMedium
-                        color: Theme.surfaceText
+                        color: Theme.surfaceVariantText
                     }
 
                     HeroBadge {
@@ -354,12 +433,8 @@ Item {
 
                     HeroActions {
                         id: lineActions
-                        showEdit: root.showEdit
                         anchors.right: lineBadge.left
                         anchors.verticalCenter: parent.verticalCenter
-                        buttonSize: root.metrics.button
-                        onSettingsClicked: root.settingsRequested()
-                        onEditClicked: root.editRequested()
                     }
                 }
 
@@ -380,17 +455,12 @@ Item {
                     text: root.time
                     visible: text !== ""
                     wrapMode: Text.WordWrap
-                    font.pixelSize: Theme.fontSizeSmall
-                    color: Theme.surfaceVariantText
+                    font.pixelSize: Theme.fontSizeMedium
+                    color: Theme.surfaceText
                 }
 
-                BatteryLevelBar {
-                    value: root.value
-                    limit: root.limit
-                    charging: root.charging
-                    wavy: root.wavy
-                    fillColor: root.accent
-                    moving: root.active
+                HeroLine {
+                    width: parent.width
                 }
 
                 HeroFooter {
@@ -404,23 +474,28 @@ Item {
     Component {
         id: lineCompact
 
-        DCard {
-            pad: root.metrics.pad
-            restRadius: Theme.cornerRadiusL
+        HeroCard {
+            id: compactCard
+
+            readonly property bool framed: root.style !== "compact"
+
             implicitHeight: compactColumn.implicitHeight + pad * 2
+            pad: framed ? BatteryPopoutMetrics.pad : 0
+            color: framed ? surfaceColor : "transparent"
+            border.width: framed ? Theme.layerOutlineWidth : 0
 
             Column {
                 id: compactColumn
                 width: parent.width
-                spacing: root.metrics.gap
+                spacing: BatteryPopoutMetrics.gap
 
                 RowLayout {
                     width: parent.width
-                    spacing: Theme.spacingM
+                    spacing: compactCard.framed ? Theme.spacingM : Theme.spacingL
 
                     HeroNumber {
                         value: root.value
-                        pixelSize: root.compactNumberSize
+                        pixelSize: compactCard.framed || BatteryPopoutMetrics.dense ? BatteryPopoutMetrics.smallNumberSize : Theme.fontSizeDisplayLarge
                         color: root.accent
                     }
 
@@ -432,20 +507,13 @@ Item {
                     }
 
                     HeroActions {
-                        showEdit: root.showEdit
-                        buttonSize: root.metrics.button
-                        onSettingsClicked: root.settingsRequested()
-                        onEditClicked: root.editRequested()
+                        Layout.alignment: compactCard.framed ? Qt.AlignVCenter : Qt.AlignTop
                     }
                 }
 
-                BatteryLevelBar {
-                    value: root.value
-                    limit: root.limit
-                    charging: root.charging
-                    wavy: root.wavy
-                    fillColor: root.accent
-                    moving: root.active
+                HeroLine {
+                    width: parent.width
+                    hatch: !compactCard.framed
                 }
 
                 HeroFooter {
@@ -459,64 +527,21 @@ Item {
     Component {
         id: ringFull
 
-        DCard {
-            pad: root.metrics.pad
-            restRadius: Theme.cornerRadiusL
-            implicitHeight: ringBox.height + (ringFooter.visible ? ringFooter.height + root.metrics.gap : 0) + pad * 2
+        HeroCard {
+            implicitHeight: ringBox.height + (ringFooter.visible ? ringFooter.height + BatteryPopoutMetrics.gap : 0) + pad * 2
 
-            BatteryLevelRing {
+            HeroRing {
                 id: ringBox
                 anchors.horizontalCenter: parent.horizontalCenter
-                width: root.metrics.heroRing
+                width: BatteryPopoutMetrics.heroRing
                 height: width
-                value: root.value
-                limit: root.limit
-                charging: root.charging
-                wavy: root.wavy
-                fillColor: root.accent
-                moving: root.active
 
-                Column {
-                    anchors.centerIn: parent
-                    width: parent.width
-                    spacing: Theme.spacingXXS
-
-                    HeroNumber {
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        value: root.value
-                        color: root.accent
-                    }
-
-                    StyledText {
-                        width: parent.width
-                        text: root.status
-                        visible: text !== ""
-                        horizontalAlignment: Text.AlignHCenter
-                        elide: Text.ElideRight
-                        font.pixelSize: Theme.fontSizeMedium
-                        font.weight: Theme.fontWeightMedium
-                        color: Theme.surfaceText
-                    }
-
-                    StyledText {
-                        width: parent.width
-                        text: root.time
-                        visible: text !== ""
-                        horizontalAlignment: Text.AlignHCenter
-                        wrapMode: Text.WordWrap
-                        font.pixelSize: Theme.fontSizeSmall
-                        color: Theme.surfaceVariantText
-                    }
-                }
+                RingCenter {}
             }
 
             HeroActions {
-                showEdit: root.showEdit
                 anchors.top: parent.top
                 anchors.right: parent.right
-                buttonSize: root.metrics.button
-                onSettingsClicked: root.settingsRequested()
-                onEditClicked: root.editRequested()
             }
 
             HeroFooter {
@@ -531,47 +556,21 @@ Item {
     Component {
         id: ringBeside
 
-        DCard {
-            pad: root.metrics.pad
-            restRadius: Theme.cornerRadiusL
-            implicitHeight: besideRow.implicitHeight + (besideFooter.visible ? besideFooter.height + root.metrics.gap : 0) + pad * 2
+        HeroCard {
+            implicitHeight: besideRow.implicitHeight + (besideFooter.visible ? besideFooter.height + BatteryPopoutMetrics.gap : 0) + pad * 2
 
             RowLayout {
                 id: besideRow
                 width: parent.width
                 spacing: Theme.spacingXL
 
-                BatteryLevelRing {
-                    Layout.preferredWidth: root.metrics.heroRingList
-                    Layout.preferredHeight: root.metrics.heroRingList
-                    value: root.value
-                    limit: root.limit
-                    charging: root.charging
-                    wavy: root.wavy
-                    fillColor: root.accent
-                    moving: root.active
+                HeroRing {
+                    Layout.preferredWidth: BatteryPopoutMetrics.heroRingBeside
+                    Layout.preferredHeight: BatteryPopoutMetrics.heroRingBeside
 
-                    Column {
-                        anchors.centerIn: parent
-                        width: parent.width
-                        spacing: Theme.spacingXXS
-
-                        HeroNumber {
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            value: root.value
-                            pixelSize: Theme.fontSizeDisplay
-                            color: root.accent
-                        }
-
-                        StyledText {
-                            width: parent.width
-                            text: root.status
-                            visible: text !== ""
-                            horizontalAlignment: Text.AlignHCenter
-                            elide: Text.ElideRight
-                            font.pixelSize: Theme.fontSizeSmall
-                            color: Theme.surfaceText
-                        }
+                    RingCenter {
+                        numberSize: Theme.fontSizeDisplay
+                        beside: true
                     }
                 }
 
@@ -610,15 +609,10 @@ Item {
                         }
                     }
                 }
-            }
 
-            HeroActions {
-                showEdit: root.showEdit
-                anchors.top: parent.top
-                anchors.right: parent.right
-                buttonSize: root.metrics.button
-                onSettingsClicked: root.settingsRequested()
-                onEditClicked: root.editRequested()
+                HeroActions {
+                    Layout.alignment: Qt.AlignTop
+                }
             }
 
             HeroFooter {
@@ -633,25 +627,17 @@ Item {
     Component {
         id: ringCompact
 
-        DCard {
-            pad: root.metrics.pad
-            restRadius: Theme.cornerRadiusL
-            implicitHeight: ringRow.implicitHeight + (ringCompactFooter.visible ? ringCompactFooter.height + root.metrics.gap : 0) + pad * 2
+        HeroCard {
+            implicitHeight: ringRow.implicitHeight + (ringCompactFooter.visible ? ringCompactFooter.height + BatteryPopoutMetrics.gap : 0) + pad * 2
 
             RowLayout {
                 id: ringRow
                 width: parent.width
                 spacing: Theme.spacingM
 
-                BatteryLevelRing {
-                    Layout.preferredWidth: root.metrics.heroSmall
-                    Layout.preferredHeight: root.metrics.heroSmall
-                    value: root.value
-                    limit: root.limit
-                    charging: root.charging
-                    wavy: root.wavy
-                    fillColor: root.accent
-                    moving: root.active
+                HeroRing {
+                    Layout.preferredWidth: BatteryPopoutMetrics.heroSmall
+                    Layout.preferredHeight: BatteryPopoutMetrics.heroSmall
 
                     HeroNumber {
                         anchors.centerIn: parent
@@ -668,12 +654,7 @@ Item {
                     sub: root.timeLine
                 }
 
-                HeroActions {
-                    showEdit: root.showEdit
-                    buttonSize: root.metrics.button
-                    onSettingsClicked: root.settingsRequested()
-                    onEditClicked: root.editRequested()
-                }
+                HeroActions {}
             }
 
             HeroFooter {
@@ -688,37 +669,39 @@ Item {
     Component {
         id: cardLayout
 
-        DCard {
+        HeroCard {
             id: card
-            pad: root.metrics.pad
-            restRadius: Theme.cornerRadiusL
-            implicitHeight: cardTrack.height + (cardFooter.visible ? cardFooter.height + root.metrics.gap : 0) + pad * 2
+            implicitHeight: cardTrack.height + (cardFooter.visible ? cardFooter.height + BatteryPopoutMetrics.gap : 0) + pad * 2
 
             ClippingRectangle {
                 id: cardTrack
 
                 readonly property real limitX: width * root.limit / 100
                 readonly property string faceMode: root.compact ? "cardSmall" : "card"
-                readonly property color baseTint: Contrast.mix(card.surfaceColor, root.accent, root.trackTintAmount)
-                readonly property color ink: Contrast.readableOnAll(root.limited ? [root.accent, baseTint, root.pastLimit(baseTint)] : [root.accent, baseTint], [Theme.surfaceText, Theme.surface])
-                // One ink has to read on fill and track: a track too far from the ink takes on more of the accent.
-                readonly property color trackTint: {
-                    let amount = root.trackTintAmount;
-                    for (let step = 0; step < 8; step++) {
-                        const tint = Contrast.mix(card.surfaceColor, root.accent, amount);
-                        const past = root.limited ? root.pastLimit(tint) : tint;
-                        if (Contrast.worstRatio(cardTrack.ink, [tint, past]) >= 3)
-                            return tint;
-                        amount = Math.min(1, amount + 0.1);
-                    }
-                    return Contrast.mix(card.surfaceColor, root.accent, amount);
+                readonly property color trackTint: Contrast.mix(card.surfaceColor, root.accent, BatteryPopoutMetrics.trackTintAmount)
+                // The text is drawn once per surface: fill ink over the fill, track ink everywhere else.
+                readonly property color fillInk: Contrast.readableOn(root.accent, [Theme.surfaceText, Theme.surface])
+                readonly property color trackInk: Contrast.readableOnAll(root.limited ? [cardTrack.trackTint, root.pastLimit(cardTrack.trackTint)] : [cardTrack.trackTint], [Theme.surfaceText, Theme.surface])
+                readonly property var face: ({
+                        mode: cardTrack.faceMode,
+                        value: root.value,
+                        status: root.status,
+                        sub: root.timeLine,
+                        numberSize: root.compact ? BatteryPopoutMetrics.smallNumberSize : Theme.fontSizeDisplayLarge,
+                        reserve: root.compact ? 0 : cardBadge.width + Theme.spacingS,
+                        actionsWidth: BatteryPopoutMetrics.button + (root.showEdit ? BatteryPopoutMetrics.button + Theme.spacingXXS : 0)
+                    })
+
+                function inkAt(item) {
+                    // Summing x (not mapToItem) keeps the binding live while the layout settles.
+                    let center = item.width / 2;
+                    for (let it = item; it && it !== cardTrack; it = it.parent)
+                        center += it.x;
+                    return center >= fill.x && center <= fill.x + fill.width ? cardTrack.fillInk : cardTrack.trackInk;
                 }
-                // The badge sits on the fill or on the track, so it has to stand out from both
-                readonly property color badgeFill: Contrast.readableOnAll([root.accent, cardTrack.trackTint], [root.badgeFill, cardTrack.ink], 3)
-                readonly property color badgeInk: Contrast.readableOn(cardTrack.badgeFill, [root.badgeInk, Theme.surface, Theme.surfaceText])
 
                 width: parent.width
-                height: root.compact ? root.metrics.fillSmall : root.metrics.fill
+                height: BatteryPopoutMetrics.cardFill
                 radius: Theme.cornerRadiusM
                 color: cardTrack.trackTint
 
@@ -728,6 +711,7 @@ Item {
                 }
 
                 Rectangle {
+                    id: fill
                     anchors.left: parent.left
                     anchors.top: parent.top
                     anchors.bottom: parent.bottom
@@ -747,55 +731,65 @@ Item {
                     anchors.right: parent.right
                     anchors.top: parent.top
                     anchors.bottom: parent.bottom
-                    color: Qt.rgba(0, 0, 0, root.pastLimitShade)
+                    color: Theme.withAlpha(Theme.scrimColor, BatteryPopoutMetrics.pastLimitShade)
                 }
 
                 FillFace {
                     anchors.fill: parent
-                    mode: cardTrack.faceMode
-                    value: root.value
-                    status: root.status
-                    sub: root.time
-                    numberSize: root.compact ? root.compactNumberSize : Theme.fontSizeDisplayLarge
-                    ink: cardTrack.ink
-                    reserve: root.compact ? 0 : cardBadge.width + Theme.spacingS
-                    actionsWidth: root.metrics.button + (root.showEdit ? root.metrics.button + Theme.spacingXXS : 0)
+                    mode: cardTrack.face.mode
+                    value: cardTrack.face.value
+                    status: cardTrack.face.status
+                    sub: cardTrack.face.sub
+                    numberSize: cardTrack.face.numberSize
+                    reserve: cardTrack.face.reserve
+                    actionsWidth: cardTrack.face.actionsWidth
+                    ink: cardTrack.trackInk
                 }
 
-                Rectangle {
-                    visible: root.limited
-                    anchors.left: parent.left
-                    anchors.leftMargin: cardTrack.limitX - width / 2
-                    anchors.top: parent.top
-                    anchors.bottom: parent.bottom
-                    width: Theme.spacingXS
-                    color: Theme.surfaceText
+                Item {
+                    id: fillClip
+                    anchors.fill: fill
+                    clip: true
+
+                    FillFace {
+                        x: -fillClip.x
+                        width: cardTrack.width
+                        height: cardTrack.height
+                        mode: cardTrack.face.mode
+                        value: cardTrack.face.value
+                        status: cardTrack.face.status
+                        sub: cardTrack.face.sub
+                        numberSize: cardTrack.face.numberSize
+                        reserve: cardTrack.face.reserve
+                        actionsWidth: cardTrack.face.actionsWidth
+                        ink: cardTrack.fillInk
+                    }
                 }
 
                 HeroBadge {
                     id: cardBadge
+
+                    readonly property color surfaceInk: cardTrack.inkAt(cardBadge)
+
                     visible: !root.compact
                     anchors.right: parent.right
                     anchors.top: parent.top
                     anchors.margins: Theme.spacingS
                     kind: root.badgeKind
                     icon: root.source.icon ?? ""
-                    fill: cardTrack.badgeFill
-                    ink: cardTrack.badgeInk
+                    fill: Contrast.readableOnAll([root.accent, cardTrack.trackTint], [root.badgeFill, cardBadge.surfaceInk], 3)
+                    ink: Contrast.readableOn(cardBadge.fill, [root.badgeInk, Theme.surface, Theme.surfaceText])
                     value: root.value
-                    ringColor: cardTrack.ink
-                    ringTrack: Theme.withAlpha(cardTrack.ink, root.ringBadgeTrack)
+                    ringColor: cardBadge.surfaceInk
+                    ringTrack: Theme.withAlpha(cardBadge.surfaceInk, BatteryPopoutMetrics.ringBadgeTrack)
                 }
 
                 HeroActions {
-                    showEdit: root.showEdit
+                    id: cardActions
                     anchors.right: parent.right
                     anchors.rightMargin: Theme.spacingS
                     y: root.compact ? (cardTrack.height - height) / 2 : cardTrack.height - height - Theme.spacingS
-                    buttonSize: root.metrics.button
-                    iconColor: cardTrack.ink
-                    onSettingsClicked: root.settingsRequested()
-                    onEditClicked: root.editRequested()
+                    inkFor: item => cardTrack.inkAt(item)
                 }
             }
 

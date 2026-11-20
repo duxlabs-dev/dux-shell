@@ -15,28 +15,19 @@ SettingsReorderList {
     property Component systemDetails: null
 
     readonly property var rows: BatteryDevices.editorRows(saved, devices)
-    readonly property var emptyRow: ({
-            "id": "",
-            "kind": "device",
-            "name": "",
-            "iconName": "",
-            "present": false,
-            "on": false,
-            "icon": true,
-            "percent": true,
-            "lowOnly": false
-        })
+    readonly property var emptyRow: BatteryDevices.editorRow("", null, null)
     readonly property var partKeys: ["icon", "percent", "lowOnly"]
     readonly property var partLabels: [I18n.tr("Icon", "battery bar widget: show the device glyph"), I18n.tr("Percentage", "battery bar widget: show the charge number"), I18n.tr("Only when low", "battery bar widget: show the entry only at or below the low threshold")]
 
     signal entriesEdited(var entries)
 
-    function saveRows(next) {
-        entriesEdited(next.map(row => BatteryDevices.entryForRow(row)));
+    // Connected devices the user never touched stay out of the saved list.
+    function saveRows(next, editedId) {
+        entriesEdited(next.filter(row => row.raw || row.id === editedId).map(row => BatteryDevices.entryForRow(row)));
     }
 
     function patchRow(index, patch) {
-        saveRows(rows.map((row, i) => i === index ? Object.assign({}, row, patch) : row));
+        saveRows(rows.map((row, i) => i === index ? Object.assign({}, row, patch) : row), rows[index].id);
     }
 
     function removeRow(index) {
@@ -45,7 +36,12 @@ SettingsReorderList {
 
     // The rows follow the list by position, so a drag or a reading change never rebuilds them mid-use
     model: rows.length
-    onReordered: indices => saveRows(indices.map(i => rows[i]))
+    // An unsaved device dragged above a saved one is saved to keep its new place.
+    onReordered: indices => {
+        const next = indices.map(i => rows[i]);
+        const lastSaved = next.map(row => !!row.raw).lastIndexOf(true);
+        saveRows(next.filter((row, i) => row.raw || i < lastSaved));
+    }
 
     delegate: SettingsReorderRow {
         id: row
