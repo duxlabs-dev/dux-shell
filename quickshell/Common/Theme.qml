@@ -1457,6 +1457,20 @@ Singleton {
         themeCategoryTransitionTimer.restart();
     }
 
+    function releaseRegistryTheme(themeId) {
+        if (currentThemeCategory !== "registry" || currentTheme !== custom)
+            return;
+        if (!SettingsData.customThemeFile.endsWith("/" + themeId + "/theme.json"))
+            return;
+        screenTransition();
+        customThemeFileView.path = "";
+        customThemeRawData = null;
+        customThemeData = null;
+        SettingsData.set("customThemeFile", "");
+        currentThemeCategory = "generic";
+        switchTheme(SettingsData.specDefault("currentThemeName"), true, false);
+    }
+
     function loadCustomTheme(themeData) {
         customThemeRawData = themeData;
         customThemeData = resolveCustomTheme(themeData, isLightMode ? "light" : "dark");

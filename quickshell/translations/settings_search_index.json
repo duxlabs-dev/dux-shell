@@ -645,8 +645,8 @@
       "interface",
       "keyboard",
       "ring",
-      "scrollbar",
-      "scrollbars",
+      "scroll",
+      "shadows",
       "style"
     ],
     "page": "theme_surfaces",
@@ -1629,32 +1629,6 @@
     ],
     "icon": "keyboard",
     "description": "Shortcuts, keyboard, mouse"
-  },
-  {
-    "section": "density",
-    "label": "Interface density",
-    "tabIndex": -1,
-    "category": "Interface style",
-    "keywords": [
-      "bar",
-      "comfortable",
-      "compact",
-      "control center",
-      "dense",
-      "density",
-      "dock",
-      "frame",
-      "interface",
-      "island",
-      "menus",
-      "padding",
-      "rows",
-      "size",
-      "spacing",
-      "spacious",
-      "style"
-    ],
-    "page": "theme_surfaces"
   },
   {
     "section": "blurLayerOutline",
@@ -2656,23 +2630,6 @@
     "page": "theme_surfaces",
     "icon": "tonality",
     "description": "Fades content at the top and bottom of scrollable views"
-  },
-  {
-    "section": "scrollbarsEnabled",
-    "label": "Scrollbars",
-    "tabIndex": -1,
-    "category": "Interface style",
-    "keywords": [
-      "interface",
-      "list",
-      "page",
-      "scroll",
-      "scrollbar",
-      "scrollbars",
-      "style"
-    ],
-    "page": "theme_surfaces",
-    "icon": "unfold_more"
   },
   {
     "section": "sectionDividerOpacity",
@@ -9577,20 +9534,6 @@
     ]
   },
   {
-    "section": "reduceMotion",
-    "label": "Reduce motion",
-    "tabIndex": 14,
-    "category": "Motion",
-    "keywords": [
-      "accessibility",
-      "animation",
-      "motion",
-      "physics",
-      "reduce",
-      "spring"
-    ]
-  },
-  {
     "section": "enableRippleEffects",
     "label": "Ripple effects",
     "tabIndex": 14,
@@ -9611,7 +9554,6 @@
     "tabIndex": 14,
     "category": "Motion",
     "keywords": [
-      "accessibility",
       "animate",
       "animation",
       "animations",
@@ -21061,23 +21003,26 @@
     "parentLabel": "Appearance"
   },
   {
-    "section": "_tab_71",
+    "section": "wallpaperFolderAdd",
     "label": "Wallpapers",
     "tabIndex": 71,
     "category": "Wallpapers",
     "keywords": [
+      "add",
       "appearance",
       "background",
       "bg",
+      "browse",
       "desktop",
+      "directories",
       "folders",
       "image",
+      "library",
       "picture",
       "wallpapers"
     ],
-    "icon": "wallpaper",
     "parentLabel": "Appearance",
-    "description": "Folders"
+    "icon": "wallpaper"
   },
   {
     "section": "compositorAnimationOverrides",
@@ -21817,5 +21762,99 @@
     ],
     "parentLabel": "Network",
     "conditionKey": "connectionEditorAvailable"
+  },
+  {
+    "section": "accessibility",
+    "label": "Accessibility",
+    "tabIndex": 86,
+    "category": "Accessibility",
+    "keywords": [
+      "a11y",
+      "accessibility",
+      "density",
+      "motion",
+      "scrollbars",
+      "switch",
+      "toggle"
+    ],
+    "icon": "accessibility_new"
+  },
+  {
+    "section": "density",
+    "label": "Interface density",
+    "tabIndex": 86,
+    "category": "Accessibility",
+    "keywords": [
+      "accessibility",
+      "bar",
+      "comfortable",
+      "compact",
+      "control center",
+      "dense",
+      "density",
+      "dock",
+      "frame",
+      "interface",
+      "island",
+      "menus",
+      "padding",
+      "rows",
+      "size",
+      "spacing",
+      "spacious"
+    ]
+  },
+  {
+    "section": "reduceMotion",
+    "label": "Reduce motion",
+    "tabIndex": 86,
+    "category": "Accessibility",
+    "keywords": [
+      "accessibility",
+      "animation",
+      "motion",
+      "physics",
+      "reduce",
+      "spring"
+    ]
+  },
+  {
+    "section": "scrollbarsEnabled",
+    "label": "Scrollbars",
+    "tabIndex": 86,
+    "category": "Accessibility",
+    "keywords": [
+      "accessibility",
+      "hide",
+      "list",
+      "page",
+      "scroll",
+      "scrollbar",
+      "scrollbars"
+    ]
+  },
+  {
+    "section": "switchStateIcons",
+    "label": "Show on/off indicators",
+    "tabIndex": 86,
+    "category": "Accessibility",
+    "keywords": [
+      "accessibility",
+      "check",
+      "checkmark",
+      "icon",
+      "indicator",
+      "indicators",
+      "keep",
+      "off",
+      "on",
+      "show",
+      "state",
+      "switch",
+      "switches",
+      "their",
+      "toggle"
+    ],
+    "description": "Off switches show an X, on switches keep their check"
   }
 ]

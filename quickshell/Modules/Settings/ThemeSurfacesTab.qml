@@ -94,18 +94,6 @@ Column {
                 onValueSelected: value => SettingsData.set("interfaceStyle", value)
             }
 
-            SettingsButtonGroupRow {
-                tab: "theme"
-                tags: ["density", "compact", "dense", "spacious", "comfortable", "spacing", "padding", "rows", "menus", "control center", "bar", "dock", "island", "frame", "size"]
-                settingKey: "density"
-                text: I18n.tr("Interface density", "interface density setting label")
-                model: [I18n.tr("Spacious", "interface density option with the most room between items"), I18n.tr("Comfortable", "interface density option with the default spacing"), I18n.tr("Compact", "interface density option fitting the most items on screen"), I18n.tr("Dense", "interface density option denser than compact for small text and tight rows")]
-                values: ["spacious", "comfortable", "compact", "dense"]
-                value: SettingsData.density
-                fallbackValue: "comfortable"
-                onValueSelected: value => SettingsData.set("density", value)
-            }
-
             SettingsSliderRow {
                 tab: "theme"
                 tags: ["classic", "divider", "dividers", "lines", "rows", "sections", "sidebar", "outline"]
@@ -367,7 +355,7 @@ Column {
     SettingsDeferred {
         SettingsCard {
             tab: "theme"
-            tags: ["focus", "ring", "keyboard", "scrollbar", "scrollbars"]
+            tags: ["focus", "ring", "keyboard", "scroll", "shadows"]
             title: I18n.tr("Controls")
             settingKey: "surfaceControls"
 
@@ -433,16 +421,6 @@ Column {
                         SettingsData.set("focusRingColor", "primary");
                     }
                 }
-            }
-
-            SettingsToggleCard {
-                tab: "theme"
-                tags: ["scroll", "scrollbar", "scrollbars", "list", "page"]
-                settingKey: "scrollbarsEnabled"
-                iconName: "unfold_more"
-                title: I18n.tr("Scrollbars", "theme settings toggle, show scrollbars on lists and pages")
-                checked: SettingsData.scrollbarsEnabled
-                onToggled: checked => SettingsData.set("scrollbarsEnabled", checked)
             }
 
             SettingsToggleCard {

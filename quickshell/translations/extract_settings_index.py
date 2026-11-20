@@ -139,6 +139,7 @@ TAB_INDEX_MAP = {
     "ProfileInspectTab.qml": 77,
     "AboutTab.qml": 13,
     "MotionTab.qml": 14,
+    "AccessibilityTab.qml": 86,
     "SoundsTab.qml": 15,
     "MediaPlayerTab.qml": 16,
     "NotificationRulesTab.qml": 55,

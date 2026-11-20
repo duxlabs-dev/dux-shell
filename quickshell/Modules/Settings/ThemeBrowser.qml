@@ -191,6 +191,7 @@ RegistryBrowserWindow {
         });
         operationFailed = false;
         operationMessage = I18n.tr("Uninstalling: %1", "uninstallation progress").arg(themeName);
+        Theme.releaseRegistryTheme(themeId);
         DMSService.uninstallTheme(themeId, response => {
             if (!root)
                 return;

@@ -15,7 +15,7 @@ Item {
         SettingsDeferred {
             SettingsCard {
                 tab: "motion"
-                tags: ["animation", "motion", "speed", "duration", "spring", "physics", "bounce", "accessibility", "ripple", "fluid"]
+                tags: ["animation", "motion", "speed", "duration", "spring", "physics", "bounce", "ripple", "fluid"]
                 title: I18n.tr("Shell animations", "settings card title, motion of DMS surfaces")
                 settingKey: "animations"
                 iconName: "auto_awesome_motion"
@@ -151,14 +151,15 @@ Item {
                     onToggled: newValue => SettingsData.set("enableRippleEffects", newValue)
                 }
 
-                SettingsToggleRow {
-                    tab: "motion"
-                    tags: ["animation", "spring", "physics", "accessibility", "reduce", "motion"]
-                    settingKey: "reduceMotion"
+                SettingsNavRow {
                     visible: !Theme.motionOff
-                    text: I18n.tr("Reduce motion")
-                    checked: SettingsData.reduceMotion
-                    onToggled: checked => SettingsData.set("reduceMotion", checked)
+                    iconName: "accessibility_new"
+                    title: I18n.tr("Reduce motion")
+                    hint: SettingsTabs.page("accessibility")?.text ?? ""
+                    onClicked: keyboard => {
+                        SettingsSearchService.navigateToSection("reduceMotion");
+                        root.parentModal?.navigateTo("accessibility", keyboard);
+                    }
                 }
 
                 SettingsNavRow {

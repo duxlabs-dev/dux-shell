@@ -42,44 +42,11 @@ Item {
         active: root.parentModal?.shouldBeVisible ?? false
     }
 
-    SettingsCard {
-        id: card
-
-        visible: root.folder !== null
-        width: root.columnWidth
-        anchors.top: parent.top
-        anchors.topMargin: Theme.spacingXS
-        anchors.horizontalCenter: parent.horizontalCenter
-        title: I18n.tr("Folder", "wallpaper folder settings card title")
-        headerActions: SettingsDeleteButton {
-            tooltipText: confirming ? I18n.tr("Confirm Delete", "remove wallpaper folder tooltip") : I18n.tr("Remove", "remove wallpaper folder tooltip")
-            onDeleteRequested: {
-                WallpaperLibraryService.removeFolder(root.folder.path);
-                root.parentModal?.goBack();
-            }
-        }
-
-        SettingsToggleRow {
-            iconName: "visibility"
-            text: I18n.tr("Show", "wallpaper folder option")
-            checked: !(root.folder?.hidden ?? false)
-            onToggled: checked => WallpaperLibraryService.setFolderHidden(root.folder.path, !checked)
-        }
-
-        SettingsToggleRow {
-            iconName: "folder_copy"
-            text: I18n.tr("Include subfolders", "wallpaper folder option")
-            checked: root.folder?.recursive ?? false
-            onToggled: checked => WallpaperLibraryService.setFolderRecursive(root.folder.path, checked)
-        }
-    }
-
     DGridView {
         id: grid
 
         visible: root.folder !== null
-        anchors.top: card.bottom
-        anchors.topMargin: SettingsMetrics.cardGap
+        anchors.top: parent.top
         anchors.bottom: parent.bottom
         anchors.horizontalCenter: parent.horizontalCenter
         width: root.columnWidth
@@ -118,7 +85,7 @@ Item {
     }
 
     CcEmptyState {
-        anchors.top: card.bottom
+        anchors.top: parent.top
         anchors.topMargin: SettingsMetrics.cardGap
         anchors.horizontalCenter: parent.horizontalCenter
         visible: root.folder === null || root.missing || (WallpaperLibraryService.loaded && root.paths.length === 0)
