@@ -1160,6 +1160,21 @@ Item {
         return useAutoGaps ? Math.max(4, storedBarSpacing) : manualGapValue;
     }
 
+    // The strip between the body's bar-facing edge and the screen edge, as wide as the body.
+    function _inBarCorridor(gx, gy) {
+        const x = renderedAlignedX, y = renderedAlignedY, w = renderedAlignedWidth, h = renderedAlignedHeight;
+        switch (effectiveBarPosition) {
+        case SettingsData.Position.Top:
+            return gx >= x && gx <= x + w && gy >= 0 && gy <= y;
+        case SettingsData.Position.Bottom:
+            return gx >= x && gx <= x + w && gy >= y + h && gy <= screenHeight;
+        case SettingsData.Position.Left:
+            return gy >= y && gy <= y + h && gx >= 0 && gx <= x;
+        default:
+            return gy >= y && gy <= y + h && gx >= x + w && gx <= screenWidth;
+        }
+    }
+
     function _standaloneAlignedXFor(width) {
         const popupGap = _standalonePopupGap();
         const leftGap = _edgeClearance("left", popupGap, adjacentBarInfo.leftBar > 0 ? adjacentBarInfo.leftBar : 0);
@@ -1346,6 +1361,7 @@ Item {
             dismissEnabled: root.hoverDismissEnabled
             dismissSuspended: root.hoverDismissSuspended || root.dragPassthrough
             surfaceVisible: root.shouldBeVisible
+            inBarCorridor: root._inBarCorridor
             onDismissRequested: root.closeFromHoverDismiss()
         }
 
