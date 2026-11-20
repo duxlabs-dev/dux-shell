@@ -417,9 +417,8 @@ Item {
         hoverController.updateBarHovered(hovered);
     }
 
-    function dismissHoverSurfaces() {
-        if (!hoverController.isActiveHoverSurfacePinned())
-            hoverController.closeHoverSurfaces();
+    function pointerMovedToIsland() {
+        hoverController.pointerMovedToIsland();
     }
 
     function invalidateHoverCandidateCache() {

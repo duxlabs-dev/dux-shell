@@ -369,23 +369,6 @@ Item {
         onTriggered: root.keyboardReclaiming = false
     }
 
-    // Once the island takes the pointer, the bar only knows its last point on the bar, so it can't close its hover popouts itself.
-    Timer {
-        id: hoverPopoutDismissTimer
-
-        interval: Timing.debounce
-        onTriggered: {
-            if (!controller.pointerInside)
-                return;
-            if (root.barBody) {
-                root.barBody.dismissHoverSurfaces();
-                return;
-            }
-            PopoutManager.dismissHoverPopoutForScreen(root.screen);
-            TrayMenuManager.closeHoverMenus();
-        }
-    }
-
     Connections {
         target: PopoutManager
 
@@ -409,7 +392,7 @@ Item {
         onKeyboardDismissRequestedChanged: root.requestKeyboardFocus()
         onPointerInsideChanged: {
             if (pointerInside)
-                hoverPopoutDismissTimer.restart();
+                root.barBody?.pointerMovedToIsland();
         }
         onKeyboardYieldedChanged: {
             if (keyboardYielded || !keyboardDismissRequested)

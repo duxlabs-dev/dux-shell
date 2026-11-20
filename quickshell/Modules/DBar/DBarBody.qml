@@ -113,8 +113,8 @@ Item {
         scrollArea.processWheel(wheel);
     }
 
-    function dismissHoverSurfaces() {
-        topBarContent.dismissHoverSurfaces();
+    function pointerMovedToIsland() {
+        topBarContent.pointerMovedToIsland();
     }
 
     property var controlCenterButtonRef: null
