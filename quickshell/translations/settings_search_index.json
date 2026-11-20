@@ -6689,17 +6689,13 @@
     "category": "Appearance",
     "keywords": [
       "appearance",
-      "attached",
       "bar",
       "corner",
       "corners",
-      "edge",
-      "flush",
       "panel",
       "radius",
       "round",
       "rounded",
-      "screen",
       "square",
       "statusbar",
       "style",
@@ -7246,6 +7242,28 @@
     "parentLabel": "Bar",
     "description": "Use fully rounded ends for the collapsed island",
     "conditionKey": "islandEnabled"
+  },
+  {
+    "section": "barEdgePlacement",
+    "label": "Placement",
+    "tabIndex": 6,
+    "category": "Appearance",
+    "keywords": [
+      "appearance",
+      "attached",
+      "bar",
+      "edge",
+      "floating",
+      "flush",
+      "gap",
+      "panel",
+      "placement",
+      "screen",
+      "statusbar",
+      "taskbar",
+      "topbar"
+    ],
+    "parentLabel": "Bar"
   },
   {
     "section": "islandSatellitePosition",
