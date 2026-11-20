@@ -213,7 +213,7 @@ QtObject {
     property bool editRoomGranted: false
     readonly property real controlCenterSheetInset: CcMetrics.islandInset * 2
     property string controlCenterDockSide: ""
-    property bool controlCenterResizing: false
+    property bool panelResizing: false
     readonly property real controlCenterDockReserve: controlCenterDockSide === "" ? 0 : CcMetrics.dockedPanelWidth + CcMetrics.dockedPanelGap
     readonly property int controlCenterColumnCap: CcMetrics.columnCapFor(dashboardAvailableWidth - controlCenterSheetInset - PopoutMetrics.editOverflow * 2 - controlCenterDockReserve)
     readonly property int controlCenterColumns: Math.min(CcMetrics.gridColumns, controlCenterColumnCap)

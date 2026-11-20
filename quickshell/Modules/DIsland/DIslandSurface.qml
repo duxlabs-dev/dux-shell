@@ -377,7 +377,7 @@ Item {
     VectorSpringMotion {
         id: motion
 
-        reducedMotion: root.reducedMotion || root.controller.controlCenterResizing
+        reducedMotion: root.reducedMotion || root.controller.panelResizing
         stiffness: root.springStiffness
         damping: root.springDamping
         mass: root.springMass
@@ -407,10 +407,10 @@ Item {
         }
 
         // Keep the grab inside the Wayland input region while it travels beyond either resize edge.
-        x: root.controller.controlCenterResizing ? -root.hostOriginX : (motion.running ? Math.min(root.motionStartBounds.x, root.targetVisualX) : root.targetVisualX) - inputPadding
-        y: root.controller.controlCenterResizing ? -root.hostOriginY : (motion.running ? Math.min(root.motionStartBounds.y, root.targetVisualY) : root.targetVisualY) - inputPadding
-        width: root.controller.controlCenterResizing ? (root.effectiveScreen?.width ?? root.width) : (motion.running ? Math.max(root.motionStartBounds.x + root.motionStartBounds.width, root.targetVisualX + motion.targetWidth) : root.targetVisualX + motion.targetWidth) + inputPadding - x
-        height: root.controller.controlCenterResizing ? (root.effectiveScreen?.height ?? root.height) : (motion.running ? Math.max(root.motionStartBounds.y + root.motionStartBounds.height, root.targetVisualY + motion.targetHeight) : root.targetVisualY + motion.targetHeight) + inputPadding - y
+        x: root.controller.panelResizing ? -root.hostOriginX : (motion.running ? Math.min(root.motionStartBounds.x, root.targetVisualX) : root.targetVisualX) - inputPadding
+        y: root.controller.panelResizing ? -root.hostOriginY : (motion.running ? Math.min(root.motionStartBounds.y, root.targetVisualY) : root.targetVisualY) - inputPadding
+        width: root.controller.panelResizing ? (root.effectiveScreen?.width ?? root.width) : (motion.running ? Math.max(root.motionStartBounds.x + root.motionStartBounds.width, root.targetVisualX + motion.targetWidth) : root.targetVisualX + motion.targetWidth) + inputPadding - x
+        height: root.controller.panelResizing ? (root.effectiveScreen?.height ?? root.height) : (motion.running ? Math.max(root.motionStartBounds.y + root.motionStartBounds.height, root.targetVisualY + motion.targetHeight) : root.targetVisualY + motion.targetHeight) + inputPadding - y
     }
 
     Loader {

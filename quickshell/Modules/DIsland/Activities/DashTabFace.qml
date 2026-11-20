@@ -47,7 +47,7 @@ FocusScope {
         widthFor: columns => Math.min(root.controller.dashboardAvailableWidth, DashMetrics.widthFor(SettingsData.showWeekNumber, undefined, columns))
         currentStep: () => root.panelColumns
         currentRows: () => root.panelRows
-        minStep: DashMetrics.minimumGridColumns
+        minStep: Math.max(DashMetrics.minimumGridColumns, root.tab?.usedColumns ?? 0)
         maxStep: root.controller.dashboardColumnCap
         rowUnit: DashMetrics.gridRowUnit + DashMetrics.gridGap
         minRows: root.contentRows
@@ -68,6 +68,9 @@ FocusScope {
         }
         onCanceled: DashMetrics.panelPreview = null
     }
+
+    readonly property bool panelResizing: panelResizer.resizing
+    onPanelResizingChanged: root.controller.panelResizing = panelResizing
 
     clip: true
     LayoutMirroring.enabled: I18n.isRtl
@@ -287,7 +290,13 @@ FocusScope {
         onDismissed: root.focusFace()
     }
 
-    Component.onDestruction: root.controller.setEditing(root.activityId, false)
+    Component.onDestruction: {
+        if (panelResizing) {
+            root.controller.panelResizing = false;
+            DashMetrics.panelPreview = null;
+        }
+        root.controller.setEditing(root.activityId, false);
+    }
 
     Component.onCompleted: {
         root.contentStaged = true;
