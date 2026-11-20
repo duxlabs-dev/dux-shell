@@ -162,6 +162,10 @@
       "type": "string",
       "description": "Trigger string for launcher activation (required for launcher type)"
     },
+    "launcherSection": {
+      "type": "boolean",
+      "description": "Launcher plugin also provides a live section of cards in Spotlight via getSectionItems(query)"
+    },
     "icon": {
       "type": "string",
       "description": "Material Design icon name"

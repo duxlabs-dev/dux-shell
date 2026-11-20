@@ -53,6 +53,8 @@ function getGridColumns(viewMode, gridColumns, iconColumns) {
         return gridColumns;
     case "icons":
         return iconColumns;
+    case "row":
+        return 1e9;
     default:
         return 1;
     }

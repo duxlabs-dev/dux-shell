@@ -14,6 +14,7 @@ Singleton {
     readonly property real tileLabelHeight: Theme.spacingXL
     readonly property real tileLabelBlockHeight: tileLabelMetrics.lineSpacing * 2
     readonly property real tileImageRatio: Theme.launcherImageRatio
+    readonly property real rowCardMinWidth: tileSize * 1.5
     readonly property real tileMinHeight: tileGap + Theme.spacingXS * 2 + gridIconSize + Theme.spacingS + tileLabelBlockHeight
     // Grid cells follow the list pitch so every density fits the same whole rows
     readonly property real gridDensityScale: (rowHeight + rowGap) / (Theme.listItemHeight + Theme.groupedListGap)

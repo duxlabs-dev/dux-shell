@@ -72,6 +72,7 @@ FocusScope {
         id: controller
         active: root.parentModal ? (root.parentModal.spotlightOpen || root.parentModal.isClosing) : true
         viewModeContext: root.viewModeContext
+        liveSections: root.viewModeContext === "spotlight"
 
         onItemExecuted: {
             if (root.parentModal) {
@@ -138,6 +139,8 @@ FocusScope {
 
         var hasCtrl = event.modifiers & Qt.ControlModifier;
         event.accepted = true;
+        if (!controller.activeFolderId && resultsList.handleExpandedKey(event))
+            return;
 
         const launcherAction = LauncherKeybinds.actionForEvent(event, SettingsData.launcherKeybinds);
         if (launcherAction) {
@@ -159,7 +162,7 @@ FocusScope {
                 controller.closeLauncherFolder();
                 return;
             }
-            if (controller.clearPluginFilter())
+            if (controller.collapseExpanded() || controller.clearPluginFilter())
                 return;
             if (root.parentModal?.attemptUserCancel)
                 root.parentModal.attemptUserCancel();

@@ -127,6 +127,11 @@ FocusScope {
             return;
         }
 
+        if (!root.controller.activeFolderId && resultsList.handleExpandedKey(event)) {
+            event.accepted = true;
+            return;
+        }
+
         const hasCtrl = event.modifiers & Qt.ControlModifier;
 
         if (root.controller.searchMode === "dmenu") {
@@ -166,7 +171,7 @@ FocusScope {
                 event.accepted = true;
                 return;
             }
-            if (root.controller.clearPluginFilter()) {
+            if (root.controller.collapseExpanded() || root.controller.clearPluginFilter()) {
                 event.accepted = true;
                 return;
             }
@@ -302,6 +307,7 @@ FocusScope {
         active: !root.controllerOverride && (root.parentModal ? (root.parentModal.spotlightOpen || root.parentModal.isClosing) : true)
         viewModeContext: "spotlight"
         forceLinearNavigation: false
+        liveSections: true
     }
 
     LauncherContextMenu {
