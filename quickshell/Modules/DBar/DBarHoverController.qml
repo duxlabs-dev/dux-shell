@@ -150,9 +150,10 @@ Item {
 
         cancelQueuedHitTest();
         _cancelPendingHover();
-        _hoverReopenSuppressedTrigger = "";
-        if (!hoverPopoutsEnabled || isActiveHoverSurfacePinned())
+        if (!hoverPopoutsEnabled || isActiveHoverSurfacePinned()) {
+            _hoverReopenSuppressedTrigger = "";
             return;
+        }
         _hoverCloseTimer.restart();
     }
 
@@ -658,7 +659,8 @@ Item {
         if (notepadContainsGlobalPoint(gx, gy))
             return true;
         const screenName = barWindow.screen?.name;
-        if (screenName && TrayMenuManager.activeTrayMenus[screenName])
+        const trayMenu = screenName ? TrayMenuManager.activeTrayMenus[screenName] : null;
+        if (trayMenu && trayMenu.openedByHover !== true)
             return true;
         return false;
     }
@@ -713,7 +715,11 @@ Item {
     function _suppressReopenAfterToggleClose(screenName) {
         if (screenName !== barWindow?.screen?.name)
             return;
-        activeHoverTrigger = "";
+        const keepPinnedSurface = hasOpenHoverSurface() && isActiveHoverSurfacePinned();
+        if (hasOpenHoverSurface() && !keepPinnedSurface)
+            closeHoverSurfaces();
+        if (!keepPinnedSurface)
+            activeHoverTrigger = "";
         if (!hoverPopoutsEnabled)
             return;
         _cancelPendingHover();
@@ -951,6 +957,7 @@ Item {
     }
 
     function _commitHoverClose() {
+        _hoverReopenSuppressedTrigger = "";
         const gx = PopoutManager.hoverCursorGlobalX;
         const gy = PopoutManager.hoverCursorGlobalY;
         const onIsland = _pointerOnIsland;
