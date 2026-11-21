@@ -616,8 +616,21 @@ Singleton {
         }
     }
 
+    PanelWindow {
+        id: pluginHostWindow
+        visible: false
+        implicitWidth: 1
+        implicitHeight: 1
+        color: "transparent"
+
+        Item {
+            id: pluginItemHost
+            anchors.fill: parent
+        }
+    }
+
     function _createDaemonInstance(pluginId, comp) {
-        const instance = comp.createObject(root, {
+        const instance = comp.createObject(pluginItemHost, {
             "pluginId": pluginId,
             "pluginService": root
         });
@@ -1088,7 +1101,7 @@ Singleton {
         const comp = pluginLauncherComponents[pluginId];
         if (!comp)
             return null;
-        const instance = comp.createObject(root, {
+        const instance = comp.createObject(pluginItemHost, {
             "pluginService": root
         });
         if (!instance) {
