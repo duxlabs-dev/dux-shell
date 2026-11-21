@@ -92,7 +92,7 @@ Item {
     readonly property bool isVertical: (surfaceContext?.isVertical ?? axis?.isVertical) ?? false
     readonly property bool hasDefaultPill: pillIcon !== "" || pillText !== ""
     readonly property Component effectiveHorizontalPill: horizontalBarPill ?? (hasDefaultPill ? defaultBarPill : null)
-    readonly property Component effectiveVerticalPill: verticalBarPill ?? horizontalBarPill ?? (hasDefaultPill ? defaultBarPill : null)
+    readonly property Component effectiveVerticalPill: verticalBarPill ?? (hasDefaultPill ? defaultBarPill : null)
     readonly property bool hasHorizontalPill: effectiveHorizontalPill !== null
     readonly property bool hasVerticalPill: effectiveVerticalPill !== null
     readonly property bool hasPopout: popoutContent !== null
@@ -235,7 +235,7 @@ Item {
                 id: pillGrid
                 anchors.centerIn: parent
                 columns: root.isVertical ? 1 : ((pillItem.hasIcon && pillItem.hasText) ? 2 : 1)
-                spacing: (pillItem.hasIcon && pillItem.hasText) ? (root.isVertical ? 2 : Theme.spacingXS) : 0
+                spacing: (pillItem.hasIcon && pillItem.hasText) ? (root.isVertical ? Theme.spacingXXS : Theme.spacingXS) : 0
                 horizontalItemAlignment: Grid.AlignHCenter
                 verticalItemAlignment: Grid.AlignVCenter
                 scale: pillItem.draggingOver ? 1.2 : 1.0
@@ -248,20 +248,21 @@ Item {
                 }
 
                 DIcon {
+                    id: pillIcon
                     visible: pillItem.hasIcon
                     name: root.pillIcon
                     size: pillItem.effectiveIconSize
                     color: pillItem.draggingOver ? Theme.primary : root.pillIconColor
 
-                    NumberAnimation on rotation {
+                    RotationAnimator on rotation {
                         from: 0
                         to: 360
-                        duration: 1000
+                        duration: Theme.extraLongDuration
                         loops: Animation.Infinite
-                        running: root.pillSpinning && root.surfaceLive
+                        running: root.pillSpinning && root.surfaceLive && !Theme.motionOff
                         onRunningChanged: {
                             if (!running)
-                                parent.rotation = 0;
+                                pillIcon.rotation = 0;
                         }
                     }
                 }
