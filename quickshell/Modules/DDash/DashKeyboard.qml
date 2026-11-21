@@ -31,6 +31,7 @@ Item {
 
     signal tabCycleRequested(int direction)
     signal editModeRequested(bool on)
+    signal discardRequested
     signal optionsDismissRequested
     signal closeRequested
     signal leaveRequested
@@ -166,7 +167,7 @@ Item {
         if (event.key !== Qt.Key_Escape)
             return false;
         if (editMode)
-            editModeRequested(false);
+            discardRequested();
         else if (steppedIn && tabsShown)
             leaveContent();
         else

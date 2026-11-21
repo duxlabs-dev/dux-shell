@@ -20,12 +20,38 @@ Item {
     readonly property bool menuOpen: customMenu.open
     readonly property bool hasCustomActions: customMenu.visibleItems.length > 0
     readonly property var focusTargets: editControls.focusTargets
+    property string editSnapshot: ""
+    readonly property var editKeys: ["dashCards", "dashOptions"]
 
     signal optionsRequested
     signal finished
 
     implicitWidth: vertical ? Theme.navigationRailWidth : editControls.implicitWidth
     implicitHeight: editControls.implicitHeight
+
+    onEditModeChanged: editSnapshot = editMode ? currentState() : ""
+    Component.onCompleted: {
+        if (editMode)
+            editSnapshot = currentState();
+    }
+
+    function currentState() {
+        const state = {};
+        for (const key of editKeys)
+            state[key] = SettingsData[key];
+        return JSON.stringify(state);
+    }
+
+    function discard() {
+        if (editSnapshot !== "") {
+            const wanted = JSON.parse(editSnapshot);
+            for (const key of editKeys) {
+                if (JSON.stringify(SettingsData[key]) !== JSON.stringify(wanted[key]))
+                    SettingsData.set(key, wanted[key]);
+            }
+        }
+        finished();
+    }
 
     function closeMenu() {
         editControls.cancelConfirmation();
@@ -77,6 +103,7 @@ Item {
         onOptionsRequested: root.optionsRequested()
         onResetRequested: root.reset()
         onClearRequested: root.clear()
+        onDiscardRequested: root.discard()
         onFinished: root.finished()
     }
 }

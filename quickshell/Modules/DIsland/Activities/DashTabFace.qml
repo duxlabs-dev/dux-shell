@@ -134,6 +134,7 @@ FocusScope {
         tabsShown: root.tabsShown
         onTabCycleRequested: direction => root.controller.cycleDashTab(direction, tabBarLoader.item?.activeFocus ?? false)
         onEditModeRequested: on => root.editMode = on
+        onDiscardRequested: pageActions.discard()
         onLeaveRequested: root.focusFace()
         onOptionsDismissRequested: tabOptions.dismiss()
         onCloseRequested: root.controller.requestCollapse()

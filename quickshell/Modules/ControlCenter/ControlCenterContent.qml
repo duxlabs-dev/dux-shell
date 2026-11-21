@@ -761,7 +761,7 @@ FocusScope {
             return true;
         }
         if (host.editMode) {
-            host.editMode = false;
+            cancelEdit();
             return true;
         }
         host.close();

@@ -403,6 +403,7 @@ DPopout {
                         mainContainer.focusInitial();
                 }
                 onEditModeRequested: on => root.editMode = on
+                onDiscardRequested: (pageActions.item as DashPageActions)?.discard()
                 onLeaveRequested: mainContainer.focusInitial()
                 onOptionsDismissRequested: tabOptions.item?.dismiss()
                 onCloseRequested: {
