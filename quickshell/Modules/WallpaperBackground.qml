@@ -19,6 +19,15 @@ Variants {
     readonly property bool desktopMenuEnabled: CompositorService.desktopContextMenuEnabled
     // niri skips place-within-backdrop surfaces when hit-testing, so the wallpaper never sees clicks there.
     readonly property bool desktopMenuOnWallpaper: desktopMenuEnabled && !CompositorService.isNiri
+    readonly property int desktopEdgeInset: Theme.spacingXS
+
+    function desktopInputInset(screen, edge) {
+        const layout = ShellLayout.forScreen(screen);
+        const band = layout?.edges[edge];
+        const barReservation = (layout?.frameStyled && !layout.manualPlacement ? band?.frameReservation : band?.reservation) ?? 0;
+        const dockReservation = SettingsData.dockReservationForEdge(screen, edge);
+        return barReservation + dockReservation + desktopEdgeInset;
+    }
     model: SettingsData.getFilteredScreens("wallpaper")
 
     PanelWindow {
@@ -44,14 +53,28 @@ Variants {
             id: emptyRegion
         }
 
-        mask: variants.desktopMenuOnWallpaper ? null : emptyRegion
+        Region {
+            id: desktopMenuRegion
+            item: desktopMenuArea
+        }
+
+        mask: variants.desktopMenuOnWallpaper ? desktopMenuRegion : emptyRegion
 
         MouseArea {
+            id: desktopMenuArea
+
+            readonly property real leftInset: variants.desktopInputInset(wallpaperWindow.screen, "left")
+            readonly property real topInset: variants.desktopInputInset(wallpaperWindow.screen, "top")
+
             anchors.fill: parent
+            anchors.leftMargin: leftInset
+            anchors.rightMargin: variants.desktopInputInset(wallpaperWindow.screen, "right")
+            anchors.topMargin: topInset
+            anchors.bottomMargin: variants.desktopInputInset(wallpaperWindow.screen, "bottom")
             z: 1
             enabled: variants.desktopMenuOnWallpaper
             acceptedButtons: Qt.RightButton
-            onClicked: mouse => PopoutService.desktopMenu()?.open(wallpaperWindow.screen, mouse.x, mouse.y, false)
+            onClicked: mouse => PopoutService.desktopMenu()?.open(wallpaperWindow.screen, mouse.x + leftInset, mouse.y + topInset, false)
         }
 
         Loader {
@@ -70,6 +93,10 @@ Variants {
                 anchors.left: true
                 anchors.right: true
 
+                mask: Region {
+                    item: niriDesktopMenuArea
+                }
+
                 // Assigned, not bound: upstream quickshell has no inputOnly and a binding would fail the whole window.
                 Component.onCompleted: {
                     if ("inputOnly" in this)
@@ -77,9 +104,18 @@ Variants {
                 }
 
                 MouseArea {
+                    id: niriDesktopMenuArea
+
+                    readonly property real leftInset: variants.desktopInputInset(wallpaperWindow.screen, "left")
+                    readonly property real topInset: variants.desktopInputInset(wallpaperWindow.screen, "top")
+
                     anchors.fill: parent
+                    anchors.leftMargin: leftInset
+                    anchors.rightMargin: variants.desktopInputInset(wallpaperWindow.screen, "right")
+                    anchors.topMargin: topInset
+                    anchors.bottomMargin: variants.desktopInputInset(wallpaperWindow.screen, "bottom")
                     acceptedButtons: Qt.RightButton
-                    onClicked: mouse => PopoutService.desktopMenu()?.open(wallpaperWindow.screen, mouse.x, mouse.y, false)
+                    onClicked: mouse => PopoutService.desktopMenu()?.open(wallpaperWindow.screen, mouse.x + leftInset, mouse.y + topInset, false)
                 }
             }
         }
