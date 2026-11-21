@@ -601,7 +601,7 @@ Item {
                     values: root.satellitePositionValues
                     value: bar.islandSetting("islandSatellitePosition")
                     fallbackValue: "island"
-                    enabled: bar.islandSetting("islandSatellitesEnabled")
+                    enabled: bar.islandSetting("islandSatellitesEnabled") && bar.islandSetting("islandPillEnabled") !== false
                     onValueSelected: value => bar.apply("islandSatellitePosition", value)
                 }
 
@@ -682,7 +682,7 @@ Item {
                     step: 1
                     value: bar.islandSetting("islandSatelliteGap")
                     visible: bar.islandSetting("islandSatellitesEnabled")
-                    enabled: bar.islandSetting("islandSatellitePosition") !== "edges" || bar.islandSetting("islandSatelliteBackground")
+                    enabled: (bar.islandSetting("islandSatellitePosition") !== "edges" && bar.islandSetting("islandPillEnabled") !== false) || bar.islandSetting("islandSatelliteBackground")
                     onSliderValueChanged: value => bar.apply("islandSatelliteGap", value)
                 }
             }

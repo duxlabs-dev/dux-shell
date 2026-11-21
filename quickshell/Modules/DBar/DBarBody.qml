@@ -43,7 +43,7 @@ Item {
     readonly property string islandSatellitePosition: isIsland ? SettingsData.islandSetting(barConfig, "islandSatellitePosition") : "edges"
     readonly property bool islandSatellitesEnabled: !isIsland || SettingsData.islandSetting(barConfig, "islandSatellitesEnabled")
     readonly property bool islandPillEnabled: SettingsData.islandSetting(barConfig, "islandPillEnabled")
-    readonly property bool islandSatellitesHugIsland: isIsland && islandSatellitePosition === "island"
+    readonly property bool islandSatellitesHugIsland: isIsland && islandPillEnabled && islandSatellitePosition === "island"
     readonly property real islandSatelliteGap: isIsland ? SettingsData.islandSetting(barConfig, "islandSatelliteGap") : 0
     readonly property bool islandSatelliteBackground: isIsland && SettingsData.islandSetting(barConfig, "islandSatelliteBackground")
     readonly property real islandGothRadius: isIsland ? _wingR : 0
