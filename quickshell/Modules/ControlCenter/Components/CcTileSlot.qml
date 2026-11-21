@@ -90,8 +90,7 @@ DEditableGridSlot {
     hoverMargin: CcMetrics.gridGap / 2
     readonly property bool editing: grid.editMode
     readonly property bool configOpen: grid.configIndex >= 0 && grid.savedIndex(index) === grid.configIndex
-    // The origins lead the grid's interacting, so the grip never hides under its own press.
-    readonly property bool chromeShown: configOpen || resizeOrigin !== null || dragOrigin !== null || dragging || resizing || activeFocus || (hovered && !grid.interacting)
+    readonly property bool chromeShown: configOpen || chromeActive
 
     activeFocusOnTab: editing
     onEditingChanged: {

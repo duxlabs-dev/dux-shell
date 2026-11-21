@@ -13,6 +13,7 @@ DashTabFace {
         OverviewTab {
             live: root.live
             editMode: root.editMode
+            editSession: root.controller.dashEditSession
             rowBudget: root.controller.dashboardRowBudget
             transientSurfaceTracker: root.controller.transientSurfaces
             preferredFocusId: root.controller.overviewFocusId

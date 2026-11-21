@@ -20,28 +20,13 @@ FocusScope {
     signal windowRequested(string windowName)
 
     property string _editLayout: ""
-    readonly property real dockReserve: root.controller.controlCenterDockReserve
+    readonly property real dockReserve: root.controller.dockReserveFor("controlcenter")
     readonly property real bodyOffset: hostContract.dockSide === "left" ? dockReserve : 0
     readonly property bool panelResizing: content.panelResizing
     onPanelResizingChanged: root.controller.panelResizing = panelResizing
 
     function pickEditLayout() {
-        if (SettingsData.controlCenterEditLayout !== "docked" || hostContract.availableHeight < CcMetrics.dockedPanelMinHeight)
-            return "strip";
-        const width = root.controller.controlCenterSheetWidth + root.inset * 2;
-        const reserve = CcMetrics.dockedPanelWidth + CcMetrics.dockedPanelGap;
-        if (root.controller.dashboardAvailableWidth < width + reserve + PopoutMetrics.editOverflow * 2)
-            return "strip";
-        if (root.controller.isVertical)
-            return root.controller.edge === "right" ? "left" : "right";
-        const screenWidth = root.effectiveScreen?.width ?? 0;
-        const x = root.alignedX;
-        const preferLeft = x + width / 2 >= screenWidth / 2;
-        const leftFits = x >= reserve + Theme.spacingL;
-        const rightFits = screenWidth - x - width >= reserve + Theme.spacingL;
-        if (preferLeft && leftFits || !rightFits && leftFits)
-            return "left";
-        return rightFits ? "right" : "strip";
+        return root.controller.pickDockSide(root.controller.controlCenterSheetWidth + root.inset * 2, root.alignedX, root.effectiveScreen?.width ?? 0, hostContract.availableHeight);
     }
 
     clip: true
@@ -82,16 +67,16 @@ FocusScope {
         onCurrentPageChanged: root.controller.controlCenterPage = currentPage
         onEditModeChanged: {
             root._editLayout = editMode ? root.pickEditLayout() : "";
-            root.controller.controlCenterDockSide = dockSide;
+            root.controller.editDockSide = dockSide;
             root.controller.setEditing("controlcenter", editMode, CcMetrics.islandEditRoom);
         }
 
         readonly property bool editLayoutDecided: root._editLayout !== ""
-        readonly property string dockSide: (root._editLayout === "left" || root._editLayout === "right") && availableHeight >= CcMetrics.dockedPanelMinHeight && root.controller.dashboardAvailableWidth >= CcMetrics.sheetWidthFor(CcMetrics.minimumColumns) + root.inset * 2 + CcMetrics.dockedPanelWidth + CcMetrics.dockedPanelGap + PopoutMetrics.editOverflow * 2 ? root._editLayout : ""
+        readonly property string dockSide: (root._editLayout === "left" || root._editLayout === "right") && root.controller.dockRoomFits(CcMetrics.sheetWidthFor(CcMetrics.minimumColumns) + root.inset * 2, availableHeight) ? root._editLayout : ""
         readonly property bool dockFits: editMode && dockSide !== ""
         readonly property bool editPopover: editMode && !dockFits && SettingsData.controlCenterEditLayout === "docked"
         readonly property real panelChromeInset: CcMetrics.islandChromeInset
-        onDockSideChanged: root.controller.controlCenterDockSide = dockSide
+        onDockSideChanged: root.controller.editDockSide = dockSide
 
         readonly property int gridColumnCap: root.controller.controlCenterColumnCap
         readonly property int gridColumns: root.controller.controlCenterColumns
@@ -168,8 +153,9 @@ FocusScope {
 
     Component.onDestruction: {
         root.controller.panelResizing = false;
+        if (root.controller.editingActivity === "controlcenter")
+            root.controller.editDockSide = "";
         root.controller.setEditing("controlcenter", false);
-        root.controller.controlCenterDockSide = "";
         if (hostContract.shouldBeVisible)
             root.releaseScanState();
     }

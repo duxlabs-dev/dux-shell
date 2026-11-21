@@ -1124,24 +1124,19 @@
       "add",
       "center",
       "control",
+      "dash",
+      "dashboard",
       "docked",
       "edit",
-      "editing",
       "interface",
       "layout",
-      "list",
       "mode",
       "panel",
       "sheet",
-      "sits",
       "style",
-      "where",
-      "while",
-      "widget",
       "widgets"
     ],
-    "page": "theme_surfaces",
-    "description": "Where the widget list sits while editing the Control Center"
+    "page": "theme_surfaces"
   },
   {
     "section": "fontFamily",

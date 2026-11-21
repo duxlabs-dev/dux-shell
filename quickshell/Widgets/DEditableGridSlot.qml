@@ -18,6 +18,8 @@ Item {
     property int restCursor: Qt.OpenHandCursor
     property real hoverMargin: 0
     readonly property bool hovered: hoverTracker.hovered
+    // The origins lead the grid's interacting, so the grip never hides under its own press.
+    readonly property bool chromeActive: resizeOrigin !== null || dragOrigin !== null || dragging || resizing || activeFocus || (hovered && !grid.interacting)
     property bool raised: dragging || resizing
     readonly property bool interactionEnabled: resizeOrigin !== null || dragOrigin !== null || !grid.interacting
 

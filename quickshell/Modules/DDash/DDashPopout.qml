@@ -6,6 +6,7 @@ import qs.Common
 import qs.Services
 import qs.DCommon.Widgets
 import qs.Widgets
+import qs.Modules.ControlCenter
 import qs.Modules.ControlCenter.Widgets
 import qs.Modules.DDash.Overview
 
@@ -19,6 +20,12 @@ DPopout {
     resizing: contentLoader.item?.panelResizing ?? false
     inputMargin: editGutter * 2
     hoverDismissSuspended: editMode
+    leftOverflow: dock.leftOverflow
+    rightOverflow: dock.rightOverflow
+    sideTopOverflow: dock.sideTopOverflow
+    sideBottomOverflow: dock.sideBottomOverflow
+    sideBlurItem: contentLoader.item?.dockedBlurItem ?? null
+    sideBlurRadius: surfaceRadius
     onOpened: contentFocusTimer.restart()
 
     Timer {
@@ -35,6 +42,38 @@ DPopout {
     property string currentTabId: DashRegistry.defaultTabId
     property string detailTabId: ""
     property bool editMode: false
+    readonly property DashEditSession editSession: DashEditSession {
+        active: root.editMode
+        pageId: root.activeTabId
+        panel: dock.fits || (dock.popover && root.popupHeight - (root.contentLoader.item?.horizontalChromeHeight ?? 0) >= CcMetrics.widgetPopoverMinHeight + CcMetrics.sheetPadding * 2)
+    }
+    readonly property bool docked: dock.fits
+    readonly property bool usesPopover: editSession.panel && !docked
+    onUsesPopoverChanged: {
+        if (!usesPopover)
+            editSession.popoverRequested = false;
+    }
+    readonly property bool popoverShown: usesPopover && (editSession.popoverRequested || editSession.selection !== null)
+    readonly property real surfaceRadius: Math.max(surfaceCornerRadii.x, surfaceCornerRadii.y, surfaceCornerRadii.z, surfaceCornerRadii.w)
+    // Clears the panel chrome's resize grips, which reach past the body edge.
+    readonly property real dockChromeReach: PopoutMetrics.editOverflow + Theme.spacingS
+
+    DockedEditLayout {
+        id: dock
+        popout: root
+        editMode: root.editMode
+        wanted: SettingsData.controlCenterEditLayout === "docked"
+        panelWidth: CcMetrics.dockedPanelWidth
+        panelGap: Math.max(CcMetrics.dockedPanelGap, root.dockChromeReach)
+        connectedPanelGap: Math.max(CcMetrics.dockedPanelConnectedGap, root.dockChromeReach)
+        minHeight: CcMetrics.dockedPanelMinHeight
+        minBodyHeight: DashMetrics.tabMinHeight + DashMetrics.contentPadding * 2 + (root.verticalNavigation ? 0 : Theme.navigationHeight + DashMetrics.contentGap)
+        availableHeight: root.maxBodyHeight
+        baseCap: DashMetrics.columnCapFor(root.screen ? root.screen.width - root.navigationWidth : undefined, SettingsData.showWeekNumber)
+        pickColumns: DashMetrics.panelColumnsFor(root.activeTabId)
+        keepColumns: DashMetrics.panelColumnsFor(root.activeTabId)
+        widthFor: columns => root.panelWidthFor(columns)
+    }
     property string overviewFocusId: CacheData.dashFocusCardId || "calendar"
 
     onEditModeChanged: {
@@ -76,7 +115,7 @@ DPopout {
     readonly property bool verticalNavigation: showTabs && (navigationEdge === SettingsData.Left || navigationEdge === SettingsData.Right)
     readonly property real navigationWidth: verticalNavigation ? Theme.navigationRailWidth + DashMetrics.contentGap : 0
 
-    readonly property int columnCap: DashMetrics.columnCapFor(screen ? screen.width - navigationWidth : undefined, SettingsData.showWeekNumber)
+    readonly property int columnCap: dock.cap
     readonly property real editGutter: editMode ? PopoutMetrics.editOverflow : 0
 
     popupWidth: panelWidthFor(DashMetrics.panelColumnsFor(activeTabId))
@@ -136,8 +175,12 @@ DPopout {
         contentLoader.item?.focusNavigation(backwards);
     }
 
+    // With the panel, edit mode spans pages; the session's undo and Discard cover all of them.
     onActiveTabIdChanged: {
-        editMode = false;
+        if (editSession.panel)
+            contentLoader.item?.panelResizer.cancel();
+        else
+            editMode = false;
         contentLoader.item?.dismissOptions();
         contentLoader.item?.resetScroll();
         if (shouldBeVisible && !contentLoader.item?.navigationFocused)
@@ -267,6 +310,9 @@ DPopout {
             readonly property bool optionsShown: tabOptions.item?.shown ?? false
             readonly property bool actionsMenuOpen: pageActions.item?.menuOpen ?? false
             readonly property var actionFocusTargets: pageActions.item?.focusTargets ?? []
+            readonly property DashPageActions actions: pageActions.item as DashPageActions
+            readonly property DashEditPanel editPanel: editPanelLoader.item as DashEditPanel
+            readonly property Item dockedBlurItem: root.docked && editPanel ? editPanelLoader : null
             focus: true
 
             readonly property bool panelResizing: panelResizer.resizing
@@ -352,11 +398,16 @@ DPopout {
             onWindowFocusItemChanged: revealFocusedItem()
 
             function presentOptions() {
+                if (root.usesPopover) {
+                    root.editSession.presentPageOptions(root.activeTabId, !!pages.currentItem?.editGrid);
+                    return;
+                }
                 tabOptions.active = true;
                 tabOptions.item.presentFor(root.activeTabId);
             }
 
             function dismissOptions() {
+                root.editSession.popoverRequested = false;
                 tabOptions.item?.dismiss();
                 pageActions.item?.closeMenu();
             }
@@ -392,11 +443,21 @@ DPopout {
                 optionsShown: mainContainer.optionsShown
                 menuOpen: mainContainer.actionsMenuOpen
                 panelResizing: mainContainer.panelResizing
-                canUndo: (pageActions.item as DashPageActions)?.canUndo ?? false
+                canUndo: root.editSession.canUndo
                 tabItem: pages.currentItem
                 contentScope: pages.currentHost
                 contentTarget: pages.focusTarget
-                headerTargets: root.editMode ? mainContainer.actionFocusTargets : [tabBar, pageTitle.focusTarget]
+                headerTargets: root.editMode && !root.docked ? mainContainer.actionFocusTargets : [tabBar, pageTitle.focusTarget]
+                panelTargets: mainContainer.editPanel?.focusTargets ?? []
+                panelDetailShown: (mainContainer.editPanel?.menuOpen ?? false) || root.popoverShown || (mainContainer.editPanel?.canGoBack ?? false)
+                onPanelBackRequested: {
+                    if (mainContainer.editPanel?.menuOpen)
+                        mainContainer.editPanel.closeMenu();
+                    else if (root.popoverShown)
+                        root.editSession.closePopover();
+                    else
+                        mainContainer.editPanel?.back();
+                }
                 tabsShown: root.showTabs
                 headerEdge: root.verticalNavigation ? (root.navigationEdge === SettingsData.Right ? "right" : "left") : (root.navigationEdge === SettingsData.Bottom ? "down" : "up")
                 onTabCycleRequested: direction => {
@@ -406,7 +467,7 @@ DPopout {
                 }
                 onEditModeRequested: on => root.editMode = on
                 onDiscardRequested: (pageActions.item as DashPageActions)?.discard()
-                onUndoRequested: (pageActions.item as DashPageActions)?.undo()
+                onUndoRequested: root.editSession.undo()
                 onLeaveRequested: mainContainer.focusInitial()
                 onOptionsDismissRequested: tabOptions.item?.dismiss()
                 onCloseRequested: {
@@ -459,6 +520,54 @@ DPopout {
                 }
             }
 
+            Loader {
+                id: editPanelLoader
+
+                readonly property real barInset: dock.inset
+                readonly property bool insetTop: barInset > 0 && root.effectiveBarPosition === SettingsData.Position.Top
+                // The popover sits below the edit bar (or beside the rail) so its controls stay reachable.
+                readonly property real headerTop: root.navigationEdge === SettingsData.Bottom ? 0 : mainContainer.horizontalChromeHeight
+                readonly property real popoverLeft: CcMetrics.sheetPadding + (root.verticalNavigation && root.navigationEdge === SettingsData.Left ? root.navigationWidth : 0)
+                readonly property real popoverRight: mainContainer.width - CcMetrics.sheetPadding - (root.verticalNavigation && root.navigationEdge === SettingsData.Right ? root.navigationWidth : 0)
+                readonly property real popoverWidth: Math.min(CcMetrics.dockedPanelWidth, popoverRight - popoverLeft)
+
+                x: {
+                    if (!root.docked)
+                        return I18n.isRtl ? popoverRight - width : popoverLeft;
+                    return dock.side === "left" ? -(width + dock.gap) : mainContainer.width + dock.gap;
+                }
+                y: {
+                    if (!root.docked)
+                        return CcMetrics.sheetPadding + headerTop;
+                    if (dock.dockAbove)
+                        return mainContainer.height - (insetTop ? 0 : barInset) - height;
+                    return insetTop ? barInset : 0;
+                }
+                width: root.docked ? CcMetrics.dockedPanelWidth : popoverWidth
+                height: root.docked ? Math.max(mainContainer.height - barInset, CcMetrics.dockedPanelMinHeight) : mainContainer.height - CcMetrics.sheetPadding * 2 - mainContainer.horizontalChromeHeight
+                z: CcMetrics.overlayZ
+                active: root.editMode && (root.docked || root.popoverShown)
+
+                sourceComponent: DashEditPanel {
+                    session: root.editSession
+                    tabItem: pages.currentItem
+                    entryId: root.activeTabId
+                    pageActions: mainContainer.actions
+                    floating: !root.docked
+                    fadeOut: pages.currentItem?.cardInteracting ?? false
+                    // Opaque where blur can't reach.
+                    surfaceColor: {
+                        const base = root.docked ? root.surfaceColor : Theme.foregroundColor(Theme.cardSurface);
+                        return root.docked && root.surfaceBlurred ? base : Theme.withAlpha(base, 1);
+                    }
+                    radius: root.docked ? root.surfaceRadius : Theme.cornerRadiusL
+                    transientSurfaceTracker: root.transientSurfaceTracker
+                    onCloseRequested: root.editSession.closePopover()
+                    onDiscardRequested: mainContainer.actions?.discard()
+                    onFinishRequested: root.editMode = false
+                }
+            }
+
             Item {
                 id: contentClip
 
@@ -493,14 +602,15 @@ DPopout {
 
                             width: parent.width
                             height: parent.height
-                            editable: true
+                            editable: !root.editMode
                             evenlySpaced: SettingsData.dashTabsEvenlySpaced
                             onEditRequested: root.editMode = true
-                            visible: root.showTabs && !root.editMode
+                            visible: root.showTabs && (!root.editMode || root.docked)
                             orientation: root.verticalNavigation ? Qt.Vertical : Qt.Horizontal
                             currentIndex: root.currentTabIndex
-                            nextFocusTarget: mainContainer.actionFocusTargets[0] ?? pages.focusTarget
-                            previousFocusTarget: pages.currentItem?.previousFocusTarget ?? pages.focusTarget
+                            // Docked editing leaves Tab to DashKeyboard, which walks into the panel.
+                            nextFocusTarget: root.editMode && root.docked ? null : mainContainer.actionFocusTargets[0] ?? pages.focusTarget
+                            previousFocusTarget: root.editMode && root.docked ? null : pages.currentItem?.previousFocusTarget ?? pages.focusTarget
                             model: DashRegistry.tabBarModel
                             onActivated: index => {
                                 const id = root.navigationIds[index];
@@ -520,7 +630,8 @@ DPopout {
                             width: parent.width
                             height: implicitHeight
                             entryId: root.activeTabId
-                            visible: !root.showTabs && !root.editMode
+                            editable: entryId !== "" && !root.editMode
+                            visible: !root.showTabs && (!root.editMode || root.docked)
                             onEditRequested: root.editMode = true
                         }
 
@@ -533,6 +644,7 @@ DPopout {
                             active: root.editMode
 
                             sourceComponent: DashPageActions {
+                                session: root.editSession
                                 availableWidth: headerRow.width
                                 vertical: root.verticalNavigation
                                 transientSurfaceTracker: root.transientSurfaceTracker
@@ -540,6 +652,8 @@ DPopout {
                                 tabItem: pages.currentItem
                                 editMode: root.editMode
                                 panelResizable: true
+                                controlsShown: !root.docked
+                                addHandler: root.usesPopover ? (anchor => root.editSession.togglePopover()) : null
                                 onOptionsRequested: mainContainer.presentOptions()
                                 onFinished: root.editMode = false
                             }

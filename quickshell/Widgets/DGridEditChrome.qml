@@ -10,6 +10,9 @@ Item {
     LayoutMirroring.childrenInherit: true
 
     property string sizeText: ""
+    property bool selected: false
+    readonly property real selectedWidth: Theme.outlineWidthFocused * 1.5
+    readonly property real selectedGap: Theme.spacingXS
     property bool dragging: false
     property bool resizing: false
     property bool hasOptions: false
@@ -66,9 +69,24 @@ Item {
         topRightRadius: root.cornerRadii.y
         bottomRightRadius: root.cornerRadii.z
         bottomLeftRadius: root.cornerRadii.w
-        color: root.dragging || root.resizing ? Theme.withAlpha(Theme.primary, Theme.stateLayerDrag) : "transparent"
+        color: root.dragging || root.resizing ? Theme.withAlpha(Theme.primary, Theme.stateLayerDrag) : root.selected ? Theme.withAlpha(Theme.primary, Theme.stateLayerHover) : "transparent"
         border.color: Theme.primary
-        border.width: Theme.outlineWidthFocused
+        border.width: root.selected ? root.selectedWidth : Theme.outlineWidthFocused
+    }
+
+    Rectangle {
+        readonly property real outset: root.selectedGap + root.selectedWidth
+
+        visible: root.selected
+        anchors.fill: parent
+        anchors.margins: root.contentInset - outset
+        topLeftRadius: root.cornerRadii.x + outset
+        topRightRadius: root.cornerRadii.y + outset
+        bottomRightRadius: root.cornerRadii.z + outset
+        bottomLeftRadius: root.cornerRadii.w + outset
+        color: "transparent"
+        border.color: Theme.primary
+        border.width: Theme.outlineWidth
     }
 
     component ButtonChip: Rectangle {

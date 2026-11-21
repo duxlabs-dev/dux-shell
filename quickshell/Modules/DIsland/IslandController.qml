@@ -135,7 +135,10 @@ QtObject {
     }
 
     onLiveCandidateChanged: syncLiveActivity()
-    onActiveActivityChanged: Qt.callLater(syncLiveActivity)
+    onActiveActivityChanged: {
+        Qt.callLater(syncLiveActivity);
+        syncDashEditPage();
+    }
     property bool launcherCycleEnabled: false
     property bool launcherSessionActive: false
     property bool launcherInputFocused: false
@@ -193,6 +196,7 @@ QtObject {
         Qt.callLater(syncLiveActivity);
         if (expanded)
             return;
+        dashEditSession.active = false;
         dashNavigationFocused = false;
         if (CacheData.dashFocusCardId !== overviewFocusId)
             CacheData.set("dashFocusCardId", overviewFocusId);
@@ -219,15 +223,15 @@ QtObject {
     // The bar host grants the room once its surface has presented a frame at the grown size.
     property bool editRoomGranted: false
     readonly property real controlCenterSheetInset: CcMetrics.islandInset * 2
-    property string controlCenterDockSide: ""
+    property string editDockSide: ""
     property bool panelResizing: false
-    readonly property real controlCenterDockReserve: controlCenterDockSide === "" ? 0 : CcMetrics.dockedPanelWidth + CcMetrics.dockedPanelGap
-    readonly property int controlCenterColumnCap: CcMetrics.columnCapFor(dashboardAvailableWidth - controlCenterSheetInset - PopoutMetrics.editOverflow * 2 - controlCenterDockReserve)
+    readonly property real editDockReserve: editDockSide === "" ? 0 : CcMetrics.dockedPanelWidth + CcMetrics.dockedPanelGap
+    readonly property int controlCenterColumnCap: CcMetrics.columnCapFor(dashboardAvailableWidth - controlCenterSheetInset - PopoutMetrics.editOverflow * 2 - dockReserveFor("controlcenter"))
     readonly property int controlCenterColumns: Math.min(CcMetrics.gridColumns, controlCenterColumnCap)
     // Here, not in the activity, because the expanded visuals unload soon after the island collapses.
     property int controlCenterPage: 0
     readonly property real controlCenterSheetWidth: CcMetrics.sheetWidthFor(controlCenterColumns)
-    readonly property real controlCenterMaxWidth: CcMetrics.sheetWidthFor(editingActivity === "controlcenter" ? controlCenterColumnCap : controlCenterColumns) + controlCenterSheetInset + controlCenterDockReserve
+    readonly property real controlCenterMaxWidth: CcMetrics.sheetWidthFor(editingActivity === "controlcenter" ? controlCenterColumnCap : controlCenterColumns) + controlCenterSheetInset + dockReserveFor("controlcenter")
     readonly property real controlCenterHeight: controlCenterHeightFor(editRoomGranted && editingActivity === "controlcenter")
 
     property bool homeCompactTight: false
@@ -244,8 +248,18 @@ QtObject {
     property real mediaContentLength: 360
     property real dashboardAvailableWidth: 1920
     property real dashboardAvailableHeight: 1080
-    readonly property int dashboardColumnCap: DashMetrics.columnCapFor(dashboardAvailableWidth - PopoutMetrics.editOverflow * 2, SettingsData.showWeekNumber)
-    readonly property real dashboardMaxWidth: Math.min(dashboardAvailableWidth, DashMetrics.widthFor(SettingsData.showWeekNumber, undefined, editingActivity !== "" ? dashboardColumnCap : DashRegistry.widestPanelColumns))
+    readonly property real dashDockReserve: editingActivity !== "" && editingActivity !== "controlcenter" ? editDockReserve : 0
+    // One edit session for all dash faces, so a tab switch while the edit panel is in use keeps edit mode and undo.
+    readonly property DashEditSession dashEditSession: DashEditSession {
+        onActiveChanged: {
+            if (!active)
+                root.dashEditLayout = "";
+        }
+    }
+    // Picked once per session: "strip", "left" or "right".
+    property string dashEditLayout: ""
+    readonly property int dashboardColumnCap: DashMetrics.columnCapFor(dashboardAvailableWidth - PopoutMetrics.editOverflow * 2 - dashDockReserve, SettingsData.showWeekNumber)
+    readonly property real dashboardMaxWidth: Math.min(dashboardAvailableWidth, DashMetrics.widthFor(SettingsData.showWeekNumber, undefined, editingActivity !== "" ? dashboardColumnCap : DashRegistry.widestPanelColumns) + dashDockReserve)
     property var dashboardContentHeights: ({})
     // Plugin tabs have no island face, and the media face needs a player.
     readonly property var dashTabIds: dashTabs ? DashRegistry.navigationIds.filter(id => DashRegistry.isAction(id) || dashActivityFor(id) !== "") : []
@@ -310,7 +324,11 @@ QtObject {
         return "";
     }
 
-    readonly property bool dashFaceExpanded: expanded && activeActivity !== "" && dashActivityFor(dashEntryIdFor(activeActivity)) === activeActivity
+    function isDashActivity(activityId) {
+        return activityId !== "" && dashActivityFor(dashEntryIdFor(activityId)) === activityId;
+    }
+
+    readonly property bool dashFaceExpanded: expanded && isDashActivity(activeActivity)
 
     function dashTabsShownFor(activityId) {
         return dashTabIds.length > 1 && dashTabIds.indexOf(dashEntryIdFor(activityId)) >= 0;
@@ -340,25 +358,79 @@ QtObject {
     }
 
     function dashboardWidthFor(activityId) {
-        return Math.min(dashboardAvailableWidth, DashMetrics.widthFor(SettingsData.showWeekNumber, undefined, DashMetrics.panelColumnsFor(dashEntryIdFor(activityId))));
+        return dashboardWidthForEntry(dashEntryIdFor(activityId));
+    }
+
+    function dashboardWidthForEntry(entryId) {
+        return Math.min(dashboardAvailableWidth, DashMetrics.widthFor(SettingsData.showWeekNumber, undefined, DashMetrics.panelColumnsFor(entryId)));
     }
 
     function dashboardHeightFor(activityId, withEditRoom) {
         const minimum = DashMetrics.panelHeightFor(dashEntryIdFor(activityId));
         const chrome = DashMetrics.islandChromeHeight(dashTabsShownFor(activityId) ? Theme.navigationHeight : 0);
-        const height = Math.max(minimum + chrome, dashboardContentHeights[activityId] ?? 0);
-        return Math.min(dashboardAvailableHeight, height + (withEditRoom ? root.editRoom : 0));
+        // The docked panel sits CcMetrics.islandInset inside the sheet on both ends.
+        const floor = withEditRoom && dockReserveFor(activityId) > 0 ? CcMetrics.dockedPanelMinHeight + controlCenterSheetInset : 0;
+        const height = Math.max(minimum + chrome, dashboardContentHeights[activityId] ?? 0) + (withEditRoom ? root.editRoom : 0);
+        return Math.min(dashboardAvailableHeight, Math.max(floor, height));
     }
 
     function controlCenterHeightFor(withEditRoom) {
-        const docked = controlCenterDockSide !== "";
+        const docked = dockReserveFor("controlcenter") > 0;
         const floor = withEditRoom && docked ? CcMetrics.dockedPanelMinHeight : CcMetrics.minHeight;
         const room = withEditRoom && !docked ? root.editRoom : 0;
         return Math.min(controlCenterMaxHeight, Math.max(floor + controlCenterSheetInset, destinationContentHeight("controlcenter") + room));
     }
 
     function dashboardTargetFor(activityId) {
-        return sheetTarget(dashboardWidthFor(activityId), dashboardHeightFor(activityId, root.editRoomGranted && root.editingActivity === activityId));
+        const height = dashboardHeightFor(activityId, root.editRoomGranted && root.editingActivity === activityId);
+        const reserve = dockReserveFor(activityId);
+        return reserve > 0 ? dockedSheetTarget(dashboardWidthFor(activityId), height, reserve) : sheetTarget(dashboardWidthFor(activityId), height);
+    }
+
+    function dashDockSideFor(entryId) {
+        if (dashEditLayout !== "left" && dashEditLayout !== "right")
+            return "";
+        return dockRoomFits(dashboardWidthForEntry(entryId), dashboardAvailableHeight - controlCenterSheetInset) ? dashEditLayout : "";
+    }
+
+    function setDashEditing(activityId, editing) {
+        if (editing)
+            dashEditSession.pageId = dashEntryIdFor(activityId);
+        dashEditSession.active = editing;
+    }
+
+    // Only a session using the panel (docked or popover) survives a tab switch; leaving the dash always ends it.
+    function syncDashEditPage() {
+        const page = isDashActivity(activeActivity) ? dashEntryIdFor(activeActivity) : "";
+        if (page === dashEditSession.pageId)
+            return;
+        if (dashEditSession.active && (page === "" || !dashEditSession.panel))
+            dashEditSession.active = false;
+        dashEditSession.pageId = page;
+    }
+
+    function dockReserveFor(activityId) {
+        return editingActivity === activityId ? editDockReserve : 0;
+    }
+
+    function dockRoomFits(minBodyWidth, availableHeight) {
+        return availableHeight >= CcMetrics.dockedPanelMinHeight && dashboardAvailableWidth >= minBodyWidth + CcMetrics.dockedPanelWidth + CcMetrics.dockedPanelGap + PopoutMetrics.editOverflow * 2;
+    }
+
+    function pickDockSide(bodyWidth, alignedX, screenWidth, availableHeight) {
+        if (SettingsData.controlCenterEditLayout !== "docked" || availableHeight < CcMetrics.dockedPanelMinHeight)
+            return "strip";
+        const reserve = CcMetrics.dockedPanelWidth + CcMetrics.dockedPanelGap;
+        if (dashboardAvailableWidth < bodyWidth + reserve + PopoutMetrics.editOverflow * 2)
+            return "strip";
+        if (isVertical)
+            return edge === "right" ? "left" : "right";
+        const preferLeft = alignedX + bodyWidth / 2 >= screenWidth / 2;
+        const leftFits = alignedX >= reserve + Theme.spacingL;
+        const rightFits = screenWidth - alignedX - bodyWidth >= reserve + Theme.spacingL;
+        if (preferLeft && leftFits || !rightFits && leftFits)
+            return "left";
+        return rightFits ? "right" : "strip";
     }
 
     function setMediaContentLength(length) {
@@ -685,8 +757,12 @@ QtObject {
     readonly property real launcherContentHeight: destinationContentHeight("launcher")
     readonly property var launcherExpandedTarget: sheetTarget(Math.min(dashboardAvailableWidth, LauncherMetrics.sizeWidth(SettingsData.dankLauncherV2Size)), launcherContentHeight > 0 ? Math.min(launcherMaxHeight, launcherContentHeight) : launcherMaxHeight)
     function controlCenterTargetFor(bodyWidth, height = controlCenterHeight) {
-        const target = sheetTarget(bodyWidth + controlCenterDockReserve, height);
-        const offset = controlCenterDockReserve / 2 * (controlCenterDockSide === "left" ? -1 : 1);
+        return dockedSheetTarget(bodyWidth, height, dockReserveFor("controlcenter"));
+    }
+
+    function dockedSheetTarget(bodyWidth, height, reserve) {
+        const target = sheetTarget(bodyWidth + reserve, height);
+        const offset = reserve / 2 * (editDockSide === "left" ? -1 : 1);
         if (!isVertical)
             target.offsetAlong += offset;
         target.centerOffsetX = offset;

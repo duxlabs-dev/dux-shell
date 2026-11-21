@@ -19,8 +19,10 @@ FocusScope {
     property int columnCap: DashMetrics.maximumGridColumns
     property string preferredFocusId: "calendar"
     property var transientSurfaceTracker: null
+    property DashEditSession editSession: null
 
     signal cardFocusChanged(string id)
+    readonly property Item editGrid: grid
     readonly property Item focusTarget: grid
     readonly property Item previousFocusTarget: grid.lastFocusTarget
     readonly property var addable: grid.addableEntries
@@ -73,6 +75,15 @@ FocusScope {
     }
 
     function presentOptions(cardId, instanceId) {
+        if (editSession?.panel) {
+            editSession.select({
+                "kind": "card",
+                "entryId": cardId,
+                "key": cardId,
+                "instanceId": instanceId
+            });
+            return;
+        }
         optionsSheet.active = true;
         optionsSheet.item.presentFor(cardId, instanceId);
     }
@@ -120,6 +131,7 @@ FocusScope {
         live: root.live
         preferredFocusId: root.preferredFocusId
         transientSurfaceTracker: root.transientSurfaceTracker
+        editSession: root.editSession
         onCardFocusChanged: id => root.cardFocusChanged(id)
 
         onCardClicked: cardId => {
