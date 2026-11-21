@@ -254,11 +254,9 @@ BasePill {
             readonly property real measuredNaturalTextWidth: {
                 if (!root.playerAvailable || root.maxTextWidth <= 0)
                     return 0;
-                if (!root.adaptiveWidthEnabled || root.lyricActive)
+                if (!root.adaptiveWidthEnabled)
                     return root.maxTextWidth;
-                if (textContainer.displayText.length === 0)
-                    return 0;
-                const rawWidth = mediaText.implicitTextWidth;
+                const rawWidth = root.lyricActive ? lyricLine.naturalWidth : (textContainer.displayText.length > 0 ? mediaText.implicitTextWidth : 0);
                 if (!isFinite(rawWidth) || rawWidth <= 0)
                     return 0;
                 return Math.min(root.maxTextWidth, Math.ceil(rawWidth));
@@ -417,7 +415,9 @@ BasePill {
                         }
 
                         MediaLyricLine {
+                            id: lyricLine
                             width: contentRoot.measuredTextWidth
+                            maxWidth: root.maxTextWidth
                             height: parent.height
                             visible: root.lyricActive
                             controller: LyricsService.controller

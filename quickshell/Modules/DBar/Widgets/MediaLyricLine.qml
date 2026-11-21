@@ -18,17 +18,27 @@ Item {
     property bool playing: true
     // Fills each word across its sung time instead of at once, like the dash's smooth highlight.
     property bool sweep: false
+    property real maxWidth: 0
 
     readonly property int revision: controller.wordRevision
     readonly property string fontKey: measure.font.family + "/" + measure.font.pixelSize + "/" + measure.font.weight
+    readonly property real naturalLimit: maxWidth > 0 ? maxWidth : width
     property string pagedKey: ""
+    property string naturalPagedKey: ""
+    property string shrunkKey: ""
+    property string lineKey: ""
     property string pageKey: ""
     property string measuredFontKey: ""
     property var pages: []
+    property var naturalPages: []
     property var cueSpans: []
     property bool snapping: false
+    property bool placing: false
+    property bool rewrapping: false
     property real shift: 0
     property real pageWidth: 0
+    property real naturalWidth: 0
+    property real maxNaturalWidth: 0
     property real scrollOffset: 0
     property real holdStartMs: 1200
     property real pxPerMs: 1 / 20
@@ -46,7 +56,11 @@ Item {
 
     onRevisionChanged: place()
     onVisibleChanged: place()
-    onWidthChanged: place()
+    onWidthChanged: {
+        if (!placing)
+            place();
+    }
+    onNaturalLimitChanged: place()
     onFontKeyChanged: place()
     onLiveChanged: place()
     onSweepChanged: place()
@@ -63,6 +77,33 @@ Item {
         return measure.implicitWidth;
     }
 
+    function buildPages(line, limit) {
+        const text = flat(line.x);
+        const cues = line.w.map(word => word.x);
+        if (scrollEnabled) {
+            return [
+                {
+                    first: 0,
+                    last: Math.max(0, cues.length - 1),
+                    text,
+                    width: widthOf(text)
+                }
+            ];
+        }
+        return paginate(cues.length > 0 ? cues : tokens(text, limit), limit);
+    }
+
+    function pageFor(pageList, line, at) {
+        if (line.w.length > 0) {
+            const index = lastStarted(line.w, at);
+            return pageList.find(candidate => index <= candidate.last) ?? pageList[pageList.length - 1];
+        }
+        const span = line.e - line.t;
+        const timed = pageList.length > 1 && Number.isFinite(span) && span > 0;
+        const pageIndex = timed ? Math.max(0, Math.min(pageList.length - 1, Math.floor((at - line.t) / span * pageList.length))) : 0;
+        return pageList[pageIndex];
+    }
+
     function place() {
         sweepMotion.stop();
         const parts = visible ? (controller.lines[controller.activeIndex]?.parts ?? []) : [];
@@ -73,19 +114,29 @@ Item {
             return;
         }
         const key = controller.activeIndex + "/" + next.t + "/" + next.voice;
-        const paged = key + "/" + width + "/" + fontKey + "/" + scrollEnabled + "/" + sweep;
-        if (paged !== pagedKey) {
-            pagedKey = paged;
-            const cues = next.w.map(word => word.x);
-            pages = scrollEnabled ? [
-                {
-                    first: 0,
-                    last: Math.max(0, cues.length - 1),
-                    text: flat(next.x)
-                }
-            ] : paginate(cues.length > 0 ? cues : tokens(flat(next.x)));
+        const naturalPaged = key + "/" + naturalLimit + "/" + fontKey + "/" + scrollEnabled + "/" + sweep;
+        if (naturalPaged !== naturalPagedKey) {
+            naturalPagedKey = naturalPaged;
+            naturalPages = buildPages(next, naturalLimit);
+            maxNaturalWidth = naturalPages.reduce((max, page) => Math.max(max, page.width), 0);
             cueSpans = next.w.length > 0 && (scrollEnabled || sweep) ? LyricsModel.cueSpans(next) : [];
         }
+        const naturalPage = pageFor(naturalPages, next, at);
+        let shrunk = shrunkKey === key ? (width > 0 && width < maxNaturalWidth) : (width > 0 && width < naturalPage.width);
+        placing = true;
+        naturalWidth = shrunk ? maxNaturalWidth : naturalPage.width;
+        placing = false;
+        shrunk = width > 0 && width < naturalWidth;
+        shrunkKey = shrunk ? key : "";
+        const pageLimit = shrunk ? width : naturalLimit;
+        const paged = key + "/" + pageLimit + "/" + fontKey + "/" + scrollEnabled + "/" + sweep;
+        const rebuilt = paged !== pagedKey;
+        if (rebuilt) {
+            pagedKey = paged;
+            pages = pageLimit === naturalLimit ? naturalPages : buildPages(next, pageLimit);
+        }
+        rewrapping = rebuilt && key === lineKey;
+        lineKey = key;
         if (next.w.length > 0) {
             placeWords(key, next, at);
         } else {
@@ -99,6 +150,7 @@ Item {
                 speed: pxPerMs * 1000
             };
         }
+        rewrapping = false;
         syncScroll();
     }
 
@@ -109,6 +161,9 @@ Item {
         const sung = index < page.first ? 0 : widthOf(flat(line.w.slice(page.first, index + 1).map(word => word.x).join("")));
         const span = index < page.first ? null : cueSpans[index];
         const before = !span || index <= page.first ? 0 : widthOf(flat(line.w.slice(page.first, index).map(word => word.x).join("")));
+        const duration = span ? span.e - span.t : 0;
+        const progress = sweep && span && Number.isFinite(duration) && duration > 0 ? Math.max(0, Math.min(1, (at - span.t) / duration)) : 1;
+        turnTo(key + "/" + page.first, page.text, before + (sung - before) * progress);
         scrollMotion = span ? {
             start: span.t,
             end: span.e,
@@ -117,14 +172,7 @@ Item {
             hold: 0,
             speed: pxPerMs * 1000
         } : null;
-        if (!sweep || index < page.first) {
-            turnTo(key + "/" + page.first, page.text, sung);
-            return;
-        }
-        const duration = span.e - span.t;
-        const progress = Number.isFinite(duration) && duration > 0 ? Math.max(0, Math.min(1, (at - span.t) / duration)) : 1;
-        turnTo(key + "/" + page.first, page.text, before + (sung - before) * progress);
-        if (progress >= 1 || !live || !controller.playing || controller.rate <= 0 || Theme.reduceMotion)
+        if (!sweep || index < page.first || progress >= 1 || !live || !controller.playing || controller.rate <= 0 || Theme.reduceMotion)
             return;
         sweepMotion.to = sung;
         sweepMotion.duration = Math.max(1, Math.min(2147483647, (span.e - at) * 1000 / controller.rate));
@@ -156,10 +204,10 @@ Item {
     }
 
     // Unspaced scripts have no word breaks, so a token wider than the slot pages between characters.
-    function tokens(text) {
+    function tokens(text, limit) {
         const result = [];
         for (const token of text.match(/\S+\s*/g) ?? [text]) {
-            if (widthOf(token) <= width) {
+            if (widthOf(token) <= limit) {
                 result.push(token);
                 continue;
             }
@@ -168,7 +216,7 @@ Item {
         return result;
     }
 
-    function paginate(chunks) {
+    function paginate(chunks, limit) {
         const words = [];
         for (let i = 0; i < chunks.length; i++) {
             const text = flat(chunks[i]);
@@ -187,7 +235,7 @@ Item {
         }
         const units = [];
         for (const word of words) {
-            if (widthOf(word.text) <= width) {
+            if (widthOf(word.text) <= limit) {
                 units.push(word);
                 continue;
             }
@@ -201,7 +249,8 @@ Item {
         const result = [];
         let page = null;
         for (const word of units) {
-            if (page && widthOf(page.text + word.text) > width) {
+            if (page && widthOf(page.text + word.text) > limit) {
+                page.width = widthOf(page.text);
                 result.push(page);
                 page = null;
             }
@@ -209,29 +258,35 @@ Item {
                 page = {
                     first: word.first,
                     last: word.last,
-                    text: word.text
+                    text: word.text,
+                    width: 0
                 };
                 continue;
             }
             page.last = word.last;
             page.text += word.text;
         }
-        if (page)
+        if (page) {
+            page.width = widthOf(page.text);
             result.push(page);
+        }
         return result;
     }
 
     function turnTo(key, text, sung) {
-        const previousOffset = current.offset;
-        const previousScrolls = current.scrolls;
-        if (current.text !== text || measuredFontKey !== fontKey) {
-            pageWidth = widthOf(text);
-            measuredFontKey = fontKey;
-        }
-        if (key === pageKey && text === current.text) {
-            current.fill = sung;
+        if (key === pageKey || rewrapping) {
+            pageKey = key;
+            if (current.text !== text || measuredFontKey !== fontKey) {
+                snap(text, sung);
+                measuredFontKey = fontKey;
+                pageWidth = widthOf(text);
+            } else {
+                current.fill = sung;
+            }
             return;
         }
+        const previousOffset = current.offset;
+        const previousScrolls = current.scrolls;
         pageKey = key;
         slide.stop();
         resetScroll();
@@ -241,6 +296,8 @@ Item {
         outgoing.offset = animate ? previousOffset : 0;
         outgoing.scrolls = animate && previousScrolls;
         snap(text, sung);
+        measuredFontKey = fontKey;
+        pageWidth = widthOf(text);
         shift = animate ? 1 : 0;
         if (animate)
             slide.start();
@@ -282,11 +339,17 @@ Item {
         sweepMotion.stop();
         slide.stop();
         pagedKey = "";
+        naturalPagedKey = "";
+        shrunkKey = "";
+        lineKey = "";
         pageKey = "";
         pages = [];
+        naturalPages = [];
         cueSpans = [];
         scrollMotion = null;
         pageWidth = 0;
+        naturalWidth = 0;
+        maxNaturalWidth = 0;
         resetScroll();
         outgoing.text = "";
         snap("", 0);
