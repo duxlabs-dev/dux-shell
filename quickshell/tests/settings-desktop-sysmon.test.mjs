@@ -72,3 +72,40 @@ test("opacity counts only when a card or tiles are painted", () => {
     for (const layout of ["bars", "list", "graphs"])
         assert.equal(uses({ layout, background: "none" }), false);
 });
+
+const dash = (cards, dashOptions) => store.migrateToVersion({ configVersion: 46, dashCards: cards, dashOptions }, 47);
+const plain = (value) => JSON.parse(JSON.stringify(value));
+const placed = (id, instanceId, config) => ({ id, instanceId, w: 2, h: 1, config });
+const old = ["cpu", "memory", "network", "disk", "sysmon"].map((id) => ({ id, w: 2, h: 1 }));
+const tile = (device, vals, extra) => ({ layout: "tiles", style: "icon", graphInterval: 300, metrics: [Object.assign({ device, vals, graph: true, on: true }, extra)] });
+const bars = (temp) => ({ layout: "bars", style: "icon", metrics: [{ device: "cpu", vals: temp ? ["usage", "temp"] : ["usage"], graph: false, on: true }, { device: "memory", vals: ["used"], graph: false, on: true }] });
+
+test("dash cards become system monitor cards with the old defaults and options", () => {
+    const clock = { id: "clock", w: 1, h: 1 };
+    let result = plain(dash([clock].concat(old), { clock: { x: 1 }, cpu: { y: 1 }, sysmon: {} }));
+    assert.deepEqual(result.dashCards, [clock,
+        placed("sysmon", "cpu-1", tile("cpu", ["usage", "temp"])),
+        placed("sysmon", "memory-2", tile("memory", ["used"])),
+        placed("sysmon", "network-3", tile("net", ["down", "up"])),
+        placed("sysmon", "disk-4", tile("disk", ["space"], { mount: "/" })),
+        placed("sysmon", "sysmon-5", bars(true))]);
+    assert.deepEqual(result.dashOptions, { clock: { x: 1 } });
+
+    result = plain(dash(old, {
+        cpu: { temperature: false, trend: false, tone: "tertiary" }, memory: { swap: true }, network: { trend: false },
+        disk: { io: true, tone: "bogus" }, sysmon: { temperature: false, tone: "primary" }
+    }));
+    const expected = [tile("cpu", ["usage"]), tile("memory", ["used", "swap"]), tile("net", ["down", "up"]), tile("disk", ["space", "read"], { mount: "/" }), bars(false)];
+    expected[0].metrics[0].graph = false;
+    expected[0].tone = "tertiary";
+    expected[2].metrics[0].graph = false;
+    expected[4].tone = "primary";
+    assert.deepEqual(result.dashCards.map((card) => card.config), expected);
+});
+
+test("a configured system monitor card and a second run are unchanged", () => {
+    const configured = { id: "sysmon", instanceId: "a", w: 1, h: 1, config: { layout: "list" } };
+    const once = plain(dash([configured].concat(old), { sysmon: { temperature: false } }));
+    assert.deepEqual(once.dashCards[0], configured);
+    assert.deepEqual(plain(store.migrateToVersion(Object.assign({}, once, { configVersion: 46 }), 47)).dashCards, once.dashCards);
+});

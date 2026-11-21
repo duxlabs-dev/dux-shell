@@ -5,7 +5,6 @@ import Quickshell.Widgets
 import qs.Common
 import qs.DCommon.Common as DCommon
 import qs.DCommon.Widgets
-import qs.Modules.DDash.Overview
 import qs.Modules.ProcessList
 import qs.Modules.Sysmon
 
@@ -13,13 +12,14 @@ Item {
     id: root
 
     property var row: ({})
-    property string style: "classic"
+    property string style: "icon"
     property string size: "sm"
     property bool solo: false
     property color accentColor: Theme.primary
     property color tileColor: Theme.surfaceContainer
     property color contentColor: Theme.surfaceText
     property color mutedColor: Theme.surfaceVariantText
+    property color trendSecondaryColor: mutedColor
     property bool halo: false
     property real radius: Theme.cornerRadiusL
     // Another tile in the same grid row shows extras, so this one keeps their line free to stay level with it.
@@ -49,42 +49,6 @@ Item {
     LayoutMirroring.childrenInherit: true
     Accessible.role: Accessible.StaticText
     Accessible.name: (row.name ?? "") + " " + valueText
-
-    component Glyph: Loader {
-        property bool gauge: false
-
-        sourceComponent: gauge ? gaugeGlyph : iconGlyph
-    }
-
-    Component {
-        id: gaugeGlyph
-
-        MetricGauge {
-            width: root.big ? MonitorMetrics.gaugeSizeHero : MonitorMetrics.gaugeSize
-            height: width
-            usage: root.missing ? -1 : root.fraction
-            ringColor: root.levelColor
-            trackColor: Theme.withAlpha(root.contentColor, Theme.stateLayerFocus)
-            discColor: Theme.foregroundColor(Theme.chipSurface, false)
-
-            DeviceIcon {
-                anchors.centerIn: parent
-                name: root.row.icon ?? ""
-                size: root.big ? Theme.iconSize : root.compact ? Theme.iconSizeSmall : Theme.iconSizeMedium
-                color: root.accentColor
-            }
-        }
-    }
-
-    Component {
-        id: iconGlyph
-
-        DeviceIcon {
-            name: root.row.icon ?? ""
-            size: Theme.iconSizeMedium
-            color: root.levelColor
-        }
-    }
 
     StyledText {
         id: extrasProbe
@@ -157,7 +121,6 @@ Item {
     }
 
     component Header: Item {
-        property bool gauge: false
         property bool showBadge: false
         property bool keepName: false
         property var badgeValues: root.extras
@@ -166,12 +129,14 @@ Item {
         anchors.right: parent.right
         height: glyph.height
 
-        Glyph {
+        DeviceIcon {
             id: glyph
 
             anchors.left: parent.left
             anchors.verticalCenter: parent.verticalCenter
-            gauge: parent.gauge
+            name: root.row.icon ?? ""
+            size: Theme.iconSizeMedium
+            color: root.levelColor
         }
 
         MonitorText {
@@ -185,7 +150,7 @@ Item {
             anchors.verticalCenter: parent.verticalCenter
             text: root.row.name ?? ""
             Accessible.ignored: true
-            font.pixelSize: root.big && parent.gauge ? Theme.fontSizeLarge : Theme.fontSizeMedium
+            font.pixelSize: Theme.fontSizeMedium
             font.weight: Theme.fontWeightMedium
             color: root.contentColor
             horizontalAlignment: Text.AlignLeft
@@ -223,7 +188,7 @@ Item {
         historyLength: values.length
         maximum: root.trend.maximum ?? 0
         color: root.levelColor
-        secondaryColor: root.mutedColor
+        secondaryColor: root.trendSecondaryColor
         curved: true
         grid: false
         gridColor: Theme.withAlpha(root.contentColor, Theme.stateLayerFocus)
@@ -315,7 +280,6 @@ Item {
 
         Item {
             Header {
-                gauge: root.style === "classic"
             }
 
             Row {
@@ -343,7 +307,7 @@ Item {
         }
     }
 
-    // Classic and Icon: in small tiles of a grid the value sits under the name, elsewhere at the bottom.
+    // Icon: in small tiles of a grid the value sits under the name, elsewhere at the bottom.
     Component {
         id: stackBody
 
@@ -356,7 +320,6 @@ Item {
             Header {
                 id: header
 
-                gauge: root.style === "classic"
                 showBadge: root.wide || (root.solo && !upperExtras.visible)
                 keepName: root.sm
             }
@@ -439,6 +402,17 @@ Item {
                 showBadge: root.wide || !meter.extrasLine
                 keepName: root.sm
                 badgeValues: meter.extraMeter ? root.extras.slice(1) : root.extras
+            }
+
+            // The trend takes the room between the header and the value, when there is a line's worth of it.
+            Trend {
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.top: header.bottom
+                anchors.topMargin: Theme.spacingXS
+                anchors.bottom: column.top
+                anchors.bottomMargin: Theme.spacingXS
+                visible: !!root.row.graph && root.hasTrend && height >= Theme.iconSize
             }
 
             Column {
@@ -556,23 +530,12 @@ Item {
                     strokeWidth: MonitorMetrics.ringStrokeSmall
                     room: Math.min(column.width, ringSmall.height - nameRow.height - column.spacing - (extrasRow.visible ? root.extrasLineHeight + column.spacing : 0))
 
-                    Column {
+                    // Only the value inside a small ring: the name sits right below it.
+                    RingValue {
                         anchors.centerIn: parent
-                        width: parent.width
-
-                        DeviceIcon {
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            name: root.row.icon ?? ""
-                            size: Theme.iconSizeSmall
-                            color: root.levelColor
-                        }
-
-                        RingValue {
-                            width: ring.textWidth
-                            anchors.horizontalCenter: parent.horizontalCenter
-                            text: root.shortValueText
-                            font.pixelSize: Theme.fontSizeLarge
-                        }
+                        width: ring.textWidth
+                        text: root.shortValueText
+                        font.pixelSize: Theme.fontSizeLarge
                     }
                 }
 

@@ -199,6 +199,16 @@ Singleton {
                     "tabIndex": 43,
                     "aliases": ["dashboard", "dashboards_osd"],
                     "hint": I18n.tr("Tabs and weather")
+                },
+                {
+                    "id": "dash_sysmon_card",
+                    "hidden": true,
+                    "backPage": "dank_dash",
+                    "titleFrom": "selectedWidgetTitle",
+                    "text": I18n.tr("Widget settings"),
+                    "icon": "tune",
+                    "tabIndex": 87,
+                    "hint": I18n.tr("Options of one widget instance")
                 }
             ]
         },

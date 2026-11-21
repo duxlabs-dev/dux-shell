@@ -23,7 +23,7 @@ function measure(box, frame, bodyW, bodyH, beside, extra) {
 
 // The least scaled candidate. Of those within 0.02 of it the lower key wins, or the earliest without a key.
 function choose(candidates, key) {
-    let top = 0;
+    let top = -Infinity;
     for (const c of candidates)
         top = Math.max(top, c.scale);
     let best = null;
