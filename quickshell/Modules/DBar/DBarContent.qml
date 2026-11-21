@@ -417,6 +417,10 @@ Item {
         hoverController.updateBarHovered(hovered);
     }
 
+    function pointerMovedToIsland() {
+        hoverController.pointerMovedToIsland();
+    }
+
     function invalidateHoverCandidateCache() {
         hoverController.invalidateCandidateCache();
     }
@@ -475,7 +479,7 @@ Item {
             LeftSection {
                 id: hLeftSection
                 objectName: "leftSection"
-                edgeIsScreenEdge: !topBarContent.hasAdjacentLeftBarLive
+                edgeIsScreenEdge: !topBarContent.hasAdjacentLeftBarLive && !barWindow.islandSatellitesHugIsland
                 overrideAxisLayout: true
                 forceVerticalLayout: false
                 live: !barWindow.axis.isVertical
@@ -493,7 +497,7 @@ Item {
             RightSection {
                 id: hRightSection
                 objectName: "rightSection"
-                edgeIsScreenEdge: !topBarContent.hasAdjacentRightBarLive
+                edgeIsScreenEdge: !topBarContent.hasAdjacentRightBarLive && !barWindow.islandSatellitesHugIsland
                 overrideAxisLayout: true
                 forceVerticalLayout: false
                 live: !barWindow.axis.isVertical
@@ -532,7 +536,7 @@ Item {
             LeftSection {
                 id: vLeftSection
                 objectName: "leftSection"
-                edgeIsScreenEdge: !topBarContent.hasAdjacentTopBarLive
+                edgeIsScreenEdge: !topBarContent.hasAdjacentTopBarLive && !barWindow.islandSatellitesHugIsland
                 overrideAxisLayout: true
                 forceVerticalLayout: true
                 live: barWindow.axis.isVertical
@@ -567,7 +571,7 @@ Item {
             RightSection {
                 id: vRightSection
                 objectName: "rightSection"
-                edgeIsScreenEdge: !topBarContent.hasAdjacentBottomBarLive
+                edgeIsScreenEdge: !topBarContent.hasAdjacentBottomBarLive && !barWindow.islandSatellitesHugIsland
                 overrideAxisLayout: true
                 forceVerticalLayout: true
                 live: barWindow.axis.isVertical

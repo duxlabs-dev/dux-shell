@@ -119,12 +119,6 @@
   "%1 fixes": {
     "%1 fixes": "%1 إصلاحات"
   },
-  "%1 h": {
-    "%1 h": "%1 س"
-  },
-  "%1 h %2 m": {
-    "%1 h %2 m": "%1 س %2 د"
-  },
   "%1 h %2 m left": {
     "%1 h %2 m left": "متبقي %1 ساعة %2 دقيقة"
   },
@@ -250,9 +244,6 @@
   },
   "%1 processes": {
     "%1 processes": "%1 عملية"
-  },
-  "%1 procs": {
-    "%1 procs": "عمليات %1"
   },
   "%1 second": {
     "%1 second": "ثانية %1"
@@ -397,9 +388,6 @@
   },
   "AC power": {
     "AC power": "طاقة التيار المتردد"
-  },
-  "API": {
-    "API": "API"
   },
   "AUR helpers are interactive — see the terminal window for prompts. This popout will return to idle when the upgrade exits.": {
     "AUR helpers are interactive — see the terminal window for prompts. This popout will return to idle when the upgrade exits.": "مساعدو AUR تفاعليون - انظر نافذة المحطة الطرفية للمطالبات. ستعود هذه النافذة المنبثقة إلى وضع الخمول عند خروج الترقية."
@@ -794,9 +782,6 @@
   "Anchor": {
     "Anchor": "المرساة (Anchor)"
   },
-  "Animation duration": {
-    "Animation duration": "مدة الحركة"
-  },
   "Animation style": {
     "Animation style": "نمط التحريك"
   },
@@ -1190,9 +1175,6 @@
   "Avoid open popouts": {
     "Avoid open popouts": ""
   },
-  "BIOS": {
-    "BIOS": "BIOS"
-  },
   "Backend": {
     "Backend": "النظام الخلفي"
   },
@@ -1501,9 +1483,6 @@
   },
   "CPU": {
     "CPU": "المعالج"
-  },
-  "CPU graph": {
-    "CPU graph": "رسم بياني للمعالج"
   },
   "CPU temperature": {
     "CPU temperature": "درجة حرارة المعالج"
@@ -2495,9 +2474,6 @@
   "DMS will then manage %1 animations and override animation settings in your config.": {
     "DMS will then manage %1 animations and override animation settings in your config.": ""
   },
-  "DNS": {
-    "DNS": ""
-  },
   "Daemon": {
     "Daemon": "الخدمة الخلفية (Daemon)"
   },
@@ -2819,9 +2795,6 @@
   "Disabled by Frame Mode": {
     "Disabled by Frame Mode": "معطل بواسطة وضع الإطار"
   },
-  "Disabling WiFi...": {
-    "Disabling WiFi...": "جاري إلغاء تفعيل الWiFi..."
-  },
   "Disabling auto-login on startup...": {
     "Disabling auto-login on startup...": "جاري إلغاء تفعيل تسجيل الدخول التلقائي عند بدء التشغيل..."
   },
@@ -2842,9 +2815,6 @@
   },
   "Disconnected": {
     "Disconnected": "غير متصل"
-  },
-  "Disconnected from WiFi": {
-    "Disconnected from WiFi": "تم قطع الاتصال بشبكة الـ Wi-Fi"
   },
   "Discover community plugins. Review their code before installing, and audit changes before updating.": {
     "Discover community plugins. Review their code before installing, and audit changes before updating.": "اكتشف ملحقات المجتمع. راجع كودها قبل التثبيت، وراجع التغييرات قبل التحديث."
@@ -2981,9 +2951,6 @@
   "Does not fit here. Drag to another spot.": {
     "Does not fit here. Drag to another spot.": ""
   },
-  "Domain (optional)": {
-    "Domain (optional)": "العنوان (اختياري)"
-  },
   "Dominant": {
     "Dominant": "مهيمن"
   },
@@ -3076,9 +3043,6 @@
   },
   "Dusk (Astronomical Twilight)": {
     "Dusk (Astronomical Twilight)": "غسق (الشفق الفلكي)"
-  },
-  "Dusk (Civil Twighlight)": {
-    "Dusk (Civil Twighlight)": "الغسق (الغسق المدني)"
   },
   "Dusk (Nautical Twilight)": {
     "Dusk (Nautical Twilight)": "الغسق (الغسق البحري)"
@@ -3209,9 +3173,6 @@
   "Empty space": {
     "Empty space": ""
   },
-  "Enable Wi-Fi before starting the hotspot.": {
-    "Enable Wi-Fi before starting the hotspot.": "قم بتمكين Wi-Fi قبل بدء نقطة الاتصال."
-  },
   "Enable autoconnect": {
     "Enable autoconnect": "تمكين الاتصال التلقائي"
   },
@@ -3226,9 +3187,6 @@
   },
   "Enabled": {
     "Enabled": "مفعّل"
-  },
-  "Enabling WiFi...": {
-    "Enabling WiFi...": "جاري تمكين الWiFi..."
   },
   "Enabling cellular...": {
     "Enabling cellular...": "جاري تمكين الشبكة الخلوية..."
@@ -3509,9 +3467,6 @@
   "Failed to disconnect VPNs": {
     "Failed to disconnect VPNs": "فشل قطع الاتصال بشبكات VPN"
   },
-  "Failed to disconnect WiFi": {
-    "Failed to disconnect WiFi": "فشل قطع الاتصال بشبكة الـ Wi-Fi"
-  },
   "Failed to duplicate %1": {
     "Failed to duplicate %1": ""
   },
@@ -3520,9 +3475,6 @@
   },
   "Failed to enable IP location": {
     "Failed to enable IP location": "فشل في تمكين موقع IP"
-  },
-  "Failed to enable WiFi": {
-    "Failed to enable WiFi": "فشل تشغيل الـ Wi-Fi"
   },
   "Failed to enable job acceptance": {
     "Failed to enable job acceptance": "فشل تفعيل قبول المهام"
@@ -3656,9 +3608,6 @@
   "Failed to save screenshot": {
     "Failed to save screenshot": ""
   },
-  "Failed to send file": {
-    "Failed to send file": ""
-  },
   "Failed to set brightness": {
     "Failed to set brightness": "فشل في ضبط السطوع"
   },
@@ -3682,9 +3631,6 @@
   },
   "Failed to set profile image": {
     "Failed to set profile image": "فشل تحميل الصورة"
-  },
-  "Failed to set profile image: %1": {
-    "Failed to set profile image: %1": "فشل تعيين صورة الملف الشخصي: %1"
   },
   "Failed to start connection to %1": {
     "Failed to start connection to %1": "فشل بدء الاتصال بـ %1"
@@ -4013,9 +3959,6 @@
   "Fonts & motion": {
     "Fonts & motion": "الخطوط والحركة"
   },
-  "Fonts, scale, animations": {
-    "Fonts, scale, animations": "خطوط، مقياس، رسوم متحركة"
-  },
   "For %1": {
     "For %1": "لـ %1"
   },
@@ -4243,9 +4186,6 @@
   },
   "Get Started": {
     "Get Started": "ابدأ"
-  },
-  "Git": {
-    "Git": "Git"
   },
   "Global fonts can be configured in Settings → Personalization": {
     "Global fonts can be configured in Settings → Personalization": "يمكن تكوين الخطوط العامة في الإعدادات ← إضفاء الطابع الشخصي"
@@ -4643,12 +4583,6 @@
   "IP sharing setup failed. Check that %1 is installed.": {
     "IP sharing setup failed. Check that %1 is installed.": "فشل إعداد مشاركة IP. تحقق من تثبيت %1."
   },
-  "IPv4": {
-    "IPv4": ""
-  },
-  "IPv6": {
-    "IPv6": "IPv6"
-  },
   "ISO date": {
     "ISO date": "تاريخ ISO"
   },
@@ -4844,9 +4778,6 @@
   "Initial title": {
     "Initial title": "العنوان الأولي"
   },
-  "Initialised": {
-    "Initialised": "تم التهيئة"
-  },
   "Injected palettes": {
     "Injected palettes": "لوحات مدرجة"
   },
@@ -4895,12 +4826,6 @@
   "Install Plugin": {
     "Install Plugin": "تثبيت ملحق"
   },
-  "Install Theme": {
-    "Install Theme": "تثبيت سمة"
-  },
-  "Install a theme": {
-    "Install a theme": ""
-  },
   "Install color themes from the DMS theme registry": {
     "Install color themes from the DMS theme registry": "تثبيت سمات لونية من سجل سمات DMS"
   },
@@ -4939,9 +4864,6 @@
   },
   "Installed": {
     "Installed": "مثبت"
-  },
-  "Installed %1": {
-    "Installed %1": ""
   },
   "Installed %1, still running %2": {
     "Installed %1, still running %2": "تم تثبيت %1، ولا يزال %2 يعمل"
@@ -5552,9 +5474,6 @@
   "MIT License": {
     "MIT License": "رخصة MIT"
   },
-  "MTU": {
-    "MTU": "MTU"
-  },
   "Mac": {
     "Mac": ""
   },
@@ -5813,9 +5732,6 @@
   "Memory controller": {
     "Memory controller": "وحدة تحكم الذاكرة"
   },
-  "Memory graph": {
-    "Memory graph": "رسم بياني للذاكرة"
-  },
   "Memory usage": {
     "Memory usage": "استخدام الذاكرة"
   },
@@ -6062,12 +5978,6 @@
   "Mute popups for %1": {
     "Mute popups for %1": "كتم النوافذ المنبثقة لـ %1"
   },
-  "Mute popups for %1 (1 hour)": {
-    "Mute popups for %1 (1 hour)": "كتم النوافذ المنبثقة لمدة %1 (ساعة واحدة)"
-  },
-  "Mute popups for %1 (4 hours)": {
-    "Mute popups for %1 (4 hours)": "كتم النوافذ المنبثقة لمدة %1 (4 ساعات)"
-  },
   "Mute, ignore and priority rules per app": {
     "Mute, ignore and priority rules per app": "قواعد الكتم والتجاهل والأولوية لكل تطبيق"
   },
@@ -6125,9 +6035,6 @@
   "Network": {
     "Network": "الشبكة"
   },
-  "Network Info": {
-    "Network Info": "معلومات الشبكة"
-  },
   "Network Information": {
     "Network Information": "معلومات الشبكة"
   },
@@ -6137,14 +6044,8 @@
   "Network download and upload speed display": {
     "Network download and upload speed display": "عرض سرعة التحميل والإرسال للشبكة"
   },
-  "Network graph": {
-    "Network graph": "رسم بياني للشبكة"
-  },
   "Network speed monitor": {
     "Network speed monitor": "مراقب سرعة الشبكة"
-  },
-  "Networks, saved networks, hotspot": {
-    "Networks, saved networks, hotspot": "الشبكات، الشبكات المحفوظة، نقطة الاتصال"
   },
   "Neutral": {
     "Neutral": "محايد"
@@ -7439,9 +7340,6 @@
   "Popouts": {
     "Popouts": "النوافذ المنبثقة"
   },
-  "Popouts and modals use the main animation duration": {
-    "Popouts and modals use the main animation duration": "تستخدم النوافذ المنبثقة والنماذج مدة الرسوم المتحركة الرئيسية"
-  },
   "Popular": {
     "Popular": "شائع"
   },
@@ -8414,9 +8312,6 @@
   "SE": {
     "SE": "SE"
   },
-  "SSID": {
-    "SSID": "SSID"
-  },
   "SW": {
     "SW": "SW"
   },
@@ -8737,9 +8632,6 @@
   },
   "Selected image file not found.": {
     "Selected image file not found.": "ملف الصورة المحدد غير موجود."
-  },
-  "Sending file to %1...": {
-    "Sending file to %1...": ""
   },
   "Sends the playing artist and album name to Apple": {
     "Sends the playing artist and album name to Apple": "إرسال اسم الفنان والألبوم قيد التشغيل إلى Apple"
@@ -9647,9 +9539,6 @@
   "Sync needs sudo authentication. Opening terminal so you can use password or fingerprint.": {
     "Sync needs sudo authentication. Opening terminal so you can use password or fingerprint.": "تتطلب المزامنة مصادقة sudo. يتم فتح الطرفية حتى تتمكن من استخدام كلمة المرور أو بصمة الإصبع."
   },
-  "Sync popouts and modals": {
-    "Sync popouts and modals": "مزامنة النوافذ المنبثقة والنماذج"
-  },
   "Sync position across displays": {
     "Sync position across displays": "مزامنة الموضع عبر الشاشات"
   },
@@ -9715,9 +9604,6 @@
   },
   "Systemd unit": {
     "Systemd unit": "وحدة Systemd"
-  },
-  "TRIM": {
-    "TRIM": "TRIM"
   },
   "Tab": {
     "Tab": "علامة التبويب"
@@ -9851,9 +9737,6 @@
   "The Island takes its place on this bar": {
     "The Island takes its place on this bar": "تحل الجزيرة محلها على هذا الشريط"
   },
-  "The WiFi adapter could not start access point mode.": {
-    "The WiFi adapter could not start access point mode.": "تعذر على محول WiFi بدء وضع نقطة الوصول."
-  },
   "The arrow points in the direction the wind is blowing. The label shows where it comes from.": {
     "The arrow points in the direction the wind is blowing. The label shows where it comes from.": "يشير السهم إلى اتجاه هبوب الرياح. بينما تظهر التسمية مصدر الرياح."
   },
@@ -9932,14 +9815,14 @@
   "Theme color": {
     "Theme color": "لون السمة"
   },
+  "Theme color behind the collapsed island": {
+    "Theme color behind the collapsed island": ""
+  },
+  "Theme color behind the expanded island": {
+    "Theme color behind the expanded island": ""
+  },
   "Theme colors come from this display's wallpaper": {
     "Theme colors come from this display's wallpaper": "تأتي ألوان السمة من خلفية هذه الشاشة"
-  },
-  "Theme colour behind the collapsed island": {
-    "Theme colour behind the collapsed island": ""
-  },
-  "Theme colour behind the expanded island": {
-    "Theme colour behind the expanded island": ""
   },
   "Theme extracted to: %1": {
     "Theme extracted to: %1": "تم استخراج السمة إلى: %1"
@@ -9952,9 +9835,6 @@
   },
   "Theme, light and dark, matugen": {
     "Theme, light and dark, matugen": "السمات، فاتح وداكن، matugen"
-  },
-  "Theme, palette, dark mode": {
-    "Theme, palette, dark mode": "سمة، لوحة ألوان، وضع داكن"
   },
   "Themed app icons": {
     "Themed app icons": ""
@@ -10360,9 +10240,6 @@
   },
   "Unknown Artist": {
     "Unknown Artist": "فنان غير معروف"
-  },
-  "Unknown Config": {
-    "Unknown Config": "تكوين غير معروف"
   },
   "Unknown Device": {
     "Unknown Device": "جهاز غير معروف"
@@ -10799,12 +10676,6 @@
   "W": {
     "W": "W"
   },
-  "WPA2 password": {
-    "WPA2 password": "كلمة مرور WPA2"
-  },
-  "WWN": {
-    "WWN": "WWN"
-  },
   "Waiting": {
     "Waiting": "في انتظار"
   },
@@ -10928,12 +10799,6 @@
   "Wi-Fi and Ethernet connection": {
     "Wi-Fi and Ethernet connection": "اتصال Wi-Fi و Ethernet"
   },
-  "Wi-Fi is disabled": {
-    "Wi-Fi is disabled": "الواي فاي معطل"
-  },
-  "Wi-Fi is disabled. You can still edit and save hotspot settings, but starting the hotspot requires Wi-Fi to be enabled.": {
-    "Wi-Fi is disabled. You can still edit and save hotspot settings, but starting the hotspot requires Wi-Fi to be enabled.": "الواي فاي معطل. لا يزال بإمكانك تعديل وحفظ إعدادات نقطة الاتصال، ولكن بدء تشغيل نقطة الاتصال يتطلب تمكين الواي فاي."
-  },
   "Wi-Fi network": {
     "Wi-Fi network": "شبكة واي فاي"
   },
@@ -10942,18 +10807,6 @@
   },
   "Wi-Fi, Ethernet, VPN": {
     "Wi-Fi, Ethernet, VPN": "واي فاي، إيثرنت، VPN"
-  },
-  "WiFi QR code for %1": {
-    "WiFi QR code for %1": "رمز QR للواي فاي لـ %1"
-  },
-  "WiFi disabled": {
-    "WiFi disabled": "الWi-Fi غير مفعل"
-  },
-  "WiFi enabled": {
-    "WiFi enabled": "الWi-Fi مفعل"
-  },
-  "WiFi is off": {
-    "WiFi is off": "WiFi غير مفعل"
   },
   "Wide (BT2020)": {
     "Wide (BT2020)": "واسع (BT2020)"
@@ -11135,6 +10988,9 @@
   "Y axis": {
     "Y axis": "المحور ص"
   },
+  "Year": {
+    "Year": ""
+  },
   "Yellow": {
     "Yellow": "أصفر"
   },
@@ -11170,9 +11026,6 @@
   },
   "Your hotspot is running.": {
     "Your hotspot is running.": "نقطة الاتصال الخاصة بك قيد التشغيل."
-  },
-  "Your hotspot profile is saved and ready to start.": {
-    "Your hotspot profile is saved and ready to start.": "تم حفظ ملف تعريف نقطة الاتصال الخاص بك وهو جاهز للبدء."
   },
   "Your keyboard layout puts %1 above the first level, so this bind will never fire. Pick a key the layout types without an extra layer.": {
     "Your keyboard layout puts %1 above the first level, so this bind will never fire. Pick a key the layout types without an extra layer.": "تضع تخطيطات لوحة المفاتيح الخاصة بك %1 فوق المستوى الأول، لذا لن يعمل هذا الربط أبداً. اختر مفتاحاً يكتبه التخطيط بدون طبقة إضافية."
@@ -11270,9 +11123,6 @@
   "e.g., scratch, /^tmp_.*/, build": {
     "e.g., scratch, /^tmp_.*/, build": "مثلاً: scratch، /^tmp_.*/، build"
   },
-  "efibootmgr failed": {
-    "efibootmgr failed": "فشل efibootmgr"
-  },
   "expires in %1": {
     "expires in %1": "تنتهي صلاحيته في %1"
   },
@@ -11291,17 +11141,11 @@
   "keyboard tab key name": {
     "Tab": "Tab"
   },
-  "khal": {
-    "khal": "khal"
-  },
   "last seen %1": {
     "last seen %1": "شوهد آخر مرة %1"
   },
   "leave empty for default": {
     "leave empty for default": "اتركه فارغاً ليكون افتراضياً"
-  },
-  "loginctl activate failed (exit %1)": {
-    "loginctl activate failed (exit %1)": "فشل تنشيط loginctl (رمز الخروج %1)"
   },
   "loginctl integration": {
     "loginctl integration": "تكامل loginctl"
@@ -11423,15 +11267,6 @@
   "updated": {
     "updated": "محدث"
   },
-  "useradd failed (exit %1)": {
-    "useradd failed (exit %1)": "فشل إضافة المستخدم (رمز الخروج %1)"
-  },
-  "userdel failed (exit %1)": {
-    "userdel failed (exit %1)": "فشل حذف المستخدم (رمز الخروج %1)"
-  },
-  "usermod failed (exit %1)": {
-    "usermod failed (exit %1)": "فشل تعديل المستخدم (رمز الخروج %1)"
-  },
   "verb, clipboard entry action button tooltip": {
     "Preview": "معاينة"
   },
@@ -11443,35 +11278,5 @@
   },
   "wifi network status, network has a saved profile": {
     "Saved": "تم الحفظ"
-  },
-  "• M - Month (1-12)": {
-    "• M - Month (1-12)": "• M - الشهر (1-12)"
-  },
-  "• MM - Month (01-12)": {
-    "• MM - Month (01-12)": "• MM - الشهر (01-12)"
-  },
-  "• MMM - Month (Jan)": {
-    "• MMM - Month (Jan)": "• (يناير) الشهر - MMM"
-  },
-  "• MMMM - Month (January)": {
-    "• MMMM - Month (January)": "• (يناير) الشهر - MMMM"
-  },
-  "• d - Day (1-31)": {
-    "• d - Day (1-31)": "• (31-1) اليوم - d"
-  },
-  "• dd - Day (01-31)": {
-    "• dd - Day (01-31)": "• (31-01) اليوم - dd"
-  },
-  "• ddd - Day name (Mon)": {
-    "• ddd - Day name (Mon)": "• (الإثنين) اسم اليوم المختصر - ddd"
-  },
-  "• dddd - Day name (Monday)": {
-    "• dddd - Day name (Monday)": "• (الإثنين) اسم اليوم الكامل - dddd"
-  },
-  "• yy - Year (24)": {
-    "• yy - Year (24)": "• (24) السنة - yy"
-  },
-  "• yyyy - Year (2024)": {
-    "• yyyy - Year (2024)": "• (2024) السنة - yyyy"
   }
 }

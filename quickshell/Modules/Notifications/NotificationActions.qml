@@ -43,19 +43,20 @@ QtObject {
                 action: "mute"
             });
         } else {
+            const muteLabel = I18n.tr("Mute popups for %1", "notification menu action, %1 is the app name").arg(appName || I18n.tr("this app"));
             list.push({
                 icon: "notifications_off",
-                label: I18n.tr("Mute popups for %1 (1 hour)", "notification menu action, %1 is the app name").arg(appName || I18n.tr("this app")),
+                label: muteLabel + " (" + I18n.duration(3600) + ")",
                 action: "mute_1h"
             });
             list.push({
                 icon: "notifications_off",
-                label: I18n.tr("Mute popups for %1 (4 hours)", "notification menu action, %1 is the app name").arg(appName || I18n.tr("this app")),
+                label: muteLabel + " (" + I18n.duration(14400) + ")",
                 action: "mute_4h"
             });
             list.push({
                 icon: "notifications_off",
-                label: I18n.tr("Mute popups for %1", "notification menu action, %1 is the app name").arg(appName || I18n.tr("this app")),
+                label: muteLabel,
                 action: "mute"
             });
         }

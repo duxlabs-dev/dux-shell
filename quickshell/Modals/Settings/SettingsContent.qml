@@ -819,6 +819,7 @@ FocusScope {
             "greeter": "GreeterTab.qml",
             "about": "AboutTab.qml",
             "motion": "MotionTab.qml",
+            "accessibility": "AccessibilityTab.qml",
             "sounds": "SoundsTab.qml",
             "media_player": "MediaPlayerTab.qml",
             "notification_rules": "NotificationRulesTab.qml",

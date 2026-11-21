@@ -119,12 +119,6 @@
   "%1 fixes": {
     "%1 fixes": "Исправлений: %1"
   },
-  "%1 h": {
-    "%1 h": "%1 ч"
-  },
-  "%1 h %2 m": {
-    "%1 h %2 m": "%1 ч %2 мин"
-  },
   "%1 h %2 m left": {
     "%1 h %2 m left": "Осталось %1 ч %2 мин"
   },
@@ -250,9 +244,6 @@
   },
   "%1 processes": {
     "%1 processes": ""
-  },
-  "%1 procs": {
-    "%1 procs": "Процессов: %1"
   },
   "%1 second": {
     "%1 second": "%1 с"
@@ -397,9 +388,6 @@
   },
   "AC power": {
     "AC power": "От сети"
-  },
-  "API": {
-    "API": "API"
   },
   "AUR helpers are interactive — see the terminal window for prompts. This popout will return to idle when the upgrade exits.": {
     "AUR helpers are interactive — see the terminal window for prompts. This popout will return to idle when the upgrade exits.": "AUR-помощники интерактивны — следите за запросами в окне терминала. Это окно вернётся в режим ожидания после завершения обновления."
@@ -794,9 +782,6 @@
   "Anchor": {
     "Anchor": "Привязка"
   },
-  "Animation duration": {
-    "Animation duration": "Длительность анимации"
-  },
   "Animation style": {
     "Animation style": "Кривая увеличения"
   },
@@ -1190,9 +1175,6 @@
   "Avoid open popouts": {
     "Avoid open popouts": ""
   },
-  "BIOS": {
-    "BIOS": ""
-  },
   "Backend": {
     "Backend": "Бэкенд"
   },
@@ -1501,9 +1483,6 @@
   },
   "CPU": {
     "CPU": "ЦП"
-  },
-  "CPU graph": {
-    "CPU graph": "График загрузки ЦП"
   },
   "CPU temperature": {
     "CPU temperature": "Температура ЦП"
@@ -2495,9 +2474,6 @@
   "DMS will then manage %1 animations and override animation settings in your config.": {
     "DMS will then manage %1 animations and override animation settings in your config.": ""
   },
-  "DNS": {
-    "DNS": ""
-  },
   "Daemon": {
     "Daemon": ""
   },
@@ -2819,9 +2795,6 @@
   "Disabled by Frame Mode": {
     "Disabled by Frame Mode": "Недоступно в режиме рамки"
   },
-  "Disabling WiFi...": {
-    "Disabling WiFi...": "Отключение Wi-Fi…"
-  },
   "Disabling auto-login on startup...": {
     "Disabling auto-login on startup...": "Отключение автоматического входа при запуске..."
   },
@@ -2842,9 +2815,6 @@
   },
   "Disconnected": {
     "Disconnected": "Отключено"
-  },
-  "Disconnected from WiFi": {
-    "Disconnected from WiFi": "Соединение с Wi-Fi разорвано"
   },
   "Discover community plugins. Review their code before installing, and audit changes before updating.": {
     "Discover community plugins. Review their code before installing, and audit changes before updating.": "Дополнения сообщества. Изучите код перед установкой и изменения перед обновлением."
@@ -2981,9 +2951,6 @@
   "Does not fit here. Drag to another spot.": {
     "Does not fit here. Drag to another spot.": ""
   },
-  "Domain (optional)": {
-    "Domain (optional)": "Домен (необязательно)"
-  },
   "Dominant": {
     "Dominant": "Преобладающий"
   },
@@ -3076,9 +3043,6 @@
   },
   "Dusk (Astronomical Twilight)": {
     "Dusk (Astronomical Twilight)": "Вечерние астрономические сумерки"
-  },
-  "Dusk (Civil Twighlight)": {
-    "Dusk (Civil Twighlight)": "Вечерние гражданские сумерки"
   },
   "Dusk (Nautical Twilight)": {
     "Dusk (Nautical Twilight)": "Вечерние навигационные сумерки"
@@ -3209,9 +3173,6 @@
   "Empty space": {
     "Empty space": ""
   },
-  "Enable Wi-Fi before starting the hotspot.": {
-    "Enable Wi-Fi before starting the hotspot.": "Включите Wi-Fi перед запуском точки доступа."
-  },
   "Enable autoconnect": {
     "Enable autoconnect": "Включить автоподключение"
   },
@@ -3226,9 +3187,6 @@
   },
   "Enabled": {
     "Enabled": "Включено"
-  },
-  "Enabling WiFi...": {
-    "Enabling WiFi...": "Включение Wi-Fi…"
   },
   "Enabling cellular...": {
     "Enabling cellular...": "Включение мобильной сети…"
@@ -3509,9 +3467,6 @@
   "Failed to disconnect VPNs": {
     "Failed to disconnect VPNs": "Не удалось отключить VPN"
   },
-  "Failed to disconnect WiFi": {
-    "Failed to disconnect WiFi": "Не удалось отключить Wi-Fi"
-  },
   "Failed to duplicate %1": {
     "Failed to duplicate %1": ""
   },
@@ -3520,9 +3475,6 @@
   },
   "Failed to enable IP location": {
     "Failed to enable IP location": "Не удалось включить определение местоположения по IP"
-  },
-  "Failed to enable WiFi": {
-    "Failed to enable WiFi": "Не удалось включить Wi-Fi"
   },
   "Failed to enable job acceptance": {
     "Failed to enable job acceptance": "Не удалось включить принятие заданий"
@@ -3656,9 +3608,6 @@
   "Failed to save screenshot": {
     "Failed to save screenshot": ""
   },
-  "Failed to send file": {
-    "Failed to send file": ""
-  },
   "Failed to set brightness": {
     "Failed to set brightness": "Не удалось установить яркость"
   },
@@ -3682,9 +3631,6 @@
   },
   "Failed to set profile image": {
     "Failed to set profile image": "Не удалось установить изображение профиля"
-  },
-  "Failed to set profile image: %1": {
-    "Failed to set profile image: %1": "Не удалось установить изображение профиля: %1"
   },
   "Failed to start connection to %1": {
     "Failed to start connection to %1": "Не удалось начать подключение к %1"
@@ -4013,9 +3959,6 @@
   "Fonts & motion": {
     "Fonts & motion": "Шрифты и анимация"
   },
-  "Fonts, scale, animations": {
-    "Fonts, scale, animations": "Шрифты, масштаб, анимация"
-  },
   "For %1": {
     "For %1": "На %1"
   },
@@ -4243,9 +4186,6 @@
   },
   "Get Started": {
     "Get Started": "Начать"
-  },
-  "Git": {
-    "Git": "Git"
   },
   "Global fonts can be configured in Settings → Personalization": {
     "Global fonts can be configured in Settings → Personalization": "Общие шрифты можно настроить в разделе «Настройки → Персонализация»."
@@ -4643,12 +4583,6 @@
   "IP sharing setup failed. Check that %1 is installed.": {
     "IP sharing setup failed. Check that %1 is installed.": "Не удалось настроить общий доступ к интернету. Проверьте, установлен ли %1."
   },
-  "IPv4": {
-    "IPv4": ""
-  },
-  "IPv6": {
-    "IPv6": ""
-  },
   "ISO date": {
     "ISO date": "Дата ISO"
   },
@@ -4844,9 +4778,6 @@
   "Initial title": {
     "Initial title": "Исходный заголовок"
   },
-  "Initialised": {
-    "Initialised": "Инициализировано"
-  },
   "Injected palettes": {
     "Injected palettes": "Внешние палитры"
   },
@@ -4895,12 +4826,6 @@
   "Install Plugin": {
     "Install Plugin": "Установить дополнение"
   },
-  "Install Theme": {
-    "Install Theme": "Установить тему"
-  },
-  "Install a theme": {
-    "Install a theme": ""
-  },
   "Install color themes from the DMS theme registry": {
     "Install color themes from the DMS theme registry": "Установить цветовые темы из реестра тем DMS"
   },
@@ -4939,9 +4864,6 @@
   },
   "Installed": {
     "Installed": "Установлено"
-  },
-  "Installed %1": {
-    "Installed %1": ""
   },
   "Installed %1, still running %2": {
     "Installed %1, still running %2": "Установлена версия %1, сейчас работает %2"
@@ -5552,9 +5474,6 @@
   "MIT License": {
     "MIT License": "Лицензия MIT"
   },
-  "MTU": {
-    "MTU": ""
-  },
   "Mac": {
     "Mac": ""
   },
@@ -5813,9 +5732,6 @@
   "Memory controller": {
     "Memory controller": ""
   },
-  "Memory graph": {
-    "Memory graph": "График использования памяти"
-  },
   "Memory usage": {
     "Memory usage": "Использование памяти"
   },
@@ -6062,12 +5978,6 @@
   "Mute popups for %1": {
     "Mute popups for %1": "Отключить всплывающие уведомления: %1"
   },
-  "Mute popups for %1 (1 hour)": {
-    "Mute popups for %1 (1 hour)": "Отключить всплывающие уведомления на 1 ч: %1"
-  },
-  "Mute popups for %1 (4 hours)": {
-    "Mute popups for %1 (4 hours)": "Отключить всплывающие уведомления на 4 ч: %1"
-  },
   "Mute, ignore and priority rules per app": {
     "Mute, ignore and priority rules per app": "Отключение, игнорирование и приоритет уведомлений приложений"
   },
@@ -6125,9 +6035,6 @@
   "Network": {
     "Network": "Сеть"
   },
-  "Network Info": {
-    "Network Info": "Сведения о сети"
-  },
   "Network Information": {
     "Network Information": "Сведения о сети"
   },
@@ -6137,14 +6044,8 @@
   "Network download and upload speed display": {
     "Network download and upload speed display": "Скорость приёма и передачи данных по сети"
   },
-  "Network graph": {
-    "Network graph": "График сетевой активности"
-  },
   "Network speed monitor": {
     "Network speed monitor": "Скорость сети"
-  },
-  "Networks, saved networks, hotspot": {
-    "Networks, saved networks, hotspot": "Доступные и сохранённые сети, точка доступа"
   },
   "Neutral": {
     "Neutral": "Нейтральный"
@@ -7439,9 +7340,6 @@
   "Popouts": {
     "Popouts": "Всплывающие панели"
   },
-  "Popouts and modals use the main animation duration": {
-    "Popouts and modals use the main animation duration": "Для всплывающих панелей и модальных окон используется основная длительность анимации."
-  },
   "Popular": {
     "Popular": "Популярные"
   },
@@ -8414,9 +8312,6 @@
   "SE": {
     "SE": "ЮВ"
   },
-  "SSID": {
-    "SSID": "SSID"
-  },
   "SW": {
     "SW": "ЮЗ"
   },
@@ -8737,9 +8632,6 @@
   },
   "Selected image file not found.": {
     "Selected image file not found.": "Выбранный файл изображения не найден."
-  },
-  "Sending file to %1...": {
-    "Sending file to %1...": ""
   },
   "Sends the playing artist and album name to Apple": {
     "Sends the playing artist and album name to Apple": "Отправляет в Apple имя исполнителя и название текущего альбома."
@@ -9647,9 +9539,6 @@
   "Sync needs sudo authentication. Opening terminal so you can use password or fingerprint.": {
     "Sync needs sudo authentication. Opening terminal so you can use password or fingerprint.": "Для синхронизации нужно подтвердить права через sudo. Открывается терминал для ввода пароля или сканирования отпечатка пальца."
   },
-  "Sync popouts and modals": {
-    "Sync popouts and modals": "Общая длительность анимации"
-  },
   "Sync position across displays": {
     "Sync position across displays": "Одинаковое положение на всех мониторах"
   },
@@ -9715,9 +9604,6 @@
   },
   "Systemd unit": {
     "Systemd unit": ""
-  },
-  "TRIM": {
-    "TRIM": ""
   },
   "Tab": {
     "Tab": "Вкладка"
@@ -9851,9 +9737,6 @@
   "The Island takes its place on this bar": {
     "The Island takes its place on this bar": "На этой панели место секции занимает «Остров»"
   },
-  "The WiFi adapter could not start access point mode.": {
-    "The WiFi adapter could not start access point mode.": "Адаптер Wi-Fi не смог запустить режим точки доступа."
-  },
   "The arrow points in the direction the wind is blowing. The label shows where it comes from.": {
     "The arrow points in the direction the wind is blowing. The label shows where it comes from.": "Стрелка указывает, куда дует ветер. Подпись показывает, откуда он дует."
   },
@@ -9932,14 +9815,14 @@
   "Theme color": {
     "Theme color": "Цвет темы"
   },
+  "Theme color behind the collapsed island": {
+    "Theme color behind the collapsed island": ""
+  },
+  "Theme color behind the expanded island": {
+    "Theme color behind the expanded island": ""
+  },
   "Theme colors come from this display's wallpaper": {
     "Theme colors come from this display's wallpaper": "Цвета темы берутся из обоев этого экрана."
-  },
-  "Theme colour behind the collapsed island": {
-    "Theme colour behind the collapsed island": ""
-  },
-  "Theme colour behind the expanded island": {
-    "Theme colour behind the expanded island": ""
   },
   "Theme extracted to: %1": {
     "Theme extracted to: %1": "Тема экспортирована в: %1"
@@ -9952,9 +9835,6 @@
   },
   "Theme, light and dark, matugen": {
     "Theme, light and dark, matugen": "Темы, светлый и тёмный режимы, matugen"
-  },
-  "Theme, palette, dark mode": {
-    "Theme, palette, dark mode": "Оформление, палитра, тёмная тема"
   },
   "Themed app icons": {
     "Themed app icons": ""
@@ -10360,9 +10240,6 @@
   },
   "Unknown Artist": {
     "Unknown Artist": "Неизвестный исполнитель"
-  },
-  "Unknown Config": {
-    "Unknown Config": "Неизвестная конфигурация"
   },
   "Unknown Device": {
     "Unknown Device": "Неизвестное устройство"
@@ -10799,12 +10676,6 @@
   "W": {
     "W": "W"
   },
-  "WPA2 password": {
-    "WPA2 password": "Пароль WPA2"
-  },
-  "WWN": {
-    "WWN": ""
-  },
   "Waiting": {
     "Waiting": ""
   },
@@ -10928,12 +10799,6 @@
   "Wi-Fi and Ethernet connection": {
     "Wi-Fi and Ethernet connection": "Подключение Wi-Fi и Ethernet"
   },
-  "Wi-Fi is disabled": {
-    "Wi-Fi is disabled": "Wi-Fi выключен"
-  },
-  "Wi-Fi is disabled. You can still edit and save hotspot settings, but starting the hotspot requires Wi-Fi to be enabled.": {
-    "Wi-Fi is disabled. You can still edit and save hotspot settings, but starting the hotspot requires Wi-Fi to be enabled.": "Wi-Fi выключен. Можно изменить и сохранить настройки точки доступа, но для её запуска нужно включить Wi-Fi."
-  },
   "Wi-Fi network": {
     "Wi-Fi network": ""
   },
@@ -10942,18 +10807,6 @@
   },
   "Wi-Fi, Ethernet, VPN": {
     "Wi-Fi, Ethernet, VPN": "Wi-Fi, Ethernet, VPN"
-  },
-  "WiFi QR code for %1": {
-    "WiFi QR code for %1": "QR-код Wi-Fi для %1"
-  },
-  "WiFi disabled": {
-    "WiFi disabled": "Wi-Fi выключен"
-  },
-  "WiFi enabled": {
-    "WiFi enabled": "Wi-Fi включён"
-  },
-  "WiFi is off": {
-    "WiFi is off": "Wi-Fi выключен"
   },
   "Wide (BT2020)": {
     "Wide (BT2020)": "Расширенный (BT2020)"
@@ -11135,6 +10988,9 @@
   "Y axis": {
     "Y axis": "Ось Y"
   },
+  "Year": {
+    "Year": ""
+  },
   "Yellow": {
     "Yellow": "Жёлтый"
   },
@@ -11170,9 +11026,6 @@
   },
   "Your hotspot is running.": {
     "Your hotspot is running.": "Ваша точка доступа работает."
-  },
-  "Your hotspot profile is saved and ready to start.": {
-    "Your hotspot profile is saved and ready to start.": "Профиль вашей точки доступа сохранён и готов к запуску."
   },
   "Your keyboard layout puts %1 above the first level, so this bind will never fire. Pick a key the layout types without an extra layer.": {
     "Your keyboard layout puts %1 above the first level, so this bind will never fire. Pick a key the layout types without an extra layer.": "В вашей раскладке символ %1 недоступен на основном уровне, поэтому это сочетание не сработает. Выберите клавишу, доступную без переключения уровня раскладки."
@@ -11270,9 +11123,6 @@
   "e.g., scratch, /^tmp_.*/, build": {
     "e.g., scratch, /^tmp_.*/, build": "например: scratch, /^tmp_.*/, build"
   },
-  "efibootmgr failed": {
-    "efibootmgr failed": "Ошибка efibootmgr"
-  },
   "expires in %1": {
     "expires in %1": "Истекает через %1"
   },
@@ -11291,17 +11141,11 @@
   "keyboard tab key name": {
     "Tab": "Tab"
   },
-  "khal": {
-    "khal": "khal"
-  },
   "last seen %1": {
     "last seen %1": "последний раз в сети %1"
   },
   "leave empty for default": {
     "leave empty for default": "оставьте пустым для значения по умолчанию"
-  },
-  "loginctl activate failed (exit %1)": {
-    "loginctl activate failed (exit %1)": "Сбой loginctl activate (код выхода %1)"
   },
   "loginctl integration": {
     "loginctl integration": "Интеграция с loginctl"
@@ -11423,15 +11267,6 @@
   "updated": {
     "updated": "обновлено"
   },
-  "useradd failed (exit %1)": {
-    "useradd failed (exit %1)": "Сбой useradd (код выхода %1)"
-  },
-  "userdel failed (exit %1)": {
-    "userdel failed (exit %1)": "Сбой userdel (код выхода %1)"
-  },
-  "usermod failed (exit %1)": {
-    "usermod failed (exit %1)": "Сбой usermod (код выхода %1)"
-  },
   "verb, clipboard entry action button tooltip": {
     "Preview": "Просмотреть"
   },
@@ -11443,35 +11278,5 @@
   },
   "wifi network status, network has a saved profile": {
     "Saved": "Сохранённые"
-  },
-  "• M - Month (1-12)": {
-    "• M - Month (1-12)": "• M — месяц (1-12)"
-  },
-  "• MM - Month (01-12)": {
-    "• MM - Month (01-12)": "• MM — месяц (01-12)"
-  },
-  "• MMM - Month (Jan)": {
-    "• MMM - Month (Jan)": "• MMM — месяц (янв.)"
-  },
-  "• MMMM - Month (January)": {
-    "• MMMM - Month (January)": "• MMMM — месяц (январь)"
-  },
-  "• d - Day (1-31)": {
-    "• d - Day (1-31)": "• d — день (1-31)"
-  },
-  "• dd - Day (01-31)": {
-    "• dd - Day (01-31)": "• dd — день (01-31)"
-  },
-  "• ddd - Day name (Mon)": {
-    "• ddd - Day name (Mon)": "• ddd — день недели (пн)"
-  },
-  "• dddd - Day name (Monday)": {
-    "• dddd - Day name (Monday)": "• dddd — день недели (понедельник)"
-  },
-  "• yy - Year (24)": {
-    "• yy - Year (24)": "• yy — год (24)"
-  },
-  "• yyyy - Year (2024)": {
-    "• yyyy - Year (2024)": "• yyyy — год (2024)"
   }
 }

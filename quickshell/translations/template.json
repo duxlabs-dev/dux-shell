@@ -287,20 +287,6 @@
     "comment": "release counts, %1 is a number"
   },
   {
-    "term": "%1 h",
-    "translation": "",
-    "context": "%1 h",
-    "reference": "",
-    "comment": "timed duration, %1 is a number of hours"
-  },
-  {
-    "term": "%1 h %2 m",
-    "translation": "",
-    "context": "%1 h %2 m",
-    "reference": "",
-    "comment": "timed duration, %1 is a number of hours, %2 is a number of minutes"
-  },
-  {
     "term": "%1 h %2 m left",
     "translation": "",
     "context": "%1 h %2 m left",
@@ -452,7 +438,7 @@
     "translation": "",
     "context": "%1 min",
     "reference": "",
-    "comment": "chart time span, %1 is a number of minutes | short duration chip, %1 is a number of minutes | timed duration, %1 is a number of minutes"
+    "comment": "chart time span, %1 is a number of minutes | short duration chip, %1 is a number of minutes"
   },
   {
     "term": "%1 min left",
@@ -606,14 +592,7 @@
     "translation": "",
     "context": "%1 processes",
     "reference": "",
-    "comment": "process count, plural, %1 is a number"
-  },
-  {
-    "term": "%1 procs",
-    "translation": "",
-    "context": "%1 procs",
-    "reference": "",
-    "comment": "short for processes, %1 is a count"
+    "comment": "process count, plural, %1 is a number | short for processes, %1 is a count"
   },
   {
     "term": "%1 second",
@@ -753,14 +732,14 @@
     "translation": "",
     "context": "%1h",
     "reference": "",
-    "comment": "hours abbreviation, %1 is a number"
+    "comment": "hours abbreviation, %1 is a number | timed duration, %1 is a number of hours"
   },
   {
     "term": "%1h %2m",
     "translation": "",
     "context": "%1h %2m",
     "reference": "",
-    "comment": "battery time remaining"
+    "comment": "battery time remaining | timed duration, %1 is a number of hours, %2 is a number of minutes"
   },
   {
     "term": "%1h ago",
@@ -774,7 +753,7 @@
     "translation": "",
     "context": "%1m",
     "reference": "",
-    "comment": "battery time remaining"
+    "comment": "battery time remaining | timed duration, %1 is a number of minutes"
   },
   {
     "term": "%1m ago",
@@ -964,13 +943,6 @@
     "context": "AM",
     "reference": "",
     "comment": "12 hour clock suffix before noon in time setting"
-  },
-  {
-    "term": "API",
-    "translation": "",
-    "context": "API",
-    "reference": "",
-    "comment": "about page card title, application programming interface version"
   },
   {
     "term": "AUR helpers are interactive — see the terminal window for prompts. This popout will return to idle when the upgrade exits.",
@@ -2840,13 +2812,6 @@
     "context": "Avoid open popouts",
     "reference": "",
     "comment": "notification setting"
-  },
-  {
-    "term": "BIOS",
-    "translation": "",
-    "context": "BIOS",
-    "reference": "",
-    "comment": "firmware version and date"
   },
   {
     "term": "Back",
@@ -5943,13 +5908,6 @@
     "comment": "animations include setup warning, %1 is the compositor name"
   },
   {
-    "term": "DNS",
-    "translation": "",
-    "context": "DNS",
-    "reference": "",
-    "comment": "network IP setting label"
-  },
-  {
     "term": "Daemon",
     "translation": "",
     "context": "Daemon",
@@ -6143,7 +6101,7 @@
     "translation": "",
     "context": "Day",
     "reference": "",
-    "comment": "screen time range filter"
+    "comment": "date format legend, calendar day | screen time range filter"
   },
   {
     "term": "Day date",
@@ -6727,9 +6685,9 @@
     "comment": ""
   },
   {
-    "term": "Disabling WiFi...",
+    "term": "Disabling Wi-Fi...",
     "translation": "",
-    "context": "Disabling WiFi...",
+    "context": "Disabling Wi-Fi...",
     "reference": "",
     "comment": "network status"
   },
@@ -6783,9 +6741,9 @@
     "comment": "Tailscale connection status: disconnected | Tailscale disconnected status"
   },
   {
-    "term": "Disconnected from WiFi",
+    "term": "Disconnected from Wi-Fi",
     "translation": "",
-    "context": "Disconnected from WiFi",
+    "context": "Disconnected from Wi-Fi",
     "reference": "",
     "comment": ""
   },
@@ -7329,9 +7287,9 @@
     "comment": ""
   },
   {
-    "term": "Dusk (Civil Twighlight)",
+    "term": "Dusk (Civil Twilight)",
     "translation": "",
-    "context": "Dusk (Civil Twighlight)",
+    "context": "Dusk (Civil Twilight)",
     "reference": "",
     "comment": ""
   },
@@ -7679,9 +7637,9 @@
     "comment": "bluetooth status"
   },
   {
-    "term": "Enabling WiFi...",
+    "term": "Enabling Wi-Fi...",
     "translation": "",
-    "context": "Enabling WiFi...",
+    "context": "Enabling Wi-Fi...",
     "reference": "",
     "comment": "network status"
   },
@@ -8337,9 +8295,9 @@
     "comment": ""
   },
   {
-    "term": "Failed to disconnect WiFi",
+    "term": "Failed to disconnect Wi-Fi",
     "translation": "",
-    "context": "Failed to disconnect WiFi",
+    "context": "Failed to disconnect Wi-Fi",
     "reference": "",
     "comment": ""
   },
@@ -8365,9 +8323,9 @@
     "comment": ""
   },
   {
-    "term": "Failed to enable WiFi",
+    "term": "Failed to enable Wi-Fi",
     "translation": "",
-    "context": "Failed to enable WiFi",
+    "context": "Failed to enable Wi-Fi",
     "reference": "",
     "comment": ""
   },
@@ -8680,13 +8638,6 @@
     "comment": "error toast, screenshot markup"
   },
   {
-    "term": "Failed to send file",
-    "translation": "",
-    "context": "Failed to send file",
-    "reference": "",
-    "comment": "Phone Connect error"
-  },
-  {
     "term": "Failed to set brightness",
     "translation": "",
     "context": "Failed to set brightness",
@@ -8741,13 +8692,6 @@
     "context": "Failed to set profile image",
     "reference": "",
     "comment": ""
-  },
-  {
-    "term": "Failed to set profile image: %1",
-    "translation": "",
-    "context": "Failed to set profile image: %1",
-    "reference": "",
-    "comment": "error message, %1 is the error detail"
   },
   {
     "term": "Failed to start connection to %1",
@@ -8880,7 +8824,7 @@
     "translation": "",
     "context": "Failed: %1",
     "reference": "",
-    "comment": "system update error status, %1 is the error message"
+    "comment": "error status, %1 is an error message or the command that failed | system update error status, %1 is the error message"
   },
   {
     "term": "Faint edge on cards, pills and widgets",
@@ -10059,13 +10003,6 @@
     "comment": "greeter first page button"
   },
   {
-    "term": "Git",
-    "translation": "",
-    "context": "Git",
-    "reference": "",
-    "comment": "release channel that follows the master branch"
-  },
-  {
     "term": "Global fonts can be configured in Settings → Personalization",
     "translation": "",
     "context": "Global fonts can be configured in Settings → Personalization",
@@ -11032,20 +10969,6 @@
     "comment": "hotspot IP configuration failure message, %1 is a package name"
   },
   {
-    "term": "IPv4",
-    "translation": "",
-    "context": "IPv4",
-    "reference": "",
-    "comment": "network IP version"
-  },
-  {
-    "term": "IPv6",
-    "translation": "",
-    "context": "IPv6",
-    "reference": "",
-    "comment": "network IP version | network IPv6 address"
-  },
-  {
     "term": "ISO date",
     "translation": "",
     "context": "ISO date",
@@ -11515,9 +11438,9 @@
     "comment": ""
   },
   {
-    "term": "Initialised",
+    "term": "Initialized",
     "translation": "",
-    "context": "Initialised",
+    "context": "Initialized",
     "reference": "",
     "comment": ""
   },
@@ -11634,20 +11557,6 @@
     "comment": "plugin installation dialog title"
   },
   {
-    "term": "Install Theme",
-    "translation": "",
-    "context": "Install Theme",
-    "reference": "",
-    "comment": "theme installation dialog title"
-  },
-  {
-    "term": "Install a theme",
-    "translation": "",
-    "context": "Install a theme",
-    "reference": "",
-    "comment": "cursor theme manager row title | icon theme manager row title"
-  },
-  {
     "term": "Install color themes from the DMS theme registry",
     "translation": "",
     "context": "Install color themes from the DMS theme registry",
@@ -11704,6 +11613,13 @@
     "comment": "matugen installation hint, %1 is the package name"
   },
   {
+    "term": "Install theme",
+    "translation": "",
+    "context": "Install theme",
+    "reference": "",
+    "comment": "cursor theme manager row title | icon theme manager row title | theme installation dialog title"
+  },
+  {
     "term": "Install theme '%1' from the DMS registry?",
     "translation": "",
     "context": "Install theme '%1' from the DMS registry?",
@@ -11739,13 +11655,6 @@
     "comment": "adjective, plugin or theme is already installed, button state and filter chip"
   },
   {
-    "term": "Installed %1",
-    "translation": "",
-    "context": "Installed %1",
-    "reference": "",
-    "comment": "theme install toast, %1 is a list of theme names"
-  },
-  {
     "term": "Installed %1, still running %2",
     "translation": "",
     "context": "Installed %1, still running %2",
@@ -11771,7 +11680,7 @@
     "translation": "",
     "context": "Installed: %1",
     "reference": "",
-    "comment": "installation success"
+    "comment": "installation success | theme install toast, %1 is a list of theme names"
   },
   {
     "term": "Installing: %1",
@@ -13195,13 +13104,6 @@
     "comment": ""
   },
   {
-    "term": "MTU",
-    "translation": "",
-    "context": "MTU",
-    "reference": "",
-    "comment": "network maximum transmission unit"
-  },
-  {
     "term": "Mac",
     "translation": "",
     "context": "Mac",
@@ -14144,7 +14046,7 @@
     "translation": "",
     "context": "Month",
     "reference": "",
-    "comment": "screen time range filter"
+    "comment": "date format legend, calendar month | screen time range filter"
   },
   {
     "term": "Month date",
@@ -14406,20 +14308,6 @@
     "comment": "notification menu action, %1 is the app name"
   },
   {
-    "term": "Mute popups for %1 (1 hour)",
-    "translation": "",
-    "context": "Mute popups for %1 (1 hour)",
-    "reference": "",
-    "comment": "notification menu action, %1 is the app name"
-  },
-  {
-    "term": "Mute popups for %1 (4 hours)",
-    "translation": "",
-    "context": "Mute popups for %1 (4 hours)",
-    "reference": "",
-    "comment": "notification menu action, %1 is the app name"
-  },
-  {
     "term": "Mute, ignore and priority rules per app",
     "translation": "",
     "context": "Mute, ignore and priority rules per app",
@@ -14558,13 +14446,6 @@
     "context": "Network",
     "reference": "",
     "comment": "noun, settings page and widget title | printer device class, a network printer | route destination network"
-  },
-  {
-    "term": "Network Info",
-    "translation": "",
-    "context": "Network Info",
-    "reference": "",
-    "comment": ""
   },
   {
     "term": "Network Information",
@@ -19992,13 +19873,6 @@
     "comment": "Southeast compass direction"
   },
   {
-    "term": "SSID",
-    "translation": "",
-    "context": "SSID",
-    "reference": "",
-    "comment": "hotspot network name placeholder"
-  },
-  {
     "term": "SW",
     "translation": "",
     "context": "SW",
@@ -20781,13 +20655,6 @@
     "context": "Selected image file not found.",
     "reference": "",
     "comment": ""
-  },
-  {
-    "term": "Sending file to %1...",
-    "translation": "",
-    "context": "Sending file to %1...",
-    "reference": "",
-    "comment": "Phone Connect share action"
   },
   {
     "term": "Sends the playing artist and album name to Apple",
@@ -23107,13 +22974,6 @@
     "comment": "the systemd service or scope a process runs in"
   },
   {
-    "term": "TRIM",
-    "translation": "",
-    "context": "TRIM",
-    "reference": "",
-    "comment": "SSD discard support"
-  },
-  {
     "term": "Tab",
     "translation": "",
     "context": "Tab",
@@ -23429,9 +23289,9 @@
     "comment": "widgets settings: the island replaces the bar's center section"
   },
   {
-    "term": "The WiFi adapter could not start access point mode.",
+    "term": "The Wi-Fi adapter could not start access point mode.",
     "translation": "",
-    "context": "The WiFi adapter could not start access point mode.",
+    "context": "The Wi-Fi adapter could not start access point mode.",
     "reference": "",
     "comment": "hotspot adapter failure message"
   },
@@ -23618,25 +23478,25 @@
     "comment": "Material wallpaper seed card"
   },
   {
+    "term": "Theme color behind the collapsed island",
+    "translation": "",
+    "context": "Theme color behind the collapsed island",
+    "reference": "",
+    "comment": "island activity settings"
+  },
+  {
+    "term": "Theme color behind the expanded island",
+    "translation": "",
+    "context": "Theme color behind the expanded island",
+    "reference": "",
+    "comment": "island activity settings"
+  },
+  {
     "term": "Theme colors come from this display's wallpaper",
     "translation": "",
     "context": "Theme colors come from this display's wallpaper",
     "reference": "",
     "comment": "matugen source display dropdown description"
-  },
-  {
-    "term": "Theme colour behind the collapsed island",
-    "translation": "",
-    "context": "Theme colour behind the collapsed island",
-    "reference": "",
-    "comment": "island activity settings"
-  },
-  {
-    "term": "Theme colour behind the expanded island",
-    "translation": "",
-    "context": "Theme colour behind the expanded island",
-    "reference": "",
-    "comment": "island activity settings"
   },
   {
     "term": "Theme extracted to: %1",
@@ -25655,13 +25515,6 @@
     "comment": ""
   },
   {
-    "term": "WWN",
-    "translation": "",
-    "context": "WWN",
-    "reference": "",
-    "comment": "drive world wide name, a unique id"
-  },
-  {
     "term": "Waiting",
     "translation": "",
     "context": "Waiting",
@@ -25942,6 +25795,13 @@
     "comment": "island settings: status group connectivity content"
   },
   {
+    "term": "Wi-Fi QR code for %1",
+    "translation": "",
+    "context": "Wi-Fi QR code for %1",
+    "reference": "",
+    "comment": "%1 is the network name"
+  },
+  {
     "term": "Wi-Fi and Ethernet connection",
     "translation": "",
     "context": "Wi-Fi and Ethernet connection",
@@ -25949,11 +25809,25 @@
     "comment": ""
   },
   {
-    "term": "Wi-Fi is disabled",
+    "term": "Wi-Fi disabled",
     "translation": "",
-    "context": "Wi-Fi is disabled",
+    "context": "Wi-Fi disabled",
     "reference": "",
-    "comment": "hotspot start error title"
+    "comment": "hotspot start error title | hotspot unavailable status"
+  },
+  {
+    "term": "Wi-Fi enabled",
+    "translation": "",
+    "context": "Wi-Fi enabled",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Wi-Fi is off",
+    "translation": "",
+    "context": "Wi-Fi is off",
+    "reference": "",
+    "comment": "network status | network status when the wifi radio is disabled"
   },
   {
     "term": "Wi-Fi network",
@@ -25975,34 +25849,6 @@
     "context": "Wi-Fi, Ethernet, VPN",
     "reference": "",
     "comment": "settings sidebar hint for the network page"
-  },
-  {
-    "term": "WiFi QR code for %1",
-    "translation": "",
-    "context": "WiFi QR code for %1",
-    "reference": "",
-    "comment": "%1 is the network name"
-  },
-  {
-    "term": "WiFi disabled",
-    "translation": "",
-    "context": "WiFi disabled",
-    "reference": "",
-    "comment": "hotspot unavailable status"
-  },
-  {
-    "term": "WiFi enabled",
-    "translation": "",
-    "context": "WiFi enabled",
-    "reference": "",
-    "comment": ""
-  },
-  {
-    "term": "WiFi is off",
-    "translation": "",
-    "context": "WiFi is off",
-    "reference": "",
-    "comment": "network status | network status when the wifi radio is disabled"
   },
   {
     "term": "Wide (BT2020)",
@@ -26432,6 +26278,13 @@
     "comment": ""
   },
   {
+    "term": "Year",
+    "translation": "",
+    "context": "Year",
+    "reference": "",
+    "comment": "date format legend, calendar year"
+  },
+  {
     "term": "Yellow",
     "translation": "",
     "context": "Yellow",
@@ -26691,13 +26544,6 @@
     "comment": ""
   },
   {
-    "term": "efibootmgr failed",
-    "translation": "",
-    "context": "efibootmgr failed",
-    "reference": "",
-    "comment": "error, efibootmgr is a program name and stays untranslated"
-  },
-  {
     "term": "expires in %1",
     "translation": "",
     "context": "expires in %1",
@@ -26733,13 +26579,6 @@
     "comment": "greeter status"
   },
   {
-    "term": "khal",
-    "translation": "",
-    "context": "khal",
-    "reference": "",
-    "comment": "calendar backend option"
-  },
-  {
     "term": "last seen %1",
     "translation": "",
     "context": "last seen %1",
@@ -26752,13 +26591,6 @@
     "context": "leave empty for default",
     "reference": "",
     "comment": "Tailscale login server placeholder"
-  },
-  {
-    "term": "loginctl activate failed (exit %1)",
-    "translation": "",
-    "context": "loginctl activate failed (exit %1)",
-    "reference": "",
-    "comment": "switch user error, loginctl is a command, %1 is exit code"
   },
   {
     "term": "loginctl integration",
@@ -26983,96 +26815,5 @@
     "context": "updated",
     "reference": "",
     "comment": "adjective, lowercase plugin badge, recently updated"
-  },
-  {
-    "term": "useradd failed (exit %1)",
-    "translation": "",
-    "context": "useradd failed (exit %1)",
-    "reference": "",
-    "comment": "create user error, useradd is a command, %1 is exit code"
-  },
-  {
-    "term": "userdel failed (exit %1)",
-    "translation": "",
-    "context": "userdel failed (exit %1)",
-    "reference": "",
-    "comment": "delete user error, userdel is a command, %1 is exit code"
-  },
-  {
-    "term": "usermod failed (exit %1)",
-    "translation": "",
-    "context": "usermod failed (exit %1)",
-    "reference": "",
-    "comment": "user group change error, usermod is a command, %1 is exit code"
-  },
-  {
-    "term": "• M - Month (1-12)",
-    "translation": "",
-    "context": "• M - Month (1-12)",
-    "reference": "",
-    "comment": ""
-  },
-  {
-    "term": "• MM - Month (01-12)",
-    "translation": "",
-    "context": "• MM - Month (01-12)",
-    "reference": "",
-    "comment": ""
-  },
-  {
-    "term": "• MMM - Month (Jan)",
-    "translation": "",
-    "context": "• MMM - Month (Jan)",
-    "reference": "",
-    "comment": ""
-  },
-  {
-    "term": "• MMMM - Month (January)",
-    "translation": "",
-    "context": "• MMMM - Month (January)",
-    "reference": "",
-    "comment": ""
-  },
-  {
-    "term": "• d - Day (1-31)",
-    "translation": "",
-    "context": "• d - Day (1-31)",
-    "reference": "",
-    "comment": ""
-  },
-  {
-    "term": "• dd - Day (01-31)",
-    "translation": "",
-    "context": "• dd - Day (01-31)",
-    "reference": "",
-    "comment": ""
-  },
-  {
-    "term": "• ddd - Day name (Mon)",
-    "translation": "",
-    "context": "• ddd - Day name (Mon)",
-    "reference": "",
-    "comment": ""
-  },
-  {
-    "term": "• dddd - Day name (Monday)",
-    "translation": "",
-    "context": "• dddd - Day name (Monday)",
-    "reference": "",
-    "comment": ""
-  },
-  {
-    "term": "• yy - Year (24)",
-    "translation": "",
-    "context": "• yy - Year (24)",
-    "reference": "",
-    "comment": ""
-  },
-  {
-    "term": "• yyyy - Year (2024)",
-    "translation": "",
-    "context": "• yyyy - Year (2024)",
-    "reference": "",
-    "comment": ""
   }
 ]

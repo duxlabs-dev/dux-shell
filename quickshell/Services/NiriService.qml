@@ -1309,9 +1309,7 @@ blur {
         const borderSize = (typeof SettingsData !== "undefined" && SettingsData.niriLayoutBorderSize >= 0) ? SettingsData.niriLayoutBorderSize : defaultBorderSize;
         const frameEnabled = typeof SettingsData !== "undefined" && SettingsData.frameEnabled;
         // dms:frame only in separate mode — connected-mode frame blur overlaps windows via popouts/arcs
-        const excludeNamespaces = ["dms:bar"];
-        if (typeof SettingsData !== "undefined" && SettingsData.dankIslandEnabled)
-            excludeNamespaces.push("dms:dankisland");
+        const excludeNamespaces = ["dms:bar", "dms:dankisland"];
         if (frameEnabled && SettingsData.frameMode !== "connected")
             excludeNamespaces.push("dms:frame");
 

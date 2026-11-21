@@ -194,7 +194,7 @@ Column {
                 root.iconInstalling = false;
             const reply = IconFolders.parseReply(output);
             if (exitCode === 0) {
-                ToastService.showInfo(I18n.tr("Installed %1", "theme install toast, %1 is a list of theme names").arg(reply.themes.join(", ")));
+                ToastService.showInfo(I18n.tr("Installed: %1", "theme install toast, %1 is a list of theme names").arg(reply.themes.join(", ")));
                 if (isCursor)
                     root.refreshCursorThemes();
                 else
@@ -1334,7 +1334,7 @@ Column {
                         }
 
                         SettingsRow {
-                            title: I18n.tr("Install a theme", "icon theme manager row title")
+                            title: I18n.tr("Install theme", "icon theme manager row title")
                             subtitle: I18n.tr("From an archive or a folder. Nothing inside it is run.", "icon theme install row description")
 
                             DButton {
@@ -1514,23 +1514,25 @@ Column {
                                 title: cursorRow.modelData
                                 trailingBadge: picked ? I18n.tr("In use", "cursor theme list badge, the theme currently applied") : ""
 
-                                supporting: Item {
-                                    width: Theme.iconSizeLarge
-                                    height: Theme.iconSizeLarge
+                                supporting: Row {
+                                    spacing: Theme.spacingS
 
-                                    DSVGIcon {
-                                        anchors.fill: parent
-                                        source: cursorRow.info?.pointer ?? ""
-                                        size: Theme.iconSizeLarge
-                                        visible: source !== ""
+                                    Repeater {
+                                        model: cursorRow.info?.cursors ?? []
+
+                                        DSVGIcon {
+                                            required property string modelData
+
+                                            source: modelData
+                                            size: Theme.iconSizeLarge
+                                        }
                                     }
 
                                     DIcon {
-                                        anchors.centerIn: parent
                                         name: "arrow_selector_tool"
                                         size: Theme.iconSizeMedium
                                         color: Theme.surfaceVariantText
-                                        visible: !(cursorRow.info?.pointer)
+                                        visible: (cursorRow.info?.cursors?.length ?? 0) === 0
                                     }
                                 }
 
@@ -1545,7 +1547,7 @@ Column {
                         }
 
                         SettingsRow {
-                            title: I18n.tr("Install a theme", "cursor theme manager row title")
+                            title: I18n.tr("Install theme", "cursor theme manager row title")
                             subtitle: I18n.tr("From an archive or a folder. Nothing inside it is run.", "icon theme install row description")
 
                             DButton {

@@ -224,27 +224,32 @@ Item {
 
                 SettingsButtonGroupRow {
                     settingKey: "barCornerStyle"
-                    tags: ["rounded", "attached", "square", "corners", "edge", "screen", "flush"]
+                    tags: ["rounded", "square", "corners"]
                     text: I18n.tr("Corner style")
                     visible: !bar.selectedBarFrameSanitized && !bar.islandOwnsSelectedBarTop
                     resetStore: bar
-                    resetKeys: ["squareCorners", "attachToScreenEdge"]
-                    model: [I18n.tr("Rounded", "bar corner style option"), I18n.tr("Flush", "bar corner style option"), I18n.tr("Square", "bar corner style option")]
-                    currentIndex: {
-                        if (bar.selectedBarConfig?.squareCorners ?? false)
-                            return 2;
-                        if (bar.selectedBarConfig?.attachToScreenEdge ?? false)
-                            return 1;
-                        return 0;
-                    }
-                    onSelectionChanged: (index, selected) => {
-                        if (!selected)
-                            return;
-                        SettingsData.updateBarConfig(bar.selectedBarId, {
-                            squareCorners: index === 2,
-                            attachToScreenEdge: index === 1
-                        });
-                    }
+                    resetKeys: ["squareCorners"]
+                    model: [I18n.tr("Rounded", "bar corner style option"), I18n.tr("Square", "bar corner style option")]
+                    values: [false, true]
+                    value: bar.selectedBarConfig?.squareCorners ?? false
+                    onValueSelected: value => SettingsData.updateBarConfig(bar.selectedBarId, {
+                            squareCorners: value
+                        })
+                }
+
+                SettingsButtonGroupRow {
+                    settingKey: "barEdgePlacement"
+                    tags: ["attached", "edge", "screen", "flush", "floating", "gap"]
+                    text: I18n.tr("Placement", "bar settings: floating off the screen edge or flush against it")
+                    visible: !bar.selectedBarFrameSanitized && !bar.islandOwnsSelectedBarTop
+                    resetStore: bar
+                    resetKeys: ["attachToScreenEdge"]
+                    model: [I18n.tr("Floating", "bar placement option: gap between the bar and the screen edge"), I18n.tr("Flush", "bar placement option: bar touches the screen edge")]
+                    values: [false, true]
+                    value: bar.selectedBarConfig?.attachToScreenEdge ?? false
+                    onValueSelected: value => SettingsData.updateBarConfig(bar.selectedBarId, {
+                            attachToScreenEdge: value
+                        })
                 }
 
                 SettingsToggleRow {

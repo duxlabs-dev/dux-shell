@@ -889,6 +889,7 @@ Item {
     }
 
     function uninstallRegistryTheme(theme) {
+        Theme.releaseRegistryTheme(theme.id);
         ToastService.showInfo(I18n.tr("Uninstalling: %1", "uninstallation progress").arg(theme.name));
         DMSService.uninstallTheme(theme.id, response => {
             if (response.error) {

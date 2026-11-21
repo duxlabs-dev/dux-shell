@@ -11,7 +11,7 @@ DIdleSurface {
     readonly property alias hostItem: hostItem
 
     requestedBounds: {
-        if (!idleSupported || !active)
+        if (!boundsSupported || !active)
             return Qt.rect(0, 0, 0, 0);
         let bounds = {
             x: 0,
@@ -29,8 +29,8 @@ DIdleSurface {
     }
 
     kind: "osd"
-    // A full-screen surface is blacked out whole by compositor capture rules matching this namespace.
-    compactWhenIdle: true
+    // Maps per show, so it stacks above overlay surfaces mapped since the last one.
+    keepMapped: false
     active: hostCount > 0
     maskItem: activeHost?.maskItem ?? null
 
@@ -42,8 +42,6 @@ DIdleSurface {
     })
     WlrLayershell.keyboardFocus: activeHost?.surfaceKeyboardFocus ?? WlrKeyboardFocus.None
     BackgroundEffect.blurRegion: activeHost?.blurRegion ?? null
-
-
 
     Item {
         id: hostItem

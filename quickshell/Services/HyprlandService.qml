@@ -547,9 +547,7 @@ Singleton {
         const frameEnabled = typeof SettingsData !== "undefined" && SettingsData.frameEnabled;
         // Hyprland `xray = false` is still early-development; unset already samples real content, so only force xray=true
         // dms:frame only in separate mode — connected-mode frame blur overlaps windows via popouts/arcs
-        const xrayNamespaces = ["dms:bar"];
-        if (typeof SettingsData !== "undefined" && SettingsData.dankIslandEnabled)
-            xrayNamespaces.push("dms:dankisland");
+        const xrayNamespaces = ["dms:bar", "dms:dankisland"];
         if (frameEnabled && SettingsData.frameMode !== "connected")
             xrayNamespaces.push("dms:frame");
 

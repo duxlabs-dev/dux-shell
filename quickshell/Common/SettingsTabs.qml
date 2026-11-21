@@ -62,7 +62,6 @@ Singleton {
                 },
                 {
                     "id": "theme_apps",
-                    "advanced": true,
                     "text": I18n.tr("App theming"),
                     "icon": "apps",
                     "tabIndex": 50,
@@ -127,6 +126,13 @@ Singleton {
             "icon": "animation",
             "tabIndex": 14,
             "hint": I18n.tr("Animations and motion", "settings sidebar hint for the motion page")
+        },
+        {
+            "id": "accessibility",
+            "text": I18n.tr("Accessibility", "settings page name for accessibility options"),
+            "icon": "accessibility_new",
+            "tabIndex": 86,
+            "hint": I18n.tr("Motion, density, scrollbars", "settings sidebar hint for the accessibility page")
         },
         {
             "id": "separator_1",

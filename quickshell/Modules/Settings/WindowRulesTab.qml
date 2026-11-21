@@ -59,7 +59,7 @@ Item {
             "xwayland": "XWayland",
             "fullscreen": I18n.tr("Fullscreen"),
             "pinned": I18n.tr("Pinned"),
-            "initialised": I18n.tr("Initialised"),
+            "initialised": I18n.tr("Initialized"),
             "initialClass": I18n.tr("Initial class"),
             "initialTitle": I18n.tr("Initial title"),
             "tag": I18n.tr("Tag"),

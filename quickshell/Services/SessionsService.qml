@@ -229,7 +229,7 @@ Singleton {
                 Qt.callLater(() => activateProc.destroy());
 
                 if (exitCode !== 0) {
-                    svc._fail(sessionId, username, err || I18n.tr("loginctl activate failed (exit %1)", "switch user error, loginctl is a command, %1 is exit code").arg(exitCode), cb);
+                    svc._fail(sessionId, username, err || I18n.commandFailed("loginctl activate", exitCode), cb);
                     return;
                 }
                 if (typeof cb === "function") {

@@ -115,11 +115,16 @@ FocusScope {
         }
     }
 
-    TapHandler {
-        acceptedButtons: Qt.BackButton
-        onTapped: {
-            if (!transientOwnsFocus())
-                root.content.goBack(false);
+    // Overlay so child Controls (SettingsRow, StyledButton, etc.) cannot swallow Qt.BackButton presses first
+    Item {
+        anchors.fill: parent
+        z: 1000
+
+        TapHandler {
+            acceptedButtons: Qt.BackButton
+            gesturePolicy: TapHandler.WithinBounds
+            enabled: !root.transientOwnsFocus()
+            onTapped: root.content.goBack(false)
         }
     }
 

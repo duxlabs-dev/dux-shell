@@ -365,7 +365,7 @@ Singleton {
                 end: new Date(times.sunset)
             },
             {
-                name: I18n.tr("Dusk (Civil Twighlight)"),
+                name: I18n.tr("Dusk (Civil Twilight)"),
                 start: new Date(times.sunset),
                 end: new Date(times.dusk)
             },

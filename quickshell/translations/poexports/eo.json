@@ -119,12 +119,6 @@
   "%1 fixes": {
     "%1 fixes": "%1 riparoj"
   },
-  "%1 h": {
-    "%1 h": ""
-  },
-  "%1 h %2 m": {
-    "%1 h %2 m": ""
-  },
   "%1 h %2 m left": {
     "%1 h %2 m left": "%1 h %2 m restas"
   },
@@ -250,9 +244,6 @@
   },
   "%1 processes": {
     "%1 processes": ""
-  },
-  "%1 procs": {
-    "%1 procs": ""
   },
   "%1 second": {
     "%1 second": "%1 sekundo"
@@ -397,9 +388,6 @@
   },
   "AC power": {
     "AC power": "Reta potenco"
-  },
-  "API": {
-    "API": "API"
   },
   "AUR helpers are interactive — see the terminal window for prompts. This popout will return to idle when the upgrade exits.": {
     "AUR helpers are interactive — see the terminal window for prompts. This popout will return to idle when the upgrade exits.": "AUR-helpantoj estas interagaj — vidu la terminalfenestron por invitoj. "
@@ -794,9 +782,6 @@
   "Anchor": {
     "Anchor": "ankro"
   },
-  "Animation duration": {
-    "Animation duration": "Animacidaŭro"
-  },
   "Animation style": {
     "Animation style": "Animacia Stilo"
   },
@@ -1190,9 +1175,6 @@
   "Avoid open popouts": {
     "Avoid open popouts": ""
   },
-  "BIOS": {
-    "BIOS": ""
-  },
   "Backend": {
     "Backend": "Interna programo"
   },
@@ -1501,9 +1483,6 @@
   },
   "CPU": {
     "CPU": "ĉefprocesoro"
-  },
-  "CPU graph": {
-    "CPU graph": "Ĉefprocesoro-grafikaĵo"
   },
   "CPU temperature": {
     "CPU temperature": "Ĉefprocesoro-temperaturo"
@@ -2495,9 +2474,6 @@
   "DMS will then manage %1 animations and override animation settings in your config.": {
     "DMS will then manage %1 animations and override animation settings in your config.": ""
   },
-  "DNS": {
-    "DNS": ""
-  },
   "Daemon": {
     "Daemon": ""
   },
@@ -2819,9 +2795,6 @@
   "Disabled by Frame Mode": {
     "Disabled by Frame Mode": "Malŝaltita de Kadra Reĝimo"
   },
-  "Disabling WiFi...": {
-    "Disabling WiFi...": "Malŝaltante WiFi-on..."
-  },
   "Disabling auto-login on startup...": {
     "Disabling auto-login on startup...": "Malŝaltante aŭtomatan ensaluti ĉe ekfunkciigo..."
   },
@@ -2842,9 +2815,6 @@
   },
   "Disconnected": {
     "Disconnected": "Malkonektita"
-  },
-  "Disconnected from WiFi": {
-    "Disconnected from WiFi": "Malkonektita de WiFi"
   },
   "Discover community plugins. Review their code before installing, and audit changes before updating.": {
     "Discover community plugins. Review their code before installing, and audit changes before updating.": "Malkovru komunumajn kromprogramojn. Reviziu ilian kodon antaŭ ol instali, kaj kontrolu ŝanĝojn antaŭ ol ĝisdatigi."
@@ -2981,9 +2951,6 @@
   "Does not fit here. Drag to another spot.": {
     "Does not fit here. Drag to another spot.": ""
   },
-  "Domain (optional)": {
-    "Domain (optional)": "Domajno (laŭvola)"
-  },
   "Dominant": {
     "Dominant": "Superreganta"
   },
@@ -3076,9 +3043,6 @@
   },
   "Dusk (Astronomical Twilight)": {
     "Dusk (Astronomical Twilight)": "Krepasko (astronomia krepasko)"
-  },
-  "Dusk (Civil Twighlight)": {
-    "Dusk (Civil Twighlight)": "Krepasko (civila krepasko)"
   },
   "Dusk (Nautical Twilight)": {
     "Dusk (Nautical Twilight)": "Krepasko (naŭtika krepasko)"
@@ -3209,9 +3173,6 @@
   "Empty space": {
     "Empty space": ""
   },
-  "Enable Wi-Fi before starting the hotspot.": {
-    "Enable Wi-Fi before starting the hotspot.": "Ebligu Wi-Fi antaŭ ol startigi la retkaptejon."
-  },
   "Enable autoconnect": {
     "Enable autoconnect": "Ŝalti aŭtomatan konekton"
   },
@@ -3226,9 +3187,6 @@
   },
   "Enabled": {
     "Enabled": "Ŝaltita"
-  },
-  "Enabling WiFi...": {
-    "Enabling WiFi...": "Ŝaltas WiFi-on..."
   },
   "Enabling cellular...": {
     "Enabling cellular...": "Ebligante ĉelan reton..."
@@ -3509,9 +3467,6 @@
   "Failed to disconnect VPNs": {
     "Failed to disconnect VPNs": "Malsukcesis malkonekti VPN-ojn"
   },
-  "Failed to disconnect WiFi": {
-    "Failed to disconnect WiFi": "Malsukcesis malkonekti WiFi-on"
-  },
   "Failed to duplicate %1": {
     "Failed to duplicate %1": ""
   },
@@ -3520,9 +3475,6 @@
   },
   "Failed to enable IP location": {
     "Failed to enable IP location": "Malsukcesis ŝalti IP-lokon"
-  },
-  "Failed to enable WiFi": {
-    "Failed to enable WiFi": "Malsukcesis ŝalti WiFi-on"
   },
   "Failed to enable job acceptance": {
     "Failed to enable job acceptance": "Malsukcesis ŝalti task-akcepton"
@@ -3656,9 +3608,6 @@
   "Failed to save screenshot": {
     "Failed to save screenshot": ""
   },
-  "Failed to send file": {
-    "Failed to send file": ""
-  },
   "Failed to set brightness": {
     "Failed to set brightness": "Malsukcesis agordi brilecon"
   },
@@ -3682,9 +3631,6 @@
   },
   "Failed to set profile image": {
     "Failed to set profile image": "Malsukcesis agordi profilbildon"
-  },
-  "Failed to set profile image: %1": {
-    "Failed to set profile image: %1": "Malsukcesis agordi profilbildon: %1"
   },
   "Failed to start connection to %1": {
     "Failed to start connection to %1": "Malsukcesis lanĉi konekton al %1"
@@ -4013,9 +3959,6 @@
   "Fonts & motion": {
     "Fonts & motion": "Tiparoj kaj movo"
   },
-  "Fonts, scale, animations": {
-    "Fonts, scale, animations": "Tiparoj, skalo, animacioj"
-  },
   "For %1": {
     "For %1": "Dum %1"
   },
@@ -4243,9 +4186,6 @@
   },
   "Get Started": {
     "Get Started": "Komenci"
-  },
-  "Git": {
-    "Git": "Git"
   },
   "Global fonts can be configured in Settings → Personalization": {
     "Global fonts can be configured in Settings → Personalization": "Tutmondaj tiparoj povas esti agorditaj en Agordoj → Personigo"
@@ -4643,12 +4583,6 @@
   "IP sharing setup failed. Check that %1 is installed.": {
     "IP sharing setup failed. Check that %1 is installed.": ""
   },
-  "IPv4": {
-    "IPv4": ""
-  },
-  "IPv6": {
-    "IPv6": ""
-  },
   "ISO date": {
     "ISO date": "ISO-dato"
   },
@@ -4844,9 +4778,6 @@
   "Initial title": {
     "Initial title": ""
   },
-  "Initialised": {
-    "Initialised": "Iniciatigita"
-  },
   "Injected palettes": {
     "Injected palettes": "Injektitaj paletroj"
   },
@@ -4895,12 +4826,6 @@
   "Install Plugin": {
     "Install Plugin": "Instali kromprogramon"
   },
-  "Install Theme": {
-    "Install Theme": "Instali etoson"
-  },
-  "Install a theme": {
-    "Install a theme": ""
-  },
   "Install color themes from the DMS theme registry": {
     "Install color themes from the DMS theme registry": "Instali kolor-etosojn el la DMS-etosa registro"
   },
@@ -4939,9 +4864,6 @@
   },
   "Installed": {
     "Installed": "Instalita"
-  },
-  "Installed %1": {
-    "Installed %1": ""
   },
   "Installed %1, still running %2": {
     "Installed %1, still running %2": "Instalita %1, ankoraŭ rulas %2"
@@ -5552,9 +5474,6 @@
   "MIT License": {
     "MIT License": "Permesilo MIT"
   },
-  "MTU": {
-    "MTU": ""
-  },
   "Mac": {
     "Mac": ""
   },
@@ -5813,9 +5732,6 @@
   "Memory controller": {
     "Memory controller": ""
   },
-  "Memory graph": {
-    "Memory graph": "Memora grafikaĵo"
-  },
   "Memory usage": {
     "Memory usage": "Memora uzado"
   },
@@ -6062,12 +5978,6 @@
   "Mute popups for %1": {
     "Mute popups for %1": "Silentigi ŝprucfenestrojn por %1"
   },
-  "Mute popups for %1 (1 hour)": {
-    "Mute popups for %1 (1 hour)": ""
-  },
-  "Mute popups for %1 (4 hours)": {
-    "Mute popups for %1 (4 hours)": ""
-  },
   "Mute, ignore and priority rules per app": {
     "Mute, ignore and priority rules per app": "Silentigaj, malatentaj kaj priorittaj reguloj por ĉiu aplikaĵo"
   },
@@ -6125,9 +6035,6 @@
   "Network": {
     "Network": "Reto"
   },
-  "Network Info": {
-    "Network Info": "Retaj informoj"
-  },
   "Network Information": {
     "Network Information": "Retaj informoj"
   },
@@ -6137,14 +6044,8 @@
   "Network download and upload speed display": {
     "Network download and upload speed display": "Vidigo de reta elŝuta kaj alŝuta rapido"
   },
-  "Network graph": {
-    "Network graph": "Reta grafikaĵo"
-  },
   "Network speed monitor": {
     "Network speed monitor": "Monitorado de reta rapido"
-  },
-  "Networks, saved networks, hotspot": {
-    "Networks, saved networks, hotspot": "Retoj, konservitaj retoj, retpunkto"
   },
   "Neutral": {
     "Neutral": "Neŭtra"
@@ -7439,9 +7340,6 @@
   "Popouts": {
     "Popouts": "Ŝprucfenestroj"
   },
-  "Popouts and modals use the main animation duration": {
-    "Popouts and modals use the main animation duration": "Ŝprucaĵoj kaj modaloj uzas la ĉefan animacian daŭron"
-  },
   "Popular": {
     "Popular": ""
   },
@@ -8414,9 +8312,6 @@
   "SE": {
     "SE": "SO"
   },
-  "SSID": {
-    "SSID": "SSID"
-  },
   "SW": {
     "SW": "SU"
   },
@@ -8737,9 +8632,6 @@
   },
   "Selected image file not found.": {
     "Selected image file not found.": "Elektita bild-dosiero ne estis trovita."
-  },
-  "Sending file to %1...": {
-    "Sending file to %1...": ""
   },
   "Sends the playing artist and album name to Apple": {
     "Sends the playing artist and album name to Apple": "Sendas la ludatan artiston kaj albumnomon al Apple"
@@ -9647,9 +9539,6 @@
   "Sync needs sudo authentication. Opening terminal so you can use password or fingerprint.": {
     "Sync needs sudo authentication. Opening terminal so you can use password or fingerprint.": "Sinkronigo bezonas sudo-aŭtentigon. Malfermas terminalon por ke vi povu uzi pasvorton aŭ fingrospuron."
   },
-  "Sync popouts and modals": {
-    "Sync popouts and modals": "Sinkronigi ŝprucaĵojn kaj modalojn"
-  },
   "Sync position across displays": {
     "Sync position across displays": "Sinkronigi pozicion trans ekranoj"
   },
@@ -9715,9 +9604,6 @@
   },
   "Systemd unit": {
     "Systemd unit": ""
-  },
-  "TRIM": {
-    "TRIM": ""
   },
   "Tab": {
     "Tab": "Langeto"
@@ -9851,9 +9737,6 @@
   "The Island takes its place on this bar": {
     "The Island takes its place on this bar": ""
   },
-  "The WiFi adapter could not start access point mode.": {
-    "The WiFi adapter could not start access point mode.": "La vifia adaptilo ne povis startigi alirpunktan reĝimon."
-  },
   "The arrow points in the direction the wind is blowing. The label shows where it comes from.": {
     "The arrow points in the direction the wind is blowing. The label shows where it comes from.": "La sago indikas la direkton en kiu la vento blovas. La etikedo montras de kie ĝi venas."
   },
@@ -9932,14 +9815,14 @@
   "Theme color": {
     "Theme color": "Etosa koloro"
   },
+  "Theme color behind the collapsed island": {
+    "Theme color behind the collapsed island": ""
+  },
+  "Theme color behind the expanded island": {
+    "Theme color behind the expanded island": ""
+  },
   "Theme colors come from this display's wallpaper": {
     "Theme colors come from this display's wallpaper": "Etosaj koloroj venas de la fonbildo de ĉi tiu ekrano"
-  },
-  "Theme colour behind the collapsed island": {
-    "Theme colour behind the collapsed island": ""
-  },
-  "Theme colour behind the expanded island": {
-    "Theme colour behind the expanded island": ""
   },
   "Theme extracted to: %1": {
     "Theme extracted to: %1": "Etoso eltirita al: %1"
@@ -9952,9 +9835,6 @@
   },
   "Theme, light and dark, matugen": {
     "Theme, light and dark, matugen": "Etoso, hela kaj malhela, matugen"
-  },
-  "Theme, palette, dark mode": {
-    "Theme, palette, dark mode": "Etoso, paletro, malhela reĝimo"
   },
   "Themed app icons": {
     "Themed app icons": ""
@@ -10360,9 +10240,6 @@
   },
   "Unknown Artist": {
     "Unknown Artist": "Nekonata artisto"
-  },
-  "Unknown Config": {
-    "Unknown Config": "Nekonata agordo"
   },
   "Unknown Device": {
     "Unknown Device": "Nekonata aparato"
@@ -10799,12 +10676,6 @@
   "W": {
     "W": "U"
   },
-  "WPA2 password": {
-    "WPA2 password": "WPA2-pasvorto"
-  },
-  "WWN": {
-    "WWN": ""
-  },
   "Waiting": {
     "Waiting": ""
   },
@@ -10928,12 +10799,6 @@
   "Wi-Fi and Ethernet connection": {
     "Wi-Fi and Ethernet connection": "Konektoj de Wi-Fi kaj Ethernet"
   },
-  "Wi-Fi is disabled": {
-    "Wi-Fi is disabled": "Wi-Fi estas malebligita"
-  },
-  "Wi-Fi is disabled. You can still edit and save hotspot settings, but starting the hotspot requires Wi-Fi to be enabled.": {
-    "Wi-Fi is disabled. You can still edit and save hotspot settings, but starting the hotspot requires Wi-Fi to be enabled.": "Wi-Fi estas malebligita. Vi ankoraŭ povas redakti kaj konservi agordojn de retkaptejo, sed startigo de la retkaptejo postulas ke Wi-Fi estu ebligita."
-  },
   "Wi-Fi network": {
     "Wi-Fi network": ""
   },
@@ -10942,18 +10807,6 @@
   },
   "Wi-Fi, Ethernet, VPN": {
     "Wi-Fi, Ethernet, VPN": "Wi-Fi, Eterreto, VPN"
-  },
-  "WiFi QR code for %1": {
-    "WiFi QR code for %1": ""
-  },
-  "WiFi disabled": {
-    "WiFi disabled": "WiFi estas malŝaltita"
-  },
-  "WiFi enabled": {
-    "WiFi enabled": "WiFi estas ŝaltita"
-  },
-  "WiFi is off": {
-    "WiFi is off": "WiFi estas malŝaltita"
   },
   "Wide (BT2020)": {
     "Wide (BT2020)": "Larĝa (BT2020)"
@@ -11135,6 +10988,9 @@
   "Y axis": {
     "Y axis": "Akso Y"
   },
+  "Year": {
+    "Year": ""
+  },
   "Yellow": {
     "Yellow": "Flava"
   },
@@ -11170,9 +11026,6 @@
   },
   "Your hotspot is running.": {
     "Your hotspot is running.": "Via retkaptejo funkcias."
-  },
-  "Your hotspot profile is saved and ready to start.": {
-    "Your hotspot profile is saved and ready to start.": "Via retkapteja profilo estas konservita kaj preta por starti."
   },
   "Your keyboard layout puts %1 above the first level, so this bind will never fire. Pick a key the layout types without an extra layer.": {
     "Your keyboard layout puts %1 above the first level, so this bind will never fire. Pick a key the layout types without an extra layer.": "Via klavara aranĝo metas %1 super la unua nivelo, tial ĉi tiu ligo neniam aktiviĝos. Elektu klavon kiun la aranĝo tajpas sen ekstra tavolo."
@@ -11270,9 +11123,6 @@
   "e.g., scratch, /^tmp_.*/, build": {
     "e.g., scratch, /^tmp_.*/, build": "ekz., scratch, /^tmp_.*/, build"
   },
-  "efibootmgr failed": {
-    "efibootmgr failed": "efibootmgr malsukcesis"
-  },
   "expires in %1": {
     "expires in %1": ""
   },
@@ -11291,17 +11141,11 @@
   "keyboard tab key name": {
     "Tab": "Langeto"
   },
-  "khal": {
-    "khal": "khal"
-  },
   "last seen %1": {
     "last seen %1": "laste vidita %1"
   },
   "leave empty for default": {
     "leave empty for default": "lasu malplena por defaŭlto"
-  },
-  "loginctl activate failed (exit %1)": {
-    "loginctl activate failed (exit %1)": "loginctl-aktivigo malsukcesis (eliro %1)"
   },
   "loginctl integration": {
     "loginctl integration": "Integriĝo kun loginctl"
@@ -11423,15 +11267,6 @@
   "updated": {
     "updated": ""
   },
-  "useradd failed (exit %1)": {
-    "useradd failed (exit %1)": "useradd malsukcesis (eliro %1)"
-  },
-  "userdel failed (exit %1)": {
-    "userdel failed (exit %1)": "userdel malsukcesis (eliro %1)"
-  },
-  "usermod failed (exit %1)": {
-    "usermod failed (exit %1)": "uzantmodo malsukcesis (eliro %1)"
-  },
   "verb, clipboard entry action button tooltip": {
     "Preview": "Antaŭrigardo"
   },
@@ -11443,35 +11278,5 @@
   },
   "wifi network status, network has a saved profile": {
     "Saved": "Konservita"
-  },
-  "• M - Month (1-12)": {
-    "• M - Month (1-12)": "• M - Monato (1-12)"
-  },
-  "• MM - Month (01-12)": {
-    "• MM - Month (01-12)": "• MM - Monato (01-12)"
-  },
-  "• MMM - Month (Jan)": {
-    "• MMM - Month (Jan)": "• MMM - Monato (Jan)"
-  },
-  "• MMMM - Month (January)": {
-    "• MMMM - Month (January)": "• MMMM - Monato (Januaro)"
-  },
-  "• d - Day (1-31)": {
-    "• d - Day (1-31)": "• d - Tago (1-31)"
-  },
-  "• dd - Day (01-31)": {
-    "• dd - Day (01-31)": "• dd - Tago (01-31)"
-  },
-  "• ddd - Day name (Mon)": {
-    "• ddd - Day name (Mon)": "• ddd - Tagnomo (Lun)"
-  },
-  "• dddd - Day name (Monday)": {
-    "• dddd - Day name (Monday)": "• dddd - Tagnomo (Lundo)"
-  },
-  "• yy - Year (24)": {
-    "• yy - Year (24)": "• yy - Jaro (24)"
-  },
-  "• yyyy - Year (2024)": {
-    "• yyyy - Year (2024)": "• yyyy - Jaro (2024)"
   }
 }

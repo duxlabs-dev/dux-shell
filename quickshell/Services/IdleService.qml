@@ -64,6 +64,8 @@ Singleton {
 
     property var lockComponent: null
     property bool monitorsOff: false
+    // A restarted shell inherits outputs its previous instance powered off.
+    property bool monitorPowerUnconfirmed: true
     property bool isShellLocked: false
     property bool isSessionLockSecure: false
     property bool lockPowerOffRequested: false
@@ -159,12 +161,11 @@ Singleton {
         id: wakeMonitor
         timeout: 1
         respectInhibitors: false
-        enabled: root.enabled && root.monitorsOff
+        enabled: root.enabled && (root.monitorsOff || root.monitorPowerUnconfirmed)
         onIsIdleChanged: {
-            if (!enabled)
+            if (!enabled || isIdle)
                 return;
-            if (!isIdle && root.monitorsOff)
-                root.requestMonitorOn();
+            root.requestMonitorOn();
         }
     }
 
@@ -200,6 +201,7 @@ Singleton {
         }
 
         function onRequestMonitorOn() {
+            monitorPowerUnconfirmed = false;
             monitorsOff = false;
             CompositorService.powerOnMonitors();
         }

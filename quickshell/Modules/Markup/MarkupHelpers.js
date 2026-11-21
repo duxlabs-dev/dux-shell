@@ -12,7 +12,7 @@ function outline(shape, viewScale) {
     const pts = shape.points;
     if (!pts)
         return [];
-    if (shape.type === "rect") {
+    if (shape.type === "rect" || shape.type === "redact") {
         const a = pts[0];
         const b = pts[pts.length - 1];
         return [a, { x: b.x, y: a.y }, b, { x: a.x, y: b.y }, a];
@@ -37,9 +37,52 @@ function outline(shape, viewScale) {
     return pts;
 }
 
+function smoothSvgPath(pts) {
+    if (!pts || pts.length === 0)
+        return "";
+    if (pts.length === 1)
+        return `M ${pts[0].x} ${pts[0].y} L ${pts[0].x + 0.001} ${pts[0].y}`;
+    if (pts.length === 2)
+        return `M ${pts[0].x} ${pts[0].y} L ${pts[1].x} ${pts[1].y}`;
+    let d = `M ${pts[0].x} ${pts[0].y}`;
+    for (let i = 1; i < pts.length - 1; i++) {
+        const mx = (pts[i].x + pts[i + 1].x) / 2;
+        const my = (pts[i].y + pts[i + 1].y) / 2;
+        d += ` Q ${pts[i].x} ${pts[i].y} ${mx} ${my}`;
+    }
+    const last = pts[pts.length - 1];
+    d += ` L ${last.x} ${last.y}`;
+    return d;
+}
+
+function svgPath(shape, viewScale) {
+    if (!shape || !shape.points || shape.points.length === 0)
+        return "";
+    if (shape.type === "pen")
+        return smoothSvgPath(shape.points);
+    const pts = outline(shape, viewScale);
+    if (!pts || pts.length === 0)
+        return "";
+    if (pts.length === 1)
+        return `M ${pts[0].x} ${pts[0].y} L ${pts[0].x + 0.001} ${pts[0].y}`;
+    return `M ${pts[0].x} ${pts[0].y}` + pts.slice(1).map(p => ` L ${p.x} ${p.y}`).join("");
+}
+
 function hits(shape, p, tolerance, viewScale) {
     if (shape.type === "text")
         return p.x >= shape.x - tolerance && p.x <= shape.x + shape.w + tolerance && p.y >= shape.y - tolerance && p.y <= shape.y + shape.h + tolerance;
+    if (shape.type === "redact") {
+        const pts = shape.points;
+        if (!pts || pts.length < 2)
+            return false;
+        const a = pts[0];
+        const b = pts[pts.length - 1];
+        const minX = Math.min(a.x, b.x) - tolerance;
+        const maxX = Math.max(a.x, b.x) + tolerance;
+        const minY = Math.min(a.y, b.y) - tolerance;
+        const maxY = Math.max(a.y, b.y) + tolerance;
+        return p.x >= minX && p.x <= maxX && p.y >= minY && p.y <= maxY;
+    }
     const pts = outline(shape, viewScale);
     const reach = (shape.width || 1) / 2 + tolerance;
     for (let i = 1; i < pts.length; i++) {

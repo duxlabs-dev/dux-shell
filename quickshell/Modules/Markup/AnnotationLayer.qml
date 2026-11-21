@@ -238,6 +238,10 @@ Item {
         return pts.map(p => Qt.point(p.x, p.y));
     }
 
+    function svgPath(shape) {
+        return Helpers.svgPath(shape, viewScale);
+    }
+
     function arrowHead(shape) {
         const pts = Helpers.arrowHead(shape, viewScale);
         return pts.map(p => Qt.point(p.x, p.y));
@@ -268,15 +272,29 @@ Item {
         required property var shape
         readonly property bool isText: shape.type === "text"
         readonly property bool isRect: shape.type === "rect"
-        readonly property var points: isText || isRect || !shape.points?.length ? [] : root.outline(shape)
+        readonly property bool isRedact: shape.type === "redact"
+        readonly property real rectX: Math.min(shape.points?.[0]?.x ?? 0, shape.points?.[shape.points?.length - 1]?.x ?? 0)
+        readonly property real rectY: Math.min(shape.points?.[0]?.y ?? 0, shape.points?.[shape.points?.length - 1]?.y ?? 0)
+        readonly property real rectW: Math.abs((shape.points?.[shape.points?.length - 1]?.x ?? 0) - (shape.points?.[0]?.x ?? 0))
+        readonly property real rectH: Math.abs((shape.points?.[shape.points?.length - 1]?.y ?? 0) - (shape.points?.[0]?.y ?? 0))
+        readonly property string svgPath: isText || isRect || isRedact || !shape.points?.length ? "" : root.svgPath(shape)
         readonly property real headRounding: Math.max(2, (shape.width ?? 1) * 0.6)
 
         Rectangle {
+            visible: annotation.isRedact && (annotation.shape.points?.length ?? 0) >= 2
+            x: annotation.rectX
+            y: annotation.rectY
+            width: annotation.rectW
+            height: annotation.rectH
+            color: annotation.shape.color ?? "transparent"
+        }
+
+        Rectangle {
             visible: annotation.isRect && (annotation.shape.points?.length ?? 0) >= 2
-            x: Math.min(annotation.shape.points?.[0]?.x ?? 0, annotation.shape.points?.[annotation.shape.points?.length - 1]?.x ?? 0)
-            y: Math.min(annotation.shape.points?.[0]?.y ?? 0, annotation.shape.points?.[annotation.shape.points?.length - 1]?.y ?? 0)
-            width: Math.abs((annotation.shape.points?.[annotation.shape.points?.length - 1]?.x ?? 0) - (annotation.shape.points?.[0]?.x ?? 0))
-            height: Math.abs((annotation.shape.points?.[annotation.shape.points?.length - 1]?.y ?? 0) - (annotation.shape.points?.[0]?.y ?? 0))
+            x: annotation.rectX
+            y: annotation.rectY
+            width: annotation.rectW
+            height: annotation.rectH
             color: "transparent"
             border.color: annotation.shape.color ?? "transparent"
             border.width: annotation.shape.width ?? 1
@@ -285,7 +303,7 @@ Item {
 
         Shape {
             anchors.fill: parent
-            visible: !annotation.isText && !annotation.isRect
+            visible: !annotation.isText && !annotation.isRect && !annotation.isRedact
             preferredRendererType: Shape.CurveRenderer
             opacity: annotation.shape.type === "highlighter" ? 0.4 : 1
 
@@ -296,8 +314,8 @@ Item {
                 capStyle: ShapePath.RoundCap
                 joinStyle: ShapePath.RoundJoin
 
-                PathPolyline {
-                    path: annotation.points
+                PathSvg {
+                    path: annotation.svgPath
                 }
             }
 
@@ -399,13 +417,24 @@ Item {
                 color: Theme.primary
                 border.color: Theme.onPrimary
                 border.width: Theme.outlineWidthFocused / root.viewScale
+                scale: cornerMouse.pressed ? 1.25 : (cornerMouse.containsMouse ? 1.15 : 1)
+
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: Theme.shortDuration
+                        easing.type: Easing.OutCubic
+                    }
+                }
 
                 MouseArea {
+                    id: cornerMouse
+
                     property var startShape: null
                     property var startBox: null
 
                     anchors.fill: parent
                     anchors.margins: -Theme.spacingXS / root.viewScale
+                    hoverEnabled: true
                     cursorShape: (cornerHandle.modelData.x === cornerHandle.modelData.y) ? Qt.SizeFDiagCursor : Qt.SizeBDiagCursor
 
                     onPressed: mouse => {
@@ -418,7 +447,7 @@ Item {
 
                     onPositionChanged: mouse => {
                         // Undo or redo mid-drag can put another shape at this index.
-                        if (!startBox || root.shapes[root.selectedIndex] !== startShape)
+                        if (!pressed || !startBox || root.shapes[root.selectedIndex] !== startShape)
                             return;
                         const p = mapToItem(root, mouse.x, mouse.y);
                         const f = cornerHandle.modelData;
@@ -437,6 +466,12 @@ Item {
                         startShape = null;
                         startBox = null;
                     }
+
+                    onCanceled: {
+                        root.moving = null;
+                        startShape = null;
+                        startBox = null;
+                    }
                 }
             }
         }
@@ -448,6 +483,7 @@ Item {
         property bool draggingShape: false
 
         anchors.fill: parent
+        acceptedButtons: Qt.LeftButton | Qt.BackButton | Qt.ForwardButton
         hoverEnabled: true
 
         onWheel: wheel => {
@@ -475,6 +511,16 @@ Item {
         }
 
         onPressed: mouse => {
+            if (mouse.button === Qt.BackButton) {
+                root.undo();
+                mouse.accepted = true;
+                return;
+            }
+            if (mouse.button === Qt.ForwardButton) {
+                root.redo();
+                mouse.accepted = true;
+                return;
+            }
             const p = Qt.point(mouse.x, mouse.y);
             if (!root.contains(root.drawArea, p)) {
                 mouse.accepted = false;
@@ -528,7 +574,7 @@ Item {
                 return;
             }
             if (root.tool === "eraser") {
-                if (pressed)
+                if (pressed && (mouse.buttons & Qt.LeftButton))
                     root.eraseAt(p);
                 return;
             }
@@ -548,7 +594,7 @@ Item {
                     return;
                 }
                 const last = pts[pts.length - 1];
-                if (Math.hypot(p.x - last.x, p.y - last.y) < 1.5 / root.viewScale) {
+                if (Math.hypot(p.x - last.x, p.y - last.y) < 4 / root.viewScale) {
                     if (root.draft.width !== currentWidth) {
                         root.draft = Object.assign({}, root.draft, {
                             width: currentWidth
@@ -566,7 +612,7 @@ Item {
             if (isShift) {
                 if (root.draft.type === "arrow" || root.draft.type === "highlighter") {
                     p = root.snapPointToAngle(p, first);
-                } else if (root.draft.type === "rect") {
+                } else if (root.draft.type === "rect" || root.draft.type === "redact") {
                     p = root.constrainSquarePoint(first, p);
                 }
             }
@@ -592,7 +638,11 @@ Item {
             root.commit(root.shapes.concat([shape]), root.crop);
         }
 
-        onReleased: mouse => endGesture(Math.hypot(mouse.x - start.x, mouse.y - start.y) > 1)
+        onReleased: mouse => {
+            if (mouse.button !== Qt.LeftButton)
+                return;
+            endGesture(Math.hypot(mouse.x - start.x, mouse.y - start.y) > 1);
+        }
         // Click-through disables the layer mid-gesture, which cancels the press instead of releasing it.
         onCanceled: endGesture(true)
     }

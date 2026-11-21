@@ -46,7 +46,10 @@ function service({ enabled = true, type = "widget" } = {}) {
         _clearLoadError() {}, _setLoadError() {}, _updateAvailablePluginsList() {},
         _loadPluginTranslations() {}, _cleanupPluginStateWriter() {},
         isPluginLoaded: id => !!context.loadedPlugins[id],
-        loadPluginManifestFile: (path, source, time) => pending.push(() => context._onManifestParsed(path, manifest, source, time))
+        loadPluginManifestFile: (path, source, time, afterLoad) => pending.push(() => {
+            context._onManifestParsed(path, manifest, source, time);
+            afterLoad?.();
+        })
     });
     context.root = context;
     for (const match of source.matchAll(/^    function (\w+)\([^\n]*\)(?:: \w+)? \{\n[\s\S]*?^    \}/gm)) {
@@ -68,9 +71,10 @@ test("successful updates replace cached components and reread the manifest", () 
     context.updatePlugin("fixture", value => response = value);
     const result = { result: { success: true } };
     requests.shift()(result);
-    assert.equal(response, result);
+    assert.equal(response, undefined);
     assert.equal(pending.length, 1);
     pending.shift()();
+    assert.equal(response, result);
     assert.equal(context.pluginWidgetComponents.fixture.value, 16);
     assert.equal(context.availablePlugins.fixture.version, "2.0.0");
 });

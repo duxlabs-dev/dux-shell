@@ -47,7 +47,7 @@ Singleton {
     readonly property real groupFrameWidth: continuousGroups ? Theme.layerOutlineWidth : 0
     readonly property color groupDividerColor: Theme.withAlpha(Theme.outline, SettingsData.sectionDividerOpacity)
     readonly property real navItemMinHeight: rowMinHeight
-    readonly property real sidebarGroupGap: Theme.spacingS
+    readonly property real sidebarGroupGap: Theme.spacingM
     readonly property real searchBarGap: Theme.spacingM
     readonly property real avatarSize: 64
     readonly property real splitDividerHeight: Theme.iconSize

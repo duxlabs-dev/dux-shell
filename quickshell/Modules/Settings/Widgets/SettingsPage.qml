@@ -103,7 +103,9 @@ DFlickable {
             if (!_onPage(card))
                 continue;
             card.active = true;
-            _incubating.push(card);
+            // A card the first screen already built never reports loaded again, so it must not hold a slot
+            if (card.status === Loader.Loading)
+                _incubating.push(card);
         }
     }
 

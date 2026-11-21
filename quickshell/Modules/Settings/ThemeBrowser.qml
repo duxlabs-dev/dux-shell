@@ -191,6 +191,7 @@ RegistryBrowserWindow {
         });
         operationFailed = false;
         operationMessage = I18n.tr("Uninstalling: %1", "uninstallation progress").arg(themeName);
+        Theme.releaseRegistryTheme(themeId);
         DMSService.uninstallTheme(themeId, response => {
             if (!root)
                 return;
@@ -237,7 +238,7 @@ RegistryBrowserWindow {
         var themeId = PopoutService.pendingThemeInstall;
         PopoutService.pendingThemeInstall = "";
         installConfirm.showWithOptions({
-            "title": I18n.tr("Install Theme", "theme installation dialog title"),
+            "title": I18n.tr("Install theme", "theme installation dialog title"),
             "message": I18n.tr("Install theme '%1' from the DMS registry?", "theme installation confirmation").arg(themeId),
             "confirmText": I18n.tr("Install", "install action button"),
             "cancelText": I18n.tr("Cancel"),

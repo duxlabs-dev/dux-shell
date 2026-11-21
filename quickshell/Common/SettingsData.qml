@@ -336,6 +336,8 @@ Singleton {
     onScrollbarsEnabledChanged: saveSettings()
     property bool scrollShadowsEnabled: Spec.SPEC.scrollShadowsEnabled.def
     onScrollShadowsEnabledChanged: saveSettings()
+    property bool switchStateIcons: Spec.SPEC.switchStateIcons.def
+    onSwitchStateIconsChanged: saveSettings()
     property int motionEffect: SettingsData.AnimationEffect.Standard
     onMotionEffectChanged: saveSettings()
     property string density: Spec.SPEC.density.def

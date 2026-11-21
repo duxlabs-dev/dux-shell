@@ -140,6 +140,29 @@ func TestListCursorsRemovableAndSymlinked(t *testing.T) {
 	require.Contains(t, found, "LinkedCursor")
 	assert.True(t, found["LinkedCursor"].Removable)
 	assert.True(t, strings.HasPrefix(found["LinkedCursor"].Pointer, "data:image/png;base64,iVBOR"))
+	assert.Equal(t, []string{found["LinkedCursor"].Pointer}, found["LinkedCursor"].Cursors)
+}
+
+func TestListCursorsCollectsMultipleStates(t *testing.T) {
+	e := newEnv(t)
+	pointer := string(xcursor("Xcur", solid(8, 8, 5, 5, 5, 255)))
+	hand := string(xcursor("Xcur", solid(8, 8, 9, 9, 9, 255)))
+	text := string(xcursor("Xcur", solid(8, 8, 3, 3, 3, 255)))
+	put(t, e.icons, map[string]string{
+		"Multi/cursors/left_ptr": pointer,
+		"Multi/cursors/hand2":    hand,
+		"Multi/cursors/xterm":    text,
+	})
+
+	found := map[string]CursorInfo{}
+	for _, c := range ListCursors(e.opts("")) {
+		found[c.Name] = c
+	}
+	require.Contains(t, found, "Multi")
+	assert.Len(t, found["Multi"].Cursors, 3)
+	assert.Equal(t, found["Multi"].Pointer, found["Multi"].Cursors[0])
+	assert.NotEqual(t, found["Multi"].Cursors[0], found["Multi"].Cursors[1])
+	assert.NotEqual(t, found["Multi"].Cursors[1], found["Multi"].Cursors[2])
 }
 
 func TestInstallCursor(t *testing.T) {

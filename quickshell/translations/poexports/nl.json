@@ -119,12 +119,6 @@
   "%1 fixes": {
     "%1 fixes": "%1 oplossingen"
   },
-  "%1 h": {
-    "%1 h": "%1 u"
-  },
-  "%1 h %2 m": {
-    "%1 h %2 m": "%1 u %2 m"
-  },
   "%1 h %2 m left": {
     "%1 h %2 m left": "%1 u %2 m resterend"
   },
@@ -250,9 +244,6 @@
   },
   "%1 processes": {
     "%1 processes": "%1 processen"
-  },
-  "%1 procs": {
-    "%1 procs": "%1 proc."
   },
   "%1 second": {
     "%1 second": "%1 seconde"
@@ -397,9 +388,6 @@
   },
   "AC power": {
     "AC power": "Netstroom"
-  },
-  "API": {
-    "API": "API"
   },
   "AUR helpers are interactive — see the terminal window for prompts. This popout will return to idle when the upgrade exits.": {
     "AUR helpers are interactive — see the terminal window for prompts. This popout will return to idle when the upgrade exits.": "AUR-helpers zijn interactief — zie het terminalvenster voor prompts. Deze pop-out keert terug naar de ruststand wanneer de upgrade is voltooid."
@@ -794,9 +782,6 @@
   "Anchor": {
     "Anchor": "Anker"
   },
-  "Animation duration": {
-    "Animation duration": "Animatieduur"
-  },
   "Animation style": {
     "Animation style": "Animatiestijl"
   },
@@ -1190,9 +1175,6 @@
   "Avoid open popouts": {
     "Avoid open popouts": ""
   },
-  "BIOS": {
-    "BIOS": "BIOS"
-  },
   "Backend": {
     "Backend": "Backend"
   },
@@ -1501,9 +1483,6 @@
   },
   "CPU": {
     "CPU": "CPU"
-  },
-  "CPU graph": {
-    "CPU graph": "CPU-grafiek"
   },
   "CPU temperature": {
     "CPU temperature": "CPU-temperatuur"
@@ -2495,9 +2474,6 @@
   "DMS will then manage %1 animations and override animation settings in your config.": {
     "DMS will then manage %1 animations and override animation settings in your config.": ""
   },
-  "DNS": {
-    "DNS": ""
-  },
   "Daemon": {
     "Daemon": "Daemon"
   },
@@ -2819,9 +2795,6 @@
   "Disabled by Frame Mode": {
     "Disabled by Frame Mode": "Uitgeschakeld door Framemodus"
   },
-  "Disabling WiFi...": {
-    "Disabling WiFi...": "Wifi uitschakelen..."
-  },
   "Disabling auto-login on startup...": {
     "Disabling auto-login on startup...": "Automatisch inloggen bij opstarten uitschakelen..."
   },
@@ -2842,9 +2815,6 @@
   },
   "Disconnected": {
     "Disconnected": "Niet verbonden"
-  },
-  "Disconnected from WiFi": {
-    "Disconnected from WiFi": "Verbinding met wifi verbroken"
   },
   "Discover community plugins. Review their code before installing, and audit changes before updating.": {
     "Discover community plugins. Review their code before installing, and audit changes before updating.": "Ontdek community-plug-ins. Controleer hun code voordat je ze installeert en controleer wijzigingen voordat je bijwerkt."
@@ -2981,9 +2951,6 @@
   "Does not fit here. Drag to another spot.": {
     "Does not fit here. Drag to another spot.": ""
   },
-  "Domain (optional)": {
-    "Domain (optional)": "Domein (optioneel)"
-  },
   "Dominant": {
     "Dominant": "Dominant"
   },
@@ -3076,9 +3043,6 @@
   },
   "Dusk (Astronomical Twilight)": {
     "Dusk (Astronomical Twilight)": "Avondschemering (Astronomische schemering)"
-  },
-  "Dusk (Civil Twighlight)": {
-    "Dusk (Civil Twighlight)": "Avondschemering (Civiele schemering)"
   },
   "Dusk (Nautical Twilight)": {
     "Dusk (Nautical Twilight)": "Avondschemering (Nautische schemering)"
@@ -3209,9 +3173,6 @@
   "Empty space": {
     "Empty space": ""
   },
-  "Enable Wi-Fi before starting the hotspot.": {
-    "Enable Wi-Fi before starting the hotspot.": "Schakel wifi in voordat je de hotspot start."
-  },
   "Enable autoconnect": {
     "Enable autoconnect": "Automatisch verbinden inschakelen"
   },
@@ -3226,9 +3187,6 @@
   },
   "Enabled": {
     "Enabled": "Ingeschakeld"
-  },
-  "Enabling WiFi...": {
-    "Enabling WiFi...": "Wifi inschakelen..."
   },
   "Enabling cellular...": {
     "Enabling cellular...": "Mobiel netwerk inschakelen..."
@@ -3509,9 +3467,6 @@
   "Failed to disconnect VPNs": {
     "Failed to disconnect VPNs": "Verbreken van VPN-verbindingen mislukt"
   },
-  "Failed to disconnect WiFi": {
-    "Failed to disconnect WiFi": "Verbreken van wifi-verbinding mislukt"
-  },
   "Failed to duplicate %1": {
     "Failed to duplicate %1": ""
   },
@@ -3520,9 +3475,6 @@
   },
   "Failed to enable IP location": {
     "Failed to enable IP location": "Inschakelen van IP-locatie mislukt"
-  },
-  "Failed to enable WiFi": {
-    "Failed to enable WiFi": "Inschakelen van wifi mislukt"
   },
   "Failed to enable job acceptance": {
     "Failed to enable job acceptance": "Inschakelen van taakacceptatie mislukt"
@@ -3656,9 +3608,6 @@
   "Failed to save screenshot": {
     "Failed to save screenshot": ""
   },
-  "Failed to send file": {
-    "Failed to send file": ""
-  },
   "Failed to set brightness": {
     "Failed to set brightness": "Instellen van helderheid mislukt"
   },
@@ -3682,9 +3631,6 @@
   },
   "Failed to set profile image": {
     "Failed to set profile image": "Instellen van profielafbeelding mislukt"
-  },
-  "Failed to set profile image: %1": {
-    "Failed to set profile image: %1": "Instellen van profielafbeelding mislukt: %1"
   },
   "Failed to start connection to %1": {
     "Failed to start connection to %1": "Starten van verbinding met %1 mislukt"
@@ -4013,9 +3959,6 @@
   "Fonts & motion": {
     "Fonts & motion": "Lettertypen & beweging"
   },
-  "Fonts, scale, animations": {
-    "Fonts, scale, animations": "Lettertypen, schaal, animaties"
-  },
   "For %1": {
     "For %1": "Gedurende %1"
   },
@@ -4243,9 +4186,6 @@
   },
   "Get Started": {
     "Get Started": "Aan de slag"
-  },
-  "Git": {
-    "Git": "Git"
   },
   "Global fonts can be configured in Settings → Personalization": {
     "Global fonts can be configured in Settings → Personalization": "Globale lettertypen kunnen worden geconfigureerd in Instellingen → Personalisatie"
@@ -4643,12 +4583,6 @@
   "IP sharing setup failed. Check that %1 is installed.": {
     "IP sharing setup failed. Check that %1 is installed.": "Instellen van IP-delen is mislukt. Controleer of %1 geïnstalleerd is."
   },
-  "IPv4": {
-    "IPv4": ""
-  },
-  "IPv6": {
-    "IPv6": "IPv6"
-  },
   "ISO date": {
     "ISO date": "ISO-datum"
   },
@@ -4844,9 +4778,6 @@
   "Initial title": {
     "Initial title": "Oorspronkelijke titel"
   },
-  "Initialised": {
-    "Initialised": "Geïnitialiseerd"
-  },
   "Injected palettes": {
     "Injected palettes": "Geïnjecteerde paletten"
   },
@@ -4895,12 +4826,6 @@
   "Install Plugin": {
     "Install Plugin": "Plug-in installeren"
   },
-  "Install Theme": {
-    "Install Theme": "Thema installeren"
-  },
-  "Install a theme": {
-    "Install a theme": ""
-  },
   "Install color themes from the DMS theme registry": {
     "Install color themes from the DMS theme registry": "Installeer kleurthema's uit het DMS-themaregister"
   },
@@ -4939,9 +4864,6 @@
   },
   "Installed": {
     "Installed": "Geïnstalleerd"
-  },
-  "Installed %1": {
-    "Installed %1": ""
   },
   "Installed %1, still running %2": {
     "Installed %1, still running %2": "%1 geïnstalleerd, %2 draait nog"
@@ -5552,9 +5474,6 @@
   "MIT License": {
     "MIT License": "MIT-licentie"
   },
-  "MTU": {
-    "MTU": "MTU"
-  },
   "Mac": {
     "Mac": ""
   },
@@ -5813,9 +5732,6 @@
   "Memory controller": {
     "Memory controller": "Geheugencontroller"
   },
-  "Memory graph": {
-    "Memory graph": "Geheugengrafiek"
-  },
   "Memory usage": {
     "Memory usage": "Geheugengebruik"
   },
@@ -6062,12 +5978,6 @@
   "Mute popups for %1": {
     "Mute popups for %1": "Pop-ups dempen voor %1"
   },
-  "Mute popups for %1 (1 hour)": {
-    "Mute popups for %1 (1 hour)": "Pop-ups voor %1 dempen (1 uur)"
-  },
-  "Mute popups for %1 (4 hours)": {
-    "Mute popups for %1 (4 hours)": "Pop-ups voor %1 dempen (4 uur)"
-  },
   "Mute, ignore and priority rules per app": {
     "Mute, ignore and priority rules per app": "Regels voor dempen, negeren en prioriteit per app"
   },
@@ -6125,9 +6035,6 @@
   "Network": {
     "Network": "Netwerk"
   },
-  "Network Info": {
-    "Network Info": "Netwerkinfo"
-  },
   "Network Information": {
     "Network Information": "Netwerkinformatie"
   },
@@ -6137,14 +6044,8 @@
   "Network download and upload speed display": {
     "Network download and upload speed display": "Weergave van download- en uploadsnelheid"
   },
-  "Network graph": {
-    "Network graph": "Netwerkgrafiek"
-  },
   "Network speed monitor": {
     "Network speed monitor": "Netwerksnelheidsmonitor"
-  },
-  "Networks, saved networks, hotspot": {
-    "Networks, saved networks, hotspot": "Netwerken, opgeslagen netwerken, hotspot"
   },
   "Neutral": {
     "Neutral": "Neutraal"
@@ -7439,9 +7340,6 @@
   "Popouts": {
     "Popouts": "Pop-outs"
   },
-  "Popouts and modals use the main animation duration": {
-    "Popouts and modals use the main animation duration": "Uitklappanelen en dialoogvensters gebruiken de hoofdanimatieduur"
-  },
   "Popular": {
     "Popular": "Populair"
   },
@@ -8414,9 +8312,6 @@
   "SE": {
     "SE": "ZO"
   },
-  "SSID": {
-    "SSID": "SSID"
-  },
   "SW": {
     "SW": "ZW"
   },
@@ -8737,9 +8632,6 @@
   },
   "Selected image file not found.": {
     "Selected image file not found.": "Geselecteerd afbeeldingsbestand niet gevonden."
-  },
-  "Sending file to %1...": {
-    "Sending file to %1...": ""
   },
   "Sends the playing artist and album name to Apple": {
     "Sends the playing artist and album name to Apple": "Stuurt de naam van de spelende artiest en het album naar Apple"
@@ -9647,9 +9539,6 @@
   "Sync needs sudo authentication. Opening terminal so you can use password or fingerprint.": {
     "Sync needs sudo authentication. Opening terminal so you can use password or fingerprint.": "Sync vereist sudo-authenticatie. Terminal wordt geopend zodat je een wachtwoord of vingerafdruk kunt gebruiken."
   },
-  "Sync popouts and modals": {
-    "Sync popouts and modals": "Uitklappanelen en dialoogvensters synchroniseren"
-  },
   "Sync position across displays": {
     "Sync position across displays": "Positie synchroniseren tussen schermen"
   },
@@ -9715,9 +9604,6 @@
   },
   "Systemd unit": {
     "Systemd unit": "Systemd-unit"
-  },
-  "TRIM": {
-    "TRIM": "TRIM"
   },
   "Tab": {
     "Tab": "Tab"
@@ -9851,9 +9737,6 @@
   "The Island takes its place on this bar": {
     "The Island takes its place on this bar": "Het Eiland neemt de plaats in op deze balk"
   },
-  "The WiFi adapter could not start access point mode.": {
-    "The WiFi adapter could not start access point mode.": "De wifi-adapter kon de accesspoint-modus niet starten."
-  },
   "The arrow points in the direction the wind is blowing. The label shows where it comes from.": {
     "The arrow points in the direction the wind is blowing. The label shows where it comes from.": "De pijl wijst in de richting waarin de wind waait. Het label toont waar de wind vandaan komt."
   },
@@ -9932,14 +9815,14 @@
   "Theme color": {
     "Theme color": "Themakleur"
   },
+  "Theme color behind the collapsed island": {
+    "Theme color behind the collapsed island": ""
+  },
+  "Theme color behind the expanded island": {
+    "Theme color behind the expanded island": ""
+  },
   "Theme colors come from this display's wallpaper": {
     "Theme colors come from this display's wallpaper": "Themakleuren komen van de achtergrond van dit scherm"
-  },
-  "Theme colour behind the collapsed island": {
-    "Theme colour behind the collapsed island": ""
-  },
-  "Theme colour behind the expanded island": {
-    "Theme colour behind the expanded island": ""
   },
   "Theme extracted to: %1": {
     "Theme extracted to: %1": "Thema geëxporteerd naar: %1"
@@ -9952,9 +9835,6 @@
   },
   "Theme, light and dark, matugen": {
     "Theme, light and dark, matugen": "Thema, licht en donker, matugen"
-  },
-  "Theme, palette, dark mode": {
-    "Theme, palette, dark mode": "Thema, palet, donkere modus"
   },
   "Themed app icons": {
     "Themed app icons": ""
@@ -10360,9 +10240,6 @@
   },
   "Unknown Artist": {
     "Unknown Artist": "Onbekende artiest"
-  },
-  "Unknown Config": {
-    "Unknown Config": "Onbekende configuratie"
   },
   "Unknown Device": {
     "Unknown Device": "Onbekend apparaat"
@@ -10799,12 +10676,6 @@
   "W": {
     "W": "B"
   },
-  "WPA2 password": {
-    "WPA2 password": "WPA2-wachtwoord"
-  },
-  "WWN": {
-    "WWN": "WWN"
-  },
   "Waiting": {
     "Waiting": "Wachtend"
   },
@@ -10928,12 +10799,6 @@
   "Wi-Fi and Ethernet connection": {
     "Wi-Fi and Ethernet connection": "Wifi- en Ethernet-verbinding"
   },
-  "Wi-Fi is disabled": {
-    "Wi-Fi is disabled": "Wifi is uitgeschakeld"
-  },
-  "Wi-Fi is disabled. You can still edit and save hotspot settings, but starting the hotspot requires Wi-Fi to be enabled.": {
-    "Wi-Fi is disabled. You can still edit and save hotspot settings, but starting the hotspot requires Wi-Fi to be enabled.": "Wifi is uitgeschakeld. Je kunt de hotspotinstellingen nog steeds bewerken en opslaan, maar voor het starten van de hotspot moet wifi zijn ingeschakeld."
-  },
   "Wi-Fi network": {
     "Wi-Fi network": "Wifi-netwerk"
   },
@@ -10942,18 +10807,6 @@
   },
   "Wi-Fi, Ethernet, VPN": {
     "Wi-Fi, Ethernet, VPN": "Wifi, ethernet, VPN"
-  },
-  "WiFi QR code for %1": {
-    "WiFi QR code for %1": "Wifi-QR-code voor %1"
-  },
-  "WiFi disabled": {
-    "WiFi disabled": "Wifi uitgeschakeld"
-  },
-  "WiFi enabled": {
-    "WiFi enabled": "Wifi ingeschakeld"
-  },
-  "WiFi is off": {
-    "WiFi is off": "Wifi is uit"
   },
   "Wide (BT2020)": {
     "Wide (BT2020)": "Breed (BT2020)"
@@ -11135,6 +10988,9 @@
   "Y axis": {
     "Y axis": "Y-as"
   },
+  "Year": {
+    "Year": ""
+  },
   "Yellow": {
     "Yellow": "Geel"
   },
@@ -11170,9 +11026,6 @@
   },
   "Your hotspot is running.": {
     "Your hotspot is running.": "Je hotspot is actief."
-  },
-  "Your hotspot profile is saved and ready to start.": {
-    "Your hotspot profile is saved and ready to start.": "Je hotspotprofiel is opgeslagen en klaar om te starten."
   },
   "Your keyboard layout puts %1 above the first level, so this bind will never fire. Pick a key the layout types without an extra layer.": {
     "Your keyboard layout puts %1 above the first level, so this bind will never fire. Pick a key the layout types without an extra layer.": "Je toetsenbordindeling plaatst %1 boven het eerste niveau, dus deze sneltoets wordt nooit geactiveerd. Kies een toets die de indeling zonder extra laag typt."
@@ -11270,9 +11123,6 @@
   "e.g., scratch, /^tmp_.*/, build": {
     "e.g., scratch, /^tmp_.*/, build": "bijv. scratch, /^tmp_.*/, build"
   },
-  "efibootmgr failed": {
-    "efibootmgr failed": "efibootmgr mislukt"
-  },
   "expires in %1": {
     "expires in %1": "verloopt over %1"
   },
@@ -11291,17 +11141,11 @@
   "keyboard tab key name": {
     "Tab": "Tab"
   },
-  "khal": {
-    "khal": "khal"
-  },
   "last seen %1": {
     "last seen %1": "laatst gezien %1"
   },
   "leave empty for default": {
     "leave empty for default": "laat leeg voor standaard"
-  },
-  "loginctl activate failed (exit %1)": {
-    "loginctl activate failed (exit %1)": "loginctl-activering mislukt (exit %1)"
   },
   "loginctl integration": {
     "loginctl integration": "loginctl-integratie"
@@ -11423,15 +11267,6 @@
   "updated": {
     "updated": "bijgewerkt"
   },
-  "useradd failed (exit %1)": {
-    "useradd failed (exit %1)": "useradd mislukt (exit %1)"
-  },
-  "userdel failed (exit %1)": {
-    "userdel failed (exit %1)": "userdel mislukt (exit %1)"
-  },
-  "usermod failed (exit %1)": {
-    "usermod failed (exit %1)": "usermod mislukt (exit %1)"
-  },
   "verb, clipboard entry action button tooltip": {
     "Preview": "Voorbeeld"
   },
@@ -11443,35 +11278,5 @@
   },
   "wifi network status, network has a saved profile": {
     "Saved": "Opgeslagen"
-  },
-  "• M - Month (1-12)": {
-    "• M - Month (1-12)": "• M - Maand (1-12)"
-  },
-  "• MM - Month (01-12)": {
-    "• MM - Month (01-12)": "• MM - Maand (01-12)"
-  },
-  "• MMM - Month (Jan)": {
-    "• MMM - Month (Jan)": "• MMM - Maand (Jan)"
-  },
-  "• MMMM - Month (January)": {
-    "• MMMM - Month (January)": "• MMMM - Maand (Januari)"
-  },
-  "• d - Day (1-31)": {
-    "• d - Day (1-31)": "• d - Dag (1-31)"
-  },
-  "• dd - Day (01-31)": {
-    "• dd - Day (01-31)": "• dd - Dag (01-31)"
-  },
-  "• ddd - Day name (Mon)": {
-    "• ddd - Day name (Mon)": "• ddd - Dagnaam (Ma)"
-  },
-  "• dddd - Day name (Monday)": {
-    "• dddd - Day name (Monday)": "• dddd - Dagnaam (Maandag)"
-  },
-  "• yy - Year (24)": {
-    "• yy - Year (24)": "• yy - Jaar (24)"
-  },
-  "• yyyy - Year (2024)": {
-    "• yyyy - Year (2024)": "• yyyy - Jaar (2024)"
   }
 }

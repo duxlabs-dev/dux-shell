@@ -8,6 +8,18 @@ import (
 	"github.com/godbus/dbus/v5"
 )
 
+type ReducedMotionResult struct {
+	Revision uint64 `json:"revision"`
+}
+
+type motionSourceState struct {
+	reduce bool
+	// our own write is still echoing through the portal backends until then
+	settlesAt time.Time
+	// last value signalled while settling; our own echoes end on reduce, anything else is external
+	settlingSignal *bool
+}
+
 type colorSchemeEcho struct {
 	value   uint32
 	expires time.Time
@@ -31,8 +43,11 @@ type AccountsState struct {
 }
 
 type SettingsState struct {
-	Available   bool   `json:"available"`
-	ColorScheme uint32 `json:"colorScheme"`
+	Available     bool   `json:"available"`
+	ColorScheme   uint32 `json:"colorScheme"`
+	ReducedMotion bool   `json:"reducedMotion"`
+	// bumped on every shell push and every external change, so the shell can order a snapshot against its own push
+	ReducedMotionRevision uint64 `json:"reducedMotionRevision"`
 }
 
 type ScreensaverInhibitor struct {
@@ -71,6 +86,8 @@ type Manager struct {
 	screensaverGnomeClaimed       bool
 	selfEchoMu                    sync.Mutex
 	selfEchoes                    []colorSchemeEcho
+	motionMu                      sync.Mutex
+	motionSeen                    map[string]motionSourceState
 	// registered on sessionConn by watchSettingsChanges; guarded by stateMutex
 	settingsSignals chan *dbus.Signal
 }

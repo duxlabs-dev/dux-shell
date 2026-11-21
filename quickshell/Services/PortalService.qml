@@ -23,6 +23,15 @@ Singleton {
     property bool settingsPortalAvailable: false
     property int systemColorScheme: 0
     property bool colorSchemeInitialized: false
+    property bool reducedMotionPushInFlight: false
+    property bool reducedMotionPushQueued: false
+    // core revision as of our last push, -1 until a push has landed on this connection
+    property int reducedMotionRevision: -1
+    readonly property bool shellReducedMotion: Theme.reduceMotion
+    readonly property bool reducedMotionSyncReady: freedeskAvailable && SettingsData._hasLoaded
+
+    onShellReducedMotionChanged: pushReducedMotion()
+    onReducedMotionSyncReadyChanged: pushReducedMotion()
 
     property bool freedeskAvailable: false
     property string pendingProfileImage: ""
@@ -145,6 +154,44 @@ Singleton {
         Quickshell.execDetached(["sh", "-c", GSettings.setCmd("org.gnome.desktop.interface", "color-scheme", targetScheme)]);
     }
 
+    // Requests dispatch concurrently in the core, so only one push is in flight at a time.
+    function pushReducedMotion() {
+        if (!reducedMotionSyncReady)
+            return;
+        if (reducedMotionPushInFlight) {
+            reducedMotionPushQueued = true;
+            return;
+        }
+        reducedMotionPushInFlight = true;
+        DMSService.sendRequest("freedesktop.settings.setReducedMotion", {
+            "reduce": shellReducedMotion
+        }, response => {
+            const queued = reducedMotionPushQueued;
+            reducedMotionPushInFlight = false;
+            reducedMotionPushQueued = false;
+            if (response.error) {
+                log.warn("Failed to set reduced motion:", response.error);
+                return;
+            }
+            reducedMotionRevision = Math.max(reducedMotionRevision, response.result.revision);
+            if (queued)
+                pushReducedMotion();
+        });
+    }
+
+    function followSystemReducedMotion(settings) {
+        if (!reducedMotionSyncReady || reducedMotionRevision < 0)
+            return;
+        if (!(settings.reducedMotionRevision > reducedMotionRevision))
+            return;
+        reducedMotionRevision = settings.reducedMotionRevision;
+        const reduce = settings.reducedMotion === true;
+        if (reduce === shellReducedMotion)
+            return;
+        if (Theme.motionOff || !SettingsData.set("reduceMotion", reduce))
+            pushReducedMotion();
+    }
+
     function setSystemIconTheme(themeName) {
         if (!settingsPortalAvailable || !freedeskAvailable)
             return;
@@ -176,7 +223,7 @@ Singleton {
                 } else if (errorMsg.includes("not found") || errorMsg.includes("does not exist")) {
                     userMessage = I18n.tr("Selected image file not found.");
                 } else {
-                    userMessage = I18n.tr("Failed to set profile image: %1", "error message, %1 is the error detail").arg(errorMsg.split(":").pop().trim());
+                    userMessage += ": " + errorMsg.split(":").pop().trim();
                 }
 
                 Quickshell.execDetached(["notify-send", "-u", "normal", "-a", "DMS", "-i", "error", I18n.tr("Profile Image Error"), userMessage]);
@@ -236,6 +283,7 @@ Singleton {
                 return;
             root.settingsPortalAvailable = data.settings.available === true;
             root.handlePortalColorScheme(data.settings.colorScheme || 0);
+            root.followSystemReducedMotion(data.settings);
         }
     }
 
@@ -244,6 +292,7 @@ Singleton {
 
         function onConnectionStateChanged() {
             if (DMSService.isConnected) {
+                root.reducedMotionRevision = -1;
                 checkDMSCapabilities();
             }
         }
@@ -271,6 +320,7 @@ Singleton {
         if (freedeskAvailable) {
             checkAccountsService();
             checkSettingsPortal();
+            pushReducedMotion();
         } else {
             log.info("freedesktop capability not available in DMS");
         }
