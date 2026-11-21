@@ -551,6 +551,15 @@ var LOCAL_SPEC = {
         def: "expressive",
         onChange: "applyInterfaceStyle"
     },
+    screenCornersEnabled: {
+        def: false
+    },
+    screenCornerRadius: {
+        def: 23
+    },
+    screenCornersOverFullscreen: {
+        def: false
+    },
     m3ElevationEnabled: {
         def: true
     },
