@@ -107,6 +107,8 @@ FocusScope {
             target.preferredFocusId = Qt.binding(() => root.dashHost.overviewFocusId);
         if ("editMode" in target)
             target.editMode = Qt.binding(() => root.dashHost.editMode);
+        if ("editSession" in target)
+            target.editSession = Qt.binding(() => root.dashHost.editSession ?? null);
         if ("rowBudget" in target)
             target.rowBudget = Qt.binding(() => root.rowBudget);
         if ("columnCap" in target)

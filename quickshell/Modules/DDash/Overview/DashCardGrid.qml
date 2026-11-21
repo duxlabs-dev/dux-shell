@@ -20,6 +20,7 @@ DEditableGrid {
     property string pendingFocusId: ""
     property int pendingFocusReason: Qt.OtherFocusReason
     property Item flashSlot: null
+    property DashEditSession editSession: null
 
     signal cardFocusChanged(string id)
 
@@ -33,12 +34,21 @@ DEditableGrid {
     readonly property int usedColumns: slotLayout.slots.reduce((used, slot) => slot ? Math.max(used, slot.col + slot.cols) : used, 0)
     readonly property var addableEntries: DashRegistry.addableCards.map(entry => ({
                 "entry": entry,
-                "size": GridUtils.fitNewCard(sourceItems, DashMetrics.gridColumns, rowBudget, entry.id, DashRegistry.defaultSize(entry.id), DashRegistry.minSize(entry.id), DashRegistry.isCardAvailable)
+                "size": fitFor(entry.id)
             })).filter(candidate => candidate.size !== null)
+    readonly property var categories: DashRegistry.cardCategories
+    readonly property var catalog: DashRegistry.addableCards.map(entry => ({
+                "id": entry.id,
+                "text": entry.card.text,
+                "icon": entry.card.icon,
+                "category": entry.category,
+                "description": entry.description ?? ""
+            }))
 
     sourceItems: DashRegistry.placed
     slotLayout: GridUtils.packCards(layoutItems, placementOrder, DashMetrics.gridColumns, width, DashMetrics.gridGap, DashMetrics.gridRowUnit, I18n.isRtl, DashRegistry.isCardAvailable)
     minimumHeight: DashMetrics.tabMinHeight
+    dropHeight: parent?.height ?? 0
     placeholderRadius: DashMetrics.cardRadius
 
     commitHandler: items => {
@@ -81,6 +91,83 @@ DEditableGrid {
             "panelColumns": DashMetrics.panelPreview.columns
         });
         clearPanelPreview();
+    }
+
+    function fitFor(id) {
+        if (!DashRegistry.addableCards.some(entry => entry.id === id))
+            return null;
+        return GridUtils.fitNewCard(sourceItems, DashMetrics.gridColumns, rowBudget, id, DashRegistry.defaultSize(id), DashRegistry.minSize(id), DashRegistry.isCardAvailable);
+    }
+
+    function canPlace(id) {
+        return fitFor(id) !== null;
+    }
+
+    function addEntry(id) {
+        const size = fitFor(id);
+        if (!size)
+            return false;
+        CardUtils.addCard(id, size.w, size.h);
+        return true;
+    }
+
+    // A placement may push other cards down, but not past the rows a click-add may use.
+    function externalFits() {
+        const limit = GridUtils.rowLimit(sourceItems, sourceItems.map((card, i) => i), DashMetrics.gridColumns, rowBudget, DashRegistry.isCardAvailable);
+        return externalItem !== null && slotLayout.rows <= limit;
+    }
+
+    function hoverNew(id, scenePoint) {
+        const size = fitFor(id);
+        if (size && hoverExternalAt(Object.assign({
+                "id": id
+            }, size), scenePoint, DashMetrics.contentPadding) && externalFits())
+            return true;
+        clearExternal();
+        return false;
+    }
+
+    function dropNew(id) {
+        if (externalItem?.id !== id || !externalFits()) {
+            clearExternal();
+            return false;
+        }
+        // Deferred: the write can drop the dragged bubble from the catalog while its drag is still ending.
+        Qt.callLater(() => {
+            const items = takeExternal();
+            if (!items)
+                return;
+            const dropped = items.pop();
+            items.push(Object.assign(CardUtils.newCard(id, dropped.w, dropped.h), {
+                "col": dropped.col,
+                "row": dropped.row
+            }));
+            CardUtils.setLayout(items);
+        });
+        return true;
+    }
+
+    function externalGhostSize(id) {
+        const size = externalItem?.id === id ? externalItem : (fitFor(id) ?? DashRegistry.defaultSize(id));
+        return Qt.size(size.w * columnWidth + (size.w - 1) * DashMetrics.gridGap, size.h * DashMetrics.gridRowUnit + (size.h - 1) * DashMetrics.gridGap);
+    }
+
+    function hasItem(key, instanceId) {
+        return DashRegistry.isCardAvailable(key) && DashRegistry.configIndex(key, instanceId) >= 0;
+    }
+
+    function optionsTarget(key, instanceId) {
+        if (!hasItem(key, instanceId))
+            return null;
+        const card = DashRegistry.entry(key).card;
+        return {
+            "kind": "card",
+            "entryId": key,
+            "key": key,
+            "instanceId": instanceId ?? "",
+            "icon": card.icon,
+            "text": card.text
+        };
     }
 
     function fittedSize(index, w, h) {
@@ -204,8 +291,16 @@ DEditableGrid {
     }
 
     function handleKeyEvent(event) {
-        if (editMode)
+        if (editMode) {
+            if (event.key !== Qt.Key_Return && event.key !== Qt.Key_Enter && event.key !== Qt.Key_Space)
+                return false;
+            for (let i = 0; i < slotRepeater.count; i++) {
+                const slot = slotRepeater.itemAt(i);
+                if (slot?.keyboardFocused)
+                    return slot.selectOptions();
+            }
             return false;
+        }
         const slots = keyboardSlots();
         const index = slots.findIndex(slot => slot.keyboardFocused);
         if (index < 0)

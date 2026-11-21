@@ -18,6 +18,13 @@ DEditableGridSlot {
     readonly property int previewW: resizing ? grid.sizePreview.changes.w : (cardData.w || 1)
     readonly property int previewH: resizing ? grid.sizePreview.changes.h : (cardData.h || 1)
 
+    // Matches the chrome's hitOverflow, so reaching for a button never hides it.
+    hoverMargin: DashMetrics.gridGap / 2
+    activeFocusOnTab: grid.editMode
+    readonly property bool selected: grid.editSession?.isSelected(cardId, cardId, instanceId) ?? false
+
+    readonly property bool hasOptions: DashRegistry.hasOptions(cardId) || !!entry?.card?.settingsPage
+
     property int resizeStartColumns: 0
     property int resizeStartRows: 0
     property int resizeStartCol: 0
@@ -30,6 +37,16 @@ DEditableGridSlot {
         resizeStartCellWidth = grid.columnWidth;
         beginResize(px, py);
     }
+
+    function selectOptions() {
+        if (!grid.editSession?.panel || !hasOptions)
+            return false;
+        grid.optionsRequested(cardId, instanceId);
+        return true;
+    }
+
+    onClicked: selectOptions()
+    onPressAndHold: selectOptions()
 
     onResizeRequested: (requestedWidth, requestedHeight) => {
         const w = Math.round((requestedWidth + DashMetrics.gridGap) / (resizeStartCellWidth + DashMetrics.gridGap));
@@ -149,12 +166,14 @@ DEditableGridSlot {
         active: root.grid.editMode || root.resizing
 
         sourceComponent: DashEditChrome {
-            visible: root.grid.editMode
+            id: chrome
+            visible: root.grid.editMode && (root.selected || root.keyboardFocused || root.chromeActive || chrome.keyboardFocused)
             enabled: root.interactionEnabled
             sizeText: root.previewW + "×" + root.previewH
             dragging: root.dragging
             resizing: root.resizing
-            hasOptions: DashRegistry.hasOptions(root.cardId)
+            selected: root.selected
+            hasOptions: root.hasOptions
             onOptionsRequested: root.grid.optionsRequested(root.cardId, root.instanceId)
             onRemoveRequested: CardUtils.removeCard(root.index)
             onResizeStarted: (px, py) => root.startResize(px, py)

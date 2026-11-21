@@ -5,6 +5,7 @@ import Quickshell
 import qs.Common
 import qs.Services
 import "utils/options.js" as Options
+import "../../Common/GridLayout.js" as GridUtils
 
 Singleton {
     id: root
@@ -103,6 +104,7 @@ Singleton {
         },
         {
             "id": "media",
+            "category": "media",
             "text": I18n.tr("Media", "dashboard media player tab name"),
             "icon": "music_note",
             "description": I18n.tr("Now playing and media controls"),
@@ -176,6 +178,7 @@ Singleton {
         },
         {
             "id": "weather",
+            "category": "weather",
             "text": I18n.tr("Weather"),
             "icon": "wb_sunny",
             "description": SettingsData.weatherEnabled ? I18n.tr("Forecast and conditions") : I18n.tr("Hidden until weather is enabled"),
@@ -196,6 +199,7 @@ Singleton {
         },
         {
             "id": "wellbeing",
+            "category": "user",
             "text": I18n.tr("Digital wellbeing", "settings page and dashboard tab title, screen time tracking"),
             "icon": "digital_wellbeing",
             "description": SettingsData.wellbeingEnabled ? I18n.tr("Screen time and app limits", "settings sidebar hint and dashboard tab description for digital wellbeing") : I18n.tr("Hidden until screen time tracking is enabled", "dashboard tab description while digital wellbeing is off"),
@@ -216,6 +220,7 @@ Singleton {
         },
         {
             "id": "notifications",
+            "category": "user",
             "text": I18n.tr("Notifications"),
             "icon": "notifications",
             "tab": {
@@ -238,6 +243,7 @@ Singleton {
         },
         {
             "id": "clock",
+            "category": "time",
             "text": I18n.tr("Clock"),
             "icon": "schedule",
             "card": {
@@ -261,6 +267,7 @@ Singleton {
         },
         {
             "id": "calendar",
+            "category": "time",
             "text": I18n.tr("Calendar"),
             "icon": "calendar_month",
             "card": {
@@ -275,6 +282,7 @@ Singleton {
         },
         {
             "id": "user",
+            "category": "user",
             "text": I18n.tr("User"),
             "icon": "person",
             "card": {
@@ -289,75 +297,22 @@ Singleton {
         },
         {
             "id": "sysmon",
+            "category": "system",
             "text": I18n.tr("System Monitor"),
             "icon": "monitoring",
             "card": {
+                "allowMultiple": true,
+                "settingsPage": "dash_sysmon_card",
                 "source": Qt.resolvedUrl("Overview/SystemMonitorCard.qml"),
-                "w": 2,
+                "w": 1,
                 "h": 1,
                 "minW": 1,
                 "minH": 1
-            },
-            "options": [toggle("temperature", I18n.tr("Show temperature"), true), toneOption()]
-        },
-        {
-            "id": "cpu",
-            "text": I18n.tr("CPU"),
-            "icon": "memory",
-            "card": {
-                "source": Qt.resolvedUrl("Overview/CpuCard.qml"),
-                "w": 1,
-                "h": 1,
-                "minW": 1,
-                "minH": 1,
-                "maxH": 3
-            },
-            "options": [toggle("trend", I18n.tr("Show trend"), true), toggle("temperature", I18n.tr("Show temperature"), true), toneOption()]
-        },
-        {
-            "id": "memory",
-            "text": I18n.tr("Memory"),
-            "icon": "developer_board",
-            "card": {
-                "source": Qt.resolvedUrl("Overview/MemoryCard.qml"),
-                "w": 1,
-                "h": 1,
-                "minW": 1,
-                "minH": 1,
-                "maxH": 3
-            },
-            "options": [toggle("trend", I18n.tr("Show trend"), true), toggle("swap", I18n.tr("Show swap"), false), toneOption()]
-        },
-        {
-            "id": "network",
-            "text": I18n.tr("Network"),
-            "icon": "swap_vert",
-            "card": {
-                "source": Qt.resolvedUrl("Overview/NetworkCard.qml"),
-                "w": 2,
-                "h": 1,
-                "minW": 1,
-                "minH": 1,
-                "maxH": 3
-            },
-            "options": [toggle("trend", I18n.tr("Show trend"), true), toneOption()]
-        },
-        {
-            "id": "disk",
-            "text": I18n.tr("Disk"),
-            "icon": "hard_drive",
-            "card": {
-                "source": Qt.resolvedUrl("Overview/DiskCard.qml"),
-                "w": 1,
-                "h": 1,
-                "minW": 1,
-                "minH": 1,
-                "maxH": 3
-            },
-            "options": [toggle("trend", I18n.tr("Show trend"), true), toggle("io", I18n.tr("Show I/O"), false), toneOption()]
+            }
         },
         {
             "id": "battery",
+            "category": "system",
             "text": I18n.tr("Battery"),
             "icon": "battery_full",
             "description": BatteryService.batteryAvailable ? "" : I18n.tr("No battery", "battery status"),
@@ -490,6 +445,38 @@ Singleton {
     })
 
     readonly property var cardEntries: entries.filter(e => e.card)
+    readonly property var cardCategories: [
+        {
+            "id": "user",
+            "title": I18n.tr("User"),
+            "icon": "account_circle"
+        },
+        {
+            "id": "time",
+            "title": I18n.tr("Time"),
+            "icon": "schedule"
+        },
+        {
+            "id": "system",
+            "title": I18n.tr("System"),
+            "icon": "dns"
+        },
+        {
+            "id": "media",
+            "title": I18n.tr("Media"),
+            "icon": "music_note"
+        },
+        {
+            "id": "weather",
+            "title": I18n.tr("Weather"),
+            "icon": "wb_sunny"
+        },
+        {
+            "id": "plugins",
+            "title": I18n.tr("Plugins"),
+            "icon": "extension"
+        }
+    ]
     readonly property var placed: Array.isArray(SettingsData.dashCards) ? SettingsData.dashCards : []
     readonly property var addableCards: cardEntries.filter(e => e.available !== false && (e.card.allowMultiple === true || !placed.some(c => c.id === e.id)))
 
@@ -583,20 +570,23 @@ Singleton {
         }, instanceId);
     }
 
+    function savePlacementField(index, field, value) {
+        const cards = placed.slice();
+        const card = Object.assign({}, cards[index]);
+        if (value === undefined)
+            delete card[field];
+        else
+            card[field] = value;
+        cards[index] = card;
+        SettingsData.set("dashCards", cards);
+    }
+
     function saveOptions(id, mine, instanceId) {
         const empty = Object.keys(mine).length === 0;
         if (instanceId !== "") {
             const index = instanceIndex(id, instanceId);
-            if (index < 0)
-                return;
-            const cards = placed.slice();
-            const card = Object.assign({}, cards[index]);
-            if (empty)
-                delete card.options;
-            else
-                card.options = mine;
-            cards[index] = card;
-            SettingsData.set("dashCards", cards);
+            if (index >= 0)
+                savePlacementField(index, "options", empty ? undefined : mine);
             return;
         }
         const all = Object.assign({}, SettingsData.dashOptions ?? {});
@@ -605,6 +595,61 @@ Singleton {
         else
             all[id] = mine;
         SettingsData.set("dashOptions", all);
+    }
+
+    // A card without an instance id (written by hand) is the first such card of its kind.
+    function configIndex(id, instanceId) {
+        return instanceId ? instanceIndex(id, instanceId) : placed.findIndex(c => c?.id === id && !c.instanceId);
+    }
+
+    function cardConfig(id, instanceId) {
+        const config = placed[configIndex(id, instanceId)]?.config;
+        return config && typeof config === "object" && !Array.isArray(config) ? config : {};
+    }
+
+    function hasCardConfig(id, instanceId) {
+        return Object.keys(cardConfig(id, instanceId)).length > 0;
+    }
+
+    function newInstanceId() {
+        return Date.now().toString(36) + Math.random().toString(36).substring(2);
+    }
+
+    // False when the copy doesn't fit the largest dash.
+    function duplicateCard(id, instanceId) {
+        const cards = placed.slice();
+        const source = cards.find(c => c.id === id && c.instanceId === instanceId);
+        if (!source)
+            return false;
+        const size = GridUtils.fitNewCard(cards, DashMetrics.gridColumns, DashMetrics.maximumGridRows, id, {
+            "w": source.w,
+            "h": source.h
+        }, minSize(id), isCardAvailable);
+        if (!size)
+            return false;
+        const copy = JSON.parse(JSON.stringify(source));
+        copy.instanceId = newInstanceId();
+        copy.w = size.w;
+        copy.h = size.h;
+        cards.push(copy);
+        SettingsData.set("dashCards", cards);
+        return true;
+    }
+
+    function setCardConfig(id, instanceId, values) {
+        const index = configIndex(id, instanceId);
+        if (index < 0)
+            return;
+        const current = cardConfig(id, instanceId);
+        const next = Object.assign({}, current, JSON.parse(JSON.stringify(values)));
+        if (JSON.stringify(next) !== JSON.stringify(current))
+            savePlacementField(index, "config", next);
+    }
+
+    function resetCardConfig(id, instanceId) {
+        const index = configIndex(id, instanceId);
+        if (index >= 0 && "config" in placed[index])
+            savePlacementField(index, "config", undefined);
     }
 
     function setOptions(id, values, instanceId = "") {

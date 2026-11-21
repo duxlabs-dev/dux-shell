@@ -28,8 +28,28 @@ Item {
     property var transientSurfaceTracker: null
     property color surfaceColor: Theme.withAlpha(CcMetrics.dialogColor, 1)
     property real radius: Theme.cornerRadiusXL
+    property var categories: categoryDefs.defs
+    property bool listShown: true
+    property Component detail: null
+    property string detailIcon: ""
+    property string detailTitle: ""
+    property string detailSubtitle: ""
+    property bool detailBack: false
+    property bool heightModes: true
+    property bool clearable: true
+    property var menuItems: []
 
     readonly property CcWidgetCategories categoryDefs: CcWidgetCategories {}
+    readonly property bool detailed: detail !== null
+    readonly property bool listVisible: listShown && !detailed
+    readonly property var detailItem: detailLoader.item
+    readonly property bool menuOpen: moreButton.menuOpen
+    readonly property var focusTargets: {
+        const targets = [backButton, searchField, ...categoryTargets(categoryGroups.count)];
+        targets.push(...(detailItem?.focusTargets ?? []));
+        targets.push(closeButton, moreButton, undoButton, discardButton, finishButton);
+        return targets.filter(item => item && item.visible && item.enabled);
+    }
     readonly property var addable: widgets.filter(widget => widget.enabled !== false)
     readonly property string query: searchField.text.trim()
     readonly property var matches: Catalog.filterWidgets(addable, query)
@@ -48,6 +68,7 @@ Item {
     signal finishRequested
     signal cancelRequested
     signal closeRequested
+    signal backRequested
 
     function containsScenePoint(scenePoint) {
         const point = mapFromItem(null, scenePoint.x, scenePoint.y);
@@ -79,8 +100,19 @@ Item {
         dragWidgetId = "";
     }
 
+    function closeMenu() {
+        moreButton.closeMenu();
+    }
+
     function focusSearch() {
         searchField.forceActiveFocus();
+    }
+
+    function categoryTargets(count) {
+        const targets = [];
+        for (let i = 0; i < count; i++)
+            targets.push(categoryGroups.itemAt(i));
+        return targets;
     }
 
     function focusCategory(index, direction) {
@@ -151,13 +183,34 @@ Item {
                 Layout.fillWidth: true
                 spacing: Theme.spacingS
 
+                DActionButton {
+                    id: backButton
+
+                    Layout.alignment: Qt.AlignTop
+                    visible: root.detailed && root.detailBack
+                    buttonSize: Theme.iconButtonSize
+                    iconName: I18n.isRtl ? "arrow_forward" : "arrow_back"
+                    iconSize: CcMetrics.iconBoxIconSize
+                    iconColor: Theme.onSurface
+                    tooltipText: I18n.tr("Back", "button to return to the widget list")
+                    onClicked: root.backRequested()
+                }
+
+                DIcon {
+                    Layout.alignment: Qt.AlignTop
+                    visible: root.detailed && root.detailIcon !== ""
+                    name: root.detailIcon
+                    size: Theme.iconSizeMedium
+                    color: Theme.onSurfaceVariant
+                }
+
                 Column {
                     Layout.fillWidth: true
                     Layout.alignment: Qt.AlignTop
 
                     StyledText {
                         width: parent.width
-                        text: root.floating ? I18n.tr("Add widget") : I18n.tr("Edit mode")
+                        text: root.detailed ? root.detailTitle : root.floating ? I18n.tr("Add widget") : I18n.tr("Edit mode")
                         font.pixelSize: Theme.fontSizeLarge
                         font.weight: Theme.fontWeightMedium
                         color: Theme.surfaceText
@@ -166,7 +219,8 @@ Item {
 
                     StyledText {
                         width: parent.width
-                        text: root.floating ? I18n.tr("Click to add, or drag into place") : I18n.tr("Drag widgets in, or click one to add it")
+                        visible: !root.detailed || root.detailSubtitle !== ""
+                        text: root.detailed ? root.detailSubtitle : root.floating ? I18n.tr("Click to add, or drag into place") : I18n.tr("Drag widgets in, or click one to add it")
                         font.pixelSize: Theme.fontSizeSmall
                         color: Theme.surfaceVariantText
                         elide: Text.ElideRight
@@ -175,7 +229,7 @@ Item {
                     // Floating, the edit strip says it.
                     StyledText {
                         width: parent.width
-                        visible: !root.floating
+                        visible: !root.floating && !root.detailed
                         text: I18n.tr("Right-click a widget for options")
                         font.pixelSize: Theme.fontSizeSmall
                         color: Theme.surfaceVariantText
@@ -184,6 +238,8 @@ Item {
                 }
 
                 DActionButton {
+                    id: closeButton
+
                     Layout.alignment: Qt.AlignTop
                     visible: root.floating
                     buttonSize: Theme.iconButtonSize
@@ -199,6 +255,7 @@ Item {
                 id: searchField
 
                 Layout.fillWidth: true
+                visible: root.listVisible
                 placeholderText: I18n.tr("Search widgets...")
                 onAccepted: {
                     if (root.matches.length > 0)
@@ -214,7 +271,7 @@ Item {
                     id: flickable
 
                     anchors.fill: parent
-                    visible: root.matches.length > 0
+                    visible: root.listVisible && root.matches.length > 0
                     contentWidth: width
                     contentHeight: groups.height
                     clip: contentHeight > height
@@ -229,7 +286,7 @@ Item {
                         Repeater {
                             id: categoryGroups
 
-                            model: Catalog.shownCategories(root.categoryDefs.defs, root.matches)
+                            model: Catalog.shownCategories(root.categories, root.matches)
 
                             Rectangle {
                                 id: groupCard
@@ -237,6 +294,10 @@ Item {
                                 required property var modelData
                                 required property int index
                                 readonly property var entries: root.matches.filter(widget => Catalog.categoryOf(widget) === modelData.id)
+
+                                function requestFocus(backwards) {
+                                    focusBoundary(backwards);
+                                }
 
                                 function focusBoundary(last) {
                                     bubbles.focusEntry(last ? entries.length - 1 : 0);
@@ -313,9 +374,28 @@ Item {
                     }
                 }
 
+                DFlickable {
+                    id: detailFlickable
+
+                    anchors.fill: parent
+                    visible: root.detailed
+                    contentWidth: width
+                    contentHeight: detailLoader.height
+                    clip: contentHeight > height
+                    interactive: contentHeight > height
+
+                    Loader {
+                        id: detailLoader
+
+                        width: detailFlickable.width
+                        active: root.detailed
+                        sourceComponent: root.detail
+                    }
+                }
+
                 CcEmptyState {
                     anchors.top: parent.top
-                    visible: root.matches.length === 0
+                    visible: root.listVisible && root.matches.length === 0
                     iconName: "search_off"
                     title: root.query.length > 0 ? I18n.tr("No widgets match your search") : I18n.tr("No widgets available")
                 }
@@ -327,8 +407,13 @@ Item {
                 visible: !root.floating
 
                 CcEditMenuButton {
+                    id: moreButton
+
                     anchors.left: parent.left
                     undoInMenu: false
+                    heightModes: root.heightModes
+                    clearable: root.clearable
+                    extraItems: root.menuItems
                     fixedHeight: root.fixedHeight
                     transientSurfaceTracker: root.transientSurfaceTracker
                     onResetRequested: root.resetRequested()
@@ -341,6 +426,8 @@ Item {
                     spacing: Theme.spacingS
 
                     DActionButton {
+                        id: undoButton
+
                         buttonSize: Theme.iconButtonSize
                         iconName: "undo"
                         iconSize: CcMetrics.iconBoxIconSize
@@ -352,6 +439,8 @@ Item {
                     }
 
                     DActionButton {
+                        id: discardButton
+
                         buttonSize: Theme.iconButtonSize
                         iconName: "close"
                         iconSize: CcMetrics.iconBoxIconSize
@@ -362,6 +451,8 @@ Item {
                     }
 
                     DButton {
+                        id: finishButton
+
                         buttonHeight: Theme.iconButtonSize
                         iconName: "check"
                         text: I18n.tr("Finish")

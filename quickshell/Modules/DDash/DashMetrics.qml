@@ -151,13 +151,7 @@ Singleton {
     readonly property real avatarSize: Theme.buttonHeightM
     readonly property real avatarSizeHero: 72
 
-    readonly property real tileTrendRatio: 0.45
-    readonly property real tileTrendFillAlpha: 0.1
     readonly property real tileValueSizeCompact: Math.round((Theme.fontSizeXXLarge + Theme.fontSizeXLarge) / 2)
-    readonly property real gaugeSize: Theme.buttonHeightXS
-    readonly property real gaugeSizeHero: CcMetrics.baseIconBoxSize
-    readonly property real gaugeStroke: 3
-    readonly property real gaugeGap: Theme.spacingXXS
     readonly property real batteryMeterThickness: 28
     readonly property real batteryMeterThicknessHero: 40
     readonly property real batteryMeterThicknessCompact: 20
@@ -168,15 +162,6 @@ Singleton {
 
     readonly property real meterBarThickness: Theme.spacingM
     readonly property real overviewPlayWidth: 64
-    readonly property int meterDuration: Theme.expressiveDurations.expressiveSlowEffects
-    readonly property real cpuWarnPercent: 60
-    readonly property real cpuCriticalPercent: 80
-    readonly property real tempWarnDegrees: 69
-    readonly property real tempCriticalDegrees: 85
-    readonly property real memoryWarnPercent: 75
-    readonly property real memoryCriticalPercent: 90
-    readonly property real diskWarnPercent: 85
-    readonly property real diskCriticalPercent: 95
 
     readonly property real overviewArtFrame: gridRowUnit
     readonly property real overviewArtHero: gridRowUnit * 1.5 + Theme.spacingL

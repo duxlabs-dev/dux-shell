@@ -392,7 +392,7 @@ Item {
     Item {
         id: inputEnvelope
 
-        readonly property real editPadding: root.controller.editingActivity === "controlcenter" ? PopoutMetrics.editOverflow : 0
+        readonly property real editPadding: root.controller.editingActivity === "controlcenter" || root.controller.dashDockReserve > 0 ? PopoutMetrics.editOverflow : 0
         readonly property real inputPadding: overshootBudget + editPadding
         readonly property real overshootBudget: {
             if (!motion.running)

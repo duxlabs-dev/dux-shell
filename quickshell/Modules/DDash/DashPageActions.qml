@@ -19,13 +19,10 @@ Item {
     readonly property bool hasWidgets: entryId === DashRegistry.overviewId || typeof tabItem?.clearWidgets === "function"
     readonly property bool menuOpen: customMenu.open
     readonly property bool hasCustomActions: customMenu.visibleItems.length > 0
-    readonly property var focusTargets: editControls.focusTargets
-    property string editSnapshot: ""
-    property string undoBase: ""
-    property var undoStack: []
-    readonly property bool canUndo: undoStack.length > 0
-    readonly property int undoLimit: 50
-    readonly property var editKeys: ["dashCards", "dashOptions"]
+    readonly property var focusTargets: controlsShown ? editControls.focusTargets : []
+    required property DashEditSession session
+    property var addHandler: null
+    property bool controlsShown: true
 
     signal optionsRequested
     signal finished
@@ -33,51 +30,8 @@ Item {
     implicitWidth: vertical ? Theme.navigationRailWidth : editControls.implicitWidth
     implicitHeight: editControls.implicitHeight
 
-    onEditModeChanged: beginEdit()
-    Component.onCompleted: beginEdit()
-
-    function beginEdit() {
-        editSnapshot = editMode ? currentState() : "";
-        undoBase = editSnapshot;
-        undoStack = [];
-    }
-
-    function trackEdit() {
-        if (!editMode)
-            return;
-        const state = currentState();
-        if (state === undoBase)
-            return;
-        undoStack = undoStack.concat([undoBase]).slice(-undoLimit);
-        undoBase = state;
-    }
-
-    function applyState(state) {
-        const wanted = JSON.parse(state);
-        for (const key of editKeys) {
-            if (JSON.stringify(SettingsData[key]) !== JSON.stringify(wanted[key]))
-                SettingsData.set(key, wanted[key]);
-        }
-    }
-
-    function undo() {
-        if (undoStack.length === 0)
-            return;
-        undoBase = undoStack[undoStack.length - 1];
-        undoStack = undoStack.slice(0, -1);
-        applyState(undoBase);
-    }
-
-    function currentState() {
-        const state = {};
-        for (const key of editKeys)
-            state[key] = SettingsData[key];
-        return JSON.stringify(state);
-    }
-
     function discard() {
-        if (editSnapshot !== "")
-            applyState(editSnapshot);
+        session.discard();
         finished();
     }
 
@@ -108,20 +62,6 @@ Item {
         tabItem?.clearWidgets?.();
     }
 
-    // Deferred, so a reset that writes both keys lands as one undo step.
-    Connections {
-        target: SettingsData
-        enabled: root.editMode
-
-        function onDashCardsChanged() {
-            Qt.callLater(root.trackEdit);
-        }
-
-        function onDashOptionsChanged() {
-            Qt.callLater(root.trackEdit);
-        }
-    }
-
     CcMenu {
         id: customMenu
         transientSurfaceTracker: root.transientSurfaceTracker
@@ -133,7 +73,7 @@ Item {
         anchors.centerIn: parent
         width: root.width
         height: root.height
-        visible: root.editMode
+        visible: root.editMode && root.controlsShown
         vertical: root.vertical
         availableWidth: root.availableWidth
         canAdd: (root.tabItem?.addable?.length ?? 0) > 0
@@ -141,7 +81,7 @@ Item {
         hasOptions: DashRegistry.hasOptions(root.entryId, true)
         hasCustomActions: root.hasCustomActions
         onActionsRequested: anchor => customMenu.openAt(anchor)
-        onAddRequested: anchor => root.tabItem?.openAddMenu(anchor)
+        onAddRequested: anchor => root.addHandler ? root.addHandler(anchor) : root.tabItem?.openAddMenu(anchor)
         onOptionsRequested: root.optionsRequested()
         onResetRequested: root.reset()
         onClearRequested: root.clear()

@@ -7,6 +7,7 @@ Column {
 
     property string instanceId: ""
     property var instanceData: null
+    property bool showOptions: true
     property bool showAppearance: true
     property bool showPlacement: true
     property bool backgroundOption: false
@@ -33,6 +34,7 @@ Column {
 
     SettingsCard {
         id: optionsCard
+        visible: root.showOptions
     }
 
     Column {
