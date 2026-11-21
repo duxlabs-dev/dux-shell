@@ -616,17 +616,8 @@ Singleton {
         }
     }
 
-    PanelWindow {
-        id: pluginHostWindow
-        visible: false
-        implicitWidth: 1
-        implicitHeight: 1
-        color: "transparent"
-
-        Item {
-            id: pluginItemHost
-            anchors.fill: parent
-        }
+    Item {
+        id: pluginItemHost
     }
 
     function _createDaemonInstance(pluginId, comp) {
