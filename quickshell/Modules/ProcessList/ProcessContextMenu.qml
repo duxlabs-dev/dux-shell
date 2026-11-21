@@ -151,6 +151,7 @@ DContextMenu {
                 type: "item",
                 text: preset.label,
                 icon: preset === ProcessActions.priorityPreset(processData?.nice) ? "check" : "",
+                trailingIcon: preset.warning ? "warning" : "",
                 action: () => closeAndRun(process => ProcessActions.setPriority(process, preset.nice)),
                 enabled: true
             })))
