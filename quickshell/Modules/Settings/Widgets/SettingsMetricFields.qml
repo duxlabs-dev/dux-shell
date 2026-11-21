@@ -35,13 +35,15 @@ Column {
     }
     readonly property bool showsSpace: type === "disk" && vals.indexOf("space") >= 0
     readonly property string wholeDevice: "device"
-    readonly property var mountValues: {
+    readonly property string mountKey: {
         const mounts = (DgopService.diskMounts ?? []).map(m => m.mount);
         if (metric?.mount && mounts.indexOf(metric.mount) < 0)
             mounts.push(metric.mount);
-        return [wholeDevice].concat(mounts);
+        return mounts.join("\n");
     }
-    readonly property var mountLabels: [SysmonService.device(metric?.device)?.name ?? SysmonService.displayName(metric?.device)].concat(mountValues.slice(1))
+    readonly property string deviceLabel: SysmonService.device(metric?.device)?.name ?? SysmonService.displayName(metric?.device)
+    readonly property var mountValues: [wholeDevice].concat(mountKey ? mountKey.split("\n") : [])
+    readonly property var mountLabels: [deviceLabel].concat(mountValues.slice(1))
     readonly property var chips: (SysmonCatalog.TYPES[type] ?? []).map(def => {
         const position = vals.indexOf(def.id);
         return {
@@ -97,7 +99,7 @@ Column {
         id: pickerRow
 
         visible: root.sections.length > 0
-        title: I18n.tr("Device")
+        title: I18n.tr("Device", "system monitor metric device field label")
 
         body: Column {
             width: parent.width
@@ -239,7 +241,7 @@ Column {
 
     SettingsToggleRow {
         visible: root.allowDeviceOptions && root.type === "net"
-        text: I18n.tr("Compact mode")
+        text: I18n.tr("Compact mode", "system monitor widget option")
         description: I18n.tr("Whole numbers, at most three digits", "network speed widget option, shows 1 MB/s instead of 1023.4 KB/s")
         checked: root.metric?.compact === true
         onToggled: checked => root.edit({

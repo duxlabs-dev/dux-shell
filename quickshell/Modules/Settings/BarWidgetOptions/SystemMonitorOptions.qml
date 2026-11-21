@@ -51,7 +51,7 @@ Column {
 
     SettingsCard {
         settingKey: "barWidgetSystemMonitorAppearance"
-        title: I18n.tr("Appearance")
+        title: I18n.tr("Appearance", "settings section title for visual options")
 
         SettingsButtonGroupRow {
             resetStore: root.page

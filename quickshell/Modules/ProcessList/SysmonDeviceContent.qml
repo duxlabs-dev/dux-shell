@@ -44,7 +44,7 @@ Column {
                 "disk": ["processes", "process-io"],
                 "net": ["processes", "process-net"]
             })[current.type] ?? [];
-        const base = current.type === "gpu" ? (gpuLive ? SysmonCatalog.paneModules(currentKey) : []) : SysmonCatalog.paneModules(currentKey);
+        const base = SysmonCatalog.paneModules(currentKey);
         const list = base.concat(procs);
         return entryType === "net" && list.indexOf("net-rate") < 0 ? list.concat("net-rate") : list;
     }

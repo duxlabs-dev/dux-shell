@@ -37,6 +37,7 @@ BasePill {
     readonly property bool hasNet: shownMetrics.some(m => SysmonCatalog.typeOf(m.device) === "net")
     // Rebuilt once per sample, not by a binding: its inputs are DgopService properties a sample assigns one by one.
     property var groups: []
+    readonly property string idleText: I18n.tr("Idle", "device state")
     readonly property bool hiddenByIdle: groups.length === 0
     readonly property bool splitActive: separator === "separate" && !noBackground && groups.length > 1
     // Centers of the gaps between groups, along the bar in visualContent coordinates.
@@ -139,7 +140,7 @@ BasePill {
 
     // One popout trigger per pill and row, the key the factory opens with and the hover controller compares.
     function triggerKey(row) {
-        return "sysmon-" + section + "-" + widgetInstanceId + "-" + row;
+        return "sysmon-" + (barConfig?.id ?? "default") + "-" + section + "-" + widgetInstanceId + "-" + row;
     }
 
     function option(key) {
@@ -176,7 +177,7 @@ BasePill {
     function rowTooltip(m, r) {
         const name = m.mount || (r && !r.missing ? SysmonService.device(m.device)?.name : "") || SysmonService.typeName(typeOf(m));
         if (r?.asleep)
-            return name + " · " + I18n.tr("Idle", "device state");
+            return name + " · " + idleText;
         return [name].concat((r?.values ?? []).map(v => v.label + " " + wideText(m, v))).join(" · ");
     }
 
@@ -257,7 +258,7 @@ BasePill {
     }
 
     function buildItems(m, r) {
-        const idle = I18n.tr("Idle", "device state");
+        const idle = idleText;
         if (r?.asleep)
             return [{
                     main: true,
@@ -342,12 +343,7 @@ BasePill {
     onStyleChanged: Qt.callLater(rebuildGroups)
     onHostDevicesChanged: Qt.callLater(rebuildGroups)
 
-    Connections {
-        target: I18n
-        function onTranslationsChanged() {
-            Qt.callLater(root.rebuildGroups);
-        }
-    }
+    onIdleTextChanged: Qt.callLater(rebuildGroups)
     onIsMouseHoveredChanged: isMouseHovered ? showTooltip() : hideTooltip()
     onTooltipTextChanged: if (tooltipShown)
         tooltip.show(tooltipText, clickArea)
@@ -360,11 +356,11 @@ BasePill {
     width: hiddenByIdle ? 0 : (isVerticalOrientation ? barThickness : visualWidth)
     height: hiddenByIdle ? 0 : (isVerticalOrientation ? visualHeight : barThickness)
     opacity: hiddenByIdle ? 0 : 1
+    visible: !hiddenByIdle || opacity > 0
 
     Accessible.role: Accessible.Button
-    Accessible.ignored: hiddenByIdle
     Accessible.name: groups.map(g => g.tooltip).join(", ")
-    Accessible.onPressAction: root.activated(0)
+    Accessible.onPressAction: root.activated(groups[0]?.index ?? 0)
 
     Behavior on width {
         enabled: root.hasNet
@@ -390,7 +386,7 @@ BasePill {
         metrics: root.shownMetrics
         charts: root.style === "graph" ? "all" : "none"
         rangeSeconds: 60
-        active: root.settled && root.surfaceLive && root.visible && (root.Window.window?.visible ?? false)
+        active: root.settled && root.surfaceLive && (root.hiddenByIdle || root.visible) && (root.Window.window?.visible ?? false)
     }
 
     content: Component {

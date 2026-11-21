@@ -575,8 +575,9 @@ Item {
                 });
             }
 
-            function triggerPopout() {
-                openPopout(0, "click");
+            function triggerPopout(deviceType = "") {
+                const group = groups.find(g => deviceType && SysmonCatalog.typeOf(shownMetrics[g.index]?.device) === deviceType) ?? groups[0];
+                openPopout(group?.index ?? 0, "click");
             }
 
             function triggerHoverPopout(widgetId, row) {

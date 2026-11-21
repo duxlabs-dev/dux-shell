@@ -23,7 +23,7 @@ SettingsReorderRow {
 
     iconName: widgetDef?.icon ?? "widgets"
     title: widgetName
-    subtitle: actions.confirming ? I18n.tr("Confirm Delete") : ""
+    subtitle: actions.confirming ? I18n.tr("Confirm Delete", "delete button confirmation text") : ""
     subtitleColor: Theme.error
     clickable: true
     onClicked: configureRequested()

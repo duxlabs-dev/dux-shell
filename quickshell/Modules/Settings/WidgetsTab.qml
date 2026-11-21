@@ -441,8 +441,9 @@ Item {
         }
         SettingsUiState.selectedWidgetSection = sectionId;
         SettingsUiState.selectedWidgetIndex = widgetIndex;
-        SettingsUiState.selectedWidgetTitle = item.text;
-        SettingsUiState.selectedWidgetDescription = item.description ?? "";
+        const info = BarWidgetCatalog.displayInfo(item);
+        SettingsUiState.selectedWidgetTitle = info.text;
+        SettingsUiState.selectedWidgetDescription = info.description ?? "";
         SettingsUiState.selectedWidgetIcon = item.icon ?? "";
         parentModal?.navigateTo("bar_widget");
     }
@@ -475,7 +476,7 @@ Item {
                 };
             }
 
-            var item = Object.assign({}, isString ? {} : widget, widgetDef, isString ? null : BarWidgetCatalog.entryInfo(widget));
+            var item = Object.assign({}, isString ? {} : widget, widgetDef);
             item.enabled = isString ? true : widget.enabled !== false;
             widgets.push(item);
         });

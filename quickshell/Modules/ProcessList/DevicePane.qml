@@ -51,7 +51,6 @@ DFlickable {
     property string idleText: ""
     property string idleIcon: "bedtime"
     property int rangeSeconds: variant === "compact" ? 60 : 0
-    // The compact chart's second line.
     property var compactSecondaryValues: secondaryValues
     property string compactSecondaryLabel: chartSecondaryLabel
     property string compactSecondaryValue: chartSecondaryValue

@@ -3,6 +3,15 @@
 // Bar widget ids that settings v48 merged into one sysmon widget.
 var SYSMON_LEGACY_IDS = ["cpuUsage", "memUsage", "diskUsage", "cpuTemp", "gpuTemp", "network_speed_monitor"];
 
+var SYSMON_LEGACY_TYPES = {
+    cpuUsage: "cpu",
+    cpuTemp: "cpu",
+    memUsage: "memory",
+    diskUsage: "disk",
+    gpuTemp: "gpu",
+    network_speed_monitor: "net"
+};
+
 var CONTROL_CENTER_GROUP_ORDER = ["network", "vpn", "bluetooth", "audio", "microphone", "brightness", "battery", "printer", "screenSharing", "idleInhibitor", "doNotDisturb"];
 
 // Island-layout bars and dots keep these keys on the bar config; the island widget carries them on its entry.

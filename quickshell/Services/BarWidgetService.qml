@@ -176,6 +176,7 @@ Singleton {
 
     // Matches getPreferredBar in DMSShellIPC: focused screen, then visible before hidden, then the last used bar.
     function resolveIpcWidget(widgetId) {
+        const legacyType = WidgetDefaults.SYSMON_LEGACY_TYPES?.[widgetId] ?? "";
         widgetId = currentWidgetId(widgetId);
         const configs = SettingsData.barConfigs.concat(SettingsData.dockConfigs ?? []).map(config => config.id);
         const screens = Quickshell.screens.map(screen => screen.name);
@@ -194,11 +195,15 @@ Singleton {
         for (const targets of [focusedTargets, [
                 {}
             ]]) {
-            for (const eligible of tiers) {
-                for (const target of targets) {
-                    const hit = Registry.select(widgetRegistry, widgetId, target, configs, screens, eligible);
-                    if (hit)
-                        return hit;
+            // An old monitor id prefers the sysmon widget that shows its kind of device.
+            for (const typed of legacyType ? [true, false] : [false]) {
+                for (const tier of tiers) {
+                    const eligible = typed ? entry => tier(entry) && SysmonService.widgetMetrics(entry.item?.widgetData).some(m => m.on !== false && SysmonService.parseKey(m.device).type === legacyType) : tier;
+                    for (const target of targets) {
+                        const hit = Registry.select(widgetRegistry, widgetId, target, configs, screens, eligible);
+                        if (hit)
+                            return hit;
+                    }
                 }
             }
         }
@@ -284,15 +289,15 @@ Singleton {
     }
 
     function triggerWidgetPopout(widgetId, target) {
-        widgetId = currentWidgetId(widgetId);
-        const widget = target ? resolveWidget(widgetId, target, true)?.item : getWidgetOnFocusedScreen(widgetId);
+        const legacyType = WidgetDefaults.SYSMON_LEGACY_TYPES?.[widgetId] ?? "";
+        const widget = target ? resolveWidget(currentWidgetId(widgetId), target, true)?.item : getWidgetOnFocusedScreen(widgetId);
         if (!widget)
             return false;
 
         const registration = registrationForItem(widget);
         registration?.context?.surface?.ensureVisible(widget);
         if (typeof widget.triggerPopout === "function") {
-            widget.triggerPopout();
+            widget.triggerPopout(legacyType);
             return true;
         }
 

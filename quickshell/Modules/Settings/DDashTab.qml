@@ -230,7 +230,7 @@ FocusScope {
             when: root.sysmonCards.length > 0
 
             SettingsCard {
-                title: I18n.tr("System Monitor")
+                title: I18n.tr("System Monitor", "system monitor widget name")
                 iconName: "monitoring"
                 settingKey: "dashSysmonCards"
                 tab: "dank_dash"
@@ -250,7 +250,7 @@ FocusScope {
 
                         iconName: SysmonService.layoutIcon(config.layout)
                         title: root.sysmonTitle(config)
-                        subtitle: actions.confirming ? I18n.tr("Confirm Delete") : SysmonService.layoutName(config.layout) + " · " + modelData.w + "×" + modelData.h
+                        subtitle: actions.confirming ? I18n.tr("Confirm Delete", "delete button confirmation text") : SysmonService.layoutName(config.layout) + " · " + modelData.w + "×" + modelData.h
                         subtitleColor: actions.confirming ? Theme.error : supportingContentColor
                         clickable: true
                         onClicked: {
@@ -264,7 +264,7 @@ FocusScope {
                             anchors.verticalCenter: parent.verticalCenter
                             onDuplicateRequested: {
                                 if (!DashRegistry.duplicateCard("sysmon", cardRow.modelData.instanceId))
-                                    ToastService.showWarning(I18n.tr("Failed to duplicate card", "dash settings: duplicating a card"), I18n.tr("No room left on the dashboard", "dash settings: why a card can't be duplicated"));
+                                    ToastService.showWarning(I18n.tr("Failed to duplicate %1", "toast title, %1 is a dash card name").arg(cardRow.title), I18n.tr("No room left on the dashboard", "dash settings: why a card can't be duplicated"));
                             }
                             onDeleteRequested: CardUtils.removeCard(DashRegistry.instanceIndex("sysmon", cardRow.modelData.instanceId))
                         }

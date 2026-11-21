@@ -91,8 +91,8 @@ Singleton {
         },
         {
             "id": "sysmon",
-            "text": I18n.tr("System Monitor"),
-            "description": I18n.tr("CPU, memory, network, and disk monitoring"),
+            "text": I18n.tr("System Monitor", "system monitor widget name"),
+            "description": I18n.tr("CPU, memory, network, and disk monitoring", "system monitor widget description"),
             "icon": "monitoring",
             "section": "right"
         },
@@ -254,6 +254,10 @@ Singleton {
             "text": names.join(", "),
             "description": get("sysmon")?.description ?? ""
         };
+    }
+
+    function displayInfo(item, base = item) {
+        return Object.assign({}, base, entryInfo(item));
     }
 
     function hasOptions(id) {

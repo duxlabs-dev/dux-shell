@@ -48,7 +48,7 @@ Item {
         visible: root.placeholder
         variant: "compact"
         typeKey: root.type
-        title: root.gpuLook ? I18n.tr("GPU") : ""
+        title: root.gpuLook ? SysmonService.typeName("gpu") : ""
         iconName: root.gpuLook ? "gpu" : ""
         mainValue: "—"
     }

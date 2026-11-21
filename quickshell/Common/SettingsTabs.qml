@@ -187,10 +187,10 @@ Singleton {
                     "hidden": true,
                     "backPage": "dankbar_widgets",
                     "titleFrom": "selectedWidgetTitle",
-                    "text": I18n.tr("Widget settings"),
+                    "text": I18n.tr("Widget settings", "settings tab name for the options of one widget instance"),
                     "icon": "tune",
                     "tabIndex": 54,
-                    "hint": I18n.tr("Options of one widget instance")
+                    "hint": I18n.tr("Options of one widget instance", "settings tab description")
                 },
                 {
                     "id": "dank_dash",
@@ -205,10 +205,10 @@ Singleton {
                     "hidden": true,
                     "backPage": "dank_dash",
                     "titleFrom": "selectedWidgetTitle",
-                    "text": I18n.tr("Widget settings"),
+                    "text": I18n.tr("Widget settings", "settings tab name for the options of one widget instance"),
                     "icon": "tune",
                     "tabIndex": 87,
-                    "hint": I18n.tr("Options of one widget instance")
+                    "hint": I18n.tr("Options of one widget instance", "settings tab description")
                 }
             ]
         },
@@ -273,10 +273,10 @@ Singleton {
                     "id": "desktop_widget",
                     "hidden": true,
                     "titleFrom": "selectedWidgetTitle",
-                    "text": I18n.tr("Widget settings"),
+                    "text": I18n.tr("Widget settings", "settings tab name for the options of one widget instance"),
                     "icon": "tune",
                     "tabIndex": 63,
-                    "hint": I18n.tr("Options of one widget instance")
+                    "hint": I18n.tr("Options of one widget instance", "settings tab description")
                 }
             ]
         },

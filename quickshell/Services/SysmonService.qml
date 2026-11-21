@@ -10,8 +10,8 @@ import "Drives.js" as Drives
 import "SysmonCatalog.js" as SysmonCatalog
 import "../Common/Format.js" as Format
 
-// Device identity and current values for the system monitor and its widgets. Functions only, so nothing here
-// is evaluated unless a visible consumer calls it from a binding.
+// Device identity and current values for the system monitor and its widgets. Besides the device counts,
+// everything here is evaluated only when a visible consumer calls it.
 Singleton {
     id: root
 
@@ -273,11 +273,18 @@ Singleton {
         return names.length;
     }
 
+    // Counts as properties so readers re-run only when a count changes, not on every sample.
+    readonly property int gpuTotal: hostGpuCount()
+    readonly property int diskTotal: diskCount()
+    readonly property int netShownTotal: (DgopService.netRates ?? []).filter(n => !Devices.isHiddenByDefault(Devices.interfaceKind(n.iface, n.linkType))).length
+
     // The type name while the type has a single device, otherwise the device's own name.
     function displayName(key) {
         const p = parseKey(key);
-        const single = p.type === "gpu" ? hostGpuCount() <= 1 : p.type === "disk" ? diskCount() <= 1 : p.type === "net" ? sortedNets().filter(n => !Devices.isHiddenByDefault(n.kind)).length <= 1 : true;
-        if (!p.id || single)
+        if (!p.id)
+            return typeName(p.type);
+        const single = p.type === "gpu" ? gpuTotal <= 1 : p.type === "disk" ? diskTotal <= 1 : p.type === "net" ? netShownTotal <= 1 : true;
+        if (single)
             return typeName(p.type);
         switch (p.type) {
         case "gpu":

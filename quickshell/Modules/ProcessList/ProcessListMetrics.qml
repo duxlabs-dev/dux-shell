@@ -24,7 +24,6 @@ Singleton {
     readonly property int refreshInterval: DgopService.updateInterval
     readonly property real sparkWidth: Theme.iconButtonSize * 1.6
     readonly property real sparkHeight: Theme.iconButtonSize * 0.7
-    // Popout layouts: device chart and stat rows, compact tiles, overview value pairs.
     readonly property real deviceChartHeight: Theme.listItemHeight * 2.5
     readonly property int deviceStatRows: 3
     readonly property int tileLimit: 3

@@ -177,9 +177,9 @@ Item {
                         readonly property var info: BarWidgetCatalog.entryInfo(modelData)
                         readonly property bool shown: slotOption ? dock.config[slotOption] === true : modelData.enabled !== false
 
-                        title: root.itemTitle(modelData)
+                        title: info?.text ?? root.widgetName(modelData.widgetId)
                         iconName: root.widgetIcon(modelData.widgetId)
-                        subtitle: removeButton.confirming ? I18n.tr("Confirm Delete") : (info?.description ?? "")
+                        subtitle: removeButton.confirming ? I18n.tr("Confirm Delete", "delete button confirmation text") : (info?.description ?? "")
                         subtitleColor: removeButton.confirming ? Theme.error : Theme.surfaceVariantText
                         body: SettingsSliderRow {
                             width: parent.width

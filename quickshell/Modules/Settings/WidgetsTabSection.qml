@@ -113,7 +113,8 @@ Column {
             readonly property var positionLabels: {
                 const labels = [I18n.tr("Start", "noun, overflow button position before the first widget", true)];
                 const seen = {};
-                for (const item of root.items) {
+                for (const entry of root.items) {
+                    const item = BarWidgetCatalog.displayInfo(entry);
                     seen[item.text] = (seen[item.text] ?? 0) + 1;
                     labels.push(I18n.tr("After %1", "overflow button position option, %1 is a widget name").arg(seen[item.text] > 1 ? item.text + " " + seen[item.text] : item.text));
                 }
@@ -149,11 +150,13 @@ Column {
             reorderList: reorderArea
             highlighted: !dragging && root.highlightedIndex === index && root.highlightedSection === root.sectionId
             opacity: dragging && reorderArea.crossSectionActive ? 0 : 1
-            title: modelData.text
+            readonly property var info: BarWidgetCatalog.displayInfo(modelData)
+
+            title: info.text
             iconName: modelData.icon
             iconColor: modelData.enabled ? Theme.primary : Theme.onSurfaceVariant
             titleColor: modelData.enabled ? Theme.onSurface : Theme.onSurfaceVariant
-            subtitle: modelData.description ?? ""
+            subtitle: info.description ?? ""
             clickable: configurable
             onClicked: root.configureWidget(root.sectionId, index)
 
