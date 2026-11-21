@@ -13,6 +13,7 @@ Item {
     property bool canAdd: true
     property bool hasWidgets: true
     property bool canClear: true
+    property bool canDiscard: true
     property bool hasOptions: false
     property bool hasCustomActions: false
     property string pendingAction: ""
@@ -208,6 +209,7 @@ Item {
 
             EditButton {
                 id: discardButton
+                visible: root.canDiscard
                 label: I18n.tr("Discard")
                 iconName: "close"
                 onClicked: root.discardRequested()
