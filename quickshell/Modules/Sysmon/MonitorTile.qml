@@ -19,7 +19,6 @@ Item {
     property color tileColor: Theme.surfaceContainer
     property color contentColor: Theme.surfaceText
     property color mutedColor: Theme.surfaceVariantText
-    property color chipColor: Theme.foregroundColor(Theme.chipSurface, false)
     property color trendSecondaryColor: mutedColor
     property bool halo: false
     property real radius: Theme.cornerRadiusL

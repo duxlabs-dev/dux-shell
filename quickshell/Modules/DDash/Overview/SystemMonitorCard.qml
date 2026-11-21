@@ -29,7 +29,6 @@ Card {
         contentColor: root.contentColor
         mutedColor: root.mutedColor
         tileColor: root.soloTile ? "transparent" : root.chipColor
-        chipColor: root.chipColor
         trendSecondaryColor: root.tinted ? root.mutedColor : Theme.tertiary
         tileRadius: root.soloTile ? DashMetrics.cardRadius : Theme.cornerRadiusS
     }
