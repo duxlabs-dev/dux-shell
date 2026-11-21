@@ -329,6 +329,8 @@ Item {
         SettingsData.recordBarInteraction(root.effectiveScreen, root.controller.barConfig?.id);
         if (button === Qt.RightButton)
             root.controller.toggleMediaFace();
+        else if (root.controller.hoverExpandBlocked)
+            root.controller.blockingPopoutDismissRequested();
         else
             root.controller.requestToggle(true);
     }
