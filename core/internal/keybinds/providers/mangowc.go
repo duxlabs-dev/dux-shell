@@ -457,8 +457,15 @@ func (m *MangoWCProvider) generatePreservedBindsContent(existingContent string, 
 	}
 
 	var lines []string
+	afterNamedScratchpad := false
 	for line := range strings.SplitSeq(source, "\n") {
+		// The bind writes its rule again, or drops it with the bind.
+		if afterNamedScratchpad && strings.HasPrefix(strings.TrimSpace(line), mangowcNamedScratchpadRulePrefix) {
+			afterNamedScratchpad = false
+			continue
+		}
 		templateBind, ok := m.parseOverrideBindLine(line, m.previousComment(lines))
+		afterNamedScratchpad = ok && templateBind != nil && strings.HasPrefix(templateBind.Action, "toggle_named_scratchpad")
 		if !ok || templateBind == nil {
 			lines = append(lines, line)
 			continue
@@ -637,7 +644,35 @@ func (m *MangoWCProvider) writeBindLine(sb *strings.Builder, bind *mangowcOverri
 	}
 
 	sb.WriteString("\n")
+	if command == "toggle_named_scratchpad" {
+		if rule := mangowcNamedScratchpadRule(params); rule != "" {
+			sb.WriteString(rule)
+			sb.WriteString("\n")
+		}
+	}
 }
+
+// Without the rule Mango maps the window the bind spawns as a plain tiled window.
+func mangowcNamedScratchpadRule(params string) string {
+	fields := strings.SplitN(params, ",", 3)
+	match := ""
+	for i, key := range []string{"app_id", "title"} {
+		if i >= len(fields) {
+			break
+		}
+		value := strings.TrimSpace(fields[i])
+		if value == "" || strings.HasPrefix(value, "none") {
+			continue
+		}
+		match += "," + key + ":" + value
+	}
+	if match == "" {
+		return ""
+	}
+	return mangowcNamedScratchpadRulePrefix + match[1:]
+}
+
+const mangowcNamedScratchpadRulePrefix = "window_rule=is_named_scratchpad:1,"
 
 func (m *MangoWCProvider) bindPrefixFromOptions(options map[string]any) string {
 	if options == nil {
