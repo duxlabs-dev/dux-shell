@@ -349,38 +349,31 @@ Column {
 
             SettingsToggleCard {
                 tab: "theme"
-                tags: ["corner", "radius", "rounded", "screen", "fullscreen"]
+                tags: ["corner", "radius", "rounded", "screen", "monitor", "edge"]
                 settingKey: "screenCorners"
-                title: I18n.tr("Override screen corners", "toggle: show screen corner settings and use a custom radius")
-                checked: SettingsData.screenCornerRadius >= 0
-                onToggled: checked => {
-                    SettingsData.set("screenCornerMode", checked ? "always" : "off")
-                    SettingsData.set("screenCornerRadius", checked ? Math.max(0, Math.min(64, Math.round(Theme.cornerRadiusL))) : -1)
-                }
-
-                SettingsButtonGroupRow {
-                    tab: "theme"
-                    tags: ["corner", "radius", "rounded", "screen", "fullscreen"]
-                    settingKey: "screenCornerMode"
-                    text: I18n.tr("Mode", "screen corners: visibility mode")
-                    model: [I18n.tr("On"), I18n.tr("Except fullscreen", "screen corners: hidden while a fullscreen window is active")]
-                    values: ["always", "unlessFullscreen"]
-                    value: SettingsData.screenCornerMode
-                    fallbackValue: "always"
-                    onValueSelected: value => SettingsData.set("screenCornerMode", value)
-                }
+                title: I18n.tr("Rounded screen corners", "toggle: draw rounded corners at the edges of each screen")
+                checked: SettingsData.screenCornersEnabled
+                onToggled: checked => SettingsData.set("screenCornersEnabled", checked)
 
                 SettingsSliderRow {
                     tab: "theme"
-                    tags: ["corner", "radius", "screen"]
+                    tags: ["corner", "radius", "rounded", "screen"]
                     settingKey: "screenCornerRadius"
-                    text: I18n.tr("Corner radius", "screen corners: radius slider label")
-                    minimumLabel: I18n.tr("Square")
+                    text: I18n.tr("Corner radius")
                     value: SettingsData.screenCornerRadius
-                    minimum: 0
+                    minimum: 4
                     maximum: 64
                     unit: "px"
                     onSliderValueChanged: newValue => SettingsData.set("screenCornerRadius", newValue)
+                }
+
+                SettingsToggleRow {
+                    tab: "theme"
+                    tags: ["corner", "screen", "fullscreen", "overlay"]
+                    settingKey: "screenCornersOverFullscreen"
+                    text: I18n.tr("Over fullscreen")
+                    checked: SettingsData.screenCornersOverFullscreen
+                    onToggled: checked => SettingsData.set("screenCornersOverFullscreen", checked)
                 }
             }
 

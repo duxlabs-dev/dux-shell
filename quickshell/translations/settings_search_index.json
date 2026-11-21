@@ -1959,23 +1959,6 @@
     "page": "notifications"
   },
   {
-    "section": "screenCornerMode",
-    "label": "Mode",
-    "tabIndex": -1,
-    "category": "Interface style",
-    "keywords": [
-      "corner",
-      "fullscreen",
-      "interface",
-      "mode",
-      "radius",
-      "rounded",
-      "screen",
-      "style"
-    ],
-    "page": "theme_surfaces"
-  },
-  {
     "section": "monoFontFamily",
     "label": "Monospace family",
     "tabIndex": -1,
@@ -2197,6 +2180,22 @@
     "page": "notifications"
   },
   {
+    "section": "screenCornersOverFullscreen",
+    "label": "Over fullscreen",
+    "tabIndex": -1,
+    "category": "Interface style",
+    "keywords": [
+      "corner",
+      "fullscreen",
+      "interface",
+      "over",
+      "overlay",
+      "screen",
+      "style"
+    ],
+    "page": "theme_surfaces"
+  },
+  {
     "section": "floatingWindowSyncGlobal",
     "label": "Override",
     "tabIndex": -1,
@@ -2211,25 +2210,6 @@
       "surface",
       "sync",
       "window"
-    ],
-    "page": "theme_surfaces"
-  },
-  {
-    "section": "screenCorners",
-    "label": "Override screen corners",
-    "tabIndex": -1,
-    "category": "Interface style",
-    "keywords": [
-      "corner",
-      "corners",
-      "fullscreen",
-      "interface",
-      "override",
-      "radius",
-      "round",
-      "rounded",
-      "screen",
-      "style"
     ],
     "page": "theme_surfaces"
   },
@@ -2656,6 +2636,25 @@
       "toast"
     ],
     "page": "notifications"
+  },
+  {
+    "section": "screenCorners",
+    "label": "Rounded screen corners",
+    "tabIndex": -1,
+    "category": "Interface style",
+    "keywords": [
+      "corner",
+      "corners",
+      "edge",
+      "interface",
+      "monitor",
+      "radius",
+      "round",
+      "rounded",
+      "screen",
+      "style"
+    ],
+    "page": "theme_surfaces"
   },
   {
     "section": "fontScale",

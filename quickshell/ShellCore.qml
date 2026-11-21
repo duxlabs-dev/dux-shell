@@ -3,6 +3,7 @@ import Quickshell
 import qs.Common
 import qs.Modules.DBar
 import qs.Modules.Frame
+import qs.Modules.ScreenCorners
 import qs.Services
 
 Item {
@@ -95,9 +96,9 @@ Item {
     }
 
     Loader {
-        active: SettingsData.screenCornerMode !== "off"
+        active: SettingsData.screenCornersEnabled
         asynchronous: false
-        source: "Modules/ScreenCorners/ScreenCorners.qml"
+        sourceComponent: ScreenCorners {}
     }
 
     Loader {

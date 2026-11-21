@@ -78,25 +78,10 @@ FocusScope {
         onDismissed: Qt.callLater(() => lockContent.focusPasswordField())
     }
 
-    RoundCorner {
-        corner: "topLeft"
-        visible: SettingsData.screenCornerMode !== "off"
-        anchors { left: root.left; top: root.top }
-    }
-    RoundCorner {
-        corner: "topRight"
-        visible: SettingsData.screenCornerMode !== "off"
-        anchors { right: root.right; top: root.top }
-    }
-    RoundCorner {
-        corner: "bottomLeft"
-        visible: SettingsData.screenCornerMode !== "off"
-        anchors { left: root.left; bottom: root.bottom }
-    }
-    RoundCorner {
-        corner: "bottomRight"
-        visible: SettingsData.screenCornerMode !== "off"
-        anchors { right: root.right; bottom: root.bottom }
+    Loader {
+        anchors.fill: parent
+        active: SettingsData.screenCornersEnabled
+        sourceComponent: ScreenCornerShape {}
     }
 
     Component.onCompleted: forceActiveFocus()

@@ -2,33 +2,38 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import Quickshell
+import Quickshell.Wayland
 import qs.Common
+import qs.Services
 
-Scope {
-    id: root
+Variants {
+    model: ShellLayout.realScreens
 
-    Variants {
-        model: ShellLayout.realScreens
+    delegate: PanelWindow {
+        id: win
 
-        delegate: Scope {
-            required property var modelData
+        required property var modelData
 
-            ScreenCornerWindow {
-                targetScreen: modelData
-                corner: "topLeft"
-            }
-            ScreenCornerWindow {
-                targetScreen: modelData
-                corner: "topRight"
-            }
-            ScreenCornerWindow {
-                targetScreen: modelData
-                corner: "bottomLeft"
-            }
-            ScreenCornerWindow {
-                targetScreen: modelData
-                corner: "bottomRight"
-            }
+        readonly property bool frameOnScreen: FrameTransitionState.effectiveFrameEnabled && SettingsData.isScreenInPreferences(modelData, SettingsData.frameScreenPreferences)
+        readonly property bool fullscreenOnScreen: !SettingsData.screenCornersOverFullscreen && (CompositorService.fullscreenToplevelOnScreen(modelData) || CompositorService.visibleNiriFullscreenToplevelOnScreen(modelData))
+
+        screen: modelData
+        visible: !frameOnScreen && !fullscreenOnScreen
+        color: "transparent"
+        mask: Region {}
+
+        WlrLayershell.namespace: "dms:screen-corners"
+        WlrLayershell.layer: WlrLayer.Overlay
+        WlrLayershell.exclusionMode: ExclusionMode.Ignore
+        WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+
+        anchors {
+            top: true
+            bottom: true
+            left: true
+            right: true
         }
+
+        ScreenCornerShape {}
     }
 }
