@@ -5,6 +5,7 @@ import QtQuick
 import Quickshell
 import qs.Services
 import "LayoutResolver.js" as Resolver
+import "CornerClearance.js" as CornerClearance
 
 Singleton {
     id: root
@@ -47,6 +48,8 @@ Singleton {
             frameBarSize: SettingsData.frameBarSize
         });
     })
+    // Largest screen-corner radius that clears window corners and floating bars on every screen.
+    readonly property real screenCornerLimit: CornerClearance.screenLimit(layouts, Theme.windowCornerLimit, Theme.windowRadius, config => root.barSpansEdge(config))
     readonly property var islandKeys: layouts.reduce((keys, layout) => keys.concat(layout.instances.filter(instance => instance.hostsIsland && !instance.free).map(instance => instance.key)), [])
     readonly property var freeIslandKeys: layouts.reduce((keys, layout) => keys.concat(layout.instances.filter(instance => instance.free).map(instance => instance.key)), [])
 

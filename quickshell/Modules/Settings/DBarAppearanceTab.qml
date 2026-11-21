@@ -53,9 +53,9 @@ Item {
                     text: I18n.tr("Radius", "corner radius slider label")
                     unit: "px"
                     minimum: 0
-                    maximum: 100
+                    maximum: Math.min(100, Math.floor(Theme.windowCornerLimit))
                     step: 1
-                    value: SettingsData.frameRounding
+                    value: Theme.frameRadius
                     onSliderDragFinished: v => SettingsData.set("frameRounding", v)
                 }
 

@@ -348,9 +348,9 @@ Column {
                     tags: ["corner", "radius", "rounded", "screen"]
                     settingKey: "screenCornerRadius"
                     text: I18n.tr("Corner radius")
-                    value: SettingsData.screenCornerRadius
+                    value: Math.min(SettingsData.screenCornerRadius, ShellLayout.screenCornerLimit)
                     minimum: 4
-                    maximum: 64
+                    maximum: Math.max(4, Math.min(64, Math.floor(ShellLayout.screenCornerLimit)))
                     unit: "px"
                     onSliderValueChanged: newValue => SettingsData.set("screenCornerRadius", newValue)
                 }

@@ -8,6 +8,6 @@ FrameBorder {
     cutoutBottomInset: -1
     cutoutLeftInset: -1
     cutoutRightInset: -1
-    cutoutRadius: SettingsData.screenCornerRadius + 1
+    cutoutRadius: Math.min(SettingsData.screenCornerRadius, ShellLayout.screenCornerLimit) + 1
     borderColor: Theme.screenOffColor
 }
