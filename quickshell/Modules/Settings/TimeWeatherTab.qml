@@ -394,18 +394,5 @@ Item {
                 }
             }
         }
-
-        SettingsDeferred {
-            SettingsCard {
-                SettingsNavRow {
-                    tab: "time"
-                    settingKey: "weather"
-                    tags: ["weather", "location", "units"]
-                    title: I18n.tr("Weather")
-                    iconName: "partly_cloudy_day"
-                    onClicked: keyboard => root.parentModal?.navigateTo("weather", keyboard)
-                }
-            }
-        }
     }
 }

@@ -3691,23 +3691,18 @@
     "section": "clockDateFormat",
     "label": "Bar format",
     "tabIndex": 1,
-    "category": "Time & weather",
+    "category": "Time",
     "keywords": [
       "bar",
-      "climate",
-      "clock",
       "date",
       "date,",
-      "forecast",
       "format",
       "panel",
       "region",
       "statusbar",
       "taskbar",
-      "temperature",
       "time",
-      "topbar",
-      "weather"
+      "topbar"
     ],
     "parentLabel": "Date, time & region",
     "description": "Preview: %1"
@@ -3716,23 +3711,18 @@
     "section": "calendarSettings",
     "label": "Calendar",
     "tabIndex": 1,
-    "category": "Time & weather",
+    "category": "Time",
     "keywords": [
       "backend",
       "calendar",
-      "climate",
-      "clock",
       "date",
       "date,",
       "day",
       "events",
-      "forecast",
       "month",
       "region",
       "tasks",
-      "temperature",
       "time",
-      "weather",
       "year"
     ],
     "parentLabel": "Date, time & region",
@@ -3742,25 +3732,20 @@
     "section": "calendarBackend",
     "label": "Calendar backend",
     "tabIndex": 1,
-    "category": "Time & weather",
+    "category": "Time",
     "keywords": [
       "backend",
       "calendar",
-      "climate",
-      "clock",
       "daemon",
       "dankcalendar",
       "date",
       "date,",
       "day",
       "events",
-      "forecast",
       "khal",
       "month",
       "region",
-      "temperature",
       "time",
-      "weather",
       "year"
     ],
     "parentLabel": "Date, time & region"
@@ -3769,19 +3754,14 @@
     "section": "dateFormat",
     "label": "Date",
     "tabIndex": 1,
-    "category": "Time & weather",
+    "category": "Time",
     "keywords": [
       "calendar",
-      "climate",
-      "clock",
       "date",
       "date,",
-      "forecast",
       "format",
       "region",
-      "temperature",
-      "time",
-      "weather"
+      "time"
     ],
     "parentLabel": "Date, time & region",
     "icon": "calendar_today"
@@ -3790,24 +3770,18 @@
     "section": "defaultTaskCalendarId",
     "label": "Default task list",
     "tabIndex": 1,
-    "category": "Time & weather",
+    "category": "Time",
     "keywords": [
       "caldav",
       "calendar",
-      "climate",
-      "clock",
-      "date",
       "date,",
       "default",
-      "forecast",
       "list",
       "region",
       "task",
       "tasks",
-      "temperature",
       "time",
-      "todo",
-      "weather"
+      "todo"
     ],
     "parentLabel": "Date, time & region"
   },
@@ -3815,19 +3789,13 @@
     "section": "firstDayOfWeek",
     "label": "First day of week",
     "tabIndex": 1,
-    "category": "Time & weather",
+    "category": "Time",
     "keywords": [
-      "climate",
-      "clock",
-      "date",
       "date,",
       "day",
       "first",
-      "forecast",
       "region",
-      "temperature",
       "time",
-      "weather",
       "week"
     ],
     "parentLabel": "Date, time & region"
@@ -3836,21 +3804,15 @@
     "section": "clockFormat",
     "label": "Format",
     "tabIndex": 1,
-    "category": "Time & weather",
+    "category": "Time",
     "keywords": [
       "12hour",
       "24hour",
-      "climate",
-      "clock",
-      "date",
       "date,",
-      "forecast",
       "format",
       "locale",
       "region",
-      "temperature",
-      "time",
-      "weather"
+      "time"
     ],
     "parentLabel": "Date, time & region"
   },
@@ -3858,22 +3820,16 @@
     "section": "padHours12Hour",
     "label": "Leading zero on hours",
     "tabIndex": 1,
-    "category": "Time & weather",
+    "category": "Time",
     "keywords": [
       "12hour",
-      "climate",
-      "clock",
-      "date",
       "date,",
-      "forecast",
       "format",
       "hours",
       "leading",
       "padding",
       "region",
-      "temperature",
       "time",
-      "weather",
       "zero"
     ],
     "parentLabel": "Date, time & region"
@@ -3882,13 +3838,10 @@
     "section": "lockDateFormat",
     "label": "Lock screen format",
     "tabIndex": 1,
-    "category": "Time & weather",
+    "category": "Time",
     "keywords": [
-      "climate",
-      "clock",
       "date",
       "date,",
-      "forecast",
       "format",
       "lock",
       "lockscreen",
@@ -3896,9 +3849,7 @@
       "region",
       "screen",
       "security",
-      "temperature",
-      "time",
-      "weather"
+      "time"
     ],
     "parentLabel": "Date, time & region",
     "description": "Preview: %1"
@@ -3907,23 +3858,17 @@
     "section": "showAmPm",
     "label": "Show AM/PM",
     "tabIndex": 1,
-    "category": "Time & weather",
+    "category": "Time",
     "keywords": [
       "12hour",
       "am",
-      "climate",
-      "clock",
-      "date",
       "date,",
-      "forecast",
       "format",
       "meridiem",
       "pm",
       "region",
       "show",
-      "temperature",
-      "time",
-      "weather"
+      "time"
     ],
     "parentLabel": "Date, time & region"
   },
@@ -3931,19 +3876,14 @@
     "section": "showSeconds",
     "label": "Show seconds",
     "tabIndex": 1,
-    "category": "Time & weather",
+    "category": "Time",
     "keywords": [
-      "climate",
       "clock",
-      "date",
       "date,",
-      "forecast",
       "region",
       "seconds",
       "show",
-      "temperature",
-      "time",
-      "weather"
+      "time"
     ],
     "parentLabel": "Date, time & region"
   },
@@ -3951,19 +3891,13 @@
     "section": "showWeekNumber",
     "label": "Show week number",
     "tabIndex": 1,
-    "category": "Time & weather",
+    "category": "Time",
     "keywords": [
-      "climate",
-      "clock",
-      "date",
       "date,",
-      "forecast",
       "number",
       "region",
       "show",
-      "temperature",
       "time",
-      "weather",
       "week"
     ],
     "parentLabel": "Date, time & region"
@@ -3972,43 +3906,17 @@
     "section": "timeFormat",
     "label": "Time",
     "tabIndex": 1,
-    "category": "Time & weather",
+    "category": "Time",
     "keywords": [
       "24hour",
-      "climate",
       "clock",
-      "date",
       "date,",
-      "forecast",
       "format",
       "region",
-      "temperature",
-      "time",
-      "weather"
+      "time"
     ],
     "parentLabel": "Date, time & region",
     "icon": "schedule"
-  },
-  {
-    "section": "weather",
-    "label": "Time & weather",
-    "tabIndex": 1,
-    "category": "Time & weather",
-    "keywords": [
-      "climate",
-      "clock",
-      "date",
-      "date,",
-      "forecast",
-      "location",
-      "region",
-      "temperature",
-      "time",
-      "units",
-      "weather"
-    ],
-    "parentLabel": "Date, time & region",
-    "icon": "partly_cloudy_day"
   },
   {
     "section": "_tab_2",
@@ -12724,7 +12632,7 @@
   },
   {
     "section": "barWidgetOption:ClockOptions.qml:6",
-    "label": "Time & weather",
+    "label": "Time",
     "tabIndex": 22,
     "keywords": [],
     "runtimeType": "barWidgetOption",
@@ -18502,6 +18410,24 @@
     ],
     "parentLabel": "Date, time & region",
     "icon": "space_dashboard"
+  },
+  {
+    "section": "weather",
+    "label": "General",
+    "tabIndex": 56,
+    "category": "Weather",
+    "keywords": [
+      "climate",
+      "date,",
+      "enable",
+      "forecast",
+      "general",
+      "region",
+      "temperature",
+      "time",
+      "weather"
+    ],
+    "parentLabel": "Date, time & region"
   },
   {
     "section": "useFahrenheit",
