@@ -52,7 +52,9 @@ BasePill {
             magnificationScale: dockHosted ? (surfaceContext?.config?.magnificationScale ?? 130) : 130,
             magnificationProfile: dockHosted ? (surfaceContext?.config?.magnificationProfile ?? "parabolic") : "parabolic",
             magnificationExpand: dockHosted && (surfaceContext?.config?.magnificationExpand ?? false),
-            iconSizePercentage: dockHosted ? 100 : appOption("appsDockIconSizePercentage")
+            iconSizePercentage: dockHosted ? 100 : appOption("appsDockIconSizePercentage"),
+            // The Dux Icons badge is too small to read at bar size.
+            bareIcons: !dockHosted
         });
     }
     property bool renderItems: true

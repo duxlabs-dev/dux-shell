@@ -99,6 +99,20 @@ function iconUrl(found, name) {
     return "file://" + found.dir + "/" + rel;
 }
 
+// The Dux Icons app icon at url without its badge, or "" when url is not one the build also wrote bare.
+function bareUrl(picked, enabled, state, url) {
+    if (!url || indexName(picked, enabled, state) === picked || state.bare !== true)
+        return "";
+    const dir = state.dir;
+    if (typeof dir !== "string" || !dir.startsWith("/") || dir.split("/").pop() !== state.applied)
+        return "";
+    const badged = "file://" + dir + "/scalable/apps/";
+    const file = url.startsWith(badged) ? url.slice(badged.length) : "";
+    if (!file || file.includes("/"))
+        return "";
+    return "file://" + dir + "/bare/apps/" + file;
+}
+
 function isOwn(platform, lastApplied, picks) {
     return platform === lastApplied || picks.includes(baseName(platform));
 }

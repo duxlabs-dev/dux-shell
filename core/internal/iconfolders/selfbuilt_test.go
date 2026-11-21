@@ -1,6 +1,7 @@
 package iconfolders
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -35,6 +36,7 @@ printf '%s %s %s %s' "$badge" "$glyph" "$back" "$mono" > "$out/scalable/places/f
 ln -s folder.svg "$out/scalable/places/inode-directory.svg"
 printf '%s %s' "${shape-default}" "$gradient" > "$out/scalable/places/style"
 [ -e "$here/paths" ] && cp "$here/paths" "$out/icon-paths.json"
+[ -e "$here/bare" ] && mkdir -p "$out/bare/apps"
 exit 0
 `
 
@@ -136,6 +138,26 @@ func TestSelfBuiltPackListsTheIconsThatStandInForFilePaths(t *testing.T) {
 
 	require.NoError(t, os.WriteFile(filepath.Join(e.bin, "paths"), []byte("not json"), 0o644))
 	assert.Empty(t, e.apply(false).Icons)
+}
+
+func TestSelfBuiltPackReportsItsBadgeFreeAppIcons(t *testing.T) {
+	e := newSelfEnv(t)
+	e.colors("#69b2ff", "#003055")
+	assert.False(t, e.apply(false).Bare, "older packs write no bare icons")
+
+	e.flag("bare")
+	state := e.apply(false)
+	assert.True(t, state.Bare)
+	assert.Equal(t, state, ReadState(e.state))
+
+	// A state written before Bare existed names the same build.
+	old := state
+	old.Bare = false
+	data, err := json.Marshal(old)
+	require.NoError(t, err)
+	o := e.opts()
+	require.NoError(t, os.WriteFile(o.statePath(), data, 0o644))
+	assert.True(t, e.apply(false).Bare)
 }
 
 func TestSelfBuiltPackWithoutItsCommandIsLeftAsInstalled(t *testing.T) {

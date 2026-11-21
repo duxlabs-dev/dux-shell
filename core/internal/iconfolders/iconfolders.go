@@ -65,6 +65,8 @@ type State struct {
 	// Dir is the applied overlay; Icons maps each recolored icon to its file below it.
 	Dir   string            `json:"dir"`
 	Icons map[string]string `json:"icons"`
+	// Bare is set when the self-built pack also wrote its app icons without the badge, under bareDir.
+	Bare bool `json:"bare,omitempty"`
 }
 
 // ErrOccupied is returned when a directory DMS did not generate holds the overlay name.

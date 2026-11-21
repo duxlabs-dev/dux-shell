@@ -129,6 +129,22 @@ printf '%s' "$v" | tr -d "'\\""`;
         _duxAppSvgs = svgs;
     }
 
+    // Panels too small for the Dux Icons badge show the app icon without it; any other url is kept.
+    function bareIcon(url: string): string {
+        if (typeof SettingsData === "undefined")
+            return url;
+        return IconFolders.bareUrl(SettingsData.resolveIconTheme(), SettingsData.iconThemeGenerated, SettingsData.iconFolderState, url) || url;
+    }
+
+    // bareIcon for an AppIconRenderer value, which resolves plain names itself.
+    function bareIconValue(value: string): string {
+        if (!value || /^[a-z+]+:/.test(value))
+            return value;
+        const url = Paths.resolveIconPath(value);
+        const bare = bareIcon(url);
+        return bare !== url ? "svg:" + bare : value;
+    }
+
     function resolve(name) {
         const tinted = _tintedDuxApps[name];
         if (tinted)

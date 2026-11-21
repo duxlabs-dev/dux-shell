@@ -488,7 +488,7 @@ Item {
                     width: actualIconSize
                     height: actualIconSize
                     iconSize: actualIconSize
-                    iconValue: coreIcon.iconValue
+                    iconValue: root.options.bareIcons ? IconThemeService.bareIconValue(coreIcon.iconValue) : coreIcon.iconValue
                     fallbackText: "?"
                 }
             }
@@ -517,7 +517,8 @@ Item {
                     if (appData.isCoreApp && appData.coreAppData) {
                         return "";
                     }
-                    return Paths.getAppIcon(appData.appId, cachedDesktopEntry);
+                    const icon = Paths.getAppIcon(appData.appId, cachedDesktopEntry);
+                    return root.options.bareIcons ? IconThemeService.bareIcon(icon) : icon;
                 }
                 mipmap: true
                 smooth: true

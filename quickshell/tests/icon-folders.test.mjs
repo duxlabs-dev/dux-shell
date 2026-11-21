@@ -154,6 +154,25 @@ test("Dux Icons is generated whenever it is picked, with the app icon option in 
     assert.equal(IconFolders.indexName("Papirus-Dark", true, state), "Papirus-Dark", "a folder overlay is resolved by path, never indexed");
 });
 
+test("small panels swap a Dux Icons app icon for its badge-free copy only when the build wrote one", () => {
+    const dir = "/icons/dux-icons-dms-1a2b3c4d";
+    const bare = { base: "dux-icons", applied: "dux-icons-dms-1a2b3c4d", inputs: "x", dir, bare: true };
+    const badged = `file://${dir}/scalable/apps/discord.svg`;
+    assert.equal(IconFolders.bareUrl("dux-icons", true, bare, badged), `file://${dir}/bare/apps/discord.svg`);
+    for (const [picked, enabled, built, url] of [
+        ["dux-icons", true, { ...bare, bare: false }, badged],
+        ["dux-icons", false, bare, badged],
+        ["Papirus-Dark", true, bare, badged],
+        ["dux-icons", true, bare, `file://${dir}/scalable/places/folder.svg`],
+        ["dux-icons", true, bare, `file://${dir}/scalable/apps/../places/folder.svg`],
+        ["dux-icons", true, bare, "file:///usr/share/icons/hicolor/scalable/apps/discord.svg"],
+        ["dux-icons", true, { ...bare, dir: "/icons/other" }, "file:///icons/other/scalable/apps/discord.svg"],
+        ["dux-icons", true, null, badged],
+        ["dux-icons", true, bare, ""]
+    ])
+        assert.equal(IconFolders.bareUrl(picked, enabled, built, url), "", `${picked} ${url}`);
+});
+
 test("the theme list offers Dux Icons once, installed as a theme or only as its command", () => {
     const found = IconFolders.parseThemeList("Adwaita\ndux-icons\ndux-icons\ndux-icons-dms-1a2b3c4d\n");
     assert.deepEqual(Array.from(found.themes), ["System Default", "Adwaita", "dux-icons"]);

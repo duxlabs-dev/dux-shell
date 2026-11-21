@@ -28,6 +28,7 @@ const (
 	indexHeader      = "[Icon Theme]\n"
 	// pathsFile is written by the pack: each Icon= value that is a file path, by the icon built from it.
 	pathsFile = "icon-paths.json"
+	bareDir   = "bare/apps"
 )
 
 var shapeName = regexp.MustCompile(`^[a-z0-9][a-z0-9-]{0,31}$`)
@@ -93,10 +94,17 @@ func (o *Options) applySelfBuilt(prev State) (State, error) {
 			return o.surviving(prev), err
 		}
 	}
-	if prev.Applied == name && prev.Dir == dir {
+	bare := hasBare(dir)
+	if prev.Applied == name && prev.Dir == dir && prev.Bare == bare {
 		return prev, nil
 	}
-	return o.commit(State{Base: SelfBuilt, Applied: name, Inputs: inputs, Dir: dir, Icons: pathIcons(dir)}, prev)
+	return o.commit(State{Base: SelfBuilt, Applied: name, Inputs: inputs, Dir: dir, Icons: pathIcons(dir), Bare: bare}, prev)
+}
+
+// hasBare reports whether the pack wrote badge-free app icons, which older versions do not.
+func hasBare(dir string) bool {
+	info, err := os.Stat(filepath.Join(dir, bareDir))
+	return err == nil && info.IsDir()
 }
 
 // pathIcons reads the icons that stand in for file paths, which no theme lookup would find.
