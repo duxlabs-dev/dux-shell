@@ -15,6 +15,7 @@ Item {
     property real triggerY: 0
     property real triggerWidth: 40
     property string triggerSection: ""
+    property bool triggerKnown: false
     property string positioning: "center"
     property int animationDuration: Theme.popoutAnimationDuration
     property real animationScaleCollapsed: Theme.effectScaleCollapsed
@@ -354,6 +355,7 @@ Item {
         triggerY = y;
         triggerWidth = width;
         triggerSection = section;
+        triggerKnown = true;
         screen = targetScreen;
 
         storedBarThickness = barThickness !== undefined ? barThickness : Theme.barThickness(SettingsData.getPrimaryBarConfig()?.innerPadding ?? SettingsData.barInnerPaddingDefault, 1);
@@ -381,6 +383,46 @@ Item {
         const w = renderedAlignedWidth + leftOverflow + rightOverflow + padding * 2;
         const h = renderedAlignedHeight + topOverflow + bottomOverflow + sideTopOverflow + sideBottomOverflow + padding * 2;
         return gx >= x && gx <= x + w && gy >= y && gy <= y + h;
+    }
+
+    // The body plus the trapezoid from the trigger's span at the screen edge to the body's bar-facing edge.
+    function hoverSafeContains(gx, gy) {
+        if (!screen || !(shouldBeVisible || (impl.item?.isClosing ?? false)))
+            return false;
+        const tolerance = 2;
+        const x = renderedAlignedX, y = renderedAlignedY, w = renderedAlignedWidth, h = renderedAlignedHeight;
+        if (gx >= x - tolerance && gx <= x + w + tolerance && gy >= y - tolerance && gy <= y + h + tolerance)
+            return true;
+        if (!triggerKnown)
+            return false;
+        const vertical = effectiveBarPosition === SettingsData.Position.Left || effectiveBarPosition === SettingsData.Position.Right;
+        let depth, bodyDepth;
+        switch (effectiveBarPosition) {
+        case SettingsData.Position.Top:
+            depth = gy;
+            bodyDepth = y;
+            break;
+        case SettingsData.Position.Bottom:
+            depth = screenHeight - gy;
+            bodyDepth = screenHeight - (y + h);
+            break;
+        case SettingsData.Position.Left:
+            depth = gx;
+            bodyDepth = x;
+            break;
+        default:
+            depth = screenWidth - gx;
+            bodyDepth = screenWidth - (x + w);
+        }
+        if (depth < 0 || depth > bodyDepth)
+            return false;
+        const along = vertical ? gy : gx;
+        const bodyStart = vertical ? y : x;
+        const bodyEnd = bodyStart + (vertical ? h : w);
+        const start = vertical ? triggerY - triggerWidth / 2 : triggerX;
+        const end = start + triggerWidth;
+        const t = bodyDepth > 0 ? depth / bodyDepth : 1;
+        return along >= start + (bodyStart - start) * t && along <= end + (bodyEnd - end) * t;
     }
 
     Loader {

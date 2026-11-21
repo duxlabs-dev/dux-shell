@@ -1346,6 +1346,7 @@ Item {
             dismissEnabled: root.hoverDismissEnabled
             dismissSuspended: root.hoverDismissSuspended || root.dragPassthrough
             surfaceVisible: root.shouldBeVisible
+            hoverSafeContains: root.popoutHandle.hoverSafeContains
             onDismissRequested: root.closeFromHoverDismiss()
         }
 

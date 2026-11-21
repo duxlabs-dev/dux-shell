@@ -391,9 +391,11 @@ Item {
 
         onKeyboardDismissRequestedChanged: root.requestKeyboardFocus()
         onPointerInsideChanged: {
-            if (pointerInside)
+            if (pointerInside && !safeZoneHeld)
                 root.barBody?.pointerMovedToIsland();
         }
+        onSafeZoneLeft: root.barBody?.pointerMovedToIsland()
+        inHoverSafeZone: (gx, gy) => root.barBody?.pointInActiveHoverSafeZone(gx, gy) === true
         onKeyboardYieldedChanged: {
             if (keyboardYielded || !keyboardDismissRequested)
                 return;
