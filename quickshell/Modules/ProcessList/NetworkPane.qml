@@ -23,28 +23,25 @@ DevicePane {
     readonly property var ipv4: rates?.ipv4 ?? []
     readonly property var ipv6: rates?.ipv6 ?? []
     readonly property string ipv6Main: SysmonDevices.stripPrefixLength(ipv6.find(a => !a.toLowerCase().startsWith("fe80")) ?? ipv6[0] ?? "")
+    readonly property string ip: netDevice?.ip || SysmonDevices.stripPrefixLength(ipv4[0] ?? "")
     readonly property string linkSpeed: SysmonDevices.formatLinkSpeed(ethernet?.speed || rates?.speed || wifiNetwork?.rate || 0)
-
-    function rate(v) {
-        return v === null || v === undefined ? "—" : Format.formatRate(v, 1);
-    }
-
-    function total(v) {
-        return v === null || v === undefined ? null : Format.formatBytes(v, true);
-    }
 
     loaded: historyA.length > 0
     title: deviceName
     subtitle: title !== deviceName ? deviceName : ""
     subtitle2: linkSpeed
     chartLabel: I18n.tr("Down", "network direction")
-    chartValue: rate(rates?.rxRate)
+    chartValue: Format.formatRateOr(rates?.rxRate, "—")
     chartSecondaryLabel: I18n.tr("Up", "network direction")
-    chartSecondaryValue: rate(rates?.txRate)
+    chartSecondaryValue: Format.formatRateOr(rates?.txRate, "—")
     values: historyA
     secondaryValues: historyB
     maximum: axisMax
     maximumText: Format.formatRate(axisMax, 1)
+
+    typeKey: "net"
+    shortSubtitle: [subtitle, ip].filter(s => s).join(" · ")
+    briefSubtitle: [subtitle, linkSpeed].filter(s => s).join(" · ")
 
     leftStats: [
         {
@@ -52,6 +49,7 @@ DevicePane {
             value: root.wifi?.ssid || null
         },
         {
+            tile: true,
             label: I18n.tr("Signal"),
             value: root.wifi?.signal > 0 ? root.wifi.signal + "%" : null
         },
@@ -62,7 +60,7 @@ DevicePane {
         },
         {
             label: I18n.tr("IP address"),
-            value: root.netDevice?.ip || SysmonDevices.stripPrefixLength(root.ipv4[0] ?? "") || null,
+            value: root.ip || null,
             tooltip: root.ipv4.join("\n")
         },
         {
@@ -80,26 +78,29 @@ DevicePane {
 
     rightStats: [
         {
+            tile: true,
             label: I18n.tr("Speed"),
             value: root.linkSpeed || null
         },
         {
             advanced: true,
+            tile: true,
             label: I18n.tr("Driver"),
             value: root.ethernet?.driver || root.rates?.driver || null
         },
         {
             advanced: true,
+            tile: true,
             label: "MTU",
             value: root.rates?.mtu > 0 ? String(root.rates.mtu) : null
         },
         {
             label: I18n.tr("Received since boot", "network data received since the system started"),
-            value: root.total(root.rates?.rxTotal)
+            value: Format.formatBytesOr(root.rates?.rxTotal, null)
         },
         {
             label: I18n.tr("Sent since boot", "network data sent since the system started"),
-            value: root.total(root.rates?.txTotal)
+            value: Format.formatBytesOr(root.rates?.txTotal, null)
         }
     ]
 }

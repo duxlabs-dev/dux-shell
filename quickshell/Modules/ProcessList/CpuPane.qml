@@ -42,8 +42,18 @@ DevicePane {
     showChart: !perThread
     chartLabel: I18n.tr("Usage", "chart legend: CPU or GPU utilization")
     chartValue: DgopService.cpuSampleCount === 0 ? "—" : DgopService.cpuUsage.toFixed(0) + "%"
+    values: DgopService.history("cpu", "usage")
     maximum: 100
     maximumText: "100%"
+
+    typeKey: "cpu"
+    mainFraction: DgopService.cpuSampleCount === 0 ? -1 : DgopService.cpuUsage / 100
+    briefSubtitle: [subtitle, subtitle2].filter(s => s).join(" · ")
+    extraLabel: I18n.tr("Temperature", "CPU temperature")
+    extraValue: DgopService.cpuTemperature > 0 ? Devices.formatTemp(DgopService.cpuTemperature) : ""
+    compactSecondaryLabel: extraLabel
+    compactSecondaryValue: extraValue
+    compactSecondaryValues: DgopService.history("cpu", "temp")
 
     headerActions: DButtonGroup {
         visible: DgopService.perCoreCpuUsage.length > 0
@@ -59,6 +69,7 @@ DevicePane {
 
     leftStats: [
         {
+            tile: true,
             label: I18n.tr("Clock"),
             value: root.ghz(root.clockMHz),
             tooltip: info?.governor ? I18n.tr("Governor", "CPU frequency scaling governor") + ": " + info.governor : ""
@@ -91,6 +102,7 @@ DevicePane {
 
     rightStats: [
         {
+            tile: true,
             label: I18n.tr("Processes"),
             value: root.count(DgopService.processCount)
         },
@@ -122,9 +134,9 @@ DevicePane {
     Rectangle {
         visible: root.perThread
         width: parent.width
-        height: Math.max(root.chartCardHeight, threadGrid.implicitHeight + Theme.spacingL * 2)
+        height: root.compactGrid ? root.chartCardHeight : Math.max(root.chartCardHeight, threadGrid.implicitHeight + Theme.spacingL * 2)
         radius: Theme.cornerRadiusL
-        color: ProcessListMetrics.cardColor
+        color: root.compactGrid ? "transparent" : ProcessListMetrics.cardColor
 
         Grid {
             id: threadGrid
@@ -132,11 +144,12 @@ DevicePane {
             readonly property int rows: Math.max(1, Math.ceil(DgopService.perCoreCpuUsage.length / columns))
             readonly property real cellWidth: (width - spacing * (columns - 1)) / columns
             // Fills the overall chart's height so the stats below stay put; many rows get a floor instead.
-            readonly property real cellHeight: Math.max(Theme.listItemHeight, (root.chartCardHeight - Theme.spacingL * 2 - spacing * (rows - 1)) / rows)
+            readonly property real inset: root.compactGrid ? 0 : Theme.spacingL
+            readonly property real cellHeight: Math.max(root.compactGrid ? 0 : Theme.listItemHeight, (root.chartCardHeight - inset * 2 - spacing * (rows - 1)) / rows)
 
-            x: Theme.spacingL
-            y: Theme.spacingL
-            width: parent.width - Theme.spacingL * 2
+            x: inset
+            y: inset
+            width: parent.width - inset * 2
             columns: Math.max(1, Math.min(8, DgopService.perCoreCpuUsage.length))
             spacing: Theme.spacingS
 
@@ -167,6 +180,7 @@ DevicePane {
 
                     StyledText {
                         id: threadLabel
+                        visible: !root.compactGrid
                         x: Theme.spacingS
                         topPadding: Theme.spacingXS
                         text: String(thread.index)
@@ -191,7 +205,7 @@ DevicePane {
                     }
 
                     DTooltipHost {
-                        text: thread.mhz > 0 ? root.ghz(thread.mhz) : ""
+                        text: [root.compactGrid ? String(thread.index) : "", thread.mhz > 0 ? root.ghz(thread.mhz) : ""].filter(s => s).join(" · ")
                         target: thread
                         hoverArea: threadHover
                     }

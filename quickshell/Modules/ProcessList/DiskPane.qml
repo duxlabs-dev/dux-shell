@@ -16,18 +16,11 @@ DevicePane {
     readonly property real axisMax: SysmonDevices.rateAxisMax(historyA, historyB, 1048576)
 
     readonly property var drive: Drives.driveFor(deviceName, DriveService.drives)
+    readonly property var space: Drives.usedSpace(DriveService.drives, DgopService.diskMounts, deviceName, "")
 
     DriveHealth {
         id: health
         level: Drives.healthLevel(root.drive)
-    }
-
-    function rate(v) {
-        return v === null || v === undefined ? "—" : Format.formatRate(v, 1);
-    }
-
-    function total(v) {
-        return v === null || v === undefined ? null : Format.formatBytes(v, true);
     }
 
     loaded: historyA.length > 0
@@ -36,13 +29,20 @@ DevicePane {
     subtitle: Drives.driveSubtitle(drive)
     subtitle2: Drives.rootMostMount(drive)
     chartLabel: I18n.tr("Disk read", "disk read rate")
-    chartValue: rate(rates?.readRate)
+    chartValue: Format.formatRateOr(rates?.readRate, "—")
     chartSecondaryLabel: I18n.tr("Disk write", "disk write rate")
-    chartSecondaryValue: rate(rates?.writeRate)
+    chartSecondaryValue: Format.formatRateOr(rates?.writeRate, "—")
     values: historyA
     secondaryValues: historyB
     maximum: axisMax
     maximumText: Format.formatRate(axisMax, 1)
+
+    typeKey: "disk"
+    mainValue: space ? Math.round(space.percent) + "%" : "—"
+    mainLabel: I18n.tr("Used", "disk space in use")
+    mainFraction: space ? space.percent / 100 : -1
+    mainDetail: space ? Format.formatBytes(space.used, true) + " / " + Format.formatBytes(space.total, true) : ""
+    extraLabel: ""
 
     leftStats: [
         {
@@ -55,6 +55,7 @@ DevicePane {
             value: root.rates?.responseTime != null ? root.rates.responseTime.toFixed(2) + " ms" : root.rates ? "—" : null
         },
         {
+            tile: true,
             label: I18n.tr("Capacity"),
             value: root.drive?.size > 0 ? Format.formatBytes(root.drive.size, true) : null
         }
@@ -62,22 +63,24 @@ DevicePane {
 
     rightStats: [
         {
+            tile: true,
             label: I18n.tr("Temperature"),
             value: root.drive?.temperature != null ? SysmonDevices.formatTemp(root.drive.temperature) : null
         },
         {
+            tile: true,
             label: I18n.tr("Health"),
             value: health.text || null
         },
         {
             advanced: true,
             label: I18n.tr("Read total", "total data read"),
-            value: root.total(root.rates?.readTotal)
+            value: Format.formatBytesOr(root.rates?.readTotal, null)
         },
         {
             advanced: true,
             label: I18n.tr("Written total", "total data written"),
-            value: root.total(root.rates?.writeTotal)
+            value: Format.formatBytesOr(root.rates?.writeTotal, null)
         }
     ]
 

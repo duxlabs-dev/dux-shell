@@ -351,21 +351,8 @@ Item {
                 loader: "dankDashPopoutLoader",
                 dashTab: "weather"
             },
-            cpuUsage: {
-                loader: "processListPopoutLoader",
-                triggerSource: "cpu"
-            },
-            memUsage: {
-                loader: "processListPopoutLoader",
-                triggerSource: "memory"
-            },
-            cpuTemp: {
-                loader: "processListPopoutLoader",
-                triggerSource: "cpu_temp"
-            },
-            gpuTemp: {
-                loader: "processListPopoutLoader",
-                triggerSource: "gpu_temp"
+            sysmon: {
+                loader: "processListPopoutLoader"
             },
             notificationButton: {
                 loader: "notificationCenterLoader",
@@ -808,7 +795,7 @@ Item {
             return !!widgetItem.openHoverAtGlobalPoint(hit.globalX, hit.globalY);
         }
         if (typeof widgetItem.triggerHoverPopout === "function") {
-            widgetItem.triggerHoverPopout(hit.widgetId);
+            widgetItem.triggerHoverPopout(hit.widgetId, _rowAtGlobalPoint(widgetItem, hit.globalX, hit.globalY));
             return true;
         }
         if (hit.widgetId === "notepadButton")
@@ -1003,9 +990,20 @@ Item {
         _hoverCloseTimer.restart();
     }
 
+    function _rowAtGlobalPoint(widgetItem, gx, gy) {
+        if (typeof widgetItem.entryAt !== "function")
+            return 0;
+        // gx, gy are screen coordinates, not scene ones.
+        const origin = barContent.surfaceContext.screenPoint(widgetItem, 0, 0);
+        return origin ? widgetItem.entryAt(gx - origin.x, gy - origin.y) : 0;
+    }
+
     function _triggerKeyForHit(hit, gx, gy) {
         if (hit.widgetId === "systemTray")
             return hit.widgetItem.hoverTriggerAtGlobalPoint?.(gx, gy) || "";
+        // Each pill and row is its own trigger.
+        if (hit.widgetId === "sysmon")
+            return hit.widgetItem.triggerKey(_rowAtGlobalPoint(hit.widgetItem, gx, gy));
         const dashTab = _hoverSpecs[hit.widgetId]?.dashTab;
         return dashTab ? dashTriggerSource(hit.section, dashTab) : hit.widgetId;
     }

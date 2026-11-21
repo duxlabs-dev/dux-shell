@@ -84,7 +84,7 @@ test("toggleReveal only works on auto hide bars and unhides first", () => {
 
 const ipcBarBody = source.slice(source.indexOf("    function getPreferredBar("), source.indexOf("    readonly property var defaultAppMimeTypes"));
 const serviceSource = readFileSync(new URL("../Services/BarWidgetService.qml", import.meta.url), "utf8");
-const serviceFunctions = ["registrationActive", "registrationShown", "registrationLive", "resolveWidget", "resolveIpcWidget"].map(name => serviceSource.match(new RegExp(`^ {4}function ${name}\\([\\s\\S]*?^ {4}\\}$`, "m"))[0]);
+const serviceFunctions = ["registrationActive", "registrationShown", "registrationLive", "resolveWidget", "resolveIpcWidget", "currentWidgetId"].map(name => serviceSource.match(new RegExp(`^ {4}function ${name}\\([\\s\\S]*?^ {4}\\}$`, "m"))[0]);
 const registrySource = readFileSync(new URL("../Common/InstanceRegistry.js", import.meta.url), "utf8").replace(/^\.pragma.*$/m, "");
 
 // Both IPC paths, getPreferredBar for control center and updates, resolveIpcWidget for `widget`, over one registry.
@@ -108,6 +108,7 @@ function ipcBarChoice(bars, { focused = "", lastUsed = {}, screens = ["A", "B"] 
     });
     const context = vm.createContext({
         Registry: registry,
+        WidgetDefaults: { SYSMON_LEGACY_IDS: [] },
         widgetRegistry,
         Quickshell: { screens: screens.map(name => ({ name })) },
         SettingsData: { barConfigs: windows.map(bar => bar.barConfig), dockConfigs: [], lastUsedBarByScreen: lastUsed, Position: { Top: 0, Bottom: 1, Left: 2, Right: 3 } },

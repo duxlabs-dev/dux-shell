@@ -25,7 +25,7 @@ Singleton {
     id: root
     readonly property var log: Log.scoped("SettingsData")
 
-    readonly property int settingsConfigVersion: 47
+    readonly property int settingsConfigVersion: 48
 
     enum Position {
         Top,
@@ -2910,13 +2910,6 @@ Singleton {
         switch (widgetId) {
         case "spacer":
             entry.size = 20;
-            break;
-        case "gpuTemp":
-            entry.selectedGpuIndex = 0;
-            entry.pciId = "";
-            break;
-        case "diskUsage":
-            entry.mountPath = "/";
             break;
         }
         const listKey = sectionId + "Widgets";

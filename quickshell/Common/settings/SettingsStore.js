@@ -6,6 +6,7 @@
 .import "./DockConfig.js" as DockConfig
 .import "./DensityPresets.js" as DensityPresets
 .import "../GridLayout.js" as GridLayout
+.import "../../Services/SysmonCatalog.js" as SysmonCatalog
 
 var PIN_KEYS = ["brightnessDevicePins", "wifiNetworkPins", "bluetoothDevicePins", "audioInputDevicePins", "audioOutputDevicePins"];
 
@@ -809,7 +810,78 @@ function migrateToVersion(obj, targetVersion) {
         settings.configVersion = 47;
     }
 
+    if (currentVersion < 48 && targetVersion >= 48) {
+        migrateBarSystemMonitors(settings);
+        settings.configVersion = 48;
+    }
+
     return settings;
+}
+
+// Migration: can be removed after a few releases. v48: the CPU, memory, disk, temperature and network bar widgets become sysmon widgets.
+function migrateBarSystemMonitors(settings) {
+    const OLD_IDS = WidgetDefaults.SYSMON_LEGACY_IDS;
+    const DROPPED = ["minimumWidth", "showSwap", "mountPath", "showMountPath", "pciId", "device", "vals", "mount", "metrics", "showInGb", "diskUsageMode", "compactMode", "hideWhenIdle"];
+    const isObject = value => !!value && typeof value === "object" && !Array.isArray(value);
+    const convert = (raw, idKey) => {
+        const id = typeof raw === "string" ? raw : isObject(raw) ? (typeof raw[idKey] === "string" ? raw[idKey] : raw.id) : "";
+        if (OLD_IDS.indexOf(id) === -1)
+            return raw;
+        const old = typeof raw === "string" ? { enabled: true } : raw;
+        const entry = Object.assign({}, old);
+        entry[typeof raw === "string" || typeof old[idKey] === "string" ? idKey : "id"] = "sysmon";
+        for (const key of DROPPED)
+            delete entry[key];
+        entry.popout = "processes";
+        const one = (device, vals, extra) => [Object.assign({ device: device, vals: vals }, extra)];
+        switch (id) {
+        case "cpuUsage":
+            entry.metrics = one("cpu", ["usage"]);
+            break;
+        case "memUsage":
+            entry.metrics = one("memory", old.showSwap === true ? ["used", "swap"] : ["used"], old.showInGb === true ? { percent: false } : {});
+            break;
+        case "diskUsage":
+            entry.metrics = one("disk", ["space"], Object.assign({ mount: typeof old.mountPath === "string" && old.mountPath[0] === "/" && !/[\u0000-\u001f\u007f]/.test(old.mountPath) ? old.mountPath : "/" }, Number.isInteger(old.diskUsageMode) && old.diskUsageMode > 0 ? { diskMode: old.diskUsageMode } : {}));
+            entry.label = old.showMountPath !== false ? "both" : "icon";
+            break;
+        case "cpuTemp":
+            entry.metrics = one("cpu", ["temp"]);
+            break;
+        case "gpuTemp":
+            if (typeof old.pciId === "string" && old.pciId && SysmonCatalog.typeOf("gpu:" + old.pciId) === "gpu") {
+                entry.metrics = one("gpu:" + old.pciId, ["temp"]);
+                delete entry.selectedGpuIndex;
+            } else {
+                entry.selectedGpuIndex = Number.isInteger(old.selectedGpuIndex) && old.selectedGpuIndex >= 0 ? old.selectedGpuIndex : 0;
+            }
+            break;
+        case "network_speed_monitor":
+            entry.metrics = one("net", ["down", "up"], Object.assign(old.compactMode === true ? { compact: true } : {}, old.hideWhenIdle === true ? { hideIdle: true } : {}));
+            break;
+        }
+        return entry;
+    };
+    const convertList = (list, idKey) => {
+        if (!Array.isArray(list))
+            return;
+        for (let i = 0; i < list.length; i++)
+            list[i] = convert(list[i], idKey || "id");
+    };
+    for (const bar of Array.isArray(settings.barConfigs) ? settings.barConfigs : []) {
+        if (!isObject(bar))
+            continue;
+        convertList(bar.islandHomeLayout);
+        for (const listKey of BAR_WIDGET_LIST_KEYS) {
+            convertList(bar[listKey]);
+            for (const widget of Array.isArray(bar[listKey]) ? bar[listKey] : []) {
+                if (isObject(widget) && widget.id === "island")
+                    convertList(widget.islandHomeLayout);
+            }
+        }
+    }
+    for (const dock of Array.isArray(settings.dockConfigs) ? settings.dockConfigs : [])
+        convertList(isObject(dock) ? dock.widgets : null, "widgetId");
 }
 
 // Migration: can be removed after a few releases. v47: the CPU, Memory, Disk, Network and System Monitor dash cards become System monitor cards.

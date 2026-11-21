@@ -1,5 +1,8 @@
 .pragma library
 
+// Bar widget ids that settings v48 merged into one sysmon widget.
+var SYSMON_LEGACY_IDS = ["cpuUsage", "memUsage", "diskUsage", "cpuTemp", "gpuTemp", "network_speed_monitor"];
+
 var CONTROL_CENTER_GROUP_ORDER = ["network", "vpn", "bluetooth", "audio", "microphone", "brightness", "battery", "printer", "screenSharing", "idleInhibitor", "doNotDisturb"];
 
 // Island-layout bars and dots keep these keys on the bar config; the island widget carries them on its entry.
@@ -245,31 +248,14 @@ var DEFAULTS = {
         keyboardLayoutNameShowIcon: false,
         keyboardLayoutNameLabelOverrides: {}
     },
-    cpuUsage: {
-        minimumWidth: true
-    },
-    cpuTemp: {
-        minimumWidth: true
-    },
-    memUsage: {
-        minimumWidth: true,
-        showSwap: false,
-        showInGb: false
-    },
-    gpuTemp: {
-        minimumWidth: true,
-        selectedGpuIndex: 0,
-        pciId: ""
-    },
-    diskUsage: {
-        minimumWidth: true,
-        mountPath: "/",
-        diskUsageMode: 0,
-        showMountPath: true
-    },
-    network_speed_monitor: {
-        hideWhenIdle: false,
-        compactMode: false
+    sysmon: {
+        metrics: [{ device: "cpu", vals: ["usage"], graph: false, on: true }],
+        separator: "gap",
+        popout: "compact",
+        style: "icon",
+        label: "icon",
+        colorMode: "default",
+        customColor: "#ffffff"
     },
     systemUpdate: {
         hideWhenIdle: false

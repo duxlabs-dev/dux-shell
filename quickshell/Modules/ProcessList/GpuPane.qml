@@ -37,7 +37,7 @@ DevicePane {
     Ref {
         service: DgopService
         modules: ["processes", "process-gpu"]
-        active: root.visible && root.live && root.singleGpu
+        active: root.visible && root.live && root.singleGpu && (root.variant === "window" || root.variant === "device")
     }
 
     function num(v, unit) {
@@ -74,12 +74,24 @@ DevicePane {
     maximum: 100
     maximumText: "100%"
 
+    typeKey: "gpu"
+    mainValue: live ? chartValue : "—"
+    mainFraction: live && stat.usage != null ? stat.usage / 100 : -1
+    shortSubtitle: stat?.driver ?? ""
+    idleText: off ? I18n.tr("Monitoring off", "GPU monitoring is turned off in settings") : suspended ? I18n.tr("Idle", "device state") : ""
+    idleIcon: off ? "visibility_off" : "bedtime"
+    compactSecondaryLabel: I18n.tr("Temperature", "GPU temperature")
+    compactSecondaryValue: live ? (temp(stat.temperature || null) ?? "") : ""
+    compactSecondaryValues: live ? DgopService.history(Devices.deviceKey("gpu", slot), "temp") : []
+
     leftStats: live ? [
         {
+            tile: true,
             label: I18n.tr("VRAM", "GPU video memory"),
             value: root.usedOf(stat.memoryUsed, stat.memoryTotal)
         },
         {
+            tile: true,
             label: I18n.tr("Core clock", "GPU core clock speed"),
             value: root.num(stat.coreClock, "MHz"),
             tooltip: root.withMax(stat.coreClockMax, "MHz")
@@ -108,6 +120,7 @@ DevicePane {
 
     rightStats: live ? [
         {
+            tile: true,
             label: I18n.tr("Power", "battery stat label, charge or discharge rate in watts", true),
             value: root.num(stat.power, "W"),
             tooltip: stat.powerLimit != null ? I18n.tr("Power limit", "GPU power limit in watts") + ": " + root.num(stat.powerLimit, "W") : ""
@@ -141,7 +154,7 @@ DevicePane {
     StyledText {
         visible: root.off || root.suspended
         width: parent.width
-        text: root.off ? I18n.tr("Monitoring off", "GPU monitoring is turned off in settings") : I18n.tr("Idle", "adjective, printer state", true)
+        text: root.off ? I18n.tr("Monitoring off", "GPU monitoring is turned off in settings") : I18n.tr("Idle", "device state")
         font.pixelSize: Theme.fontSizeLarge
         color: Theme.surfaceVariantText
     }

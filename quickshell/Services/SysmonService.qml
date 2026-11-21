@@ -7,6 +7,8 @@ import qs.Common
 import qs.Services
 import "SysmonDevices.js" as Devices
 import "Drives.js" as Drives
+import "SysmonCatalog.js" as SysmonCatalog
+import "../Common/Format.js" as Format
 
 // Device identity and current values for the system monitor and its widgets. Functions only, so nothing here
 // is evaluated unless a visible consumer calls it from a binding.
@@ -176,6 +178,39 @@ Singleton {
         for (const n of shown)
             items.push(netEntry(n.net, n.kind, shown.filter(s => s.kind === n.kind).length));
         return items;
+    }
+
+    // A popout's device list: CPU, memory, every GPU, the entry's drive or Disks, and the entry's interfaces or Network.
+    // A drive or interface that isn't listed keeps its row under its own name.
+    function popoutDevices(deviceKey, entryType) {
+        const own = parseKey(deviceKey);
+        const ownEntry = own.id && (own.type === "disk" || own.type === "net") ? device(deviceKey) ?? {
+            key: Devices.deviceKey(own.type, own.id),
+            type: own.type,
+            icon: own.type === "net" ? "lan" : "hard_drive",
+            name: own.id
+        } : null;
+        const all = devices({
+            aggregates: true
+        });
+        const list = all.filter(e => e.type === "cpu" || e.type === "memory" || e.type === "gpu");
+        list.push(ownEntry?.type === "disk" ? ownEntry : aggregateEntry("disk"));
+        if (entryType !== "net")
+            return list.concat(aggregateEntry("net"));
+        if (deviceKey === "net")
+            list.push(aggregateEntry("net"));
+        const nets = all.filter(e => e.type === "net" && e.key !== "net");
+        if (ownEntry?.type === "net" && !nets.some(e => e.key === ownEntry.key))
+            list.push(ownEntry);
+        return list.concat(nets);
+    }
+
+    // The key when it is listed, else the first device of its type.
+    function popoutSelection(list, key, entryType) {
+        if (list.some(e => e.key === key))
+            return key;
+        const type = parseKey(key).type || entryType;
+        return (list.find(e => e.type === type) ?? list[0])?.key ?? "";
     }
 
     function device(key) {
@@ -429,5 +464,79 @@ Singleton {
     function asleep(key) {
         const p = parseKey(key);
         return p.type === "gpu" && gpuFor(p.id)?.state === "suspended";
+    }
+
+    // The entries a bar widget shows. GPU entries saved without a device id resolve through their list index
+    // (a migration fallback that can go after a few releases) and give no entries until dgop lists the GPU.
+    function widgetMetrics(entry) {
+        if (SysmonCatalog.listOf(entry?.metrics))
+            return SysmonCatalog.normalizeMetrics(entry.metrics);
+        const index = entry?.selectedGpuIndex;
+        if (Number.isInteger(index) && index >= 0) {
+            const g = (DgopService.availableGpus ?? [])[index];
+            return g ? SysmonCatalog.normalizeMetrics([
+                {
+                    device: gpuEntry(g).key,
+                    vals: ["temp"]
+                }
+            ]) : [];
+        }
+        return SysmonCatalog.normalizeMetrics([
+            {
+                device: "cpu",
+                vals: ["usage"]
+            }
+        ]);
+    }
+
+    // Rail text and history for a devices() entry; the rates of the aggregates are the sums DgopService keeps.
+    function summary(e) {
+        switch (e.type) {
+        case "cpu":
+            return {
+                value: DgopService.cpuSampleCount === 0 ? "—" : DgopService.cpuUsage.toFixed(0) + "%",
+                values: DgopService.history("cpu", "usage"),
+                maximum: 100
+            };
+        case "memory":
+            return {
+                value: DgopService.memoryInfo === null ? "—" : Format.formatBytes(DgopService.usedMemoryKB * 1024, true) + " / " + Format.formatBytes(DgopService.totalMemoryKB * 1024, true),
+                values: DgopService.history("memory", "used"),
+                maximum: 100
+            };
+        case "gpu":
+            {
+                const g = e.gpu;
+                const suspended = g.state === "suspended";
+                const off = !Devices.gpuMonitored(DgopService.gpuPciIds, g.pciId, g.busId);
+                return {
+                    value: off ? I18n.tr("Monitoring off", "GPU monitoring is turned off in settings") : suspended ? I18n.tr("Idle", "device state") : (g.usage != null ? Math.round(g.usage) + "%" : "—"),
+                    values: suspended || off ? [] : DgopService.history(e.key, "usage"),
+                    maximum: 100
+                };
+            }
+        case "disk":
+            {
+                const r = e.key === "disk" ? DgopService.diskReadRate : e.disk?.readRate;
+                const w = e.key === "disk" ? DgopService.diskWriteRate : e.disk?.writeRate;
+                return {
+                    value: Format.formatRateSumOr(r, w, "—"),
+                    valueTooltip: valueLabel("disk", "read") + ": " + Format.formatRateOr(r, "—") + "\n" + valueLabel("disk", "write") + ": " + Format.formatRateOr(w, "—"),
+                    values: DgopService.history(e.key, "read"),
+                    secondaryValues: DgopService.history(e.key, "write")
+                };
+            }
+        default:
+            {
+                const rx = e.key === "net" ? DgopService.networkRxRate : e.net?.rxRate;
+                const tx = e.key === "net" ? DgopService.networkTxRate : e.net?.txRate;
+                return {
+                    value: Format.formatRateSumOr(rx, tx, "—"),
+                    valueTooltip: valueLabel("net", "down") + ": " + Format.formatRateOr(rx, "—") + "\n" + valueLabel("net", "up") + ": " + Format.formatRateOr(tx, "—"),
+                    values: DgopService.history(e.key, "down"),
+                    secondaryValues: DgopService.history(e.key, "up")
+                };
+            }
+        }
     }
 }

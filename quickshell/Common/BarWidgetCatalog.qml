@@ -4,6 +4,7 @@ import QtQuick
 import Quickshell
 import qs.Common
 import qs.Services
+import "../Services/SysmonCatalog.js" as SysmonCatalog
 
 Singleton {
     id: root
@@ -89,38 +90,10 @@ Singleton {
             "section": "right"
         },
         {
-            "id": "cpuUsage",
-            "text": I18n.tr("CPU usage"),
-            "description": I18n.tr("CPU usage indicator"),
-            "icon": "memory",
-            "section": "right"
-        },
-        {
-            "id": "memUsage",
-            "text": I18n.tr("Memory usage"),
-            "description": I18n.tr("Memory usage indicator"),
-            "icon": "developer_board",
-            "section": "right"
-        },
-        {
-            "id": "diskUsage",
-            "text": I18n.tr("Disk usage"),
-            "description": I18n.tr("Percentage"),
-            "icon": "storage",
-            "section": "right"
-        },
-        {
-            "id": "cpuTemp",
-            "text": I18n.tr("CPU temperature"),
-            "description": I18n.tr("CPU temperature display"),
-            "icon": "device_thermostat",
-            "section": "right"
-        },
-        {
-            "id": "gpuTemp",
-            "text": I18n.tr("GPU temperature"),
-            "description": I18n.tr("GPU temperature display"),
-            "icon": "auto_awesome_mosaic",
+            "id": "sysmon",
+            "text": I18n.tr("System Monitor"),
+            "description": I18n.tr("CPU, memory, network, and disk monitoring"),
+            "icon": "monitoring",
             "section": "right"
         },
         {
@@ -194,13 +167,6 @@ Singleton {
             "section": "right"
         },
         {
-            "id": "network_speed_monitor",
-            "text": I18n.tr("Network speed monitor"),
-            "description": I18n.tr("Network download and upload speed display"),
-            "icon": "network_check",
-            "section": "right"
-        },
-        {
             "id": "keyboard_layout_name",
             "text": I18n.tr("Keyboard layout"),
             "description": I18n.tr("Displays the active keyboard layout and allows switching"),
@@ -250,12 +216,7 @@ Singleton {
             "controlCenterButton": "ControlCenterOptions.qml",
             "privacyIndicator": "PrivacyOptions.qml",
             "keyboard_layout_name": "KeyboardLayoutOptions.qml",
-            "cpuUsage": "SystemMonitorOptions.qml",
-            "cpuTemp": "SystemMonitorOptions.qml",
-            "memUsage": "SystemMonitorOptions.qml",
-            "gpuTemp": "SystemMonitorOptions.qml",
-            "diskUsage": "SystemMonitorOptions.qml",
-            "network_speed_monitor": "NetworkMonitorOptions.qml",
+            "sysmon": "SystemMonitorOptions.qml",
             "systemUpdate": "SystemUpdateOptions.qml",
             "island": "IslandOptions.qml"
         })
@@ -266,6 +227,33 @@ Singleton {
 
     function optionsFile(id) {
         return optionFiles[id] ?? "";
+    }
+
+    // Title and subtitle that tell two system monitor widgets apart; null for every other widget.
+    function entryInfo(entry) {
+        if (entry?.id !== "sysmon" && entry?.widgetId !== "sysmon")
+            return null;
+        const shown = SysmonService.widgetMetrics(entry).filter(m => m.on);
+        if (shown.length === 0)
+            return null;
+        if (shown.length === 1) {
+            const m = shown[0];
+            const type = SysmonCatalog.typeOf(m.device);
+            return {
+                "text": m.mount ?? SysmonService.displayName(m.device),
+                "description": m.vals.map(v => SysmonService.valueLabel(type, v)).join(", ")
+            };
+        }
+        const names = [];
+        for (const m of shown) {
+            const name = m.mount ?? SysmonService.displayName(m.device);
+            if (name && names.indexOf(name) < 0)
+                names.push(name);
+        }
+        return {
+            "text": names.join(", "),
+            "description": get("sysmon")?.description ?? ""
+        };
     }
 
     function hasOptions(id) {
@@ -282,15 +270,7 @@ Singleton {
                 "enabled": CompositorService.isMango && MangoService.available,
                 "warning": !CompositorService.isMango ? I18n.tr("Requires MangoWC compositor") : (!MangoService.available ? I18n.tr("Mango service not available") : undefined)
             },
-            "cpuUsage": dgop,
-            "memUsage": dgop,
-            "diskUsage": dgop,
-            "cpuTemp": dgop,
-            "gpuTemp": {
-                "enabled": dgop.enabled,
-                "warning": dgop.warning ?? I18n.tr("This widget prevents GPU power off states, which can significantly impact battery life on laptops. It is not recommended to use this on laptops with hybrid graphics.")
-            },
-            "network_speed_monitor": dgop,
+            "sysmon": dgop,
             "systemUpdate": {
                 "enabled": SystemUpdateService.sysupdateAvailable,
                 "warning": SystemUpdateService.sysupdateAvailable ? undefined : I18n.tr("Requires DMS server with sysupdate capability")

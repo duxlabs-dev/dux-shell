@@ -22,6 +22,22 @@ Singleton {
     readonly property real menuWidth: 240
     readonly property real dialogWidth: 360
     readonly property int refreshInterval: DgopService.updateInterval
+    readonly property real sparkWidth: Theme.iconButtonSize * 1.6
+    readonly property real sparkHeight: Theme.iconButtonSize * 0.7
+    // Popout layouts: device chart and stat rows, compact tiles, overview value pairs.
+    readonly property real deviceChartHeight: Theme.listItemHeight * 2.5
+    readonly property int deviceStatRows: 3
+    readonly property int tileLimit: 3
+    readonly property int pairLimit: 3
+    readonly property int pairMinimum: 2
+    // Material shape behind the icon of the device in focus, per device type.
+    readonly property var typeShapes: ({
+            "cpu": "cookie9",
+            "memory": "slanted",
+            "gpu": "clover4",
+            "disk": "arch",
+            "net": "softBurst"
+        })
 
     // Shared by the window and the bar popout, like the user/system filter; not persisted.
     property bool onlineOnly: false

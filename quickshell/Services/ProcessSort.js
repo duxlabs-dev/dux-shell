@@ -17,6 +17,10 @@ function rawValue(key, row) {
         const r = _num(row.diskRead), w = _num(row.diskWrite);
         return (r === null && w === null) ? null : (r ?? 0) + (w ?? 0);
     }
+    case "net": {
+        const rx = _num(row.netRx), tx = _num(row.netTx);
+        return (rx === null && tx === null) ? null : (rx ?? 0) + (tx ?? 0);
+    }
     case "gpuVideo": return _num(row.gpuVideo);
     case "connections": return _num(row.connections);
     case "netRx": return _num(row.netRx);

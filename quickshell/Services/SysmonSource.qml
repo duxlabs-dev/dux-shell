@@ -6,6 +6,7 @@ import qs.Services
 import "SysmonCatalog.js" as Catalog
 import "SysmonDevices.js" as Devices
 import "Drives.js" as Drives
+import "../Common/Format.js" as Format
 
 // Holds the dgop modules, drive data and GPU ids its metrics need while active, and turns the metrics into rows.
 QtObject {
@@ -126,7 +127,7 @@ QtObject {
         case "cpu":
             return Catalog.shortCpuName(DgopService.cpuModel);
         case "memory":
-            return DgopService.totalMemoryKB > 0 ? DgopService.formatSystemMemory(DgopService.usedMemoryKB) + " / " + DgopService.formatSystemMemory(DgopService.totalMemoryKB) : "";
+            return DgopService.totalMemoryKB > 0 ? Format.formatBytes(DgopService.usedMemoryKB * 1024, true) + " / " + Format.formatBytes(DgopService.totalMemoryKB * 1024, true) : "";
         case "gpu":
             return dev.gpu?.driver || "";
         case "disk":

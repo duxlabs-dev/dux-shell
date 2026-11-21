@@ -147,3 +147,10 @@ function memoryChannelCount(modules) {
     }
     return channels.size;
 }
+
+// Drops the vendor and brand words GPU names carry ("AMD Radeon RX 7900 XTX" -> "RX 7900 XTX") for tight captions.
+function shortGpuName(name) {
+    const full = String(name ?? "");
+    const short = full.replace(/[[\]]/g, "").replace(/\b(Advanced Micro Devices|AMD|ATI|NVIDIA|Intel|Corporation|Radeon|GeForce|Graphics)\b/gi, "").replace(/\s+/g, " ").trim();
+    return short || full;
+}

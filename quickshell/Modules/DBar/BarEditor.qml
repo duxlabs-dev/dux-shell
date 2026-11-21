@@ -207,9 +207,9 @@ Item {
 
     function widgetRows(entry, definitions) {
         const widgetId = entry.wrapper.itemData.widgetId;
-        const definition = definitions.find(widget => widget.id === widgetId) ?? {
+        const definition = Object.assign({}, definitions.find(widget => widget.id === widgetId) ?? {
             id: widgetId
-        };
+        }, BarWidgetCatalog.entryInfo(entry.wrapper.itemData));
         const section = entry.section;
         const index = entry.index;
         const rows = [];

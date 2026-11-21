@@ -11437,6 +11437,14 @@
     "optionFile": "IslandOptions.qml"
   },
   {
+    "section": "barWidgetOption:SystemMonitorOptions.qml:3",
+    "label": "Appearance",
+    "tabIndex": 22,
+    "keywords": [],
+    "runtimeType": "barWidgetOption",
+    "optionFile": "SystemMonitorOptions.qml"
+  },
+  {
     "section": "barWidgetOption:MusicOptions.qml:8",
     "label": "Artwork",
     "tabIndex": 22,
@@ -11666,14 +11674,6 @@
     "optionFile": "KeyboardLayoutOptions.qml"
   },
   {
-    "section": "barWidgetOption:NetworkMonitorOptions.qml:2",
-    "label": "Compact mode",
-    "tabIndex": 22,
-    "keywords": [],
-    "runtimeType": "barWidgetOption",
-    "optionFile": "NetworkMonitorOptions.qml"
-  },
-  {
     "section": "barWidgetOption:RunningAppsOptions.qml:1",
     "label": "Compact mode",
     "tabIndex": 22,
@@ -11794,14 +11794,6 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:SystemMonitorOptions.qml:7",
-    "label": "Disk usage format",
-    "tabIndex": 22,
-    "keywords": [],
-    "runtimeType": "barWidgetOption",
-    "optionFile": "SystemMonitorOptions.qml"
-  },
-  {
     "section": "barWidgetOption:WorkspaceSwitcherOptions.qml:17",
     "label": "Don't dim unfocused apps",
     "tabIndex": 22,
@@ -11824,6 +11816,14 @@
     "keywords": [],
     "runtimeType": "barWidgetOption",
     "optionFile": "MusicOptions.qml"
+  },
+  {
+    "section": "barWidgetOption:SystemMonitorOptions.qml:1",
+    "label": "Entries",
+    "tabIndex": 22,
+    "keywords": [],
+    "runtimeType": "barWidgetOption",
+    "optionFile": "SystemMonitorOptions.qml"
   },
   {
     "section": "barWidgetOption:IslandOptions.qml:53",
@@ -11864,22 +11864,6 @@
     "keywords": [],
     "runtimeType": "barWidgetOption",
     "optionFile": "WorkspaceSwitcherOptions.qml"
-  },
-  {
-    "section": "barWidgetOption:SystemMonitorOptions.qml:1",
-    "label": "Force padding",
-    "tabIndex": 22,
-    "keywords": [],
-    "runtimeType": "barWidgetOption",
-    "optionFile": "SystemMonitorOptions.qml"
-  },
-  {
-    "section": "barWidgetOption:SystemMonitorOptions.qml:4",
-    "label": "GPU",
-    "tabIndex": 22,
-    "keywords": [],
-    "runtimeType": "barWidgetOption",
-    "optionFile": "SystemMonitorOptions.qml"
   },
   {
     "section": "barWidgetOption:WorkspaceSwitcherOptions.qml:1",
@@ -11936,14 +11920,6 @@
     "keywords": [],
     "runtimeType": "barWidgetOption",
     "optionFile": "IslandOptions.qml"
-  },
-  {
-    "section": "barWidgetOption:NetworkMonitorOptions.qml:1",
-    "label": "Hide when idle",
-    "tabIndex": 22,
-    "keywords": [],
-    "runtimeType": "barWidgetOption",
-    "optionFile": "NetworkMonitorOptions.qml"
   },
   {
     "section": "barWidgetOption:SystemUpdateOptions.qml:1",
@@ -12099,6 +12075,14 @@
     "optionFile": "IslandOptions.qml"
   },
   {
+    "section": "barWidgetOption:SystemMonitorOptions.qml:5",
+    "label": "Label",
+    "tabIndex": 22,
+    "keywords": [],
+    "runtimeType": "barWidgetOption",
+    "optionFile": "SystemMonitorOptions.qml"
+  },
+  {
     "section": "barWidgetOption:KeyboardLayoutOptions.qml:3",
     "label": "Label overrides",
     "tabIndex": 22,
@@ -12233,14 +12217,6 @@
     "keywords": [],
     "runtimeType": "barWidgetOption",
     "optionFile": "IslandOptions.qml"
-  },
-  {
-    "section": "barWidgetOption:SystemMonitorOptions.qml:5",
-    "label": "Mount",
-    "tabIndex": 22,
-    "keywords": [],
-    "runtimeType": "barWidgetOption",
-    "optionFile": "SystemMonitorOptions.qml"
   },
   {
     "section": "barWidgetOption:WorkspaceSwitcherOptions.qml:19",
@@ -12379,6 +12355,14 @@
     "optionFile": "IslandOptions.qml"
   },
   {
+    "section": "barWidgetOption:SystemMonitorOptions.qml:6",
+    "label": "Popout",
+    "tabIndex": 22,
+    "keywords": [],
+    "runtimeType": "barWidgetOption",
+    "optionFile": "SystemMonitorOptions.qml"
+  },
+  {
     "section": "barWidgetOption:IslandOptions.qml:13",
     "label": "Power menu",
     "tabIndex": 22,
@@ -12441,6 +12425,14 @@
     "keywords": [],
     "runtimeType": "barWidgetOption",
     "optionFile": "AppsDockOptions.qml"
+  },
+  {
+    "section": "barWidgetOption:SystemMonitorOptions.qml:2",
+    "label": "Separator",
+    "tabIndex": 22,
+    "keywords": [],
+    "runtimeType": "barWidgetOption",
+    "optionFile": "SystemMonitorOptions.qml"
   },
   {
     "section": "barWidgetOption:AppsDockOptions.qml:11",
@@ -12515,22 +12507,6 @@
     "optionFile": "KeyboardLayoutOptions.qml"
   },
   {
-    "section": "barWidgetOption:SystemMonitorOptions.qml:3",
-    "label": "Show in GB",
-    "tabIndex": 22,
-    "keywords": [],
-    "runtimeType": "barWidgetOption",
-    "optionFile": "SystemMonitorOptions.qml"
-  },
-  {
-    "section": "barWidgetOption:SystemMonitorOptions.qml:6",
-    "label": "Show mount path",
-    "tabIndex": 22,
-    "keywords": [],
-    "runtimeType": "barWidgetOption",
-    "optionFile": "SystemMonitorOptions.qml"
-  },
-  {
     "section": "barWidgetOption:WorkspaceSwitcherOptions.qml:10",
     "label": "Show occupied only",
     "tabIndex": 22,
@@ -12569,14 +12545,6 @@
     "keywords": [],
     "runtimeType": "barWidgetOption",
     "optionFile": "WorkspaceSwitcherOptions.qml"
-  },
-  {
-    "section": "barWidgetOption:SystemMonitorOptions.qml:2",
-    "label": "Show swap",
-    "tabIndex": 22,
-    "keywords": [],
-    "runtimeType": "barWidgetOption",
-    "optionFile": "SystemMonitorOptions.qml"
   },
   {
     "section": "barWidgetOption:FocusedWindowOptions.qml:2",
@@ -12705,6 +12673,14 @@
     "keywords": [],
     "runtimeType": "barWidgetOption",
     "optionFile": "MusicOptions.qml"
+  },
+  {
+    "section": "barWidgetOption:SystemMonitorOptions.qml:4",
+    "label": "Style",
+    "tabIndex": 22,
+    "keywords": [],
+    "runtimeType": "barWidgetOption",
+    "optionFile": "SystemMonitorOptions.qml"
   },
   {
     "section": "barWidgetOption:WorkspaceSwitcherOptions.qml:2",

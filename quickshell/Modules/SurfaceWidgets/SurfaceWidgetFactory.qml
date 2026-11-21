@@ -7,6 +7,7 @@ import qs.Services
 import qs.Modules.DBar.Widgets
 import qs.Modules.DDash
 import "../DBar/WidgetModel.js" as WidgetModel
+import "../../Services/SysmonCatalog.js" as SysmonCatalog
 
 Item {
     id: root
@@ -113,7 +114,12 @@ Item {
         if (typeof popout.prepareForTrigger === "function")
             popout.prepareForTrigger(spec.triggerSource, mode);
 
-        if (spec.prepare)
+        // A click on the open popout's own trigger closes it, so it keeps its current contents while it animates away.
+        const screenName = popout.screen?.name;
+        const triggerId = spec.triggerSource !== undefined ? spec.triggerSource : spec.tabIndex;
+        const closing = mode !== "hover" && popout.shouldBeVisible && PopoutManager.currentPopoutsByScreen[screenName] === popout && (triggerId === undefined || PopoutManager.currentPopoutTriggers[screenName] === triggerId);
+
+        if (spec.prepare && !closing)
             spec.prepare(popout);
 
         const request = mode === "hover" ? PopoutManager.requestHoverPopout : PopoutManager.requestPopout;
@@ -122,11 +128,7 @@ Item {
     }
 
     readonly property var widgetVisibility: ({
-            "cpuUsage": DgopService.dgopAvailable,
-            "memUsage": DgopService.dgopAvailable,
-            "cpuTemp": DgopService.dgopAvailable,
-            "gpuTemp": DgopService.dgopAvailable,
-            "network_speed_monitor": DgopService.dgopAvailable
+            "sysmon": DgopService.dgopAvailable
         })
 
     function getWidgetVisible(widgetId) {
@@ -147,11 +149,7 @@ Item {
             systemTrayComponent,
             privacyIndicatorComponent,
             clipboardComponent,
-            cpuUsageComponent,
-            memUsageComponent,
-            diskUsageComponent,
-            cpuTempComponent,
-            gpuTempComponent,
+            sysmonComponent,
             notificationButtonComponent,
             batteryComponent,
             layoutComponent,
@@ -160,7 +158,6 @@ Item {
             idleInhibitorComponent,
             spacerComponent,
             separatorComponent,
-            networkComponent,
             keyboardLayoutNameComponent,
             vpnComponent,
             notepadButtonComponent,
@@ -540,10 +537,10 @@ Item {
     }
 
     Component {
-        id: cpuUsageComponent
+        id: sysmonComponent
 
-        CpuMonitor {
-            id: cpuWidget
+        SystemMonitor {
+            id: sysmonWidget
             barThickness: surfaceContext.thickness
             widgetThickness: surfaceContext.widgetThickness
             axis: surfaceContext.axis
@@ -551,108 +548,43 @@ Item {
             popoutTarget: PopoutService.processListPopoutLoader?.item ?? null
             parentScreen: surfaceContext.screen
             widgetData: parent.widgetData
-            onCpuClicked: {
-                root.openWidgetPopout({
-                    loader: PopoutService.processListPopoutLoader,
-                    widgetItem: cpuWidget,
-                    section: root.getWidgetSection(parent) || "right",
-                    triggerSource: "cpu",
-                    mode: "click"
-                });
-            }
-        }
-    }
-
-    Component {
-        id: memUsageComponent
-
-        RamMonitor {
-            id: ramWidget
-            barThickness: surfaceContext.thickness
-            widgetThickness: surfaceContext.widgetThickness
-            axis: surfaceContext.axis
-            section: root.getWidgetSection(parent) || "right"
-            popoutTarget: PopoutService.processListPopoutLoader?.item ?? null
-            parentScreen: surfaceContext.screen
-            widgetData: parent.widgetData
-            onRamClicked: {
-                root.openWidgetPopout({
-                    loader: PopoutService.processListPopoutLoader,
-                    widgetItem: ramWidget,
-                    section: root.getWidgetSection(parent) || "right",
-                    triggerSource: "memory",
-                    mode: "click"
-                });
-            }
-        }
-    }
-
-    Component {
-        id: diskUsageComponent
-
-        DiskUsage {
-            widgetThickness: surfaceContext.widgetThickness
-            barThickness: surfaceContext.thickness
-            axis: surfaceContext.axis
-            widgetData: parent.widgetData
-            parentScreen: surfaceContext.screen
             barConfig: root.surfaceContext.config
             isAutoHideBar: root.surfaceContext.config?.autoHide ?? false
-        }
-    }
 
-    Component {
-        id: cpuTempComponent
-
-        CpuTemperature {
-            id: cpuTempWidget
-            barThickness: surfaceContext.thickness
-            widgetThickness: surfaceContext.widgetThickness
-            axis: surfaceContext.axis
-            section: root.getWidgetSection(parent) || "right"
-            popoutTarget: PopoutService.processListPopoutLoader?.item ?? null
-            parentScreen: surfaceContext.screen
-            widgetData: parent.widgetData
-            onCpuTempClicked: {
+            function openPopout(row, mode) {
+                const section = root.getWidgetSection(parent) || "right";
+                // A row without a listed device (no data yet, an interface down, a drive removed) falls back to its metric's device.
+                const key = rows[row]?.key || shownMetrics[row]?.device || "";
+                const type = rows[row]?.type || SysmonCatalog.typeOf(key);
+                const style = key ? popoutStyle : "processes";
                 root.openWidgetPopout({
                     loader: PopoutService.processListPopoutLoader,
-                    widgetItem: cpuTempWidget,
-                    section: root.getWidgetSection(parent) || "right",
-                    triggerSource: "cpu_temp",
-                    mode: "click"
+                    widgetItem: sysmonWidget,
+                    section,
+                    triggerSource: sysmonWidget.triggerKey(row),
+                    mode,
+                    prepare: popout => {
+                        if (style === "processes")
+                            DgopService.setSortBy(type === "memory" ? "memory" : "cpu");
+                        popout.configure({
+                            style,
+                            device: key,
+                            entryType: type
+                        });
+                    }
                 });
             }
-        }
-    }
 
-    Component {
-        id: gpuTempComponent
-
-        GpuTemperature {
-            id: gpuTempWidget
-            barThickness: surfaceContext.thickness
-            widgetThickness: surfaceContext.widgetThickness
-            axis: surfaceContext.axis
-            section: root.getWidgetSection(parent) || "right"
-            popoutTarget: PopoutService.processListPopoutLoader?.item ?? null
-            parentScreen: surfaceContext.screen
-            widgetData: parent.widgetData
-            onGpuTempClicked: {
-                root.openWidgetPopout({
-                    loader: PopoutService.processListPopoutLoader,
-                    widgetItem: gpuTempWidget,
-                    section: root.getWidgetSection(parent) || "right",
-                    triggerSource: "gpu_temp",
-                    mode: "click"
-                });
+            function triggerPopout() {
+                openPopout(0, "click");
             }
+
+            function triggerHoverPopout(widgetId, row) {
+                openPopout(row ?? 0, "hover");
+            }
+
+            onActivated: row => openPopout(row, "click")
         }
-    }
-
-    Component {
-        id: networkComponent
-
-        NetworkMonitor {}
     }
 
     Component {

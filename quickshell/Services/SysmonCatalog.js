@@ -16,6 +16,14 @@ const TYPES = {
     net: [V("down", "rate", null, null), V("up", "rate", null, null)]
 };
 
+// The values behind the bar widget's option rows, in the order the rows list them.
+const barChoices = {
+    style: ["icon", "meter", "ring", "graph"],
+    label: ["icon", "name", "both", "none"],
+    separator: ["gap", "line", "dot", "separate"],
+    popout: ["compact", "processes", "device", "overview"]
+};
+
 const maxMetrics = 16;
 const maxSuffix = 128;
 const hasControl = s => /[\u0000-\u001f\u007f]/.test(s);
@@ -107,6 +115,16 @@ function normalizeMetrics(input) {
         };
         if (type === "disk" && typeof m.mount === "string" && m.mount.charAt(0) === "/" && !hasControl(m.mount))
             metric.mount = m.mount;
+        if ((type === "memory" || type === "gpu") && m.percent === false)
+            metric.percent = false;
+        if (type === "disk" && Number.isInteger(m.diskMode) && m.diskMode >= 1 && m.diskMode <= 3)
+            metric.diskMode = m.diskMode;
+        if (type === "net") {
+            if (m.compact === true)
+                metric.compact = true;
+            if (m.hideIdle === true)
+                metric.hideIdle = true;
+        }
         out.push(metric);
     }
     return out;
@@ -229,6 +247,25 @@ function modulesFor(metrics, extras) {
     if (extras && extras.system)
         set["system"] = true;
     return Object.keys(set).sort();
+}
+
+// The dgop modules a device pane reads; the aggregate keys ("disk", "net") also need the all-devices modules.
+function paneModules(key) {
+    const type = typeOf(key);
+    const all = key === type;
+    switch (type) {
+    case "cpu":
+        return ["cpu", "system"];
+    case "memory":
+        return ["memory", "memory-modules"];
+    case "gpu":
+        return ["gpu"];
+    case "disk":
+        return all ? ["disk", "disk-rate", "diskmounts"] : ["disk-rate", "diskmounts"];
+    case "net":
+        return all ? ["network", "net-rate"] : ["net-rate"];
+    }
+    return [];
 }
 
 function needsDrives(metrics) {

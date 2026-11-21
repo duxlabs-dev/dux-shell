@@ -16,14 +16,20 @@ Rectangle {
     property var secondaryValues: []
     property real maximum: 0
     property string maximumText: ""
+    readonly property string maximumLabel: I18n.tr("Max %1", "chart axis maximum, %1 is a value like 12 MB/s").arg(maximumText)
     property int historyLength: 0
+    // Shows only the newest part of the history; 0 shows all of it.
+    property int rangeSeconds: 0
+    property bool legendVisible: true
+    property bool grid: true
     property real chartHeight: Theme.listItemHeight * 2
     property color cardColor: ProcessListMetrics.cardColor
     property bool compact: false
     readonly property real padding: compact ? 0 : Theme.spacingL
 
     readonly property bool hasSecondary: secondaryLabel !== ""
-    readonly property int spanSeconds: Math.round((historyLength > 0 ? historyLength : DgopService.historySize) * DgopService.updateInterval / 1000)
+    readonly property int rangePoints: rangeSeconds > 0 ? Math.max(1, Math.round(rangeSeconds * 1000 / DgopService.updateInterval)) : 0
+    readonly property int spanSeconds: rangeSeconds > 0 ? rangeSeconds : Math.round((historyLength > 0 ? historyLength : DgopService.historySize) * DgopService.updateInterval / 1000)
 
     implicitHeight: content.implicitHeight + padding * 2
     radius: Theme.cornerRadiusL
@@ -39,18 +45,19 @@ Rectangle {
         Item {
             width: parent.width
             height: legendRow.implicitHeight
+            visible: root.legendVisible
 
             Row {
                 id: legendRow
                 spacing: Theme.spacingL
 
-                LegendItem {
+                ChartLegendItem {
                     text: root.label
                     value: root.compact ? "" : root.valueText
                     swatchColor: Theme.primary
                 }
 
-                LegendItem {
+                ChartLegendItem {
                     visible: root.hasSecondary
                     text: root.secondaryLabel
                     value: root.compact ? "" : root.secondaryValueText
@@ -63,7 +70,7 @@ Rectangle {
                 anchors.right: parent.right
                 anchors.verticalCenter: legendRow.verticalCenter
                 visible: !root.compact && root.maximumText !== ""
-                text: I18n.tr("Max %1", "chart axis maximum, %1 is a value like 12 MB/s").arg(root.maximumText)
+                text: root.maximumLabel
                 font.pixelSize: Theme.fontSizeSmall
                 font.features: {
                     "tnum": 1
@@ -75,10 +82,11 @@ Rectangle {
         MetricChart {
             width: parent.width
             height: root.chartHeight
-            values: root.values
-            secondaryValues: root.hasSecondary ? root.secondaryValues : []
+            values: root.rangePoints > 0 ? root.values.slice(-root.rangePoints) : root.values
+            secondaryValues: !root.hasSecondary ? [] : root.rangePoints > 0 ? root.secondaryValues.slice(-root.rangePoints) : root.secondaryValues
             maximum: root.maximum
-            historyLength: root.historyLength
+            historyLength: root.rangePoints > 0 ? root.rangePoints : root.historyLength
+            grid: root.grid
         }
 
         Item {
@@ -99,47 +107,6 @@ Rectangle {
                 font.pixelSize: Theme.fontSizeSmall
                 color: Theme.surfaceVariantText
             }
-        }
-    }
-
-    component LegendItem: Row {
-        id: legendItem
-
-        property string text: ""
-        property string value: ""
-        property color swatchColor: Theme.primary
-        property bool dashed: false
-
-        spacing: Theme.spacingXS
-
-        Row {
-            anchors.verticalCenter: parent.verticalCenter
-            spacing: Theme.spacingXXS
-
-            Repeater {
-                model: legendItem.dashed ? 2 : 1
-
-                Rectangle {
-                    width: legendItem.dashed ? Theme.spacingS : Theme.spacingL
-                    height: Theme.outlineWidthFocused
-                    radius: height / 2
-                    color: legendItem.swatchColor
-                }
-            }
-        }
-
-        StyledText {
-            text: legendItem.text
-            font.pixelSize: Theme.fontSizeSmall
-            color: Theme.surfaceVariantText
-        }
-
-        NumericText {
-            visible: text !== ""
-            text: legendItem.value
-            font.pixelSize: Theme.fontSizeSmall
-            font.weight: Theme.fontWeightMedium
-            color: Theme.surfaceText
         }
     }
 }

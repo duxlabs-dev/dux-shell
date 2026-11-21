@@ -5,6 +5,7 @@ import QtQuick
 import Quickshell
 import qs.Common
 import "../Common/InstanceRegistry.js" as Registry
+import "../Common/settings/BarWidgetDefaults.js" as WidgetDefaults
 
 Singleton {
     id: root
@@ -175,6 +176,7 @@ Singleton {
 
     // Matches getPreferredBar in DMSShellIPC: focused screen, then visible before hidden, then the last used bar.
     function resolveIpcWidget(widgetId) {
+        widgetId = currentWidgetId(widgetId);
         const configs = SettingsData.barConfigs.concat(SettingsData.dockConfigs ?? []).map(config => config.id);
         const screens = Quickshell.screens.map(screen => screen.name);
         const screenName = getFocusedScreenName();
@@ -265,17 +267,24 @@ Singleton {
         return [...new Set(Object.values(widgetRegistry).map(entry => entry.widgetId))];
     }
 
+    // Ids of monitor widgets from before the settings v48 migration still reach their sysmon widget.
+    function currentWidgetId(widgetId) {
+        return WidgetDefaults.SYSMON_LEGACY_IDS.includes(widgetId) ? "sysmon" : widgetId;
+    }
+
     function hasWidget(widgetId) {
         return resolveIpcWidget(widgetId) !== null;
     }
 
     function ensureWidget(widgetId) {
+        widgetId = currentWidgetId(widgetId);
         if (!hasWidget(widgetId) && !onDemandWidgetIds.includes(widgetId))
             onDemandWidgetIds = [...onDemandWidgetIds, widgetId];
         return hasWidget(widgetId);
     }
 
     function triggerWidgetPopout(widgetId, target) {
+        widgetId = currentWidgetId(widgetId);
         const widget = target ? resolveWidget(widgetId, target, true)?.item : getWidgetOnFocusedScreen(widgetId);
         if (!widget)
             return false;
@@ -291,11 +300,7 @@ Singleton {
             "battery": "toggleBatteryPopup",
             "vpn": "toggleVpnPopup",
             "layout": "toggleLayoutPopup",
-            "clock": "clockClicked",
-            "cpuUsage": "cpuClicked",
-            "memUsage": "ramClicked",
-            "cpuTemp": "cpuTempClicked",
-            "gpuTemp": "gpuTempClicked"
+            "clock": "clockClicked"
         };
 
         const signalName = signalMap[widgetId];

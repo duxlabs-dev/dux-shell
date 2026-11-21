@@ -92,6 +92,10 @@ Item {
         }
     }
 
+    function itemTitle(item) {
+        return BarWidgetCatalog.entryInfo(item)?.text ?? widgetName(item.widgetId);
+    }
+
     function widgetIcon(id) {
         switch (id) {
         case "dockLauncher":
@@ -126,8 +130,8 @@ Item {
     function configureWidget(item) {
         SettingsUiState.selectedDockId = dock.selectedDockId;
         SettingsUiState.selectedDockWidgetId = item.id;
-        SettingsUiState.selectedWidgetTitle = root.widgetName(item.widgetId);
-        SettingsUiState.selectedWidgetDescription = "";
+        SettingsUiState.selectedWidgetTitle = root.itemTitle(item);
+        SettingsUiState.selectedWidgetDescription = BarWidgetCatalog.entryInfo(item)?.description ?? "";
         SettingsUiState.selectedWidgetIcon = root.widgetIcon(item.widgetId);
         root.parentModal?.navigateTo("bar_widget");
     }
@@ -170,12 +174,13 @@ Item {
 
                         reorderList: widgetList
                         readonly property string slotOption: root.slotOptions[modelData.widgetId] ?? ""
+                        readonly property var info: BarWidgetCatalog.entryInfo(modelData)
                         readonly property bool shown: slotOption ? dock.config[slotOption] === true : modelData.enabled !== false
 
-                        title: root.widgetName(modelData.widgetId)
+                        title: root.itemTitle(modelData)
                         iconName: root.widgetIcon(modelData.widgetId)
-                        subtitle: removeButton.confirming ? I18n.tr("Confirm Delete") : ""
-                        subtitleColor: Theme.error
+                        subtitle: removeButton.confirming ? I18n.tr("Confirm Delete") : (info?.description ?? "")
+                        subtitleColor: removeButton.confirming ? Theme.error : Theme.surfaceVariantText
                         body: SettingsSliderRow {
                             width: parent.width
                             visible: widgetRow.modelData.widgetId === "spacer"

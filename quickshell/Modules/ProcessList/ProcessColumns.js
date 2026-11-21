@@ -2,13 +2,13 @@
 .import "../../Common/Format.js" as Format
 .import "../../Services/ProcessSort.js" as ProcessSort
 
-// width is in Theme.fontSizeSmall units. meter marks resource columns, drawn in the stronger text color.
+// width is in Theme.fontSizeSmall units. group is the resource a column measures. meter marks resource columns, drawn in the stronger text color.
 const COLUMNS = [
-    {id: "cpu", width: 7, meter: "percent"},
-    {id: "memory", width: 8, meter: "memory"},
-    {id: "gpu", width: 6, meter: "percent", modules: ["process-gpu"]},
-    {id: "vram", width: 7, meter: "vram", modules: ["process-gpu", "gpu"]},
-    {id: "gpuVideo", width: 6, meter: "percent", modules: ["process-gpu"]},
+    {id: "cpu", group: "cpu", width: 7, meter: "percent"},
+    {id: "memory", group: "memory", width: 8, meter: "memory"},
+    {id: "gpu", group: "gpu", width: 6, meter: "percent", modules: ["process-gpu"]},
+    {id: "vram", group: "gpu", width: 7, meter: "vram", modules: ["process-gpu", "gpu"]},
+    {id: "gpuVideo", group: "gpu", width: 6, meter: "percent", modules: ["process-gpu"]},
     {id: "diskRead", group: "disk", width: 7, meter: "disk", modules: ["process-io", "disk"]},
     {id: "diskWrite", group: "disk", width: 7, meter: "disk", modules: ["process-io", "disk"]},
     {id: "connections", group: "network", width: 7, modules: ["process-net"]},
@@ -27,6 +27,12 @@ const POPOUT_COLUMNS = ["cpu", "memory", "pid"];
 
 function _col(id) {
     return COLUMNS.find(c => c.id === id) || null;
+}
+
+// The system monitor device type a column measures: "cpu", "memory", "gpu", "disk", "net" or "".
+function deviceType(id) {
+    const group = _col(id)?.group ?? "";
+    return group === "network" ? "net" : group;
 }
 
 function modulesFor(columnIds) {
@@ -51,9 +57,11 @@ function formatCell(id, row) {
     case "gpuVideo": return v.toFixed(0) + "%";
     case "memory":
     case "vram": return Format.formatBytes(v * 1024, true);
+    case "disk":
     case "diskRead":
     case "diskWrite": return Format.formatRate(v, 1);
     // UDP (QUIC) has no byte counters, so the TCP rate is only a lower bound.
+    case "net":
     case "netRx":
     case "netTx": return (row.netPartial ? "≥ " : "") + Format.formatRate(v, 1);
     case "cpuTime": return Format.formatDuration(v, true);

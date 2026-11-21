@@ -46,17 +46,17 @@ Column {
         });
     }
 
-    signal itemEnabledChanged(string sectionId, string itemId, bool enabled)
+    signal itemEnabledChanged(string sectionId, int index, bool enabled)
     signal itemOrderChanged(string sectionId, var indices)
     signal addWidget(string sectionId)
     signal removeWidget(string sectionId, int widgetIndex)
     signal spacerSizeChanged(string sectionId, int widgetIndex, int newSize)
     signal configureWidget(string sectionId, int widgetIndex)
 
-    signal dragStarted(string sectionId, string itemId)
+    signal dragStarted()
 
     property var reorderGroup: null
-    property string highlightedId: ""
+    property int highlightedIndex: -1
     property string highlightedSection: ""
 
     width: parent.width
@@ -137,7 +137,7 @@ Column {
         groupKey: root.sectionId
         dropArea: root
         onReordered: indices => root.itemOrderChanged(root.sectionId, indices)
-        onDragStarted: (index, position) => root.dragStarted(root.sectionId, root.items[index].id)
+        onDragStarted: (index, position) => root.dragStarted()
 
         delegate: SettingsReorderRow {
             id: widgetRow
@@ -147,20 +147,13 @@ Column {
             readonly property bool configurable: BarWidgetCatalog.configurable(modelData)
 
             reorderList: reorderArea
-            highlighted: !dragging && root.highlightedId === modelData.id && root.highlightedSection === root.sectionId
+            highlighted: !dragging && root.highlightedIndex === index && root.highlightedSection === root.sectionId
             opacity: dragging && reorderArea.crossSectionActive ? 0 : 1
             title: modelData.text
             iconName: modelData.icon
             iconColor: modelData.enabled ? Theme.primary : Theme.onSurfaceVariant
             titleColor: modelData.enabled ? Theme.onSurface : Theme.onSurfaceVariant
-            subtitle: {
-                if (modelData.id !== "gpuTemp")
-                    return modelData.description ?? "";
-                const gpu = DgopService.widgetGpu(modelData.selectedGpuIndex ?? 0, modelData.pciId);
-                if (!gpu)
-                    return I18n.tr("No GPU detected", "empty state when no graphics card is found");
-                return gpu.driver?.toUpperCase() ?? "";
-            }
+            subtitle: modelData.description ?? ""
             clickable: configurable
             onClicked: root.configureWidget(root.sectionId, index)
 
@@ -227,7 +220,7 @@ Column {
                 visible: widgetRow.modelData.id !== "spacer" && widgetRow.modelData.locked !== true
                 checked: widgetRow.modelData.enabled
                 anchors.verticalCenter: parent.verticalCenter
-                onToggled: value => root.itemEnabledChanged(root.sectionId, widgetRow.modelData.id, value)
+                onToggled: value => root.itemEnabledChanged(root.sectionId, widgetRow.index, value)
             }
 
             DActionButton {
