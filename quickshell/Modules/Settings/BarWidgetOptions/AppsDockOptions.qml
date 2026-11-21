@@ -143,7 +143,7 @@ Column {
             buttonPadding: Theme.spacingS
             minButtonWidth: 44
             textSize: Theme.fontSizeSmall
-            model: [I18n.tr("Apps Icon"), I18n.tr("OS Logo"), "Dank", root.compositorLabel, I18n.tr("Custom")]
+            model: [I18n.tr("Apps Icon"), I18n.tr("OS Logo"), "Dux", root.compositorLabel, I18n.tr("Custom")]
             currentIndex: Math.max(0, modes.indexOf(root.apps.get("launcherLogoMode")))
             onSelectionChanged: (index, selected) => {
                 if (!selected)
