@@ -62,13 +62,20 @@ SettingsRow {
         id: choiceControl
 
         DDropdown {
+            id: dropdown
             options: root.choices.map(c => c.text)
-            currentValue: root.choices[root.choiceIndex]?.text ?? ""
             onValueChanged: value => {
                 const choice = root.choices.find(c => c.text === value);
                 if (!choice)
                     return;
                 root.commit(choice.value);
+            }
+
+            // A pick assigns currentValue, which would drop a plain binding and show a stale value after undo or reset.
+            Binding {
+                target: dropdown
+                property: "currentValue"
+                value: root.choices[root.choiceIndex]?.text ?? ""
             }
         }
     }

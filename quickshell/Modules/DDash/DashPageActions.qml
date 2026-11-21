@@ -21,6 +21,10 @@ Item {
     readonly property bool hasCustomActions: customMenu.visibleItems.length > 0
     readonly property var focusTargets: editControls.focusTargets
     property string editSnapshot: ""
+    property string undoBase: ""
+    property var undoStack: []
+    readonly property bool canUndo: undoStack.length > 0
+    readonly property int undoLimit: 50
     readonly property var editKeys: ["dashCards", "dashOptions"]
 
     signal optionsRequested
@@ -29,10 +33,39 @@ Item {
     implicitWidth: vertical ? Theme.navigationRailWidth : editControls.implicitWidth
     implicitHeight: editControls.implicitHeight
 
-    onEditModeChanged: editSnapshot = editMode ? currentState() : ""
-    Component.onCompleted: {
-        if (editMode)
-            editSnapshot = currentState();
+    onEditModeChanged: beginEdit()
+    Component.onCompleted: beginEdit()
+
+    function beginEdit() {
+        editSnapshot = editMode ? currentState() : "";
+        undoBase = editSnapshot;
+        undoStack = [];
+    }
+
+    function trackEdit() {
+        if (!editMode)
+            return;
+        const state = currentState();
+        if (state === undoBase)
+            return;
+        undoStack = undoStack.concat([undoBase]).slice(-undoLimit);
+        undoBase = state;
+    }
+
+    function applyState(state) {
+        const wanted = JSON.parse(state);
+        for (const key of editKeys) {
+            if (JSON.stringify(SettingsData[key]) !== JSON.stringify(wanted[key]))
+                SettingsData.set(key, wanted[key]);
+        }
+    }
+
+    function undo() {
+        if (undoStack.length === 0)
+            return;
+        undoBase = undoStack[undoStack.length - 1];
+        undoStack = undoStack.slice(0, -1);
+        applyState(undoBase);
     }
 
     function currentState() {
@@ -43,13 +76,8 @@ Item {
     }
 
     function discard() {
-        if (editSnapshot !== "") {
-            const wanted = JSON.parse(editSnapshot);
-            for (const key of editKeys) {
-                if (JSON.stringify(SettingsData[key]) !== JSON.stringify(wanted[key]))
-                    SettingsData.set(key, wanted[key]);
-            }
-        }
+        if (editSnapshot !== "")
+            applyState(editSnapshot);
         finished();
     }
 
@@ -78,6 +106,20 @@ Item {
             return;
         }
         tabItem?.clearWidgets?.();
+    }
+
+    // Deferred, so a reset that writes both keys lands as one undo step.
+    Connections {
+        target: SettingsData
+        enabled: root.editMode
+
+        function onDashCardsChanged() {
+            Qt.callLater(root.trackEdit);
+        }
+
+        function onDashOptionsChanged() {
+            Qt.callLater(root.trackEdit);
+        }
     }
 
     CcMenu {

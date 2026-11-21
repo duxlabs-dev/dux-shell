@@ -391,6 +391,8 @@ DPopout {
                 editMode: root.editMode
                 optionsShown: mainContainer.optionsShown
                 menuOpen: mainContainer.actionsMenuOpen
+                panelResizing: mainContainer.panelResizing
+                canUndo: (pageActions.item as DashPageActions)?.canUndo ?? false
                 tabItem: pages.currentItem
                 contentScope: pages.currentHost
                 contentTarget: pages.focusTarget
@@ -404,6 +406,7 @@ DPopout {
                 }
                 onEditModeRequested: on => root.editMode = on
                 onDiscardRequested: (pageActions.item as DashPageActions)?.discard()
+                onUndoRequested: (pageActions.item as DashPageActions)?.undo()
                 onLeaveRequested: mainContainer.focusInitial()
                 onOptionsDismissRequested: tabOptions.item?.dismiss()
                 onCloseRequested: {
