@@ -63,7 +63,18 @@ Item {
     }
     readonly property real screenY: stackMotion.value
     readonly property real stackTarget: stackMotion.target
-    readonly property bool stackMoving: stackMotion.running
+    property real stackShiftX: 0
+    readonly property real screenShiftX: shiftMotion.value
+    // Widest |shift| of the running move; held until shiftMotion stops so the band doesn't resize per frame.
+    property real shiftPad: 0
+    onStackShiftXChanged: {
+        if (_positioned)
+            shiftMotion.retarget(stackShiftX);
+        else
+            shiftMotion.snapTo(stackShiftX);
+        shiftPad = shiftMotion.running ? Math.max(shiftPad, Math.abs(stackShiftX)) : Math.abs(stackShiftX);
+    }
+    readonly property bool stackMoving: stackMotion.running || shiftMotion.running
     readonly property real stackOriginTop: Theme.snap(_topEdgeBase() - windowShadowPad, dpr)
     readonly property real slotBottom: Theme.snap(_topEdgeBase() + stackTarget - windowShadowPad, dpr) + layoutHeight + windowShadowPad * 2
     property real presentationProgress: 0
@@ -317,6 +328,19 @@ Item {
         velocityEpsilon: 0.05
     }
 
+    SpringMotion {
+        id: shiftMotion
+        reducedMotion: !NotificationMetrics.animationsEnabled
+        stiffness: NotificationMetrics.stackSpring.stiffness
+        damping: NotificationMetrics.stackSpring.damping
+        positionEpsilon: 0.05
+        velocityEpsilon: 0.05
+        onRunningChanged: {
+            if (!running)
+                win.shiftPad = Math.abs(win.stackShiftX);
+        }
+    }
+
     onHasValidDataChanged: {
         if (!hasValidData && !exiting && !_isDestroying) {
             forceExit();
@@ -452,6 +476,15 @@ Item {
         return base + screenY;
     }
 
+    function edgeMargin(side) {
+        if (connectedFrameMode)
+            return _frameEdgeInset(side);
+        if (frameVisibleWithoutConnectedChrome)
+            return _frameGapMargin(side);
+        const bar = getBarInfo()[side + "Bar"];
+        return bar > 0 ? bar : Theme.popupDistance;
+    }
+
     function getLeftMargin() {
         if (isCenterPosition)
             return screen ? (screen.width - alignedWidth) / 2 : 0;
@@ -461,12 +494,7 @@ Item {
         if (!isLeft)
             return 0;
 
-        if (connectedFrameMode)
-            return _frameEdgeInset("left");
-        if (frameVisibleWithoutConnectedChrome)
-            return _frameGapMargin("left");
-        const barInfo = getBarInfo();
-        return barInfo.leftBar > 0 ? barInfo.leftBar : Theme.popupDistance;
+        return edgeMargin("left");
     }
 
     function getRightMargin() {
@@ -478,12 +506,7 @@ Item {
         if (!isRight)
             return 0;
 
-        if (connectedFrameMode)
-            return _frameEdgeInset("right");
-        if (frameVisibleWithoutConnectedChrome)
-            return _frameGapMargin("right");
-        const barInfo = getBarInfo();
-        return barInfo.rightBar > 0 ? barInfo.rightBar : Theme.popupDistance;
+        return edgeMargin("right");
     }
 
     function getContentX() {
@@ -495,10 +518,10 @@ Item {
         const barRight = getRightMargin();
 
         if (isCenterPosition)
-            return Theme.snap((screen.width - alignedWidth) / 2, dpr);
+            return Theme.snap((screen.width - alignedWidth) / 2 + screenShiftX, dpr);
         if (popupPos === SettingsData.Position.Left || popupPos === SettingsData.Position.Bottom)
-            return Theme.snap(barLeft, dpr);
-        return Theme.snap(screen.width - alignedWidth - barRight, dpr);
+            return Theme.snap(barLeft + screenShiftX, dpr);
+        return Theme.snap(screen.width - alignedWidth - barRight + screenShiftX, dpr);
     }
 
     function getAllocatedContentY() {
