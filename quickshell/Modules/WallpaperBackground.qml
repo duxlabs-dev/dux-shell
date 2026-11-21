@@ -24,7 +24,7 @@ Variants {
     function desktopInputInset(screen, edge) {
         const layout = ShellLayout.forScreen(screen);
         const band = layout?.edges[edge];
-        const barReservation = (layout?.manualPlacement ? band?.reservation : band?.frameReservation) ?? band?.reservation ?? 0;
+        const barReservation = (layout?.frameStyled && !layout.manualPlacement ? band?.frameReservation : band?.reservation) ?? 0;
         const dockReservation = SettingsData.dockReservationForEdge(screen, edge);
         return barReservation + dockReservation + desktopEdgeInset;
     }
