@@ -459,6 +459,7 @@ Item {
         retainResultsOnClose: !SettingsData.dankLauncherV2UnloadOnClose
         viewModeContext: "spotlight"
         forceLinearNavigation: true
+        liveSections: true
     }
 
     TransientSurfaceTracker {
