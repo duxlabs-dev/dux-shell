@@ -30,7 +30,7 @@ Item {
     readonly property bool isIsland: barConfig?.island === true
     // Resolver-owned so the body, the frame and the dismiss window agree during the frame latch.
     readonly property var layoutInstance: ShellLayout.forConfig(screen, _barId)
-    readonly property bool hostsIsland: isIsland || (layoutInstance?.hostsIsland ?? false)
+    readonly property bool hostsIsland: islandPillEnabled && (isIsland || (layoutInstance?.hostsIsland ?? false))
     readonly property string islandChromeMode: isIsland ? "own" : usesConnectedFrameChrome && frameHosted ? "none" : "band"
     readonly property bool frameHosted: layoutInstance?.kind === "frame"
     property real hostOffsetX: 0
@@ -42,7 +42,8 @@ Item {
     readonly property real islandStripThickness: isIsland ? SettingsData.islandStripThickness(barConfig) : 0
     readonly property string islandSatellitePosition: isIsland ? SettingsData.islandSetting(barConfig, "islandSatellitePosition") : "edges"
     readonly property bool islandSatellitesEnabled: !isIsland || SettingsData.islandSetting(barConfig, "islandSatellitesEnabled")
-    readonly property bool islandSatellitesHugIsland: isIsland && islandSatellitePosition === "island"
+    readonly property bool islandPillEnabled: SettingsData.islandSetting(barConfig, "islandPillEnabled")
+    readonly property bool islandSatellitesHugIsland: isIsland && islandPillEnabled && islandSatellitePosition === "island"
     readonly property real islandSatelliteGap: isIsland ? SettingsData.islandSetting(barConfig, "islandSatelliteGap") : 0
     readonly property bool islandSatelliteBackground: isIsland && SettingsData.islandSetting(barConfig, "islandSatelliteBackground")
     readonly property real islandGothRadius: isIsland ? _wingR : 0

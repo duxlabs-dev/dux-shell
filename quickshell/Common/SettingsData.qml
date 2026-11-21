@@ -3193,7 +3193,7 @@ Singleton {
     }
 
     function hostsIsland(bc) {
-        return isIslandBarConfig(bc) || !!_islandWidgetLocation(bc, true);
+        return (isIslandBarConfig(bc) && islandSetting(bc, "islandPillEnabled") !== false) || !!_islandWidgetLocation(bc, true);
     }
 
     function _sharesScreen(a, b) {
@@ -3316,7 +3316,7 @@ Singleton {
     }
 
     function islandFreePlacement(bc) {
-        return isDotBarConfig(bc) || (isIslandBarConfig(bc) && islandSetting(bc, "islandFloating") && islandSetting(bc, "islandPlacement") === "free");
+        return isDotBarConfig(bc) || (isIslandBarConfig(bc) && islandSetting(bc, "islandFloating") && islandSetting(bc, "islandPillEnabled") !== false && islandSetting(bc, "islandPlacement") === "free");
     }
 
     // A hosted island shares its config id with the bar, so last-used cannot tell them apart and would degenerate into always.

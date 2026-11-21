@@ -180,7 +180,7 @@ Item {
                 SettingsButtonGroupRow {
                     settingKey: "islandPalette"
                     tags: ["island", "appearance", "palette", "surface", "bright", "dim"]
-                    visible: bar.selectedBarIsIsland
+                    visible: bar.selectedBarIsIsland && bar.islandSetting("islandPillEnabled") !== false
                     resetStore: bar
                     resetKeys: ["islandPalette"]
                     text: I18n.tr("Palette", "island settings: surface tone choice")
@@ -194,7 +194,7 @@ Item {
                 SettingsToggleRow {
                     settingKey: "islandHighContrast"
                     tags: ["island", "appearance", "contrast", "accessibility", "outline"]
-                    visible: bar.selectedBarIsIsland
+                    visible: bar.selectedBarIsIsland && bar.islandSetting("islandPillEnabled") !== false
                     text: I18n.tr("High contrast", "island settings: high contrast toggle")
                     checked: bar.islandSetting("islandHighContrast")
                     onToggled: checked => bar.apply("islandHighContrast", checked)
@@ -578,9 +578,17 @@ Item {
                 SettingsToggleRow {
                     settingKey: "islandSatellitesEnabled"
                     tags: ["island", "satellite", "widgets", "left", "right"]
-                    text: I18n.tr("Show", "island settings: satellite widgets toggle")
+                    text: I18n.tr("Show Satellite", "island settings: satellite widgets toggle")
                     checked: bar.islandSetting("islandSatellitesEnabled")
                     onToggled: checked => bar.apply("islandSatellitesEnabled", checked)
+                }
+
+                SettingsToggleRow {
+                    settingKey: "islandPillEnabled"
+                    tags: ["island", "pill", "widgets", "center"]
+                    text: I18n.tr("Show Pill", "island settings: pill widgets toggle")
+                    checked: bar.islandSetting("islandPillEnabled")
+                    onToggled: checked => bar.apply("islandPillEnabled", checked)
                 }
 
                 SettingsButtonGroupRow {
@@ -593,7 +601,7 @@ Item {
                     values: root.satellitePositionValues
                     value: bar.islandSetting("islandSatellitePosition")
                     fallbackValue: "island"
-                    enabled: bar.islandSetting("islandSatellitesEnabled")
+                    enabled: bar.islandSetting("islandSatellitesEnabled") && bar.islandSetting("islandPillEnabled") !== false
                     onValueSelected: value => bar.apply("islandSatellitePosition", value)
                 }
 
@@ -674,7 +682,7 @@ Item {
                     step: 1
                     value: bar.islandSetting("islandSatelliteGap")
                     visible: bar.islandSetting("islandSatellitesEnabled")
-                    enabled: bar.islandSetting("islandSatellitePosition") !== "edges" || bar.islandSetting("islandSatelliteBackground")
+                    enabled: (bar.islandSetting("islandSatellitePosition") !== "edges" && bar.islandSetting("islandPillEnabled") !== false) || bar.islandSetting("islandSatelliteBackground")
                     onSliderValueChanged: value => bar.apply("islandSatelliteGap", value)
                 }
             }

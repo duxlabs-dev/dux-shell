@@ -35,7 +35,8 @@ Singleton {
                 islandReserve: Resolver.islandReserve(SettingsData.islandSettings(config), SettingsData.islandDefaultsFor(config)),
                 islandFloating: SettingsData.islandSetting(config, "islandFloating"),
                 islandPlacement: SettingsData.islandFreePlacement(config) ? "free" : "edge",
-                islandSatellites: SettingsData.islandSetting(config, "islandSatellitesEnabled")
+                islandSatellites: SettingsData.islandSetting(config, "islandSatellitesEnabled"),
+                islandPill: SettingsData.islandSetting(config, "islandPillEnabled")
             };
         }), screen, {
             screens: root.screens,
