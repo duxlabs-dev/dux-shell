@@ -7,12 +7,10 @@ import qs.Modules.ControlCenter
 import qs.Modules.DDash
 
 Singleton {
-    readonly property real gaugeSize: DashMetrics.gaugeSize
-    readonly property real gaugeSizeHero: DashMetrics.gaugeSizeHero
-    readonly property real tileTrendRatio: DashMetrics.tileTrendRatio
-    readonly property real tileTrendFillAlpha: DashMetrics.tileTrendFillAlpha
+    readonly property real tileTrendRatio: 0.45
+    readonly property real tileTrendFillAlpha: 0.1
     readonly property real tileValueSizeCompact: DashMetrics.tileValueSizeCompact
-    readonly property int meterDuration: DashMetrics.meterDuration
+    readonly property int meterDuration: Theme.expressiveDurations.expressiveSlowEffects
     readonly property bool animationsEnabled: CcMetrics.animationsEnabled
 
     readonly property real wideThreshold: DashMetrics.gridRowUnit * 2
