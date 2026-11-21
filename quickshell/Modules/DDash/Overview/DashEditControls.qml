@@ -13,11 +13,12 @@ Item {
     property bool canAdd: true
     property bool hasWidgets: true
     property bool canClear: true
+    property bool canDiscard: true
     property bool hasOptions: false
     property bool hasCustomActions: false
     property string pendingAction: ""
     property real availableWidth: Infinity
-    readonly property var actionButtons: [addButton, optionsButton, customButton, resetButton, clearButton, finishButton]
+    readonly property var actionButtons: [addButton, optionsButton, customButton, resetButton, clearButton, discardButton, finishButton]
     readonly property var focusTargets: actionButtons.filter(item => item.visible && item.enabled)
     readonly property real focusPadding: Theme.focusRingOffset + Theme.focusRingWidth
     readonly property var shownButtons: actionButtons.filter(item => item.visible)
@@ -29,6 +30,7 @@ Item {
     signal optionsRequested
     signal resetRequested
     signal clearRequested
+    signal discardRequested
     signal finished
 
     implicitWidth: actions.implicitWidth
@@ -203,6 +205,14 @@ Item {
                 armedTextColor: Theme.onError
                 visible: root.hasWidgets && root.canClear
                 onConfirmed: root.clearRequested()
+            }
+
+            EditButton {
+                id: discardButton
+                visible: root.canDiscard
+                label: I18n.tr("Discard")
+                iconName: "close"
+                onClicked: root.discardRequested()
             }
 
             EditButton {

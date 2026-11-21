@@ -18,6 +18,7 @@ Item {
     readonly property bool editable: widgetGrid !== null
     readonly property var addable: widgetGrid?.addable ?? []
     property bool blocksTabNavigation: widgetGrid?.blocksTabNavigation ?? false
+    readonly property bool sheetShown: widgetGrid?.sheetShown ?? false
     property bool live: Window.window?.visible ?? false
     property var pluginData: ({})
     readonly property var options: DashRegistry.resolvedOptions(entryId)
