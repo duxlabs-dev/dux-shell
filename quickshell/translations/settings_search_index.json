@@ -8433,6 +8433,37 @@
     "icon": "search"
   },
   {
+    "section": "launcherSemanticSearch",
+    "label": "Semantic search",
+    "tabIndex": 9,
+    "category": "Launcher",
+    "keywords": [
+      "actions",
+      "app drawer",
+      "app menu",
+      "applications",
+      "apply",
+      "change",
+      "download",
+      "drawer",
+      "dsearch",
+      "embedding",
+      "language",
+      "launcher",
+      "meaning",
+      "menu",
+      "model",
+      "restarts",
+      "search",
+      "semantic",
+      "service",
+      "start",
+      "start menu"
+    ],
+    "icon": "psychology",
+    "description": "Restarts the dsearch service to apply the change."
+  },
+  {
     "section": "dankLauncherV2ShowAppDescriptions",
     "label": "Show app descriptions",
     "tabIndex": 9,

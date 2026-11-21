@@ -673,6 +673,10 @@ PluginService.getLoadedPlugins(): array
 PluginService.isPluginLoaded(pluginId: string): bool
 PluginService.getWidgetComponents(): object
 
+// Launcher Actions - see the Launcher Actions section
+PluginService.registerActions(pluginId: string, actions: array): {registered: int, errors: array}
+PluginService.unregisterActions(pluginId: string): void
+
 // Data Persistence
 PluginService.savePluginData(pluginId: string, key: string, value: any): bool
 PluginService.loadPluginData(pluginId: string, key: string, defaultValue: any): any
@@ -1596,6 +1600,68 @@ See `PLUGINS/LauncherExample/` for a complete working example demonstrating:
 - Search/filtering implementation
 - Settings integration
 - Proper error handling
+
+## Launcher Actions
+
+Any plugin surface can offer **actions** to the launcher and to semantic search: things the user runs by name ("start a timer", "turn on the living room lamp") rather than items the plugin lists under a trigger. The shell builds one catalog from its own actions and every plugin's; the launcher shows the matching rows with a state, and Enter runs the action. Plugin actions have the id `plugin:<pluginId>:<id>` and disappear when the plugin unloads or is disabled.
+
+### Registering
+
+Call `registerActions` once the surface is up (a daemon is the natural place) and again whenever the set changes. Each call replaces everything the plugin registered before; an empty list removes it all.
+
+```qml
+Component.onCompleted: {
+    pluginService.registerActions(pluginId, [
+        {
+            id: "lamp.on",
+            title: I18n.trFor("myPlugin", "Living room lamp"),
+            text: "Living room lamp. Turn the lamp in the living room on or set its brightness; light, bulb, too dark, smart home.",
+            keywords: ["lamp", "light", "lamba", "ışık"],
+            icon: "lightbulb",
+            params: [{ name: "percent", type: "percent", min: 0, max: 100 }],
+            available: () => root.connected,
+            state: () => root.lampOn ? I18n.trFor("myPlugin", "On") : I18n.trFor("myPlugin", "Off"),
+            run: (values, query) => root.setLamp(values.percent === undefined ? 100 : values.percent)
+        }
+    ]);
+}
+```
+
+`registerActions(pluginId, actions)` returns `{registered, errors}`. A malformed entry is skipped, named in `errors` and logged; the plugin's other actions still register.
+
+| Field | Required | Meaning |
+|---|---|---|
+| `id` | yes | Letters, digits, `.`, `_`, `-`. Unique within the plugin. |
+| `title` | yes | Shown in the row. Translate it with `I18n.trFor`. |
+| `text` | yes | **English** description the search model embeds. Write it as: name, what it does, synonyms, the situation a user is in ("tired eyes", "flashlight"). A rich description matters far more than a short one; short ones outrank everything else for unrelated queries. |
+| `keywords` | no | Extra words for the lexical side of the search, English and the languages you care about. |
+| `icon` | no | Material icon name. Defaults to `extension`. |
+| `params` | no | Numbers to extract from the typed text, see below. |
+| `available` | no | Boolean, or a function returning one. Unavailable actions are hidden from search and never embedded. Default `true`. A throwing function counts as available. |
+| `state` | no | String, or a function returning one, shown next to the title ("" shows nothing). |
+| `run(values, query)` | yes | Called on Enter. `values` holds the extracted params, `query` the text as typed. Returning `false` or throwing shows a failure toast; anything else counts as success. |
+
+The shell does not show a confirmation for a plugin action; give feedback yourself, for example with `ToastService`.
+
+### Parameters
+
+`params` is a list of `{name, type, min, max, unit, required, example}`. The shell reads the numbers out of the typed text, in Turkish and English, with or without diacritics, and clamps them to `min`/`max`:
+
+| `type` | Understands |
+|---|---|
+| `percent` | `%40`, `40%`, `yüzde 40`, `forty percent`, `volume 40`, `sesi 80'e çıkar` |
+| `int` | `3`, `3.`, `third`, `üçüncü`, `twenty five`, `yirmi beş` |
+| `duration` | `15 dakika`, `15m`, `1h30m`, `1 saat 30 dk`, `half an hour`, `yarım saat`, `bir buçuk saat`; delivered in `unit` (`seconds`, `minutes` or `hours`, default minutes) |
+
+A param the user did not type has no key in `values`. With `required: true` the shell refuses to run and tells the user to add a value, showing `example`. An action without `params` ignores any numbers.
+
+### Lifecycle
+
+`PluginService` emits `pluginUnloaded` when a plugin is unloaded, disabled, reloaded or removed, and the catalog drops that plugin's actions at once. A reload registers them again from your `Component.onCompleted`. `pluginService.unregisterActions(pluginId)` removes them earlier if you need to. The catalog's `revision` changes with every registration, removal and availability change, and the search index follows it.
+
+### Example Plugin
+
+See `PLUGINS/ActionsExample/` for a timer that registers a parameterised action and an action that is only available while a countdown runs.
 
 ## Desktop Plugins
 
