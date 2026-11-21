@@ -661,6 +661,27 @@ Singleton {
         return activate(profiles[(from + step + profiles.length) % profiles.length].id);
     }
 
+    function _ipcReady() {
+        ensureDefault();
+        return ready;
+    }
+
+    function _ipcCycle(step) {
+        if (cycle(step))
+            return "SUCCESS: Switched to " + activeProfile.name;
+        return profiles.length < 2 ? "ERROR: No other profile to switch to" : "ERROR: Failed to switch profile";
+    }
+
+    function _ipcResolve(ref) {
+        const byId = find(ref);
+        if (byId)
+            return byId;
+        const named = profiles.filter(p => p.name === ref);
+        if (named.length > 1)
+            return "ERROR: Several profiles are named " + ref + ", use the id";
+        return named[0] ?? "ERROR: No profile " + ref;
+    }
+
     function applyGroups(id, groups) {
         const target = find(id);
         if (!ready || _applying || !target || !Profiles.normalize(groups).some(g => target.groups.includes(g)))
@@ -770,44 +791,23 @@ Singleton {
     }
 
     IpcHandler {
-        function _ready() {
-            root.ensureDefault();
-            return root.ready;
-        }
-
-        function _cycled(step) {
-            if (root.cycle(step))
-                return "SUCCESS: Switched to " + root.activeProfile.name;
-            return root.profiles.length < 2 ? "ERROR: No other profile to switch to" : "ERROR: Failed to switch profile";
-        }
-
-        function _resolve(ref) {
-            const byId = root.find(ref);
-            if (byId)
-                return byId;
-            const named = root.profiles.filter(p => p.name === ref);
-            if (named.length > 1)
-                return "ERROR: Several profiles are named " + ref + ", use the id";
-            return named[0] ?? "ERROR: No profile " + ref;
-        }
-
         function list(): string {
-            if (!_ready())
+            if (!root._ipcReady())
                 return "ERROR: Profiles are not loaded yet";
             return root.profiles.map(p => p.id + "\t" + p.name).join("\n");
         }
 
         function current(): string {
-            if (!_ready())
+            if (!root._ipcReady())
                 return "ERROR: Profiles are not loaded yet";
             const p = root.activeProfile;
             return p ? p.id + "\t" + p.name : "";
         }
 
         function apply(ref: string): string {
-            if (!_ready())
+            if (!root._ipcReady())
                 return "ERROR: Profiles are not loaded yet";
-            const p = _resolve(ref);
+            const p = root._ipcResolve(ref);
             if (typeof p === "string")
                 return p;
             if (p.id === root.activeProfileId)
@@ -816,28 +816,28 @@ Singleton {
         }
 
         function next(): string {
-            if (!_ready())
+            if (!root._ipcReady())
                 return "ERROR: Profiles are not loaded yet";
-            return _cycled(1);
+            return root._ipcCycle(1);
         }
 
         function prev(): string {
-            if (!_ready())
+            if (!root._ipcReady())
                 return "ERROR: Profiles are not loaded yet";
-            return _cycled(-1);
+            return root._ipcCycle(-1);
         }
 
         function save(ref: string): string {
-            if (!_ready())
+            if (!root._ipcReady())
                 return "ERROR: Profiles are not loaded yet";
-            const p = _resolve(ref);
+            const p = root._ipcResolve(ref);
             if (typeof p === "string")
                 return p;
             return root.updateFromCurrent(p.id) ? "SUCCESS: Saved " + p.name : "ERROR: Failed to save " + p.name;
         }
 
         function create(name: string): string {
-            if (!_ready())
+            if (!root._ipcReady())
                 return "ERROR: Profiles are not loaded yet";
             if (!name.trim())
                 return "ERROR: No name given";
@@ -846,9 +846,9 @@ Singleton {
         }
 
         function rename(ref: string, name: string): string {
-            if (!_ready())
+            if (!root._ipcReady())
                 return "ERROR: Profiles are not loaded yet";
-            const p = _resolve(ref);
+            const p = root._ipcResolve(ref);
             if (typeof p === "string")
                 return p;
             if (!name.trim())
@@ -857,9 +857,9 @@ Singleton {
         }
 
         function remove(ref: string): string {
-            if (!_ready())
+            if (!root._ipcReady())
                 return "ERROR: Profiles are not loaded yet";
-            const p = _resolve(ref);
+            const p = root._ipcResolve(ref);
             if (typeof p === "string")
                 return p;
             if (p.id === root.activeProfileId)
