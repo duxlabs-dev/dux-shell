@@ -416,10 +416,13 @@ Singleton {
             return "";
         if (notif.appName && notif.appName !== "")
             return notif.appName;
+        if (!notif.desktopEntry)
+            return "";
         const entry = DesktopEntries.heuristicLookup(notif.desktopEntry);
         if (entry && entry.name)
             return entry.name;
-        return "";
+        // an uninstalled desktop entry is still an identity; "" is kept for senders with neither
+        return notif.desktopEntry;
     }
 
     function _ruleFieldValue(field, info) {
@@ -1024,7 +1027,8 @@ Singleton {
         readonly property string appName: {
             if (!notification)
                 return "app";
-            if (notification.appName == "") {
+            // heuristicLookup("") matches any entry without StartupWMClass
+            if (notification.appName == "" && notification.desktopEntry) {
                 const entry = DesktopEntries.heuristicLookup(notification.desktopEntry);
                 if (entry && entry.name)
                     return entry.name.toLowerCase();
@@ -1032,6 +1036,7 @@ Singleton {
             return notification.appName || "app";
         }
         readonly property string desktopEntry: notification?.desktopEntry ?? ""
+        readonly property string ruleAppName: root._resolveAppNameForRule(notification)
         readonly property string image: notification?.image ?? ""
         readonly property string cleanImage: root.notificationCleanImage(image)
         readonly property bool hasDisplayImage: root.notificationHasImage(image)

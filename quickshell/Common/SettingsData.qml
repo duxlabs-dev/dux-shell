@@ -3842,12 +3842,28 @@ Singleton {
     }
 
     function requestNotificationRuleForNotification(appName, desktopEntry) {
-        const pattern = desktopEntry || appName || "";
-        pendingNotificationRule = _newNotificationRule(pattern ? {
-            field: desktopEntry ? "desktopEntry" : "appName",
-            pattern: pattern,
-            matchType: "exact"
-        } : {});
+        pendingNotificationRule = _newNotificationRule(_appRuleKey(appName, desktopEntry));
+    }
+
+    // A sender with neither (a host app through the notification portal) is keyed on its empty app name.
+    function _appRuleKey(appName, desktopEntry) {
+        if (desktopEntry)
+            return {
+                field: "desktopEntry",
+                pattern: desktopEntry,
+                matchType: "exact"
+            };
+        if (appName)
+            return {
+                field: "appName",
+                pattern: appName,
+                matchType: "exact"
+            };
+        return {
+            field: "appName",
+            pattern: "^$",
+            matchType: "regex"
+        };
     }
 
     function _isMuteRule(rule) {
@@ -3878,27 +3894,23 @@ Singleton {
     function _appRuleIndex(rules, appName, desktopEntry, predicate) {
         const app = (appName || "").toString().toLowerCase();
         const desktop = (desktopEntry || "").toString().toLowerCase();
-        if (!app && !desktop)
-            return -1;
         return rules.findIndex(rule => {
-            if (!predicate(rule) || (rule.matchType || "contains").toString().toLowerCase() !== "exact" || (rule.conditions || []).length > 0)
+            if (!predicate(rule) || (rule.conditions || []).length > 0)
                 return false;
+            const matchType = (rule.matchType || "contains").toString().toLowerCase();
             const pattern = (rule.pattern || "").toString().toLowerCase();
+            if (!app && !desktop)
+                return matchType === "regex" && (!rule.field || rule.field === "appName") && pattern === "^$";
+            if (matchType !== "exact")
+                return false;
             const value = !rule.field || rule.field === "appName" ? app : rule.field === "desktopEntry" ? desktop : "";
             return pattern !== "" && pattern === value;
         });
     }
 
     function _addAppRule(appName, desktopEntry, overrides) {
-        const pattern = desktopEntry || appName || "";
-        if (!pattern)
-            return;
         var rules = JSON.parse(JSON.stringify(notificationRules || []));
-        const rule = _newNotificationRule(Object.assign({
-            field: desktopEntry ? "desktopEntry" : "appName",
-            pattern: pattern,
-            matchType: "exact"
-        }, overrides));
+        const rule = _newNotificationRule(Object.assign(_appRuleKey(appName, desktopEntry), overrides));
         if (!rule.expiresAt)
             delete rule.expiresAt;
         rules.push(rule);

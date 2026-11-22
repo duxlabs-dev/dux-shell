@@ -977,8 +977,6 @@ Item {
 
         sourceComponent: NotificationContextMenu {
             transientSurfaceTracker: transientSurfaces
-            appName: notificationData?.appName ?? ""
-            desktopEntry: notificationData?.desktopEntry ?? ""
             dismissText: notificationCard.dismissText
             notification: notificationData
             onAppMuted: {

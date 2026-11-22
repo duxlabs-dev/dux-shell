@@ -164,7 +164,7 @@ DPopout {
                     IconImage {
                         width: Theme.iconSizeMedium
                         height: Theme.iconSizeMedium
-                        source: AppSearchService.windowIcon(root.appId, root.currentWindow) || Paths.getAppIcon(root.appId, DesktopEntries.heuristicLookup(root.appId))
+                        source: AppSearchService.windowIcon(root.appId, root.currentWindow) || (root.appId ? Paths.getAppIcon(root.appId, DesktopEntries.heuristicLookup(root.appId)) : "")
                         asynchronous: true
                         mipmap: true
                         smooth: true
