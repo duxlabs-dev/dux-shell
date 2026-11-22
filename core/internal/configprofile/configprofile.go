@@ -120,8 +120,13 @@ func WallpaperDir() string {
 	return filepath.Join(utils.XDGDataHome(), "dms", "wallpapers")
 }
 
-// List returns the profiles in dir ordered like the shell: by created, then id.
-func List(dir string) ([]Summary, error) {
+func SessionFile() string {
+	return filepath.Join(utils.XDGStateHome(), "dms", "session.json")
+}
+
+// List returns the profiles in dir ordered like the shell: the ids in the session
+// file's configProfileOrder first, then the rest by created, then id.
+func List(dir, sessionFile string) ([]Summary, error) {
 	entries, err := os.ReadDir(dir)
 	if errors.Is(err, os.ErrNotExist) {
 		return nil, nil
@@ -151,7 +156,23 @@ func List(dir string) ([]Summary, error) {
 		}
 		items = append(items, item{Summary{e.Name(), p.Name}, p.Created})
 	}
+	rank := map[string]int{}
+	for _, id := range savedOrder(sessionFile) {
+		if _, ok := rank[id]; !ok {
+			rank[id] = len(rank)
+		}
+	}
 	slices.SortStableFunc(items, func(a, b item) int {
+		ra, okA := rank[a.ID]
+		rb, okB := rank[b.ID]
+		switch {
+		case okA && okB:
+			return cmp.Compare(ra, rb)
+		case okA:
+			return -1
+		case okB:
+			return 1
+		}
 		return cmp.Or(cmp.Compare(a.created, b.created), strings.Compare(a.ID, b.ID))
 	})
 	out := make([]Summary, len(items))
@@ -159,6 +180,26 @@ func List(dir string) ([]Summary, error) {
 		out[i] = it.Summary
 	}
 	return out, nil
+}
+
+func savedOrder(sessionFile string) []string {
+	b, err := os.ReadFile(sessionFile)
+	if err != nil {
+		return nil
+	}
+	var s struct {
+		Order []any `json:"configProfileOrder"`
+	}
+	if json.Unmarshal(b, &s) != nil {
+		return nil
+	}
+	var ids []string
+	for _, v := range s.Order {
+		if id, ok := v.(string); ok {
+			ids = append(ids, id)
+		}
+	}
+	return ids
 }
 
 // Export returns the paths it couldn't bundle as warnings; they stay unchanged in the profile.

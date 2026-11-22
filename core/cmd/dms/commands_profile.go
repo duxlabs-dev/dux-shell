@@ -21,7 +21,7 @@ var profileListCmd = &cobra.Command{
 	Long:  "List config profiles, one per line as the id and the name separated by a tab.",
 	Args:  cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		profiles, err := configprofile.List(configprofile.Dir())
+		profiles, err := configprofile.List(configprofile.Dir(), configprofile.SessionFile())
 		if err != nil {
 			log.Fatalf("Error listing profiles: %v", err)
 		}
@@ -43,7 +43,7 @@ var profileExportCmd = &cobra.Command{
 		if len(args) > 1 {
 			return nil, cobra.ShellCompDirectiveNoFileComp
 		}
-		profiles, _ := configprofile.List(configprofile.Dir())
+		profiles, _ := configprofile.List(configprofile.Dir(), configprofile.SessionFile())
 		ids := make([]string, len(profiles))
 		for i, p := range profiles {
 			ids[i] = p.ID

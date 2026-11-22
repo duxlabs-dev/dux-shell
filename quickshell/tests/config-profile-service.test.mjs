@@ -33,8 +33,8 @@ function fileText(p) {
 
 // The real service functions over a live state and a `disk` of folder name -> profile.json text (undefined: none).
 // `events` logs writes and applies in order; `procs` holds every command except mkdir, which succeeds at once.
-function service({ profiles = [], files = {}, active = "a", applyOk = true, dir = "/cfg/profiles", realProc = false }) {
-    const events = [], procs = [], toasts = [], imported = [];
+function service({ profiles = [], files = {}, active = "a", applyOk = true, dir = "/cfg/profiles", realProc = false, order = [], snapshot }) {
+    const events = [], procs = [], toasts = [], imported = [], cache = {};
     const disk = Object.assign(Object.fromEntries(profiles.map(p => [p.id, fileText(p)])), files);
     const live = { settings: { frameEnabled: true }, session: { dockPins: { main: "app.desktop" } } };
     const ctx = vm.createContext({
@@ -43,8 +43,8 @@ function service({ profiles = [], files = {}, active = "a", applyOk = true, dir 
         log: { warn() {} },
         I18n: { tr: s => s },
         profileImported: id => imported.push(id),
-        profilesDir: dir, profiles: [], _entries: {}, _views: {}, _folderIds: [], _creating: {}, _deleting: {},
-        _folderReady: false, _scanned: false, _applying: false, _settingsDirty: true, ready: true, draft: null, _pendingImport: "", capturingId: "", screenshotTargetId: "",
+        profilesDir: dir, _snapshotFile: "/cache/config-profile-snapshot.json", profiles: [], _entries: {}, _views: {}, _folderIds: [], _creating: {}, _deleting: {},
+        _folderReady: false, _scanned: false, _applying: false, _settingsDirty: true, ready: true, draft: null, _pendingImport: "", capturingId: "", screenshotTargetId: "", _snapshot: null, _snapshotRead: false,
         SettingsData: {
             settingsConfigVersion: SV,
             pluginSettings: {},
@@ -59,6 +59,7 @@ function service({ profiles = [], files = {}, active = "a", applyOk = true, dir 
         SessionData: {
             sessionConfigVersion: SSV,
             activeConfigProfile: active,
+            configProfileOrder: order,
             profileValues: keys => clone(Object.fromEntries(keys.filter(k => k in live.session).map(k => [k, live.session[k]]))),
             applyProfileValues(values) {
                 events.push("applySession");
@@ -66,6 +67,9 @@ function service({ profiles = [], files = {}, active = "a", applyOk = true, dir 
             },
             set(key, value) {
                 this[key] = value;
+                // the real property emits configProfileOrderChanged, which the service refreshes on
+                if (key === "configProfileOrder")
+                    ctx._refresh();
             }
         },
         ToastService: { showInfo() {}, showWarning() {}, showError: (title, detail) => toasts.push(detail) },
@@ -101,6 +105,14 @@ function service({ profiles = [], files = {}, active = "a", applyOk = true, dir 
                 };
             }
         },
+        snapshotLoader: {
+            item: {
+                setText(text) {
+                    events.push("write:snapshot");
+                    cache.snapshot = text;
+                }
+            }
+        },
         syncTimer: { restart() {}, stop() {} },
         screenshotEnded() {}
     });
@@ -111,9 +123,79 @@ function service({ profiles = [], files = {}, active = "a", applyOk = true, dir 
     Object.defineProperty(ctx, "activeProfileId", { get: () => vm.runInContext(activeExpr, ctx) });
     Object.defineProperty(ctx, "activeProfile", { get: () => ctx.find(ctx.activeProfileId) });
     ctx._setFolders(Object.keys(disk));
+    if (snapshot !== undefined)
+        ctx._readSnapshot(snapshot, "");
     const setup = events.splice(0);
-    return { ctx, events, procs, toasts, disk, live, setup, imported };
+    return { ctx, events, procs, toasts, disk, live, setup, imported, cache };
 }
+
+const ids = c => clone(c.profiles.map(p => p.id));
+
+test("profile order: listed ids first, the rest by creation, moves keep unloaded folders and skip unchanged writes", () => {
+    const ps = [profile("a", { created: 1 }), profile("b", { created: 2 }), profile("c", { created: 3 }), profile("d", { created: 4 })];
+    const { ctx } = service({ profiles: ps, files: { broken: "{" }, order: ["c", "gone", "a", "c", 7, "broken"] });
+    assert.deepEqual(ids(ctx), ["c", "a", "b", "d"]);
+    assert.equal(ctx.moveProfile("d", 0), 0);
+    assert.deepEqual(ids(ctx), ["d", "c", "a", "b"]);
+    assert.equal(ctx.moveProfile("d", 99), 3);
+    assert.equal(ctx.moveProfile("nope", 0), -1);
+    assert.equal(ctx._ipcMove("b", 0).startsWith("SUCCESS"), true);
+    assert.deepEqual(ids(ctx), ["b", "c", "a", "d"]);
+    assert.deepEqual(clone(ctx.SessionData.configProfileOrder).filter(i => i === "broken").length, 1);
+    ctx.SessionData.set = () => assert.fail("written");
+    assert.equal(ctx.setOrder([...ids(ctx), "gone"]), true);
+    delete ctx.SessionData.set;
+    for (const bad of ["a", { 0: "a" }, null]) {
+        ctx.SessionData.configProfileOrder = bad;
+        ctx._refresh();
+        assert.deepEqual(ids(ctx), ["a", "b", "c", "d"]);
+    }
+});
+
+const snapshotText = (p, extra) => JSON.stringify(Object.assign({ id: p.id }, JSON.parse(fileText(p)), extra));
+
+test("reset to when applied: snapshot follows switches and survives restarts only when it matches the active profile", () => {
+    for (const sync of [true, false]) {
+        const { ctx, events, live, disk } = service({ profiles: [profile("a", { sync })], snapshot: null });
+        assert.equal(ctx.updateFromCurrent("a"), true);
+        assert.equal(ctx.updateProfile("a", "a", ["frame"], sync), true);
+        const before = disk.a;
+        events.splice(0);
+        assert.equal(ctx.canResetToApplied(), true);
+        assert.equal(ctx.resetToApplied(), true);
+        assert.equal(live.settings.frameEnabled, false);
+        assert.deepEqual(live.session.dockPins, { main: "app.desktop" });
+        assert.equal(disk.a !== before, sync);
+        assert.equal(ctx.canResetToApplied(), false);
+    }
+
+    for (const via of ["b", "n"]) {
+        const { ctx, cache } = service({ profiles: [profile("a", { sync: true }), profile("b"), profile("n", { configVersion: SV + 1 })], snapshot: null });
+        assert.equal(ctx.activate(via), true);
+        ctx._ensureSnapshot();
+        assert.equal(JSON.parse(cache.snapshot).id, via);
+        assert.equal(ctx.activate("a"), true);
+        ctx._ensureSnapshot();
+        assert.equal(JSON.parse(cache.snapshot).id, "a", via);
+        assert.equal(ctx.canResetToApplied(), false, via);
+    }
+
+    const b = profile("b", { settings: { frameEnabled: true } });
+    for (const text of ["{ nope", "[]", snapshotText(b), snapshotText(profile("a", { configVersion: SV + 1 }))]) {
+        const { ctx, live, cache } = service({ profiles: [profile("a"), b], snapshot: text });
+        assert.equal(JSON.parse(cache.snapshot).id, "a", text);
+        assert.equal(ctx.resetToApplied(), true);
+        assert.equal(live.settings.frameEnabled, false, text);
+    }
+    const kept = service({ profiles: [profile("a")], snapshot: snapshotText(profile("a"), { session: { dockPins: { main: "snap.desktop" } } }) });
+    assert.equal(kept.ctx.resetToApplied(), true);
+    assert.deepEqual(kept.live.session.dockPins, { main: "snap.desktop" });
+    assert.ok(!kept.setup.concat(kept.events).includes("write:snapshot"));
+
+    const newer = service({ profiles: [profile("a", { configVersion: SV + 1 })], snapshot: snapshotText(profile("a")) });
+    assert.equal(newer.ctx.canResetToApplied(), false);
+    assert.equal(newer.ctx.resetToApplied(), false);
+});
 
 const removed = procs => clone(procs.filter(p => p.cmd[0] === "rm").map(p => p.cmd));
 

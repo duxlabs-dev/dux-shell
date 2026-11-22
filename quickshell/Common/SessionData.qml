@@ -302,6 +302,7 @@ Singleton {
     property var niriOutputSettings: ({})
     property var hyprlandOutputSettings: ({})
     property string activeConfigProfile: ""
+    property var configProfileOrder: []
     property var activeDisplayProfile: ({})
     property var activeDisplayProfileModes: ({})
     property var desktopWidgetGridSettings: ({})

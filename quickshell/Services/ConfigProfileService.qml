@@ -15,6 +15,7 @@ Singleton {
     readonly property var log: Log.scoped("ConfigProfileService")
 
     readonly property string profilesDir: Paths.strip(Paths.config) + "/profiles"
+    readonly property string _snapshotFile: Paths.strip(Paths.cache) + "/config-profile-snapshot.json"
 
     property var profiles: []
     // Folder name -> { state: "ok" | "broken" | "missing", profile, text }
@@ -35,6 +36,9 @@ Singleton {
     property string screenshotTargetId: ""
     property var draft: null
     property string _pendingImport: ""
+    // The active profile as it was stored when it became active.
+    property var _snapshot: null
+    property bool _snapshotRead: false
     readonly property var imageExtensions: ["jpg", "jpeg", "png", "bmp", "gif", "webp", "jxl", "avif", "heif", "exr", "svg"]
     readonly property var _groupLabels: ({
             "colors": I18n.tr("Theme"),
@@ -86,7 +90,9 @@ Singleton {
     onReadyChanged: {
         if (ready && _wantsDefault)
             ensureDefault();
+        _ensureSnapshot();
     }
+    onActiveProfileIdChanged: _ensureSnapshot()
 
     // The folder must exist before the model is pointed at it, or it never becomes Ready.
     function _start() {
@@ -115,6 +121,20 @@ Singleton {
             showHidden: false
             onCountChanged: root._scanFolder()
             onStatusChanged: root._scanFolder()
+        }
+    }
+
+    Loader {
+        id: snapshotLoader
+        active: root._started
+        sourceComponent: FileView {
+            path: root._snapshotFile
+            blockLoading: true
+            atomicWrites: true
+            printErrors: false
+            onLoaded: root._readSnapshot(text(), "")
+            onLoadFailed: error => root._readSnapshot(null, error === FileViewError.FileNotFound ? "" : FileViewError.toString(error))
+            onSaveFailed: error => root.log.warn("Failed to save", path, FileViewError.toString(error))
         }
     }
 
@@ -153,6 +173,10 @@ Singleton {
         function onSaved() {
             root.liveChanged();
             root._scheduleSync();
+        }
+
+        function onConfigProfileOrderChanged() {
+            root._refresh();
         }
     }
 
@@ -213,8 +237,18 @@ Singleton {
         _refresh();
     }
 
+    function _orderIds() {
+        const order = SessionData.configProfileOrder;
+        return Array.isArray(order) ? order.filter(id => typeof id === "string") : [];
+    }
+
     function _refresh() {
-        profiles = Object.values(_entries).filter(e => e.state === "ok").map(e => e.profile).sort((a, b) => (a.created || 0) - (b.created || 0) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+        const order = _orderIds();
+        const rank = id => {
+            const i = order.indexOf(id);
+            return i < 0 ? order.length : i;
+        };
+        profiles = Object.values(_entries).filter(e => e.state === "ok").map(e => e.profile).sort((a, b) => rank(a.id) - rank(b.id) || (a.created || 0) - (b.created || 0) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
         _scanned = _folderReady && _folderIds.every(name => _entries[name] || _deleting[name]);
         if (_pendingImport && find(_pendingImport)) {
             const id = _pendingImport;
@@ -653,12 +687,133 @@ Singleton {
         return true;
     }
 
+    function _readSnapshot(text, error) {
+        _snapshot = null;
+        try {
+            if (text !== null) {
+                const data = JSON.parse(text);
+                if (data && Object.keys(data).length === 1 && _validId(data.id)) {
+                    _snapshot = data;
+                } else {
+                    const loaded = _parseProfile(data?.id, text);
+                    if (!_isNewer(loaded))
+                        _snapshot = Profiles.migrate(loaded, SettingsData.settingsConfigVersion, SessionData.sessionConfigVersion) || loaded;
+                }
+            } else if (error) {
+                log.warn("Failed to read", _snapshotFile, error);
+            }
+        } catch (e) {
+            log.warn(_snapshotFile + " is unreadable:", e.message || String(e));
+        }
+        _snapshotRead = true;
+        _ensureSnapshot();
+    }
+
+    // Never cleared without an active profile: a hand-edited profile.json is briefly unreadable.
+    function _ensureSnapshot() {
+        const profile = find(activeProfileId);
+        if (!ready || !_snapshotRead || !profile)
+            return;
+        // A newer profile can't be restored, but it still ends the old profile's snapshot.
+        const newer = _isNewer(profile);
+        const idOnly = !_snapshot?.groups;
+        if (_snapshot?.id === profile.id && idOnly === newer)
+            return;
+        // At startup the active profile can still be unmigrated: its migration is written after ready turns true.
+        const stored = newer ? null : Profiles.migrate(profile, SettingsData.settingsConfigVersion, SessionData.sessionConfigVersion) || profile;
+        _snapshot = newer ? {
+            "id": profile.id
+        } : SpecUtil.cloneDef(stored);
+        snapshotLoader.item?.setText(JSON.stringify(newer ? _snapshot : Object.assign({
+            "id": profile.id
+        }, _fileForm(stored)), null, 2));
+    }
+
+    function _restoredSnapshot() {
+        const profile = activeProfile;
+        if (!ready || !profile || _isNewer(profile) || _snapshot?.id !== profile.id || !_snapshot.groups)
+            return null;
+        return Profiles.rescope(_snapshot, profile.groups, _current(), SettingsData.settingsConfigVersion, SessionData.sessionConfigVersion);
+    }
+
+    function canResetToApplied() {
+        const restored = _restoredSnapshot();
+        return !!restored && Profiles.diff(restored, _current()).length > 0;
+    }
+
+    // Groups added to the profile since it became active keep their current values.
+    function resetToApplied() {
+        const profile = activeProfile;
+        const restored = _restoredSnapshot();
+        if (_applying || !restored)
+            return false;
+        _applying = true;
+        try {
+            syncTimer.stop();
+            if (!_apply(restored))
+                return false;
+            if (profile.sync) {
+                const next = Object.assign({}, profile, {
+                    "groups": restored.groups,
+                    "configVersion": restored.configVersion,
+                    "sessionConfigVersion": restored.sessionConfigVersion,
+                    "settings": restored.settings,
+                    "session": restored.session
+                });
+                delete next.pluginSettings;
+                if (restored.pluginSettings)
+                    next.pluginSettings = restored.pluginSettings;
+                if (!_sameData(profile, next))
+                    _write(next);
+            }
+        } finally {
+            _applying = false;
+            syncTimer.stop();
+        }
+        return true;
+    }
+
     function cycle(step) {
         if (profiles.length === 0 || (profiles.length < 2 && activeProfileId))
             return false;
         const idx = profiles.findIndex(p => p.id === activeProfileId);
         const from = idx < 0 && step < 0 ? 0 : idx;
         return activate(profiles[(from + step + profiles.length) % profiles.length].id);
+    }
+
+    // The visible order wins, then loaded profiles it lacks, then stored ids of folders that exist but aren't loaded.
+    function setOrder(ids) {
+        if (!ready)
+            return false;
+        const loaded = profiles.map(p => p.id);
+        const stored = _orderIds();
+        const next = [...new Set([...ids.filter(id => loaded.includes(id)), ...loaded, ...stored.filter(id => _folderIds.includes(id))])];
+        if (JSON.stringify(next) !== JSON.stringify(stored)) {
+            SessionData.set("configProfileOrder", next);
+        }
+        return true;
+    }
+
+    // Returns the final 0-based index, or -1.
+    function moveProfile(id, index) {
+        const order = profiles.map(p => p.id);
+        const from = order.indexOf(id);
+        if (!ready || from < 0)
+            return -1;
+        const to = Math.max(0, Math.min(index, order.length - 1));
+        order.splice(from, 1);
+        order.splice(to, 0, id);
+        return setOrder(order) ? to : -1;
+    }
+
+    function _ipcMove(ref, position) {
+        const p = _ipcResolve(ref);
+        if (typeof p === "string")
+            return p;
+        const to = Math.max(1, Math.min(position, profiles.length));
+        if (profiles.findIndex(q => q.id === p.id) === to - 1)
+            return "SUCCESS: " + p.name + " is already at position " + to;
+        return moveProfile(p.id, to - 1) >= 0 ? "SUCCESS: Moved " + p.name + " to position " + to : "ERROR: Failed to move " + p.name;
     }
 
     function _ipcReady() {
@@ -854,6 +1009,12 @@ Singleton {
             if (!name.trim())
                 return "ERROR: No name given";
             return root.updateProfile(p.id, name, p.groups, p.sync) ? "SUCCESS: Renamed " + p.name + " to " + name.trim() : "ERROR: Failed to rename " + p.name;
+        }
+
+        function move(ref: string, position: int): string {
+            if (!root._ipcReady())
+                return "ERROR: Profiles are not loaded yet";
+            return root._ipcMove(ref, position);
         }
 
         function remove(ref: string): string {

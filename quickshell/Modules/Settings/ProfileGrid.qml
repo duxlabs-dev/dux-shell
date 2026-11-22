@@ -7,6 +7,7 @@ import qs.Services
 import qs.DCommon.FileBrowser
 import qs.DCommon.Widgets
 import qs.Modules.Settings.Widgets
+import "../../Common/QmlUtils.js" as QmlUtils
 
 Column {
     id: root
@@ -18,6 +19,12 @@ Column {
     property bool spinnerDue: false
 
     property var parentModal: null
+    property string draggedId: ""
+
+    function relayout() {
+        if (profileList.draggingIndex < 0)
+            profileList.layout();
+    }
 
     function openPage(page, id, imported) {
         if (!id && !ConfigProfileService.screenshotTargetId && !ConfigProfileService.capturingId && !ConfigProfileService.draft?.thumbnail) {
@@ -45,38 +52,51 @@ Column {
         }
     }
 
-    Grid {
-        id: grid
-        readonly property real cellWidth: (width - columnSpacing * (columns - 1)) / columns
+    DReorderList {
+        id: profileList
 
         width: root.width
         visible: ConfigProfileService.ready
         columns: root.columns
-        columnSpacing: root.cellSpacing
-        rowSpacing: root.cellSpacing
+        spacing: root.cellSpacing
+        Component.onCompleted: flickable = QmlUtils.findParentFlickable(root.parent)
+        onDragStarted: index => root.draggedId = ConfigProfileService.profiles[index]?.id ?? ""
+        onReordered: indices => {
+            const profiles = ConfigProfileService.profiles;
+            ConfigProfileService.setOrder(indices.map(i => profiles[i].id));
+        }
 
-        Repeater {
-            model: ScriptModel {
-                values: ConfigProfileService.profiles
-                objectProp: "id"
+        model: ScriptModel {
+            values: ConfigProfileService.profiles
+            objectProp: "id"
+        }
+
+        delegate: ProfileCard {
+            required property var modelData
+
+            reorderList: profileList
+            compact: root.compact
+            profile: ConfigProfileService.find(modelData.id) ?? modelData
+            targetScreen: root.targetScreen
+            onEditRequested: id => root.openPage("profile_edit", id)
+            onMenuRequested: (x, y, keyboard) => {
+                profileMenu.profile = profile;
+                profileMenu.canReset = isActive && ConfigProfileService.canResetToApplied();
+                const point = mapToItem(root, x, y);
+                profileMenu.openAt(point.x, point.y);
+                if (keyboard)
+                    profileMenu.highlightEdge(false);
             }
+        }
+    }
 
-            ProfileCard {
-                required property var modelData
-
-                width: grid.cellWidth
-                compact: root.compact
-                profile: ConfigProfileService.find(modelData.id) ?? modelData
-                targetScreen: root.targetScreen
-                onEditRequested: id => root.openPage("profile_edit", id)
-                onMenuRequested: (x, y, keyboard) => {
-                    profileMenu.profile = profile;
-                    const point = mapToItem(root, x, y);
-                    profileMenu.openAt(point.x, point.y);
-                    if (keyboard)
-                        profileMenu.highlightEdge(false);
-                }
-            }
+    // A Repeater gives no signal when the ScriptModel moves delegates, so moves made elsewhere need a relayout.
+    Connections {
+        target: ConfigProfileService
+        function onProfilesChanged() {
+            if (profileList.draggingIndex >= 0 && ConfigProfileService.profiles[profileList.draggingIndex]?.id !== root.draggedId)
+                profileList.cancel();
+            Qt.callLater(root.relayout);
         }
     }
 
@@ -84,6 +104,10 @@ Column {
         id: profileMenu
 
         property var profile: null
+        readonly property int cardIndex: ConfigProfileService.profiles.findIndex(p => p.id === profile?.id)
+        property bool canReset: false
+        readonly property bool vertical: profileList.columns <= 1
+        readonly property int leftDelta: I18n.isRtl && !vertical ? 1 : -1
         readonly property bool isActive: profile?.id === ConfigProfileService.activeProfileId
 
         anchorItem: root
@@ -113,6 +137,37 @@ Column {
             onClicked: {
                 profileMenu.close();
                 root.openPage("profile_edit", profileMenu.profile.id);
+            }
+        }
+
+        FileMenuItem {
+            visible: profileMenu.isActive
+            enabled: profileMenu.canReset
+            iconName: "history"
+            text: I18n.tr("Reset to when applied", "config profile menu: discard changes made since the profile was applied")
+            onClicked: {
+                profileMenu.close();
+                ConfigProfileService.resetToApplied();
+            }
+        }
+
+        FileMenuItem {
+            iconName: profileMenu.vertical ? "arrow_upward" : "arrow_back"
+            enabled: profileMenu.cardIndex >= 0 && profileMenu.cardIndex + profileMenu.leftDelta >= 0 && profileMenu.cardIndex + profileMenu.leftDelta < profileList.count
+            text: profileMenu.vertical ? I18n.tr("Move up", "config profile menu, one-column layout: move the profile card one place up") : I18n.tr("Move left", "config profile menu: move the profile card one place left")
+            onClicked: {
+                profileMenu.close();
+                profileList.move(profileMenu.cardIndex, profileMenu.leftDelta);
+            }
+        }
+
+        FileMenuItem {
+            iconName: profileMenu.vertical ? "arrow_downward" : "arrow_forward"
+            enabled: profileMenu.cardIndex >= 0 && profileMenu.cardIndex - profileMenu.leftDelta >= 0 && profileMenu.cardIndex - profileMenu.leftDelta < profileList.count
+            text: profileMenu.vertical ? I18n.tr("Move down", "config profile menu, one-column layout: move the profile card one place down") : I18n.tr("Move right", "config profile menu: move the profile card one place right")
+            onClicked: {
+                profileMenu.close();
+                profileList.move(profileMenu.cardIndex, -profileMenu.leftDelta);
             }
         }
 

@@ -273,6 +273,9 @@ var LOCAL_SPEC = {
     activeConfigProfile: {
         def: ""
     },
+    configProfileOrder: {
+        def: []
+    },
     activeDisplayProfile: {
         def: {}
     },
