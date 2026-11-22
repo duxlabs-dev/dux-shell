@@ -104,10 +104,7 @@ Column {
         id: profileMenu
 
         property var profile: null
-        readonly property int cardIndex: ConfigProfileService.profiles.findIndex(p => p.id === profile?.id)
         property bool canReset: false
-        readonly property bool vertical: profileList.columns <= 1
-        readonly property int leftDelta: I18n.isRtl && !vertical ? 1 : -1
         readonly property bool isActive: profile?.id === ConfigProfileService.activeProfileId
 
         anchorItem: root
@@ -148,26 +145,6 @@ Column {
             onClicked: {
                 profileMenu.close();
                 ConfigProfileService.resetToApplied();
-            }
-        }
-
-        FileMenuItem {
-            iconName: profileMenu.vertical ? "arrow_upward" : "arrow_back"
-            enabled: profileMenu.cardIndex >= 0 && profileMenu.cardIndex + profileMenu.leftDelta >= 0 && profileMenu.cardIndex + profileMenu.leftDelta < profileList.count
-            text: profileMenu.vertical ? I18n.tr("Move up", "config profile menu, one-column layout: move the profile card one place up") : I18n.tr("Move left", "config profile menu: move the profile card one place left")
-            onClicked: {
-                profileMenu.close();
-                profileList.move(profileMenu.cardIndex, profileMenu.leftDelta);
-            }
-        }
-
-        FileMenuItem {
-            iconName: profileMenu.vertical ? "arrow_downward" : "arrow_forward"
-            enabled: profileMenu.cardIndex >= 0 && profileMenu.cardIndex - profileMenu.leftDelta >= 0 && profileMenu.cardIndex - profileMenu.leftDelta < profileList.count
-            text: profileMenu.vertical ? I18n.tr("Move down", "config profile menu, one-column layout: move the profile card one place down") : I18n.tr("Move right", "config profile menu: move the profile card one place right")
-            onClicked: {
-                profileMenu.close();
-                profileList.move(profileMenu.cardIndex, -profileMenu.leftDelta);
             }
         }
 
