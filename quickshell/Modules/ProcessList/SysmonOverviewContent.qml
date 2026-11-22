@@ -25,7 +25,7 @@ Column {
     // DevicePane's overview layout is as tall as its ring.
     readonly property real bodyHeight: MonitorMetrics.ringSizeWide + bodyTopPadding + bodyBottomPadding
 
-    readonly property var rows: SysmonService.popoutDevices(deviceKey, entryType)
+    readonly property var rows: SysmonService.popoutDevices(deviceKey)
     readonly property string expandedKey: SysmonService.popoutSelection(rows, chosenKey || deviceKey, entryType)
     readonly property string monitorTarget: expandedKey || "processes"
     readonly property string expandedType: SysmonService.parseKey(expandedKey).type
@@ -36,8 +36,6 @@ Column {
                     vals: ["read", "write"]
                 })));
         const extra = SysmonCatalog.paneModules(expandedKey);
-        if (entryType === "net")
-            extra.push("net-rate");
         extra.forEach(m => {
             if (list.indexOf(m) < 0)
                 list.push(m);

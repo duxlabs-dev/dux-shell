@@ -27,7 +27,7 @@ Column {
     readonly property real tabHeight: stackedTabs ? Theme.buttonHeightM : Theme.buttonHeightS + Theme.spacingXS
 
     readonly property var own: SysmonService.parseKey(deviceKey)
-    readonly property var tabs: SysmonService.popoutDevices(deviceKey, entryType)
+    readonly property var tabs: SysmonService.popoutDevices(deviceKey)
     readonly property string currentKey: SysmonService.popoutSelection(tabs, chosenKey || deviceKey, entryType)
     readonly property string monitorTarget: currentKey
     readonly property var current: SysmonService.parseKey(currentKey)
@@ -46,7 +46,7 @@ Column {
             })[current.type] ?? [];
         const base = SysmonCatalog.paneModules(currentKey);
         const list = base.concat(procs);
-        return entryType === "net" && list.indexOf("net-rate") < 0 ? list.concat("net-rate") : list;
+        return own.type === "net" && own.id && list.indexOf("net-rate") < 0 ? list.concat("net-rate") : list;
     }
     readonly property var topProcesses: {
         if (!active || sortKey === "")

@@ -180,9 +180,9 @@ Singleton {
         return items;
     }
 
-    // A popout's device list: CPU, memory, every GPU, the entry's drive or Disks, and the entry's interfaces or Network.
+    // A popout's device list: CPU, memory, every GPU, the entry's drive or Disks, and the entry's interface or Network.
     // A drive or interface that isn't listed keeps its row under its own name.
-    function popoutDevices(deviceKey, entryType) {
+    function popoutDevices(deviceKey) {
         const own = parseKey(deviceKey);
         const ownEntry = own.id && (own.type === "disk" || own.type === "net") ? device(deviceKey) ?? {
             key: Devices.deviceKey(own.type, own.id),
@@ -190,19 +190,10 @@ Singleton {
             icon: own.type === "net" ? "lan" : "hard_drive",
             name: own.id
         } : null;
-        const all = devices({
-            aggregates: true
-        });
-        const list = all.filter(e => e.type === "cpu" || e.type === "memory" || e.type === "gpu");
+        const list = devices().filter(e => e.type === "cpu" || e.type === "memory" || e.type === "gpu");
         list.push(ownEntry?.type === "disk" ? ownEntry : aggregateEntry("disk"));
-        if (entryType !== "net")
-            return list.concat(aggregateEntry("net"));
-        if (deviceKey === "net")
-            list.push(aggregateEntry("net"));
-        const nets = all.filter(e => e.type === "net" && e.key !== "net");
-        if (ownEntry?.type === "net" && !nets.some(e => e.key === ownEntry.key))
-            list.push(ownEntry);
-        return list.concat(nets);
+        list.push(ownEntry?.type === "net" ? ownEntry : aggregateEntry("net"));
+        return list;
     }
 
     // The key when it is listed, else the first device of its type.
