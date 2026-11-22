@@ -127,15 +127,18 @@ Item {
             touchpadBy(event);
             return;
         }
-        if (Math.abs(event.angleDelta.x) <= Math.abs(event.angleDelta.y)) {
+        const horizontal = Math.abs(event.angleDelta.x) > Math.abs(event.angleDelta.y);
+        const shiftWheel = (event.modifiers & Qt.ShiftModifier) !== 0 && event.angleDelta.y !== 0;
+        if (!horizontal && !shiftWheel) {
             event.accepted = false;
             return;
         }
+        const delta = horizontal ? event.angleDelta.x : event.angleDelta.y;
         const quiet = Date.now() >= wheelQuietUntil;
         wheelQuietUntil = Date.now() + CcMetrics.pageWheelQuietMs;
         if (swipe.active || !quiet)
             return;
-        goTo(currentIndex + (event.angleDelta.x > 0 ? -1 : 1) * (I18n.isRtl ? -1 : 1));
+        goTo(currentIndex + (delta > 0 ? -1 : 1) * (I18n.isRtl ? -1 : 1));
     }
 
     function touchpadBy(event) {

@@ -59,8 +59,10 @@ CcTile {
     }
 
     onWheel: wheelEvent => {
-        if (!audio)
+        if (!audio || (wheelEvent.modifiers & Qt.ShiftModifier)) {
+            wheelEvent.accepted = false;
             return;
+        }
         const current = audio.volume * 100;
         const step = wheelEvent.angleDelta.y > 0 ? AudioService.wheelVolumeStep : -AudioService.wheelVolumeStep;
         audio.muted = false;
