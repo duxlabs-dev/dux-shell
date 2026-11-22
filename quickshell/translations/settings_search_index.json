@@ -21507,6 +21507,53 @@
     "conditionKey": "isHyprlandOrNiri"
   },
   {
+    "section": "configProfilePicker",
+    "label": "Behavior",
+    "tabIndex": 75,
+    "category": "Profiles",
+    "keywords": [
+      "appearance",
+      "behavior",
+      "carousel",
+      "dash",
+      "dashboard",
+      "grid",
+      "island",
+      "keybind",
+      "picker",
+      "preset",
+      "profiles",
+      "setup",
+      "snapshot",
+      "switcher"
+    ],
+    "parentLabel": "Appearance",
+    "icon": "tune"
+  },
+  {
+    "section": "configProfilePickerView",
+    "label": "Profile picker",
+    "tabIndex": 75,
+    "category": "Profiles",
+    "keywords": [
+      "appearance",
+      "carousel",
+      "dash",
+      "dashboard",
+      "grid",
+      "island",
+      "keybind",
+      "picker",
+      "preset",
+      "profile",
+      "profiles",
+      "setup",
+      "snapshot",
+      "switcher"
+    ],
+    "parentLabel": "Appearance"
+  },
+  {
     "section": "_tab_75",
     "label": "Profiles",
     "tabIndex": 75,

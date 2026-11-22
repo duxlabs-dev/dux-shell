@@ -305,6 +305,7 @@ QtObject {
         case "weather":
         case "wellbeing":
         case "wallpaper":
+        case "profiles":
             return entryId;
         }
         return "";
@@ -377,7 +378,7 @@ QtObject {
         powerMenuContentWidth = next;
     }
 
-    readonly property var destinations: ["launcher", "controlcenter", "wallpaper", "weather", "wellbeing", "notificationcenter", "clipboard", "powermenu"]
+    readonly property var destinations: ["launcher", "controlcenter", "wallpaper", "weather", "wellbeing", "notificationcenter", "clipboard", "powermenu", "profiles"]
     readonly property var blankClickOwners: ["live", "launcher", "controlcenter", "wallpaper", "notificationcenter", "clipboard", "powermenu"]
     readonly property var destinationDefaults: ({
             "launcher": {
@@ -410,6 +411,10 @@ QtObject {
             },
             "powermenu": {
                 "contentLength": 150,
+                "contentHeight": 0
+            },
+            "profiles": {
+                "contentLength": 130,
                 "contentHeight": 0
             }
         })

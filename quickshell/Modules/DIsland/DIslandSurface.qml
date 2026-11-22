@@ -523,6 +523,8 @@ Item {
             clipboardExpandedComponent: expandedClipboardComponent
             powerMenuCompactComponent: compactPowerMenuComponent
             powerMenuExpandedComponent: expandedPowerMenuComponent
+            profilesCompactComponent: compactProfilesComponent
+            profilesExpandedComponent: expandedProfilesComponent
         }
 
         HoverHandler {
@@ -986,6 +988,28 @@ Item {
 
         PowerMenuExpanded {
             controller: root.controller
+        }
+    }
+
+    Component {
+        id: compactProfilesComponent
+
+        DestinationCompact {
+            controller: root.controller
+            activityId: "profiles"
+            iconName: "style"
+            label: I18n.tr("Profiles", "island compact face: config profile picker label")
+        }
+    }
+
+    Component {
+        id: expandedProfilesComponent
+
+        ProfilePickerExpanded {
+            controller: root.controller
+            onWindowRequested: windowName => root.openAfterCollapse(windowName)
+            resizeGeometry: root.resizeGeometry
+            effectiveScreen: root.effectiveScreen
         }
     }
 

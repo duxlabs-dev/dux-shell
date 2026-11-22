@@ -16,7 +16,7 @@ SettingsCard {
     readonly property var routingValues: ["normal", "always", "last-used"]
     readonly property var interactionModeValues: ["click", "hybrid"]
     // Dash tabs that have an island face; see IslandController.dashActivityFor.
-    readonly property var dashTabValues: ["overview", "media", "weather", "wellbeing", "wallpaper", "notifications"]
+    readonly property var dashTabValues: ["overview", "media", "weather", "wellbeing", "wallpaper", "notifications", "profiles"]
     readonly property var dashTabLabels: dashTabValues.map(id => DashRegistry.entry(id)?.text ?? id)
     readonly property var routeActivities: ["launcher", "controlcenter", "notificationcenter", "clipboard", "powermenu", "home", "media", "weather", "wallpaper"]
     readonly property var routeKeys: routeActivities.map(activity => SettingsData.islandRouteKey(activity))
