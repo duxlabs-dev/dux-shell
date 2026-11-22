@@ -218,6 +218,8 @@ QtObject {
         if (_scrollInProgress)
             return;
         const delta = wheel.angleDelta.y;
+        if (delta === 0)
+            return;
         const isTouchpad = WheelInput.isTouchpad(wheel);
         const reverse = reverseScrolling ? -1 : 1;
 
