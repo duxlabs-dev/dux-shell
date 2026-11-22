@@ -263,100 +263,27 @@ Item {
                             }
                         }
 
-                        Item {
-                            width: parent.width
-                            height: maxVolSlider.height
-
-                            StyledText {
-                                id: maxVolLabel
-                                text: I18n.tr("Max volume") + " · " + maxVolSlider.value + "%"
-                                anchors.left: parent.left
-                                anchors.leftMargin: Theme.spacingM + Theme.iconSize + Theme.spacingM
-                                anchors.verticalCenter: parent.verticalCenter
-                                font.pixelSize: Theme.fontSizeSmall
-                                color: Theme.surfaceVariantText
-                                horizontalAlignment: Text.AlignLeft
-                            }
-
-                            DSlider {
-                                id: maxVolSlider
-                                upDownKeysStep: false
-                                anchors.left: maxVolLabel.right
-                                anchors.leftMargin: Theme.spacingS
-                                anchors.right: parent.right
-                                anchors.rightMargin: Theme.spacingM
-                                anchors.verticalCenter: parent.verticalCenter
-                                minimum: 100
-                                maximum: 200
-                                step: 5
-                                showValue: true
-                                wheelEnabled: false
-                                centerMinimum: true
-                                onSliderValueChanged: newValue => {
-                                    SessionData.setDeviceMaxVolume(modelData.name, newValue);
-                                }
-                            }
-
-                            Binding {
-                                target: maxVolSlider
-                                property: "value"
-                                value: SessionData.deviceMaxVolumes[modelData.name] ?? 100
-                                when: !maxVolSlider.isDragging
-                            }
+                        SettingsSliderRow {
+                            text: I18n.tr("Max volume")
+                            unit: "%"
+                            minimum: 100
+                            maximum: 200
+                            step: 5
+                            value: SessionData.deviceMaxVolumes[modelData.name] ?? 100
+                            onSliderValueChanged: newValue => SessionData.setDeviceMaxVolume(modelData.name, newValue)
                         }
 
-                        Item {
+                        SettingsSliderRow {
                             visible: AudioService.supportsBalance(modelData)
-                            width: parent.width
-                            height: balanceSlider.height
-
-                            StyledText {
-                                id: balanceLabel
-                                text: I18n.tr("Balance", "Audio settings: channel balance slider") + " · " + root.formatBalance(balanceSlider.value)
-                                anchors.left: parent.left
-                                anchors.leftMargin: Theme.spacingM + Theme.iconSize + Theme.spacingM
-                                anchors.verticalCenter: parent.verticalCenter
-                                font.pixelSize: Theme.fontSizeSmall
-                                color: Theme.surfaceVariantText
-                                horizontalAlignment: Text.AlignLeft
-                            }
-
-                            DSlider {
-                                id: balanceSlider
-                                upDownKeysStep: false
-                                anchors.left: balanceLabel.right
-                                anchors.leftMargin: Theme.spacingS
-                                anchors.right: balanceResetBtn.visible ? balanceResetBtn.left : parent.right
-                                anchors.rightMargin: balanceResetBtn.visible ? Theme.spacingXS : Theme.spacingM
-                                anchors.verticalCenter: parent.verticalCenter
-                                minimum: -100
-                                maximum: 100
-                                step: 5
-                                showValue: true
-                                wheelEnabled: false
-                                onSliderValueChanged: newValue => {
-                                    AudioService.setDeviceBalance(modelData, newValue);
-                                }
-                            }
-
-                            DActionButton {
-                                id: balanceResetBtn
-                                visible: balanceSlider.value !== 0
-                                anchors.right: parent.right
-                                anchors.rightMargin: Theme.spacingS
-                                anchors.verticalCenter: parent.verticalCenter
-                                iconName: "restart_alt"
-                                iconSize: Theme.iconSizeSmall
-                                tooltipText: I18n.tr("Reset")
-                                onClicked: AudioService.setDeviceBalance(modelData, 0)
-                            }
-
-                            Binding {
-                                target: balanceSlider
-                                property: "value"
-                                value: SessionData.deviceBalances[modelData.name] ?? 0
-                                when: !balanceSlider.isDragging
-                            }
+                            text: I18n.tr("Balance", "Audio settings: channel balance slider") + " · " + root.formatBalance(SessionData.deviceBalances[modelData.name] ?? 0)
+                            unit: "%"
+                            minimum: -100
+                            maximum: 100
+                            step: 5
+                            value: SessionData.deviceBalances[modelData.name] ?? 0
+                            modified: (SessionData.deviceBalances[modelData.name] ?? 0) !== 0
+                            onResetRequested: AudioService.setDeviceBalance(modelData, 0)
+                            onSliderValueChanged: newValue => AudioService.setDeviceBalance(modelData, newValue)
                         }
                     }
                 }
