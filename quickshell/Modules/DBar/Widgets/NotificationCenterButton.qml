@@ -2,13 +2,47 @@ import QtQuick
 import qs.Common
 import qs.Modules.Notifications
 import qs.Modules.Plugins
+import qs.Services
 import qs.DCommon.Widgets
 
 BasePill {
     id: root
 
+    property var widgetData: null
     property bool hasUnread: false
     property bool isActive: false
+
+    readonly property bool hideWhenEmpty: SettingsData.widgetOption("notificationButton", widgetData, "hideWhenEmpty")
+    readonly property bool shouldHide: hideWhenEmpty && widgetData?.enabled !== false && NotificationService.notifications.length === 0
+
+    width: shouldHide ? 0 : (isVerticalOrientation ? barThickness : visualWidth)
+    height: shouldHide ? 0 : (isVerticalOrientation ? visualHeight : barThickness)
+    visible: !shouldHide
+    opacity: shouldHide ? 0 : 1
+
+    Behavior on width {
+        NumberAnimation {
+            duration: Theme.expressiveDurations.expressiveDefaultSpatial
+            easing.type: Easing.BezierSpline
+            easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
+        }
+    }
+
+    Behavior on height {
+        NumberAnimation {
+            duration: Theme.expressiveDurations.expressiveDefaultSpatial
+            easing.type: Easing.BezierSpline
+            easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
+        }
+    }
+
+    Behavior on opacity {
+        NumberAnimation {
+            duration: Theme.expressiveDurations.expressiveFastEffects
+            easing.type: Easing.BezierSpline
+            easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
+        }
+    }
 
     content: Component {
         Item {
