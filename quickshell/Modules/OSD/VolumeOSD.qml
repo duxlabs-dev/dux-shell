@@ -25,7 +25,7 @@ LevelOSD {
     onIconClicked: AudioService.toggleMute()
     onLevelRequested: level => {
         SessionData.suppressOSDTemporarily();
-        audio.volume = level / 100;
+        AudioService.setNodeVolume(AudioService.sink, level / 100);
     }
 
     Connections {

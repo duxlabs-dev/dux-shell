@@ -54,6 +54,7 @@ Singleton {
         source: active ? "PipewireAudioBackend.qml" : ""
         onLoaded: {
             root.rebuildTypedNodeLists();
+            root.applySavedBalancesToNodes();
             root.deviceRevision++;
         }
     }
@@ -63,6 +64,7 @@ Singleton {
         ignoreUnknownSignals: true
         function onNodesUpdated() {
             root.adoptPendingCardSink();
+            root.applySavedBalancesToNodes();
             if (root.refCount === 0)
                 return;
             root.rebuildTypedNodeLists();
@@ -160,7 +162,7 @@ Singleton {
         return SessionData.deviceMaxVolumes[name] ?? 100;
     }
 
-    readonly property int sinkVolumePercent: Math.min(sinkMaxVolume, Math.round((sink?.audio?.volume ?? 0) * 100))
+    readonly property int sinkVolumePercent: Math.min(sinkMaxVolume, Math.round(getNodeVolume(sink) * 100))
     readonly property int sourceVolumePercent: Math.round((source?.audio?.volume ?? 0) * 100)
     readonly property int wheelVolumeStep: SettingsData.audioWheelScrollAmount
 
@@ -182,15 +184,137 @@ Singleton {
         return SessionData.deviceMaxVolumes[node.name] ?? 100;
     }
 
+    function getDeviceBalance(node) {
+        if (freebsdAudio || !node?.name || !node.isSink || node.isStream)
+            return 0;
+        return SessionData.getDeviceBalance(node.name);
+    }
+
+    function supportsBalance(node) {
+        if (freebsdAudio || !node?.audio || !node.isSink || node.isStream || !pipewireBackend)
+            return false;
+        const channels = node.audio.channels;
+        if (!channels || channels.length < 2)
+            return false;
+        let hasLeft = false;
+        let hasRight = false;
+        for (let i = 0; i < channels.length; i++) {
+            const side = pipewireBackend.channelSide(channels[i]);
+            if (side === "left")
+                hasLeft = true;
+            else if (side === "right")
+                hasRight = true;
+            if (hasLeft && hasRight)
+                return true;
+        }
+        return false;
+    }
+
+    function getNodeVolume(node) {
+        const audio = node?.audio;
+        if (!audio)
+            return 0;
+        const balance = getDeviceBalance(node);
+        if (balance === 0 || !pipewireBackend)
+            return audio.volume ?? 0;
+        const channels = audio.channels;
+        const volumes = audio.volumes;
+        if (!channels || !volumes || channels.length === 0 || volumes.length !== channels.length)
+            return audio.volume ?? 0;
+        const primarySide = balance < 0 ? "left" : "right";
+        let sum = 0;
+        let count = 0;
+        for (let i = 0; i < channels.length; i++) {
+            if (pipewireBackend.channelSide(channels[i]) === primarySide) {
+                sum += volumes[i];
+                count++;
+            }
+        }
+        return count > 0 ? sum / count : (audio.volume ?? 0);
+    }
+
+    function setNodeVolume(node, volumeRatio, forceChannelWrite) {
+        const audio = node?.audio;
+        if (!audio)
+            return;
+        const clamped = Math.max(0, volumeRatio);
+        const balance = getDeviceBalance(node);
+        if ((balance === 0 && !forceChannelWrite) || !pipewireBackend) {
+            audio.volume = clamped;
+            return;
+        }
+        const channels = audio.channels;
+        if (!channels || channels.length === 0) {
+            audio.volume = clamped;
+            return;
+        }
+        const b = balance / 100;
+        const leftScale = b > 0 ? 1 - b : 1;
+        const rightScale = b < 0 ? 1 + b : 1;
+        const nextVolumes = [];
+        for (let i = 0; i < channels.length; i++) {
+            const side = pipewireBackend.channelSide(channels[i]);
+            const scale = side === "left" ? leftScale : (side === "right" ? rightScale : 1);
+            nextVolumes.push(clamped * scale);
+        }
+        audio.volumes = nextVolumes;
+    }
+
+    function setDeviceBalance(node, balancePercent) {
+        if (freebsdAudio || !node?.name || !node.isSink || node.isStream)
+            return;
+        const baseVolume = getNodeVolume(node);
+        SessionData.setDeviceBalance(node.name, balancePercent);
+        setNodeVolume(node, baseVolume, true);
+    }
+
+    function applySavedBalance(node) {
+        if (freebsdAudio || !node?.audio || !node.isSink || node.isStream || !pipewireBackend)
+            return;
+        const balance = getDeviceBalance(node);
+        if (balance === 0)
+            return;
+        const channels = node.audio.channels;
+        const volumes = node.audio.volumes;
+        if (!channels || !volumes || channels.length === 0 || volumes.length !== channels.length)
+            return;
+        const baseVolume = getNodeVolume(node);
+        const b = balance / 100;
+        const leftScale = b > 0 ? 1 - b : 1;
+        const rightScale = b < 0 ? 1 + b : 1;
+        let needsUpdate = false;
+        const nextVolumes = [];
+        for (let i = 0; i < channels.length; i++) {
+            const side = pipewireBackend.channelSide(channels[i]);
+            const scale = side === "left" ? leftScale : (side === "right" ? rightScale : 1);
+            const expected = baseVolume * scale;
+            nextVolumes.push(expected);
+            if (Math.abs(volumes[i] - expected) > 0.001)
+                needsUpdate = true;
+        }
+        if (needsUpdate)
+            node.audio.volumes = nextVolumes;
+    }
+
+    function applySavedBalancesToNodes() {
+        if (freebsdAudio || !pipewireBackend)
+            return;
+        for (let i = 0; i < pipewireNodes.length; i++) {
+            const node = pipewireNodes[i];
+            if (node?.isSink && !node.isStream && getDeviceBalance(node) !== 0)
+                applySavedBalance(node);
+        }
+    }
+
     Connections {
         target: SessionData
         function onDeviceMaxVolumesChanged() {
             if (!root.sink?.audio)
                 return;
             const maxVol = root.sinkMaxVolume;
-            const currentPercent = Math.round(root.sink.audio.volume * 100);
+            const currentPercent = Math.round(root.getNodeVolume(root.sink) * 100);
             if (currentPercent > maxVol)
-                root.sink.audio.volume = maxVol / 100;
+                root.setNodeVolume(root.sink, maxVol / 100);
         }
     }
 
@@ -1320,7 +1444,7 @@ EOFCONFIG
         const audio = node?.audio;
         if (!audio)
             return false;
-        return audio.muted || audio.volume === 0;
+        return audio.muted || root.getNodeVolume(node) === 0;
     }
 
     function volumeIcon(volume, muted) {
@@ -1335,11 +1459,7 @@ EOFCONFIG
         const audio = node?.audio;
         if (!audio)
             return noDeviceIcon;
-        if (audio.muted)
-            return "volume_off";
-        if (audio.volume === 0)
-            return "volume_mute";
-        return audio.volume <= 0.33 ? "volume_down" : "volume_up";
+        return volumeIcon(root.getNodeVolume(node), audio.muted);
     }
 
     function sinkIcon(node) {
@@ -1733,7 +1853,7 @@ EOFCONFIG
         const maxVol = root.sinkMaxVolume;
         const clampedVolume = Math.max(0, Math.min(maxVol, percentage));
         root.sinkVolumeWrites = [];
-        root.sink.audio.volume = clampedVolume / 100;
+        root.setNodeVolume(root.sink, clampedVolume / 100);
         return `Volume set to ${clampedVolume}%`;
     }
 
@@ -1746,16 +1866,33 @@ EOFCONFIG
     property var sinkVolumeWrites: []
     property bool writingSinkVolume: false
 
-    onSinkChanged: sinkVolumeWrites = []
+    onSinkChanged: {
+        sinkVolumeWrites = [];
+        root.applySavedBalance(root.sink);
+    }
+
+    function handleSinkVolumeEcho() {
+        if (root.writingSinkVolume || root.sinkVolumeWrites.length === 0)
+            return;
+        const idx = root.sinkVolumeWrites.indexOf(Math.round(root.getNodeVolume(root.sink) * 100));
+        root.sinkVolumeWrites = idx < 0 ? [] : root.sinkVolumeWrites.slice(idx + 1);
+    }
 
     Connections {
         target: root.sink?.audio ?? null
+        ignoreUnknownSignals: true
 
         function onVolumeChanged() {
-            if (root.writingSinkVolume || root.sinkVolumeWrites.length === 0)
-                return;
-            const idx = root.sinkVolumeWrites.indexOf(Math.round(root.sink.audio.volume * 100));
-            root.sinkVolumeWrites = idx < 0 ? [] : root.sinkVolumeWrites.slice(idx + 1);
+            if (root.sink?.audio?.volumes === undefined)
+                root.handleSinkVolumeEcho();
+        }
+
+        function onVolumesChanged() {
+            root.handleSinkVolumeEcho();
+        }
+
+        function onChannelsChanged() {
+            root.applySavedBalance(root.sink);
         }
     }
 
@@ -1764,7 +1901,7 @@ EOFCONFIG
         const maxVol = root.sinkMaxVolume;
         const stepValue = outputVolumeStep(step);
         const pending = root.sinkVolumeWrites;
-        const currentVolume = pending.length > 0 ? pending[pending.length - 1] : Math.round(audio.volume * 100);
+        const currentVolume = pending.length > 0 ? pending[pending.length - 1] : Math.round(root.getNodeVolume(root.sink) * 100);
         const newVolume = Math.max(0, Math.min(maxVol, currentVolume + direction * stepValue));
 
         if (audio.muted)
@@ -1774,7 +1911,7 @@ EOFCONFIG
             return newVolume;
 
         root.writingSinkVolume = true;
-        audio.volume = newVolume / 100;
+        root.setNodeVolume(root.sink, newVolume / 100);
         root.writingSinkVolume = false;
         root.sinkVolumeWrites = pending.concat([newVolume]).slice(-8);
         return newVolume;
@@ -1988,7 +2125,7 @@ EOFCONFIG
             let result = "Audio Status:\n";
 
             if (root.sink?.audio) {
-                const volume = Math.round(root.sink.audio.volume * 100);
+                const volume = Math.round(root.getNodeVolume(root.sink) * 100);
                 const muteStatus = root.sink.audio.muted ? " (muted)" : "";
                 const maxVol = root.sinkMaxVolume;
                 result += `Output: ${volume}%${muteStatus} (max: ${maxVol}%)\n`;

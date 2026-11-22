@@ -291,6 +291,7 @@ Singleton {
     property string pinnedPlayerIdentity: ""
 
     property var deviceMaxVolumes: ({})
+    property var deviceBalances: ({})
     property var hiddenOutputDeviceNames: []
     property var hiddenInputDeviceNames: []
 
@@ -1812,6 +1813,26 @@ Singleton {
         if (!nodeName)
             return 100;
         return deviceMaxVolumes[nodeName] ?? 100;
+    }
+
+    function setDeviceBalance(nodeName, balancePercent) {
+        if (!nodeName)
+            return;
+        const updated = Object.assign({}, deviceBalances);
+        const clamped = Math.max(-100, Math.min(100, Math.round(balancePercent)));
+        if (clamped === 0) {
+            delete updated[nodeName];
+        } else {
+            updated[nodeName] = clamped;
+        }
+        deviceBalances = updated;
+        saveSettings();
+    }
+
+    function getDeviceBalance(nodeName) {
+        if (!nodeName)
+            return 0;
+        return deviceBalances[nodeName] ?? 0;
     }
 
     function updateLocale() {

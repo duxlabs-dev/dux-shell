@@ -248,6 +248,9 @@ var LOCAL_SPEC = {
     deviceMaxVolumes: {
         def: {}
     },
+    deviceBalances: {
+        def: {}
+    },
     hiddenOutputDeviceNames: {
         def: []
     },

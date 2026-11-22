@@ -11,8 +11,8 @@ CcSliderRow {
     property bool playFeedback: false
 
     readonly property var audio: node?.audio ?? null
-    readonly property real volumePercent: audio ? Math.round(audio.volume * 100) : 0
-    readonly property bool audible: !!audio && !audio.muted && audio.volume > 0
+    readonly property real volumePercent: audio ? Math.round(AudioService.getNodeVolume(node) * 100) : 0
+    readonly property bool audible: !!audio && !audio.muted && AudioService.getNodeVolume(node) > 0
 
     iconName: {
         if (!isInput)
@@ -38,7 +38,7 @@ CcSliderRow {
         if (!audio)
             return;
         SessionData.suppressOSDTemporarily();
-        audio.volume = newValue / 100;
+        AudioService.setNodeVolume(node, newValue / 100);
         if (newValue > 0 && audio.muted)
             audio.muted = false;
         if (playFeedback)

@@ -215,10 +215,10 @@ BasePill {
         }
 
         const maxVol = AudioService.sinkMaxVolume;
-        const currentVolume = AudioService.sink.audio.volume * 100;
+        const currentVolume = AudioService.getNodeVolume(AudioService.sink) * 100;
         const newVolume = delta > 0 ? Math.min(maxVol, currentVolume + step) : Math.max(0, currentVolume - step);
         AudioService.sink.audio.muted = false;
-        AudioService.sink.audio.volume = newVolume / 100;
+        AudioService.setNodeVolume(AudioService.sink, newVolume / 100);
         AudioService.playVolumeChangeSoundIfEnabled();
     }
 

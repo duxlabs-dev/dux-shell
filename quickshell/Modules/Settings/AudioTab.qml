@@ -69,6 +69,12 @@ Item {
         SessionData.setHiddenInputDeviceNames(uniqueNames);
     }
 
+    function formatBalance(value) {
+        if (value === 0)
+            return I18n.tr("Center");
+        return (value < 0 ? I18n.tr("Left") : I18n.tr("Right")) + " " + Math.abs(value) + "%";
+    }
+
     function updateDeviceList() {
         const allNodes = AudioService.allNodes;
 
@@ -199,7 +205,7 @@ Item {
         SettingsDeferred {
             SettingsCard {
                 tab: "audio"
-                tags: ["audio", "device", "output", "speaker"]
+                tags: ["audio", "device", "output", "speaker", "balance"]
                 title: I18n.tr("Output devices")
                 settingKey: "audioOutputDevices"
                 iconName: "volume_up"
@@ -296,6 +302,60 @@ Item {
                                 property: "value"
                                 value: SessionData.deviceMaxVolumes[modelData.name] ?? 100
                                 when: !maxVolSlider.isDragging
+                            }
+                        }
+
+                        Item {
+                            visible: AudioService.supportsBalance(modelData)
+                            width: parent.width
+                            height: balanceSlider.height
+
+                            StyledText {
+                                id: balanceLabel
+                                text: I18n.tr("Balance", "Audio settings: channel balance slider") + " · " + root.formatBalance(balanceSlider.value)
+                                anchors.left: parent.left
+                                anchors.leftMargin: Theme.spacingM + Theme.iconSize + Theme.spacingM
+                                anchors.verticalCenter: parent.verticalCenter
+                                font.pixelSize: Theme.fontSizeSmall
+                                color: Theme.surfaceVariantText
+                                horizontalAlignment: Text.AlignLeft
+                            }
+
+                            DSlider {
+                                id: balanceSlider
+                                upDownKeysStep: false
+                                anchors.left: balanceLabel.right
+                                anchors.leftMargin: Theme.spacingS
+                                anchors.right: balanceResetBtn.visible ? balanceResetBtn.left : parent.right
+                                anchors.rightMargin: balanceResetBtn.visible ? Theme.spacingXS : Theme.spacingM
+                                anchors.verticalCenter: parent.verticalCenter
+                                minimum: -100
+                                maximum: 100
+                                step: 5
+                                showValue: true
+                                wheelEnabled: false
+                                onSliderValueChanged: newValue => {
+                                    AudioService.setDeviceBalance(modelData, newValue);
+                                }
+                            }
+
+                            DActionButton {
+                                id: balanceResetBtn
+                                visible: balanceSlider.value !== 0
+                                anchors.right: parent.right
+                                anchors.rightMargin: Theme.spacingS
+                                anchors.verticalCenter: parent.verticalCenter
+                                iconName: "restart_alt"
+                                iconSize: Theme.iconSizeSmall
+                                tooltipText: I18n.tr("Reset")
+                                onClicked: AudioService.setDeviceBalance(modelData, 0)
+                            }
+
+                            Binding {
+                                target: balanceSlider
+                                property: "value"
+                                value: SessionData.deviceBalances[modelData.name] ?? 0
+                                when: !balanceSlider.isDragging
                             }
                         }
                     }
