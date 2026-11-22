@@ -18,31 +18,6 @@ BasePill {
     width: shouldHide ? 0 : (isVerticalOrientation ? barThickness : visualWidth)
     height: shouldHide ? 0 : (isVerticalOrientation ? visualHeight : barThickness)
     visible: !shouldHide
-    opacity: shouldHide ? 0 : 1
-
-    Behavior on width {
-        NumberAnimation {
-            duration: Theme.expressiveDurations.expressiveDefaultSpatial
-            easing.type: Easing.BezierSpline
-            easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
-        }
-    }
-
-    Behavior on height {
-        NumberAnimation {
-            duration: Theme.expressiveDurations.expressiveDefaultSpatial
-            easing.type: Easing.BezierSpline
-            easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
-        }
-    }
-
-    Behavior on opacity {
-        NumberAnimation {
-            duration: Theme.expressiveDurations.expressiveFastEffects
-            easing.type: Easing.BezierSpline
-            easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
-        }
-    }
 
     content: Component {
         Item {
