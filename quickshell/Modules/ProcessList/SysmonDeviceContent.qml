@@ -54,6 +54,11 @@ Column {
         const value = p => ProcessSort.rawValue(sortKey, p) ?? 0;
         return (DgopService.allProcesses ?? []).filter(p => value(p) > 0).sort((a, b) => value(b) - value(a) || a.pid - b.pid).slice(0, processRows);
     }
+    // A rate needs two samples, so for two intervals after a switch every process may still read unknown.
+    readonly property bool processesPending: active && sortKey !== "" && pendingTimer.running && (DgopService.allProcesses ?? []).every(p => ProcessSort.rawValue(sortKey, p) === null)
+
+    onSortKeyChanged: pendingTimer.restart()
+    onActiveChanged: pendingTimer.restart()
 
     function selectStep(from, step) {
         const i = Math.max(0, Math.min(tabs.length - 1, from + step));
@@ -62,6 +67,12 @@ Column {
     }
 
     spacing: Theme.spacingM
+
+    Timer {
+        id: pendingTimer
+        interval: DgopService.updateInterval * 2
+        running: true
+    }
 
     Ref {
         service: DgopService
@@ -117,12 +128,6 @@ Column {
                     event.accepted = true;
                 }
 
-                TextMetrics {
-                    id: captionMetrics
-                    font: caption.font
-                    text: caption.text
-                }
-
                 Grid {
                     anchors.centerIn: parent
                     columns: root.stackedTabs ? 1 : 2
@@ -140,7 +145,7 @@ Column {
 
                     StyledText {
                         id: caption
-                        width: Math.min(Math.ceil(captionMetrics.advanceWidth), tab.width - Theme.spacingS * 2 - (root.stackedTabs ? 0 : tabIcon.width + Theme.spacingXS))
+                        width: Math.min(Math.ceil(implicitWidth), tab.width - Theme.spacingS * 2 - (root.stackedTabs ? 0 : tabIcon.width + Theme.spacingXS))
                         text: tab.entry.gpu ? Devices.shortGpuName(tab.entry.gpu.displayName || tab.entry.name) : tab.entry.name || ""
                         font.pixelSize: Theme.fontSizeSmall
                         font.weight: Theme.fontWeightMedium
@@ -174,8 +179,14 @@ Column {
         width: parent.width
         height: root.processRows * root.processRowHeight + (root.processRows - 1) * Theme.groupedListGap
 
+        DSpinner {
+            anchors.centerIn: parent
+            size: Theme.iconSize
+            visible: root.processesPending
+        }
+
         StyledText {
-            visible: root.topProcesses.length === 0
+            visible: root.topProcesses.length === 0 && !root.processesPending
             anchors.centerIn: parent
             text: I18n.tr("No matching processes", "empty state in process list")
             font.pixelSize: Theme.fontSizeMedium

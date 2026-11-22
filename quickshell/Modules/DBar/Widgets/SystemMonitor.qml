@@ -85,8 +85,7 @@ BasePill {
     readonly property int hoveredGroup: {
         if (!hover.hovered)
             return 0;
-        const p = clickArea.mapToItem(root, hover.point.position.x, hover.point.position.y);
-        return groupAt(p.x, p.y);
+        return groupAt(hover.point.position.x, hover.point.position.y);
     }
     readonly property string tooltipText: groups[hoveredGroup]?.tooltip ?? ""
     property bool tooltipShown: false
@@ -482,6 +481,12 @@ BasePill {
         font.pixelSize: root.textSize
     }
 
+    // On the pill rather than the click area, so the pill's hover tint still sees the pointer.
+    HoverHandler {
+        id: hover
+        margin: Math.max(root.leftMargin, root.topMargin, root.rightMargin, root.bottomMargin)
+    }
+
     PillTooltip {
         id: tooltip
         pill: root
@@ -495,10 +500,6 @@ BasePill {
         height: root.height + root.topMargin + root.bottomMargin
         cursorShape: Qt.PointingHandCursor
         acceptedButtons: Qt.LeftButton
-
-        HoverHandler {
-            id: hover
-        }
 
         onPressed: mouse => {
             root.hideTooltip();
