@@ -1065,8 +1065,8 @@ var LOCAL_SPEC = {
         def: false,
         onChange: "applyStoredIconTheme"
     },
-    iconMonoApps: {
-        def: false,
+    iconAppStyle: {
+        def: "themed",
         onChange: "applyStoredIconTheme"
     },
     iconShape: {
@@ -1075,6 +1075,30 @@ var LOCAL_SPEC = {
     },
     iconGradient: {
         def: false,
+        onChange: "applyStoredIconTheme"
+    },
+    iconTileColor: {
+        def: "edge",
+        onChange: "applyStoredIconTheme"
+    },
+    iconColorSource: {
+        def: "common",
+        onChange: "applyStoredIconTheme"
+    },
+    iconTileStyle: {
+        def: "tonal",
+        onChange: "applyStoredIconTheme"
+    },
+    iconTileTone: {
+        def: -1,
+        onChange: "applyStoredIconTheme"
+    },
+    iconOwnTone: {
+        def: -1,
+        onChange: "applyStoredIconTheme"
+    },
+    iconFileStyle: {
+        def: "color",
         onChange: "applyStoredIconTheme"
     },
     availableIconThemes: {

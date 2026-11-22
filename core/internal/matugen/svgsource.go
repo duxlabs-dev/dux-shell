@@ -2,15 +2,12 @@ package matugen
 
 import (
 	"fmt"
-	"image"
 	"image/png"
-	"math"
 	"os"
 	"path/filepath"
 	"strings"
 
-	"github.com/srwiley/oksvg"
-	"github.com/srwiley/rasterx"
+	"github.com/duxlabs-dev/dux-shell/core/internal/colorseed"
 )
 
 // stageImageSource returns the absolute path templates see as {{image}} and,
@@ -37,7 +34,7 @@ func stageImageSource(opts *Options) (sourceImage string, cleanup func(), err er
 }
 
 func rasterizeSVGToPNG(path string) (string, error) {
-	img, err := rasterizeSVG(path, sourceSampleMaxDim)
+	img, err := colorseed.RasterizeSVG(path, sourceSampleMaxDim)
 	if err != nil {
 		return "", err
 	}
@@ -51,21 +48,4 @@ func rasterizeSVGToPNG(path string) (string, error) {
 		return "", err
 	}
 	return f.Name(), nil
-}
-
-func rasterizeSVG(path string, maxDim int) (image.Image, error) {
-	icon, err := oksvg.ReadIcon(path, oksvg.IgnoreErrorMode)
-	if err != nil {
-		return nil, err
-	}
-	vw, vh := icon.ViewBox.W, icon.ViewBox.H
-	if vw <= 0 || vh <= 0 {
-		return nil, fmt.Errorf("no usable viewBox")
-	}
-	scale := float64(maxDim) / math.Max(vw, vh)
-	w, h := max(int(vw*scale), 1), max(int(vh*scale), 1)
-	img := image.NewRGBA(image.Rect(0, 0, w, h))
-	icon.SetTarget(0, 0, float64(w), float64(h))
-	icon.Draw(rasterx.NewDasher(w, h, rasterx.NewScannerGV(w, h, img, img.Bounds())), 1)
-	return img, nil
 }

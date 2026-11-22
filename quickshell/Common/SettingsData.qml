@@ -685,11 +685,24 @@ Singleton {
     property string iconThemeLight: Spec.SPEC.iconThemeLight.def
     property bool iconThemePerMode: Spec.SPEC.iconThemePerMode.def
     property bool iconFolderRecolor: Spec.SPEC.iconFolderRecolor.def
-    property bool iconMonoApps: Spec.SPEC.iconMonoApps.def
+    property string iconAppStyle: Spec.SPEC.iconAppStyle.def
     property string iconShape: Spec.SPEC.iconShape.def
     property bool iconGradient: Spec.SPEC.iconGradient.def
-    readonly property string iconStyle: IconFolders.style(iconMonoApps, iconShape, iconGradient)
-    readonly property var iconStyleRunArgs: IconFolders.styleArgs(iconStyle, "icon-")
+    property string iconTileColor: Spec.SPEC.iconTileColor.def
+    property string iconColorSource: Spec.SPEC.iconColorSource.def
+    property string iconTileStyle: Spec.SPEC.iconTileStyle.def
+    property int iconTileTone: Spec.SPEC.iconTileTone.def
+    property int iconOwnTone: Spec.SPEC.iconOwnTone.def
+    property string iconFileStyle: Spec.SPEC.iconFileStyle.def
+    readonly property string iconStyle: IconFolders.style(iconAppStyle, iconShape, iconGradient, {
+        "color": iconTileColor,
+        "source": iconColorSource,
+        "style": iconTileStyle,
+        "tone": iconTileTone,
+        "ownTone": iconOwnTone,
+        "files": iconFileStyle
+    })
+    readonly property var iconStyleRunArgs: IconFolders.runArgs(iconTheme, iconStyle)
     readonly property string iconTheme: resolveIconTheme()
     property var availableIconThemes: Spec.SPEC.availableIconThemes.def
     property string systemDefaultIconTheme: Spec.SPEC.systemDefaultIconTheme.def
@@ -1704,7 +1717,7 @@ Singleton {
         _syncIconFolders();
     }
 
-    // A newly installed app has no badge until the pack is built again; an unchanged build keeps its name.
+    // A newly installed app has no tile until the pack is built again; an unchanged build keeps its name.
     function appsChanged() {
         if (IconFolders.isSelf(IconFolders.packOf(_wantedIconFolders())))
             iconAppsRebuildDelay.restart();

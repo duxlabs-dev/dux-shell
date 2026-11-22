@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/duxlabs-dev/dux-shell/core/internal/iconfolders"
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -42,4 +43,79 @@ func TestIconFoldersPrintsOneLineOrNothing(t *testing.T) {
 	out, err = iconFoldersResult(picked, false, false)
 	assert.ErrorIs(t, err, iconfolders.ErrOccupied)
 	assert.Nil(t, out, "the shell takes any stdout line for success")
+}
+
+func TestIconTileFlagsDefaultToTodaysBuild(t *testing.T) {
+	for _, cmd := range []*cobra.Command{matugenGenerateCmd, matugenQueueCmd} {
+		opts := buildMatugenOptions(cmd)
+		assert.Equal(t, "theme", opts.IconTileColor, cmd.Name())
+		assert.Equal(t, "score", opts.IconColorSource, cmd.Name())
+		assert.Equal(t, "tonal", opts.IconTileStyle, cmd.Name())
+		assert.Equal(t, -1, opts.IconTileTone, cmd.Name())
+		assert.Equal(t, -1, opts.IconOwnTone, cmd.Name())
+		assert.Equal(t, "standard", opts.IconFileStyle, cmd.Name())
+		assert.Equal(t, "color", opts.IconAppStyle, cmd.Name())
+	}
+	flags := matugenIconFoldersCmd.Flags()
+	for name, want := range map[string]string{"tile-color": "theme", "color-source": "score", "tile-style": "tonal", "tile-tone": "-1", "own-tone": "-1", "file-style": "standard", "app-style": "color"} {
+		flag := flags.Lookup(name)
+		require.NotNil(t, flag, name)
+		assert.Equal(t, want, flag.DefValue, name)
+	}
+}
+
+func TestIconTileFlagsReachTheOptions(t *testing.T) {
+	cmd := &cobra.Command{Use: "probe"}
+	for _, name := range []string{"state-dir", "shell-dir", "config-dir", "kind", "value", "mode", "icon-theme", "matugen-type", "stock-colors", "terminal-palette", "skip-templates", "icon-shape", "source-mode", "seed-color", "spec"} {
+		cmd.Flags().String(name, "", "")
+	}
+	for _, name := range []string{"run-user-templates", "sync-mode-with-portal", "terminals-always-dark", "icon-folders", "icon-gradient"} {
+		cmd.Flags().Bool(name, false, "")
+	}
+	cmd.Flags().Int("terminal-opacity", 0, "")
+	cmd.Flags().Float64("contrast", 0, "")
+	cmd.Flags().String("icon-tile-color", "theme", "")
+	cmd.Flags().String("icon-color-source", "score", "")
+	cmd.Flags().String("icon-tile-style", "tonal", "")
+	cmd.Flags().Int("icon-tile-tone", -1, "")
+	cmd.Flags().Int("icon-own-tone", -1, "")
+	cmd.Flags().String("icon-file-style", "standard", "")
+	cmd.Flags().String("icon-app-style", "color", "")
+	require.NoError(t, cmd.ParseFlags([]string{"--icon-tile-color", "edge", "--icon-color-source", "common", "--icon-tile-style", "content", "--icon-tile-tone", "0", "--icon-own-tone", "55", "--icon-file-style", "color", "--icon-app-style", "monochrome"}))
+
+	opts := buildMatugenOptions(cmd)
+	assert.Equal(t, "edge", opts.IconTileColor)
+	assert.Equal(t, "common", opts.IconColorSource)
+	assert.Equal(t, "content", opts.IconTileStyle)
+	assert.Equal(t, 0, opts.IconTileTone)
+	assert.Equal(t, 55, opts.IconOwnTone)
+	assert.Equal(t, "color", opts.IconFileStyle)
+	assert.Equal(t, "monochrome", opts.IconAppStyle)
+}
+
+func TestStyleFlagsTakeOnlyKnownStyles(t *testing.T) {
+	for _, tc := range []struct {
+		cmd             *cobra.Command
+		files, appStyle string
+	}{{matugenGenerateCmd, "icon-file-style", "icon-app-style"}, {matugenQueueCmd, "icon-file-style", "icon-app-style"}, {matugenIconFoldersCmd, "file-style", "app-style"}} {
+		cmd := &cobra.Command{Use: tc.cmd.Name()}
+		cmd.Flags().String(tc.files, "standard", "")
+		cmd.Flags().String(tc.appStyle, "color", "")
+		require.NotNil(t, tc.cmd.PreRunE, tc.cmd.Name())
+		for _, value := range []string{"standard", "color", "Color"} {
+			require.NoError(t, cmd.Flags().Set(tc.files, value))
+			assert.NoError(t, tc.cmd.PreRunE(cmd, nil), tc.cmd.Name()+" "+value)
+		}
+		for _, value := range []string{"color", "themed", "Monochrome"} {
+			require.NoError(t, cmd.Flags().Set(tc.appStyle, value))
+			assert.NoError(t, tc.cmd.PreRunE(cmd, nil), tc.cmd.Name()+" "+value)
+		}
+		for _, value := range []string{"base", "papirus"} {
+			require.NoError(t, cmd.Flags().Set(tc.files, value))
+			assert.ErrorContains(t, tc.cmd.PreRunE(cmd, nil), "bad file style", tc.cmd.Name()+" "+value)
+		}
+		require.NoError(t, cmd.Flags().Set(tc.files, "color"))
+		require.NoError(t, cmd.Flags().Set(tc.appStyle, "mono"))
+		assert.ErrorContains(t, tc.cmd.PreRunE(cmd, nil), "bad app style", tc.cmd.Name())
+	}
 }

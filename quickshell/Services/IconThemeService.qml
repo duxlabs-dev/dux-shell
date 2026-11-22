@@ -26,6 +26,14 @@ Singleton {
             return null;
         return IconFolders.manifest(SettingsData.resolveIconTheme(), SettingsData.iconThemeGenerated, SettingsData.iconFolderState);
     }
+    // Shell tiles that sit beside app icons, such as launcher folders, take this outline to match them.
+    readonly property string tileShape: {
+        if (typeof SettingsData === "undefined")
+            return "";
+        return IconFolders.tileShape(SettingsData.resolveIconTheme(), SettingsData.iconThemeGenerated, SettingsData.iconFolderState, SettingsData.iconShape);
+    }
+    // Those shell tiles turn neutral too when the pack draws every app on one neutral tile.
+    readonly property bool neutralTiles: tileShape !== "" && SettingsData.iconAppStyle === "monochrome"
     // The theme draws DMS's own launcher entries, as the self-built pack does.
     readonly property bool drawsShellEntries: {
         if (!indexed || !managedTheme)
