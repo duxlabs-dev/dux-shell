@@ -13,8 +13,11 @@ Singleton {
     readonly property real tileGap: Theme.spacingXS
     readonly property real tileLabelHeight: Theme.spacingXL
     readonly property real tileLabelBlockHeight: tileLabelMetrics.lineSpacing * 2
+    readonly property real tileLabelBaseline: tileLabelMetrics.ascent
+    // Room for a wrapped second label line below the centred content
+    readonly property real tileContentPad: tileLabelBlockHeight - tileLabelBaseline + Theme.spacingXS
     readonly property real tileImageRatio: Theme.launcherImageRatio
-    readonly property real tileMinHeight: tileGap + Theme.spacingXS * 2 + gridIconSize + Theme.spacingS + tileLabelBlockHeight
+    readonly property real tileMinHeight: tileGap + gridIconSize + Theme.spacingS + tileLabelBaseline + tileContentPad * 2
     // Grid cells follow the list pitch so every density fits the same whole rows
     readonly property real gridDensityScale: (rowHeight + rowGap) / (Theme.listItemHeight + Theme.groupedListGap)
     readonly property real pillHeight: Theme.fieldHeightLarge
@@ -26,7 +29,7 @@ Singleton {
     readonly property real iconSize: Theme.avatarSize + Theme.densityStepS
     readonly property real gridIconSize: Theme.iconSizeLarge + Theme.spacingL
     readonly property real iconsIconSize: Theme.iconSizeLarge + Theme.spacingXL + Theme.densityStepS
-    readonly property real iconsCellHeight: iconsIconSize + Theme.spacingS + tileLabelBlockHeight + Theme.spacingM
+    readonly property real iconsCellHeight: tileGap + iconsIconSize + Theme.spacingS + tileLabelBaseline + tileContentPad * 2
     readonly property real previewWidth: Theme.listItemHeight
     readonly property real previewHeight: Theme.avatarSize
     readonly property real footerHeight: Math.max(Theme.buttonHeightXXS, Theme.buttonHeightXS + Theme.densityStepS)

@@ -140,14 +140,20 @@ Rectangle {
         anchors.fill: parent
         active: !root.imageTile
         sourceComponent: Item {
-            Column {
+            // Centred from icon top to first-line baseline; wrapped lines hang below
+            Item {
+                id: tileContent
+
+                readonly property real labelY: root.showIcon ? root.computedIconSize + Theme.spacingS : 0
+
                 anchors.centerIn: parent
-                spacing: Theme.spacingS
                 width: parent.width - root.contentInset * 2
+                height: labelY + LauncherMetrics.tileLabelBaseline
 
                 Loader {
                     width: root.computedIconSize
                     height: root.computedIconSize
+                    anchors.top: parent.top
                     anchors.horizontalCenter: parent.horizontalCenter
                     visible: root.showIcon
                     sourceComponent: root.isFolder ? folderIconComponent : appIconComponent
@@ -195,6 +201,7 @@ Rectangle {
                 }
 
                 StyledText {
+                    y: tileContent.labelY
                     width: parent.width
                     height: LauncherMetrics.tileLabelBlockHeight
                     verticalAlignment: Text.AlignTop
