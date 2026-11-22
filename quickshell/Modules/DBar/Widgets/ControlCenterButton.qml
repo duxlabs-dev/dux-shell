@@ -557,7 +557,7 @@ BasePill {
                         NumericText {
                             id: audioPercentV
                             visible: verticalGroupItem.modelData.id === "audio" && root.showAudioPercent && isFinite(AudioService.sink?.audio?.volume)
-                            text: Math.round((AudioService.sink?.audio?.volume ?? 0) * 100) + "%"
+                            text: AudioService.sinkVolumePercent + "%"
                             reserveText: "100%"
                             font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale, root.barConfig?.maximizeWidgetText)
                             color: Theme.widgetTextColor
@@ -756,7 +756,7 @@ BasePill {
                                 NumericText {
                                     id: audioPercent
                                     visible: root.showAudioPercent && isFinite(AudioService.sink?.audio?.volume)
-                                    text: Math.round((AudioService.sink?.audio?.volume ?? 0) * 100) + "%"
+                                    text: AudioService.sinkVolumePercent + "%"
                                     reserveText: "100%"
                                     font.pixelSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale, root.barConfig?.maximizeWidgetText)
                                     color: Theme.widgetTextColor

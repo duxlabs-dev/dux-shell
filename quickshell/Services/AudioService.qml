@@ -64,7 +64,6 @@ Singleton {
         ignoreUnknownSignals: true
         function onNodesUpdated() {
             root.adoptPendingCardSink();
-            root.applySavedBalancesToNodes();
             if (root.refCount === 0)
                 return;
             root.rebuildTypedNodeLists();
@@ -263,6 +262,7 @@ Singleton {
     function setDeviceBalance(node, balancePercent) {
         if (freebsdAudio || !node?.name || !node.isSink || node.isStream)
             return;
+        SessionData.suppressOSDTemporarily();
         const baseVolume = getNodeVolume(node);
         SessionData.setDeviceBalance(node.name, balancePercent);
         setNodeVolume(node, baseVolume, true);
@@ -1889,6 +1889,8 @@ EOFCONFIG
 
         function onVolumesChanged() {
             root.handleSinkVolumeEcho();
+            if (!root.writingSinkVolume)
+                root.applySavedBalance(root.sink);
         }
 
         function onChannelsChanged() {
