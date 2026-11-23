@@ -385,6 +385,72 @@ BasePill {
 
     property bool menuOpen: false
 
+    // StatusNotifierItem tooltips: title plus description. The description may
+    // carry the spec's small HTML subset, so tags are stripped to plain text.
+    function trayTooltipText(item) {
+        if (!item)
+            return "";
+        const title = (item.tooltipTitle || "").trim();
+        const description = (item.tooltipDescription || "").replace(/<br\s*\/?>/gi, "\n").replace(/<[^>]*>/g, "").trim();
+        if (title && description)
+            return title + "\n" + description;
+        return title || description;
+    }
+
+    // The area that currently owns the tooltip. Moving straight from one icon to
+    // the next can deliver the new icon's entered before the old icon's exited,
+    // so an icon only hides the tooltip while it still owns it.
+    property Item trayTooltipOwner: null
+
+    function showTrayTooltip(item, area) {
+        if (!root.parentScreen || !area)
+            return;
+        const text = root.trayTooltipText(item);
+        if (!text) {
+            root.hideTrayTooltip();
+            return;
+        }
+        root.trayTooltipOwner = area;
+        trayTooltipLoader.active = true;
+        if (!trayTooltipLoader.item)
+            return;
+        const currentScreen = root.parentScreen || Screen;
+        if (root.isVerticalOrientation) {
+            const localPos = area.mapToItem(null, area.width / 2, area.height / 2);
+            const isLeft = root.axis?.edge === "left";
+            const tooltipX = isLeft ? (root.barThickness + root.barSpacing + Theme.spacingXS) : (currentScreen.width - root.barThickness - root.barSpacing - Theme.spacingXS);
+            trayTooltipLoader.item.show(text, tooltipX, localPos.y + root.minTooltipY, currentScreen, isLeft, !isLeft);
+            return;
+        }
+        const localPos = area.mapToItem(null, area.width / 2, 0);
+        let tooltipY;
+        if (root.axis?.edge === "bottom") {
+            const lines = text.split("\n").length;
+            const tooltipHeight = Theme.fontSizeSmall * 1.5 * lines + Theme.spacingS * 2;
+            tooltipY = currentScreen.height - root.barThickness - root.barSpacing - Theme.spacingXS - tooltipHeight;
+        } else {
+            tooltipY = root.barThickness + root.barSpacing + Theme.spacingXS;
+        }
+        trayTooltipLoader.item.show(text, localPos.x, tooltipY, currentScreen, false, false);
+    }
+
+    // Without an area: hide unconditionally (press, icon without a tooltip).
+    function hideTrayTooltip(area) {
+        if (area && area !== root.trayTooltipOwner)
+            return;
+        root.trayTooltipOwner = null;
+        if (trayTooltipLoader.item)
+            trayTooltipLoader.item.hide();
+    }
+
+    Loader {
+        id: trayTooltipLoader
+        active: false
+        sourceComponent: DTooltip {
+            multiline: true
+        }
+    }
+
     function _openOverflowAt(triggerItem) {
         if (!triggerItem || !root.parentScreen)
             return;
@@ -644,7 +710,11 @@ BasePill {
                 cursorShape: Qt.PointingHandCursor
                 enabled: root.inlineExpanded
 
+                onEntered: root.showTrayTooltip(trayItem, inlineVisualContent)
+                onExited: root.hideTrayTooltip(inlineVisualContent)
+
                 onPressed: mouse => {
+                    root.hideTrayTooltip();
                     const pos = mapToItem(inlineVisualContent, mouse.x, mouse.y);
                     inlineItemRipple.trigger(pos.x, pos.y);
                 }
@@ -764,7 +834,11 @@ BasePill {
                 acceptedButtons: Qt.LeftButton | Qt.RightButton
                 cursorShape: dragHandler.longPressing ? Qt.DragMoveCursor : Qt.PointingHandCursor
 
+                onEntered: root.showTrayTooltip(delegateRoot.trayItem, visualContent)
+                onExited: root.hideTrayTooltip(visualContent)
+
                 onPressed: mouse => {
+                    root.hideTrayTooltip();
                     const pos = mapToItem(visualContent, mouse.x, mouse.y);
                     itemRipple.trigger(pos.x, pos.y);
                     if (mouse.button === Qt.LeftButton) {

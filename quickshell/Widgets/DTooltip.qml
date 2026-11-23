@@ -13,6 +13,9 @@ Item {
     property bool alignLeft: false
     property bool alignRight: false
     property bool persistent: false
+    // Same meaning as DTooltipV2.multiline: show every line and wrap long ones
+    // instead of eliding to a single line.
+    property bool multiline: false
     property bool shown: false
 
     readonly property var surface: IdleSurfaces.surfaceFor("tooltip", targetScreen?.name ?? "")
@@ -72,9 +75,9 @@ Item {
             text: root.text
             font.pixelSize: Theme.fontSizeSmall
             color: Theme.tooltipText
-            wrapMode: Text.NoWrap
-            maximumLineCount: 1
-            elide: Text.ElideRight
+            wrapMode: root.multiline ? Text.Wrap : Text.NoWrap
+            maximumLineCount: root.multiline ? 2147483647 : 1
+            elide: root.multiline ? Text.ElideNone : Text.ElideRight
             width: Math.min(implicitWidth, Theme.tooltipMaxWidth)
         }
     }
