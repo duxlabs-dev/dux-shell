@@ -3,6 +3,7 @@ import qs.Common
 import qs.Services
 import qs.Widgets
 import "ControllerUtils.js" as Utils
+import "../../Common/settings/AppFolders.js" as AppFolders
 
 DContextMenu {
     id: root
@@ -21,7 +22,7 @@ DContextMenu {
             return item?.id || coreAppData?.builtInPluginId || "";
         return desktopEntry?.id || desktopEntry?.execString || "";
     }
-    readonly property bool isPinned: !!appId && SessionData.getDockPins(pinDockId).includes(appId)
+    readonly property bool isPinned: SessionData.isDockAppPinned(pinDockId, appId)
     readonly property bool isRegularApp: item?.type === "app" && !item.isCore && desktopEntry
     readonly property bool isFlatpakApp: isRegularApp && (item?.source === "flatpak" || !!item?.flatpakId || Utils.classifyAppSource(desktopEntry) === "flatpak")
     readonly property string flatpakAppId: item?.flatpakId || (isFlatpakApp ? Utils.extractFlatpakAppId(desktopEntry) : "")
@@ -29,6 +30,7 @@ DContextMenu {
     readonly property bool isFolderItem: item?.type === "folder"
 
     property var pendingAfterHide: null
+    property bool foldersExpanded: false
 
     signal editAppRequested(var app)
 
@@ -125,6 +127,7 @@ DContextMenu {
     }
 
     onRenderActiveChanged: {
+        foldersExpanded = false;
         if (renderActive)
             return;
         if (parentHandler)
@@ -162,20 +165,21 @@ DContextMenu {
                     action: removeFromFolder
                 }];
 
-        const items = [{
+        return [
+            {
                 type: "item",
                 icon: "create_new_folder",
                 text: I18n.tr("Create folder"),
                 action: createFolder
-            }];
-        for (const folder of SessionData.launcherFolders.slice(0, 6))
-            items.push({
-                type: "item",
-                icon: "folder",
-                text: I18n.tr("Add to %1").arg(folder.name),
-                action: () => addToFolder(folder.id)
-            });
-        return items;
+            }
+        ].concat(AppFolders.addToFolderEntries(SessionData.launcherFolders, {
+            header: I18n.tr("Add to folder"),
+            label: folder => I18n.tr("Add to %1").arg(folder.name),
+            indent: Theme.spacingS,
+            expanded: root.foldersExpanded,
+            toggle: () => root.foldersExpanded = !root.foldersExpanded,
+            add: folder => root.addToFolder(folder.id)
+        }));
     }
 
     function folderMenuItems() {
@@ -255,10 +259,9 @@ DContextMenu {
     function togglePin() {
         if (!appId || !SettingsData.getDockConfig(pinDockId))
             return;
-        const pins = SessionData.getDockPins(pinDockId);
         if (!isPinned)
             SettingsData.ensureDockApps(pinDockId);
-        SessionData.setDockPins(pinDockId, isPinned ? pins.filter(id => id !== appId) : pins.concat([appId]));
+        SessionData.setDockAppPinned(pinDockId, appId, !isPinned);
         hide();
     }
 

@@ -7,6 +7,7 @@ import qs.Common
 import qs.Services
 import qs.DCommon.Widgets
 import qs.Modals.DLauncherV2.Components
+import qs.Widgets as Widgets
 
 LauncherTile {
     id: root
@@ -95,8 +96,9 @@ LauncherTile {
                 height: width
                 active: root.isFolder
                 visible: active
-                sourceComponent: LauncherFolderIcon {
-                    item: root.item
+                sourceComponent: Widgets.AppFolderIcon {
+                    members: root.item?.data?.members ?? []
+                    materialIcon: root.item?.icon ?? ""
                 }
             }
 

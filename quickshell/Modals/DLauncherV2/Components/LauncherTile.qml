@@ -4,6 +4,7 @@ import QtQuick
 import qs.Common
 import qs.DCommon.Widgets
 import qs.Modals.DLauncherV2
+import qs.Widgets as Widgets
 
 Rectangle {
     id: root
@@ -193,8 +194,9 @@ Rectangle {
                     Component {
                         id: folderIconComponent
 
-                        LauncherFolderIcon {
-                            item: root.item
+                        Widgets.AppFolderIcon {
+                            members: root.item?.data?.members ?? []
+                            materialIcon: root.item?.icon ?? ""
                             receiving: root.receiving
                         }
                     }
