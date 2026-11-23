@@ -7,7 +7,7 @@ import qs.Services
 
 Singleton {
     readonly property real sheetWidthDefault: sheetWidthFor(defaultColumns)
-    readonly property int defaultColumns: 8
+    readonly property int defaultColumns: 7
     readonly property int minimumColumns: 4
     readonly property int osdSheetColumns: 6
     readonly property real sheetPadding: PopoutMetrics.contentPadding

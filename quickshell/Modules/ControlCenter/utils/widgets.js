@@ -101,7 +101,7 @@ function defaultWidget(id, columns) {
 
 function sizeSpec(widget, columns, rows = Infinity) {
     const spec = {
-        "w": 4,
+        "w": 3.5,
         "h": 1,
         "minW": 1,
         "maxW": columns,

@@ -804,6 +804,12 @@ function migrateToVersion(obj, targetVersion) {
         settings.configVersion = 46;
     }
 
+    if (currentVersion < 47 && targetVersion >= 47) {
+        if (Array.isArray(settings.controlCenterWidgets) && settings.controlCenterColumns === undefined)
+            settings.controlCenterColumns = 8;
+        settings.configVersion = 47;
+    }
+
     return settings;
 }
 
