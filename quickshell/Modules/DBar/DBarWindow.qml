@@ -9,6 +9,8 @@ import qs.Widgets
 PanelWindow {
     id: barWindow
     readonly property var log: Log.scoped("DBarWindow")
+    contentItem.opacity: IdleService.chromeOpacity
+    visible: IdleService.chromeOpacity > 0
 
     required property var rootWindow
     required property var barConfig

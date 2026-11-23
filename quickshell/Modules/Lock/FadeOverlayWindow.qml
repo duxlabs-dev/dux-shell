@@ -13,6 +13,7 @@ PanelWindow {
     property bool _completed: false
     property bool fadeEnabled: true
     property int gracePeriod: 5
+    property int fadeDurationMs: gracePeriod * 1000
     property color overlayColor: "black"
     property bool holdsAfterCompletion: false
 
@@ -56,7 +57,7 @@ PanelWindow {
             property: "opacity"
             from: 0.0
             to: 1.0
-            duration: root.gracePeriod * 1000
+            duration: root.fadeDurationMs
             easing.type: Easing.OutCubic
         }
     }

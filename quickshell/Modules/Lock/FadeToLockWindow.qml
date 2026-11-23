@@ -5,6 +5,7 @@ import qs.Common
 FadeOverlayWindow {
     WlrLayershell.namespace: "dms:fade-to-lock"
     fadeEnabled: SettingsData.fadeToLockEnabled
-    gracePeriod: SettingsData.fadeToLockGracePeriod
+    fadeDurationMs: Theme.expressiveDurations.expressiveEffects
+    overlayColor: "transparent"
     holdsAfterCompletion: true
 }

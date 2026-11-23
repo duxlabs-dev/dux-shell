@@ -11,6 +11,7 @@ import qs.DCommon.Common as DCommon
 import qs.Services
 import "../Common/WorkspaceModel.js" as WorkspaceModel
 import "../Common/WindowModel.js" as WindowModel
+import "../Common/LockWorkspaceState.js" as LockWorkspaceState
 import "NiriFullscreen.js" as NiriFullscreen
 
 Singleton {
@@ -2189,18 +2190,20 @@ Singleton {
             else
                 NiriService.switchToWorkspace(record.id);
             return;
-        case "hyprland":
+        case "hyprland": {
+            const selector = WorkspaceModel.hyprlandSelector(record);
+            log.debug("[LockWorkspace] switchToWorkspace hyprland record id", record.id, "name", record.name, "output", record.output, "selector", selector, "screen", screenName, "focusedMonitor", Hyprland.focusedMonitor?.name);
+            if (screenName && screenName !== Hyprland.focusedMonitor?.name)
+                HyprlandService.focusMonitor(screenName);
             if (record.special === true) {
-                // togglespecialworkspace acts on the focused monitor, so a pill on another monitor's bar focuses that monitor first
-                if (screenName && screenName !== Hyprland.focusedMonitor?.name)
-                    HyprlandService.focusMonitor(screenName);
                 HyprlandService.toggleSpecial(record.name === "special" ? "" : record.name);
                 return;
             }
             if (moveToOutput && record.output && record.output !== moveToOutput)
-                HyprlandService.moveWorkspaceToMonitor(WorkspaceModel.hyprlandSelector(record), moveToOutput);
-            HyprlandService.focusWorkspace(WorkspaceModel.hyprlandSelector(record));
+                HyprlandService.moveWorkspaceToMonitor(selector, moveToOutput);
+            HyprlandService.focusWorkspace(selector);
             return;
+        }
         case "mango":
             MangoService.switchToTag(record.output, record.id);
             return;
@@ -2217,6 +2220,93 @@ Singleton {
             UmbrielService.action("workspace-switch", String(record.idx), "--output", record.output);
             return;
         }
+    }
+
+    function captureLockWorkspace(screenName) {
+        if (!root.hasWorkspaceIpc)
+            return null;
+        const activeRecord = root.activeWorkspaceForScreen(screenName);
+        if (!activeRecord)
+            return null;
+        log.debug("[LockWorkspace] captureLockWorkspace screen", screenName, "active id", activeRecord.id, "name", activeRecord.name, "output", activeRecord.output, "key", root.currentWorkspaceKey(screenName, false));
+        return {
+            screenName,
+            workspaceRecord: activeRecord,
+            workspaceKey: root.currentWorkspaceKey(screenName, false)
+        };
+    }
+
+    function findLockWorkspaceTarget(screenName, savedState, reservedTargets) {
+        if (!root.hasWorkspaceIpc || !savedState)
+            return null;
+        reservedTargets = reservedTargets || [];
+
+        const workspaces = root.workspacesForScreen(screenName, false, {
+            occupiedOnly: false,
+            minCount: 0,
+            showSpecial: false,
+            showAllTags: false
+        });
+
+        function workspaceOccupied(record) {
+            if (!record)
+                return true;
+            if (LockWorkspaceState.isReservedWorkspaceTarget(record, reservedTargets))
+                return true;
+            if (LockWorkspaceState.compareWorkspaceRecords(savedState.workspaceRecord, record))
+                return true;
+            if (root._workspaceKey(record) === root.currentWorkspaceKey(screenName, false))
+                return true;
+            return root.workspaceOccupied(record);
+        }
+
+        const found = LockWorkspaceState.findLockWorkspaceTarget(savedState, workspaces, workspaceOccupied);
+        log.debug("[LockWorkspace] findLockWorkspaceTarget screen", screenName, "found", !!found, "id", found?.id, "name", found?.name, "output", found?.output);
+        if (found) {
+            reservedTargets.push(found);
+            return found;
+        }
+
+        if (root.supportsPersistentWorkspaces && root.compositor !== "mango") {
+            switch (root.compositor) {
+                case "hyprland": {
+                    const state = root._hyprlandWorkspaceState();
+                    const reservedIds = reservedTargets.filter(target => typeof target?.id === "number").map(target => target.id);
+                    const id = LockWorkspaceState.nextHyprlandLockWorkspaceId(state.workspaces, savedState.workspaceRecord?.id, reservedIds);
+                    const target = { id: id, name: String(id), output: screenName };
+                    reservedTargets.push(target);
+                    return target;
+                }
+                case "sway":
+                case "scroll":
+                case "miracle": {
+                    const reservedNames = reservedTargets.filter(target => typeof target?.name === "string").map(target => target.name);
+                    const name = LockWorkspaceState.nextI3LockWorkspaceName(reservedNames);
+                    const target = { id: name, name: name, output: screenName };
+                    reservedTargets.push(target);
+                    return target;
+                }
+                default:
+                    return null;
+            }
+        }
+
+        return null;
+    }
+
+    function switchToLockWorkspace(target, screenName) {
+        if (!target || target.placeholder === true || !root.hasWorkspaceIpc)
+            return false;
+        root.switchToWorkspace(target, screenName, false);
+        return true;
+    }
+
+    function restoreLockWorkspace(savedState) {
+        if (!savedState || !savedState.screenName || !savedState.workspaceRecord)
+            return false;
+        log.debug("[LockWorkspace] restoreLockWorkspace screen", savedState.screenName, "saved id", savedState.workspaceRecord.id, "name", savedState.workspaceRecord.name, "output", savedState.workspaceRecord.output, "key", root.currentWorkspaceKey(savedState.screenName, false));
+        root.switchToWorkspace(savedState.workspaceRecord, savedState.screenName, false);
+        return true;
     }
 
     function stepWorkspace(workspaces, currentKey, direction) {

@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell.Wayland
 import qs.Common
+import qs.Services
 import qs.Modules.ScreenCorners
 
 FocusScope {
@@ -12,13 +13,29 @@ FocusScope {
     required property var pam
     required property string sharedPasswordBuffer
     required property string screenName
+    required property bool lockUiVisible
     property bool inputRevealed: false
+    property bool fadeCompletionReported: false
     signal inputRevealRequested(bool revealed)
+    signal lockUiFadeFinished()
 
     required property bool isLocked
 
     signal passwordChanged(string newPassword)
     signal unlockRequested
+
+    function completeLockUiFadeIfNeeded() {
+        if (IdleService.lockTransitionPhase !== "fadingLockUi")
+            return;
+        if (root.lockUiVisible !== false)
+            return;
+        if (lockContent.uiOpacity !== 0)
+            return;
+        if (fadeCompletionReported)
+            return;
+        fadeCompletionReported = true;
+        root.lockUiFadeFinished();
+    }
 
     HoverHandler {
         enabled: root.pam.awaitingActivityRetry
@@ -58,15 +75,20 @@ FocusScope {
         screenName: root.screenName
         enabled: !videoScreensaver.active
         focus: !videoScreensaver.active
-        opacity: videoScreensaver.active ? 0 : 1
+        uiOpacity: (root.lockUiVisible && !videoScreensaver.active) ? 1 : 0
         onUnlockRequested: root.unlockRequested()
         onPasswordEdited: text => root.passwordChanged(text)
 
-        Behavior on opacity {
+        Behavior on uiOpacity {
             NumberAnimation {
                 duration: Theme.expressiveDurations.expressiveEffects
                 easing.type: Easing.BezierSpline
                 easing.bezierCurve: Theme.expressiveCurves.expressiveEffects
+                // Video screensaver can hold opacity at zero, so completion must not depend on animation start.
+                onRunningChanged: {
+                    if (!running)
+                        completeLockUiFadeIfNeeded()
+                }
             }
         }
     }
@@ -82,6 +104,14 @@ FocusScope {
         anchors.fill: parent
         active: SettingsData.screenCornersEnabled
         sourceComponent: ScreenCornerShape {}
+    }
+
+    onLockUiVisibleChanged: {
+        if (lockUiVisible) {
+            fadeCompletionReported = false;
+            return;
+        }
+        Qt.callLater(completeLockUiFadeIfNeeded)
     }
 
     Component.onCompleted: forceActiveFocus()

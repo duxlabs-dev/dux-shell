@@ -8,6 +8,8 @@ import qs.Services
 
 PanelWindow {
     id: root
+    contentItem.opacity: IdleService.chromeOpacity
+    visible: IdleService.chromeOpacity > 0
 
     required property string barId
 

@@ -22,6 +22,7 @@ FocusScope {
     property bool demoMode: false
     property bool greeterPreview: false
     property var pam: demoPam
+    property real uiOpacity: 1
     property string screenName: ""
     property bool unlocking: false
     property string pamState: ""
@@ -104,12 +105,12 @@ FocusScope {
             return;
         if (root.unlocking)
             return;
-        if (!root.visible || root.opacity <= 0)
+        if (!root.visible || root.uiOpacity <= 0)
             return;
         if (root.sessionLock && !root.sessionLock.secure)
             return;
         Qt.callLater(() => {
-            if (root.visible && root.opacity > 0 && !root.unlocking)
+            if (root.visible && root.uiOpacity > 0 && !root.unlocking)
                 sendLockerReadyOnce();
         });
     }
@@ -135,7 +136,7 @@ FocusScope {
     }
 
     onVisibleChanged: maybeSend()
-    onOpacityChanged: maybeSend()
+    onUiOpacityChanged: maybeSend()
 
     LockScreenBackground {
         id: background
@@ -164,6 +165,7 @@ FocusScope {
         lockHost: root
         editMode: root.demoMode
         bottomInset: editorLoader.item?.fabReserved ?? 0
+        opacity: root.uiOpacity
         onFocusStolen: root.focusPasswordField()
         onOptionsRequested: instanceId => editorLoader.item?.showOptions(instanceId)
     }

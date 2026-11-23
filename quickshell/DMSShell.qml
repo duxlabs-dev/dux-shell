@@ -111,10 +111,6 @@ Item {
             sourceComponent: FadeToLockWindow {
                 screen: fadeWindowLoader.modelData
 
-                onFadeCompleted: {
-                    IdleService.lockRequested();
-                }
-
                 onFadeCancelled: {
                     root.log.debug("Fade to lock cancelled by user on screen:", fadeWindowLoader.modelData.name);
                 }
