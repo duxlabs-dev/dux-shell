@@ -25,10 +25,7 @@ Item {
         if (!pluginService?.availablePlugins || !pluginId)
             return false;
         const plugin = pluginService.availablePlugins[pluginId];
-        if (!plugin)
-            return false;
-        const caps = Array.isArray(plugin.capabilities) ? plugin.capabilities : [];
-        return plugin.type === "desktop" || caps.includes("desktop-widget");
+        return !!plugin?.surfaces?.includes("desktop");
     }
 
     readonly property bool hasPermission: {
