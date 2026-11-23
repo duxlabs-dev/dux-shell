@@ -262,7 +262,10 @@ func (m Model) viewInstallComplete() string {
 	cmd := m.styles.Accent
 	autostart, logs := m.troubleshootingHints()
 
-	if m.isImmutable() && m.optionalDepSelected("dux-greeter") {
+	if m.greeterSetupFailed {
+		b.WriteString(m.styles.Warning.Render("⚠ The greeter was installed but not set up. Finish it before rebooting:") + "\n")
+		b.WriteString(label.Render("  Configure greetd:  ") + cmd.Render("dms-greeter install") + "\n\n")
+	} else if m.isImmutable() && m.optionalDepSelected("dux-greeter") {
 		b.WriteString(label.Render("Greeter:") + "\n")
 		b.WriteString(label.Render("  Configure greetd:  ") + cmd.Render("dms-greeter install --yes") + "\n\n")
 	}
@@ -331,6 +334,9 @@ func (m Model) updateInstallingPackagesState(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	m.packageProgress = progressMsg
+	if progressMsg.greeterFailed {
+		m.greeterSetupFailed = true
+	}
 
 	if progressMsg.logOutput != "" {
 		m.installationLogs = append(m.installationLogs, progressMsg.logOutput)
