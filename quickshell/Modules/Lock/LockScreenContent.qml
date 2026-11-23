@@ -28,6 +28,8 @@ FocusScope {
     property string pamState: ""
     property bool lockerReadySent: false
     property bool lockerReadyArmed: false
+    property bool lockReadyConfirmed: false
+    readonly property bool widgetsRevealed: demoMode || greeterPreview || lockReadyConfirmed
     property var sessionLock: null
     property Item authWidget: null
     readonly property Item backgroundItem: background
@@ -41,6 +43,7 @@ FocusScope {
     function resetLockState() {
         widgetLayer.refreshPlacement();
         lockerReadySent = false;
+        lockReadyConfirmed = false;
         lockerReadyArmed = true;
         unlocking = false;
         pamState = "";
@@ -89,6 +92,7 @@ FocusScope {
             return;
         if (root.unlocking)
             return;
+        lockReadyConfirmed = true;
         lockerReadySent = true;
         if (SessionService.loginctlAvailable && DMSService.apiVersion >= 2) {
             DMSService.sendRequest("loginctl.lockerReady", null, resp => {
