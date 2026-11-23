@@ -34,7 +34,7 @@ Column {
 
     SettingsCard {
         id: optionsCard
-        visible: content.length > 0
+        visible: hasContent
     }
 
     Column {

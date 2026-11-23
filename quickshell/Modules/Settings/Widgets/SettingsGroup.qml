@@ -8,6 +8,7 @@ Item {
     id: root
 
     readonly property bool isSettingsGroup: true
+    readonly property bool hasContent: host.children.length > 0
     default property alias content: host.data
     property real spacing: SettingsMetrics.groupGap
     property real customPaddingH: SettingsMetrics.rowPaddingH

@@ -51,15 +51,17 @@ DesktopWidgetInstanceSettings {
         }
     }
 
-    function hasSettingsGroup(node, depth) {
-        if (!node || depth > 3)
+    function hasCardLevelContent(node, depth) {
+        if (!node || depth > 2)
             return false;
+        if (node.isSettingsCard === true || node.isSettingsGroup === true)
+            return true;
         const list = node.content ?? node.children ?? [];
         for (let i = 0; i < list.length; i++) {
             const child = list[i];
-            if (child?.isSettingsGroup === true)
+            if (child?.isSettingsCard === true || child?.isSettingsGroup === true)
                 return true;
-            if (hasSettingsGroup(child, depth + 1))
+            if (hasCardLevelContent(child, depth + 1))
                 return true;
         }
         return false;
@@ -68,17 +70,26 @@ DesktopWidgetInstanceSettings {
     Loader {
         id: settingsLoader
 
+        property Item defaultParent: null
+
         width: parent ? parent.width : 0
         active: root.settingsPath !== ""
         source: root.settingsPath
+        Component.onCompleted: if (!defaultParent) defaultParent = parent
 
         onLoaded: {
             if (!item)
                 return;
-            if (root.hasSettingsGroup(item, 0)) {
+            if (!defaultParent)
+                defaultParent = settingsLoader.parent;
+            if (root.hasCardLevelContent(item, 0)) {
                 settingsLoader.parent = root.cardsHost;
                 settingsLoader.x = 0;
                 settingsLoader.y = 0;
+                settingsLoader.width = Qt.binding(() => root.cardsHost.width);
+            } else if (defaultParent && settingsLoader.parent !== defaultParent) {
+                settingsLoader.parent = defaultParent;
+                settingsLoader.width = Qt.binding(() => settingsLoader.parent ? settingsLoader.parent.width : 0);
             }
             if (item.instanceId !== undefined)
                 item.instanceId = root.instanceId;

@@ -7,6 +7,9 @@ import qs.Services
 Column {
     id: root
 
+    readonly property bool isSettingsCard: true
+    readonly property bool hasContent: contentGroup.hasContent
+
     LayoutMirroring.enabled: I18n.isRtl
     LayoutMirroring.childrenInherit: true
 
