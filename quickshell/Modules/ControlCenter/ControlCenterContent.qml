@@ -14,6 +14,7 @@ import "./utils/widgets.js" as WidgetUtils
 import "./utils/pages.js" as Pages
 import "../../Common/GridLayout.js" as GridUtils
 import "../../Common/ControlCenterLayout.js" as PanelLayout
+import "../../Common/EditHistory.js" as EditHistory
 
 FocusScope {
     id: root
@@ -159,16 +160,11 @@ FocusScope {
     readonly property real targetImplicitHeight: CcMetrics.gridVerticalPadding + (fixedHeight ? Math.max(fixedGridHeight, gridDragging ? heldGridHeight : gridTargetHeight) : gridDragging ? heldGridHeight : gridTargetHeight)
     readonly property bool contentOverflows: targetImplicitHeight > (host.availableHeight ?? Infinity)
     property Item detailReturnFocus: null
-    // One string so Discard and undo can compare and restore the whole session state at once.
-    readonly property string editState: JSON.stringify({
-        "widgets": SettingsData.controlCenterWidgets || [],
-        "columns": SettingsData.controlCenterColumns,
-        "rows": SettingsData.controlCenterRows
-    })
+    readonly property var editKeys: ["controlCenterWidgets", "controlCenterColumns", "controlCenterRows"]
+    readonly property string editState: EditHistory.snapshot(SettingsData, editKeys)
     property string editSnapshot: ""
     property string undoBase: ""
     property var undoStack: []
-    readonly property int undoLimit: 50
     property bool undoBatching: false
     property int rowPreview: -1
     property var resizeBase: null
@@ -341,17 +337,9 @@ FocusScope {
     }
 
     function applyEditState(state) {
-        if (state === "")
-            return;
-        const wanted = JSON.parse(state);
         const batching = undoBatching;
         undoBatching = true;
-        if (JSON.stringify(SettingsData.controlCenterWidgets || []) !== JSON.stringify(wanted.widgets))
-            SettingsData.set("controlCenterWidgets", wanted.widgets);
-        if (SettingsData.controlCenterColumns !== wanted.columns)
-            SettingsData.set("controlCenterColumns", wanted.columns);
-        if (SettingsData.controlCenterRows !== wanted.rows)
-            SettingsData.set("controlCenterRows", wanted.rows);
+        EditHistory.restore(SettingsData, state, editKeys);
         undoBatching = batching;
     }
 
@@ -496,7 +484,7 @@ FocusScope {
         enforceFixedHeight();
         if (!host.editMode || editState === undoBase)
             return;
-        undoStack = undoStack.concat([undoBase]).slice(-undoLimit);
+        undoStack = EditHistory.push(undoStack, undoBase);
         undoBase = editState;
     }
 
@@ -512,7 +500,7 @@ FocusScope {
         undoBatching = false;
         if (editState === before)
             return;
-        undoStack = undoStack.concat([before]).slice(-undoLimit);
+        undoStack = EditHistory.push(undoStack, before);
         undoBase = editState;
     }
 
