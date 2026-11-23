@@ -221,7 +221,7 @@ Item {
 
         Item {
             id: desktopDisplaySettings
-            visible: root.isDesktopPlugin
+            visible: root.isDesktopPlugin && !root.pluginService?.isDesktopInstance
             width: parent.width
             height: visible ? displaySettingsColumn.implicitHeight : 0
 
