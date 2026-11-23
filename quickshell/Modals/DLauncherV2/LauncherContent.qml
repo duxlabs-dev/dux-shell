@@ -256,8 +256,10 @@ FocusScope {
             }
             if (actionPanel.expanded && actionPanel.selectedActionIndex > 0) {
                 actionPanel.executeSelectedAction();
+            } else if (controller.searchMode === "dmenu" && hasCtrl) {
+                controller.acceptDmenuCustomText();
             } else {
-                controller.executeSelected(!!(event.modifiers & Qt.ControlModifier));
+                controller.executeSelected(hasCtrl);
             }
             return;
         case Qt.Key_Menu:
@@ -425,8 +427,10 @@ FocusScope {
                             controller.toggleDmenuMultiSelectHighlighted();
                         } else if (actionPanel.expanded && actionPanel.selectedActionIndex > 0) {
                             actionPanel.executeSelectedAction();
+                        } else if (controller.searchMode === "dmenu" && (event.modifiers & Qt.ControlModifier)) {
+                            controller.acceptDmenuCustomText();
                         } else {
-                            controller.executeSelected();
+                            controller.executeSelected(!!(event.modifiers & Qt.ControlModifier));
                         }
                         event.accepted = true;
                     }

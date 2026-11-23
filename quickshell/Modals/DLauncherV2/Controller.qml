@@ -2698,6 +2698,14 @@ Item {
         executeItem(selectedItem, true, newInstance);
     }
 
+    function acceptDmenuCustomText() {
+        if (searchMode !== "dmenu" || dmenuOnlyMatch || dmenuNoCustom)
+            return false;
+        _sendDmenuFreeText(searchQuery);
+        itemExecuted();
+        return true;
+    }
+
     function executeItem(item, isKeyboard = false, newInstance = false) {
         if (!item)
             return;
