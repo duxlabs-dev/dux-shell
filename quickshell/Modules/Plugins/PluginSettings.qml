@@ -25,7 +25,7 @@ Item {
         if (!pluginService?.availablePlugins || !pluginId)
             return false;
         const plugin = pluginService.availablePlugins[pluginId];
-        return plugin?.type === "desktop";
+        return !!plugin?.surfaces?.includes("desktop");
     }
 
     readonly property bool hasPermission: {
@@ -221,7 +221,7 @@ Item {
 
         Item {
             id: desktopDisplaySettings
-            visible: root.isDesktopPlugin
+            visible: root.isDesktopPlugin && !root.pluginService?.isDesktopInstance
             width: parent.width
             height: visible ? displaySettingsColumn.implicitHeight : 0
 
