@@ -21,6 +21,7 @@ Column {
     default property alias rows: optionsCard.content
     property alias optionsTitle: optionsCard.title
     property alias cards: extraCards.data
+    readonly property Item cardsHost: extraCards
 
     function updateConfig(key, value) {
         const updates = Object.assign({}, configFixups);

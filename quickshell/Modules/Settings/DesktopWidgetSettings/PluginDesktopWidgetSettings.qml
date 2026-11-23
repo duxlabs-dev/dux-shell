@@ -51,14 +51,35 @@ DesktopWidgetInstanceSettings {
         }
     }
 
-    cards: Loader {
-        width: parent.width
+    function hasSettingsGroup(node, depth) {
+        if (!node || depth > 3)
+            return false;
+        const list = node.content ?? node.children ?? [];
+        for (let i = 0; i < list.length; i++) {
+            const child = list[i];
+            if (child?.isSettingsGroup === true)
+                return true;
+            if (hasSettingsGroup(child, depth + 1))
+                return true;
+        }
+        return false;
+    }
+
+    Loader {
+        id: settingsLoader
+
+        width: parent ? parent.width : 0
         active: root.settingsPath !== ""
         source: root.settingsPath
 
         onLoaded: {
             if (!item)
                 return;
+            if (root.hasSettingsGroup(item, 0)) {
+                settingsLoader.parent = root.cardsHost;
+                settingsLoader.x = 0;
+                settingsLoader.y = 0;
+            }
             if (item.instanceId !== undefined)
                 item.instanceId = root.instanceId;
             if (item.instanceData !== undefined)
