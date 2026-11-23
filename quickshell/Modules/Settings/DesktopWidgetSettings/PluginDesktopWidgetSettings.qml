@@ -16,11 +16,12 @@ DesktopWidgetInstanceSettings {
     }
 
     showAppearance: false
-    showPlacement: settingsPath === ""
+    showPlacement: true
 
     QtObject {
         id: instanceScopedPluginService
 
+        readonly property bool isDesktopInstance: true
         readonly property var availablePlugins: PluginService.availablePlugins
         readonly property var loadedPlugins: PluginService.loadedPlugins
         readonly property var pluginDesktopComponents: PluginService.pluginDesktopComponents

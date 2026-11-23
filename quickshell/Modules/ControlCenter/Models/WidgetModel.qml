@@ -223,7 +223,7 @@ QtObject {
             "description": I18n.tr("Profile"),
             "icon": "person",
             "type": "info",
-            "category": "user",
+            "category": "system",
             "enabled": true
         },
         {

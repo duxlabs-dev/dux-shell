@@ -767,6 +767,7 @@ Column {
                 onValueSelected: value => SettingsData.set("controlCenterEditLayout", value)
             }
 
+
             SettingsSliderRow {
                 tab: "theme"
                 tags: ["control", "center", "icon", "scale", "size", "tile", "header"]
