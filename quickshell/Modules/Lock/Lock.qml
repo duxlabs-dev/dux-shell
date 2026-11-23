@@ -80,7 +80,7 @@ Scope {
     }
 
     function setLockPhase(event) {
-        IdleService.lockTransitionPhase = LockTransitionState.next(IdleService.lockTransitionPhase, event, SettingsData.fadeToLockEnabled);
+        IdleService.lockTransitionPhase = LockTransitionState.next(IdleService.lockTransitionPhase, event, true);
     }
 
     function applySecureUi() {
@@ -241,12 +241,10 @@ Scope {
             pendingLock = true;
 
         setLockPhase("lockRequested");
-        if (SettingsData.fadeToLockEnabled) {
-            IdleService.fadeToLockRequested();
-            closeTransientUi();
-            IdleService.hideChrome(finishChromeHidden);
-            return;
-        }
+        IdleService.fadeToLockRequested();
+        closeTransientUi();
+        IdleService.hideChrome(finishChromeHidden);
+        return;
 
         if (!externallyInitiated)
             notifyLoginctl(true);
@@ -411,7 +409,7 @@ Scope {
         }
         resetLockRetry();
 
-        if (SettingsData.fadeToLockEnabled && IdleService.lockTransitionPhase === "lockVisible") {
+        if (IdleService.lockTransitionPhase === "lockVisible") {
             setLockPhase("unlockRequested");
             IdleService.lockUiVisible = false;
             if (Theme.reduceMotion)

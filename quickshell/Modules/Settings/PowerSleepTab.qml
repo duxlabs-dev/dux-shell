@@ -148,16 +148,6 @@ Item {
                 tags: ["fade", "grace", "period", "lock", "dpms", "display"]
 
                 SettingsToggleRow {
-                    settingKey: "fadeToLockEnabled"
-                    tags: ["fade", "lock", "screen", "idle"]
-                    text: I18n.tr("Fade to lock screen")
-                    description: SettingsData.isManaged("fadeToLockEnabled") ? root.managedNote : I18n.tr("Hides the shell before locking. Input during the fade cancels it", "idle fade toggle description")
-                    enabled: !SettingsData.isManaged("fadeToLockEnabled")
-                    checked: SettingsData.fadeToLockEnabled
-                    onToggled: checked => SettingsData.set("fadeToLockEnabled", checked)
-                }
-
-                SettingsToggleRow {
                     settingKey: "fadeToDpmsEnabled"
                     tags: ["fade", "dpms", "monitor", "screen", "idle", "grace period"]
                     text: I18n.tr("Fade to display off")

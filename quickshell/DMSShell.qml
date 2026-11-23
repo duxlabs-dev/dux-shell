@@ -105,7 +105,7 @@ Item {
             id: fadeWindowLoader
             required property var modelData
             readonly property FadeToLockWindow loadedWindow: item as FadeToLockWindow
-            active: SettingsData.fadeToLockEnabled
+            active: !Theme.reduceMotion
             asynchronous: false
 
             sourceComponent: FadeToLockWindow {

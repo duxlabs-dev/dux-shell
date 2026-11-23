@@ -186,7 +186,7 @@ Singleton {
                 return;
             if (isIdle)
                 root.lockRequested()
-            else if (SettingsData.fadeToLockEnabled && !root.isShellLocked)
+            else if (!Theme.reduceMotion && !root.isShellLocked)
                 root.cancelFadeToLock()
         }
     }
