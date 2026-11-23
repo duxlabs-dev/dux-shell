@@ -35,6 +35,15 @@ Item {
     readonly property bool showLabel: tall && !vertical && width >= CcMetrics.expandedTileMinWidth
     readonly property bool showNumber: tall && (!vertical || height >= CcMetrics.gridRowUnit * 3)
     readonly property real bodyRadius: tall ? CcMetrics.tallTileRadius : Theme.cornerRadiusM
+    // The far-end handle stays inside the rounded end, like the round action button.
+    readonly property real endInset: {
+        if (tall)
+            return 0;
+        const half = (height - bodyInset * 2) / 2;
+        const radius = Math.min(small ? CcMetrics.pillRadius(width, half * 2) : bodyRadius, half);
+        const over = slider.handleHeight / 2 - (half - radius);
+        return (over > 0 ? radius - Math.sqrt(Math.max(0, radius * radius - over * over)) : 0) + Theme.spacingXS;
+    }
     readonly property real contentPadding: tall ? (vertical ? Theme.spacingS : CcMetrics.tallTilePadding) : 0
     readonly property real actionSize: Math.min(compact ? CcMetrics.touchTarget : Math.max(CcMetrics.touchTarget, CcMetrics.iconBoxSize), width - contentPadding * 2, tall ? Math.min(CcMetrics.tileHeight, height - contentPadding * 2 - CcMetrics.touchTarget - (vertical ? Theme.spacingS : Theme.spacingM)) : height)
 
@@ -112,6 +121,7 @@ Item {
             anchors.left: parent.left
             anchors.leftMargin: root.tall ? 0 : action.width + Theme.spacingS
             anchors.right: parent.right
+            anchors.rightMargin: root.endInset
             y: root.vertical ? (root.showNumber ? labels.height + Theme.spacingS : 0) : root.tall ? action.height + Theme.spacingM : 0
             height: Math.max(0, (root.vertical ? action.y - Theme.spacingS : parent.height) - y)
 

@@ -52,7 +52,7 @@ Grid {
             required property int index
 
             entry: modelData
-            addAllowed: grid.canAdd(modelData.id)
+            addAllowed: modelData.added !== true && grid.canAdd(modelData.id)
             bubbleSize: grid.bubbleSize
             draggable: grid.draggable
             roundAll: grid.roundAll

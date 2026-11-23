@@ -1,7 +1,6 @@
 import QtQuick
 import qs.Common
 import qs.Modules.ControlCenter
-import qs.Services
 import qs.DCommon.Widgets
 import qs.Widgets
 
@@ -13,6 +12,7 @@ StyledButton {
     property real previewWidth: bubbleSize
     property bool draggable: false
     property bool addAllowed: true
+    readonly property bool added: entry.added === true
     property bool roundAll: true
     property bool wrapLabel: false
     property var canStep: (dx, dy) => true
@@ -24,7 +24,7 @@ StyledButton {
 
     height: preview.height + Theme.spacingS + label.height
     Accessible.name: entry.text
-    readonly property string blockedText: I18n.tr("Does not fit here. Drag to another spot.")
+    readonly property string blockedText: added ? I18n.tr("Already added", "control center widget list: this widget is already on the panel") : I18n.tr("Does not fit here. Drag to another spot.")
     Accessible.description: addAllowed ? (entry.description ?? "") : blockedText
 
     function tryStep(event, dx, dy) {
@@ -49,23 +49,34 @@ StyledButton {
         anchors.horizontalCenter: parent.horizontalCenter
         width: item.previewWidth
         height: item.bubbleSize
-        radius: item.roundAll || item.entry.id === "user" ? Theme.fullRadius(width, height) : Theme.cornerRadiusLIncreased
-        color: CcMetrics.iconBoxInactiveColor
+        radius: item.roundAll ? Theme.fullRadius(width, height) : Theme.cornerRadiusLIncreased
+        color: item.added ? Theme.onSurface_12 : CcMetrics.iconBoxInactiveColor
 
         DIcon {
             anchors.centerIn: parent
             name: item.entry.icon
             size: Theme.iconSizeLarge
-            color: item.addAllowed ? Theme.primary : Theme.surfaceVariantText
-            visible: item.entry.id !== "user" || PortalService.profileImageUrl === ""
+            color: item.added ? Theme.onSurface_38 : item.addAllowed ? Theme.primary : Theme.surfaceVariantText
         }
 
-        Loader {
-            anchors.fill: parent
-            active: item.entry.id === "user" && PortalService.profileImageUrl !== ""
-            sourceComponent: DCircularImage {
-                imageSource: PortalService.profileImageUrl
-                fallbackIcon: "material:person"
+        Rectangle {
+            // On the 45° point of the preview's top end corner.
+            readonly property real cornerOffset: Math.min(preview.radius, preview.width / 2, preview.height / 2) * (1 - Math.SQRT1_2)
+            readonly property real centerX: I18n.isRtl ? cornerOffset : preview.width - cornerOffset
+
+            x: centerX - width / 2
+            y: cornerOffset - height / 2
+            width: Theme.iconSize
+            height: width
+            radius: Theme.fullRadius(width, height)
+            color: Theme.primary
+            visible: item.addAllowed
+
+            DIcon {
+                anchors.centerIn: parent
+                name: "add"
+                size: Theme.iconSizeSmall
+                color: Theme.onPrimary
             }
         }
 
@@ -87,7 +98,7 @@ StyledButton {
         width: parent.width
         text: item.entry.text
         font.pixelSize: Theme.fontSizeSmall
-        color: Theme.surfaceText
+        color: item.added ? Theme.onSurface_38 : Theme.surfaceText
         horizontalAlignment: Text.AlignHCenter
         height: item.wrapLabel ? metrics.height * 2 : metrics.height
         maximumLineCount: item.wrapLabel ? 2 : 1
@@ -106,7 +117,7 @@ StyledButton {
         property bool started: false
 
         target: null
-        enabled: item.draggable
+        enabled: item.draggable && !item.added
         cursorShape: Qt.ClosedHandCursor
         // Once dragging, the list's flickable may not take the point back and cancel the drag.
         grabPermissions: PointerHandler.CanTakeOverFromItems | PointerHandler.CanTakeOverFromHandlersOfDifferentType

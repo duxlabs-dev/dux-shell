@@ -60,8 +60,14 @@ FocusScope {
     // A height drag previews from its grab snapshot and saves only on release.
     readonly property var layoutWidgets: {
         const base = resizeBase?.vertical ? resizeBase.widgets : SettingsData.controlCenterWidgets || [];
-        return fixedHeight ? rowLayout(base, gridColumns, fixedRows, (resizeBase?.vertical ?? false) && fixedRows > resizeBase.rows) : base;
+        if (!fixedHeight)
+            return base;
+        if (heightShrinking)
+            return rowLayout(base, gridColumns, resizeBase.rows);
+        return rowLayout(base, gridColumns, fixedRows, (resizeBase?.vertical ?? false) && fixedRows > resizeBase.rows);
     }
+    // Shrinking keeps the grab's pages so cut tiles visibly leave; release repaginates.
+    readonly property bool heightShrinking: (resizeBase?.vertical ?? false) && fixedRows < resizeBase.rows
     readonly property int usedPageCount: Pages.pageCount(layoutWidgets, widget => widgetModel.isTileShown(widget))
     // Edit mode adds an empty page after the last used one to drop or add on.
     readonly property int pageCount: usedPageCount + (host.editMode ? 1 : 0)
@@ -120,14 +126,22 @@ FocusScope {
     readonly property var addHint: addSpot ?? addPin
 
     // A function, so plugin widget components are only instantiated once a sheet or panel asks.
+    // Placed widgets stay listed, marked `added`.
     function addableWidgets(fitSpot = false) {
         const existingIds = placedWidgetIds.split(",");
         const allWidgets = widgetModel.baseWidgetDefinitions.concat(widgetModel.getPluginWidgets());
-        return allWidgets.filter(widget => {
-            if (!widget.allowMultiple && existingIds.includes(widget.id))
-                return false;
-            return !fitSpot || canAddAtPin(widget.id);
-        });
+        const result = [];
+        for (const widget of allWidgets) {
+            if (!widget.allowMultiple && existingIds.includes(widget.id)) {
+                result.push(Object.assign({}, widget, {
+                    "added": true
+                }));
+                continue;
+            }
+            if (!fitSpot || canAddAtPin(widget.id))
+                result.push(widget);
+        }
+        return result;
     }
 
     function canAddAtPin(widgetId) {
@@ -1103,6 +1117,7 @@ FocusScope {
                         columns: root.gridColumns
                         availableHeight: root.pageGridHeight
                         rowLimit: root.fixedHeight ? root.fixedRows : 0
+                        spillPreview: root.heightShrinking
                         // Short and empty pages must accept drops across the available panel height.
                         minimumHeight: Math.max(pager.height, contentFlickable.height - CcMetrics.sheetPadding)
                         editMode: root.host.editMode

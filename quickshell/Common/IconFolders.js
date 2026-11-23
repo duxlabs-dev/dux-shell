@@ -147,6 +147,19 @@ function outlinePath(shape) {
     return found ? found[1] : "";
 }
 
+// Fraction of the tile from its center to each outline's farthest point.
+const REACH = {
+    circle: 0.5,
+    squircle: 0.5946,
+    rounded: 0.6165,
+    square: 0.7071
+};
+
+// Scales an outline to fit inside the circle its tile holds.
+function circleFit(shape) {
+    return Math.min(1, 0.5 / (REACH[shape] || REACH.square));
+}
+
 // Side of the largest centered square inside each outline, as a fraction of the tile, measured from a 1024 px render.
 const INSETS = {
     circle: 0.707,

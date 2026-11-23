@@ -4,11 +4,6 @@ import qs.Common
 QtObject {
     readonly property var defs: [
         {
-            "id": "user",
-            "title": I18n.tr("User"),
-            "icon": "account_circle"
-        },
-        {
             "id": "network",
             "title": I18n.tr("Network"),
             "icon": "hub"
