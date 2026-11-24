@@ -37,6 +37,16 @@ test("the edit button is added once and keeps a placed one", () => {
     assert.equal(store.migrateToVersion({ configVersion: 36 }, 37).controlCenterWidgets, undefined);
 });
 
+test("a saved layout keeps the old 8 column grid", () => {
+    const cases = [
+        [{ controlCenterWidgets: [{ id: "wifi", w: 4, h: 1 }] }, 8],
+        [{ controlCenterWidgets: [{ id: "wifi", w: 4, h: 1 }], controlCenterColumns: 6 }, 6],
+        [{}, undefined]
+    ];
+    for (const [settings, columns] of cases)
+        assert.equal(store.migrateToVersion(Object.assign({ configVersion: 46 }, settings), 47).controlCenterColumns, columns, JSON.stringify(settings));
+});
+
 test("footer entries form a row under the grid in footer order, fills sharing the spare width and end entries right-aligned", () => {
     const migrated = store.migrateToVersion({
         configVersion: 40,

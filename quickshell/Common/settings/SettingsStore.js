@@ -805,14 +805,20 @@ function migrateToVersion(obj, targetVersion) {
     }
 
     if (currentVersion < 47 && targetVersion >= 47) {
-        migrateDashSystemMonitorCards(settings);
+        if (Array.isArray(settings.controlCenterWidgets) && settings.controlCenterColumns === undefined)
+            settings.controlCenterColumns = 8;
         settings.configVersion = 47;
+    }
+
+    if (currentVersion < 48 && targetVersion >= 48) {
+        migrateDashSystemMonitorCards(settings);
+        settings.configVersion = 48;
     }
 
     return settings;
 }
 
-// Migration: can be removed after a few releases. v47: the CPU, Memory, Disk, Network and System Monitor dash cards become System monitor cards.
+// Migration: can be removed after a few releases. v48: the CPU, Memory, Disk, Network and System Monitor dash cards become System monitor cards.
 function migrateDashSystemMonitorCards(settings) {
     const optionsRoot = settings.dashOptions && typeof settings.dashOptions === "object" && !Array.isArray(settings.dashOptions) ? settings.dashOptions : {};
     const optionsFor = id => optionsRoot[id] && typeof optionsRoot[id] === "object" && !Array.isArray(optionsRoot[id]) ? optionsRoot[id] : {};

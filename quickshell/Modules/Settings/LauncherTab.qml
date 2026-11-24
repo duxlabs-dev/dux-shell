@@ -12,8 +12,6 @@ Item {
     property var parentModal: null
     readonly property string defaultLauncherAction: "spawn dms ipc call spotlight toggle"
     readonly property string spotlightBarAction: "spawn dms ipc call spotlight-bar toggle"
-    readonly property int keybindDataVersion: KeybindsService._dataVersion
-    readonly property bool keybindsAvailable: KeybindsService.available
     readonly property string defaultLauncherKeybindSearch: "spotlight toggle"
     readonly property string spotlightBarKeybindSearch: "spotlight-bar"
     readonly property bool spotlightIgnoresRows: SettingsData.launcherStyle === "spotlight" && !SettingsData.connectedFrameModeActive
@@ -23,26 +21,6 @@ Item {
     readonly property bool niriOverviewUsesFull: CompositorService.isNiri && SettingsData.niriOverviewOverlayEnabled && SettingsData.niriOverviewLauncherStyle !== "spotlight"
     readonly property bool spotlightIgnoresSize: spotlightIgnoresRows && !niriOverviewUsesFull
     readonly property var builtInPluginIds: ["dms_settings", "dms_notepad", "dms_sysmon", "dms_colorpicker", "dms_settings_search", "dms_clipboard_search", "dms_power", "dms_vpn", "dms_qr_generator"]
-
-    function openKeybindsSearch(query) {
-        if (!root.parentModal)
-            return;
-        if (typeof root.parentModal.showKeybindsSearch === "function") {
-            root.parentModal.showKeybindsSearch(query);
-        } else {
-            root.parentModal.navigateTo("keybinds");
-        }
-    }
-
-    function keysLabel(actionId) {
-        void (keybindDataVersion);
-        if (!keybindsAvailable)
-            return I18n.tr("Manual config");
-        const keys = KeybindsService.keysForAction(actionId);
-        if (!keys || keys.length === 0)
-            return I18n.tr("Not bound");
-        return keys.join(", ");
-    }
 
     function lastLaunchedText(lastUsed) {
         if (!lastUsed)
@@ -81,14 +59,6 @@ Item {
         SettingsData.set("launcherKeybinds", updated);
     }
 
-    Component.onCompleted: {
-        KeybindsService.addRef();
-        if (KeybindsService.available)
-            KeybindsService.loadBinds(false);
-    }
-
-    Component.onDestruction: KeybindsService.removeRef()
-
     SettingsPage {
         id: mainColumn
 
@@ -114,15 +84,11 @@ Item {
                     onValueSelected: value => SettingsData.set("launcherStyle", value)
                 }
 
-                SettingsRow {
-                    iconName: "keyboard"
-                    title: I18n.tr("Shortcut", "noun, keyboard shortcut row in launcher settings")
-                    subtitle: root.keybindsAvailable ? "" : I18n.tr("Bind the %1 IPC action in your compositor config.", "launcher shortcut hint, %1 is the ipc target name").arg("spotlight")
-                    trailingBadge: root.keysLabel(root.defaultLauncherAction)
-                    trailingBadgeColor: Theme.primary
-                    showChevron: root.keybindsAvailable
-                    clickable: root.keybindsAvailable
-                    onClicked: root.openKeybindsSearch(root.defaultLauncherKeybindSearch)
+                SettingsShortcutRow {
+                    parentModal: root.parentModal
+                    ipcTarget: "spotlight"
+                    action: root.defaultLauncherAction
+                    search: root.defaultLauncherKeybindSearch
                 }
             }
         }
@@ -836,15 +802,11 @@ Item {
                 settingKey: "spotlightBar"
                 tags: ["launcher", "spotlight", "bar", "shortcut", "chips"]
 
-                SettingsRow {
-                    iconName: "keyboard"
-                    title: I18n.tr("Shortcut")
-                    subtitle: root.keybindsAvailable ? "" : I18n.tr("Bind the %1 IPC action in your compositor config.").arg("spotlight-bar")
-                    trailingBadge: root.keysLabel(root.spotlightBarAction)
-                    trailingBadgeColor: Theme.primary
-                    showChevron: root.keybindsAvailable
-                    clickable: root.keybindsAvailable
-                    onClicked: root.openKeybindsSearch(root.spotlightBarKeybindSearch)
+                SettingsShortcutRow {
+                    parentModal: root.parentModal
+                    ipcTarget: "spotlight-bar"
+                    action: root.spotlightBarAction
+                    search: root.spotlightBarKeybindSearch
                 }
 
                 SettingsToggleRow {

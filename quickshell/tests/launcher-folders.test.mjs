@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { loadScript } from "./qml-script.mjs";
 
-const folders = loadScript(new URL("../Common/settings/LauncherFolders.js", import.meta.url));
+const folders = loadScript(new URL("../Common/settings/AppFolders.js", import.meta.url));
 const plain = value => JSON.parse(JSON.stringify(value));
 const appsById = list => Object.fromEntries(plain(list).map(f => [f.id, f.apps]));
 

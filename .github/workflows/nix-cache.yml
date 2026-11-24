@@ -1,0 +1,61 @@
+name: Nix cache
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master, stable, "stable-*"]
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  CACHE_URL: https://nix-cache.duxlabs.dev
+
+jobs:
+  build:
+    name: ${{ matrix.system }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - system: x86_64-linux
+            runner: ubuntu-latest
+          - system: aarch64-linux
+            runner: ubuntu-24.04-arm
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+
+      - name: Set up binary cache
+        id: cache
+        uses: Mic92/niks3-action@v1
+        with:
+          server-url: ${{ env.CACHE_URL }}
+
+      - name: Build
+        run: nix build .#default -L
+
+      - name: Pin the latest build of the branch
+        env:
+          NIKS3: ${{ steps.cache.outputs.binary-dir }}/niks3
+          TOKEN_SCRIPT: ${{ steps.cache.outputs.auth-token-script }}
+          PIN: ${{ github.event.repository.name }}-${{ github.ref_name }}-${{ matrix.system }}
+        run: |
+          set -euo pipefail
+          case "$GITHUB_REF_NAME" in
+            master | stable | stable-*) ;;
+            *) echo "not pinning $GITHUB_REF_NAME"; exit 0 ;;
+          esac
+          pin() {
+            "$NIKS3" push --server-url "$CACHE_URL" --auth-token-script "$TOKEN_SCRIPT" --pin "$1" "$2"
+          }
+          qt_base_drv=$(nix-store --query --references "$(nix eval --raw .#default.drvPath)" | grep -- '-dux-qt-base-[0-9][^/]*\.drv$')
+          pin "$PIN" "$(readlink -f result)"
+          pin "$PIN-dux-qt-base" "$(nix build --no-link --print-out-paths "$qt_base_drv^out")"

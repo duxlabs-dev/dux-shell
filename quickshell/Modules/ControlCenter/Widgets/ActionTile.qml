@@ -12,7 +12,7 @@ CcTile {
     tooltips: !finishing
     iconName: finishing ? "check" : widgetDef?.icon ?? ""
     title: finishing ? I18n.tr("Finish") : widgetDef?.text ?? ""
-    restIconColor: action === "power" ? Theme.error : CcMetrics.tileInactiveIcon
+    restIconColor: action === "power" ? Theme.error : CcMetrics.tileInactiveContent
 
     onClicked: {
         switch (action) {

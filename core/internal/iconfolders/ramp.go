@@ -48,22 +48,31 @@ func hexOf(c color.ARGB) string {
 }
 
 func loadRamp(colorsPath, mode string) (Ramp, error) {
+	primary, onPrimary, err := loadPrimary(colorsPath, mode)
+	if err != nil {
+		return Ramp{}, err
+	}
+	return NewRamp(primary, onPrimary)
+}
+
+// loadPrimary reads the mode's primary and on_primary roles from dms-colors.json.
+func loadPrimary(colorsPath, mode string) (string, string, error) {
 	data, err := os.ReadFile(colorsPath)
 	if err != nil {
-		return Ramp{}, fmt.Errorf("failed to read colors: %w", err)
+		return "", "", fmt.Errorf("failed to read colors: %w", err)
 	}
 	var parsed struct {
 		Colors map[string]map[string]string `json:"colors"`
 	}
 	if err := json.Unmarshal(data, &parsed); err != nil {
-		return Ramp{}, fmt.Errorf("failed to parse %s: %w", colorsPath, err)
+		return "", "", fmt.Errorf("failed to parse %s: %w", colorsPath, err)
 	}
 	if mode != "light" {
 		mode = "dark"
 	}
 	roles := parsed.Colors[mode]
 	if roles["primary"] == "" {
-		return Ramp{}, fmt.Errorf("%s has no %s primary", colorsPath, mode)
+		return "", "", fmt.Errorf("%s has no %s primary", colorsPath, mode)
 	}
-	return NewRamp(roles["primary"], roles["on_primary"])
+	return roles["primary"], roles["on_primary"], nil
 }

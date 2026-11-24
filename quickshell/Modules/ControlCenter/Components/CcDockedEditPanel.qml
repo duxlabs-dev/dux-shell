@@ -177,7 +177,7 @@ Item {
         ColumnLayout {
             anchors.fill: parent
             anchors.margins: CcMetrics.sheetPadding
-            spacing: Theme.spacingL
+            spacing: Theme.spacingM
 
             RowLayout {
                 Layout.fillWidth: true
@@ -225,16 +225,6 @@ Item {
                         color: Theme.surfaceVariantText
                         elide: Text.ElideRight
                     }
-
-                    // Floating, the edit strip says it.
-                    StyledText {
-                        width: parent.width
-                        visible: !root.floating && !root.detailed
-                        text: I18n.tr("Right-click a widget for options")
-                        font.pixelSize: Theme.fontSizeSmall
-                        color: Theme.surfaceVariantText
-                        elide: Text.ElideRight
-                    }
                 }
 
                 DActionButton {
@@ -258,8 +248,9 @@ Item {
                 visible: root.listVisible
                 placeholderText: I18n.tr("Search widgets...")
                 onAccepted: {
-                    if (root.matches.length > 0)
-                        root.addRequested(root.matches[0].id);
+                    const first = root.matches.find(widget => !widget.added);
+                    if (first)
+                        root.addRequested(first.id);
                 }
             }
 
@@ -272,6 +263,8 @@ Item {
 
                     anchors.fill: parent
                     visible: root.listVisible && root.matches.length > 0
+                    // A fade would cover the labels of the last visible row.
+                    fadeEdges: false
                     contentWidth: width
                     contentHeight: groups.height
                     clip: contentHeight > height
@@ -281,7 +274,7 @@ Item {
                         id: groups
 
                         width: flickable.width
-                        spacing: Theme.spacingS
+                        spacing: Theme.groupedListGap
 
                         Repeater {
                             id: categoryGroups
@@ -310,7 +303,10 @@ Item {
 
                                 width: groups.width
                                 height: groupContent.implicitHeight + Theme.spacingM * 2
-                                radius: Theme.cornerRadiusL
+                                topLeftRadius: index === 0 ? Theme.groupedListOuterRadius : Theme.groupedListInnerRadius
+                                topRightRadius: topLeftRadius
+                                bottomLeftRadius: index === categoryGroups.count - 1 ? Theme.groupedListOuterRadius : Theme.groupedListInnerRadius
+                                bottomRightRadius: bottomLeftRadius
                                 color: Theme.foregroundColor(Theme.cardSurface)
 
                                 Column {
@@ -320,7 +316,7 @@ Item {
                                     anchors.left: parent.left
                                     anchors.right: parent.right
                                     anchors.margins: Theme.spacingM
-                                    spacing: Theme.spacingM
+                                    spacing: Theme.spacingS
 
                                     Row {
                                         width: parent.width

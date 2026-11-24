@@ -3,6 +3,7 @@ import Quickshell
 import Quickshell.Wayland
 import qs.Common
 import qs.Services
+import qs.DCommon.Widgets
 import qs.Widgets
 
 PanelWindow {
@@ -18,6 +19,8 @@ PanelWindow {
     property string layerNamespace: "dms:dock-context-menu"
     property real menuMaxWidth: 400
     property real menuMinWidth: 180
+    // Growing from the top keeps the clicked row under the pointer.
+    property real heldY: -1
 
     property point anchorPos: Qt.point(screen ? screen.width / 2 : 0, screen ? screen.height - 100 : 0)
 
@@ -27,8 +30,19 @@ PanelWindow {
         surfaceContext = button?.dockApps?.surfaceContext ?? null;
         anchorItem = button;
         dockVisibleHeight = dockHeight || 40;
+        heldY = -1;
         visible = true;
     }
+
+    function holdPosition() {
+        heldY = menuContainer.y;
+    }
+
+    function containsScenePoint(point) {
+        return menuContainer.contains(menuContainer.mapFromItem(null, point.x, point.y));
+    }
+
+    readonly property alias menuSurface: menuContainer
 
     function close() {
         visible = false;
@@ -70,6 +84,7 @@ PanelWindow {
         }
         anchorItem = null;
         surfaceContext = null;
+        heldY = -1;
     }
 
     WindowBlur {
@@ -112,6 +127,10 @@ PanelWindow {
             return Math.min(root.width - width - 10, root.anchorPos.x);
         }
         y: {
+            if (root.heldY >= 0) {
+                const bottom = root.options.position === SettingsData.Position.Bottom ? root.anchorPos.y : root.height - 10;
+                return Math.max(10, Math.min(bottom - height, root.heldY));
+            }
             if (isVertical) {
                 const want = root.anchorPos.y - height / 2;
                 return Math.max(10, Math.min(root.height - height - 10, want));
@@ -122,7 +141,7 @@ PanelWindow {
         }
 
         width: Math.min(root.menuMaxWidth, Math.max(root.menuMinWidth, menuColumn.implicitWidth + Theme.spacingS * 2))
-        height: menuColumn.implicitHeight + Theme.spacingS * 2
+        height: Math.min(root.height - 20, menuColumn.implicitHeight + Theme.spacingS * 2)
         color: Theme.floatingSurface
         radius: Theme.windowRadius
         border.color: BlurService.borderColor
@@ -130,6 +149,15 @@ PanelWindow {
 
         opacity: root.visible ? 1 : 0
         visible: opacity > 0
+
+        Behavior on height {
+            enabled: root.heldY >= 0
+            NumberAnimation {
+                duration: Theme.reduceMotion ? 0 : Theme.expressiveDurations.expressiveDefaultSpatial
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
+            }
+        }
 
         Behavior on opacity {
             NumberAnimation {
@@ -150,13 +178,21 @@ PanelWindow {
             z: -1
         }
 
-        Column {
-            id: menuColumn
-            width: parent.width - Theme.spacingS * 2
-            anchors.horizontalCenter: parent.horizontalCenter
-            anchors.top: parent.top
-            anchors.topMargin: Theme.spacingS
-            spacing: 1
+        DFlickable {
+            id: menuFlickable
+            anchors.fill: parent
+            anchors.margins: Theme.spacingS
+            clip: true
+            contentWidth: width
+            contentHeight: menuColumn.implicitHeight
+            boundsBehavior: Flickable.StopAtBounds
+            interactive: contentHeight > height + 0.5
+
+            Column {
+                id: menuColumn
+                width: menuFlickable.width
+                spacing: 1
+            }
         }
     }
 

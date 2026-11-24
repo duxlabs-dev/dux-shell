@@ -248,6 +248,7 @@ Singleton {
             "systemTray": "SystemTrayOptions.qml",
             "battery": "BatteryOptions.qml",
             "controlCenterButton": "ControlCenterOptions.qml",
+            "notificationButton": "NotificationButtonOptions.qml",
             "privacyIndicator": "PrivacyOptions.qml",
             "keyboard_layout_name": "KeyboardLayoutOptions.qml",
             "cpuUsage": "SystemMonitorOptions.qml",

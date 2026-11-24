@@ -10,7 +10,13 @@ DEditableGridSlot {
 
     readonly property var widgetData: JSON.parse(json)
     readonly property real resizeRows: grid.rowLimit > 0 ? grid.rowLimit - (grid.pinnedCells?.[index]?.row ?? slot?.row ?? 0) : grid.maximumRows
-    readonly property var sizeSpec: WidgetUtils.sizeSpec(widgetData, grid.columns, resizeRows)
+    readonly property var sizeSpec: {
+        const spec = WidgetUtils.sizeSpec(widgetData, grid.columns, resizeRows);
+        const fit = tileItem?.groupMinimumWidth ?? 0;
+        if (fit > 0)
+            spec.minW = Math.min(spec.maxW, Math.max(spec.minW, Math.ceil(spanOf(fit) / spec.step) * spec.step));
+        return spec;
+    }
     readonly property real cols: slot?.cols ?? 1
     readonly property real rows: slot?.rows ?? 1
     readonly property bool compact: cols <= 2 && rows === 1
@@ -22,11 +28,27 @@ DEditableGridSlot {
     property real biasH: 0
     readonly property real smallSpanLimit: (1 + CcMetrics.smallRowFraction) / 2
 
-    readonly property bool overflowing: grid.interacting && grid.slotLayout.slots[index] === null && grid.slotLayout.commitSlots?.[index] != null
+    readonly property bool tilePressed: !grid.editMode && (tileItem?.pressed ?? false)
+
+    onTilePressedChanged: grid.bounce.press(index, tilePressed)
+    Component.onDestruction: {
+        if (tilePressed)
+            grid?.bounce?.press(index, false);
+    }
+
+    readonly property bool overflowing: (grid.interacting || grid.spillPreview) && grid.slotLayout.slots[index] === null && grid.slotLayout.commitSlots?.[index] != null
     property real overflowProgress: overflowing ? 1 : 0
     readonly property var shownSlot: grid.slotLayout.slots[index] ?? null
     property var lastShownSlot: null
     readonly property real overflowTravel: I18n.isRtl ? -(x + width) : grid.width - x
+    // Latched, so a tile taken back retraces its exit path.
+    property real overflowRise: 0
+    readonly property real riseTarget: !overflowing ? -1 : grid.spillPreview ? grid.spillTop : 0
+
+    onRiseTargetChanged: {
+        if (riseTarget >= 0)
+            overflowRise = riseTarget;
+    }
 
     onShownSlotChanged: {
         if (shownSlot)
@@ -70,6 +92,7 @@ DEditableGridSlot {
     transform: [
         Translate {
             x: root.overflowProgress > 0 ? root.overflowProgress * root.overflowTravel : 0
+            y: root.overflowProgress > 0 ? -root.overflowProgress * root.overflowRise : 0
         },
         Scale {
             origin.x: root.width / 2
@@ -160,9 +183,9 @@ DEditableGridSlot {
     CcTileLoader {
         id: tileLoader
 
-        x: root.inGroupHover ? Math.max(0, Math.min(root.width - width, root._hoverLocal.x - width / 2)) : 0
+        x: root.inGroupHover ? Math.max(0, Math.min(root.width - width, root._hoverLocal.x - width / 2)) : root.grid.bounce.dx(root.index)
         y: root.inGroupHover ? Math.max(0, Math.min(root.height - height, root._hoverLocal.y - height / 2)) : 0
-        width: root.inGroupHover ? (root.tileItem?.quickWidth ?? CcMetrics.iconBoxSize) : root.width
+        width: root.inGroupHover ? (root.tileItem?.quickWidth ?? CcMetrics.iconBoxSize) : root.width + root.grid.bounce.dw(root.index)
         height: root.inGroupHover ? CcMetrics.iconBoxSize : root.height
         grid: root.grid
         widgetData: root.widgetData

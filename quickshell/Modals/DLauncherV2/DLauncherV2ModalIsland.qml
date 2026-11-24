@@ -28,7 +28,7 @@ Item {
     readonly property real screenHeight: usingFallback ? fallback.screenHeight : Theme.mediumBreakpoint
     readonly property real dpr: usingFallback ? fallback.dpr : 1
     readonly property int modalWidth: usingFallback ? fallback.modalWidth : LauncherMetrics.sizeWidth(SettingsData.dankLauncherV2Size)
-    readonly property int modalHeight: usingFallback ? fallback.modalHeight : LauncherMetrics.sizeHeight(SettingsData.dankLauncherV2Size, LauncherMetrics.islandEdgeInset, false)
+    readonly property int modalHeight: usingFallback ? fallback.modalHeight : LauncherMetrics.sizeHeight(SettingsData.dankLauncherV2Size, 0, false)
     readonly property real modalX: usingFallback ? fallback.modalX : 0
     readonly property real modalY: usingFallback ? fallback.modalY : 0
     readonly property real alignedX: usingFallback ? fallback.alignedX : 0

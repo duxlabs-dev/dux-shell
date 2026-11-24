@@ -1,5 +1,6 @@
 import QtQuick
 import qs.Common
+import "../../Common/EditHistory.js" as EditHistory
 
 QtObject {
     id: root
@@ -10,7 +11,6 @@ QtObject {
     property var selection: null
     property bool popoverRequested: false
     readonly property bool canUndo: undoStack.length > 0
-    readonly property int undoLimit: 50
     readonly property var editKeys: ["dashCards", "dashOptions"]
     property string snapshot: ""
     property string undoBase: ""
@@ -28,33 +28,18 @@ QtObject {
     Component.onCompleted: begin()
 
     function begin() {
-        snapshot = active ? currentState() : "";
+        snapshot = active ? EditHistory.snapshot(SettingsData, editKeys) : "";
         undoBase = snapshot;
         undoStack = [];
-    }
-
-    function currentState() {
-        const state = {};
-        for (const key of editKeys)
-            state[key] = SettingsData[key];
-        return JSON.stringify(state);
-    }
-
-    function applyState(state) {
-        const wanted = JSON.parse(state);
-        for (const key of editKeys) {
-            if (JSON.stringify(SettingsData[key]) !== JSON.stringify(wanted[key]))
-                SettingsData.set(key, wanted[key]);
-        }
     }
 
     function track() {
         if (!active)
             return;
-        const state = currentState();
+        const state = EditHistory.snapshot(SettingsData, editKeys);
         if (state === undoBase)
             return;
-        undoStack = undoStack.concat([undoBase]).slice(-undoLimit);
+        undoStack = EditHistory.push(undoStack, undoBase);
         undoBase = state;
     }
 
@@ -63,12 +48,11 @@ QtObject {
             return;
         undoBase = undoStack[undoStack.length - 1];
         undoStack = undoStack.slice(0, -1);
-        applyState(undoBase);
+        EditHistory.restore(SettingsData, undoBase, editKeys);
     }
 
     function discard() {
-        if (snapshot !== "")
-            applyState(snapshot);
+        EditHistory.restore(SettingsData, snapshot, editKeys);
     }
 
     function select(target) {

@@ -116,7 +116,7 @@ Singleton {
         if (!excludedApps.length)
             return false;
 
-        const desktopId = DesktopEntries.heuristicLookup(Paths.moddedAppId(appId))?.id ?? "";
+        const desktopId = appId ? DesktopEntries.heuristicLookup(Paths.moddedAppId(appId))?.id ?? "" : "";
         return excludedApps.some(excludedId => Paths.isAppIdMatch(appId, excludedId, desktopId));
     }
 

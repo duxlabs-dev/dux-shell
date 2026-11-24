@@ -73,7 +73,7 @@ test("opacity counts only when a card or tiles are painted", () => {
         assert.equal(uses({ layout, background: "none" }), false);
 });
 
-const dash = (cards, dashOptions) => store.migrateToVersion({ configVersion: 46, dashCards: cards, dashOptions }, 47);
+const dash = (cards, dashOptions) => store.migrateToVersion({ configVersion: 47, dashCards: cards, dashOptions }, 48);
 const plain = (value) => JSON.parse(JSON.stringify(value));
 const placed = (id, instanceId, config) => ({ id, instanceId, w: 2, h: 1, config });
 const old = ["cpu", "memory", "network", "disk", "sysmon"].map((id) => ({ id, w: 2, h: 1 }));
@@ -107,5 +107,5 @@ test("a configured system monitor card and a second run are unchanged", () => {
     const configured = { id: "sysmon", instanceId: "a", w: 1, h: 1, config: { layout: "list" } };
     const once = plain(dash([configured].concat(old), { sysmon: { temperature: false } }));
     assert.deepEqual(once.dashCards[0], configured);
-    assert.deepEqual(plain(store.migrateToVersion(Object.assign({}, once, { configVersion: 46 }), 47)).dashCards, once.dashCards);
+    assert.deepEqual(plain(store.migrateToVersion(Object.assign({}, once, { configVersion: 47 }), 48)).dashCards, once.dashCards);
 });
