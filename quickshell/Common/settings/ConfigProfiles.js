@@ -20,7 +20,7 @@ var CATEGORIES = [
     },
     {
         id: "other",
-        groups: ["time_weather", "lock_screen", "launcher", "notifications", "osd", "sound_media", "plugins", "general"]
+        groups: ["time", "weather", "lock_screen", "launcher", "notifications", "osd", "sound_media", "plugins", "general"]
     }
 ];
 
@@ -46,7 +46,8 @@ var SETTINGS_MAP = {
     fonts_motion: ["fontFamily", "monoFontFamily", "displayFontFamily", "fontWeight", "fontScale", "textRenderType", "textRenderQuality", "motionDuration", "enableRippleEffects", "reduceMotion", "springBounce", "motionEffect"],
     icons: ["iconThemeDark", "iconThemeLight", "iconThemePerMode", "iconFolderRecolor", "iconAppStyle", "iconShape", "iconGradient", "iconTileColor", "iconColorSource", "iconTileStyle", "iconTileTone", "iconOwnTone", "iconFileStyle"],
     cursor: ["cursorSettings"],
-    time_weather: ["clockFormat", "showSeconds", "padHours12Hour", "useFahrenheit", "lockDateFormat", "useAutoLocation", "weatherEnabled", "firstDayOfWeek", "showWeekNumber", "windSpeedUnit", "clockDateFormat", "weatherProviders", "showAmPm"],
+    time: ["clockFormat", "showSeconds", "padHours12Hour", "lockDateFormat", "firstDayOfWeek", "showWeekNumber", "clockDateFormat", "showAmPm"],
+    weather: ["weatherProviders", "weatherEnabled", "useFahrenheit", "windSpeedUnit", "useAutoLocation"],
     lock_screen: ["lockScreenWidgetInstances", "lockScreenShowPowerActions", "lockScreenShowProfileImage", "lockScreenShowWeather", "lockScreenFontFamily", "lockScreenVideoEnabled", "lockScreenVideoCycling"],
     launcher: ["browserPickerViewMode", "appPickerViewMode", "sortAppsAlphabetically", "appLauncherGridColumns", "appLauncherIconColumns", "rememberLastQuery", "rememberLastMode", "spotlightSectionViewModes", "appDrawerSectionViewModes", "niriOverviewOverlayEnabled", "niriOverviewLauncherStyle", "dankLauncherV2Size", "dankLauncherV2ShowSourceBadges", "dankLauncherV2ShowAppIcons", "dankLauncherV2ShowAppDescriptions", "dankLauncherV2ShowFooter", "dankLauncherV2UnloadOnClose", "dankLauncherV2IncludeFilesInAll", "dankLauncherV2IncludeFoldersInAll", "launcherUseOverlayLayer", "launcherStyle", "spotlightBarShowModeChips", "launcherPluginVisibility", "launcherPluginOrder", "launcherKeybinds", "launcherEnterAction"],
     notifications: ["notificationSummaryFontSize", "notificationBodyFontSize", "notificationOverlayEnabled", "notificationPopupPrivacyMode", "notificationPopupBodyInvokesAction", "notificationTimeoutLow", "notificationTimeoutNormal", "notificationTimeoutCritical", "notificationIgnoreAppTimeout", "notificationCompactMode", "notificationShowTimeoutBar", "notificationDedupeEnabled", "notificationPopupPosition", "notificationHistorySaveLow", "notificationHistorySaveNormal", "notificationHistorySaveCritical", "notificationRules", "notificationDndAllowCritical", "notificationDndWhileScreenSharing", "notificationFocusedMonitor", "notificationLeadingShortcut", "notificationTrailingShortcut", "notificationPopupAvoidPopouts"],

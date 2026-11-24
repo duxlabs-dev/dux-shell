@@ -98,7 +98,7 @@ CATEGORY_KEYWORDS = {
 }
 
 TAB_INDEX_MAP = {
-    "TimeWeatherTab.qml": 1,
+    "TimeTab.qml": 1,
     "WeatherSettingsTab.qml": 56,
     "KeybindsTab.qml": 2,
     "DBarTab.qml": 3,

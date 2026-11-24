@@ -667,7 +667,7 @@ Singleton {
             "hint": I18n.tr("Clock, weather, locale", "settings sidebar hint for the date, time and region page"),
             "children": [
                 {
-                    "id": "time_weather",
+                    "id": "time",
                     "text": I18n.tr("Time"),
                     "icon": "schedule",
                     "tabIndex": 1,
