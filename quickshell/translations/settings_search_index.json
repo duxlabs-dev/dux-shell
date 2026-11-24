@@ -12156,6 +12156,14 @@
     "optionFile": "NetworkMonitorOptions.qml"
   },
   {
+    "section": "barWidgetOption:NotificationButtonOptions.qml:1",
+    "label": "Hide when no notifications",
+    "tabIndex": 22,
+    "keywords": [],
+    "runtimeType": "barWidgetOption",
+    "optionFile": "NotificationButtonOptions.qml"
+  },
+  {
     "section": "barWidgetOption:SystemUpdateOptions.qml:1",
     "label": "Hide when no updates",
     "tabIndex": 22,
