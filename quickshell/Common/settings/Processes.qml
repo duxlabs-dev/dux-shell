@@ -401,14 +401,14 @@ Singleton {
 
     Timer {
         id: authApplyDebounce
-        interval: 300
+        interval: Timing.debounceLong
         repeat: false
         onTriggered: root.beginAuthApply()
     }
 
     Timer {
         id: greeterAutoLoginSyncDebounce
-        interval: 300
+        interval: Timing.debounceLong
         repeat: false
         onTriggered: root.beginGreeterAutoLoginSync()
     }

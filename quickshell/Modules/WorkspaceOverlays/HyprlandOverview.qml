@@ -76,17 +76,9 @@ Scope {
 
                 Timer {
                     id: delayedGrabTimer
-                    interval: 150
+                    interval: Timing.settle
                     repeat: false
                     onTriggered: root.grabArmed = true
-                }
-
-                Timer {
-                    id: closeTimer
-                    interval: Math.max(Theme.expressiveDurations.expressiveDefaultSpatial + 120, Math.round(morph.settleDurationMs) + 120)
-                    onTriggered: {
-                        root.visible = false;
-                    }
                 }
 
                 Rectangle {
@@ -97,9 +89,9 @@ Scope {
 
                     Behavior on opacity {
                         NumberAnimation {
-                            duration: Theme.variantDuration(Theme.expressiveDurations.expressiveDefaultSpatial, overviewScope.overviewOpen)
+                            duration: Theme.expressiveDurations.expressiveEffects
                             easing.type: Easing.BezierSpline
-                            easing.bezierCurve: overviewScope.overviewOpen ? Theme.variantModalEnterCurve : Theme.variantModalExitCurve
+                            easing.bezierCurve: Theme.expressiveCurves.expressiveEffects
                         }
                     }
 
@@ -109,7 +101,6 @@ Scope {
                             const localPos = mapToItem(contentAnchor, mouse.x, mouse.y);
                             if (localPos.x < 0 || localPos.x > contentAnchor.width || localPos.y < 0 || localPos.y > contentAnchor.height) {
                                 overviewScope.overviewOpen = false;
-                                closeTimer.restart();
                             }
                         }
                     }
@@ -129,7 +120,7 @@ Scope {
                         height: childrenRect.height
                         transformOrigin: Item.Center
 
-                        readonly property var morphSpringParams: Theme.springPreset("expressive", Theme.variantDuration(Theme.expressiveDurations.expressiveDefaultSpatial, overviewScope.overviewOpen))
+                        readonly property var morphSpringParams: Theme.springPreset("defaultSpatial")
                         readonly property real collapsedX: {
                             if (Theme.isDepthEffect)
                                 return Theme.effectAnimOffset * 0.25;
@@ -145,7 +136,6 @@ Scope {
 
                         SpringMotion {
                             id: morph
-                            reducedMotion: Theme.springMotionDisabled
                             positionEpsilon: 0.001
                             velocityEpsilon: 0.001
                             stiffness: contentContainer.morphSpringParams.stiffness
@@ -169,9 +159,9 @@ Scope {
 
                         Behavior on opacity {
                             NumberAnimation {
-                                duration: Theme.variantDuration(Theme.expressiveDurations.expressiveDefaultSpatial, overviewScope.overviewOpen)
+                                duration: Theme.expressiveDurations.expressiveEffects
                                 easing.type: Easing.BezierSpline
-                                easing.bezierCurve: overviewScope.overviewOpen ? Theme.variantModalEnterCurve : Theme.variantModalExitCurve
+                                easing.bezierCurve: Theme.expressiveCurves.expressiveEffects
                             }
                         }
 
@@ -198,7 +188,6 @@ Scope {
                         if (!root.monitorIsFocused)
                             return;
                         overviewScope.overviewOpen = false;
-                        closeTimer.restart();
                         event.accepted = true;
                     }
 
@@ -267,14 +256,12 @@ Scope {
                 Connections {
                     target: overviewScope
                     function onOverviewOpenChanged() {
-                        if (overviewScope.overviewOpen) {
-                            closeTimer.stop();
-                            root.visible = true;
-                            Qt.callLater(() => focusScope.forceActiveFocus());
-                        } else {
-                            closeTimer.restart();
+                        if (!overviewScope.overviewOpen) {
                             root.grabArmed = false;
+                            return;
                         }
+                        root.visible = true;
+                        Qt.callLater(() => focusScope.forceActiveFocus());
                     }
                 }
             }

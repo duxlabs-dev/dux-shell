@@ -2,15 +2,19 @@
 .import qs.Services as Services
 .import qs.Modules.ControlCenter as ControlCenter
 .import "../../../Common/GridLayout.js" as GridLayout
+.import "../../../Common/ControlCenterLayout.js" as PanelLayout
 .import "../../../Common/settings/SettingsSpec.js" as Spec
+.import "catalog.js" as Catalog
+.import "pages.js" as Pages
 
 var OPTION_IDS = ["diskUsage", "brightnessSlider", "idleInhibitor", "user", "battery", "quickTiles"];
-var GROUP_ID = "quickTiles";
+var GROUP_ID = PanelLayout.GROUP_ID;
 var BATTERY_STYLES = ["icon", "solid", "outline", "ring", "duo"];
 var ACTION_IDS = ["settings", "lock", "power"];
 var EDIT_ID = "edit";
+var SPACER_ID = "spacer";
 var BUTTON_IDS = ACTION_IDS.concat([EDIT_ID]);
-var USER_SHAPES = ["circle", "cookie4", "cookie7", "cookie12", "clover4", "clover8", "sunny", "pentagon", "arch", "slanted", "gem", "square"];
+var USER_SHAPES = ["circle", "cookie4", "cookie7", "cookie12", "clover4", "clover8", "sunny", "pentagon", "arch", "slanted", "gem", "squircle", "rounded", "square"];
 
 function isSliderWidget(id) {
     return id === "volumeSlider" || id === "brightnessSlider" || id === "inputVolumeSlider";
@@ -25,7 +29,7 @@ function isSmall(widget, rows) {
 }
 
 function canGroup(widget) {
-    return canShrink(widget?.id) && !isSliderWidget(widget?.id) && widget?.id !== GROUP_ID;
+    return canShrink(widget?.id) && !isSliderWidget(widget?.id) && ![GROUP_ID, SPACER_ID].includes(widget?.id);
 }
 
 // Members of a group that no longer exists fall back to the grid.
@@ -79,10 +83,7 @@ function hasOptions(id) {
 }
 
 function filterWidgets(widgets, query) {
-    const needle = query.trim().toLowerCase();
-    if (!needle)
-        return widgets;
-    return widgets.filter(widget => [widget.text, widget.description, widget.id].some(value => (value || "").toLowerCase().includes(needle)));
+    return Catalog.filterWidgets(widgets, query);
 }
 
 function nextUserShape(shape) {
@@ -100,7 +101,7 @@ function defaultWidget(id, columns) {
 
 function sizeSpec(widget, columns, rows = Infinity) {
     const spec = {
-        "w": 4,
+        "w": 3.5,
         "h": 1,
         "minW": 1,
         "maxW": columns,
@@ -134,8 +135,7 @@ function clampSize(widget, columns, rows = Infinity) {
     };
 }
 
-function addWidget(widgetId, columns) {
-    const widgets = Common.SettingsData.controlCenterWidgets.slice();
+function newWidget(widgetId, columns) {
     const widget = defaultWidget(widgetId, columns);
     if (BUTTON_IDS.includes(widgetId) || isSliderWidget(widgetId))
         widget.small = true;
@@ -146,16 +146,36 @@ function addWidget(widgetId, columns) {
         widget.showMountPath = true;
     }
 
-    if (widgetId === GROUP_ID)
+    if (widgetId === GROUP_ID || widgetId === SPACER_ID)
         widget.instanceId = generateUniqueId();
 
     if (widgetId === "brightnessSlider") {
         widget.instanceId = generateUniqueId();
         widget.deviceName = "";
     }
+    return widget;
+}
 
+// `base` replaces the saved list, so a drop can commit the grid's rearranged layout together with the new tile.
+// With `room` ({layout, rowLimit}) the tile narrows into the spot's free run instead of sliding below.
+function addWidget(widgetId, columns, col, row, base, page, room, prepareLayout, size) {
+    const widgets = (base ?? Common.SettingsData.controlCenterWidgets).slice();
+    const widget = Pages.withPage(newWidget(widgetId, columns), Number.isInteger(page) ? page : 0);
+    if (size)
+        Object.assign(widget, clampSize(Object.assign({}, widget, size), columns));
+    if (Number.isFinite(col) && Number.isFinite(row)) {
+        const cell = placedInRoom(widget, columns, col, row, room);
+        if (!cell)
+            return false;
+        Object.assign(widget, cell);
+    }
     widgets.push(widget);
-    Common.SettingsData.set("controlCenterWidgets", widgets);
+    setLayout(prepareLayout ? prepareLayout(widgets) : widgets);
+    return true;
+}
+
+function placedInRoom(widget, columns, col, row, room) {
+    return PanelLayout.placedInRoom(widget, columns, col, row, room, clampSize);
 }
 
 function generateUniqueId() {
@@ -167,17 +187,31 @@ function removeWidget(index) {
     if (index < 0 || index >= widgets.length || !isRemovable(widgets[index]))
         return;
     const [removed] = widgets.splice(index, 1);
-    Common.SettingsData.set("controlCenterWidgets", removed.id === GROUP_ID ? ungroup(widgets, removed.instanceId) : widgets);
+    Common.SettingsData.set("controlCenterWidgets", removed.id === GROUP_ID ? ungroup(widgets, removed.instanceId, Pages.pageOf(removed)) : widgets);
 }
 
-function ungroup(widgets, groupId) {
+function ungroup(widgets, groupId, page) {
     return widgets.map(widget => {
         if (widget?.group !== groupId)
             return widget;
-        const freed = Object.assign({}, widget);
+        const freed = Pages.withPage(Object.assign({}, widget), page);
         delete freed.group;
         return freed;
     });
+}
+
+function moveToPage(index, page, base, cell) {
+    const widgets = base ?? Common.SettingsData.controlCenterWidgets;
+    const moved = Pages.movedToPage(widgets, index, page, cell);
+    if (moved !== widgets)
+        Common.SettingsData.set("controlCenterWidgets", moved);
+}
+
+function compactPages(isShown) {
+    const widgets = Common.SettingsData.controlCenterWidgets;
+    const compacted = Pages.compactPages(widgets, isShown);
+    if (compacted !== widgets)
+        Common.SettingsData.set("controlCenterWidgets", compacted);
 }
 
 // Lands just before `beforeIndex`, or after the group's last member.
@@ -190,9 +224,11 @@ function moveToGroup(index, groupId, beforeIndex) {
     widgets.splice(index, 1);
     const lastMember = widgets.reduce((last, other, i) => other?.group === groupId ? i : last, -1);
     const at = before ? widgets.indexOf(before) : lastMember >= 0 ? lastMember + 1 : widgets.length;
-    const moved = Object.assign({}, widget, {
+    const group = widgets.find(other => other?.instanceId === groupId);
+    // Members carry their group's page so they stay on it once ungrouped.
+    const moved = Pages.withPage(Object.assign({}, widget, {
         "group": groupId
-    });
+    }), Pages.pageOf(group));
     delete moved.col;
     delete moved.row;
     widgets.splice(at, 0, moved);
@@ -225,9 +261,9 @@ function setLayout(widgets) {
 }
 
 function resetToDefault() {
-    Common.SettingsData.resetToDefault(["controlCenterWidgets", "controlCenterColumns"]);
+    Common.SettingsData.resetToDefault(["controlCenterWidgets", "controlCenterColumns", "controlCenterRows"]);
 }
 
 function clearAll() {
-    Common.SettingsData.set("controlCenterWidgets", Common.SettingsData.controlCenterWidgets.filter(widget => !isRemovable(widget)));
+    Common.SettingsData.set("controlCenterWidgets", Common.SettingsData.controlCenterWidgets.filter(widget => !isRemovable(widget)).map(widget => Pages.withPage(widget, 0)));
 }

@@ -69,89 +69,94 @@ Item {
     SettingsPage {
         id: mainColumn
 
-        SettingsCard {
-            visible: NightModeService.gammaAdjustAvailable
+        SettingsDeferred {
+            when: NightModeService.gammaAdjustAvailable
 
-            SettingsSliderRow {
-                settingKey: "displayGamma"
-                resetStore: SessionData
-                resetKeys: ["displayGamma"]
-                tags: ["gamma", "display", "panel", "washed out", "brightness"]
-                text: I18n.tr("Gamma")
-                minimum: 50
-                maximum: 200
-                step: 5
-                unit: ""
-                decimals: 2
-                value: Math.round(SessionData.displayGamma * 100)
-                onSliderValueChanged: newValue => NightModeService.setDisplayGamma(newValue / 100)
-            }
+            SettingsCard {
 
-            SettingsSliderRow {
-                settingKey: "displayContrast"
-                resetStore: SessionData
-                resetKeys: ["displayContrast"]
-                tags: ["contrast", "display", "panel", "washed out"]
-                text: I18n.tr("Contrast")
-                minimum: 50
-                maximum: 200
-                step: 5
-                value: Math.round(SessionData.displayContrast * 100)
-                onSliderValueChanged: newValue => NightModeService.setDisplayContrast(newValue / 100)
+                SettingsSliderRow {
+                    settingKey: "displayGamma"
+                    resetStore: SessionData
+                    resetKeys: ["displayGamma"]
+                    tags: ["gamma", "display", "panel", "washed out", "brightness"]
+                    text: I18n.tr("Gamma")
+                    minimum: 50
+                    maximum: 200
+                    step: 5
+                    unit: ""
+                    decimals: 2
+                    value: Math.round(SessionData.displayGamma * 100)
+                    onSliderValueChanged: newValue => NightModeService.setDisplayGamma(newValue / 100)
+                }
+
+                SettingsSliderRow {
+                    settingKey: "displayContrast"
+                    resetStore: SessionData
+                    resetKeys: ["displayContrast"]
+                    tags: ["contrast", "display", "panel", "washed out"]
+                    text: I18n.tr("Contrast")
+                    minimum: 50
+                    maximum: 200
+                    step: 5
+                    value: Math.round(SessionData.displayContrast * 100)
+                    onSliderValueChanged: newValue => NightModeService.setDisplayContrast(newValue / 100)
+                }
             }
         }
 
-        SettingsCard {
-            SettingsToggleRow {
-                text: I18n.tr("Night mode")
-                description: NightModeService.gammaControlAvailable ? "" : I18n.tr("Gamma control not available. Requires DMS API v6+.")
-                checked: NightModeService.nightModeEnabled
-                enabled: NightModeService.gammaControlAvailable
-                onToggled: NightModeService.toggleNightMode()
-            }
-
-            SettingsSliderRow {
-                settingKey: "nightModeTemperature"
-                resetStore: SessionData
-                resetKeys: ["nightModeTemperature"]
-                tags: ["gamma", "night", "temperature", "kelvin", "warm", "color", "blue light"]
-                visible: NightModeService.gammaControlAvailable
-                text: SessionData.nightModeAutoEnabled ? I18n.tr("Night temperature") : I18n.tr("Color Temperature", "Color Temperature")
-                minimum: 1000
-                maximum: 6000
-                step: 100
-                unit: "K"
-                value: SessionData.nightModeTemperature
-                onSliderValueChanged: newValue => {
-                    SessionData.setNightModeTemperature(newValue);
-                    if (SessionData.nightModeHighTemperature < newValue)
-                        SessionData.setNightModeHighTemperature(newValue);
+        SettingsDeferred {
+            SettingsCard {
+                SettingsToggleRow {
+                    text: I18n.tr("Night mode")
+                    description: NightModeService.gammaControlAvailable ? "" : I18n.tr("Gamma control not available. Requires DMS API v6+.")
+                    checked: NightModeService.nightModeEnabled
+                    enabled: NightModeService.gammaControlAvailable
+                    onToggled: NightModeService.toggleNightMode()
                 }
-            }
 
-            SettingsSliderRow {
-                settingKey: "nightModeHighTemperature"
-                resetStore: SessionData
-                resetKeys: ["nightModeHighTemperature"]
-                tags: ["gamma", "day", "temperature", "kelvin", "color"]
-                visible: NightModeService.gammaControlAvailable && SessionData.nightModeAutoEnabled
-                text: I18n.tr("Day temperature")
-                minimum: SessionData.nightModeTemperature
-                maximum: 10000
-                step: 100
-                unit: "K"
-                value: Math.max(SessionData.nightModeHighTemperature, SessionData.nightModeTemperature)
-                onSliderValueChanged: newValue => SessionData.setNightModeHighTemperature(newValue)
-            }
+                SettingsSliderRow {
+                    settingKey: "nightModeTemperature"
+                    resetStore: SessionData
+                    resetKeys: ["nightModeTemperature"]
+                    tags: ["gamma", "night", "temperature", "kelvin", "warm", "color", "blue light"]
+                    visible: NightModeService.gammaControlAvailable
+                    text: SessionData.nightModeAutoEnabled ? I18n.tr("Night temperature") : I18n.tr("Color Temperature", "Color Temperature")
+                    minimum: 1000
+                    maximum: 6000
+                    step: 100
+                    unit: "K"
+                    value: SessionData.nightModeTemperature
+                    onSliderValueChanged: newValue => {
+                        SessionData.setNightModeTemperature(newValue);
+                        if (SessionData.nightModeHighTemperature < newValue)
+                            SessionData.setNightModeHighTemperature(newValue);
+                    }
+                }
 
-            SettingsToggleRow {
-                text: I18n.tr("Automatic control")
-                checked: SessionData.nightModeAutoEnabled
-                visible: NightModeService.gammaControlAvailable
-                onToggled: checked => {
-                    if (checked !== NightModeService.nightModeEnabled)
-                        NightModeService.toggleNightMode();
-                    SessionData.setNightModeAutoEnabled(checked);
+                SettingsSliderRow {
+                    settingKey: "nightModeHighTemperature"
+                    resetStore: SessionData
+                    resetKeys: ["nightModeHighTemperature"]
+                    tags: ["gamma", "day", "temperature", "kelvin", "color"]
+                    visible: NightModeService.gammaControlAvailable && SessionData.nightModeAutoEnabled
+                    text: I18n.tr("Day temperature")
+                    minimum: SessionData.nightModeTemperature
+                    maximum: 10000
+                    step: 100
+                    unit: "K"
+                    value: Math.max(SessionData.nightModeHighTemperature, SessionData.nightModeTemperature)
+                    onSliderValueChanged: newValue => SessionData.setNightModeHighTemperature(newValue)
+                }
+
+                SettingsToggleRow {
+                    text: I18n.tr("Automatic control")
+                    checked: SessionData.nightModeAutoEnabled
+                    visible: NightModeService.gammaControlAvailable
+                    onToggled: checked => {
+                        if (checked !== NightModeService.nightModeEnabled)
+                            NightModeService.toggleNightMode();
+                        SessionData.setNightModeAutoEnabled(checked);
+                    }
                 }
             }
         }
@@ -174,6 +179,7 @@ Item {
             }
 
             SettingsTimeRow {
+                dialogHost: root.parentModal?.dialogHostFor(root) ?? null
                 visible: !autoModeGroup.locationMode
                 is24Hour: SettingsData.use24HourClock
                 startTitle: I18n.tr("Start")
@@ -213,59 +219,62 @@ Item {
             }
         }
 
-        SettingsCard {
-            title: I18n.tr("Current status")
-            visible: SessionData.nightModeAutoEnabled && NightModeService.gammaControlAvailable && NightModeService.nightModeEnabled && NightModeService.gammaCurrentTemp > 0
+        SettingsDeferred {
+            when: SessionData.nightModeAutoEnabled && NightModeService.gammaControlAvailable && NightModeService.nightModeEnabled && NightModeService.gammaCurrentTemp > 0
 
-            Column {
-                spacing: Theme.spacingM
+            SettingsCard {
+                title: I18n.tr("Current status")
 
-                Row {
-                    width: parent.width
+                Column {
                     spacing: Theme.spacingM
 
-                    StatusTile {
-                        iconName: "device_thermostat"
-                        value: NightModeService.gammaCurrentTemp + "K"
-                        label: I18n.tr("Current temperature")
+                    Row {
+                        width: parent.width
+                        spacing: Theme.spacingM
+
+                        StatusTile {
+                            iconName: "device_thermostat"
+                            value: NightModeService.gammaCurrentTemp + "K"
+                            label: I18n.tr("Current temperature")
+                        }
+
+                        StatusTile {
+                            iconName: NightModeService.gammaIsDay ? "wb_sunny" : "nightlight"
+                            iconColor: NightModeService.gammaIsDay ? Theme.warning : Theme.secondary
+                            value: NightModeService.gammaIsDay ? I18n.tr("Daytime", "night mode status label, current period is day") : I18n.tr("Night")
+                            label: I18n.tr("Current period")
+                        }
                     }
 
-                    StatusTile {
-                        iconName: NightModeService.gammaIsDay ? "wb_sunny" : "nightlight"
-                        iconColor: NightModeService.gammaIsDay ? Theme.warning : Theme.secondary
-                        value: NightModeService.gammaIsDay ? I18n.tr("Daytime", "night mode status label, current period is day") : I18n.tr("Night")
-                        label: I18n.tr("Current period")
+                    Row {
+                        width: parent.width
+                        spacing: Theme.spacingM
+                        visible: autoModeGroup.locationMode && (NightModeService.gammaSunriseTime || NightModeService.gammaSunsetTime)
+
+                        StatusTile {
+                            visible: NightModeService.gammaSunriseTime
+                            iconName: "wb_twilight"
+                            iconColor: Theme.warning
+                            value: Format.formatIsoTime(NightModeService.gammaSunriseTime)
+                            label: I18n.tr("Sunrise")
+                        }
+
+                        StatusTile {
+                            visible: NightModeService.gammaSunsetTime
+                            iconName: "wb_twilight"
+                            iconColor: Theme.secondary
+                            value: Format.formatIsoTime(NightModeService.gammaSunsetTime)
+                            label: I18n.tr("Sunset")
+                        }
                     }
                 }
 
-                Row {
-                    width: parent.width
-                    spacing: Theme.spacingM
-                    visible: autoModeGroup.locationMode && (NightModeService.gammaSunriseTime || NightModeService.gammaSunsetTime)
-
-                    StatusTile {
-                        visible: NightModeService.gammaSunriseTime
-                        iconName: "wb_twilight"
-                        iconColor: Theme.warning
-                        value: Format.formatIsoTime(NightModeService.gammaSunriseTime)
-                        label: I18n.tr("Sunrise")
-                    }
-
-                    StatusTile {
-                        visible: NightModeService.gammaSunsetTime
-                        iconName: "wb_twilight"
-                        iconColor: Theme.secondary
-                        value: Format.formatIsoTime(NightModeService.gammaSunsetTime)
-                        label: I18n.tr("Sunset")
-                    }
+                SettingsRow {
+                    visible: NightModeService.gammaNextTransition
+                    iconName: "schedule"
+                    title: I18n.tr("Next Transition")
+                    subtitle: Format.formatIsoTime(NightModeService.gammaNextTransition)
                 }
-            }
-
-            SettingsRow {
-                visible: NightModeService.gammaNextTransition
-                iconName: "schedule"
-                title: I18n.tr("Next Transition")
-                subtitle: Format.formatIsoTime(NightModeService.gammaNextTransition)
             }
         }
 

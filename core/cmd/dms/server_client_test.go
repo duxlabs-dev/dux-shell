@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"net"
 	"path/filepath"
 	"strings"
@@ -82,5 +83,48 @@ func TestServerRequestReportsClosedConnection(t *testing.T) {
 	_, err := sendServerRequest(ipc.Request{Method: "test"})
 	if err == nil || strings.Contains(err.Error(), "%!") {
 		t.Fatalf("want a readable error for a server that hangs up, got %v", err)
+	}
+}
+
+func TestCopyFileContentsSendsAbsolutePath(t *testing.T) {
+	got := make(chan string, 1)
+	fakeServer(t, func(conn net.Conn) {
+		conn.Write([]byte("{}\n"))
+		line, _ := bufio.NewReader(conn).ReadBytes('\n')
+		var req ipc.Request
+		_ = json.Unmarshal(line, &req)
+		got <- req.Params["filePath"].(string)
+		conn.Write([]byte(`{"id":1,"result":{"success":true}}` + "\n"))
+	})
+
+	dir := t.TempDir()
+	t.Chdir(dir)
+	if err := copyFileContentsToClipboard("shot.png", "image/png"); err != nil {
+		t.Fatalf("copyFileContentsToClipboard: %v", err)
+	}
+	if path := <-got; path != filepath.Join(dir, "shot.png") {
+		t.Fatalf("server got %q, want the absolute path", path)
+	}
+}
+
+// A server that accepts the copy but never answers must not hang the CLI;
+// it gives up so the caller can serve the selection itself.
+func TestServerCopyGivesUpOnSilentServer(t *testing.T) {
+	old := serverCopyReplyTimeout
+	serverCopyReplyTimeout = 100 * time.Millisecond
+	t.Cleanup(func() { serverCopyReplyTimeout = old })
+
+	fakeServer(t, func(conn net.Conn) {
+		conn.Write([]byte("{}\n"))
+		bufio.NewReader(conn).ReadBytes('\n')
+		time.Sleep(2 * time.Second)
+	})
+
+	start := time.Now()
+	if serverCopyFileContents("/tmp/shot.png", "image/png") {
+		t.Fatal("want the copy refused when the server never answers")
+	}
+	if elapsed := time.Since(start); elapsed > time.Second {
+		t.Fatalf("took %v, want it to give up after the reply timeout", elapsed)
 	}
 }

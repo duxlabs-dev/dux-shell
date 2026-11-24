@@ -31,25 +31,6 @@ PanelWindow {
     readonly property point storedPoint: Qt.point(root.clampAnchorX((typeof root.storedAnchor?.x === "number" ? root.storedAnchor.x : 0.5) * root.screenWidth), root.clampAnchorY((typeof root.storedAnchor?.y === "number" ? root.storedAnchor.y : 0.5) * root.screenHeight))
     readonly property real anchorX: root.anchor.x
     readonly property real anchorY: root.anchor.y
-    // Sized from the visual's size alone, so a fractional spring position never resizes the surface.
-    readonly property int surfaceX: Math.floor(body.currentVisualX - root.hitPadding - body.shadowPadding)
-    readonly property int surfaceY: Math.floor(body.currentVisualY - root.hitPadding - body.shadowPadding)
-    readonly property int surfaceWidth: Math.ceil(body.currentVisualWidth + 2 * (root.hitPadding + body.shadowPadding)) + 1
-    readonly property int surfaceHeight: Math.ceil(body.currentVisualHeight + 2 * (root.hitPadding + body.shadowPadding)) + 1
-
-    // Gestures and morphs run on a surface lifted to the whole output: per-frame margin commits skew pointer coordinates and relayout Hyprland.
-    property bool lifting: false
-    property bool liftForced: false
-    property point liftOrigin
-    // True from the unlift until the tight configure lands: a re-grab in that window still reads the output size.
-    property bool sizeStale: false
-    readonly property bool outputSized: root.width >= root.screenWidth - 2 && root.height >= root.screenHeight - 2
-    // Negative far margins grow the surface in place; the origin flips only once the buffer spans the output.
-    readonly property bool lifted: root.lifting && (root.liftForced || (!root.sizeStale && root.outputSized))
-    readonly property int frameLeft: root.lifted ? 0 : root.lifting ? root.liftOrigin.x : root.surfaceX
-    readonly property int frameTop: root.lifted ? 0 : root.lifting ? root.liftOrigin.y : root.surfaceY
-    readonly property int frameRight: root.lifting ? -root.frameLeft : Math.round(root.screenWidth) - root.surfaceX - root.surfaceWidth
-    readonly property int frameBottom: root.lifting ? -root.frameTop : Math.round(root.screenHeight) - root.surfaceY - root.surfaceHeight
 
     readonly property bool expanded: body.expanded
     readonly property bool pointerInside: body.islandController.pointerInside
@@ -63,9 +44,15 @@ PanelWindow {
     property point anchor
     property bool dragging: false
     property bool flinging: false
-    // sheetOut spans the expand through the collapse spring, so the whole morph draws into one static buffer.
-    readonly property bool liftWanted: root.dragging || root.flinging || body.sheetOut
+    // sheetOut spans the expand through the collapse spring.
+    readonly property bool anchorHeld: root.dragging || root.flinging || body.sheetOut
+    readonly property bool dismissActive: body.islandController.outsideClickCollapses && !body.inputSuspended
     property bool idle: false
+    // Origin stays at the output corner so scene coordinates never shift; only the far edges pull in while the island rests.
+    readonly property bool lifted: hitHover.hovered || root.pointerInside || root.expanded || root.motionRunning || root.anchorHeld || root.dismissActive
+    readonly property int restWidth: Math.min(Math.round(root.screenWidth), Math.ceil(body.currentVisualX + body.currentVisualWidth + root.hitPadding + body.shadowPadding) + 1)
+    readonly property int restHeight: Math.min(Math.round(root.screenHeight), Math.ceil(body.currentVisualY + body.currentVisualHeight + root.hitPadding + body.shadowPadding) + 1)
+    readonly property bool outputSized: root.width >= root.screenWidth - 2 && root.height >= root.screenHeight - 2
 
     function anchorLimit(size, extent) {
         const half = size / 2;
@@ -94,15 +81,6 @@ PanelWindow {
         root.wake();
     }
 
-    function beginLift() {
-        if (root.lifting)
-            return;
-        root.liftOrigin = Qt.point(root.frameLeft, root.frameTop);
-        root.liftForced = false;
-        root.lifting = true;
-        liftTimeout.restart();
-    }
-
     function wake() {
         root.idle = false;
         if (root.idleDelay > 0)
@@ -120,27 +98,13 @@ PanelWindow {
     }
 
     onStoredPointChanged: {
-        if (!root.liftWanted)
+        if (!root.anchorHeld)
             root.anchor = root.storedPoint;
     }
     // Stored once the fling settles; a save mid-gesture stalls the fling's first frame.
-    onLiftWantedChanged: {
-        if (root.liftWanted) {
-            root.beginLift();
-            return;
-        }
-        root.sizeStale = root.outputSized;
-        root.lifting = false;
-        liftTimeout.stop();
-        root.storeAnchor();
-    }
-    onOutputSizedChanged: {
-        if (!root.outputSized)
-            root.sizeStale = false;
-    }
-    onLiftedChanged: {
-        if (root.lifted)
-            liftTimeout.stop();
+    onAnchorHeldChanged: {
+        if (!root.anchorHeld)
+            root.storeAnchor();
     }
     onMotionRunningChanged: {
         if (!root.motionRunning)
@@ -171,7 +135,6 @@ PanelWindow {
         radius: Math.ceil(body.currentSurfaceRadius)
     }
 
-    // All four edges are anchored so the margins alone place and size the surface, letting a lift grow it past the output.
     anchors {
         top: true
         bottom: true
@@ -179,10 +142,8 @@ PanelWindow {
         right: true
     }
     WlrLayershell.margins {
-        left: root.frameLeft
-        top: root.frameTop
-        right: root.frameRight
-        bottom: root.frameBottom
+        right: root.lifted ? 0 : Math.round(root.screenWidth) - root.restWidth
+        bottom: root.lifted ? 0 : Math.round(root.screenHeight) - root.restHeight
     }
 
     Component.onCompleted: {
@@ -195,7 +156,6 @@ PanelWindow {
         id: islandChrome
 
         window: root
-        extraWindows: [dismissWindow]
         host: body
     }
 
@@ -204,22 +164,14 @@ PanelWindow {
 
         interval: root.idleDelay
         onTriggered: {
-            if (root.expanded || root.pointerInside || hitHover.hovered || root.liftWanted || body.islandController.transientActive)
+            if (root.expanded || root.pointerInside || hitHover.hovered || root.anchorHeld || body.islandController.transientActive)
                 return;
             root.idle = true;
         }
     }
 
-    // A compositor that never sizes the lifted surface would leave every drag frozen.
-    Timer {
-        id: liftTimeout
-
-        interval: 250
-        onTriggered: root.liftForced = true
-    }
-
     // A quick stroke outruns the dot's rectangle between frames and the pointer leave ends the drag, so a drag takes input everywhere.
-    mask: root.dragging && root.lifted ? null : hitRegion
+    mask: root.dragging || root.dismissActive ? null : hitRegion
     Region {
         id: hitRegion
 
@@ -228,8 +180,8 @@ PanelWindow {
     Item {
         id: hitTarget
 
-        x: body.currentVisualX - root.hitPadding - root.frameLeft
-        y: body.currentVisualY - root.hitPadding - root.frameTop
+        x: body.currentVisualX - root.hitPadding
+        y: body.currentVisualY - root.hitPadding
         width: body.currentVisualWidth + 2 * root.hitPadding
         height: body.currentVisualHeight + 2 * root.hitPadding
 
@@ -241,44 +193,28 @@ PanelWindow {
         }
     }
 
-    // Catches outside clicks; the lifted surface's own mask stays the island rectangle.
-    PanelWindow {
-        id: dismissWindow
-        screen: root.screen
-        visible: body.islandController.outsideClickCollapses && !body.inputSuspended
-        color: "transparent"
-        exclusiveZone: -1
-        WlrLayershell.namespace: "dms:dankisland-dismiss"
-        WlrLayershell.layer: root.WlrLayershell.layer
-        anchors {
-            top: true
-            bottom: true
-            left: true
-            right: true
-        }
-        // The frozen spring envelope, so this full-output surface is not re-committed every frame of a morph.
-        mask: Region {
-            width: dismissWindow.width
-            height: dismissWindow.height
-            Region {
-                readonly property Item envelope: body.inputMaskItem
+    MouseArea {
+        anchors.fill: parent
+        enabled: root.dismissActive
+        acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
+        onClicked: body.islandController.requestCollapse()
+    }
 
-                x: dismissWindow.visible ? envelope.x : 0
-                y: dismissWindow.visible ? envelope.y : 0
-                width: dismissWindow.visible ? envelope.width : 0
-                height: dismissWindow.visible ? envelope.height : 0
-                intersection: Intersection.Subtract
-            }
-        }
-        MouseArea {
-            anchors.fill: parent
-            acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
-            onClicked: body.islandController.requestCollapse()
-        }
+    // Clicks inside the morph envelope stay with the island instead of collapsing it.
+    MouseArea {
+        readonly property Item envelope: body.inputMaskItem
+
+        enabled: root.dismissActive
+        x: envelope.x
+        y: envelope.y
+        width: envelope.width
+        height: envelope.height
+        acceptedButtons: Qt.AllButtons
+        onPressed: mouse => mouse.accepted = true
     }
 
     MouseArea {
-        anchors.fill: parent
+        anchors.fill: hitTarget
         enabled: !root.expanded && !body.inputSuspended
         onClicked: {
             SettingsData.recordBarInteraction(root.screen, root.barId);
@@ -289,16 +225,11 @@ PanelWindow {
     IslandBarHost {
         id: body
 
-        x: -root.frameLeft
-        y: -root.frameTop
         width: root.screenWidth
         height: root.screenHeight
-        originOffsetX: x
-        originOffsetY: y
         barConfig: root.barConfig
         screen: root.screen
         hostWindow: root
-        hostLifted: root.lifted
         barId: root.barId
         anchor: root.anchor
         anchorSnaps: root.dragging

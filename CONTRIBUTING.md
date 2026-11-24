@@ -54,6 +54,38 @@ make run     # dev build, then launch against the live quickshell/ tree
 
 The UI config dir resolves in order: `-c <dir>`, `DMS_SHELL_DIR`, the dir a running instance is using, then the embedded UI. Each candidate must contain `shell.qml`. `make run` uses `-c $(pwd)/quickshell`, so QML edits hot-reload from the working tree.
 
+### Quickshell runtime (dux-qt-base)
+
+`dms qs` runs the UI on `libdux-qt-base.so.0`, the quickshell fork in the `dux-qt-base` submodule. By default `make build` does not embed it, and `dms` loads the first one it finds:
+
+1. the copy embedded in `dms`, if it was built with `QTBASE=1`
+2. `libdux-qt-base.so.0` next to `dms`, or in `../lib/dms/` relative to it
+3. the dynamic linker search path: `LD_LIBRARY_PATH`, the dirs in `ld.so.conf`, then `/usr/lib` and `/lib` (or their `lib64` variants)
+
+Without one, `dms run` refuses to start. `dms run --qs-child`, or `DMS_QS_CHILD=1`, runs the UI on upstream `qs` from `PATH` instead. That path is unsupported: fork-only features degrade to warnings.
+
+To build and install the library from the submodule:
+
+```bash
+cd dux-qt-base
+just release        # configures RelWithDebInfo into build/, prefix /usr/local
+sudo just install
+sudo ldconfig
+```
+
+`/usr/local/lib` is only searched if `ld.so.conf` lists it, which not every distro does.
+
+Pass cmake flags through `just configure`, for example `just configure release -DCMAKE_INSTALL_PREFIX=/usr`, then `just build`. Rebuild and reinstall after every Qt update, the library uses private Qt APIs. See `dux-qt-base/BUILD.md` for options and dependencies.
+
+To embed the runtime in `dms` instead (distro packages depend on the dux-qt-base package rather than embedding):
+
+```bash
+cd core
+make QTBASE=1 && sudo make install
+```
+
+An embedded copy always wins over an installed one. `dms doctor` shows which runtime is in use.
+
 The Go core depends on [dankgo](https://github.com/duxlabs-dev/dux-go) for logging, XDG paths, the IPC transport, and the quickshell process lifecycle. To develop against a local dankgo checkout, create a gitignored `go.work` at the repo root:
 
 ```
@@ -64,7 +96,7 @@ go work init ./core ../dankgo
 
 Everything under `quickshell/DCommon/` (core widgets, the file browser, scroll physics, bundled fonts) is shared across the DMS suite and lives in the `dux-qml-common` submodule. It is a normal git worktree:
 
-1. Edit files under `dux-qml-common/` (or through the `quickshell/DCommon` symlink — same files) and test in the running shell; hot reload works as usual. For isolated widget work, the library is its own runnable config with a gallery: `qs -c dux-qml-common`.
+1. Edit files under `dux-qml-common/` (or through the `quickshell/DCommon` symlink — same files) and test in the running shell; hot reload works as usual. For isolated widget work, the library is its own runnable config with a gallery: `dms qs -c dux-qml-common`.
 2. Commit and PR those changes in the `dux-qml-common` repo: `cd dux-qml-common && git switch -c my-change`, push, open the PR there.
 3. Once merged, bump the pointer here: `make update-common` (updates the submodule and the nix flake input together), then commit alongside any DMS-side changes. If you only bump the submodule, CI syncs `flake.lock` to it automatically on master.
 
@@ -127,20 +159,19 @@ This is a monorepo, the easiest thing to do is to open an editor in either `quic
 }
 ```
 
-3. Create empty `.qmlls.ini` file in `quickshell/` directory
+3. Generate `quickshell/.qmlls.ini` so qmlls can resolve `qs.*` and `Quickshell` imports. You don't need to create the file first; this command creates it:
 
 ```bash
-cd quickshell
-touch .qmlls.ini
+dms qs tooling -p quickshell
 ```
 
-4. Restart dms to generate the `.qmlls.ini` file
+It does not start a shell. The generated file is a symlink into `/run/user/<uid>`, so run it again after a reboot. A dev shell running from `quickshell/` keeps it current on its own. If your dux-qt-base predates the `tooling` command, `rm -f quickshell/.qmlls.ini && touch quickshell/.qmlls.ini` and run the shell from `quickshell/` once instead.
 
-5. Run `make lint-qml` from the repo root to lint QML entrypoints (requires the `.qmlls.ini` generated above). The script needs the **Qt 6** `qmllint`; it checks `qmllint6`, Fedora's `qmllint-qt6`, `/usr/lib/qt6/bin/qmllint`, then `qmllint` in `PATH`. If your Qt 6 binary lives elsewhere, set `QMLLINT=/path/to/qmllint`.
+4. Run `make lint-qml` from the repo root to lint `shell.qml` and `DMSShell.qml`. It runs `dms qs tooling` first, so it works after a reboot without a running shell, and checks against dux-qt-base's `Quickshell` types; `UPSTREAM=1 make lint-qml` checks against an installed upstream quickshell instead. Set `DMS=/path/to/dms` to use another `dms`. The script needs the **Qt 6** `qmllint`; it checks `qmllint6`, Fedora's `qmllint-qt6`, `/usr/lib/qt6/bin/qmllint`, then `qmllint` in `PATH`. If your Qt 6 binary lives elsewhere, set `QMLLINT=/path/to/qmllint`.
 
-6. Run `make test-qml` for QML unit tests (`nix develop --command make test-qml` with Nix). These use Qt 6 `qmltestrunner` offscreen and do not require a running shell. Set `QMLTESTRUNNER=/path/to/qmltestrunner` if needed.
+5. Run `make test-qml` for QML unit tests (`nix develop --command make test-qml` with Nix). These use Qt 6 `qmltestrunner` offscreen and do not require a running shell. Set `QMLTESTRUNNER=/path/to/qmltestrunner` if needed.
 
-7. Make your changes, test, and open a pull request.
+6. Make your changes, test, and open a pull request.
 
 ### I18n/Localization
 

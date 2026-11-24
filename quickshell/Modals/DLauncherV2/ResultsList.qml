@@ -6,6 +6,7 @@ import qs.Common
 import qs.Services
 import qs.DCommon.Widgets
 import qs.Modals.DLauncherV2.Components
+import "../../Common/settings/AppFolders.js" as AppFolders
 
 Item {
     id: root
@@ -14,6 +15,7 @@ Item {
     property var keyForwardTargets: []
     property Item focusReturnTarget: null
     property int gridColumns: controller?.gridColumns ?? 4
+    readonly property int iconColumns: controller?.iconColumns ?? 0
     property bool leadingSectionHeaderAtBottom: false
     property bool showEmptyState: true
     property var _visualModel: ({
@@ -23,6 +25,7 @@ Item {
             height: 0
         })
     readonly property var _visualRows: _visualModel.rows
+    readonly property bool _dmenuMode: controller?.searchMode === "dmenu"
     readonly property var _flatIndexToRowMap: _visualModel.indexMap
     readonly property var _cumulativeHeights: _visualModel.heights
     property int _lastSelectedFlatIndex: -1
@@ -58,7 +61,224 @@ Item {
 
     signal itemRightClicked(int index, var item, real mouseX, real mouseY)
 
+    readonly property FolderPopup folderPopup: folderPopupLoader.item as FolderPopup
+    property LauncherTile _dragTile: null
+    property var _dragItem: null
+    property int _pressIndex: -1
+    property int _liftedIndex: -1
+    property int _pressMemberIndex: -1
+    property int _liftedMemberIndex: -1
+    property int _dropTargetIndex: -1
+    property point _pressScene: Qt.point(0, 0)
+    property point _dragPoint: Qt.point(0, 0)
+    property point _dragGrab: Qt.point(0, 0)
+    property size _dragSize: Qt.size(0, 0)
+    property bool _dragImageTile: false
+    property bool _mouseDrag: false
+    readonly property bool _pressActive: _pressIndex >= 0 || _pressMemberIndex >= 0
+    readonly property bool _dragActive: _liftedIndex >= 0 || _liftedMemberIndex >= 0
+
+    onVisibleChanged: {
+        if (!visible)
+            _resetDrag();
+    }
+
+    function _armDrag(tile, sceneX, sceneY, fromMouse, memberIndex = -1) {
+        _resetDrag();
+        const item = tile?.item;
+        if (!item || controller?.searchQuery)
+            return;
+        const folderMove = item.type === "folder" && memberIndex < 0;
+        if (item.type !== "app" && !folderMove)
+            return;
+        if (memberIndex < 0 && tile.flatIndex < 0)
+            return;
+        _dragTile = tile;
+        _pressIndex = memberIndex < 0 ? tile.flatIndex : -1;
+        _pressMemberIndex = memberIndex;
+        _pressScene = Qt.point(sceneX, sceneY);
+        _dragPoint = mapFromItem(null, sceneX, sceneY);
+        _mouseDrag = fromMouse;
+        tile.holdGrab = fromMouse;
+        liftTimer.restart();
+    }
+
+    function _lift() {
+        liftTimer.stop();
+        const tile = _dragTile;
+        if (!tile?.item || !visible) {
+            _resetDrag();
+            return;
+        }
+        const origin = tile.mapToItem(root, 0, 0);
+        _dragItem = tile.item;
+        _dragImageTile = tile.imageTile;
+        _dragSize = Qt.size(tile.width, tile.height);
+        _dragGrab = Qt.point(_dragPoint.x - origin.x, _dragPoint.y - origin.y);
+        _liftedIndex = _pressIndex;
+        _liftedMemberIndex = _pressMemberIndex;
+        _updateDropTarget();
+    }
+
+    function _dragMove(sceneX, sceneY) {
+        if (!_pressActive)
+            return;
+        if (!_dragActive && Math.hypot(sceneX - _pressScene.x, sceneY - _pressScene.y) >= (_dragTile?.dragThreshold ?? 0)) {
+            if (!_mouseDrag) {
+                _resetDrag();
+                return;
+            }
+            _lift();
+        }
+        _dragPoint = mapFromItem(null, sceneX, sceneY);
+        if (!_dragActive)
+            return;
+        if (_liftedMemberIndex < 0) {
+            _updateDropTarget();
+            return;
+        }
+        const popup = root.folderPopup;
+        if (popup)
+            popup.memberDragOutside = !popup.surfaceContains(sceneX, sceneY);
+    }
+
+    function _dragRelease(sceneX, sceneY) {
+        if (!_dragActive) {
+            _resetDrag();
+            return;
+        }
+        _dragPoint = mapFromItem(null, sceneX, sceneY);
+        const source = _dragItem;
+        if (_liftedMemberIndex >= 0) {
+            _releaseFromFolder(source.id, sceneX, sceneY);
+            return;
+        }
+        const hit = _hitTest(_dragPoint);
+        const target = _dropTargetFor(hit);
+        _resetDrag();
+        // The drop destroys its releasing delegate; defer until the handler returns.
+        if (target)
+            Qt.callLater(root._dropOn, hit.entry, source);
+    }
+
+    function _releaseFromFolder(sourceId, sceneX, sceneY) {
+        const popup = root.folderPopup;
+        const folderId = controllerActiveFolderId;
+        _resetDrag();
+        if (!popup || !folderId)
+            return;
+        if (!popup.surfaceContains(sceneX, sceneY)) {
+            Qt.callLater(root._dropOutOfFolder, sourceId);
+            return;
+        }
+        const targetId = popup.members[popup.memberIndexAt(sceneX, sceneY)]?.id ?? "";
+        if (targetId && targetId !== sourceId)
+            Qt.callLater(root._reorderInFolder, folderId, sourceId, targetId);
+    }
+
+    function _resetDrag() {
+        if (!_pressActive)
+            return;
+        liftTimer.stop();
+        if (_dragTile)
+            _dragTile.holdGrab = false;
+        _mouseDrag = false;
+        if (root.folderPopup)
+            root.folderPopup.memberDragOutside = false;
+        _liftedIndex = -1;
+        _liftedMemberIndex = -1;
+        _dropTargetIndex = -1;
+        _pressIndex = -1;
+        _pressMemberIndex = -1;
+        _dragTile = null;
+        _dragItem = null;
+    }
+
+    function _hitTest(point) {
+        if (!listClip.contains(listClip.mapFromItem(root, point.x, point.y)))
+            return null;
+        const contentPoint = mainListView.contentItem.mapFromItem(root, point.x, point.y);
+        const row = _visualRows[mainListView.indexAt(contentPoint.x, contentPoint.y)];
+        if (row?.type !== "grid_row")
+            return null;
+        const cellWidth = Math.floor(mainListView.width / row.cols);
+        const listX = mainListView.mapFromItem(root, point.x, point.y).x;
+        const column = Math.floor((I18n.isRtl ? mainListView.width - listX : listX) / cellWidth);
+        return {
+            entry: row.items[column] ?? null,
+            sectionId: row.sectionId
+        };
+    }
+
+    function _dropTargetFor(hit) {
+        const target = hit?.entry?.item;
+        const action = AppFolders.dropAction(_dragItem, target);
+        if (!action || (action === "move" && hit.sectionId !== "apps"))
+            return null;
+        return target;
+    }
+
+    function _updateDropTarget() {
+        if (_liftedMemberIndex >= 0)
+            return;
+        const hit = _hitTest(_dragPoint);
+        _dropTargetIndex = _dropTargetFor(hit) ? hit.entry.flatIndex : -1;
+    }
+
+    function _dropOn(targetEntry, source) {
+        const target = targetEntry.item;
+        switch (AppFolders.dropAction(source, target)) {
+        case "move":
+            controller?.moveLauncherFolder(source.data.folderId, targetEntry.flatIndex);
+            break;
+        case "add":
+            SessionData.addAppToLauncherFolder(target.data.folderId, source.id);
+            break;
+        case "create":
+            controller?.createFolderWith([target.id, source.id]);
+            break;
+        }
+    }
+
+    function _dropOutOfFolder(sourceId) {
+        SessionData.removeAppFromLauncherFolder(sourceId);
+    }
+
+    function _reorderInFolder(folderId, sourceId, targetId) {
+        SessionData.moveAppInLauncherFolder(folderId, sourceId, targetId);
+    }
+
+    Timer {
+        id: liftTimer
+        interval: Timing.longPress
+        onTriggered: root._lift()
+    }
+
+    readonly property int _dragScrollDirection: {
+        if (_liftedIndex < 0)
+            return 0;
+        const y = _dragPoint.y - listClip.y;
+        if (y < Theme.spacingXL)
+            return -1;
+        if (y > listClip.height - Theme.spacingXL)
+            return 1;
+        return 0;
+    }
+
+    Timer {
+        id: dragScrollTimer
+        interval: LauncherMetrics.dragScrollInterval
+        repeat: true
+        running: root._dragScrollDirection !== 0
+        onTriggered: {
+            const next = mainListView.contentY + root._dragScrollDirection * Theme.spacingL;
+            mainListView.contentY = Math.max(mainListView.originY, Math.min(mainListView.maximumContentY, next));
+            root._updateDropTarget();
+        }
+    }
+
     function _rebuildVisualModel() {
+        root._resetDrag();
         root._selectionMotionReady = false;
         var sections = root.controller?.sections ?? [];
         var rows = [];
@@ -119,7 +339,7 @@ Item {
                     rows.push({
                         _rowId: rowId,
                         type: "list_item",
-                        item: items[i],
+                        item: isDmenuSection ? Object.assign({}, items[i]) : items[i],
                         flatIndex: flatIdx,
                         sectionId: sectionId,
                         firstInGroup: i === 0,
@@ -132,10 +352,9 @@ Item {
                 hasGrid = hasGrid || mode === "grid";
                 var cols = root.controller?.getGridColumns(sectionId) ?? root.gridColumns;
                 var cellWidth = Math.floor(root.width / cols);
-                var cellHeight = mode === "tile" ? cellWidth * LauncherMetrics.tileImageRatio : cellWidth + LauncherMetrics.tileLabelHeight;
+                var cellHeight = mode === "tile" ? cellWidth * LauncherMetrics.tileImageRatio : mode === "icons" ? LauncherMetrics.iconsCellHeight : cellWidth + LauncherMetrics.tileLabelHeight;
                 var gridSpace = root._fitSpace - sectionBand - LauncherMetrics.fadeLength;
                 if (mode === "grid" && gridSpace > 0) {
-                    // Never aim below what the icon and label need
                     var target = Math.max(cellHeight * LauncherMetrics.gridDensityScale, Math.min(cellHeight, LauncherMetrics.tileMinHeight));
                     cellHeight = gridSpace / Math.max(1, Math.round(gridSpace / target));
                 }
@@ -203,12 +422,16 @@ Item {
         }
     }
 
+    on_DragTileChanged: {
+        if (!_dragTile && (_pressIndex >= 0 || _pressMemberIndex >= 0))
+            _resetDrag();
+    }
+    onIconColumnsChanged: rebuildTimer.restart()
     onGridColumnsChanged: rebuildTimer.restart()
     onWidthChanged: rebuildTimer.restart()
     on_FitSpaceChanged: _settleHeight()
     onResizingChanged: _settleHeight()
 
-    // Only fitted grid cells depend on height
     function _settleHeight() {
         if (resizing)
             return;
@@ -238,6 +461,7 @@ Item {
             rebuildTimer.restart();
         }
         function onSearchModeChanged() {
+            root._resetDrag();
             root._visualModel = {
                 rows: [],
                 indexMap: {},
@@ -254,7 +478,7 @@ Item {
     function resetScroll() {
         root._selectionMotionReady = false;
         root._lastSelectedFlatIndex = root.controller?.selectedFlatIndex ?? -1;
-        mainListView.contentY = mainListView.originY;
+        mainListView.resetScroll();
     }
 
     function revealExpandedSection(sectionId) {
@@ -281,6 +505,8 @@ Item {
 
     function getSelectedItemPosition() {
         var fallback = mapToItem(null, width / 2, height / 2);
+        if (controllerActiveFolderId.length > 0)
+            return root.folderPopup?.selectedCellScenePosition() ?? fallback;
         if (!controller?.flatModel || controller.selectedFlatIndex < 0)
             return fallback;
 
@@ -317,6 +543,65 @@ Item {
     }
 
     readonly property int controllerSelectedFlatIndex: root.controller?.selectedFlatIndex ?? -1
+    readonly property string controllerActiveFolderId: root.controller?.activeFolderId ?? ""
+    property bool _folderPopupShown: false
+
+    onControllerActiveFolderIdChanged: {
+        if (controllerActiveFolderId.length > 0) {
+            _folderPopupShown = true;
+            return;
+        }
+        _resetDrag();
+        if (!root.folderPopup?.close())
+            _folderPopupShown = false;
+    }
+
+    function _hideFolderPopup() {
+        if (controllerActiveFolderId.length === 0)
+            _folderPopupShown = false;
+    }
+
+    Connections {
+        target: root.controller
+        ignoreUnknownSignals: true
+        function onFolderOpened(folderId) {
+            root.folderPopup?.open(folderId);
+        }
+    }
+
+    function cellSceneRect(flatIndex, itemId) {
+        const rowIndex = _flatIndexToRowMap[flatIndex];
+        const row = _visualRows[rowIndex];
+        const delegate = rowIndex === undefined ? null : mainListView.itemAtIndex(rowIndex);
+        if (!row || !delegate)
+            return null;
+        let x = 0;
+        let inset = 0;
+        let width = mainListView.width;
+        let height = row.height - LauncherMetrics.rowGap;
+        if (row.type === "grid_row") {
+            const column = row.items.findIndex(entry => entry.flatIndex === flatIndex);
+            if (column < 0 || row.items[column].item?.id !== itemId)
+                return null;
+            const cellWidth = Math.floor(mainListView.width / row.cols);
+            inset = LauncherMetrics.tileGap / 2;
+            x = (I18n.isRtl ? mainListView.width - (column + 1) * cellWidth : column * cellWidth) + inset;
+            width = cellWidth - LauncherMetrics.tileGap;
+            height = row.height - LauncherMetrics.tileGap;
+        } else if (row.type !== "list_item" || row.item?.id !== itemId) {
+            return null;
+        }
+        const clipTop = delegate.mapToItem(listClip, x, inset).y;
+        if (clipTop + height <= 0 || clipTop >= listClip.height)
+            return null;
+        const scene = delegate.mapToItem(null, x, inset);
+        return {
+            x: scene.x,
+            y: scene.y,
+            width: width,
+            height: height
+        };
+    }
 
     onControllerSelectedFlatIndexChanged: {
         const previousRow = _visualModel.rows[_visualModel.indexMap[_lastSelectedFlatIndex]];
@@ -344,14 +629,20 @@ Item {
             fadeTopInset: listClip.anchors.topMargin
             fadeLength: LauncherMetrics.fadeLength
             clip: true
+            interactive: !root._dragActive
             scrollBarTopMargin: (root.controller?.sections?.length > 0) ? LauncherMetrics.sectionBand : 0
 
-            model: ScriptModel {
-                values: root._visualRows
+            // Dmenu can contain thousands of rows; diffing their identities is quadratic.
+            model: root._dmenuMode ? root._visualRows.length : rowModel
+
+            ScriptModel {
+                id: rowModel
+                values: root._dmenuMode ? [] : root._visualRows
                 objectProp: "_rowId"
             }
 
-            currentIndex: root._flatIndexToRowMap[root.controller?.selectedFlatIndex] ?? -1
+            // Keep the drag's mouse grab alive by retaining only its row.
+            currentIndex: root._flatIndexToRowMap[root._liftedIndex >= 0 ? root._liftedIndex : root.controller?.selectedFlatIndex] ?? -1
             highlightFollowsCurrentItem: false
             highlight: LauncherHighlight {
                 animate: root._selectionMotionReady
@@ -373,13 +664,14 @@ Item {
                 required property var modelData
                 required property int index
 
-                readonly property string rowType: modelData?.type ?? ""
+                readonly property var rowData: root._dmenuMode ? root._visualRows[index] : modelData
+                readonly property string rowType: rowData?.type ?? ""
 
                 z: 1
+                // An integer model never arms DListView's orphan sweep, so hide released delegates here.
+                visible: index >= 0
                 width: mainListView.width
-                height: modelData?.height ?? LauncherMetrics.rowHeight
-
-                Component.onCompleted: mainListView.fadeIn(delegateRoot, index)
+                height: rowData?.height ?? LauncherMetrics.rowHeight
 
                 Loader {
                     active: delegateRoot.rowType === "list_item"
@@ -391,14 +683,13 @@ Item {
                         height: delegateRoot.height - LauncherMetrics.rowGap
                         z: -1
                         visible: delegateRoot.visible
-                        opacity: delegateRoot.opacity
                         color: Theme.foregroundColor(Theme.cardSurface, Theme.isFloatingWindow(root))
                         border.width: Theme.layerOutlineWidth
                         border.color: Theme.outlineMedium
                         radius: Theme.groupedListInnerRadius
-                        topLeftRadius: delegateRoot.modelData?.firstInGroup ? Theme.groupedListOuterRadius : radius
+                        topLeftRadius: delegateRoot.rowData?.firstInGroup ? Theme.groupedListOuterRadius : radius
                         topRightRadius: topLeftRadius
-                        bottomLeftRadius: delegateRoot.modelData?.lastInGroup ? Theme.groupedListOuterRadius : radius
+                        bottomLeftRadius: delegateRoot.rowData?.lastInGroup ? Theme.groupedListOuterRadius : radius
                         bottomRightRadius: bottomLeftRadius
                     }
                 }
@@ -410,19 +701,19 @@ Item {
                     visible: active
                     sourceComponent: SectionHeader {
                         focusReturnTarget: root.focusReturnTarget
-                        section: delegateRoot.modelData?.section ?? null
+                        section: delegateRoot.rowData?.section ?? null
                         controller: root.controller
                         viewMode: {
                             var vt = root.controller?.viewModeVersion ?? 0;
                             void (vt);
-                            return root.controller?.getSectionViewMode(delegateRoot.modelData?.sectionId ?? "") ?? "list";
+                            return root.controller?.getSectionViewMode(delegateRoot.rowData?.sectionId ?? "") ?? "list";
                         }
                         canChangeViewMode: {
                             var vt = root.controller?.viewModeVersion ?? 0;
                             void (vt);
-                            return root.controller?.canChangeSectionViewMode(delegateRoot.modelData?.sectionId ?? "") ?? false;
+                            return root.controller?.canChangeSectionViewMode(delegateRoot.rowData?.sectionId ?? "") ?? false;
                         }
-                        canCollapse: root.controller?.canCollapseSection(delegateRoot.modelData?.sectionId ?? "") ?? false
+                        canCollapse: root.controller?.canCollapseSection(delegateRoot.rowData?.sectionId ?? "") ?? false
                         transientSurfaceTracker: root.transientSurfaceTracker
                     }
                 }
@@ -435,22 +726,22 @@ Item {
                     visible: active
                     sourceComponent: LauncherRow {
                         keyForwardTargets: root.keyForwardTargets
-                        firstInGroup: delegateRoot.modelData?.firstInGroup ?? true
-                        lastInGroup: delegateRoot.modelData?.lastInGroup ?? true
+                        firstInGroup: delegateRoot.rowData?.firstInGroup ?? true
+                        lastInGroup: delegateRoot.rowData?.lastInGroup ?? true
                         externalHighlight: true
-                        item: delegateRoot.modelData?.item ?? null
-                        isSelected: (delegateRoot.modelData?.flatIndex ?? -1) === root.controller?.selectedFlatIndex
+                        item: delegateRoot.rowData?.item ?? null
+                        isSelected: (delegateRoot.rowData?.flatIndex ?? -1) === root.controller?.selectedFlatIndex
                         controller: root.controller
-                        flatIndex: delegateRoot.modelData?.flatIndex ?? -1
+                        flatIndex: delegateRoot.rowData?.flatIndex ?? -1
 
                         onClicked: {
-                            if (root.controller && delegateRoot.modelData?.item) {
-                                root.controller.executeItem(delegateRoot.modelData.item);
+                            if (root.controller && delegateRoot.rowData?.item) {
+                                root.controller.executeItem(delegateRoot.rowData.item);
                             }
                         }
 
                         onRightClicked: (mouseX, mouseY) => {
-                            root.itemRightClicked(delegateRoot.modelData?.flatIndex ?? -1, delegateRoot.modelData?.item ?? null, mouseX, mouseY);
+                            root.itemRightClicked(delegateRoot.rowData?.flatIndex ?? -1, delegateRoot.rowData?.item ?? null, mouseX, mouseY);
                         }
                     }
                 }
@@ -461,15 +752,16 @@ Item {
                     visible: active
                     sourceComponent: Row {
                         Repeater {
-                            model: delegateRoot.modelData?.items ?? []
+                            model: delegateRoot.rowData?.items ?? []
 
                             Item {
                                 id: gridCellDelegate
                                 required property var modelData
                                 required property int index
 
-                                readonly property bool isTile: delegateRoot.modelData?.viewMode === "tile"
-                                readonly property real cellWidth: Math.floor(delegateRoot.width / (delegateRoot.modelData?.cols ?? root.gridColumns))
+                                readonly property bool isTile: delegateRoot.rowData?.viewMode === "tile"
+                                readonly property bool isBare: delegateRoot.rowData?.viewMode === "icons"
+                                readonly property real cellWidth: Math.floor(delegateRoot.width / (delegateRoot.rowData?.cols ?? root.gridColumns))
 
                                 width: cellWidth
                                 height: delegateRoot.height
@@ -481,8 +773,7 @@ Item {
                                     width: gridCellDelegate.width - LauncherMetrics.tileGap
                                     height: delegateRoot.height - LauncherMetrics.tileGap
                                     z: -1
-                                    visible: delegateRoot.visible
-                                    opacity: delegateRoot.opacity
+                                    visible: delegateRoot.visible && !gridCellDelegate.isBare
                                     color: Theme.foregroundColor(Theme.cardSurface, Theme.isFloatingWindow(root))
                                     border.width: Theme.layerOutlineWidth
                                     border.color: Theme.outlineMedium
@@ -499,11 +790,20 @@ Item {
                                         id: gridCellComponent
 
                                         LauncherTile {
+                                            id: gridTile
                                             externalHighlight: true
+                                            bare: gridCellDelegate.isBare
                                             item: gridCellDelegate.modelData?.item ?? null
                                             isSelected: (gridCellDelegate.modelData?.flatIndex ?? -1) === root.controller?.selectedFlatIndex
                                             controller: root.controller
                                             flatIndex: gridCellDelegate.modelData?.flatIndex ?? -1
+                                            dragSource: root._liftedIndex >= 0 && gridTile.flatIndex === root._liftedIndex
+                                            receiving: root._dropTargetIndex >= 0 && gridTile.flatIndex === root._dropTargetIndex
+
+                                            onDragPressed: (sceneX, sceneY, fromMouse) => root._armDrag(gridTile, sceneX, sceneY, fromMouse)
+                                            onDragMoved: (sceneX, sceneY) => root._dragMove(sceneX, sceneY)
+                                            onDragReleased: (sceneX, sceneY) => root._dragRelease(sceneX, sceneY)
+                                            onDragCanceled: root._resetDrag()
 
                                             onClicked: {
                                                 if (root.controller && gridCellDelegate.modelData?.item) {
@@ -521,11 +821,19 @@ Item {
                                         id: tileCellComponent
 
                                         TileItem {
+                                            id: imageTileItem
                                             externalHighlight: true
                                             item: gridCellDelegate.modelData?.item ?? null
                                             isSelected: (gridCellDelegate.modelData?.flatIndex ?? -1) === root.controller?.selectedFlatIndex
                                             controller: root.controller
                                             flatIndex: gridCellDelegate.modelData?.flatIndex ?? -1
+                                            dragSource: root._liftedIndex >= 0 && imageTileItem.flatIndex === root._liftedIndex
+                                            receiving: root._dropTargetIndex >= 0 && imageTileItem.flatIndex === root._dropTargetIndex
+
+                                            onDragPressed: (sceneX, sceneY, fromMouse) => root._armDrag(imageTileItem, sceneX, sceneY, fromMouse)
+                                            onDragMoved: (sceneX, sceneY) => root._dragMove(sceneX, sceneY)
+                                            onDragReleased: (sceneX, sceneY) => root._dragRelease(sceneX, sceneY)
+                                            onDragCanceled: root._resetDrag()
 
                                             onClicked: {
                                                 if (root.controller && gridCellDelegate.modelData?.item) {
@@ -630,6 +938,97 @@ Item {
         canCollapse: root.controller?.canCollapseSection(section?.id ?? "") ?? false
         popupAbove: true
         transientSurfaceTracker: root.transientSurfaceTracker
+    }
+
+    Loader {
+        id: folderPopupLoader
+        anchors.fill: parent
+        z: 102
+        active: root._folderPopupShown
+        sourceComponent: FolderPopup {
+            controller: root.controller
+            host: root
+            focusReturnTarget: root.focusReturnTarget
+            animationsEnabled: root.visible && (root.controller?.active ?? false)
+            liftedMemberIndex: root._liftedMemberIndex
+            dragActive: root._dragActive
+            onDismissed: Qt.callLater(root._hideFolderPopup)
+            onMemberRightClicked: (item, sceneX, sceneY) => root.itemRightClicked(-1, item, sceneX, sceneY)
+            onMemberDragPressed: (tile, memberIndex, sceneX, sceneY, fromMouse) => root._armDrag(tile, sceneX, sceneY, fromMouse, memberIndex)
+            onMemberDragMoved: (sceneX, sceneY) => root._dragMove(sceneX, sceneY)
+            onMemberDragReleased: (sceneX, sceneY) => root._dragRelease(sceneX, sceneY)
+            onMemberDragCanceled: root._resetDrag()
+        }
+    }
+
+    Item {
+        id: dragLayer
+        anchors.fill: parent
+        z: 102
+
+        WheelHandler {
+            enabled: root._pressActive
+            onWheel: root._resetDrag()
+        }
+
+        Shortcut {
+            sequence: "Escape"
+            enabled: root._dragActive
+            context: Qt.WindowShortcut
+            onActivated: root._resetDrag()
+        }
+
+        Loader {
+            active: root._dragActive
+            x: root._dragPoint.x - root._dragGrab.x
+            y: root._dragPoint.y - root._dragGrab.y
+            width: root._dragSize.width
+            height: root._dragSize.height
+            sourceComponent: Item {
+                NumberAnimation on scale {
+                    from: 1
+                    to: LauncherMetrics.dragLiftScale
+                    duration: Theme.reduceMotion ? 0 : Theme.expressiveDurations.expressiveFastSpatial
+                    easing.type: Easing.BezierSpline
+                    easing.bezierCurve: Theme.expressiveCurves.expressiveFastSpatial
+                }
+
+                Loader {
+                    anchors.fill: parent
+                    active: Theme.elevationEnabled
+                    sourceComponent: ElevationShadow {
+                        level: Theme.elevationLevel3
+                        targetColor: Theme.chipSurface
+                        targetRadius: Theme.cornerRadiusL
+                    }
+                }
+
+                Loader {
+                    anchors.fill: parent
+                    sourceComponent: root._dragImageTile ? ghostImageTile : ghostGridTile
+                }
+
+                Component {
+                    id: ghostGridTile
+
+                    LauncherTile {
+                        enabled: false
+                        item: root._dragItem
+                        color: Theme.foregroundColor(Theme.chipSurface, Theme.isFloatingWindow(root))
+                    }
+                }
+
+                Component {
+                    id: ghostImageTile
+
+                    TileItem {
+                        enabled: false
+                        item: root._dragItem
+                        color: Theme.foregroundColor(Theme.chipSurface, Theme.isFloatingWindow(root))
+                    }
+                }
+            }
+        }
     }
 
     Item {

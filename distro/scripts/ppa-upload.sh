@@ -29,6 +29,8 @@ error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
 AVAILABLE_PACKAGES=(dms dms-git)
 export PPA_OWNER="${PPA_OWNER:-duxlabs}"
+# The legacy AvengeMedia PPAs are deprecated: stable dms only, dms-git stays frozen there
+[[ "$PPA_OWNER" == "avengemedia" ]] && AVAILABLE_PACKAGES=(dms)
 
 KEEP_BUILDS=false
 REBUILD_RELEASE=""
@@ -202,6 +204,11 @@ else
         error "Invalid selection"
         exit 1
     fi
+fi
+
+if [[ "$PPA_OWNER" == "avengemedia" && "$PACKAGE_NAME" == "dms-git" ]]; then
+    error "dms-git is not published to ppa:${PPA_OWNER}"
+    exit 1
 fi
 
 if [ ! -d "$PACKAGE_DIR" ]; then

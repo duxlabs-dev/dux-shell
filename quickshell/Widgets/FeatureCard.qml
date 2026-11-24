@@ -14,7 +14,7 @@ DCard {
 
     readonly property var accentPair: Theme.accent(accent)
     readonly property bool engaged: hover.hovered || focusTarget.visualFocus
-    readonly property var morphSpring: Theme.springPreset("default", Theme.expressiveDurations.expressiveDefaultSpatial)
+    readonly property var morphSpring: Theme.springPreset("defaultSpatial")
 
     onEngagedChanged: morphMotion.retarget(engaged ? 1 : 0)
 
@@ -32,7 +32,6 @@ DCard {
 
     SpringMotion {
         id: morphMotion
-        enabled: !Theme.springMotionDisabled
         stiffness: root.morphSpring.stiffness
         damping: root.morphSpring.damping
     }

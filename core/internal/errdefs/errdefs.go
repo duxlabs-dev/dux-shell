@@ -47,6 +47,7 @@ const (
 	ErrHotspotIPConfigFailed   = "hotspot-ip-config-failed"
 	ErrHotspotSupplicantFailed = "hotspot-supplicant-failed"
 	ErrHotspotFailed           = "hotspot-failed"
+	ErrHotspotWPA3Failed       = "hotspot-wpa3-failed"
 )
 
 var (

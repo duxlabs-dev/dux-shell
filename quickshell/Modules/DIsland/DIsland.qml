@@ -114,6 +114,7 @@ Item {
     function activityName(activity) {
         const requested = (activity || "home").trim().toLowerCase();
         switch (requested) {
+        case "live":
         case "media":
         case "launcher":
         case "controlcenter":
@@ -123,6 +124,7 @@ Item {
         case "notificationcenter":
         case "clipboard":
         case "powermenu":
+        case "profiles":
             return requested;
         case "power-menu":
             return "powermenu";
@@ -140,6 +142,8 @@ Item {
 
     function openActivityOn(host, activityId, section) {
         switch (activityId) {
+        case "live":
+            return host.islandController.requestActivity("live", true, true);
         case "media":
             if (!host.islandController.mediaAvailable)
                 return host.islandController.requestActivity("home", true, true);
@@ -282,6 +286,13 @@ Item {
             "activity": host.islandController.activeActivity,
             "expanded": host.islandController.expanded,
             "mediaAvailable": host.islandController.mediaAvailable,
+            "pointerInside": host.islandController.pointerInside,
+            "hoverEnabled": host.islandController.hoverExpandEnabled,
+            "hoverOpenDelay": host.islandController.hoverOpenDelay,
+            "inputSuspended": host.islandController.inputSuspended,
+            "liveActivity": host.islandController.liveActive ? {source: host.islandController.liveEntry?.source, id: host.islandController.liveEntry?.id} : null,
+            "stableActivities": host.islandController.stableActivities.map(entry => ({source: entry.source, id: entry.id, position: entry.position})),
+            "queuedEvents": host.islandController.presentationSession?.queue.length ?? 0,
             "launcherAvailable": true,
             "controlCenterAvailable": true,
             "wallpaperAvailable": true,

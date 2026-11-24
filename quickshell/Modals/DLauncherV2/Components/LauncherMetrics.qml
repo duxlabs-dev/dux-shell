@@ -8,14 +8,16 @@ Singleton {
     // Dense floor: the 36px row preview needs the room
     readonly property real rowHeight: Math.max(Theme.listItemHeight + Theme.densityStepM, Theme.buttonHeightS + Theme.spacingXS)
     readonly property real rowPadding: Theme.spacingL + Theme.densityStepS
-    // Never below the hairline gap, so rows never touch
     readonly property real rowGap: Theme.groupedListGap + Math.max(0, Theme.densityStepXS)
     readonly property real tileSize: Theme.launcherTileSize
     readonly property real tileGap: Theme.spacingXS
     readonly property real tileLabelHeight: Theme.spacingXL
     readonly property real tileLabelBlockHeight: tileLabelMetrics.lineSpacing * 2
+    readonly property real tileLabelBaseline: tileLabelMetrics.ascent
+    // Room for a wrapped second label line below the centred content
+    readonly property real tileContentPad: tileLabelBlockHeight - tileLabelBaseline + Theme.spacingXS
     readonly property real tileImageRatio: Theme.launcherImageRatio
-    readonly property real tileMinHeight: tileGap + Theme.spacingXS * 2 + gridIconSize + Theme.spacingS + tileLabelBlockHeight
+    readonly property real tileMinHeight: tileGap + gridIconSize + Theme.spacingS + tileLabelBaseline + tileContentPad * 2
     // Grid cells follow the list pitch so every density fits the same whole rows
     readonly property real gridDensityScale: (rowHeight + rowGap) / (Theme.listItemHeight + Theme.groupedListGap)
     readonly property real pillHeight: Theme.fieldHeightLarge
@@ -26,6 +28,8 @@ Singleton {
     readonly property real headerInset: (headerButtonSize - Theme.iconSizeSmall) / 2
     readonly property real iconSize: Theme.avatarSize + Theme.densityStepS
     readonly property real gridIconSize: Theme.iconSizeLarge + Theme.spacingL
+    readonly property real iconsIconSize: Theme.iconSizeLarge + Theme.spacingXL + Theme.densityStepS
+    readonly property real iconsCellHeight: tileGap + iconsIconSize + Theme.spacingS + tileLabelBaseline + tileContentPad * 2
     readonly property real previewWidth: Theme.listItemHeight
     readonly property real previewHeight: Theme.avatarSize
     readonly property real footerHeight: Math.max(Theme.buttonHeightXXS, Theme.buttonHeightXS + Theme.densityStepS)
@@ -41,8 +45,17 @@ Singleton {
     readonly property real spotlightWidth: Theme.launcherWidthWide
     readonly property real spotlightTopFraction: 0.33
     readonly property real spotlightInset: Theme.spacingM
-    // The footerless island sheet adds ResultsList's spacingS below its spacingM margin.
-    readonly property real islandEdgeInset: Theme.spacingS
+
+    readonly property real folderAnchorGap: Theme.spacingS
+    readonly property int folderMaxColumns: 4
+    readonly property int folderMaxVisibleRows: 3
+    readonly property real popupEnterScale: Theme.popupEnterScale
+    // Drag scrolling must work when animation durations are zero.
+    readonly property int dragScrollInterval: 50
+    readonly property real dragLiftScale: 1.08
+    readonly property real dropTargetScale: 1.04
+    readonly property real dragSourceOpacity: 0.38
+    readonly property real dropTargetOutlineWidth: Theme.outlineWidth * 2
 
     FontMetrics {
         id: tileLabelMetrics
@@ -82,7 +95,6 @@ Singleton {
     }
 
     // edgeInset: the painted border lifts the footer, which would otherwise eat into the rows.
-    // Footerless results keep a spacingM bottom margin.
     function sizeHeight(size, edgeInset = 0, footer = true) {
         return chromeHeight + (footer ? footerHeight : Theme.spacingM) + edgeInset + sectionBand + sizeRows(size) * (rowHeight + rowGap) + fadeLength;
     }

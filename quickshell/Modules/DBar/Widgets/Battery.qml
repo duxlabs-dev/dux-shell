@@ -43,9 +43,9 @@ BasePill {
 
     // Stepped on purpose: an Animation repaints the bar at the full refresh rate.
     Timer {
-        interval: 50
+        interval: Timing.slowTick
         repeat: true
-        running: battery.critical && battery.surfaceLive && !SettingsData.reduceMotion
+        running: battery.critical && battery.surfaceLive && !Theme.reduceMotion
         onRunningChanged: {
             battery.criticalTick = 0;
             battery.criticalPulse = 0;
@@ -165,118 +165,122 @@ BasePill {
             implicitWidth: battery.isVerticalOrientation ? (battery.widgetThickness - battery.horizontalPadding * 2) : batteryContent.implicitWidth
             implicitHeight: battery.isVerticalOrientation ? batteryColumn.implicitHeight : (battery.widgetThickness - battery.horizontalPadding * 2)
 
-            Column {
+            Loader {
                 id: batteryColumn
-                visible: battery.isVerticalOrientation
+                active: battery.isVerticalOrientation
                 anchors.centerIn: parent
-                spacing: 1
+                sourceComponent: Column {
+                    spacing: 1
 
-                DIcon {
-                    name: BatteryService.getBatteryIcon()
-                    visible: !battery.pillStyle
-                    size: Theme.barIconSize(battery.barThickness, undefined, battery.barConfig?.maximizeWidgetIcons, battery.barConfig?.iconScale)
-                    color: {
-                        if (!BatteryService.batteryAvailable) {
+                    DIcon {
+                        name: BatteryService.getBatteryIcon()
+                        visible: !battery.pillStyle
+                        size: Theme.barIconSize(battery.barThickness, undefined, battery.barConfig?.maximizeWidgetIcons, battery.barConfig?.iconScale)
+                        color: {
+                            if (!BatteryService.batteryAvailable) {
+                                return Theme.widgetIconColor;
+                            }
+
+                            if (battery.critical) {
+                                return battery.criticalForeground;
+                            }
+
+                            if (battery.levelColors) {
+                                return BatteryService.levelColor;
+                            }
+
+                            if (BatteryService.isLowBattery && !BatteryService.isCharging) {
+                                return Theme.error;
+                            }
+
+                            if (BatteryService.isCharging || BatteryService.isPluggedIn) {
+                                return Theme.primary;
+                            }
+
                             return Theme.widgetIconColor;
                         }
-
-                        if (battery.critical) {
-                            return battery.criticalForeground;
-                        }
-
-                        if (battery.levelColors) {
-                            return BatteryService.levelColor;
-                        }
-
-                        if (BatteryService.isLowBattery && !BatteryService.isCharging) {
-                            return Theme.error;
-                        }
-
-                        if (BatteryService.isCharging || BatteryService.isPluggedIn) {
-                            return Theme.primary;
-                        }
-
-                        return Theme.widgetIconColor;
+                        anchors.horizontalCenter: parent.horizontalCenter
                     }
-                    anchors.horizontalCenter: parent.horizontalCenter
-                }
 
-                BatteryMeter {
-                    visible: battery.pillStyle
-                    vertical: true
-                    showNumber: false
-                    meterStyle: battery.batteryStyle
-                    levelColors: battery.levelColors
-                    colorOverride: battery.critical ? battery.criticalForeground : "transparent"
-                    maxDiameter: battery.widgetThickness - Theme.spacingXS
-                    thickness: Theme.barIconSize(battery.barThickness, undefined, battery.barConfig?.maximizeWidgetIcons, battery.barConfig?.iconScale)
-                    anchors.horizontalCenter: parent.horizontalCenter
-                }
+                    BatteryMeter {
+                        visible: battery.pillStyle
+                        vertical: true
+                        showNumber: false
+                        meterStyle: battery.batteryStyle
+                        levelColors: battery.levelColors
+                        colorOverride: battery.critical ? battery.criticalForeground : "transparent"
+                        maxDiameter: battery.widgetThickness - Theme.spacingXS
+                        thickness: Theme.barIconSize(battery.barThickness, undefined, battery.barConfig?.maximizeWidgetIcons, battery.barConfig?.iconScale)
+                        anchors.horizontalCenter: parent.horizontalCenter
+                    }
 
-                StyledText {
-                    text: battery.verticalDisplayText
-                    font.pixelSize: Theme.barTextSize(battery.barThickness, battery.barConfig?.fontScale, battery.barConfig?.maximizeWidgetText)
-                    color: battery.contentColor
-                    horizontalAlignment: Text.AlignHCenter
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    visible: BatteryService.batteryAvailable && battery.verticalDisplayText !== ""
+                    StyledText {
+                        text: battery.verticalDisplayText
+                        font.pixelSize: Theme.barTextSize(battery.barThickness, battery.barConfig?.fontScale, battery.barConfig?.maximizeWidgetText)
+                        color: battery.contentColor
+                        horizontalAlignment: Text.AlignHCenter
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        visible: BatteryService.batteryAvailable && battery.verticalDisplayText !== ""
+                    }
                 }
             }
 
-            Row {
+            Loader {
                 id: batteryContent
-                visible: !battery.isVerticalOrientation
+                active: !battery.isVerticalOrientation
                 anchors.centerIn: parent
-                spacing: (barConfig?.noBackground ?? false) ? 1 : 2
+                sourceComponent: Row {
+                    spacing: (barConfig?.noBackground ?? false) ? 1 : 2
 
-                DIcon {
-                    name: BatteryService.getBatteryIcon()
-                    visible: !battery.pillStyle
-                    size: Theme.barIconSize(battery.barThickness, -4, battery.barConfig?.maximizeWidgetIcons, battery.barConfig?.iconScale)
-                    color: {
-                        if (!BatteryService.batteryAvailable) {
+                    DIcon {
+                        name: BatteryService.getBatteryIcon()
+                        visible: !battery.pillStyle
+                        size: Theme.barIconSize(battery.barThickness, -4, battery.barConfig?.maximizeWidgetIcons, battery.barConfig?.iconScale)
+                        color: {
+                            if (!BatteryService.batteryAvailable) {
+                                return Theme.widgetIconColor;
+                            }
+
+                            if (battery.critical) {
+                                return battery.criticalForeground;
+                            }
+
+                            if (battery.levelColors) {
+                                return BatteryService.levelColor;
+                            }
+
+                            if (BatteryService.isLowBattery && !BatteryService.isCharging) {
+                                return Theme.error;
+                            }
+
+                            if (BatteryService.isCharging || BatteryService.isPluggedIn) {
+                                return Theme.primary;
+                            }
+
                             return Theme.widgetIconColor;
                         }
-
-                        if (battery.critical) {
-                            return battery.criticalForeground;
-                        }
-
-                        if (battery.levelColors) {
-                            return BatteryService.levelColor;
-                        }
-
-                        if (BatteryService.isLowBattery && !BatteryService.isCharging) {
-                            return Theme.error;
-                        }
-
-                        if (BatteryService.isCharging || BatteryService.isPluggedIn) {
-                            return Theme.primary;
-                        }
-
-                        return Theme.widgetIconColor;
+                        anchors.verticalCenter: parent.verticalCenter
                     }
-                    anchors.verticalCenter: parent.verticalCenter
-                }
 
-                BatteryMeter {
-                    visible: battery.pillStyle
-                    showNumber: battery.showPercent
-                    meterStyle: battery.batteryStyle
-                    levelColors: battery.levelColors
-                    colorOverride: battery.critical ? battery.criticalForeground : "transparent"
-                    maxDiameter: battery.widgetThickness - Theme.spacingXS
-                    thickness: Theme.barIconSize(battery.barThickness, -4, battery.barConfig?.maximizeWidgetIcons, battery.barConfig?.iconScale)
-                    fontSize: Theme.barTextSize(battery.barThickness, battery.barConfig?.fontScale, battery.barConfig?.maximizeWidgetText)
-                    anchors.verticalCenter: parent.verticalCenter
-                }
+                    BatteryMeter {
+                        visible: battery.pillStyle
+                        showNumber: battery.showPercent
+                        meterStyle: battery.batteryStyle
+                        levelColors: battery.levelColors
+                        colorOverride: battery.critical ? battery.criticalForeground : "transparent"
+                        maxDiameter: battery.widgetThickness - Theme.spacingXS
+                        thickness: Theme.barIconSize(battery.barThickness, -4, battery.barConfig?.maximizeWidgetIcons, battery.barConfig?.iconScale)
+                        fontSize: Theme.barTextSize(battery.barThickness, battery.barConfig?.fontScale, battery.barConfig?.maximizeWidgetText)
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
 
-                NumericText {
-                    text: battery.horizontalSideText
-                    font.pixelSize: Theme.barTextSize(battery.barThickness, battery.barConfig?.fontScale, battery.barConfig?.maximizeWidgetText)
-                    color: battery.contentColor
-                    anchors.verticalCenter: parent.verticalCenter
-                    visible: BatteryService.batteryAvailable && battery.horizontalSideText !== ""
+                    NumericText {
+                        text: battery.horizontalSideText
+                        font.pixelSize: Theme.barTextSize(battery.barThickness, battery.barConfig?.fontScale, battery.barConfig?.maximizeWidgetText)
+                        color: battery.contentColor
+                        anchors.verticalCenter: parent.verticalCenter
+                        visible: BatteryService.batteryAvailable && battery.horizontalSideText !== ""
+                    }
                 }
             }
         }

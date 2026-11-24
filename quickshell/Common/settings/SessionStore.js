@@ -137,5 +137,12 @@ function migrateToVersion(obj, targetVersion, settingsData) {
             session.trayItemOrder = stripTrayKeys(session.trayItemOrder);
         session.configVersion = 7;
     }
+
+    if (currentVersion < 8) {
+        console.info("SessionData: Migrating session to version 8");
+        if (session.dockPins === undefined)
+            session.dockPins = {};
+        session.configVersion = 8;
+    }
     return session;
 }

@@ -136,9 +136,7 @@ Singleton {
         const isPendingOsd = pendingOsdDevices[device.id] === true;
         if (isPendingOsd) {
             clearDevicePendingOsd(device.id);
-            if (!suppressOsd) {
-                brightnessChanged(true);
-            }
+            brightnessChanged(true);
             return;
         }
 
@@ -538,7 +536,7 @@ Singleton {
 
     Timer {
         id: osdSuppressTimer
-        interval: 2000
+        interval: Timing.hold
         running: true
         onTriggered: suppressOsd = false
     }
@@ -578,7 +576,7 @@ Singleton {
 
         function onScreensChanged() {
             suppressOsd = true;
-            rescanTimer.run([3000, 5000, 8000]);
+            rescanTimer.run(Timing.brightnessHotplugRescanSchedule);
         }
     }
 
@@ -608,7 +606,7 @@ Singleton {
         function onSessionResumed() {
             suppressOsd = true;
             osdSuppressTimer.restart();
-            rescanTimer.run([400, 1400, 2600]);
+            rescanTimer.run(Timing.resumeRecoverySchedule);
         }
     }
 

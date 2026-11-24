@@ -27,7 +27,7 @@ MouseArea {
 
     Timer {
         id: cooldownTimer
-        interval: 100
+        interval: Timing.settleShort
         onTriggered: root.actionInProgress = false
     }
 

@@ -2,7 +2,6 @@ import QtQuick
 import QtQuick.Shapes
 import qs.Common
 import qs.Modules.ControlCenter
-import qs.Modules.ControlCenter.Widgets
 import qs.DCommon.Widgets
 import qs.Widgets
 
@@ -17,6 +16,7 @@ Item {
     property bool dragging: false
     property bool dragRemovable: false
     property bool canUndo: false
+    property bool fixedHeight: false
     property var transientSurfaceTracker: null
     readonly property bool trashShown: editMode && dragging && dragRemovable
     property bool overTrash: false
@@ -43,6 +43,7 @@ Item {
     signal undoRequested
     signal resetRequested
     signal clearRequested
+    signal heightModeRequested(bool fixed)
     signal finishRequested
     signal cancelRequested
 
@@ -63,144 +64,125 @@ Item {
         return above ? y <= height + CcMetrics.sheetPadding : y >= -CcMetrics.sheetPadding;
     }
 
-    Shape {
+    Loader {
         anchors.fill: parent
-        preferredRendererType: Shape.CurveRenderer
+        active: root.editMode
 
-        ShapePath {
-            strokeWidth: -1
-            fillColor: root.backgroundColor
-            PathSvg {
-                path: root.outline
-            }
-        }
-    }
+        sourceComponent: Item {
+            Shape {
+                anchors.fill: parent
+                preferredRendererType: Shape.CurveRenderer
 
-    Shape {
-        anchors.fill: parent
-        preferredRendererType: Shape.CurveRenderer
-        opacity: root.trashShown ? 1 : 0
-        visible: opacity > 0
-
-        ShapePath {
-            strokeWidth: -1
-            fillGradient: LinearGradient {
-                x1: 0
-                y1: 0
-                x2: 0
-                y2: root.height
-                GradientStop {
-                    position: 0
-                    color: root.above ? root.trashColor : "transparent"
-                }
-                GradientStop {
-                    position: 1
-                    color: root.above ? "transparent" : root.trashColor
+                ShapePath {
+                    strokeWidth: -1
+                    fillColor: root.backgroundColor
+                    PathSvg {
+                        path: root.outline
+                    }
                 }
             }
-            PathSvg {
-                path: root.outline
+
+            Shape {
+                anchors.fill: parent
+                preferredRendererType: Shape.CurveRenderer
+                opacity: root.trashShown ? 1 : 0
+                visible: opacity > 0
+
+                ShapePath {
+                    strokeWidth: -1
+                    fillGradient: LinearGradient {
+                        x1: 0
+                        y1: 0
+                        x2: 0
+                        y2: root.height
+                        GradientStop {
+                            position: 0
+                            color: root.above ? root.trashColor : "transparent"
+                        }
+                        GradientStop {
+                            position: 1
+                            color: root.above ? "transparent" : root.trashColor
+                        }
+                    }
+                    PathSvg {
+                        path: root.outline
+                    }
+                }
+
+                Behavior on opacity {
+                    enabled: CcMetrics.animationsEnabled
+                    NumberAnimation {
+                        duration: Theme.expressiveDurations.expressiveFastEffects
+                        easing.type: Easing.BezierSpline
+                        easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
+                    }
+                }
+            }
+
+            Row {
+                anchors.left: parent.left
+                anchors.leftMargin: CcMetrics.sheetPadding
+                y: root.actionsY(height)
+                spacing: Theme.spacingS
+                visible: !root.trashShown
+
+                DButton {
+                    buttonHeight: Theme.iconButtonSize
+                    iconName: "add"
+                    text: I18n.tr("Add widget")
+                    variant: "tonal"
+                    onClicked: root.addWidgetRequested()
+                }
+
+                CcEditMenuButton {
+                    canUndo: root.canUndo
+                    fixedHeight: root.fixedHeight
+                    transientSurfaceTracker: root.transientSurfaceTracker
+                    onUndoRequested: root.undoRequested()
+                    onResetRequested: root.resetRequested()
+                    onClearRequested: root.clearRequested()
+                    onHeightModeRequested: fixed => root.heightModeRequested(fixed)
+                }
+            }
+
+            Row {
+                anchors.right: parent.right
+                anchors.rightMargin: CcMetrics.sheetPadding
+                y: root.actionsY(height)
+                spacing: Theme.spacingS
+                visible: !root.trashShown
+
+                DActionButton {
+                    buttonSize: Theme.iconButtonSize
+                    iconName: "close"
+                    iconSize: CcMetrics.iconBoxIconSize
+                    iconColor: Theme.onSurface
+                    backgroundColor: Theme.hostChipSurface
+                    tooltipText: I18n.tr("Discard")
+                    onClicked: root.cancelRequested()
+                }
+
+                DActionButton {
+                    buttonSize: Theme.iconButtonSize
+                    iconName: "check"
+                    iconSize: CcMetrics.iconBoxIconSize
+                    iconColor: Theme.onPrimary
+                    backgroundColor: Theme.primary
+                    tooltipText: I18n.tr("Finish")
+                    onClicked: root.finishRequested()
+                }
+            }
+
+            DIcon {
+                anchors.centerIn: parent
+                name: "delete"
+                size: CcMetrics.iconBoxIconSize
+                filled: root.overTrash
+                color: Theme.error
+                visible: root.trashShown
+                Accessible.role: Accessible.Graphic
+                Accessible.name: I18n.tr("Remove")
             }
         }
-
-        Behavior on opacity {
-            enabled: CcMetrics.animationsEnabled
-            NumberAnimation {
-                duration: Theme.shortDuration
-                easing.type: Theme.standardEasing
-            }
-        }
-    }
-
-    Row {
-        anchors.left: parent.left
-        anchors.leftMargin: CcMetrics.sheetPadding
-        y: root.actionsY(height)
-        spacing: Theme.spacingS
-        visible: !root.trashShown
-
-        DButton {
-            buttonHeight: Theme.iconButtonSize
-            iconName: "add"
-            text: I18n.tr("Add widget")
-            variant: "tonal"
-            onClicked: root.addWidgetRequested()
-        }
-
-        DActionButton {
-            id: moreButton
-
-            buttonSize: Theme.iconButtonSize
-            iconName: "more_horiz"
-            iconSize: CcMetrics.iconBoxIconSize
-            iconColor: Theme.onSecondaryContainer
-            backgroundColor: Theme.secondaryContainer
-            tooltipText: I18n.tr("More")
-            onClicked: editMenu.openAt(moreButton)
-        }
-    }
-
-    Row {
-        anchors.right: parent.right
-        anchors.rightMargin: CcMetrics.sheetPadding
-        y: root.actionsY(height)
-        spacing: Theme.spacingS
-        visible: !root.trashShown
-
-        DActionButton {
-            buttonSize: Theme.iconButtonSize
-            iconName: "close"
-            iconSize: CcMetrics.iconBoxIconSize
-            iconColor: Theme.onSurface
-            backgroundColor: Theme.chipSurface
-            tooltipText: I18n.tr("Discard")
-            onClicked: root.cancelRequested()
-        }
-
-        DActionButton {
-            buttonSize: Theme.iconButtonSize
-            iconName: "check"
-            iconSize: CcMetrics.iconBoxIconSize
-            iconColor: Theme.onPrimary
-            backgroundColor: Theme.primary
-            tooltipText: I18n.tr("Finish")
-            onClicked: root.finishRequested()
-        }
-    }
-
-    DIcon {
-        anchors.centerIn: parent
-        name: "delete"
-        size: CcMetrics.iconBoxIconSize
-        filled: root.overTrash
-        color: Theme.error
-        visible: root.trashShown
-        Accessible.role: Accessible.Graphic
-        Accessible.name: I18n.tr("Remove")
-    }
-
-    CcMenu {
-        id: editMenu
-
-        transientSurfaceTracker: root.transientSurfaceTracker
-        items: [
-            {
-                "iconName": "undo",
-                "label": I18n.tr("Undo"),
-                "enabled": root.canUndo,
-                "action": () => root.undoRequested()
-            },
-            {
-                "iconName": "settings_backup_restore",
-                "label": I18n.tr("Reset to default"),
-                "action": () => root.resetRequested()
-            },
-            {
-                "iconName": "clear_all",
-                "label": I18n.tr("Clear All"),
-                "destructive": true,
-                "action": () => root.clearRequested()
-            }
-        ]
     }
 }

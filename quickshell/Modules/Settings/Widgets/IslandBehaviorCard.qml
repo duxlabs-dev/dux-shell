@@ -1,6 +1,7 @@
 import QtQuick
 import qs.Common
 import qs.DCommon.Widgets
+import qs.Modules.DDash
 
 SettingsCard {
     id: root
@@ -14,6 +15,9 @@ SettingsCard {
 
     readonly property var routingValues: ["normal", "always", "last-used"]
     readonly property var interactionModeValues: ["click", "hybrid"]
+    // Dash tabs that have an island face; see IslandController.dashActivityFor.
+    readonly property var dashTabValues: ["overview", "media", "weather", "wellbeing", "wallpaper", "notifications", "profiles"]
+    readonly property var dashTabLabels: dashTabValues.map(id => DashRegistry.entry(id)?.text ?? id)
     readonly property var routeActivities: ["launcher", "controlcenter", "notificationcenter", "clipboard", "powermenu", "home", "media", "weather", "wallpaper"]
     readonly property var routeKeys: routeActivities.map(activity => SettingsData.islandRouteKey(activity))
     readonly property string sharedRouting: SettingsData.islandSharedRoutingMode(root.store.config)
@@ -183,6 +187,19 @@ SettingsCard {
         onToggled: checked => root.store.apply("islandDashTabs", checked)
     }
 
+    SettingsDropdownRow {
+        settingKey: root.keyPrefix + "DashDefaultTab"
+        tags: ["island", "dashboard", "dash", "tabs", "default", "favorite", "open", "hover"]
+        resetStore: root.store
+        resetKeys: ["islandDashDefaultTab"]
+        text: I18n.tr("Dashboard opens to", "island settings: dash tab the home face expands into")
+        description: I18n.tr("Clicking or hovering the home face opens this tab", "island settings: default dashboard tab description")
+        options: root.dashTabLabels
+        dropdownWidth: Theme.smallBreakpoint / 2
+        currentValue: options[Math.max(0, root.dashTabValues.indexOf(root.store.setting("islandDashDefaultTab")))]
+        onValueChanged: value => root.store.apply("islandDashDefaultTab", root.dashTabValues[options.indexOf(value)] ?? "overview")
+    }
+
     SettingsToggleRow {
         settingKey: root.keyPrefix + "MediaClockVisible"
         tags: ["island", "media", "clock", "compact", "time"]
@@ -193,6 +210,15 @@ SettingsCard {
     }
 
     SettingsToggleRow {
+        settingKey: root.keyPrefix + "MediaControls"
+        tags: ["island", "media", "controls", "playback", "play", "pause", "skip", "compact"]
+        visible: !root.isDot
+        text: I18n.tr("Playback controls", "island settings: transport buttons in the media face toggle")
+        checked: root.store.setting("islandMediaControls")
+        onToggled: checked => root.store.apply("islandMediaControls", checked)
+    }
+
+    SettingsToggleRow {
         settingKey: root.keyPrefix + "MediaLyrics"
         tags: ["island", "media", "lyrics", "compact"]
         visible: !root.isDot
@@ -200,6 +226,15 @@ SettingsCard {
         description: I18n.tr("Shows the line being sung instead of the title and artist while synced lyrics are available", "media widget lyrics toggle description")
         checked: root.store.setting("islandMediaLyrics")
         onToggled: checked => root.store.apply("islandMediaLyrics", checked)
+    }
+
+    SettingsToggleRow {
+        settingKey: root.keyPrefix + "MediaScrollLyrics"
+        tags: ["island", "media", "lyrics", "scroll", "compact"]
+        visible: !root.isDot && root.store.setting("islandMediaLyrics")
+        text: I18n.tr("Scroll lyrics", "Media player option that moves a lyric line too wide for the pill instead of clipping it")
+        checked: root.store.setting("islandMediaScrollLyrics")
+        onToggled: checked => root.store.apply("islandMediaScrollLyrics", checked)
     }
 
     SettingsToggleRow {

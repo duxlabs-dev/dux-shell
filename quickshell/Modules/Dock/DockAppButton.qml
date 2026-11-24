@@ -3,6 +3,7 @@ import QtQuick.Effects
 import qs.Common
 import qs.Services
 import qs.DCommon.Widgets
+import qs.Widgets as Widgets
 
 Item {
     id: root
@@ -20,6 +21,15 @@ Item {
     property real dragAxisOffset: 0
     property int targetIndex: -1
     property int originalIndex: -1
+    readonly property bool isFolder: appData?.type === "folder"
+    readonly property bool receivingApp: dockApps?.folderDropIndex === index && index >= 0
+    readonly property bool folderRenamePending: isFolder && (dockApps?.pendingFolderRename ?? "") === appData.folder.id
+    onFolderRenamePendingChanged: {
+        if (!folderRenamePending)
+            return;
+        root.dockApps.renameHandoff.schedule();
+        root.contextMenu?.showFolder(root, root.parentDockScreen, true);
+    }
     property bool isVertical: root.options.position === SettingsData.Position.Left || root.options.position === SettingsData.Position.Right
     property bool showWindowTitle: false
     property string windowTitle: ""
@@ -47,42 +57,15 @@ Item {
             return appData.windowCount > 0;
         return appData.isRunning;
     }
-    readonly property string coreIconColorOverride: root.options.launcherLogoColorOverride
-    readonly property bool coreIconHasCustomColor: coreIconColorOverride !== "" && coreIconColorOverride !== "primary" && coreIconColorOverride !== "surface"
-    readonly property color effectiveCoreIconColor: {
-        if (coreIconColorOverride === "primary")
-            return Theme.primary;
-        if (coreIconColorOverride === "surface")
-            return Theme.surfaceText;
-        if (coreIconColorOverride !== "")
-            return coreIconColorOverride;
-        return Theme.surfaceText;
-    }
-    readonly property real effectiveCoreIconBrightness: coreIconHasCustomColor ? root.options.launcherLogoBrightness : 0.0
-    readonly property real effectiveCoreIconContrast: coreIconHasCustomColor ? root.options.launcherLogoContrast : 0.0
 
     function updateDesktopEntry() {
         dockApps?.refreshDesktopEntries();
     }
 
     function launchAppInstance() {
-        if (!appData?.appId)
+        if (!appData?.appId || isFolder)
             return;
-        if (appData.isCoreApp && appData.coreAppData) {
-            AppSearchService.executeCoreApp(appData.coreAppData);
-            return;
-        }
-        const desktopEntry = cachedDesktopEntry;
-        if (!desktopEntry)
-            return;
-        AppUsageHistoryData.addAppUsage({
-            "id": appData.appId,
-            "name": desktopEntry.name || appData.appId,
-            "icon": desktopEntry.icon ? String(desktopEntry.icon) : "",
-            "exec": desktopEntry.exec || "",
-            "comment": desktopEntry.comment || ""
-        });
-        SessionService.launchDesktopEntry(desktopEntry);
+        dockApps?.launchApp(appData.appId, appData.coreAppData, cachedDesktopEntry);
     }
 
     property bool isWindowFocused: {
@@ -94,7 +77,7 @@ Item {
             const toplevel = getToplevelObject();
             return isToplevelFocused(toplevel);
         }
-        if (appData.type === "grouped")
+        if (appData.type === "grouped" || appData.type === "folder")
             return getGroupedToplevels().some(toplevel => isToplevelFocused(toplevel));
 
         return false;
@@ -121,6 +104,9 @@ Item {
             return "";
         }
 
+        if (isFolder)
+            return appData.folder.name || I18n.tr("Folder");
+
         let appName;
         if (appData.isCoreApp && appData.coreAppData) {
             appName = appData.coreAppData.name || appData.appId;
@@ -142,6 +128,26 @@ Item {
 
     function getGroupedToplevels() {
         return appData?.allWindows?.map(w => w.toplevel).filter(t => t !== null) || [];
+    }
+
+    readonly property var previewToplevels: {
+        if (!WindowCaptureService.available || !appData)
+            return [];
+        switch (appData.type) {
+        case "window":
+            return appData.toplevel ? [appData.toplevel] : [];
+        case "grouped":
+            return getGroupedToplevels();
+        default:
+            return [];
+        }
+    }
+    readonly property bool showsWindowPreview: previewToplevels.length > 0
+
+    function activateWindow(toplevel) {
+        if (restoreSpecialWorkspaceWindow(toplevel))
+            return;
+        CompositorService.activateToplevel(toplevel);
     }
 
     function isToplevelFocused(toplevel) {
@@ -189,6 +195,10 @@ Item {
     function showContextMenu() {
         if (!contextMenu)
             return;
+        if (isFolder) {
+            contextMenu.showFolder(root, parentDockScreen);
+            return;
+        }
         const shouldHidePin = Paths.isDmsAppId(appData.appId);
         contextMenu.showForButton(root, appData, root.height, shouldHidePin, cachedDesktopEntry, parentDockScreen, dockApps);
     }
@@ -232,7 +242,7 @@ Item {
     Timer {
         id: longPressTimer
 
-        interval: 500
+        interval: Timing.longPress
         repeat: false
         onTriggered: {
             if (appData && appData.isPinned) {
@@ -260,32 +270,37 @@ Item {
         anchors.fill: parent
         hoverEnabled: true
         enabled: true
-        preventStealing: dragging || longPressing
-        cursorShape: longPressing ? Qt.DragMoveCursor : Qt.PointingHandCursor
+        preventStealing: mouseDrag || root.dragging || root.longPressing
+        cursorShape: root.dragging || root.longPressing ? Qt.DragMoveCursor : Qt.PointingHandCursor
         acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
+        property bool mouseDrag: false
         onPressed: mouse => {
             if (mouse.button === Qt.LeftButton && appData && appData.isPinned) {
+                mouseDrag = !!root.dockApps?.mixedStrip && mouse.source === Qt.MouseEventNotSynthesized;
                 dragStartPos = Qt.point(mouse.x, mouse.y);
                 longPressTimer.start();
             }
         }
-        onCanceled: root.cancelDrag()
+        onCanceled: {
+            mouseDrag = false;
+            root.cancelDrag();
+        }
 
         onReleased: mouse => {
+            if (mouse.button !== Qt.LeftButton)
+                return;
+            mouseDrag = false;
             longPressTimer.stop();
 
             const wasDragging = dragging;
-            const didReorder = wasDragging && targetIndex >= 0 && dockApps && (targetIndex !== originalIndex || dockApps.mixedDropIndex >= 0);
-
-            if (didReorder) {
-                const from = originalIndex;
-                const to = dockApps.dropTarget(targetIndex);
-                dockApps.settleDrag(() => dockApps.movePinnedApp(from, to));
+            if (wasDragging && dockApps) {
+                dockApps.updateMixedDrag(mouseArea, mouse.x, mouse.y);
+                dockApps.finishDrag(originalIndex, dockApps.dropTarget(targetIndex));
             }
 
             root.cancelDrag();
 
-            if (wasDragging || mouse.button !== Qt.LeftButton)
+            if (wasDragging || !contains(Qt.point(mouse.x, mouse.y)))
                 return;
 
             handleLeftClick();
@@ -295,7 +310,12 @@ Item {
             if (!appData)
                 return;
 
+            if (!root.isFolder)
+                root.contextMenu?.closeFolder();
             switch (appData.type) {
+            case "folder":
+                root.showContextMenu();
+                break;
             case "pinned":
                 if (!appData.appId)
                     return;
@@ -356,9 +376,10 @@ Item {
             }
         }
         onPositionChanged: mouse => {
-            if (longPressing && !dragging) {
-                const distance = Math.sqrt(Math.pow(mouse.x - dragStartPos.x, 2) + Math.pow(mouse.y - dragStartPos.y, 2));
-                if (distance > 5) {
+            if (!root.dragging && (pressedButtons & Qt.LeftButton) && root.appData?.isPinned) {
+                const distance = Math.hypot(mouse.x - root.dragStartPos.x, mouse.y - root.dragStartPos.y);
+                if ((mouseDrag || root.longPressing) && distance >= drag.threshold) {
+                    longPressTimer.stop();
                     dragging = true;
                     targetIndex = index;
                     originalIndex = index;
@@ -366,6 +387,8 @@ Item {
                         dockApps.draggedIndex = index;
                         dockApps.dropTargetIndex = index;
                     }
+                } else if (root.dockApps?.mixedStrip && distance >= drag.threshold) {
+                    longPressTimer.stop();
                 }
             }
 
@@ -385,7 +408,7 @@ Item {
             }
         }
         onClicked: mouse => {
-            if (!appData)
+            if (!appData || (root.isFolder && mouse.button !== Qt.RightButton))
                 return;
 
             if (mouse.button === Qt.MiddleButton) {
@@ -457,9 +480,9 @@ Item {
             anchors.fill: parent
             radius: Theme.cornerRadius
             color: Theme.primarySelected
-            border.width: 2
+            border.width: Theme.outlineWidth * 2
             border.color: Theme.primary
-            visible: dragging
+            visible: dragging || (root.receivingApp && !root.isFolder)
             z: -1
         }
 
@@ -469,42 +492,66 @@ Item {
             anchors.fill: parent
             scale: root.options?.enlargeOnHover && root.isHovered ? (root.options?.enlargePercentage ?? 125) / 100 : 1
 
-            AppIconRenderer {
+            Loader {
+                anchors.centerIn: parent
+                width: root.actualIconSize
+                height: root.actualIconSize
+                active: root.isFolder
+                sourceComponent: Widgets.AppFolderIcon {
+                    members: root.dockApps.folderMembers(root.appData.folder, maxPreviewItems)
+                    materialIcon: root.appData.folder.icon || ""
+                    receiving: root.receivingApp
+                }
+            }
+
+            Loader {
                 id: coreIcon
 
+                readonly property string iconValue: appData && appData.isCoreApp && appData.coreAppData ? (appData.coreAppData.icon || "") : ""
+
                 anchors.centerIn: parent
-                iconSize: actualIconSize
-                iconValue: appData && appData.isCoreApp && appData.coreAppData ? (appData.coreAppData.icon || "") : ""
-                colorOverride: effectiveCoreIconColor
-                brightnessOverride: effectiveCoreIconBrightness
-                contrastOverride: effectiveCoreIconContrast
-                fallbackText: "?"
-                visible: iconValue !== ""
+                active: iconValue !== ""
+                visible: active
+                sourceComponent: AppIconRenderer {
+                    width: actualIconSize
+                    height: actualIconSize
+                    iconSize: actualIconSize
+                    iconValue: root.options.bareIcons ? IconThemeService.bareIconValue(coreIcon.iconValue) : coreIcon.iconValue
+                    fallbackText: "?"
+                }
             }
 
             Image {
                 id: iconImg
 
                 readonly property real displaySize: appData && Paths.isDmsAppId(appData.appId) ? actualIconSize * 0.85 : actualIconSize
+                // A theme change swaps the file; the old picture stays up until the new one is decoded.
+                property bool drawn: false
 
+                retainWhileLoading: true
+                onStatusChanged: {
+                    if (status !== Image.Loading)
+                        drawn = status === Image.Ready;
+                }
                 anchors.centerIn: parent
                 width: displaySize
                 height: displaySize
                 fillMode: Image.PreserveAspectFit
                 sourceSize: Qt.size(displaySize * root.iconLoadScale, displaySize * root.iconLoadScale)
                 source: {
-                    if (!appData || appData.appId === "__SEPARATOR__") {
+                    if (!appData || root.isFolder || appData.appId === "__SEPARATOR__") {
                         return "";
                     }
                     if (appData.isCoreApp && appData.coreAppData) {
                         return "";
                     }
-                    return Paths.getAppIcon(appData.appId, cachedDesktopEntry);
+                    const icon = Paths.getAppIcon(appData.appId, cachedDesktopEntry);
+                    return root.options.bareIcons ? IconThemeService.bareIcon(icon) : icon;
                 }
                 mipmap: true
                 smooth: true
                 asynchronous: true
-                visible: status === Image.Ready && !coreIcon.visible
+                visible: drawn && !coreIcon.active
                 opacity: root.isMinimized ? 0.4 : 1
                 layer.enabled: appData && Paths.isDmsAppId(appData.appId)
                 layer.smooth: true
@@ -516,45 +563,50 @@ Item {
                 }
             }
 
-            Rectangle {
-                width: actualIconSize
-                height: actualIconSize
+            Loader {
+                readonly property bool missing: !root.isFolder && !coreIcon.active && !iconImg.drawn && !!appData?.appId
                 anchors.centerIn: parent
-                visible: !coreIcon.visible && iconImg.status !== Image.Ready && appData && appData.appId && !Paths.isSteamApp(appData.appId)
-                opacity: root.isMinimized ? 0.4 : 1
-                color: Theme.surfaceLight
-                radius: Theme.cornerRadius
-                border.width: 1
-                border.color: Theme.primarySelected
+                active: missing && !Paths.isSteamApp(appData.appId)
+                sourceComponent: Rectangle {
+                    width: actualIconSize
+                    height: actualIconSize
+                    opacity: root.isMinimized ? 0.4 : 1
+                    color: Theme.surfaceLight
+                    radius: Theme.cornerRadius
+                    border.width: 1
+                    border.color: Theme.primarySelected
 
-                StyledText {
-                    anchors.centerIn: parent
-                    text: {
-                        if (!appData || !appData.appId) {
-                            return "?";
-                        }
+                    StyledText {
+                        anchors.centerIn: parent
+                        text: {
+                            if (!appData || !appData.appId) {
+                                return "?";
+                            }
 
-                        let appName;
-                        if (appData.isCoreApp && appData.coreAppData) {
-                            appName = appData.coreAppData.name || appData.appId;
-                        } else {
-                            appName = Paths.getAppName(appData.appId, cachedDesktopEntry);
+                            let appName;
+                            if (appData.isCoreApp && appData.coreAppData) {
+                                appName = appData.coreAppData.name || appData.appId;
+                            } else {
+                                appName = Paths.getAppName(appData.appId, cachedDesktopEntry);
+                            }
+                            return appName.charAt(0).toUpperCase();
                         }
-                        return appName.charAt(0).toUpperCase();
+                        font.pixelSize: Math.max(8, parent.width * 0.35)
+                        color: Theme.primary
+                        font.weight: Theme.fontWeightMedium
                     }
-                    font.pixelSize: Math.max(8, parent.width * 0.35)
-                    color: Theme.primary
-                    font.weight: Theme.fontWeightMedium
                 }
             }
 
-            DIcon {
+            Loader {
                 anchors.centerIn: parent
-                size: actualIconSize
-                name: "sports_esports"
-                color: Theme.surfaceText
-                visible: !coreIcon.visible && iconImg.status !== Image.Ready && appData && appData.appId && Paths.isSteamApp(appData.appId)
-                opacity: root.isMinimized ? 0.4 : 1
+                active: !root.isFolder && !coreIcon.active && !iconImg.drawn && !!appData?.appId && Paths.isSteamApp(appData.appId)
+                sourceComponent: DIcon {
+                    size: actualIconSize
+                    name: "sports_esports"
+                    color: Theme.surfaceText
+                    opacity: root.isMinimized ? 0.4 : 1
+                }
             }
         }
 
@@ -629,13 +681,16 @@ Item {
 
                     Behavior on width {
                         NumberAnimation {
-                            duration: Theme.shortDuration
-                            easing.type: Easing.OutCubic
+                            duration: Theme.expressiveDurations.expressiveDefaultSpatial
+                            easing.type: Easing.BezierSpline
+                            easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
                         }
                     }
                     Behavior on color {
                         ColorAnimation {
-                            duration: Theme.shortDuration
+                            duration: Theme.expressiveDurations.expressiveFastEffects
+                            easing.type: Easing.BezierSpline
+                            easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
                         }
                     }
                 }
@@ -689,13 +744,16 @@ Item {
 
                     Behavior on height {
                         NumberAnimation {
-                            duration: Theme.shortDuration
-                            easing.type: Easing.OutCubic
+                            duration: Theme.expressiveDurations.expressiveDefaultSpatial
+                            easing.type: Easing.BezierSpline
+                            easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
                         }
                     }
                     Behavior on color {
                         ColorAnimation {
-                            duration: Theme.shortDuration
+                            duration: Theme.expressiveDurations.expressiveFastEffects
+                            easing.type: Easing.BezierSpline
+                            easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
                         }
                     }
                 }

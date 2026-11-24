@@ -31,45 +31,47 @@ Item {
     SettingsPage {
         id: mainColumn
 
-        SettingsCard {
-            tab: "locale"
-            tags: ["locale", "language", "country"]
-            title: I18n.tr("General")
-            iconName: "language"
-
-            SettingsDropdownRow {
-                id: localeDropdown
+        SettingsDeferred {
+            SettingsCard {
                 tab: "locale"
                 tags: ["locale", "language", "country"]
-                settingKey: "locale"
-                text: I18n.tr("Language", "interface language dropdown label")
-                options: localeTab._allLocaleOptions()
-                enableFuzzySearch: true
+                title: I18n.tr("General")
+                iconName: "language"
 
-                Component.onCompleted: {
-                    currentValue = SessionData.locale ? localeTab._localeDisplayName(SessionData.locale) : localeTab._systemDefaultLabel;
+                SettingsDropdownRow {
+                    id: localeDropdown
+                    tab: "locale"
+                    tags: ["locale", "language", "country"]
+                    settingKey: "locale"
+                    text: I18n.tr("Language", "interface language dropdown label")
+                    options: localeTab._allLocaleOptions()
+                    enableFuzzySearch: true
+
+                    Component.onCompleted: {
+                        currentValue = SessionData.locale ? localeTab._localeDisplayName(SessionData.locale) : localeTab._systemDefaultLabel;
+                    }
+
+                    onValueChanged: value => {
+                        SessionData.set("locale", localeTab._codeForDisplayName(value));
+                    }
                 }
 
-                onValueChanged: value => {
-                    SessionData.set("locale", localeTab._codeForDisplayName(value));
-                }
-            }
+                SettingsDropdownRow {
+                    id: timeLocaleDropdown
+                    tab: "locale"
+                    tags: ["locale", "time", "date", "format", "region"]
+                    settingKey: "timeLocale"
+                    text: I18n.tr("Time and date")
+                    options: localeTab._allLocaleOptions()
+                    enableFuzzySearch: true
 
-            SettingsDropdownRow {
-                id: timeLocaleDropdown
-                tab: "locale"
-                tags: ["locale", "time", "date", "format", "region"]
-                settingKey: "timeLocale"
-                text: I18n.tr("Time and date")
-                options: localeTab._allLocaleOptions()
-                enableFuzzySearch: true
+                    Component.onCompleted: {
+                        currentValue = SessionData.timeLocale ? localeTab._localeDisplayName(SessionData.timeLocale) : localeTab._systemDefaultLabel;
+                    }
 
-                Component.onCompleted: {
-                    currentValue = SessionData.timeLocale ? localeTab._localeDisplayName(SessionData.timeLocale) : localeTab._systemDefaultLabel;
-                }
-
-                onValueChanged: value => {
-                    SessionData.set("timeLocale", localeTab._codeForDisplayName(value));
+                    onValueChanged: value => {
+                        SessionData.set("timeLocale", localeTab._codeForDisplayName(value));
+                    }
                 }
             }
         }

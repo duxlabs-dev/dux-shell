@@ -9,9 +9,10 @@ DevicePane {
 
     property string deviceName: ""
 
-    readonly property var history: DgopService.deviceHistory[SysmonDevices.deviceKey("net", deviceName)] ?? ({})
+    readonly property var historyA: DgopService.history(SysmonDevices.deviceKey("net", deviceName), "down")
+    readonly property var historyB: DgopService.history(SysmonDevices.deviceKey("net", deviceName), "up")
     readonly property var rates: (DgopService.netRates ?? []).find(n => n.iface === deviceName) ?? null
-    readonly property real axisMax: SysmonDevices.rateAxisMax(history.a, history.b, 102400)
+    readonly property real axisMax: SysmonDevices.rateAxisMax(historyA, historyB, 102400)
 
     // NetworkManager's view, when it manages this interface; dgop's sysfs values fill the gaps.
     readonly property var ethernet: (NetworkService.ethernetDevices ?? []).find(d => d.name === deviceName) ?? null
@@ -32,7 +33,7 @@ DevicePane {
         return v === null || v === undefined ? null : Format.formatBytes(v, true);
     }
 
-    loaded: (history.a ?? []).length > 0
+    loaded: historyA.length > 0
     title: deviceName
     subtitle: title !== deviceName ? deviceName : ""
     subtitle2: linkSpeed
@@ -40,14 +41,14 @@ DevicePane {
     chartValue: rate(rates?.rxRate)
     chartSecondaryLabel: I18n.tr("Up", "network direction")
     chartSecondaryValue: rate(rates?.txRate)
-    values: history.a ?? []
-    secondaryValues: history.b ?? []
+    values: historyA
+    secondaryValues: historyB
     maximum: axisMax
     maximumText: Format.formatRate(axisMax, 1)
 
     leftStats: [
         {
-            label: I18n.tr("SSID"),
+            label: "SSID",
             value: root.wifi?.ssid || null
         },
         {
@@ -66,7 +67,7 @@ DevicePane {
         },
         {
             advanced: true,
-            label: I18n.tr("IPv6", "network IPv6 address"),
+            label: "IPv6",
             value: root.ipv6Main || null,
             tooltip: root.ipv6.join("\n")
         },
@@ -89,7 +90,7 @@ DevicePane {
         },
         {
             advanced: true,
-            label: I18n.tr("MTU", "network maximum transmission unit"),
+            label: "MTU",
             value: root.rates?.mtu > 0 ? String(root.rates.mtu) : null
         },
         {

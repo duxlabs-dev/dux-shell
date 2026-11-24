@@ -148,6 +148,10 @@ func (b *HybridIwdNetworkdBackend) ConnectEthernet() error {
 	return b.l3.ConnectEthernet()
 }
 
+func (b *HybridIwdNetworkdBackend) ConnectEthernetDevice(device string) error {
+	return b.l3.ConnectEthernetDevice(device)
+}
+
 func (b *HybridIwdNetworkdBackend) DisconnectEthernet() error {
 	return b.l3.DisconnectEthernet()
 }
@@ -160,8 +164,8 @@ func (b *HybridIwdNetworkdBackend) GetEthernetDevices() []EthernetDevice {
 	return b.l3.GetEthernetDevices()
 }
 
-func (b *HybridIwdNetworkdBackend) ActivateWiredConnection(uuid string) error {
-	return b.l3.ActivateWiredConnection(uuid)
+func (b *HybridIwdNetworkdBackend) ActivateWiredConnection(uuid, device string) error {
+	return b.l3.ActivateWiredConnection(uuid, device)
 }
 
 func (b *HybridIwdNetworkdBackend) GetCellularDevices() []CellularDevice {

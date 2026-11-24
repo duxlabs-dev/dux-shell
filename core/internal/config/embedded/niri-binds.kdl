@@ -37,6 +37,9 @@ binds {
     Mod+N hotkey-overlay-title="Notepad" { spawn "dms" "ipc" "call" "notepad" "toggle"; }
     Mod+Shift+N hotkey-overlay-title="Notepad: Expand" { spawn "dms" "ipc" "call" "notepad" "toggleExpand"; }
     Mod+Ctrl+N hotkey-overlay-title="Notification Center" { spawn "dms" "ipc" "call" "notifications" "toggle"; }
+    Mod+S hotkey-overlay-title="Scratchpad" { spawn "dms" "ipc" "call" "scratchpad" "toggle" ""; }
+    Mod+Shift+S hotkey-overlay-title="Scratchpad: Move Window" { spawn "dms" "ipc" "call" "scratchpad" "move" ""; }
+    Mod+Ctrl+S hotkey-overlay-title="Scratchpad: Restore Window" { spawn "dms" "ipc" "call" "scratchpad" "restore"; }
 
     // === Security ===
     Mod+Alt+L hotkey-overlay-title="Lock Screen" {

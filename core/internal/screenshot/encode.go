@@ -2,6 +2,7 @@ package screenshot
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/binary"
 	"fmt"
 	"image"
@@ -170,6 +171,39 @@ func EncodePPM(w io.Writer, img *image.RGBA) error {
 	return bw.Flush()
 }
 
+// ReadPPM loads a binary 8-bit PPM, the uncompressed image Qt writes fastest.
+func ReadPPM(path string) (*ShmBuffer, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	var magic string
+	var w, h, maxVal int
+	r := bytes.NewReader(data)
+	if _, err := fmt.Fscan(r, &magic, &w, &h, &maxVal); err != nil {
+		return nil, err
+	}
+	// One whitespace byte separates the header from the pixels.
+	pix := data[min(len(data), len(data)-r.Len()+1):]
+	if magic != "P6" || maxVal != 255 || w <= 0 || h <= 0 || w > 1<<15 || h > 1<<15 || len(pix) < w*h*3 {
+		return nil, fmt.Errorf("not an 8-bit binary PPM: %s", path)
+	}
+
+	buf, err := CreateShmBuffer(w, h, w*4)
+	if err != nil {
+		return nil, err
+	}
+	dst := buf.Data()
+	for i := range w * h {
+		dst[i*4+0] = pix[i*3+2]
+		dst[i*4+1] = pix[i*3+1]
+		dst[i*4+2] = pix[i*3+0]
+		dst[i*4+3] = 0xFF
+	}
+	buf.Format = FormatXRGB8888
+	return buf, nil
+}
+
 func GenerateFilename(format Format) string {
 	t := time.Now()
 	ext := "png"
@@ -187,15 +221,23 @@ func GetOutputDir() string {
 		return dir
 	}
 
-	if xdgPics := utils.XDGPicturesDir(); xdgPics != "" {
-		screenshotDir := filepath.Join(xdgPics, "Screenshots")
+	home, _ := os.UserHomeDir()
+	pictures := utils.XDGPicturesDir()
+	// Without user-dirs.dirs, match the ~/Pictures that Qt and the settings page assume.
+	if pictures == "" && home != "" {
+		pictures = filepath.Join(home, "Pictures")
+	}
+	if pictures != "" {
+		screenshotDir := filepath.Join(pictures, "Screenshots")
 		if err := os.MkdirAll(screenshotDir, 0o755); err == nil {
 			return screenshotDir
 		}
-		return xdgPics
+		if info, err := os.Stat(pictures); err == nil && info.IsDir() {
+			return pictures
+		}
 	}
 
-	if home, err := os.UserHomeDir(); err == nil {
+	if home != "" {
 		return home
 	}
 	return "."

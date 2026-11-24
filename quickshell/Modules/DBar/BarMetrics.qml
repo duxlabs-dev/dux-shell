@@ -24,6 +24,7 @@ Singleton {
     readonly property real popoutRowHeight: Math.max(Theme.listItemHeight + Theme.densityStepM, Theme.buttonHeightS + Theme.spacingXS)
     readonly property real popoutRowTwoLineHeight: Theme.listItemTwoLineHeight + Theme.densityStepM
     readonly property var elevationLevel: Theme.elevationLevel2
+    readonly property real hiddenWidgetOpacity: Theme.onSurface_38.a
 
     function pillRadius(thickness, style) {
         if (style === "flat")
@@ -70,6 +71,12 @@ Singleton {
                 "active": 0.9,
                 "slim": 0.5,
                 "activeSlim": 0.6
+            },
+            "expressive": {
+                "compact": 0.5,
+                "active": 0.7,
+                "slim": 0.7,
+                "activeSlim": 0.7
             }
         })
 
@@ -77,6 +84,9 @@ Singleton {
     readonly property real indicatorLabelRatio: 0.65
     readonly property real indicatorLabelScale: 1.3
     readonly property real indicatorLabelMin: Math.round(Theme.fontSizeSmall * 0.75)
+    readonly property real indicatorDotRatio: 0.18
+    readonly property int indicatorDotLimit: 3
+    readonly property var indicatorShapes: ["sunny", "arch", "gem", "slanted", "pentagon", "square", "clover4", "diamond"]
 
     function indicatorRatio(style, key, compact) {
         return (indicatorRatios[style] ?? indicatorRatios.pills)[key] * (compact ? indicatorCompactScale : 1);

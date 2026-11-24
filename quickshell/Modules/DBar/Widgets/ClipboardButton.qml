@@ -61,13 +61,14 @@ BasePill {
 
     Timer {
         id: dropConfirmationTimer
-        interval: 1200
+        interval: Timing.holdShort
         onTriggered: root.dropConfirmed = false
     }
 
     function openContextMenu() {
         const anchor = root.contextMenuAnchor();
-        contextMenu.openFromBar(anchor);
+        contextMenuLoader.active = true;
+        contextMenuLoader.item.openFromBar(anchor);
     }
 
     MouseArea {
@@ -119,35 +120,41 @@ BasePill {
 
                 Behavior on color {
                     ColorAnimation {
-                        duration: 150
+                        duration: Theme.expressiveDurations.expressiveFastEffects
+                        easing.type: Easing.BezierSpline
+                        easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
                     }
                 }
                 Behavior on scale {
                     NumberAnimation {
-                        duration: 200
-                        easing.type: Easing.OutBack
+                        duration: Theme.expressiveDurations.expressiveFastSpatial
+                        easing.type: Easing.BezierSpline
+                        easing.bezierCurve: Theme.expressiveCurves.expressiveFastSpatial
                     }
                 }
             }
         }
     }
 
-    DContextMenu {
-        id: contextMenu
-        layerNamespace: "dms:clipboard-context-menu"
-        menuItems: [
-            {
-                type: "item",
-                icon: "delete_sweep",
-                text: I18n.tr("Clear All"),
-                action: () => root.clearAllRequested()
-            },
-            {
-                type: "item",
-                icon: "push_pin",
-                text: I18n.tr("Show Saved Items"),
-                action: () => root.showSavedItemsRequested()
-            }
-        ]
+    Loader {
+        id: contextMenuLoader
+        active: false
+        sourceComponent: DContextMenu {
+            layerNamespace: "dms:clipboard-context-menu"
+            menuItems: [
+                {
+                    type: "item",
+                    icon: "delete_sweep",
+                    text: I18n.tr("Clear All"),
+                    action: () => root.clearAllRequested()
+                },
+                {
+                    type: "item",
+                    icon: "push_pin",
+                    text: I18n.tr("Show Saved Items"),
+                    action: () => root.showSavedItemsRequested()
+                }
+            ]
+        }
     }
 }

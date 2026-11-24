@@ -69,20 +69,6 @@ Scope {
             hideSpotlight();
     }
 
-    onIsClosingChanged: {
-        if (!isClosing) {
-            closeTimer.stop();
-            return;
-        }
-        closeTimer.restart();
-    }
-
-    Timer {
-        id: closeTimer
-        interval: Theme.expressiveDurations.fast
-        onTriggered: niriOverviewScope.resetState()
-    }
-
     Loader {
         id: niriOverlayLoader
         active: overlayActive || isClosing
@@ -104,9 +90,53 @@ Scope {
                 property bool hasActiveModal: !!ModalManager.currentModalsByScreen[screen.name]
                 readonly property bool useSpotlightStyle: SettingsData.niriOverviewLauncherStyle === "spotlight"
                 readonly property var launcherContent: useSpotlightStyle ? spotlightLauncherLoader.item : fullLauncherLoader.item
+                readonly property bool spotlightShown: shouldShowSpotlight || (niriOverviewScope.isClosing && isSpotlightScreen)
+                readonly property string searchText: launcherContent?.searchField?.text ?? ""
+                readonly property bool hasFocusOnMap: "focusOnMap" in WlrLayershell
+                readonly property bool typeInOverview: hasFocusOnMap && NiriService.configNextSupported && CompositorService.niriWindowRulesIncluded
+
+                function releaseIdleKeyboardFocus() {
+                    if (!typeInOverview || spotlightShown || searchText)
+                        return;
+                    if (launcherContent?.searchField?.Window.active)
+                        WlrLayershell.releaseKeyboardFocus?.();
+                }
+
+                function handleOverviewKey(event) {
+                    switch (event.key) {
+                    case Qt.Key_Return:
+                        NiriService.closeOverview();
+                        break;
+                    case Qt.Key_Left:
+                        NiriService.focusColumnLeft();
+                        break;
+                    case Qt.Key_Right:
+                        NiriService.focusColumnRight();
+                        break;
+                    case Qt.Key_Up:
+                        NiriService.send({
+                            "Action": {
+                                "FocusWorkspaceUp": {}
+                            }
+                        });
+                        break;
+                    case Qt.Key_Down:
+                        NiriService.send({
+                            "Action": {
+                                "FocusWorkspaceDown": {}
+                            }
+                        });
+                        break;
+                    default:
+                        return;
+                    }
+                    event.accepted = true;
+                }
 
                 readonly property QtObject fakeParentModal: QtObject {
-                    readonly property bool spotlightOpen: spotlightContainer.visible
+                    readonly property var effectiveScreen: overlayWindow.screen
+                    readonly property bool spotlightOpen: overlayWindow.spotlightShown
+                    readonly property bool searchAlwaysEnabled: true
                     readonly property bool isClosing: niriOverviewScope.isClosing
                     readonly property real alignedX: spotlightContainer.x
                     readonly property real alignedY: spotlightContainer.y
@@ -153,11 +183,22 @@ Scope {
                         return WlrKeyboardFocus.None;
                     if (hasActivePopout || hasActiveModal)
                         return WlrKeyboardFocus.None;
-                    return WlrKeyboardFocus.Exclusive;
+                    if (!typeInOverview)
+                        return WlrKeyboardFocus.Exclusive;
+
+                    return WlrKeyboardFocus.OnDemand;
                 }
 
+                function updateFocusOnMap() {
+                    if (typeInOverview)
+                        WlrLayershell.focusOnMap = false;
+                }
+
+                Component.onCompleted: updateFocusOnMap()
+                onTypeInOverviewChanged: updateFocusOnMap()
+
                 mask: Region {
-                    item: overlayVisible && spotlightContainer.visible ? spotlightContainer : null
+                    item: overlayVisible && spotlightShown ? spotlightContainer : null
                 }
 
                 WindowBlur {
@@ -174,6 +215,8 @@ Scope {
                 }
 
                 onShouldShowSpotlightChanged: {
+                    scaleMorph.retarget(shouldShowSpotlight ? 1 : 0);
+                    slideMorph.retarget(shouldShowSpotlight ? 1 : 0);
                     if (shouldShowSpotlight) {
                         if (launcherContent?.controller) {
                             launcherContent.controller.searchMode = SessionData.niriOverviewLastMode || "apps";
@@ -183,78 +226,51 @@ Scope {
                     }
                     if (!isActiveScreen)
                         return;
-                    Qt.callLater(() => keyboardFocusScope.forceActiveFocus());
+                    if (launcherContent?.searchField?.Window.active)
+                        WlrLayershell.releaseKeyboardFocus?.();
+                    Qt.callLater(() => launcherContent?.searchField?.forceActiveFocus());
                 }
+
+                onHasActiveModalChanged: {
+                    if (hasActiveModal && shouldShowSpotlight)
+                        niriOverviewScope.hideSpotlight();
+                }
+
+                onHasActivePopoutChanged: {
+                    if (hasActivePopout && shouldShowSpotlight)
+                        niriOverviewScope.hideSpotlight();
+                }
+
+                onSpotlightShownChanged: {
+                    if (!spotlightShown && searchText)
+                        launcherContent.searchField.text = "";
+                }
+
+                // Opening a folder clears the query before it sets activeFolderId.
+                function hideIfSearchCleared() {
+                    if (searchText || !niriOverviewScope.searchActive || launcherContent?.controller?.activeFolderId)
+                        return;
+                    niriOverviewScope.hideSpotlight();
+                }
+
+                onSearchTextChanged: {
+                    if (searchText && isActiveScreen && !niriOverviewScope.searchActive)
+                        niriOverviewScope.showSpotlight(screen.name);
+                    else if (!searchText && niriOverviewScope.searchActive)
+                        Qt.callLater(hideIfSearchCleared);
+                }
+
+                onLauncherContentChanged: Qt.callLater(() => launcherContent?.searchField?.forceActiveFocus())
+
+                // Qt only gives an unfocused window an active focus item while no shell window is focused.
+                readonly property bool shellWindowFocused: Application.state === Qt.ApplicationActive
+                onShellWindowFocusedChanged: launcherContent?.searchField?.forceActiveFocus()
 
                 anchors {
                     top: true
                     left: true
                     right: true
                     bottom: true
-                }
-
-                FocusScope {
-                    id: keyboardFocusScope
-                    anchors.fill: parent
-                    focus: true
-
-                    Keys.onPressed: event => {
-                        if (overlayWindow.shouldShowSpotlight || niriOverviewScope.isClosing)
-                            return;
-                        if ([Qt.Key_Escape, Qt.Key_Return].includes(event.key)) {
-                            NiriService.closeOverview();
-                            event.accepted = true;
-                            return;
-                        }
-
-                        if (event.key === Qt.Key_Left) {
-                            NiriService.focusColumnLeft();
-                            event.accepted = true;
-                            return;
-                        }
-
-                        if (event.key === Qt.Key_Right) {
-                            NiriService.focusColumnRight();
-                            event.accepted = true;
-                            return;
-                        }
-
-                        if (event.key === Qt.Key_Up) {
-                            NiriService.send({
-                                "Action": {
-                                    "FocusWorkspaceUp": {}
-                                }
-                            });
-                            event.accepted = true;
-                            return;
-                        }
-
-                        if (event.key === Qt.Key_Down) {
-                            NiriService.send({
-                                "Action": {
-                                    "FocusWorkspaceDown": {}
-                                }
-                            });
-                            event.accepted = true;
-                            return;
-                        }
-
-                        if (event.modifiers & (Qt.ControlModifier | Qt.MetaModifier) || [Qt.Key_Delete, Qt.Key_Backspace].includes(event.key)) {
-                            event.accepted = false;
-                            return;
-                        }
-
-                        if (event.isAutoRepeat || !event.text)
-                            return;
-                        if (!overlayWindow.launcherContent?.searchField)
-                            return;
-                        const trimmedText = event.text.trim();
-                        overlayWindow.launcherContent.searchField.text = trimmedText;
-                        overlayWindow.launcherContent.controller.setSearchQuery(trimmedText);
-                        niriOverviewScope.showSpotlight(overlayWindow.screen.name);
-                        Qt.callLater(() => overlayWindow.launcherContent.searchField.forceActiveFocus());
-                        event.accepted = true;
-                    }
                 }
 
                 Item {
@@ -287,22 +303,18 @@ Scope {
                     height: overlayWindow.useSpotlightStyle ? Math.ceil(overlayWindow.launcherContent?.implicitHeight ?? LauncherMetrics.pillHeight) : Math.min(baseHeight, overlayWindow.screen.height - LauncherMetrics.screenMargin)
 
                     readonly property bool animatingOut: niriOverviewScope.isClosing && overlayWindow.isSpotlightScreen
-
-                    readonly property var scaleSpringParams: Theme.springPreset("fast", Theme.expressiveDurations.fast)
-                    readonly property var slideSpringParams: Theme.springPreset("default", Theme.popoutAnimationDuration)
-
-                    function checkExitSettled() {
-                        if (!spotlightContainer.animatingOut)
-                            return;
-                        const spring = Theme.isConnectedEffect ? slideMorph : scaleMorph;
-                        if (!spring.running)
-                            niriOverviewScope.resetState();
+                    readonly property bool exitSettled: animatingOut && (Theme.isConnectedEffect ? slideMorph.value === 0 : opacity <= 0)
+                    onExitSettledChanged: {
+                        if (exitSettled)
+                            Qt.callLater(niriOverviewScope.resetState);
                     }
+
+                    readonly property var scaleSpringParams: Theme.springPreset("fastSpatial")
+                    readonly property var slideSpringParams: Theme.springPreset("defaultSpatial")
 
                     SpringMotion {
                         id: scaleMorph
                         enabled: !Theme.isConnectedEffect
-                        reducedMotion: Theme.expressiveDurations.fast <= 0
                         positionEpsilon: 0.001
                         velocityEpsilon: 0.001
                         stiffness: spotlightContainer.scaleSpringParams.stiffness
@@ -310,13 +322,11 @@ Scope {
                         value: overlayWindow.shouldShowSpotlight ? 1 : 0
 
                         Component.onCompleted: snapTo(overlayWindow.shouldShowSpotlight ? 1 : 0)
-                        onRunningChanged: spotlightContainer.checkExitSettled()
                     }
 
                     SpringMotion {
                         id: slideMorph
                         enabled: Theme.isConnectedEffect
-                        reducedMotion: Theme.popoutAnimationDuration <= 0
                         positionEpsilon: 0.05
                         velocityEpsilon: 0.05
                         stiffness: spotlightContainer.slideSpringParams.stiffness
@@ -324,33 +334,21 @@ Scope {
                         value: overlayWindow.shouldShowSpotlight ? 1 : 0
 
                         Component.onCompleted: snapTo(overlayWindow.shouldShowSpotlight ? 1 : 0)
-                        onRunningChanged: spotlightContainer.checkExitSettled()
-                    }
-
-                    Connections {
-                        target: overlayWindow
-                        function onShouldShowSpotlightChanged() {
-                            scaleMorph.retarget(overlayWindow.shouldShowSpotlight ? 1 : 0);
-                            slideMorph.retarget(overlayWindow.shouldShowSpotlight ? 1 : 0);
-                            spotlightContainer.checkExitSettled();
-                        }
                     }
 
                     scale: Theme.isConnectedEffect ? 1.0 : (0.96 + 0.04 * scaleMorph.value)
-                    opacity: Theme.isConnectedEffect ? 1 : (overlayWindow.shouldShowSpotlight ? 1 : 0)
-                    visible: overlayWindow.shouldShowSpotlight || animatingOut
-                    enabled: overlayWindow.shouldShowSpotlight
+                    opacity: overlayWindow.spotlightShown && (Theme.isConnectedEffect || overlayWindow.shouldShowSpotlight) ? 1 : 0
 
-                    layer.enabled: visible
+                    layer.enabled: overlayWindow.spotlightShown
                     layer.smooth: false
                     layer.textureSize: layer.enabled ? Qt.size(Math.round(width * overlayWindow.dpr), Math.round(height * overlayWindow.dpr)) : Qt.size(0, 0)
 
                     Behavior on opacity {
                         enabled: !Theme.isConnectedEffect
                         NumberAnimation {
-                            duration: Theme.expressiveDurations.fast
+                            duration: Theme.expressiveDurations.expressiveEffects
                             easing.type: Easing.BezierSpline
-                            easing.bezierCurve: spotlightContainer.visible ? Theme.expressiveCurves.expressiveFastSpatial : Theme.expressiveCurves.standardAccel
+                            easing.bezierCurve: Theme.expressiveCurves.expressiveEffects
                         }
                     }
 
@@ -368,9 +366,20 @@ Scope {
                         anchors.fill: parent
                         focus: true
 
-                        Keys.onPressed: event => overlayWindow.launcherContent?.activeContextMenu?.handleKey(event)
+                        Window.onActiveChanged: overlayWindow.launcherContent?.searchField?.forceActiveFocus()
+
+                        // Unfocus if the text input is still empty after a key released (for example, an empty ctrl+v)
+                        Keys.onReleased: overlayWindow.releaseIdleKeyboardFocus()
+
+                        Keys.onPressed: event => {
+                            if (overlayWindow.spotlightShown)
+                                overlayWindow.launcherContent?.activeContextMenu?.handleKey(event);
+                            else if (!overlayWindow.typeInOverview)
+                                overlayWindow.handleOverviewKey(event);
+                        }
 
                         Keys.onEscapePressed: event => {
+                            event.accepted = false;
                             overlayWindow.launcherContent?.activeContextMenu?.handleKey(event);
                             if (!event.accepted)
                                 overlayWindow.launcherContent?.parentModal?.hide();
@@ -395,13 +404,10 @@ Scope {
                             }
                         }
 
-                        Connections {
+                        Binding {
                             target: overlayWindow.launcherContent?.searchField ?? null
-                            function onTextChanged() {
-                                if (overlayWindow.launcherContent.searchField.text.length > 0 || !niriOverviewScope.searchActive)
-                                    return;
-                                niriOverviewScope.hideSpotlight();
-                            }
+                            property: "placeholderText"
+                            value: ""
                         }
 
                         Connections {

@@ -206,7 +206,7 @@ DModal {
 
     Timer {
         id: targetCopyConfirmationTimer
-        interval: 1200
+        interval: Timing.holdShort
         repeat: false
         onTriggered: root.targetCopied = false
     }

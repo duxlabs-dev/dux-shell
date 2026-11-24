@@ -109,6 +109,11 @@ FocusScope {
     }
 
     Keys.onPressed: event => {
+        if (parentModal && !parentModal.spotlightOpen) {
+            event.accepted = false;
+            return;
+        }
+
         if (editMode) {
             if (event.key === Qt.Key_Escape) {
                 closeEditMode();
@@ -124,6 +129,11 @@ FocusScope {
                 event.accepted = true;
                 return;
             }
+        }
+
+        if (controller.activeFolderId && controller.handleFolderKey(event)) {
+            event.accepted = true;
+            return;
         }
 
         var hasCtrl = event.modifiers & Qt.ControlModifier;
@@ -145,6 +155,10 @@ FocusScope {
                 actionPanel.hide();
                 return;
             }
+            if (controller.activeFolderId) {
+                controller.closeLauncherFolder();
+                return;
+            }
             if (controller.clearPluginFilter())
                 return;
             if (root.parentModal?.attemptUserCancel)
@@ -154,6 +168,10 @@ FocusScope {
             return;
         case Qt.Key_Backspace:
             if (searchField.text.length === 0) {
+                if (controller.activeFolderId) {
+                    controller.closeLauncherFolder();
+                    return;
+                }
                 if (controller.clearPluginFilter())
                     return;
                 if (controller.autoSwitchedToFiles) {
@@ -391,7 +409,7 @@ FocusScope {
                 width: parent.width
                 textColor: Theme.onSurface
                 font.pixelSize: Theme.fontSizeLarge
-                enabled: root.parentModal ? (root.parentModal.spotlightOpen || root.parentModal.isClosing) : true
+                enabled: root.parentModal ? (root.parentModal.spotlightOpen || root.parentModal.isClosing || !!root.parentModal.searchAlwaysEnabled) : true
                 placeholderText: _isDmenu ? controller.dmenuPlaceholder : (I18n.tr("Search", "search field placeholder") + "…")
                 echoMode: (_isDmenu && controller.dmenuPassword) ? TextInput.Password : TextInput.Normal
                 ignoreUpDownKeys: true
@@ -406,6 +424,10 @@ FocusScope {
                 }
 
                 Keys.onPressed: event => {
+                    if (root.parentModal && !root.parentModal.spotlightOpen) {
+                        event.accepted = false;
+                        return;
+                    }
                     if (controller.searchMode === "dmenu") {
                         var kbN = controller.matchDmenuKeybind(event);
                         if (kbN > 0) {
@@ -415,7 +437,9 @@ FocusScope {
                         }
                     }
                     if (event.key === Qt.Key_Escape) {
-                        if (root.parentModal?.attemptUserCancel)
+                        if (controller.activeFolderId)
+                            controller.closeLauncherFolder();
+                        else if (root.parentModal?.attemptUserCancel)
                             root.parentModal.attemptUserCancel();
                         else
                             root.parentModal?.hide();
@@ -423,6 +447,8 @@ FocusScope {
                     } else if ((event.key === Qt.Key_Return || event.key === Qt.Key_Enter)) {
                         if (controller.searchMode === "dmenu" && controller.dmenuMultiSelect && (event.modifiers & Qt.ShiftModifier)) {
                             controller.toggleDmenuMultiSelectHighlighted();
+                        } else if (controller.activeFolderId) {
+                            controller.executeFolderSelected();
                         } else if (actionPanel.expanded && actionPanel.selectedActionIndex > 0) {
                             actionPanel.executeSelectedAction();
                         } else {
@@ -485,8 +511,9 @@ FocusScope {
 
                 Behavior on height {
                     NumberAnimation {
-                        duration: Theme.shortDuration
-                        easing.type: Theme.standardEasing
+                        duration: Theme.expressiveDurations.expressiveDefaultSpatial
+                        easing.type: Easing.BezierSpline
+                        easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
                     }
                 }
 
@@ -546,8 +573,9 @@ FocusScope {
 
                 Behavior on height {
                     NumberAnimation {
-                        duration: Theme.shortDuration
-                        easing.type: Theme.standardEasing
+                        duration: Theme.expressiveDurations.expressiveDefaultSpatial
+                        easing.type: Easing.BezierSpline
+                        easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
                     }
                 }
 
@@ -712,6 +740,11 @@ FocusScope {
         function onModeChanged() {
             extFilterField.text = "";
         }
+        function onFolderContextMenuRequested() {
+            const scenePos = resultsList.getSelectedItemPosition();
+            const localPos = root.mapFromItem(null, scenePos.x, scenePos.y);
+            showContextMenu(controller.folderMemberAt(controller.folderSelectedIndex), localPos.x, localPos.y, true);
+        }
     }
 
     Loader {
@@ -726,6 +759,7 @@ FocusScope {
             focus: true
             editingApp: root.editingApp
             editAppId: root.editAppId
+            transientSurfaceTracker: root.transientSurfaceTracker
             onCloseRequested: root.closeEditMode()
         }
 

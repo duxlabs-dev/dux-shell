@@ -34,7 +34,7 @@ Item {
     readonly property bool hasSeekbar: seekbarEnabled && !!presentation && presentation.length > 0
     readonly property bool panelOpen: !!inlinePanel?.opened
     readonly property bool scrolling: root.player.live && !!presentation?.playing && !panelOpen
-    readonly property var availableFocusTargets: root.player.lyricsFocusTarget ? [root.player.lyricsFocusTarget].concat(focusTargets) : focusTargets
+    readonly property var availableFocusTargets: [root.player.lyricsFocusTarget, root.player.lyricsSourceButton].filter(Boolean).concat(focusTargets)
 
     readonly property Item focusTarget: panelOpen ? inlinePanel.focusTarget : availableFocusTargets.find(item => item?.visible && item.enabled) ?? null
     readonly property Item previousFocusTarget: panelOpen ? inlinePanel.focusTarget : availableFocusTargets.filter(item => item?.visible && item.enabled).slice(-1)[0] ?? null
@@ -48,7 +48,7 @@ Item {
     }
 
     function buttonForPanel(panelId) {
-        const usable = panelButtons.filter(button => button?.visible && button.enabled);
+        const usable = panelButtons.concat(root.player.lyricsSourceButton ?? []).filter(button => button?.visible && button.enabled);
         const opener = root.player.panelOpener;
         if (opener?.panelId === panelId && usable.includes(opener))
             return opener;
@@ -60,16 +60,18 @@ Item {
     }
 
     // The backdrop clips itself to the corners, so the card needs no clip of its own.
+    // Layered so the fill, backdrop and tint cost one blend per frame, not three.
     Rectangle {
-        id: card
-
         anchors.fill: parent
         radius: root.backdropRadius
         color: root.surfaceColor
         border.width: Theme.layerOutlineWidth
         border.color: Theme.outlineMedium
+        layer.enabled: backdrop.active && root.player.live
 
         Loader {
+            id: backdrop
+
             anchors.fill: parent
             anchors.margins: Theme.layerOutlineWidth
             active: root.player.wallpaperEnabled && !!root.presentation
@@ -81,20 +83,20 @@ Item {
                 artUrl: root.artUrl
             }
         }
+    }
 
-        TapHandler {
-            enabled: root.panelOpen
-            onTapped: eventPoint => {
-                if (root.inlinePanel.contains(root.inlinePanel.mapFromItem(card, eventPoint.position)))
-                    return;
-                root.player.panel = "";
-            }
+    TapHandler {
+        enabled: root.panelOpen
+        onTapped: eventPoint => {
+            if (root.inlinePanel.contains(root.inlinePanel.mapFromItem(root, eventPoint.position)))
+                return;
+            root.player.panel = "";
         }
+    }
 
-        Item {
-            id: cardBody
-            anchors.fill: parent
-            anchors.margins: root.padding + Theme.layerOutlineWidth
-        }
+    Item {
+        id: cardBody
+        anchors.fill: parent
+        anchors.margins: root.padding + Theme.layerOutlineWidth
     }
 }

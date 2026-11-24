@@ -32,6 +32,9 @@ Item {
     property bool keyboardNavigable: false
     property var transientSurfaceTracker: null
     property var targetScreen: null
+    property var targetWindow: null
+    property Item inlineHost: null
+    readonly property bool isPopupMode: targetWindow !== null && !inlineHost
     property real anchorX: 0
     property real anchorY: 0
     property real originX: 0
@@ -41,12 +44,27 @@ Item {
     property bool renderActive: false
     property int selectedMenuIndex: -1
     property bool keyboardNavigation: false
-    readonly property alias contextWindow: menuWindow
+    readonly property var surface: isPopupMode || inlineHost ? null : IdleSurfaces.surfaceFor("context-menu", targetScreen?.name ?? "")
+    readonly property Item hostItem: {
+        if (!renderActive)
+            return null;
+        return inlineHost ?? (isPopupMode ? popupLoader.item?.contentItem : surface?.hostItem) ?? null;
+    }
+    readonly property bool attached: hostItem !== null
+    readonly property var contextWindow: attached ? (inlineHost ? targetWindow : isPopupMode ? popupLoader.item : surface) : null
+    readonly property var blurRegion: menuBlur.effectiveRegion
+    readonly property int surfaceKeyboardFocus: {
+        if (!keyboardNavigable || !renderActive)
+            return WlrKeyboardFocus.None;
+        if (PopoutManager.screenshotActive || CompositorService.useHyprlandFocusGrab)
+            return WlrKeyboardFocus.None;
+        return WlrKeyboardFocus.Exclusive;
+    }
     readonly property alias customContentItem: customContentLoader.item
-    readonly property bool blurActive: renderActive && openState && BlurService.enabled
+    readonly property bool blurActive: !inlineHost && renderActive && openState && BlurService.enabled
 
-    readonly property real maxMenuWidth: Math.max(0, (targetScreen?.width ?? Theme.launcherWidthMicro) - menuMargin * 2)
-    readonly property real maxMenuHeight: Math.max(0, (targetScreen?.height ?? Theme.launcherHeightDefault) - menuMargin * 2)
+    readonly property real maxMenuWidth: Math.max(0, (targetWindow ? targetWindow.width : (targetScreen?.width ?? Theme.launcherWidthMicro)) - menuMargin * 2)
+    readonly property real maxMenuHeight: Math.max(0, (targetWindow ? targetWindow.height : (targetScreen?.height ?? Theme.launcherHeightDefault)) - menuMargin * 2)
     readonly property string longestMenuText: {
         let longest = "";
         for (const menuItem of menuItems) {
@@ -65,9 +83,6 @@ Item {
     readonly property int visibleItemCount: menuItems.filter(menuItem => isSelectable(menuItem)).length
 
     signal backdropRightClicked(real x, real y)
-
-    onRenderActiveChanged: transientSurfaceTracker?.setActive(root, renderActive, contextWindow)
-    Component.onDestruction: transientSurfaceTracker?.unregister(root)
 
     Connections {
         target: root.transientSurfaceTracker
@@ -111,8 +126,7 @@ Item {
         }
     }
 
-    function open(screen, x, y, fromKeyboard) {
-        targetScreen = screen;
+    function _finishOpen(x, y, fromKeyboard) {
         anchorX = x;
         anchorY = y;
         originX = x;
@@ -127,6 +141,30 @@ Item {
                 keyboardHandler.forceActiveFocus();
             ensureSelectedVisible();
         });
+    }
+
+    function open(screen, x, y, fromKeyboard) {
+        targetWindow = null;
+        targetScreen = screen;
+        _finishOpen(x, y, fromKeyboard);
+    }
+
+    function openInWindow(win, x, y, fromKeyboard) {
+        if (!win)
+            return;
+        targetScreen = null;
+        targetWindow = win;
+        _finishOpen(x, y, fromKeyboard);
+    }
+
+    function openAtItem(item, x, y, fromKeyboard) {
+        if (!item)
+            return;
+        const win = item.QsWindow?.window ?? null;
+        if (!win)
+            return;
+        const pos = item.mapToItem(null, x, y);
+        openInWindow(win, pos.x, pos.y, fromKeyboard);
     }
 
     function openFromBar(anchor) {
@@ -222,34 +260,57 @@ Item {
             activate(menuItems[index]);
     }
 
-    PanelWindow {
+    function handleKeyEvent(event) {
+        return false;
+    }
+
+    onRenderActiveChanged: transientSurfaceTracker?.setActive(root, renderActive, contextWindow)
+    // A host maps its window from childrenChanged, which Qt emits before the item leaves its old window.
+    onHostItemChanged: {
+        menuWindow.parent = null;
+        menuWindow.parent = hostItem ?? root;
+    }
+    Component.onDestruction: transientSurfaceTracker?.unregister(root)
+
+    Loader {
+        id: popupLoader
+        active: root.isPopupMode && root.renderActive
+        sourceComponent: PopupWindow {
+            anchor.window: root.targetWindow
+            anchor.rect: Qt.rect(0, 0, 1, 1)
+            anchor.edges: Edges.Top | Edges.Left
+            anchor.gravity: Edges.Bottom | Edges.Right
+            anchor.adjustment: PopupAdjustment.None
+            implicitWidth: root.targetWindow ? root.targetWindow.width : 0
+            implicitHeight: root.targetWindow ? root.targetWindow.height : 0
+            color: "transparent"
+            visible: root.renderActive
+            grabFocus: true
+            BackgroundEffect.blurRegion: root.blurActive ? root.blurRegion : null
+            onVisibleChanged: {
+                if (!visible && root.renderActive) {
+                    root.openState = false;
+                    root.renderActive = false;
+                }
+            }
+            Component.onDestruction: {
+                if (menuWindow.parent === contentItem)
+                    menuWindow.parent = root;
+            }
+        }
+    }
+
+    Item {
         id: menuWindow
 
-        screen: root.targetScreen
-        visible: root.renderActive
-        color: "transparent"
-
-        WlrLayershell.namespace: root.layerNamespace
-        WlrLayershell.layer: WlrLayershell.Overlay
-        WlrLayershell.exclusiveZone: -1
-
-        WlrLayershell.keyboardFocus: {
-            if (!root.keyboardNavigable || !root.renderActive)
-                return WlrKeyboardFocus.None;
-            if (PopoutManager.screenshotActive || CompositorService.useHyprlandFocusGrab)
-                return WlrKeyboardFocus.None;
-            return WlrKeyboardFocus.Exclusive;
-        }
-
-        anchors {
-            top: true
-            left: true
-            right: true
-            bottom: true
-        }
+        readonly property var host: root
+        anchors.fill: parent
+        z: root.inlineHost ? 1 : 0
 
         WindowBlur {
-            targetWindow: menuWindow
+            id: menuBlur
+            targetWindow: root.isPopupMode ? popupLoader.item : root.surface
+            applyToWindow: false
             surfaceColor: menuContainer.color
             blurX: root.blurActive ? menuContainer.x + openScaleTransform.origin.x * (1 - menuContainer.openScale) : 0
             blurY: root.blurActive ? menuContainer.y + openScaleTransform.origin.y * (1 - menuContainer.openScale) : 0
@@ -262,9 +323,10 @@ Item {
             anchors.fill: parent
             z: -1
             enabled: root.renderActive
-            acceptedButtons: Qt.LeftButton | Qt.RightButton
+            acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
+            onPressed: mouse => mouse.accepted = true
             onClicked: mouse => {
-                if (mouse.button === Qt.RightButton) {
+                if (mouse.button === Qt.RightButton && !root.isPopupMode && !root.inlineHost) {
                     root.backdropRightClicked(mouse.x, mouse.y);
                     return;
                 }
@@ -278,6 +340,8 @@ Item {
             focus: root.keyboardNavigable && root.openState
 
             Keys.onPressed: event => {
+                if (root.handleKeyEvent(event))
+                    return;
                 switch (event.key) {
                 case Qt.Key_Down:
                     root.selectNext();
@@ -333,7 +397,7 @@ Item {
 
                 Behavior on openScale {
                     NumberAnimation {
-                        duration: SettingsData.reduceMotion ? 0 : Theme.expressiveDurations.expressiveFastSpatial
+                        duration: Theme.reduceMotion ? 0 : Theme.expressiveDurations.expressiveDefaultSpatial
                         easing.type: Easing.BezierSpline
                         easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
                     }
@@ -342,9 +406,9 @@ Item {
                 Behavior on height {
                     enabled: root.openState
                     NumberAnimation {
-                        duration: SettingsData.reduceMotion ? 0 : Theme.expressiveDurations.expressiveFastSpatial
+                        duration: Theme.reduceMotion ? 0 : Theme.expressiveDurations.expressiveDefaultSpatial
                         easing.type: Easing.BezierSpline
-                        easing.bezierCurve: Theme.expressiveCurves.emphasizedDecel
+                        easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
                     }
                 }
 
@@ -353,8 +417,9 @@ Item {
                     enabled: menuContainer.opacity > 0
                     NumberAnimation {
                         id: closeFade
-                        duration: SettingsData.reduceMotion ? 0 : Theme.shortDuration
-                        easing.type: Theme.emphasizedEasing
+                        duration: Theme.reduceMotion ? 0 : Theme.expressiveDurations.expressiveFastEffects
+                        easing.type: Easing.BezierSpline
+                        easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
                         onRunningChanged: {
                             if (!running && !root.openState)
                                 root.renderActive = false;
@@ -417,11 +482,10 @@ Item {
                                     sourceComponent: menuItemDelegate.modelData.component ?? null
                                 }
 
-                                Rectangle {
+                                DDivider {
                                     visible: menuItemDelegate.isSeparator
-                                    width: parent.width - Theme.spacingS * 2
-                                    height: Theme.outlineWidth
                                     anchors.centerIn: parent
+                                    inset: Theme.spacingS
                                     color: Theme.outlineHeavy
                                 }
 

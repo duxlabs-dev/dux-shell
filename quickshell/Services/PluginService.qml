@@ -35,6 +35,8 @@ Singleton {
     property var _daemonSpawnQueue: []
     property var globalVars: ({})
     property var pluginLoadErrors: ({})
+    readonly property bool hasDisabledPluginsSnapshot: (CacheData.disabledPluginsSnapshot?.length ?? 0) > 0
+    readonly property int loadedDisableableCount: Object.keys(loadedPlugins).length
     property var _componentRevisions: ({})
     property var directoryModifiedTimes: ({})
     property string pendingSettingsRevealPluginId: ""
@@ -59,14 +61,14 @@ Singleton {
 
     Timer {
         id: resyncDebounce
-        interval: 120
+        interval: Timing.debounceShort
         repeat: false
         onTriggered: resyncAll()
     }
 
     Timer {
         id: _stateWriteTimer
-        interval: 150
+        interval: Timing.debounce
         repeat: false
         onTriggered: root._flushDirtyStates()
     }
@@ -191,12 +193,13 @@ Singleton {
         }
     }
 
-    function loadPluginManifestFile(manifestPathNoScheme, sourceTag, mtimeEpochMs) {
-        const loader = manifestFvComp.createObject(root, {
+    function loadPluginManifestFile(manifestPathNoScheme, sourceTag, mtimeEpochMs, afterLoad) {
+        manifestFvComp.createObject(root, {
             absPath: manifestPathNoScheme,
             path: manifestPathNoScheme,
             sourceTag: sourceTag,
-            mtimeEpochMs: mtimeEpochMs
+            mtimeEpochMs: mtimeEpochMs,
+            afterLoad: afterLoad ?? null
         });
     }
 
@@ -207,6 +210,7 @@ Singleton {
             property string absPath: ""
             property string sourceTag: ""
             property double mtimeEpochMs: 0
+            property var afterLoad: null
             onLoaded: {
                 try {
                     let raw = text();
@@ -222,12 +226,16 @@ Singleton {
                         bad: true
                     };
                 }
+                if (afterLoad)
+                    afterLoad();
                 fv.destroy();
             }
             onLoadFailed: err => {
                 // a directory without plugin.json is not a plugin, not a failed one (#3112)
                 if (err !== FileViewError.FileNotFound)
                     root.log.warn("manifest load failed", absPath, err);
+                if (afterLoad)
+                    afterLoad();
                 fv.destroy();
             }
         }
@@ -383,7 +391,7 @@ Singleton {
 
         const componentPaths = _resolveComponentPaths(manifest, dir);
         const surfaces = Object.keys(componentPaths);
-        if (surfaces.length === 0 && !manifest.lyrics?.command && !manifest.weather?.command) {
+        if (surfaces.length === 0 && !manifest.lyrics?.command && !manifest.weather?.command && !manifest.iconFolders?.length) {
             log.error("no valid component surfaces in manifest:", absPath);
             knownManifests[absPath] = {
                 mtime: mtimeEpochMs,
@@ -436,7 +444,8 @@ Singleton {
             _updateAvailablePluginsList();
             _loadPluginTranslations(manifest.id, dir);
             const isPureDesktop = surfaces.length === 1 && surfaces[0] === "desktop";
-            const enabled = isPureDesktop || SettingsData.getPluginSetting(manifest.id, "enabled", false);
+            const inSnapshot = (typeof CacheData !== "undefined" ? CacheData.disabledPluginsSnapshot || [] : []).includes(manifest.id);
+            const enabled = !inSnapshot && (isPureDesktop || SettingsData.getPluginSetting(manifest.id, "enabled", false));
             if (enabled && !info.loaded && !installingPlugins[manifest.id])
                 runStartupGate(manifest.id);
             pluginListUpdated();
@@ -494,10 +503,15 @@ Singleton {
             return;
         }
         DMSService.update(pluginId, response => {
-            if (!response.error)
-                forceRescanPlugin(pluginId);
-            if (callback)
-                callback(response);
+            if (response.error) {
+                if (callback)
+                    callback(response);
+                return;
+            }
+            forceRescanPlugin(pluginId, () => {
+                if (callback)
+                    callback(response);
+            });
         });
     }
 
@@ -515,7 +529,7 @@ Singleton {
 
         const componentPaths = plugin.componentPaths || {};
         const surfaces = Object.keys(componentPaths);
-        if (surfaces.length === 0 && !plugin.lyrics?.command && !plugin.weather?.command) {
+        if (surfaces.length === 0 && !plugin.lyrics?.command && !plugin.weather?.command && !plugin.iconFolders?.length) {
             log.error("Plugin has no component surfaces:", pluginId);
             pluginLoadFailed(pluginId, "No component surfaces");
             return false;
@@ -601,6 +615,8 @@ Singleton {
 
             _clearLoadError(pluginId);
             pluginLoaded(pluginId);
+            if (plugin.iconFolders?.length)
+                SettingsData.iconRecipesChanged();
             return true;
         } catch (e) {
             log.error("Error loading plugin:", pluginId, e.message);
@@ -613,8 +629,12 @@ Singleton {
         }
     }
 
+    Item {
+        id: pluginItemHost
+    }
+
     function _createDaemonInstance(pluginId, comp) {
-        const instance = comp.createObject(root, {
+        const instance = comp.createObject(pluginItemHost, {
             "pluginId": pluginId,
             "pluginService": root
         });
@@ -650,6 +670,8 @@ Singleton {
             return false;
         }
 
+        IslandActivityService.clearSource(pluginId);
+        NotificationInterceptorService.clearSource(pluginId);
         try {
             const components = [pluginDaemonComponents, pluginLauncherComponents, pluginDesktopComponents, pluginWidgetComponents, pluginDashComponents, pluginDashCardComponents].map(map => map[pluginId]).filter(comp => !!comp);
             const instance = pluginInstances[pluginId];
@@ -707,6 +729,8 @@ Singleton {
             _destroyComponents(components);
             _cleanupPluginStateWriter(pluginId);
             pluginUnloaded(pluginId);
+            if (plugin.iconFolders?.length)
+                SettingsData.iconRecipesChanged();
             return true;
         } catch (error) {
             log.error("Error unloading plugin:", pluginId, "Error:", error.message);
@@ -886,6 +910,8 @@ Singleton {
     }
 
     function enablePlugin(pluginId, onResult) {
+        if (typeof CacheData !== "undefined" && Array.isArray(CacheData.disabledPluginsSnapshot) && CacheData.disabledPluginsSnapshot.includes(pluginId))
+            CacheData.set("disabledPluginsSnapshot", CacheData.disabledPluginsSnapshot.filter(id => id !== pluginId));
         SettingsData.setPluginSetting(pluginId, "enabled", true);
         return runStartupGate(pluginId, onResult);
     }
@@ -937,6 +963,8 @@ Singleton {
 
         if (!plugin.startupCheckPath) {
             const ok = loadPlugin(pluginId);
+            if (ok)
+                _restoreDesktopWidgetsForPlugin(pluginId);
             if (onResult)
                 onResult(ok);
             return ok;
@@ -964,6 +992,8 @@ Singleton {
             }
             _clearLoadError(pluginId);
             const ok = loadPlugin(pluginId);
+            if (ok)
+                _restoreDesktopWidgetsForPlugin(pluginId);
             if (onResult)
                 onResult(ok);
         };
@@ -990,6 +1020,77 @@ Singleton {
         return unloadPlugin(pluginId);
     }
 
+    function _restoreDesktopWidgetsForPlugin(pluginId) {
+        if (typeof CacheData === "undefined" || !Array.isArray(CacheData.disabledDesktopWidgetsSnapshot) || CacheData.disabledDesktopWidgetsSnapshot.length === 0)
+            return;
+        const snapshotSet = new Set(CacheData.disabledDesktopWidgetsSnapshot);
+        const restoredIds = new Set();
+        for (const inst of SettingsData.desktopWidgetInstances || []) {
+            if (inst.widgetType === pluginId && snapshotSet.has(inst.id)) {
+                restoredIds.add(inst.id);
+                SettingsData.updateDesktopWidgetInstance(inst.id, {
+                    enabled: true
+                });
+            }
+        }
+        if (restoredIds.size > 0)
+            CacheData.set("disabledDesktopWidgetsSnapshot", CacheData.disabledDesktopWidgetsSnapshot.filter(id => !restoredIds.has(id)));
+    }
+
+    function disableAllPlugins() {
+        const ids = Object.keys(loadedPlugins);
+        if (ids.length === 0)
+            return [];
+        const idSet = new Set(ids);
+        const instanceIds = (SettingsData.desktopWidgetInstances || []).filter(inst => inst.enabled && idSet.has(inst.widgetType)).map(inst => inst.id);
+        const existingWidgets = Array.isArray(CacheData.disabledDesktopWidgetsSnapshot) ? CacheData.disabledDesktopWidgetsSnapshot : [];
+        CacheData.set("disabledDesktopWidgetsSnapshot", Array.from(new Set(existingWidgets.concat(instanceIds))));
+        for (const instId of instanceIds) {
+            SettingsData.updateDesktopWidgetInstance(instId, {
+                enabled: false
+            });
+        }
+        const existingPlugins = Array.isArray(CacheData.disabledPluginsSnapshot) ? CacheData.disabledPluginsSnapshot : [];
+        CacheData.set("disabledPluginsSnapshot", Array.from(new Set(existingPlugins.concat(ids))));
+        for (const id of ids)
+            disablePlugin(id);
+        return ids;
+    }
+
+    function restoreDisabledPlugins(onResult) {
+        const snapshot = Array.isArray(CacheData.disabledPluginsSnapshot) ? CacheData.disabledPluginsSnapshot.slice() : [];
+        CacheData.set("disabledPluginsSnapshot", []);
+        const toEnable = snapshot.filter(id => availablePlugins[id] && !isPluginLoaded(id));
+        if (toEnable.length === 0) {
+            CacheData.set("disabledDesktopWidgetsSnapshot", []);
+            if (onResult)
+                onResult([]);
+            return [];
+        }
+        let pending = toEnable.length;
+        const failed = [];
+        for (const id of toEnable) {
+            enablePlugin(id, ok => {
+                if (!ok)
+                    failed.push(id);
+                if (--pending > 0)
+                    return;
+                if (onResult) {
+                    onResult(failed);
+                    return;
+                }
+                for (const failedId of failed) {
+                    const plugin = availablePlugins[failedId];
+                    const err = pluginLoadErrors[failedId];
+                    const title = I18n.tr("%1 Startup Failed", "plugin error title, %1 is the plugin name").arg(plugin?.name || failedId);
+                    const body = err ? (err.details ? (err.title + "\n\n" + err.details) : err.title) : I18n.tr("Failed to enable plugin: %1").arg(plugin?.name || failedId);
+                    ToastService.showError(title, body, "", "plugin-startup-" + failedId);
+                }
+            });
+        }
+        return toEnable;
+    }
+
     function reloadPlugin(pluginId) {
         if (!_preparePluginReload(pluginId))
             return false;
@@ -1006,7 +1107,7 @@ Singleton {
         const comp = pluginLauncherComponents[pluginId];
         if (!comp)
             return null;
-        const instance = comp.createObject(root, {
+        const instance = comp.createObject(pluginItemHost, {
             "pluginService": root
         });
         if (!instance) {
@@ -1173,20 +1274,19 @@ Singleton {
         checkPluginDirectoryExists();
     }
 
-    function forceRescanPlugin(pluginId) {
+    function forceRescanPlugin(pluginId, onRescanned) {
         const plugin = availablePlugins[pluginId];
-        if (!plugin || !plugin.manifestPath) {
+        if (!plugin || !plugin.manifestPath || !_preparePluginReload(pluginId)) {
+            if (onRescanned)
+                onRescanned();
             return;
         }
         const manifestPath = plugin.manifestPath;
-        const source = plugin.source || "user";
-        if (!_preparePluginReload(pluginId))
-            return;
         delete knownManifests[manifestPath];
         const newMap = Object.assign({}, availablePlugins);
         delete newMap[pluginId];
         availablePlugins = newMap;
-        loadPluginManifestFile(manifestPath, source, Date.now());
+        loadPluginManifestFile(manifestPath, plugin.source || "user", Date.now(), onRescanned);
     }
 
     function createPluginDirectory() {
@@ -1416,7 +1516,7 @@ Singleton {
 
     Timer {
         id: undoUninstallTimer
-        interval: 8000
+        interval: Timing.holdExtraLong
         onTriggered: root.lastUninstalledPlugin = null
     }
 
@@ -1528,7 +1628,7 @@ Singleton {
             id: waiter
             required property string pluginId
             required property var done
-            interval: 10000
+            interval: Timing.timeout
             running: true
 
             function complete() {

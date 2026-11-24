@@ -11,11 +11,14 @@ Item {
     readonly property bool useHyprlandFocusGrab: CompositorService.useHyprlandFocusGrab
     property string layerNamespace: "dms:modal"
     property Component content: null
+    property url contentSource
     property Item directContent: null
     property real modalWidth: 400
     property real modalHeight: 300
     property var targetScreen
     property bool showBackground: true
+    // Off: no panel, blur, border or shadow behind the content, and the scrim shows in every mode.
+    property bool showSurface: true
     property real backgroundOpacity: Theme.scrimAlpha
     property string positioning: "center"
     property point customPosition: Qt.point(0, 0)
@@ -25,8 +28,6 @@ Item {
     property int animationDuration: Theme.modalAnimationDuration
     property real animationScaleCollapsed: Theme.popupEnterScale
     property real animationOffset: Theme.spacingL
-    property list<real> animationEnterCurve: Theme.expressiveCurves.expressiveDefaultSpatial
-    property list<real> animationExitCurve: Theme.expressiveCurves.emphasized
     property color backgroundColor: Theme.floatingWindowSurface
     property color borderColor: Theme.outlineVariant
     property real borderWidth: 0
@@ -41,13 +42,19 @@ Item {
     property var customKeyboardFocus: null
     readonly property alias transientSurfaceTracker: _transientSurfaceTracker
     property bool useOverlayLayer: false
+    property bool dragPassthrough: false
 
     signal opened
     signal dialogClosed
     signal backgroundClicked
 
-    readonly property var contentLoader: impl.item ? impl.item.contentLoader : null
+    readonly property var contentLoader: impl.item ? impl.item.contentLoader : _fallbackContentLoader
     readonly property alias modalFocusScope: _modalFocusScope
+
+    Loader {
+        id: _fallbackContentLoader
+        active: false
+    }
 
     TransientSurfaceTracker {
         id: _transientSurfaceTracker
@@ -62,8 +69,11 @@ Item {
 
     // Hyprland OnDemand grab delivers keyboard focus to the modal content surface.
     DFocusGrab {
-        windows: (root.contentWindow ? [root.contentWindow] : []).concat(root.transientSurfaceTracker?.focusWindows ?? [])
-        wanted: KeyboardFocus.wantsGrab(root.shouldBeVisible && root.shouldHaveFocus, root.customKeyboardFocus)
+        id: focusGrab
+
+        keyboardWindow: root.contentWindow
+        peerWindows: root.transientSurfaceTracker?.focusWindows ?? []
+        wanted: KeyboardFocus.wantsGrab(root.shouldBeVisible && root.shouldHaveFocus && !root.dragPassthrough, root.customKeyboardFocus)
     }
     readonly property var contentWindow: impl.item ? impl.item.contentWindow : null
     readonly property var effectiveScreen: impl.item ? impl.item.effectiveScreen : null
@@ -77,6 +87,7 @@ Item {
     readonly property real alignedHeight: impl.item ? impl.item.alignedHeight : 0
 
     function open() {
+        dragPassthrough = false;
         _maybeResolveBackend();
         if (impl.item)
             impl.item.open();
@@ -95,6 +106,7 @@ Item {
     }
 
     function toggle() {
+        dragPassthrough = false;
         if (impl.item)
             impl.item.toggle();
     }
@@ -146,6 +158,7 @@ Item {
                     root.shouldHaveFocus = host.shouldHaveFocus;
             }
             onOpened: root.opened()
+            onSurfaceUnmapping: focusGrab.releaseBeforeUnmap()
             onDialogClosed: {
                 root.dialogClosed();
                 root._maybeResolveBackend();

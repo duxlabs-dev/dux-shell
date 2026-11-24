@@ -69,6 +69,13 @@ Column {
         }
 
         SettingsToggleRow {
+            text: I18n.tr("Show running apps", "Dock setting: also show open apps that are not pinned")
+            visible: root.dockHosted
+            checked: root.apps.get("showRunningApps")
+            onToggled: checked => root.apps.set("showRunningApps", checked)
+        }
+
+        SettingsToggleRow {
             text: I18n.tr("Group by app")
             visible: root.dockHosted
             checked: root.apps.get("groupByApp")
@@ -77,7 +84,7 @@ Column {
 
         SettingsToggleRow {
             text: I18n.tr("Separate pinned and running apps")
-            visible: root.dockHosted
+            visible: root.dockHosted && root.apps.get("showRunningApps")
             checked: root.apps.get("separatePinnedAndRunningApps")
             onToggled: checked => root.apps.set("separatePinnedAndRunningApps", checked)
         }
@@ -136,7 +143,7 @@ Column {
             buttonPadding: Theme.spacingS
             minButtonWidth: 44
             textSize: Theme.fontSizeSmall
-            model: [I18n.tr("Apps Icon"), I18n.tr("OS Logo"), "Dank", root.compositorLabel, I18n.tr("Custom")]
+            model: [I18n.tr("Apps Icon"), I18n.tr("OS Logo"), "Dux", root.compositorLabel, I18n.tr("Custom")]
             currentIndex: Math.max(0, modes.indexOf(root.apps.get("launcherLogoMode")))
             onSelectionChanged: (index, selected) => {
                 if (!selected)

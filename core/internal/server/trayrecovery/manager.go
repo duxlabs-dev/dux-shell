@@ -50,7 +50,7 @@ func NewManager() (*Manager, error) {
 func (m *Manager) WatchLoginctl(lm *loginctl.Manager) {
 	ch := lm.Subscribe("tray-recovery")
 	m.wg.Go(func() {
-		defer lm.Unsubscribe("tray-recovery")
+		defer lm.Unsubscribe("tray-recovery", ch)
 
 		wasSleeping := false
 		for {

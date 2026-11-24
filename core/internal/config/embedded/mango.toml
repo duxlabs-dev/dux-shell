@@ -14,6 +14,7 @@ exec_once = "dms run"
 source = [
     "./dms/colors.conf",
     "./dms/layout.conf",
+    "./dms/animations.conf",
     "./dms/cursor.conf",
     "./dms/input.conf",
     "./dms/outputs.conf",

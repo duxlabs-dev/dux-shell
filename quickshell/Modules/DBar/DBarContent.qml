@@ -246,34 +246,38 @@ Item {
     }
 
     Behavior on anchors.leftMargin {
-        enabled: _animateFrameInsets && _usesFrameBarChrome && !SettingsData.reduceMotion
+        enabled: _animateFrameInsets && _usesFrameBarChrome && !Theme.reduceMotion
         NumberAnimation {
-            duration: Theme.shortDuration
-            easing.type: Easing.OutCubic
+            duration: Theme.expressiveDurations.expressiveDefaultSpatial
+            easing.type: Easing.BezierSpline
+            easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
         }
     }
 
     Behavior on anchors.rightMargin {
-        enabled: _animateFrameInsets && _usesFrameBarChrome && !SettingsData.reduceMotion
+        enabled: _animateFrameInsets && _usesFrameBarChrome && !Theme.reduceMotion
         NumberAnimation {
-            duration: Theme.shortDuration
-            easing.type: Easing.OutCubic
+            duration: Theme.expressiveDurations.expressiveDefaultSpatial
+            easing.type: Easing.BezierSpline
+            easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
         }
     }
 
     Behavior on anchors.topMargin {
-        enabled: _animateFrameInsets && _usesFrameBarChrome && !SettingsData.reduceMotion
+        enabled: _animateFrameInsets && _usesFrameBarChrome && !Theme.reduceMotion
         NumberAnimation {
-            duration: Theme.shortDuration
-            easing.type: Easing.OutCubic
+            duration: Theme.expressiveDurations.expressiveDefaultSpatial
+            easing.type: Easing.BezierSpline
+            easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
         }
     }
 
     Behavior on anchors.bottomMargin {
-        enabled: _animateFrameInsets && _usesFrameBarChrome && !SettingsData.reduceMotion
+        enabled: _animateFrameInsets && _usesFrameBarChrome && !Theme.reduceMotion
         NumberAnimation {
-            duration: Theme.shortDuration
-            easing.type: Easing.OutCubic
+            duration: Theme.expressiveDurations.expressiveDefaultSpatial
+            easing.type: Easing.BezierSpline
+            easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
         }
     }
 
@@ -413,6 +417,14 @@ Item {
         hoverController.updateBarHovered(hovered);
     }
 
+    function pointerMovedToIsland() {
+        hoverController.pointerMovedToIsland();
+    }
+
+    function pointInActiveHoverSafeZone(gx, gy) {
+        return hoverController.pointInActiveHoverSafeZone(gx, gy);
+    }
+
     function invalidateHoverCandidateCache() {
         hoverController.invalidateCandidateCache();
     }
@@ -471,9 +483,10 @@ Item {
             LeftSection {
                 id: hLeftSection
                 objectName: "leftSection"
-                edgeIsScreenEdge: !topBarContent.hasAdjacentLeftBarLive
+                edgeIsScreenEdge: !topBarContent.hasAdjacentLeftBarLive && !barWindow.islandSatellitesHugIsland
                 overrideAxisLayout: true
                 forceVerticalLayout: false
+                live: !barWindow.axis.isVertical
                 anchors {
                     left: parent.left
                     leftMargin: topBarContent.leadingSectionOffset
@@ -488,9 +501,10 @@ Item {
             RightSection {
                 id: hRightSection
                 objectName: "rightSection"
-                edgeIsScreenEdge: !topBarContent.hasAdjacentRightBarLive
+                edgeIsScreenEdge: !topBarContent.hasAdjacentRightBarLive && !barWindow.islandSatellitesHugIsland
                 overrideAxisLayout: true
                 forceVerticalLayout: false
+                live: !barWindow.axis.isVertical
                 anchors {
                     right: parent.right
                     rightMargin: topBarContent.trailingSectionOffset
@@ -507,6 +521,7 @@ Item {
                 objectName: "centerSection"
                 overrideAxisLayout: true
                 forceVerticalLayout: false
+                live: !barWindow.axis.isVertical
                 anchors.centerIn: topBarContent.fitToWidgets ? null : parent
                 anchors.verticalCenter: parent.verticalCenter
                 x: topBarContent.fitToWidgets ? -(barWindow.lengthPaddingStartPx + topBarContent._leftMargin) : 0
@@ -525,9 +540,10 @@ Item {
             LeftSection {
                 id: vLeftSection
                 objectName: "leftSection"
-                edgeIsScreenEdge: !topBarContent.hasAdjacentTopBarLive
+                edgeIsScreenEdge: !topBarContent.hasAdjacentTopBarLive && !barWindow.islandSatellitesHugIsland
                 overrideAxisLayout: true
                 forceVerticalLayout: true
+                live: barWindow.axis.isVertical
                 width: parent.width
                 anchors {
                     top: parent.top
@@ -545,6 +561,7 @@ Item {
                 objectName: "centerSection"
                 overrideAxisLayout: true
                 forceVerticalLayout: true
+                live: barWindow.axis.isVertical
                 width: parent.width
                 height: topBarContent.fitToWidgets ? barWindow.fittedAvailableLength : parent.height
                 anchors.centerIn: topBarContent.fitToWidgets ? null : parent
@@ -558,9 +575,10 @@ Item {
             RightSection {
                 id: vRightSection
                 objectName: "rightSection"
-                edgeIsScreenEdge: !topBarContent.hasAdjacentBottomBarLive
+                edgeIsScreenEdge: !topBarContent.hasAdjacentBottomBarLive && !barWindow.islandSatellitesHugIsland
                 overrideAxisLayout: true
                 forceVerticalLayout: true
+                live: barWindow.axis.isVertical
                 width: parent.width
                 height: implicitHeight
                 anchors {

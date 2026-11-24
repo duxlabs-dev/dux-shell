@@ -51,8 +51,9 @@ Item {
     Behavior on opacity {
         NumberAnimation {
             id: fadeAnimation
-            duration: Theme.mediumDuration
-            easing.type: Theme.standardEasing
+            duration: Theme.expressiveDurations.expressiveSlowEffects
+            easing.type: Easing.BezierSpline
+            easing.bezierCurve: Theme.expressiveCurves.expressiveSlowEffects
         }
     }
 

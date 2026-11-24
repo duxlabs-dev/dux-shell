@@ -47,7 +47,7 @@ FocusScope {
             content.rememberFocus();
             // Focus that falls back to a container when its control is destroyed must not scroll the page
             if (keyboardDriven() || focusedItem.cursorPosition !== undefined)
-                content._reveal(focusedItem);
+                content.reveal(focusedItem);
         }
     }
 
@@ -115,11 +115,16 @@ FocusScope {
         }
     }
 
-    TapHandler {
-        acceptedButtons: Qt.BackButton
-        onTapped: {
-            if (!transientOwnsFocus())
-                root.content.goBack(false);
+    // Overlay so child Controls (SettingsRow, StyledButton, etc.) cannot swallow Qt.BackButton presses first
+    Item {
+        anchors.fill: parent
+        z: 1000
+
+        TapHandler {
+            acceptedButtons: Qt.BackButton
+            gesturePolicy: TapHandler.WithinBounds
+            enabled: !root.transientOwnsFocus()
+            onTapped: root.content.goBack(false)
         }
     }
 

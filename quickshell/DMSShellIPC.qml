@@ -22,6 +22,8 @@ Item {
     required property var hyprlandOverviewLoader
     required property var workspaceRenameModalLoaderRef
     required property var windowRuleModalLoaderRef
+    required property var markupOverlayLoaderRef
+    required property var annotateOverlayLoaderRef
 
     function getPreferredBar(refPropertyName) {
         const focusedScreenName = BarWidgetService.getFocusedScreenName();
@@ -325,27 +327,60 @@ Item {
             return JSON.stringify(PopoutManager.getActiveSurfaces());
         }
 
+        // options: JSON {cursor, finish} from `dms screenshot draw`.
+        function draw(options: string): string {
+            if (root.markupOverlayLoaderRef.active)
+                return "DRAW_BUSY";
+            let opts;
+            try {
+                opts = JSON.parse(options);
+            } catch (e) {
+                return "DRAW_FAILED";
+            }
+            if (!Array.isArray(opts?.finish))
+                return "DRAW_FAILED";
+            root.markupOverlayLoaderRef.active = true;
+            const overlay = root.markupOverlayLoaderRef.item;
+            if (!overlay)
+                return "DRAW_FAILED";
+            overlay.start(opts);
+            return "DRAW_OPENED";
+        }
+
         target: "screenshot"
     }
 
-    function dashIslandActivity(tabId) {
-        switch (tabId) {
-        case "overview":
-            return "home";
-        case "media":
-        case "wallpaper":
-        case "weather":
-            return tabId;
-        default:
-            return "";
+    IpcHandler {
+        function toggle(): string {
+            const loader = root.annotateOverlayLoaderRef;
+            if (loader.active) {
+                loader.active = false;
+                return "ANNOTATE_CLOSED";
+            }
+            loader.active = true;
+            if (!loader.item?.start()) {
+                loader.active = false;
+                return "ANNOTATE_FAILED";
+            }
+            return "ANNOTATE_OPENED";
         }
+
+        function passthrough(): string {
+            const overlay = root.annotateOverlayLoaderRef.active ? root.annotateOverlayLoaderRef.item : null;
+            if (!overlay)
+                return "ANNOTATE_NOT_OPEN";
+            overlay.setPassthrough(!overlay.passthrough);
+            return overlay.passthrough ? "ANNOTATE_PASSTHROUGH_ON" : "ANNOTATE_PASSTHROUGH_OFF";
+        }
+
+        target: "annotate"
     }
 
     function routeDashToIsland(tabId, toggle) {
-        const activity = dashIslandActivity(tabId);
-        if (activity === "")
+        const screen = CompositorService.getFocusedScreen();
+        if (!PopoutService.dashRoutesToIsland(tabId, screen))
             return false;
-        return PopoutService.routeToIsland(activity, null, toggle);
+        return PopoutService.routeToIsland(PopoutService.dashIslandActivity(tabId), screen, toggle);
     }
 
     function resolveDashPosition(position) {
@@ -381,8 +416,6 @@ Item {
             if (position && bar.positionDash)
                 bar.positionDash(dash, position);
             dash.requestTab(tabId);
-            if (dash.updateSurfacePosition)
-                dash.updateSurfacePosition();
             return true;
         }
 
@@ -419,7 +452,7 @@ Item {
         }
 
         function close(): string {
-            const islandClosed = [...SettingsData.islandDashActivities, "wellbeing"].filter(activity => PopoutService.closeIslandActivity(activity)).length > 0;
+            const islandClosed = [...SettingsData.islandDashActivities, "wellbeing", "profiles"].filter(activity => PopoutService.closeIslandActivity(activity)).length > 0;
             if (root.dankDashPopoutLoaderRef.item)
                 root.dankDashPopoutLoaderRef.item.dashVisible = false;
             return islandClosed || root.dankDashPopoutLoaderRef.item ? "DASH_CLOSE_SUCCESS" : "DASH_CLOSE_FAILED";
@@ -860,6 +893,19 @@ Item {
 
         function status(selector: string, value: string): string {
             return withBarConfig(selector, value, true, bar => bar.visible ? "visible" : "hidden");
+        }
+
+        function edit(selector: string, value: string): string {
+            return withBarConfig(selector, value, false, bar => {
+                if (bar.visible === false)
+                    return "BAR_HIDDEN";
+                const screenName = BarWidgetService.barEditScreen(bar.id);
+                if (!screenName)
+                    return "BAR_NOT_FOUND";
+                PopoutManager.dismissAllForScreen(screenName);
+                BarWidgetService.startBarEdit(bar.id, screenName);
+                return "BAR_EDIT_SUCCESS";
+            });
         }
 
         function autoHide(selector: string, value: string): string {
@@ -1395,6 +1441,18 @@ Item {
             return PluginService.isPluginLoaded(pluginId) ? "loaded" : "disabled";
         }
 
+        function disableAll(): string {
+            const disabled = PluginService.disableAllPlugins();
+            return disabled.length > 0 ? `PLUGINS_DISABLED: ${disabled.length}` : "NO_ACTIVE_PLUGINS";
+        }
+
+        function restore(): string {
+            if (!PluginService.hasDisabledPluginsSnapshot)
+                return "NO_PLUGINS_SNAPSHOT";
+            const restored = PluginService.restoreDisabledPlugins();
+            return restored.length > 0 ? `PLUGINS_RESTORE_REQUESTED: ${restored.length}` : "NO_PLUGINS_TO_RESTORE";
+        }
+
         target: "plugins"
     }
 
@@ -1444,7 +1502,7 @@ Item {
 
     IpcHandler {
         function open(): string {
-            if (!PopoutService.clipboardHistoryModal) {
+            if (!PopoutService.clipboardHistoryModalLoader) {
                 return "CLIPBOARD_NOT_AVAILABLE";
             }
             PopoutService.openClipboardHistory();
@@ -1452,7 +1510,7 @@ Item {
         }
 
         function close(): string {
-            if (!PopoutService.clipboardHistoryModal) {
+            if (!PopoutService.clipboardHistoryModalLoader) {
                 return "CLIPBOARD_NOT_AVAILABLE";
             }
             PopoutService.closeClipboardHistory();
@@ -1460,7 +1518,7 @@ Item {
         }
 
         function toggle(): string {
-            if (!PopoutService.clipboardHistoryModal) {
+            if (!PopoutService.clipboardHistoryModalLoader) {
                 return "CLIPBOARD_NOT_AVAILABLE";
             }
             PopoutService.toggleClipboardHistory();
@@ -1895,6 +1953,16 @@ Item {
 
     IpcHandler {
         function toggle(name: string): string {
+            if (CompositorService.isNiri) {
+                const results = {
+                    "hide": "SCRATCHPAD_HIDDEN",
+                    "leave": "SCRATCHPAD_HIDDEN",
+                    "show": "SCRATCHPAD_SHOWN",
+                    "empty": "SCRATCHPAD_EMPTY",
+                    "failed": "SCRATCHPAD_MOVE_FAILED"
+                };
+                return results[CompositorService.toggleSpecialWorkspace(name)];
+            }
             if (!CompositorService.isHyprland)
                 return "SCRATCHPAD_UNSUPPORTED_COMPOSITOR";
             CompositorService.toggleSpecialWorkspace(name);
@@ -1902,19 +1970,20 @@ Item {
         }
 
         function move(name: string): string {
-            if (!CompositorService.isHyprland)
+            if (!CompositorService.isHyprland && !CompositorService.isNiri)
                 return "SCRATCHPAD_UNSUPPORTED_COMPOSITOR";
-            const active = ToplevelManager.activeToplevel;
+            const active = CompositorService.scratchpadFocusedWindow();
             if (!active)
                 return "SCRATCHPAD_NO_FOCUSED_WINDOW";
-            CompositorService.moveWindowToSpecial(active, name || "special");
+            if (CompositorService.moveWindowToSpecial(active, name || "special") === false)
+                return "SCRATCHPAD_MOVE_FAILED";
             return "SCRATCHPAD_MOVED";
         }
 
         function restore(): string {
-            if (!CompositorService.isHyprland)
+            if (!CompositorService.isHyprland && !CompositorService.isNiri)
                 return "SCRATCHPAD_UNSUPPORTED_COMPOSITOR";
-            const active = ToplevelManager.activeToplevel;
+            const active = CompositorService.scratchpadFocusedWindow();
             if (!active)
                 return "SCRATCHPAD_NO_FOCUSED_WINDOW";
             if (!CompositorService.windowScratchpadName(active))

@@ -62,7 +62,7 @@ Rectangle {
             return {
                 label: I18n.tr("UV Index"),
                 icon: "light_mode",
-                value: weather.uv == null ? null : String(weather.uv),
+                value: root.uvIndex === null ? null : String(root.uvIndex),
                 shape: "cookie7",
                 detail: root.uvCategories[root.uvCategory] ?? ""
             };
@@ -70,6 +70,7 @@ Rectangle {
         return {};
     }
     readonly property var uvCategories: [I18n.tr("Low"), I18n.tr("Moderate", "uv index category"), I18n.tr("High"), I18n.tr("Very High"), I18n.tr("Extreme", "uv index category")]
+    readonly property var uvIndex: Visuals.uvIndex(weather.uv)
     readonly property int uvCategory: Visuals.uvCategory(weather.uv)
     readonly property string windDirection: {
         const directions = [I18n.tr("N", "North compass direction"), I18n.tr("NE", "Northeast compass direction"), I18n.tr("E", "East compass direction"), I18n.tr("SE", "Southeast compass direction"), I18n.tr("S", "South compass direction"), I18n.tr("SW", "Southwest compass direction"), I18n.tr("W", "West compass direction"), I18n.tr("NW", "Northwest compass direction")];

@@ -7,6 +7,7 @@ import Quickshell.Io
 import qs.Common
 import qs.Services
 import qs.DCommon.Widgets
+import qs.Widgets
 
 Column {
     id: root
@@ -19,6 +20,8 @@ Column {
 
     property alias text: textArea.text
     property alias textArea: textArea
+    property alias contextMenuOpen: contextMenu.renderActive
+    property double contextMenuLastClosedMs: 0
     property bool contentLoaded: false
     property string lastSavedContent: ""
     property var currentTab: NotepadStorageService.tabs.length > NotepadStorageService.currentTabIndex ? NotepadStorageService.tabs[NotepadStorageService.currentTabIndex] : null
@@ -380,8 +383,9 @@ Column {
 
         Behavior on opacity {
             NumberAnimation {
-                duration: Theme.shortDuration
-                easing.type: Theme.standardEasing
+                duration: Theme.expressiveDurations.expressiveFastEffects
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
             }
         }
 
@@ -653,6 +657,13 @@ Column {
                         }
 
                         Keys.onPressed: event => {
+                            if (event.key === Qt.Key_Menu || (event.key === Qt.Key_F10 && (event.modifiers & Qt.ShiftModifier))) {
+                                event.accepted = true;
+                                const rect = textArea.cursorRectangle;
+                                const pos = textArea.mapToItem(root, rect.x, rect.y + rect.height);
+                                root.openContextMenu(pos.x, pos.y, true);
+                                return;
+                            }
                             if (event.modifiers & Qt.ControlModifier) {
                                 switch (event.key) {
                                 case Qt.Key_S:
@@ -681,7 +692,34 @@ Column {
                                         root.previewRequested();
                                     }
                                     break;
+                                case Qt.Key_Plus:
+                                case Qt.Key_Equal:
+                                    event.accepted = true;
+                                    SettingsData.notepadFontSize = Math.min(48, SettingsData.notepadFontSize + 1);
+                                    break;
+                                case Qt.Key_Minus:
+                                case Qt.Key_Underscore:
+                                    event.accepted = true;
+                                    SettingsData.notepadFontSize = Math.max(8, SettingsData.notepadFontSize - 1);
+                                    break;
                                 }
+                            }
+                        }
+
+                        MouseArea {
+                            property bool skipNextOpen: false
+                            anchors.fill: parent
+                            acceptedButtons: Qt.RightButton
+                            cursorShape: Qt.IBeamCursor
+                            onPressed: mouse => {
+                                skipNextOpen = contextMenu.renderActive || (Date.now() - root.contextMenuLastClosedMs) < 200;
+                                mouse.accepted = true;
+                            }
+                            onClicked: mouse => {
+                                if (skipNextOpen)
+                                    return;
+                                const pos = mapToItem(root, mouse.x, mouse.y);
+                                root.openContextMenu(pos.x, pos.y, false);
                             }
                         }
 
@@ -756,10 +794,9 @@ Column {
                             color: Theme.surfaceTextMedium
                         }
 
-                        Rectangle {
-                            width: 1
+                        DDivider {
+                            vertical: true
                             height: 20
-                            color: Theme.outlineVariant
                             anchors.verticalCenter: parent.verticalCenter
                         }
 
@@ -903,6 +940,31 @@ Column {
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
                 spacing: Theme.spacingS
+
+                DActionButton {
+                    iconName: "undo"
+                    tooltipText: I18n.tr("Undo")
+                    iconSize: Theme.iconSize - 2
+                    iconColor: textArea.canUndo ? Theme.surfaceText : Theme.surfaceTextAlpha
+                    enabled: textArea.canUndo
+                    onClicked: textArea.undo()
+                }
+
+                DActionButton {
+                    iconName: "redo"
+                    tooltipText: I18n.tr("Redo")
+                    iconSize: Theme.iconSize - 2
+                    iconColor: textArea.canRedo ? Theme.surfaceText : Theme.surfaceTextAlpha
+                    enabled: textArea.canRedo
+                    onClicked: textArea.redo()
+                }
+
+                DDivider {
+                    vertical: true
+                    anchors.verticalCenter: parent.verticalCenter
+                    height: Theme.iconSize - 2
+                    color: Theme.outlineMedium
+                }
 
                 DActionButton {
                     visible: !root.inPopout
@@ -1063,7 +1125,7 @@ Column {
 
     Timer {
         id: autoSaveTimer
-        interval: 2000
+        interval: Timing.hold
         repeat: false
         onTriggered: {
             autoSaveToSession();
@@ -1072,7 +1134,7 @@ Column {
 
     Timer {
         id: pluginSyncTimer
-        interval: 350
+        interval: Timing.debounceSlow
         repeat: false
         onTriggered: syncContentToPlugin()
     }
@@ -1132,6 +1194,90 @@ Column {
             textArea.text = buffer.content;
             applyingShared = false;
             syncContentToPlugin();
+        }
+    }
+
+    function openContextMenu(x, y, fromKeyboard) {
+        const hasSelection = textArea.selectedText.length > 0;
+        contextMenu.menuItems = [
+            {
+                type: "item",
+                icon: "content_cut",
+                text: I18n.tr("Cut"),
+                enabled: hasSelection,
+                action: () => textArea.cut()
+            },
+            {
+                type: "item",
+                icon: "content_copy",
+                text: I18n.tr("Copy"),
+                enabled: hasSelection,
+                action: () => textArea.copy()
+            },
+            {
+                type: "item",
+                icon: "content_paste",
+                text: I18n.tr("Paste"),
+                enabled: textArea.canPaste,
+                action: () => textArea.paste()
+            },
+            {
+                type: "item",
+                icon: "delete",
+                text: I18n.tr("Delete"),
+                enabled: hasSelection,
+                action: () => textArea.remove(textArea.selectionStart, textArea.selectionEnd)
+            },
+            {
+                type: "separator"
+            },
+            {
+                type: "item",
+                icon: "select_all",
+                text: I18n.tr("Select All"),
+                enabled: textArea.length > 0,
+                action: () => textArea.selectAll()
+            }
+        ];
+
+        let finalY = y;
+        if (hasSelection) {
+            const startRect = textArea.positionToRectangle(textArea.selectionStart);
+            const endRect = textArea.positionToRectangle(textArea.selectionEnd);
+            const startPos = textArea.mapToItem(root, startRect.x, startRect.y);
+            const endPos = textArea.mapToItem(root, endRect.x, endRect.y + endRect.height);
+            const selTop = Math.min(startPos.y, endPos.y - endRect.height);
+            const selBottom = Math.max(startPos.y + startRect.height, endPos.y);
+            const menuHeight = contextMenu.effectiveMenuHeight;
+            const gap = Theme.spacingXS;
+
+            if (finalY < selBottom && finalY + menuHeight > selTop) {
+                const belowY = selBottom + gap;
+                const aboveY = selTop - gap - menuHeight;
+                if (belowY + menuHeight <= root.height)
+                    finalY = belowY;
+                else if (aboveY >= 0)
+                    finalY = aboveY;
+            }
+        }
+
+        contextMenu.openAtItem(root, x, finalY, fromKeyboard);
+    }
+
+    onSurfaceVisibleChanged: {
+        if (!surfaceVisible)
+            contextMenu.hide();
+    }
+
+    DContextMenu {
+        id: contextMenu
+        keyboardNavigable: true
+        onRenderActiveChanged: {
+            if (!renderActive) {
+                root.contextMenuLastClosedMs = Date.now();
+                if (root.surfaceVisible && textArea.visible)
+                    Qt.callLater(() => textArea.forceActiveFocus());
+            }
         }
     }
 }

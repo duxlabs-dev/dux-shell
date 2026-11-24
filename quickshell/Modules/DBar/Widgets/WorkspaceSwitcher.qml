@@ -51,9 +51,10 @@ BasePill {
     readonly property bool linesStyle: indicatorStyle === "lines"
     readonly property bool cardsStyle: indicatorStyle === "cards"
     readonly property bool dotsStyle: indicatorStyle === "dots"
+    readonly property bool expressiveStyle: indicatorStyle === "expressive"
     readonly property real roundness: root.opt("workspaceIndicatorRoundness")
     readonly property bool compactIndicators: root.opt("workspaceIndicatorCompact")
-    readonly property bool segmented: !linesStyle && !cardsStyle && !dotsStyle && surfaceContext?.kind !== "dock" && BarMetrics.widgetStyle(barConfig) === "segments" && !noBackground
+    readonly property bool segmented: !linesStyle && !cardsStyle && !dotsStyle && !expressiveStyle && surfaceContext?.kind !== "dock" && BarMetrics.widgetStyle(barConfig) === "segments" && !noBackground
     readonly property real compactRatio: BarMetrics.indicatorRatio(indicatorStyle, "compact", compactIndicators)
     readonly property real slimRatio: BarMetrics.indicatorRatio(indicatorStyle, "slim", compactIndicators)
     readonly property real activeSlimRatio: BarMetrics.indicatorRatio(indicatorStyle, "activeSlim", compactIndicators)
@@ -69,6 +70,17 @@ BasePill {
     readonly property real hoveredAppAlpha: 0.85
     readonly property real cardWindowRatio: 0.45
     readonly property real labelSize: Math.min(Theme.barTextSize(barThickness, barConfig?.fontScale, barConfig?.maximizeWidgetText), Math.floor(widgetThickness * BarMetrics.indicatorLabelRatio))
+    readonly property real indicatorDotSize: Math.max(Theme.spacingXS, Math.round(widgetThickness * slimRatio * BarMetrics.indicatorDotRatio))
+    // a digit's line box is off-center, so an expressive label centers on the digit box
+    readonly property real labelDigitShift: expressiveStyle ? Math.round(digitMetrics.boundingRect.y + digitMetrics.boundingRect.height / 2 - digitMetrics.tightBoundingRect.y - digitMetrics.tightBoundingRect.height / 2) : 0
+
+    StyledTextMetrics {
+        id: digitMetrics
+        text: "0"
+        font.pixelSize: root.labelSize
+        font.weight: Theme.fontWeightMedium
+    }
+    property Item activeDelegate: null
 
     WorkspaceSwitcherModel {
         id: workspaces
@@ -124,13 +136,14 @@ BasePill {
             const keyBase = (w.app_id || w.appId || w.class || w.windowClass || "unknown");
             const moddedId = Paths.moddedAppId(keyBase);
             const groupThisWs = root.opt("groupWorkspaceApps") && (!isActiveWs || root.opt("groupActiveWorkspaceApps"));
-            const key = groupThisWs ? moddedId : `${moddedId}_${i}`;
+            const coreIcon = AppSearchService.windowIcon(keyBase, w);
+            const key = groupThisWs ? moddedId + coreIcon : `${moddedId}_${i}`;
 
             if (!byApp[key]) {
-                const isQuickshell = Paths.isDmsAppId(keyBase);
+                const isQuickshell = !coreIcon && Paths.isDmsAppId(keyBase);
                 const isSteamApp = Paths.isSteamApp(moddedId);
                 const desktopEntry = DesktopEntries.heuristicLookup(moddedId);
-                const icon = Paths.getAppIcon(moddedId, desktopEntry);
+                const icon = coreIcon || Paths.getAppIcon(moddedId, desktopEntry);
                 const appName = Paths.getAppName(moddedId, desktopEntry);
                 byApp[key] = {
                     "type": "icon",
@@ -279,6 +292,18 @@ BasePill {
         }
     }
 
+    Loader {
+        x: workspaceRow.x
+        y: workspaceRow.y
+        active: root.expressiveStyle
+        sourceComponent: WorkspaceActiveShape {
+            target: root.activeDelegate
+            vertical: root.isVertical
+            barStyle: BarMetrics.widgetStyle(root.barConfig)
+            roundness: root.roundness
+        }
+    }
+
     BarSegment {
         id: workspaceRow
 
@@ -359,7 +384,7 @@ BasePill {
                     return 0;
                 }
 
-                readonly property var shiftSpringParams: Theme.springPreset("fast", 150)
+                readonly property var shiftSpringParams: Theme.springPreset("fastSpatial")
 
                 SpringMotion {
                     id: shiftXSpring
@@ -400,6 +425,11 @@ BasePill {
                     if (root.useExtWorkspace || !root.useNativeWorkspaces)
                         return modelData === root.currentWorkspace;
                     return CompositorService.isCurrentWorkspace(record, root.currentWorkspace);
+                }
+                onIsActiveChanged: {
+                    if (!isActive)
+                        return;
+                    root.activeDelegate = delegateRoot;
                 }
                 property bool isOccupied: root.useNativeWorkspaces && CompositorService.workspaceOccupied(record)
                 property bool isPlaceholder: !!(record && record.placeholder)
@@ -449,13 +479,40 @@ BasePill {
 
                 readonly property real lineThickness: Math.max(Theme.spacingXXS, root.widgetThickness * (isActive ? root.activeSlimRatio : root.slimRatio))
                 // a label scales the whole shape with the bar font, up to the widget thickness, so every style keeps its proportions
-                readonly property bool labeled: !root.linesStyle && !root.opt("showWorkspaceApps") && (root.opt("showWorkspaceIndex") || root.opt("showWorkspaceName") || loadedHasIcon)
+                readonly property bool hasLabel: root.opt("showWorkspaceIndex") || root.opt("showWorkspaceName") || loadedHasIcon
+                readonly property bool labeled: !root.linesStyle && !root.opt("showWorkspaceApps") && hasLabel
                 readonly property real slimBase: widgetThickness * (isActive ? root.activeSlimRatio : root.slimRatio)
-                readonly property real labelScale: labeled ? Math.min(root.widgetThickness / slimBase, Math.max(BarMetrics.indicatorLabelScale, Math.max(root.labelSize, BarMetrics.indicatorLabelMin) / BarMetrics.indicatorLabelRatio / slimBase)) : 1
+                readonly property real labelScale: labeled ? Math.min(root.widgetThickness / slimBase, Math.max(root.expressiveStyle ? 1 : BarMetrics.indicatorLabelScale, Math.max(root.labelSize, BarMetrics.indicatorLabelMin) / BarMetrics.indicatorLabelRatio / slimBase)) : 1
                 readonly property real crossBase: root.opt("showWorkspaceApps") ? Math.max(widgetThickness * root.compactRatio, root.appIconSize + Theme.spacingXS * 2) : slimBase * labelScale
                 readonly property real primaryBase: root.dotsStyle ? crossBase : labelScale * (isActive ? Math.max(root.widgetThickness * root.activeRatio, root.appIconSize * root.activeIconRatio) : Math.max(root.widgetThickness * root.compactRatio, root.appIconSize * root.iconRatio))
                 readonly property real baseWidth: root.isVertical ? (root.linesStyle ? lineThickness : crossBase) : primaryBase
                 readonly property real baseHeight: root.isVertical ? primaryBase : (root.linesStyle ? lineThickness : crossBase)
+                readonly property bool iconic: root.opt("showWorkspaceApps") && isOccupied
+                readonly property bool contained: root.expressiveStyle && (iconic || isUrgent || (isOccupied && occupiedColor.a > 0))
+                readonly property int trailingDots: {
+                    if (!root.expressiveStyle)
+                        return 0;
+                    const shownIcons = Math.min(loadedIcons.length, root.opt("maxWorkspaceIcons"));
+                    if (shownIcons === 0)
+                        return hasLabel ? 0 : 1;
+                    const windowCount = loadedIcons.reduce((total, icon) => total + icon.count, 0);
+                    return Math.min(BarMetrics.indicatorDotLimit, windowCount - shownIcons);
+                }
+                // the shape's margins stay whole pixels so it shares a center with its label
+                readonly property real expressiveCross: {
+                    const wanted = Math.min(root.widgetThickness, Math.max(slimBase * labelScale, root.opt("showWorkspaceApps") ? root.appIconSize + Theme.spacingXS * 2 : 0));
+                    return root.widgetThickness - 2 * Math.round((root.widgetThickness - wanted) / 2);
+                }
+                readonly property real contentAlong: root.isVertical ? contentImplicitHeight : contentImplicitWidth
+                readonly property real expressiveAlong: {
+                    const needed = Math.ceil(Math.max(contained ? expressiveCross : root.widgetThickness * root.compactRatio, contentAlong + Theme.spacingXS * 2));
+                    return contained ? needed : needed + Math.abs(expressiveCross - needed) % 2;
+                }
+                readonly property bool indicatorShaped: root.expressiveStyle && !iconic && contentAlong <= expressiveCross
+                readonly property string indicatorShape: BarMetrics.indicatorShapes[Math.max(0, index) % BarMetrics.indicatorShapes.length]
+                readonly property real indicatorWidth: Math.max(visualContent.width, expressiveCross)
+                readonly property real indicatorHeight: Math.max(visualContent.height, expressiveCross)
+                readonly property real indicatorShift: (root.isVertical ? shiftYSpring : shiftXSpring).value + (dragHandler.dragging ? dragHandler.dragAxisOffset : 0)
                 readonly property bool hasWorkspaceName: root.opt("showWorkspaceName") && record?.name && record.name !== ""
                 readonly property real contentImplicitWidth: appIconsLoader.item?.contentWidth ?? 0
                 readonly property real contentImplicitHeight: appIconsLoader.item?.contentHeight ?? 0
@@ -482,6 +539,8 @@ BasePill {
                 }
 
                 readonly property real visualWidth: {
+                    if (root.expressiveStyle)
+                        return root.isVertical ? expressiveCross : expressiveAlong;
                     if (contentImplicitWidth <= 0 || (underline && root.isVertical))
                         return baseWidth + iconsExtraWidth;
                     if (root.isVertical)
@@ -490,6 +549,8 @@ BasePill {
                 }
                 // the row reserves icon height for each label, so a horizontal label must not set the thickness
                 readonly property real visualHeight: {
+                    if (root.expressiveStyle)
+                        return root.isVertical ? expressiveAlong : expressiveCross;
                     if (labeled && !root.isVertical)
                         return baseHeight;
                     if (contentImplicitHeight <= 0 || (underline && !root.isVertical))
@@ -544,7 +605,7 @@ BasePill {
                 }
 
                 readonly property string unfocusedColorMode: effectiveColorMode(root.opt("workspaceUnfocusedColorMode"), root.opt("workspaceUnfocusedMonitorUnfocusedColorMode"))
-                readonly property color unfocusedColor: colorFromMode(unfocusedColorMode, Theme.surfaceTextAlpha, effectiveCustomColor(root.opt("workspaceUnfocusedCustomColor"), root.opt("workspaceUnfocusedMonitorUnfocusedCustomColor")), Theme.surfaceTextAlpha)
+                readonly property color unfocusedColor: colorFromMode(unfocusedColorMode, root.expressiveStyle ? Theme.withAlpha(Theme.surfaceText, 0) : Theme.surfaceTextAlpha, effectiveCustomColor(root.opt("workspaceUnfocusedCustomColor"), root.opt("workspaceUnfocusedMonitorUnfocusedCustomColor")), Theme.surfaceTextAlpha)
 
                 readonly property string activeColorMode: effectiveColorMode(root.opt("workspaceColorMode"), root.opt("workspaceUnfocusedMonitorColorMode"))
                 readonly property color activeColor: {
@@ -565,7 +626,7 @@ BasePill {
 
                 readonly property color focusedBorderColor: colorFromMode(effectiveColorMode(root.opt("workspaceFocusedBorderColor"), root.opt("workspaceUnfocusedMonitorBorderColor")), Theme.primary, effectiveCustomColor(root.opt("workspaceFocusedBorderCustomColor"), root.opt("workspaceUnfocusedMonitorBorderCustomColor")), Theme.primary)
 
-                readonly property bool focusedBorderEnabledForMonitor: root.useUnfocusedAppearance ? root.opt("workspaceUnfocusedMonitorBorderEnabled") : root.opt("workspaceFocusedBorderEnabled")
+                readonly property bool focusedBorderEnabledForMonitor: !indicatorShaped && (root.useUnfocusedAppearance ? root.opt("workspaceUnfocusedMonitorBorderEnabled") : root.opt("workspaceFocusedBorderEnabled"))
                 readonly property int focusedBorderThicknessForMonitor: root.useUnfocusedAppearance ? root.opt("workspaceUnfocusedMonitorBorderThickness") : root.opt("workspaceFocusedBorderThickness")
 
                 function getContrastingIconColor(bgColor) {
@@ -619,6 +680,8 @@ BasePill {
                     return inkFromMode(unfocusedColorMode, unfocusedColor, idleInk);
                 }
                 readonly property color contentInk: {
+                    if (root.expressiveStyle && !isActive && !contained)
+                        return isPlaceholder ? Theme.surfaceTextAlpha : isHovered || isOccupied ? Theme.surfaceText : Theme.surfaceTextMedium;
                     // lines and inactive cards draw no fill, so their label sits on the bar
                     if (root.linesStyle || (root.cardsStyle && !isActive))
                         return isActive ? activeColor : isUrgent ? urgentColor : isPlaceholder ? Theme.surfaceTextAlpha : Theme.surfaceTextMedium;
@@ -629,7 +692,9 @@ BasePill {
 
                 // a translucent fill gains a state layer on hover, an opaque one fades
                 readonly property color hoverColor: Theme.withAlpha(unfocusedColor, unfocusedColor.a < 1 ? Math.min(1, unfocusedColor.a + Theme.stateLayerFocus) : root.hoverFadeAlpha)
-                readonly property color requestedColor: isActive ? activeColor : isUrgent ? urgentColor : isPlaceholder ? Theme.surfaceTextLight : isHovered ? hoverColor : isOccupied ? occupiedColor : unfocusedColor
+                // the travelling shape paints the active fill, and an expressive workspace without a container is a bare dot
+                readonly property color requestedColor: root.expressiveStyle && (isActive || !contained) ? Theme.withAlpha(fillColor, 0) : fillColor
+                readonly property color fillColor: isActive ? activeColor : isUrgent ? urgentColor : isPlaceholder ? Theme.surfaceTextLight : isHovered ? hoverColor : isOccupied ? occupiedColor : unfocusedColor
 
                 property bool colorAnimationReady: false
 
@@ -749,7 +814,7 @@ BasePill {
 
                 Timer {
                     id: dataUpdateTimer
-                    interval: 50
+                    interval: Timing.debounceFast
                     onTriggered: delegateRoot.loadData()
                 }
 
@@ -791,7 +856,7 @@ BasePill {
                 readonly property color outlineColor: dragHandler.dragging ? Theme.primary : (isUrgent ? urgentColor : (isDropTarget ? Theme.primary : Theme.withAlpha(Theme.primary, 0)))
 
                 Behavior on width {
-                    enabled: !SettingsData.reduceMotion
+                    enabled: !Theme.reduceMotion
                     NumberAnimation {
                         duration: Theme.expressiveDurations.expressiveFastSpatial
                         easing.type: Easing.BezierSpline
@@ -800,7 +865,7 @@ BasePill {
                 }
 
                 Behavior on height {
-                    enabled: !SettingsData.reduceMotion
+                    enabled: !Theme.reduceMotion
                     NumberAnimation {
                         duration: Theme.expressiveDurations.expressiveFastSpatial
                         easing.type: Easing.BezierSpline
@@ -829,7 +894,7 @@ BasePill {
                     border.color: (delegateRoot.focusedBorderEnabledForMonitor && isActive && !isPlaceholder) ? focusedBorderColor : Theme.withAlpha(focusedBorderColor, 0)
 
                     Behavior on width {
-                        enabled: !SettingsData.reduceMotion
+                        enabled: !Theme.reduceMotion
                         NumberAnimation {
                             duration: Theme.expressiveDurations.expressiveFastSpatial
                             easing.type: Easing.BezierSpline
@@ -838,7 +903,7 @@ BasePill {
                     }
 
                     Behavior on height {
-                        enabled: !SettingsData.reduceMotion
+                        enabled: !Theme.reduceMotion
                         NumberAnimation {
                             duration: Theme.expressiveDurations.expressiveFastSpatial
                             easing.type: Easing.BezierSpline
@@ -847,7 +912,7 @@ BasePill {
                     }
 
                     Behavior on border.width {
-                        enabled: !SettingsData.reduceMotion
+                        enabled: !Theme.reduceMotion
                         NumberAnimation {
                             duration: Theme.expressiveDurations.expressiveFastSpatial
                             easing.type: Easing.BezierSpline
@@ -856,7 +921,7 @@ BasePill {
                     }
 
                     Behavior on border.color {
-                        enabled: !SettingsData.reduceMotion
+                        enabled: !Theme.reduceMotion
                         ColorAnimation {
                             duration: Theme.expressiveDurations.expressiveEffects
                             easing.type: Easing.BezierSpline
@@ -900,7 +965,7 @@ BasePill {
                     }
 
                     Behavior on opacity {
-                        enabled: !SettingsData.reduceMotion
+                        enabled: !Theme.reduceMotion
                         NumberAnimation {
                             duration: Theme.expressiveDurations.expressiveEffects
                             easing.type: Easing.BezierSpline
@@ -909,7 +974,7 @@ BasePill {
                     }
 
                     Behavior on width {
-                        enabled: !SettingsData.reduceMotion
+                        enabled: !Theme.reduceMotion
                         NumberAnimation {
                             duration: Theme.expressiveDurations.expressiveFastSpatial
                             easing.type: Easing.BezierSpline
@@ -918,7 +983,7 @@ BasePill {
                     }
 
                     Behavior on height {
-                        enabled: !SettingsData.reduceMotion
+                        enabled: !Theme.reduceMotion
                         NumberAnimation {
                             duration: Theme.expressiveDurations.expressiveFastSpatial
                             easing.type: Easing.BezierSpline
@@ -927,7 +992,7 @@ BasePill {
                     }
 
                     Behavior on border.width {
-                        enabled: !SettingsData.reduceMotion
+                        enabled: !Theme.reduceMotion
                         NumberAnimation {
                             duration: Theme.expressiveDurations.expressiveFastSpatial
                             easing.type: Easing.BezierSpline
@@ -936,7 +1001,7 @@ BasePill {
                     }
 
                     Behavior on border.color {
-                        enabled: !SettingsData.reduceMotion
+                        enabled: !Theme.reduceMotion
                         ColorAnimation {
                             duration: Theme.expressiveDurations.expressiveEffects
                             easing.type: Easing.BezierSpline
@@ -948,7 +1013,7 @@ BasePill {
                 Loader {
                     id: appIconsLoader
                     anchors.fill: parent
-                    active: root.opt("showWorkspaceApps") || root.opt("showWorkspaceIndex") || root.opt("showWorkspaceName") || loadedHasIcon
+                    active: root.expressiveStyle || root.opt("showWorkspaceApps") || root.opt("showWorkspaceIndex") || root.opt("showWorkspaceName") || loadedHasIcon
                     opacity: visualContent.opacity
                     transform: Translate {
                         x: root.isVertical ? 0 : (dragHandler.dragging ? dragHandler.dragAxisOffset : 0)
@@ -972,7 +1037,7 @@ BasePill {
                             id: rowLayout
                             Row {
                                 spacing: Theme.spacingXS
-                                visible: loadedIcons.length > 0 || root.opt("showWorkspaceIndex") || root.opt("showWorkspaceName") || loadedHasIcon
+                                visible: loadedIcons.length > 0 || root.opt("showWorkspaceIndex") || root.opt("showWorkspaceName") || loadedHasIcon || trailingDots > 0
 
                                 Item {
                                     visible: loadedHasIcon && loadedIconData?.type === "icon"
@@ -1027,6 +1092,8 @@ BasePill {
                                     StyledText {
                                         id: wsIndexText
                                         anchors.centerIn: parent
+                                        anchors.horizontalCenterOffset: root.expressiveStyle ? Math.round(wsIndexTextMetrics.advanceWidth / 2 - wsIndexTextMetrics.tightBoundingRect.x - wsIndexTextMetrics.tightBoundingRect.width / 2) : 0
+                                        anchors.verticalCenterOffset: root.labelDigitShift
                                         text: loadedHasIcon ? (record?.name ?? "") : root.getWorkspaceIndex(record, index)
                                         color: contentInk
                                         font.pixelSize: root.labelSize
@@ -1135,7 +1202,7 @@ BasePill {
                                         }
 
                                         CountBadge {
-                                            visible: modelData.count > 1 && !isActive
+                                            visible: modelData.count > 1 && !isActive && !root.expressiveStyle
                                             text: modelData.count
                                             color: activeColor
                                             textColor: activeInk
@@ -1147,6 +1214,23 @@ BasePill {
                                         }
                                     }
                                 }
+
+                                Repeater {
+                                    model: trailingDots
+                                    Item {
+                                        anchors.verticalCenter: parent.verticalCenter
+                                        width: root.indicatorDotSize + Theme.spacingXS
+                                        height: root.indicatorDotSize
+
+                                        Rectangle {
+                                            anchors.centerIn: parent
+                                            width: root.indicatorDotSize
+                                            height: root.indicatorDotSize
+                                            radius: root.indicatorDotSize / 2
+                                            color: contentInk
+                                        }
+                                    }
+                                }
                             }
                         }
 
@@ -1154,7 +1238,7 @@ BasePill {
                             id: columnLayout
                             Column {
                                 spacing: Theme.spacingXS
-                                visible: loadedIcons.length > 0 || root.opt("showWorkspaceIndex") || root.opt("showWorkspaceName") || loadedHasIcon
+                                visible: loadedIcons.length > 0 || root.opt("showWorkspaceIndex") || root.opt("showWorkspaceName") || loadedHasIcon || trailingDots > 0
 
                                 DIcon {
                                     visible: loadedHasIcon && loadedIconData?.type === "icon"
@@ -1174,9 +1258,21 @@ BasePill {
                                     font.weight: (isActive && !isPlaceholder) ? Theme.fontWeightMedium : Theme.fontWeight
                                 }
 
+                                StyledTextMetrics {
+                                    id: columnIndexMetrics
+                                    text: columnIndexText.text
+                                    font.pixelSize: root.labelSize
+                                    font.weight: Theme.fontWeightMedium
+                                }
+
                                 StyledText {
+                                    id: columnIndexText
                                     visible: (root.opt("showWorkspaceIndex") || root.opt("showWorkspaceName")) && !loadedHasIcon
                                     anchors.horizontalCenter: parent.horizontalCenter
+                                    anchors.horizontalCenterOffset: root.expressiveStyle ? Math.round(columnIndexMetrics.advanceWidth / 2 - columnIndexMetrics.tightBoundingRect.x - columnIndexMetrics.tightBoundingRect.width / 2) : 0
+                                    transform: Translate {
+                                        y: root.labelDigitShift
+                                    }
                                     text: root.getWorkspaceIndex(record, index)
                                     color: contentInk
                                     font.pixelSize: root.labelSize
@@ -1284,7 +1380,7 @@ BasePill {
                                         }
 
                                         CountBadge {
-                                            visible: modelData.count > 1 && !isActive
+                                            visible: modelData.count > 1 && !isActive && !root.expressiveStyle
                                             text: modelData.count
                                             color: activeColor
                                             textColor: activeInk
@@ -1293,6 +1389,23 @@ BasePill {
                                             anchors.rightMargin: -Theme.spacingXXS
                                             anchors.bottomMargin: -Theme.spacingXXS
                                             z: 2
+                                        }
+                                    }
+                                }
+
+                                Repeater {
+                                    model: trailingDots
+                                    Item {
+                                        anchors.horizontalCenter: parent.horizontalCenter
+                                        width: root.indicatorDotSize
+                                        height: root.indicatorDotSize + Theme.spacingXS
+
+                                        Rectangle {
+                                            anchors.centerIn: parent
+                                            width: root.indicatorDotSize
+                                            height: root.indicatorDotSize
+                                            radius: root.indicatorDotSize / 2
+                                            color: contentInk
                                         }
                                     }
                                 }

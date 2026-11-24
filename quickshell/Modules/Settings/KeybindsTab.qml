@@ -37,11 +37,10 @@ Item {
     property Item _editorReturnFocus: null
 
     readonly property bool initialLoading: KeybindsService.loading && _filteredBinds.length === 0
-    readonly property Item windowFocusItem: keybindsTab.Window.window?.activeFocusItem ?? null
 
-    onWindowFocusItemChanged: {
-        if (editorOpen && !removeBindConfirm.visible)
-            focusTrapTimer.restart();
+    SettingsDialogFocusTrap {
+        dialog: editorLoader.item
+        active: keybindsTab.editorOpen && !removeBindConfirm.visible
     }
 
     Keys.onPressed: event => {
@@ -134,26 +133,6 @@ Item {
 
     function _presentLoadedEditor() {
         editorLoader.item.present(editorBind, editorKeyIndex, editorIsNew);
-    }
-
-    function _trapEditorFocus() {
-        const dialog = editorLoader.item;
-        if (!editorOpen || !dialog || dialog.activeFocus || removeBindConfirm.visible)
-            return;
-        const first = dialog.nextItemInFocusChain(true);
-        if (first && _isInside(first, dialog)) {
-            first.forceActiveFocus(Qt.TabFocusReason);
-            return;
-        }
-        dialog.forceActiveFocus();
-    }
-
-    function _isInside(item, ancestor) {
-        for (let node = item; node; node = node.parent) {
-            if (node === ancestor)
-                return true;
-        }
-        return false;
     }
 
     function closeEditor() {
@@ -297,14 +276,8 @@ Item {
 
     Timer {
         id: searchDebounce
-        interval: 150
+        interval: Timing.debounce
         onTriggered: keybindsTab._updateFiltered()
-    }
-
-    Timer {
-        id: focusTrapTimer
-        interval: 0
-        onTriggered: keybindsTab._trapEditorFocus()
     }
 
     Timer {
@@ -578,7 +551,7 @@ Item {
 
     Loader {
         id: editorLoader
-        parent: keybindsTab.parentModal?.modalFocusScope ?? keybindsTab
+        parent: keybindsTab.parentModal?.dialogHostFor(keybindsTab) ?? keybindsTab
         anchors.fill: parent
         z: 100
         active: keybindsTab.editorMounted
@@ -603,7 +576,7 @@ Item {
 
     ConfirmDialogOverlay {
         id: removeBindConfirm
-        parent: keybindsTab.parentModal?.modalFocusScope ?? keybindsTab
+        parent: keybindsTab.parentModal?.dialogHostFor(keybindsTab) ?? keybindsTab
         z: 101
     }
 }

@@ -27,6 +27,12 @@ func HandleRequest(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request, m
 		handleSubscribe(conn, req, manager)
 	case "wallpaper.list":
 		handleList(ctx, conn, req)
+	case "wallpaper.suggestFolders":
+		conn.Respond(req.ID, SuggestFolders(params.StringSlice(req.Params, "folders")))
+	case "wallpaper.folderListed":
+		handleFolderListed(conn, req)
+	case "wallpaper.folderOf":
+		handleFolderOf(conn, req)
 	default:
 		conn.RespondError(req.ID, fmt.Sprintf("unknown method: %s", req.Method))
 	}
@@ -62,7 +68,34 @@ func handleList(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request) {
 
 	ctx, cancel := context.WithTimeout(ctx, listTimeout)
 	defer cancel()
-	conn.Respond(req.ID, ListWallpapers(ctx, folders, extensions))
+	library := ListWallpapers(ctx, folders, extensions)
+	if params.BoolOpt(req.Params, "dimensions", false) {
+		readSizes(ctx, library.Items)
+	}
+	conn.Respond(req.ID, library)
+}
+
+func handleFolderListed(conn *ipc.ConnWriter, req ipc.Request) {
+	path, err := params.StringNonEmpty(req.Params, "path")
+	if err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
+	conn.Respond(req.ID, FolderListed(path, params.StringSlice(req.Params, "folders")))
+}
+
+func handleFolderOf(conn *ipc.ConnWriter, req ipc.Request) {
+	path, err := params.StringNonEmpty(req.Params, "path")
+	if err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
+	var folders []Folder
+	if err := decodeParam(req.Params, "folders", &folders); err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
+	conn.Respond(req.ID, FolderOf(path, folders))
 }
 
 func decodeParam(reqParams map[string]any, key string, out any) error {
@@ -84,23 +117,5 @@ func handleTrigger(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
 }
 
 func handleSubscribe(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
-	clientID := fmt.Sprintf("client-%p", conn)
-	stateChan := manager.Subscribe(clientID)
-	defer manager.Unsubscribe(clientID)
-
-	initialState := manager.GetState()
-	if err := conn.WriteResponse(ipc.Response[State]{
-		ID:     req.ID,
-		Result: &initialState,
-	}); err != nil {
-		return
-	}
-
-	for state := range stateChan {
-		if err := conn.WriteResponse(ipc.Response[State]{
-			Result: &state,
-		}); err != nil {
-			return
-		}
-	}
+	models.StreamSubscription(conn, req, manager, fmt.Sprintf("client-%p", conn), false)
 }

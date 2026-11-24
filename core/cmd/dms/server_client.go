@@ -46,6 +46,11 @@ func dialServer() (net.Conn, *bufio.Scanner, error) {
 }
 
 func sendServerRequest(req ipc.Request) (*ipc.Response[any], error) {
+	return sendServerRequestWithin(req, 0)
+}
+
+// sendServerRequestWithin bounds the reply wait too; 0 waits forever.
+func sendServerRequestWithin(req ipc.Request, replyTimeout time.Duration) (*ipc.Response[any], error) {
 	conn, scanner, err := dialServer()
 	if err != nil {
 		return nil, err
@@ -65,7 +70,11 @@ func sendServerRequest(req ipc.Request) (*ipc.Response[any], error) {
 		return nil, fmt.Errorf("failed to write newline: %w", err)
 	}
 
-	_ = conn.SetDeadline(time.Time{})
+	deadline := time.Time{}
+	if replyTimeout > 0 {
+		deadline = time.Now().Add(replyTimeout)
+	}
+	_ = conn.SetDeadline(deadline)
 	if !scanner.Scan() {
 		return nil, fmt.Errorf("failed to read response")
 	}

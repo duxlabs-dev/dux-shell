@@ -240,28 +240,6 @@ func TestLoadPlugins(t *testing.T) {
 }
 
 func TestList(t *testing.T) {
-	t.Run("returns cached plugins if available", func(t *testing.T) {
-		registry, _, _ := setupTestRegistry(t)
-
-		plugin := Plugin{
-			Name:         "CachedPlugin",
-			Capabilities: []string{"test"},
-			Category:     "test",
-			Repo:         "https://github.com/test/test",
-			Author:       "Test",
-			Description:  "Test",
-			Compositors:  []string{"niri"},
-			Distro:       []string{"any"},
-		}
-
-		registry.plugins = []Plugin{plugin}
-
-		plugins, err := registry.List()
-		assert.NoError(t, err)
-		assert.Len(t, plugins, 1)
-		assert.Equal(t, "CachedPlugin", plugins[0].Name)
-	})
-
 	t.Run("updates and loads plugins when cache is empty", func(t *testing.T) {
 		registry, fs, _ := setupTestRegistry(t)
 

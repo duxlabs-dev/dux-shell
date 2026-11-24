@@ -5,6 +5,7 @@ import Quickshell
 import Quickshell.Wayland
 import qs.Common
 import qs.Services
+import qs.Widgets
 import qs.DCommon.Widgets
 import "../Common/KeyUtils.js" as KeyUtils
 import "../Common/KeybindActions.js" as Actions
@@ -105,7 +106,8 @@ FocusScope {
                     spacing: Theme.spacingXS
 
                     Repeater {
-                        model: keybindRow.modelData.keyCombos || (keybindRow.modelData.key ? [KeyUtils.formatKeyTokens(keybindRow.modelData.key, KeybindsService.modKey, KeybindsService.modSymbol)] : [])
+                        id: combosRepeater
+                        model: keybindRow.modelData.keyCombos || (keybindRow.modelData.key ? [KeyUtils.formatKeyTokens(keybindRow.modelData.key, KeybindsService.modKey, KeybindsService.modSymbol, content.modifierStyle)] : [])
 
                         Row {
                             anchors.right: parent ? parent.right : undefined
@@ -424,7 +426,7 @@ FocusScope {
 
                 const label = content.getBindLabel(bind);
                 const labelLower = label.toLowerCase();
-                const keyTokens = KeyUtils.formatKeyTokens(bind.key, KeybindsService.modKey, KeybindsService.modSymbol);
+                const keyTokens = KeyUtils.formatKeyTokens(bind.key, KeybindsService.modKey, KeybindsService.modSymbol, content.modifierStyle);
                 const tokenSig = keyTokens.join("+");
                 const keyLower = (bind.key || "").toLowerCase();
                 const keyCombo = KeyUtils.normalizeKeyCombo(bind.key, KeybindsService.modKey, KeybindsService.modSymbol);
@@ -521,7 +523,12 @@ FocusScope {
     }
 
     property string activeSearchQuery: ""
+    readonly property string modifierStyle: SettingsData.keybindsModifierStyle || "windows"
     property var dataModel: generateCategories("")
+
+    onModifierStyleChanged: {
+        content.dataModel = content.generateCategories(content.activeSearchQuery);
+    }
 
     Connections {
         target: KeybindsService
@@ -532,7 +539,7 @@ FocusScope {
 
     Timer {
         id: searchDebounce
-        interval: 120
+        interval: Timing.debounce
         repeat: false
         onTriggered: {
             content.activeSearchQuery = searchField.text;
@@ -601,8 +608,9 @@ FocusScope {
                 anchors.left: parent.left
                 anchors.right: parent.right
                 anchors.top: searchRow.bottom
-                anchors.bottom: parent.bottom
+                anchors.bottom: sidebarFooter.top
                 anchors.topMargin: Theme.spacingM
+                anchors.bottomMargin: Theme.spacingS
                 contentWidth: width
                 contentHeight: sidebarCol.implicitHeight
                 clip: true
@@ -618,6 +626,7 @@ FocusScope {
                         width: sidebarCol.width
                         implicitHeight: Theme.menuItemHeight
                         isSelected: content.selectedCategory === "All"
+                        isHovered: hovered || allBadgeHover.containsMouse
                         surfaceColor: "transparent"
                         border.width: 0
                         radius: Theme.cornerRadiusFull
@@ -650,9 +659,17 @@ FocusScope {
 
                             DBadge {
                                 text: content.dataModel.totalCount.toString()
-                                color: allTab.isSelected ? Theme.primary : Theme.surfaceVariant
+                                color: allTab.isSelected ? Theme.primary : Theme.chipSurfaceNested
                                 textColor: allTab.isSelected ? Theme.onPrimary : Theme.surfaceVariantText
                                 Layout.alignment: Qt.AlignVCenter
+
+                                MouseArea {
+                                    id: allBadgeHover
+                                    anchors.fill: parent
+                                    hoverEnabled: true
+                                    acceptedButtons: Qt.NoButton
+                                    cursorShape: Qt.PointingHandCursor
+                                }
                             }
                         }
                     }
@@ -671,6 +688,7 @@ FocusScope {
                             width: sidebarCol.width
                             implicitHeight: Theme.menuItemHeight
                             isSelected: content.selectedCategory === catTab.catName
+                            isHovered: hovered || catBadgeHover.containsMouse
                             surfaceColor: "transparent"
                             border.width: 0
                             radius: Theme.cornerRadiusFull
@@ -703,11 +721,59 @@ FocusScope {
 
                                 DBadge {
                                     text: (catTab.catInfo?.count || 0).toString()
-                                    color: catTab.isSelected ? Theme.primary : Theme.surfaceVariant
+                                    color: catTab.isSelected ? Theme.primary : Theme.chipSurfaceNested
                                     textColor: catTab.isSelected ? Theme.onPrimary : Theme.surfaceVariantText
                                     Layout.alignment: Qt.AlignVCenter
+
+                                    MouseArea {
+                                        id: catBadgeHover
+                                        anchors.fill: parent
+                                        hoverEnabled: true
+                                        acceptedButtons: Qt.NoButton
+                                        cursorShape: Qt.PointingHandCursor
+                                    }
                                 }
                             }
+                        }
+                    }
+                }
+            }
+
+            // Bottom Settings Row for Keycap Modifier Style (Windows vs Mac)
+            Column {
+                id: sidebarFooter
+                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.bottom: parent.bottom
+                spacing: Theme.spacingS
+
+                DDivider {
+                    inset: Theme.spacingS
+                    opacity: 0.3
+                }
+
+                RowLayout {
+                    width: parent.width
+                    spacing: Theme.spacingS
+
+                    StyledText {
+                        text: I18n.tr("Key style", "modifier icon style toggle label")
+                        font.pixelSize: Theme.fontSizeSmall
+                        color: Theme.surfaceVariantText
+                        elide: Text.ElideRight
+                        Layout.fillWidth: true
+                        Layout.alignment: Qt.AlignVCenter
+                        Layout.leftMargin: Theme.spacingS
+                    }
+
+                    DButtonGroup {
+                        id: modifierStyleGroup
+                        size: "small"
+                        model: [I18n.tr("Linux", "keyboard keycap style name"), I18n.tr("Mac", "keyboard keycap style name")]
+                        currentIndex: content.modifierStyle === "mac" ? 1 : 0
+                        onSelectionChanged: (index, selected) => {
+                            if (selected)
+                                SettingsData.set("keybindsModifierStyle", index === 1 ? "mac" : "windows");
                         }
                     }
                 }
@@ -748,21 +814,30 @@ FocusScope {
                             readonly property var sectionCatInfo: content.dataModel.byCategory[sectionCatName]
 
                             // Section Header
-                            RowLayout {
+                            Row {
+                                id: categoryHeader
                                 width: parent.width
                                 spacing: Theme.spacingS
+                                height: Math.max(categoryIcon.implicitHeight, categoryTitle.implicitHeight)
 
                                 DIcon {
+                                    id: categoryIcon
                                     name: content.getCategoryIcon(sectionCol.sectionCatName)
                                     size: Theme.iconSizeMedium
                                     color: Theme.primary
+                                    anchors.verticalCenter: parent.verticalCenter
                                 }
 
                                 StyledText {
+                                    id: categoryTitle
                                     text: I18n.tr(sectionCol.sectionCatName)
+                                    width: Math.min(implicitWidth, Math.max(0, categoryHeader.width - categoryIcon.width - categoryHeader.spacing))
                                     font.pixelSize: Theme.fontSizeMedium
                                     font.weight: Theme.fontWeightMedium
                                     color: Theme.primary
+                                    horizontalAlignment: Text.AlignLeft
+                                    elide: Text.ElideRight
+                                    anchors.verticalCenter: parent.verticalCenter
                                 }
                             }
 

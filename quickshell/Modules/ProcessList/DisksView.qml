@@ -6,7 +6,7 @@ import qs.Common
 import qs.Services
 import qs.DCommon.Widgets
 import qs.Modules.Settings.Widgets
-import "Drives.js" as Drives
+import "../../Services/Drives.js" as Drives
 
 Item {
     id: root
@@ -129,7 +129,7 @@ Item {
                                 Layout.preferredWidth: Theme.fontSizeMedium * 10
                                 Layout.preferredHeight: Theme.spacingS
                                 radius: height / 2
-                                color: Theme.surfaceContainerHighest
+                                color: Theme.chipSurfaceNested
 
                                 Rectangle {
                                     width: parent.width * Math.min(1, mountRow.usedRatio)

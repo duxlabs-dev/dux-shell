@@ -1,7 +1,6 @@
 package wlcontext
 
 import (
-	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -51,24 +50,4 @@ func TestSharedContext_DrainCmdQueue(t *testing.T) {
 
 	assert.Equal(t, 10, counter)
 	assert.Len(t, sc.cmdQueue, 0)
-}
-
-func TestSharedContext_ConcurrentDrainAndPost(t *testing.T) {
-	sc := newTestSharedContext(t, 256)
-
-	var wg sync.WaitGroup
-
-	wg.Go(func() {
-		for range 100 {
-			sc.Post(func() {})
-		}
-	})
-
-	wg.Go(func() {
-		for range 50 {
-			sc.drainCmdQueue()
-		}
-	})
-
-	wg.Wait()
 }

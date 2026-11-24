@@ -1,13 +1,21 @@
 package freedesktop
 
 import (
+	"bytes"
 	"fmt"
+	"image"
+	_ "image/jpeg"
+	"image/png"
 	"io"
 	"os"
 
 	"github.com/duxlabs-dev/dux-shell/core/internal/utils"
 	"github.com/godbus/dbus/v5"
+	"golang.org/x/image/draw"
+	_ "golang.org/x/image/webp"
 )
+
+const iconSize = 256
 
 func (m *Manager) SetIconFile(iconPath string) error {
 	if !m.state.Accounts.Available || m.accountsObj == nil {
@@ -51,7 +59,7 @@ func stageIconFile(iconPath string) (string, func(), error) {
 	}
 	cleanup := func() { os.Remove(tmp.Name()) }
 
-	if _, err := io.Copy(tmp, src); err != nil {
+	if err := writeIcon(tmp, src); err != nil {
 		tmp.Close()
 		cleanup()
 		return "", noop, fmt.Errorf("failed to stage icon file: %w", err)
@@ -62,6 +70,29 @@ func stageIconFile(iconPath string) (string, func(), error) {
 	}
 
 	return tmp.Name(), cleanup, nil
+}
+
+func writeIcon(dst io.Writer, src io.Reader) error {
+	data, err := io.ReadAll(src)
+	if err != nil {
+		return err
+	}
+
+	img, _, err := image.Decode(bytes.NewReader(data))
+	if err != nil {
+		_, err = dst.Write(data)
+		return err
+	}
+	b := img.Bounds()
+	shortest := min(b.Dx(), b.Dy())
+	if shortest <= iconSize {
+		_, err = dst.Write(data)
+		return err
+	}
+
+	out := image.NewRGBA(image.Rect(0, 0, b.Dx()*iconSize/shortest, b.Dy()*iconSize/shortest))
+	draw.CatmullRom.Scale(out, out.Bounds(), img, b, draw.Src, nil)
+	return png.Encode(dst, out)
 }
 
 func (m *Manager) SetRealName(name string) error {

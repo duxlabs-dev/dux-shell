@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/duxlabs-dev/dux-go/dbusutil"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/pubsub"
 	"github.com/godbus/dbus/v5"
 )
 
@@ -491,59 +492,23 @@ func (m *Manager) GetState() SessionState {
 }
 
 func (m *Manager) Subscribe(id string) chan SessionState {
-	ch := make(chan SessionState, 64)
-	m.subscribers.Store(id, ch)
-	return ch
+	return m.subscribers.Subscribe(id)
 }
 
-func (m *Manager) Unsubscribe(id string) {
-	if val, ok := m.subscribers.LoadAndDelete(id); ok {
-		close(val)
-	}
+func (m *Manager) Unsubscribe(id string, ch chan SessionState) {
+	m.subscribers.Unsubscribe(id, ch)
 }
 
 func (m *Manager) notifier() {
 	defer m.notifierWg.Done()
-	const minGap = 100 * time.Millisecond
-	timer := time.NewTimer(minGap)
-	timer.Stop()
-	var pending bool
-	for {
-		select {
-		case <-m.stopChan:
-			timer.Stop()
-			return
-		case <-m.dirty:
-			if pending {
-				continue
-			}
-			pending = true
-			timer.Reset(minGap)
-		case <-timer.C:
-			if !pending {
-				continue
-			}
-
-			currentState := m.snapshotState()
-
-			if m.lastNotifiedState != nil && !stateChangedMeaningfully(m.lastNotifiedState, &currentState) {
-				pending = false
-				continue
-			}
-
-			m.subscribers.Range(func(key string, ch chan SessionState) bool {
-				select {
-				case ch <- currentState:
-				default:
-				}
-				return true
-			})
-
-			stateCopy := currentState
-			m.lastNotifiedState = &stateCopy
-			pending = false
-		}
-	}
+	pubsub.RunDebouncedNotifier(pubsub.DebouncedConfig[SessionState]{
+		MinGap:   100 * time.Millisecond,
+		Stop:     m.stopChan,
+		Dirty:    m.dirty,
+		Snapshot: m.snapshotState,
+		Changed:  stateChangedMeaningfully,
+		Broker:   &m.subscribers,
+	})
 }
 
 func (m *Manager) notifySubscribers() {
@@ -712,9 +677,5 @@ func (m *Manager) Close() {
 	m.releaseSleepInhibitor()
 	m.releaseKeepAwake()
 
-	m.subscribers.Range(func(key string, ch chan SessionState) bool {
-		close(ch)
-		m.subscribers.Delete(key)
-		return true
-	})
+	m.subscribers.Close()
 }

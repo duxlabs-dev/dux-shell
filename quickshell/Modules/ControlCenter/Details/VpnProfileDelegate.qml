@@ -10,12 +10,16 @@ CcListRow {
 
     required property var profile
     property bool isExpanded: false
+    property bool showsEditButton: false
     readonly property bool isTransient: !!profile?.transient
     readonly property bool canExpand: profile?.canExpand !== false
     readonly property bool canDelete: profile?.canDelete !== false
+    // Plugin VPNs keep the credentials panel: the editor only covers their General and IP settings.
+    readonly property bool editorReplacesPanel: showsEditButton && !isTransient && profile?.type === "wireguard"
 
     signal toggleExpand
     signal deleteRequested
+    signal editRequested
 
     readonly property bool isActive: DMSNetworkService.vpnStateForUuid(profile?.uuid) === "activated"
     readonly property bool isConnecting: DMSNetworkService.isVpnConnectingUuid(profile?.uuid)
@@ -86,11 +90,12 @@ CcListRow {
 
     DActionButton {
         anchors.verticalCenter: parent.verticalCenter
-        visible: root.isActive
+        visible: root.isActive || root.isConnecting
         buttonSize: Theme.buttonHeightXS
         iconSize: Theme.iconSizeMedium
         iconName: "link_off"
         Accessible.name: I18n.tr("Disconnect")
+        tooltipText: I18n.tr("Disconnect")
         iconColor: root.contentColor
         enabled: !DMSNetworkService.isBusy
         onClicked: DMSNetworkService.toggle(root.profile.uuid)
@@ -98,7 +103,19 @@ CcListRow {
 
     DActionButton {
         anchors.verticalCenter: parent.verticalCenter
-        visible: root.canExpand
+        visible: root.showsEditButton && !root.isTransient
+        buttonSize: Theme.buttonHeightXS
+        iconSize: Theme.iconSizeMedium
+        iconName: "edit"
+        tooltipText: I18n.tr("Edit")
+        Accessible.name: I18n.tr("Edit")
+        iconColor: root.contentColor
+        onClicked: root.editRequested()
+    }
+
+    DActionButton {
+        anchors.verticalCenter: parent.verticalCenter
+        visible: root.canExpand && !root.editorReplacesPanel
         buttonSize: Theme.buttonHeightXS
         iconSize: Theme.iconSizeMedium
         iconName: root.isExpanded ? "expand_less" : "expand_more"
@@ -163,7 +180,7 @@ CcListRow {
         Column {
             width: parent.width
             spacing: Theme.spacingXS
-            visible: !root.isTransient && !VPNService.configLoading && root.profile?.type !== "wireguard"
+            visible: !root.isTransient && !VPNService.configLoading && root.profile?.type !== "wireguard" && (root.hasError || !root.profile?.pluginLogin)
 
             StyledText {
                 text: root.hasError ? DMSNetworkService.vpnError : I18n.tr("Credentials", "noun, label above vpn username and password fields")
@@ -173,6 +190,7 @@ CcListRow {
 
             DTextField {
                 id: usernameField
+                visible: !root.profile?.pluginLogin
                 width: parent.width
                 placeholderText: I18n.tr("Username")
                 text: (root.configData && (root.configData.username || (root.configData.data && root.configData.data.username))) || ""
@@ -180,6 +198,7 @@ CcListRow {
 
             DTextField {
                 id: passwordField
+                visible: !root.profile?.pluginLogin
                 width: parent.width
                 placeholderText: I18n.tr("Password")
                 echoMode: TextInput.Password
@@ -189,6 +208,7 @@ CcListRow {
 
             DButton {
                 text: I18n.tr("Save credentials")
+                visible: !root.profile?.pluginLogin
                 buttonHeight: Theme.buttonHeightXS
                 enabled: passwordField.text.length > 0
                 onClicked: {

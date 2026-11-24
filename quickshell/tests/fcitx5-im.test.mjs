@@ -108,7 +108,7 @@ const scope = vm.createContext({
     },
     request: (...args) => root.request(...args)
 });
-for (const fn of ["findItem", "trayIdentityOf", "displayName", "resolve"])
+for (const fn of ["displayName", "resolve"])
     vm.runInContext(extract(fn), scope);
 
 const resolveWith = (result, error) => {
@@ -117,22 +117,6 @@ const resolveWith = (result, error) => {
     assert.equal(calls.length, 1, "resolve sends exactly one request");
     calls[0].callback(result, error);
 };
-
-test("fcitx5: only the tray item with the fixed Fcitx id is picked", () => {
-    const fcitx = { id: "Fcitx", icon: "fcitx-pinyin", tooltipTitle: "Pinyin" };
-    const other = { id: "org.kde.StatusNotifierItem-1-1", icon: "x", tooltipTitle: "y" };
-    assert.equal(scope.findItem([other, fcitx]), fcitx);
-    assert.equal(scope.findItem([other]), null);
-    assert.equal(scope.findItem([]), null);
-});
-
-test("fcitx5: tray identity changes with either icon or tooltip title", () => {
-    const base = { icon: "fcitx-pinyin", tooltipTitle: "Pinyin" };
-    assert.equal(scope.trayIdentityOf(base), scope.trayIdentityOf({ icon: "fcitx-pinyin", tooltipTitle: "Pinyin" }));
-    assert.notEqual(scope.trayIdentityOf(base), scope.trayIdentityOf({ icon: "fcitx-keyboard-us", tooltipTitle: "Pinyin" }));
-    assert.notEqual(scope.trayIdentityOf(base), scope.trayIdentityOf({ icon: "fcitx-pinyin", tooltipTitle: "Hangul" }));
-    assert.equal(scope.trayIdentityOf(null), "");
-});
 
 test("fcitx5: only the last segment of a keyboard tooltip title is kept", () => {
     assert.equal(scope.displayName("Keyboard - English (US)", "keyboard-us"), "English (US)");

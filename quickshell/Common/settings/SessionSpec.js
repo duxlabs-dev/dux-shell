@@ -2,6 +2,19 @@
 .import "../../DCommon/Common/settings/SharedSessionSpec.js" as Shared
 .import "../../DCommon/Common/settings/SpecUtil.js" as Util
 
+function coerceWallpaperFolders(value) {
+    if (!Array.isArray(value))
+        return [];
+    return value.filter(e => e !== null && typeof e === "object" && typeof e.path === "string" && e.path.startsWith("/")).map(e => Object.assign({}, e, {
+        recursive: e.recursive === true,
+        hidden: e.hidden === true
+    }));
+}
+
+function coerceWallpaperFolderSelection(value) {
+    return Array.isArray(value) ? value.filter(p => typeof p === "string") : [];
+}
+
 var LOCAL_SPEC = {
     doNotDisturb: {
         def: false
@@ -78,6 +91,17 @@ var LOCAL_SPEC = {
     wallpaperCyclingVideoEnd: {
         def: false
     },
+    wallpaperFolders: {
+        def: [],
+        coerce: coerceWallpaperFolders
+    },
+    wallpaperFolderSelection: {
+        def: [],
+        coerce: coerceWallpaperFolderSelection
+    },
+    wallpaperHideMismatched: {
+        def: false
+    },
     monitorCyclingSettings: {
         def: {}
     },
@@ -151,7 +175,9 @@ var LOCAL_SPEC = {
         def: true
     },
     dockPins: {
-        def: {}
+        def: {
+            dock: ["dms_notepad", "dms_sysmon", "dms_colorpicker", "dms_qr_generator", "dms_settings"]
+        }
     },
     barPinnedApps: {
         def: []
@@ -204,6 +230,9 @@ var LOCAL_SPEC = {
     appOverrides: {
         def: {}
     },
+    launcherFolders: {
+        def: []
+    },
     searchAppActions: {
         def: true
     },
@@ -220,6 +249,9 @@ var LOCAL_SPEC = {
         def: ""
     },
     deviceMaxVolumes: {
+        def: {}
+    },
+    deviceBalances: {
         def: {}
     },
     hiddenOutputDeviceNames: {
@@ -243,6 +275,9 @@ var LOCAL_SPEC = {
     },
     hyprlandOutputSettings: {
         def: {}
+    },
+    activeConfigProfile: {
+        def: ""
     },
     activeDisplayProfile: {
         def: {}
@@ -270,6 +305,9 @@ var LOCAL_SPEC = {
     },
     lastAppliedIconTheme: {
         def: ""
+    },
+    iconFoldersPresent: {
+        def: false
     },
     launcherLastMode: {
         def: "all"

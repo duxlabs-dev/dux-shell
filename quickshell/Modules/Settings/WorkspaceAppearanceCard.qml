@@ -3,6 +3,7 @@ import qs.Common
 import qs.Services
 import qs.DCommon.Widgets
 import qs.Modules.Settings.Widgets
+import "../../Common/WorkspaceModel.js" as WorkspaceModel
 
 SettingsCard {
     id: root
@@ -192,7 +193,7 @@ SettingsCard {
         borderThicknessKey: "workspaceUnfocusedMonitorBorderThickness"
     }
 
-    readonly property var namedWorkspaces: NiriService.getNamedWorkspaces().concat(CompositorService.specialWorkspaceNames)
+    readonly property var namedWorkspaces: NiriService.getNamedWorkspaces().filter(name => !WorkspaceModel.niriScratchpadName(name)).concat(CompositorService.isHyprland ? CompositorService.specialWorkspaceNames : [])
 
     SettingsRow {
         visible: root.namedWorkspaces.length > 0

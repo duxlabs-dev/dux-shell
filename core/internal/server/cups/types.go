@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/duxlabs-dev/dux-go/syncmap"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/pubsub"
 	"github.com/duxlabs-dev/dux-shell/core/pkg/ipp"
 )
 
@@ -76,21 +76,20 @@ type PrinterClass struct {
 }
 
 type Manager struct {
-	state             *CUPSState
-	client            CUPSClientInterface
-	pkHelper          PkHelper
-	subscription      SubscriptionManagerInterface
-	subLifecycleMu    sync.Mutex
-	stateMutex        sync.RWMutex
-	subscribers       syncmap.Map[string, chan CUPSState]
-	stopChan          chan struct{}
-	eventWG           sync.WaitGroup
-	dirty             chan struct{}
-	notifierWg        sync.WaitGroup
-	lastNotifiedState *CUPSState
-	baseURL           string
-	probeRemoteFn     func(host string, port int, useTLS bool) (*RemotePrinterInfo, error)
-	dialFn            func(network, addr string, timeout time.Duration) (net.Conn, error)
+	state          *CUPSState
+	client         CUPSClientInterface
+	pkHelper       PkHelper
+	subscription   SubscriptionManagerInterface
+	subLifecycleMu sync.Mutex
+	stateMutex     sync.RWMutex
+	subscribers    pubsub.Broker[CUPSState]
+	stopChan       chan struct{}
+	eventWG        sync.WaitGroup
+	dirty          chan struct{}
+	notifierWg     sync.WaitGroup
+	baseURL        string
+	probeRemoteFn  func(host string, port int, useTLS bool) (*RemotePrinterInfo, error)
+	dialFn         func(network, addr string, timeout time.Duration) (net.Conn, error)
 }
 
 type SubscriptionManagerInterface interface {

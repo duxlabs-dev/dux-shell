@@ -33,6 +33,19 @@ SettingsCard {
     }
 
     SettingsToggleRow {
+        settingKey: root.keyPrefix + "WorkspaceOsd"
+        tags: ["island", "workspace", "switch", "osd"]
+        text: I18n.tr("Workspace Switch", "toggle label for workspace change OSD")
+        // The switch rides the live activity queue as source "workspace"; without it the regular OSD shows.
+        readonly property bool available: root.store.setting("islandActivitiesEnabled") && !(root.store.setting("islandExcludedSources") || []).includes("workspace")
+        description: available ? I18n.tr("Show workspace changes in the island instead of the regular OSD", "island settings: workspace OSD toggle description") : I18n.tr("Needs Plugin activities on and the workspace source shown", "island settings: workspace OSD unavailable hint")
+        visible: SettingsData.osdWorkspaceEnabled
+        enabled: available
+        checked: available && root.store.setting("islandWorkspaceOsd")
+        onToggled: checked => root.store.apply("islandWorkspaceOsd", checked)
+    }
+
+    SettingsToggleRow {
         settingKey: root.keyPrefix + "ChargingPulse"
         tags: ["island", "battery", "charging", "plugged", "power", "pulse"]
         text: I18n.tr("Charging", "island settings: pulse the island when power is connected or removed")

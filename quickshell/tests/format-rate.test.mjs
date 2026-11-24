@@ -16,10 +16,13 @@ test("compact rates never show bytes or more than three digits", () => {
         [1, "1 KB/s", "1K"],
         [999.4 * KB, "999 KB/s", "999K"],
         [999.5 * KB, "1 MB/s", "1M"],
-        [1000 * GB, "1 TB/s", "1T"]
+        [1000 * GB, "1 TB/s", "1T"],
+        [1.2 * MB, "1 MB/s", "1M", "1.2M"]
     ];
-    for (const [rate, long, short] of cases) {
+    for (const [rate, long, short, decimal] of cases) {
         assert.equal(format.formatRateCompact(rate, false), long, `${rate} B/s`);
         assert.equal(format.formatRateCompact(rate, true), short, `${rate} B/s short`);
+        if (decimal)
+            assert.equal(format.formatRateCompact(rate, true, true), decimal, `${rate} B/s one decimal`);
     }
 });

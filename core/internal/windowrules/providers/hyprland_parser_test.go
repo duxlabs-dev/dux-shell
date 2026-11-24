@@ -53,62 +53,6 @@ func TestHyprlandSetRuleLeavesConfOnlyInstallReadOnly(t *testing.T) {
 	}
 }
 
-func TestHyprlandRemoveRule(t *testing.T) {
-	tmpDir := hyprLuaDir(t)
-	provider := NewHyprlandWritableProvider(tmpDir)
-
-	rule1 := newTestWindowRule("rule1", "Rule 1", "^(app1)$")
-	rule1.Actions.OpenFloating = new(true)
-	rule2 := newTestWindowRule("rule2", "Rule 2", "^(app2)$")
-	rule2.Actions.OpenFloating = new(true)
-
-	_ = provider.SetRule(rule1)
-	_ = provider.SetRule(rule2)
-
-	if err := provider.RemoveRule("rule1"); err != nil {
-		t.Fatalf("RemoveRule failed: %v", err)
-	}
-
-	rules, _ := provider.LoadDMSRules()
-	if len(rules) != 1 {
-		t.Fatalf("expected 1 rule after removal, got %d", len(rules))
-	}
-	if rules[0].ID != "rule2" {
-		t.Errorf("remaining rule ID = %q, want rule2", rules[0].ID)
-	}
-}
-
-func TestHyprlandReorderRules(t *testing.T) {
-	tmpDir := hyprLuaDir(t)
-	provider := NewHyprlandWritableProvider(tmpDir)
-
-	rule1 := newTestWindowRule("rule1", "Rule 1", "^(app1)$")
-	rule1.Actions.OpenFloating = new(true)
-	rule2 := newTestWindowRule("rule2", "Rule 2", "^(app2)$")
-	rule2.Actions.OpenFloating = new(true)
-	rule3 := newTestWindowRule("rule3", "Rule 3", "^(app3)$")
-	rule3.Actions.OpenFloating = new(true)
-
-	_ = provider.SetRule(rule1)
-	_ = provider.SetRule(rule2)
-	_ = provider.SetRule(rule3)
-
-	if err := provider.ReorderRules([]string{"rule3", "rule1", "rule2"}); err != nil {
-		t.Fatalf("ReorderRules failed: %v", err)
-	}
-
-	rules, _ := provider.LoadDMSRules()
-	if len(rules) != 3 {
-		t.Fatalf("expected 3 rules, got %d", len(rules))
-	}
-	expectedOrder := []string{"rule3", "rule1", "rule2"}
-	for i, expectedID := range expectedOrder {
-		if rules[i].ID != expectedID {
-			t.Errorf("rule %d ID = %q, want %q", i, rules[i].ID, expectedID)
-		}
-	}
-}
-
 func TestParseHyprlandLuaRequiresFragment(t *testing.T) {
 	tmpDir := t.TempDir()
 	dmsDir := filepath.Join(tmpDir, "dms")

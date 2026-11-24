@@ -52,7 +52,9 @@ BasePill {
             magnificationScale: dockHosted ? (surfaceContext?.config?.magnificationScale ?? 130) : 130,
             magnificationProfile: dockHosted ? (surfaceContext?.config?.magnificationProfile ?? "parabolic") : "parabolic",
             magnificationExpand: dockHosted && (surfaceContext?.config?.magnificationExpand ?? false),
-            iconSizePercentage: dockHosted ? 100 : appOption("appsDockIconSizePercentage")
+            iconSizePercentage: dockHosted ? 100 : appOption("appsDockIconSizePercentage"),
+            // The Dux Icons badge is too small to read at bar size.
+            bareIcons: !dockHosted
         });
     }
     property bool renderItems: true
@@ -85,12 +87,72 @@ BasePill {
             Component.onCompleted: root.stripItem = apps
         }
     }
-    DockContextMenu {
-        id: appMenu
-        options: root.appOptions
+    Loader {
+        id: appMenuLoader
+        active: false
+        property bool folderMode: false
+        readonly property DockContextMenuBase menu: item as DockContextMenuBase
+        sourceComponent: folderMode ? folderMenuComponent : appMenuComponent
     }
-    DockTrashContextMenu {
+    Component {
+        id: appMenuComponent
+        DockContextMenu {
+            options: root.appOptions
+        }
+    }
+    Component {
+        id: folderMenuComponent
+        DockFolderMenu {
+            options: root.appOptions
+        }
+    }
+    Loader {
+        id: trashMenuLoader
+        active: false
+        sourceComponent: DockTrashContextMenu {
+            options: root.appOptions
+        }
+    }
+    QtObject {
+        id: appMenu
+        readonly property bool visible: appMenuLoader.menu?.visible ?? false
+        readonly property DockFolderMenu folderMenu: appMenuLoader.menu as DockFolderMenu
+
+        function closeFolder() {
+            folderMenu?.close();
+        }
+        function updateFolderDrop(item, x, y) {
+            return folderMenu?.updatePinDrop(item, x, y) ?? "";
+        }
+        function clearFolderDrop() {
+            if (folderMenu)
+                folderMenu.receivingPin = false;
+        }
+
+        function showFolder(button, dockScreen, rename = false) {
+            if (folderMenu?.visible && folderMenu.anchorItem === button && !rename) {
+                folderMenu.close();
+                return;
+            }
+            appMenuLoader.folderMode = true;
+            appMenuLoader.active = true;
+            appMenuLoader.menu.show(button, button.height, dockScreen);
+            folderMenu.renaming = rename;
+        }
+        function showForButton(button, data, dockHeight, hidePinOption, entry, dockScreen, parentDockApps) {
+            appMenuLoader.folderMode = false;
+            appMenuLoader.active = true;
+            const menu = appMenuLoader.item as DockContextMenu;
+            menu.showForButton(button, data, dockHeight, hidePinOption, entry, dockScreen, parentDockApps);
+        }
+    }
+    QtObject {
         id: trashMenu
-        options: root.appOptions
+        readonly property bool visible: trashMenuLoader.item?.visible ?? false
+
+        function showForButton(button, dockHeight, dockScreen, parentDockApps) {
+            trashMenuLoader.active = true;
+            trashMenuLoader.item.showForButton(button, dockHeight, dockScreen, parentDockApps);
+        }
     }
 }

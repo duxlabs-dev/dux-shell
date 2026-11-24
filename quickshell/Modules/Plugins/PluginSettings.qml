@@ -2,6 +2,7 @@ import QtQuick
 import Quickshell
 import qs.Common
 import qs.Services
+import qs.Widgets
 import qs.DCommon.Widgets
 
 Item {
@@ -24,7 +25,7 @@ Item {
         if (!pluginService?.availablePlugins || !pluginId)
             return false;
         const plugin = pluginService.availablePlugins[pluginId];
-        return plugin?.type === "desktop";
+        return !!plugin?.surfaces?.includes("desktop");
     }
 
     readonly property bool hasPermission: {
@@ -220,7 +221,7 @@ Item {
 
         Item {
             id: desktopDisplaySettings
-            visible: root.isDesktopPlugin
+            visible: root.isDesktopPlugin && !root.pluginService?.isDesktopInstance
             width: parent.width
             height: visible ? displaySettingsColumn.implicitHeight : 0
 
@@ -229,9 +230,7 @@ Item {
                 width: parent.width
                 spacing: Theme.spacingS
 
-                Rectangle {
-                    width: parent.width
-                    height: 1
+                DDivider {
                     color: Theme.outline
                     opacity: 0.3
                     visible: root.content.length > 0

@@ -7,7 +7,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
-	"slices"
 	"strings"
 
 	"github.com/duxlabs-dev/dux-shell/core/internal/deps"
@@ -97,7 +96,7 @@ func (a *ArchDistribution) DetectDependenciesWithTerminal(ctx context.Context, w
 	// Common detections using base methods
 	dependencies = append(dependencies, a.detectGit())
 	dependencies = append(dependencies, a.detectWindowManager(wm))
-	dependencies = append(dependencies, a.detectQuickshell())
+	dependencies = append(dependencies, a.detectDuxQtBase())
 	dependencies = append(dependencies, a.detectDMSGreeter())
 	dependencies = append(dependencies, a.detectXDGPortal())
 	dependencies = append(dependencies, a.detectAccountsService())
@@ -218,7 +217,7 @@ func (a *ArchDistribution) GetPackageMappingWithVariants(wm deps.WindowManager, 
 	packages := map[string]PackageMapping{
 		"dms (Dux Shell)":        a.getDMSMapping(variants["dms (Dux Shell)"]),
 		"git":                    {Name: "git", Repository: RepoTypeSystem},
-		"quickshell":             a.getQuickshellMapping(variants["quickshell"]),
+		"dux-qt-base":            a.getDuxQtBaseMapping(),
 		"dux-greeter":            a.getDMSGreeterMapping(variants["dux-greeter"]),
 		"matugen":                a.getMatugenMapping(variants["matugen"]),
 		"ghostty":                {Name: "ghostty", Repository: RepoTypeSystem},
@@ -248,11 +247,12 @@ func (a *ArchDistribution) GetPackageMappingWithVariants(wm deps.WindowManager, 
 	return packages
 }
 
-func (a *ArchDistribution) getQuickshellMapping(variant deps.PackageVariant) PackageMapping {
-	if forceQuickshellGit || variant == deps.VariantGit {
-		return PackageMapping{Name: "quickshell-git", Repository: RepoTypeAUR}
+// extra carries dux-qt-base once dux-shell depends on it; until then it is AUR-only
+func (a *ArchDistribution) getDuxQtBaseMapping() PackageMapping {
+	if a.isInSystemRepo("dux-qt-base") {
+		return PackageMapping{Name: "dux-qt-base", Repository: RepoTypeSystem}
 	}
-	return PackageMapping{Name: "quickshell", Repository: RepoTypeSystem}
+	return PackageMapping{Name: "dux-qt-base", Repository: RepoTypeAUR}
 }
 
 func (a *ArchDistribution) getHyprlandMapping(_ deps.PackageVariant) PackageMapping {
@@ -403,19 +403,6 @@ func (a *ArchDistribution) InstallPackages(ctx context.Context, dependencies []d
 
 	systemPkgs, aurPkgs, manualPkgs, variantMap := a.categorizePackages(dependencies, wm, reinstallFlags, skipFlags)
 
-	if slices.Contains(aurPkgs, "quickshell-git") && slices.Contains(systemPkgs, "dux-shell") {
-		if err := a.preinstallQuickshellGit(ctx, sudoPassword, progressChan); err != nil {
-			return fmt.Errorf("failed to preinstall quickshell-git: %w", err)
-		}
-		aurPkgs = slices.DeleteFunc(aurPkgs, func(p string) bool { return p == "quickshell-git" })
-	}
-
-	if slices.Contains(systemPkgs, "quickshell") && a.packageInstalled("quickshell-git") {
-		if err := a.removeQuickshellGit(ctx, sudoPassword, progressChan); err != nil {
-			return fmt.Errorf("failed to remove quickshell-git: %w", err)
-		}
-	}
-
 	// Phase 3: System Packages
 	if len(systemPkgs) > 0 {
 		progressChan <- InstallProgressMsg{
@@ -531,51 +518,6 @@ func (a *ArchDistribution) categorizePackages(dependencies []deps.Dependency, wm
 	}
 
 	return systemPkgs, aurPkgs, manualPkgs, variantMap
-}
-
-func (a *ArchDistribution) removeQuickshellGit(ctx context.Context, sudoPassword string, progressChan chan<- InstallProgressMsg) error {
-	progressChan <- InstallProgressMsg{
-		Phase:       PhaseSystemPackages,
-		Progress:    0.33,
-		Step:        "Removing quickshell-git...",
-		IsComplete:  false,
-		NeedsSudo:   true,
-		CommandInfo: "sudo pacman -Rdd --noconfirm quickshell-git",
-		LogOutput:   "Removing quickshell-git so stable quickshell can be installed",
-	}
-	cmd := privesc.ExecCommand(ctx, sudoPassword, "pacman -Rdd --noconfirm quickshell-git")
-	return a.runWithProgress(cmd, progressChan, PhaseSystemPackages, 0.33, 0.35)
-}
-
-func (a *ArchDistribution) preinstallQuickshellGit(ctx context.Context, sudoPassword string, progressChan chan<- InstallProgressMsg) error {
-	if a.packageInstalled("quickshell-git") {
-		return nil
-	}
-
-	if a.packageInstalled("quickshell") {
-		progressChan <- InstallProgressMsg{
-			Phase:       PhaseAURPackages,
-			Progress:    0.15,
-			Step:        "Removing stable quickshell...",
-			IsComplete:  false,
-			NeedsSudo:   true,
-			CommandInfo: "sudo pacman -Rdd --noconfirm quickshell",
-			LogOutput:   "Removing stable quickshell so quickshell-git can be installed",
-		}
-		cmd := privesc.ExecCommand(ctx, sudoPassword, "pacman -Rdd --noconfirm quickshell")
-		if err := a.runWithProgress(cmd, progressChan, PhaseAURPackages, 0.15, 0.18); err != nil {
-			return fmt.Errorf("failed to remove stable quickshell: %w", err)
-		}
-	}
-
-	progressChan <- InstallProgressMsg{
-		Phase:       PhaseAURPackages,
-		Progress:    0.18,
-		Step:        "Building quickshell-git before system packages...",
-		IsComplete:  false,
-		CommandInfo: "Installing quickshell-git ahead of dux-shell to avoid conflict",
-	}
-	return a.installSingleAURPackage(ctx, "quickshell-git", sudoPassword, progressChan, 0.18, 0.32)
 }
 
 func (a *ArchDistribution) InstalledVariant(stable, git PackageMapping) (deps.PackageVariant, bool) {
@@ -696,30 +638,16 @@ func (a *ArchDistribution) installAURPackages(ctx context.Context, packages []st
 }
 
 func (a *ArchDistribution) reorderAURPackages(packages []string) []string {
-	dmsDepencies := []string{"quickshell", "quickshell-git"}
-
-	var deps []string
 	var others []string
 	var dmsShell []string
-
 	for _, pkg := range packages {
 		if pkg == "dux-shell-git" {
 			dmsShell = append(dmsShell, pkg)
-		} else {
-			isDep := false
-			if slices.Contains(dmsDepencies, pkg) {
-				deps = append(deps, pkg)
-				isDep = true
-			}
-			if !isDep {
-				others = append(others, pkg)
-			}
+			continue
 		}
+		others = append(others, pkg)
 	}
-
-	result := append(deps, others...)
-	result = append(result, dmsShell...)
-	return result
+	return append(others, dmsShell...)
 }
 
 func (a *ArchDistribution) installSingleAURPackage(ctx context.Context, pkg, sudoPassword string, progressChan chan<- InstallProgressMsg, startProgress, endProgress float64) error {
@@ -789,7 +717,6 @@ func (a *ArchDistribution) installSingleAURPackageInternal(ctx context.Context, 
 		srcinfoPath := filepath.Join(packageDir, ".SRCINFO")
 		// extra ships dgop only as dux-gop (provides dgop), which makepkg resolves but pacman -Si does not
 		srcinfoEdits := []string{
-			"/depends = quickshell/d",
 			`s/^\(\s*depends = \)dgop$/\1dux-gop/`,
 		}
 

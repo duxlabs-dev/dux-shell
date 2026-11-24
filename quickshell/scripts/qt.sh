@@ -66,7 +66,19 @@ apply_qt_colors() {
         qt6_applied=true
     fi
 
-    if [ "$qt5_applied" = false ] && [ "$qt6_applied" = false ]; then
+    kde_applied=false
+    case ":${XDG_CURRENT_DESKTOP:-}:" in
+    *:KDE:*) ;;
+    *)
+        for kwrite in kwriteconfig6 kwriteconfig5; do
+            command -v "$kwrite" >/dev/null 2>&1 || continue
+            "$kwrite" --file "$config_dir/kdeglobals" --group UiSettings --key ColorScheme DankMatugen && kde_applied=true
+            break
+        done
+        ;;
+    esac
+
+    if [ "$qt5_applied" = false ] && [ "$qt6_applied" = false ] && [ "$kde_applied" = false ]; then
         echo "Warning: Neither qt5ct nor qt6ct found" >&2
         echo "Install qt5ct or qt6ct for Qt application theming" >&2
         exit 1

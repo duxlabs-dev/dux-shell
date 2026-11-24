@@ -19,7 +19,9 @@ SettingsRow {
     property alias textSize: buttonGroup.textSize
     property alias checkEnabled: buttonGroup.checkEnabled
 
-    readonly property bool compact: width - buttonGroup.naturalWidth - SettingsMetrics.rowPaddingH * 2 - SettingsMetrics.rowContentSpacing < SettingsMetrics.buttonGroupCompactThreshold
+    readonly property bool foldsAlone: width - buttonGroup.naturalWidth - SettingsMetrics.rowPaddingH * 2 - SettingsMetrics.rowContentSpacing < SettingsMetrics.buttonGroupCompactThreshold
+    readonly property var foldGroup: groupHost
+    readonly property bool compact: foldsAlone || (foldGroup?.foldButtonGroups ?? false)
 
     // `values` is index-aligned with `model`.
     property var values: []
@@ -56,7 +58,7 @@ SettingsRow {
         id: buttonGroup
         arrowKeysSelect: false
         parent: root.compact ? bodyHost : trailingHost
-        x: root.compact ? (parent.width - width) / 2 : 0
+        x: root.compact && !I18n.isRtl ? parent.width - width : 0
         selectionMode: "single"
         currentIndex: root.values.length > 0 ? root.indexOfValue(root.value) : 0
         enabled: root.enabled

@@ -18,16 +18,20 @@ Singleton {
     property color highlight: artAccent ? _accent : Theme.tertiary
 
     Behavior on accent {
-        enabled: !SettingsData.reduceMotion && Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
+        enabled: !Theme.reduceMotion
         ColorAnimation {
             duration: Theme.expressiveDurations.expressiveEffects
+            easing.type: Easing.BezierSpline
+            easing.bezierCurve: Theme.expressiveCurves.expressiveEffects
         }
     }
 
     Behavior on highlight {
-        enabled: !SettingsData.reduceMotion && Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
+        enabled: !Theme.reduceMotion
         ColorAnimation {
             duration: Theme.expressiveDurations.expressiveEffects
+            easing.type: Easing.BezierSpline
+            easing.bezierCurve: Theme.expressiveCurves.expressiveEffects
         }
     }
     property int lyricsConsumers: 0

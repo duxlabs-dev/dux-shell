@@ -46,11 +46,14 @@ lint-qml:
 test-qml:
 	QMLTESTRUNNER="$(QMLTESTRUNNER)" python3 quickshell/tests/run-qml.py
 
-# Pull the latest dux-qml-common and pin it everywhere it is consumed
-# (submodule pointer + nix flake input). Commit both in one change.
+.PHONY: update-common update-qtbase
 update-common:
 	git submodule update --remote --merge dux-qml-common
 	nix --extra-experimental-features 'nix-command flakes' flake update dank-qml-common
+
+update-qtbase:
+	git submodule update --remote --merge dux-qt-base
+	nix --extra-experimental-features 'nix-command flakes' flake update dux-qt-base
 
 # Installation targets
 install-bin:
@@ -158,6 +161,8 @@ help:
 	@echo "  clean                - Clean build artifacts"
 	@echo "  lint-qml             - Run qmllint on shell entrypoints using the Quickshell tooling VFS"
 	@echo "  test-qml             - Run shell logic and Qt unit tests"
+	@echo "  update-common        - Update the dux-qml-common submodule and flake input"
+	@echo "  update-qtbase        - Update the dux-qt-base submodule and flake input"
 	@echo ""
 	@echo "Install:"
 	@echo "  install              - Build and install everything (requires sudo)"

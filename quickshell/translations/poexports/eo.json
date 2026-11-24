@@ -2,8 +2,17 @@
   " (%1 left)": {
     " (%1 left)": ""
   },
+  "%1 %2": {
+    "%1 %2": ""
+  },
   "%1 (+%2 more)": {
     "%1 (+%2 more)": "%1 (+%2 pli)"
+  },
+  "%1 (UI)": {
+    "%1 (UI)": ""
+  },
+  "%1 (recommended)": {
+    "%1 (recommended)": ""
   },
   "%1 DMS bind may be overridden by config binds that come after the include.": {
     "%1 DMS bind may be overridden by config binds that come after the include.": "%1 DMS-klavkombino eble estas superregata de agordaj ligoj post la inkludo."
@@ -41,6 +50,12 @@
   "%1 already holds this screen edge": {
     "%1 already holds this screen edge": "%1 jam okupas ĉi tiun ekranrandon"
   },
+  "%1 app": {
+    "%1 app": ""
+  },
+  "%1 apps": {
+    "%1 apps": ""
+  },
   "%1 before": {
     "%1 before": "%1 antaŭe"
   },
@@ -49,6 +64,9 @@
   },
   "%1 breaking": {
     "%1 breaking": "%1 rompa"
+  },
+  "%1 can use these shortcuts from any window. Change them later in Settings.": {
+    "%1 can use these shortcuts from any window. Change them later in Settings.": ""
   },
   "%1 character": {
     "%1 character": "%1 signo"
@@ -67,6 +85,9 @@
   },
   "%1 cores, %2 threads": {
     "%1 cores, %2 threads": ""
+  },
+  "%1 could not be read": {
+    "%1 could not be read": ""
   },
   "%1 day": {
     "%1 day": "%1 tago"
@@ -98,17 +119,14 @@
   "%1 fixes": {
     "%1 fixes": "%1 riparoj"
   },
-  "%1 h": {
-    "%1 h": ""
-  },
-  "%1 h %2 m": {
-    "%1 h %2 m": ""
-  },
   "%1 h %2 m left": {
     "%1 h %2 m left": "%1 h %2 m restas"
   },
   "%1 h left": {
     "%1 h left": "Restas %1 h"
+  },
+  "%1 has no folders that can be recolored": {
+    "%1 has no folders that can be recolored": ""
   },
   "%1 holds this edge, so the dock stays hidden there": {
     "%1 holds this edge, so the dock stays hidden there": "%1 okupas ĉi tiun randon, tial la doko restas kaŝita tie"
@@ -122,14 +140,26 @@
   "%1 is %2 and may use a lot of memory.": {
     "%1 is %2 and may use a lot of memory.": "%1 estas %2 kaj eble uzos multe da memoro."
   },
+  "%1 is already installed. Replace it?": {
+    "%1 is already installed. Replace it?": ""
+  },
+  "%1 is not installed": {
+    "%1 is not installed": ""
+  },
   "%1 is not installed. Install the package to manage the greeter.": {
     "%1 is not installed. Install the package to manage the greeter.": ""
+  },
+  "%1 is not supported": {
+    "%1 is not supported": ""
   },
   "%1 is now included in config": {
     "%1 is now included in config": "%1 nun inkluziviĝas en la agordo"
   },
   "%1 is running and will create duplicate Bluetooth players. Disable it with: %2": {
     "%1 is running and will create duplicate Bluetooth players. Disable it with: %2": ""
+  },
+  "%1 is still included": {
+    "%1 is still included": ""
   },
   "%1 issue found": {
     "%1 issue found": "%1 problemo trovita"
@@ -176,6 +206,9 @@
   "%1 not found": {
     "%1 not found": ""
   },
+  "%1 not removed": {
+    "%1 not removed": ""
+  },
   "%1 notifications": {
     "%1 notifications": "%1 sciigoj"
   },
@@ -212,14 +245,14 @@
   "%1 processes": {
     "%1 processes": ""
   },
-  "%1 procs": {
-    "%1 procs": ""
-  },
   "%1 second": {
     "%1 second": "%1 sekundo"
   },
   "%1 seconds": {
     "%1 seconds": "%1 sekundoj"
+  },
+  "%1 still uses it": {
+    "%1 still uses it": ""
   },
   "%1 tasks": {
     "%1 tasks": "%1 taskoj"
@@ -323,6 +356,9 @@
   "50 uses Material shapes. Lower values reduce rounding; higher values increase it.": {
     "50 uses Material shapes. Lower values reduce rounding; higher values increase it.": "50 uzas formojn de Material. Pli malaltaj valoroj malpliigas rondecon; pli altaj valoroj pligrandigas ĝin."
   },
+  "6 GHz": {
+    "6 GHz": ""
+  },
   "A custom seed color overrides this": {
     "A custom seed color overrides this": "Propra sema koloro superregas ĉi tion"
   },
@@ -352,9 +388,6 @@
   },
   "AC power": {
     "AC power": "Reta potenco"
-  },
-  "API": {
-    "API": "API"
   },
   "AUR helpers are interactive — see the terminal window for prompts. This popout will return to idle when the upgrade exits.": {
     "AUR helpers are interactive — see the terminal window for prompts. This popout will return to idle when the upgrade exits.": "AUR-helpantoj estas interagaj — vidu la terminalfenestron por invitoj. "
@@ -440,6 +473,21 @@
   "Active: None": {
     "Active: None": "Aktiva: neniu"
   },
+  "Activity colors": {
+    "Activity colors": ""
+  },
+  "Activity icon animation": {
+    "Activity icon animation": ""
+  },
+  "Activity position": {
+    "Activity position": ""
+  },
+  "Activity sources": {
+    "Activity sources": ""
+  },
+  "Ad-hoc": {
+    "Ad-hoc": ""
+  },
   "Adapters": {
     "Adapters": "Adaptiloj"
   },
@@ -467,14 +515,26 @@
   "Add Title": {
     "Add Title": "Aldoni titolon"
   },
+  "Add a profile in Settings": {
+    "Add a profile in Settings": ""
+  },
   "Add a task...": {
     "Add a task...": "Aldoni taskon..."
+  },
+  "Add a widget here": {
+    "Add a widget here": ""
+  },
+  "Add account": {
+    "Add account": ""
   },
   "Add by address": {
     "Add by address": "Aldoni per adreso"
   },
   "Add condition": {
     "Add condition": ""
+  },
+  "Add connection": {
+    "Add connection": ""
   },
   "Add entry": {
     "Add entry": "Aldoni elementon"
@@ -497,6 +557,9 @@
   "Add printer": {
     "Add printer": "Aldoni presilon"
   },
+  "Add routes for allowed IPs": {
+    "Add routes for allowed IPs": ""
+  },
   "Add rule": {
     "Add rule": "Aldoni regulon"
   },
@@ -505,6 +568,9 @@
   },
   "Add substitution": {
     "Add substitution": "Aldoni anstataŭigon"
+  },
+  "Add to %1": {
+    "Add to %1": ""
   },
   "Add to autostart": {
     "Add to autostart": "Aldoni al memlanĉo"
@@ -529,6 +595,9 @@
   },
   "Added in front of every app launch command": {
     "Added in front of every app launch command": "Aldonita antaŭ ĉiu aplikaĵa lanĉkomando"
+  },
+  "Address generation": {
+    "Address generation": ""
   },
   "Adds a compositor window rule so DMS windows such as Settings open floating": {
     "Adds a compositor window rule so DMS windows such as Settings open floating": "Aldonas kunmetilan fenestroregulon por ke DMS-fenestroj kiel Agordoj malfermiĝu flosante"
@@ -560,11 +629,20 @@
   "Advanced comma-separated libxkbcommon options.": {
     "Advanced comma-separated libxkbcommon options.": "Progresintaj komo-apartigitaj opcioj de libxkbcommon."
   },
+  "Advanced options": {
+    "Advanced options": ""
+  },
   "After %1": {
     "After %1": "Post %1"
   },
+  "After capture": {
+    "After capture": ""
+  },
   "Afternoon": {
     "Afternoon": "Posttagmezo"
+  },
+  "Airplane mode": {
+    "Airplane mode": ""
   },
   "Album art backdrop": {
     "Album art backdrop": "Fono de albumkovrilo"
@@ -583,6 +661,9 @@
   },
   "All checks passed": {
     "All checks passed": "Ĉiuj kontroloj sukcesis"
+  },
+  "All connections": {
+    "All connections": ""
   },
   "All day": {
     "All day": "Tuttage"
@@ -608,6 +689,9 @@
   "Allow LAN access": {
     "Allow LAN access": "Permesu LAN-aliron"
   },
+  "Allow TLS 1.0 and 1.1": {
+    "Allow TLS 1.0 and 1.1": ""
+  },
   "Allow critical": {
     "Allow critical": "Permesi kritikajn"
   },
@@ -619,6 +703,12 @@
   },
   "Allow in Do Not Disturb": {
     "Allow in Do Not Disturb": "Permesi en «Ne ĝenu»"
+  },
+  "Allow incoming connections": {
+    "Allow incoming connections": ""
+  },
+  "Allowed IPs": {
+    "Allowed IPs": ""
   },
   "Allowed cores": {
     "Allowed cores": ""
@@ -692,14 +782,17 @@
   "Anchor": {
     "Anchor": "ankro"
   },
-  "Animation duration": {
-    "Animation duration": "Animacidaŭro"
-  },
   "Animation style": {
     "Animation style": "Animacia Stilo"
   },
   "Animations": {
     "Animations": "Animacioj"
+  },
+  "Animations and motion": {
+    "Animations and motion": ""
+  },
+  "Annotate region captures": {
+    "Annotate region captures": ""
   },
   "Anonymous": {
     "Anonymous": ""
@@ -815,11 +908,17 @@
   "Apps that capture the keyboard can block it": {
     "Apps that capture the keyboard can block it": "Aplikaĵoj kiuj kaptas la klavaron povas bloki ĝin"
   },
+  "Apps that register global shortcuts appear here.": {
+    "Apps that register global shortcuts appear here.": ""
+  },
   "Apps with notification popups muted. Unmute or delete to remove.": {
     "Apps with notification popups muted. Unmute or delete to remove.": "Aplikaĵoj kun silentigitaj sciigaj ŝprucfenestroj. Malsilentigu aŭ forigu por restaŭri."
   },
   "Arc extender": {
     "Arc extender": "Arko-Etendilo"
+  },
+  "Archive": {
+    "Archive": ""
   },
   "Archive manager": {
     "Archive manager": "Arkivomastrumilo"
@@ -830,17 +929,26 @@
   "Arguments": {
     "Arguments": "Argumentoj"
   },
+  "Arrange dock items": {
+    "Arrange dock items": ""
+  },
   "Arrangement": {
     "Arrangement": "Aranĝo"
   },
   "Arrangement, resolution, scale, profiles": {
     "Arrangement, resolution, scale, profiles": "Aranĝo, distingivo, skalo, profiloj"
   },
+  "Arrow": {
+    "Arrow": ""
+  },
   "Artwork": {
     "Artwork": "Artaĵo"
   },
   "Asleep": {
     "Asleep": ""
+  },
+  "At least one group must remain selected": {
+    "At least one group must remain selected": ""
   },
   "At least one output must remain enabled": {
     "At least one output must remain enabled": "Almenaŭ unu eligo devas resti ebligita"
@@ -947,6 +1055,9 @@
   "Auto follows bar spacing, Off keeps your %1 config": {
     "Auto follows bar spacing, Off keeps your %1 config": "Aŭtomata sekvas bretan interspacon, Malŝaltita konservas vian agordon de %1"
   },
+  "Auto height": {
+    "Auto height": ""
+  },
   "Auto location": {
     "Auto location": "Aŭtomata loko"
   },
@@ -1007,6 +1118,9 @@
   "Autoconnect enabled": {
     "Autoconnect enabled": "Aŭtomata konekto estas ŝaltita"
   },
+  "Automatic DNS": {
+    "Automatic DNS": ""
+  },
   "Automatic control": {
     "Automatic control": "Aŭtomata regado"
   },
@@ -1015,6 +1129,9 @@
   },
   "Automatic placement": {
     "Automatic placement": "Aŭtomata lokigo"
+  },
+  "Automatic routes": {
+    "Automatic routes": ""
   },
   "Automatically enable while screen sharing": {
     "Automatically enable while screen sharing": "Aŭtomate ebligi dum ekrana kunhavigo"
@@ -1049,11 +1166,14 @@
   "Available networks": {
     "Available networks": "Disponeblaj retoj"
   },
+  "Available to all users": {
+    "Available to all users": ""
+  },
   "Avatar ring": {
     "Avatar ring": "Profilbilda ringo"
   },
-  "BIOS": {
-    "BIOS": ""
+  "Avoid open popouts": {
+    "Avoid open popouts": ""
   },
   "Backend": {
     "Backend": "Interna programo"
@@ -1159,6 +1279,9 @@
   },
   "Bento style only": {
     "Bento style only": ""
+  },
+  "Bind keys to region, screen, window and scroll captures": {
+    "Bind keys to region, screen, window and scroll captures": ""
   },
   "Bind the %1 IPC action in your compositor config.": {
     "Bind the %1 IPC action in your compositor config.": "Ligu la IPC-agon %1 en via kunmetila agordo."
@@ -1289,6 +1412,12 @@
   "Bottom section": {
     "Bottom section": "Malsupra sekcio"
   },
+  "Bounce": {
+    "Bounce": ""
+  },
+  "Brackets": {
+    "Brackets": ""
+  },
   "Bright": {
     "Bright": "Hela"
   },
@@ -1349,11 +1478,11 @@
   "Button color": {
     "Button color": "Butonkoloro"
   },
+  "CA certificate": {
+    "CA certificate": ""
+  },
   "CPU": {
     "CPU": "ĉefprocesoro"
-  },
-  "CPU graph": {
-    "CPU graph": "Ĉefprocesoro-grafikaĵo"
   },
   "CPU temperature": {
     "CPU temperature": "Ĉefprocesoro-temperaturo"
@@ -1418,6 +1547,9 @@
   "Candidates per page": {
     "Candidates per page": ""
   },
+  "Cannot delete the active profile": {
+    "Cannot delete the active profile": ""
+  },
   "Cannot delete the only administrator": {
     "Cannot delete the only administrator": "Ne povas forigi la solan administranton"
   },
@@ -1450,6 +1582,12 @@
   },
   "Caps lock": {
     "Caps lock": "Majuskla baskulo"
+  },
+  "Capture": {
+    "Capture": ""
+  },
+  "Card": {
+    "Card": ""
   },
   "Card backgrounds": {
     "Card backgrounds": ""
@@ -1498,6 +1636,9 @@
   },
   "Change Volume": {
     "Change Volume": "Ŝanĝi laŭtecon"
+  },
+  "Change where an activity sits, what it shows when collapsed and what a click opens": {
+    "Change where an activity sits, what it shows when collapsed and what a click opens": ""
   },
   "Changes save to %1": {
     "Changes save to %1": "Ŝanĝoj konserviĝas al %1"
@@ -1589,6 +1730,9 @@
   "Choose colors from palette": {
     "Choose colors from palette": "Elekti kolorojn el paletro"
   },
+  "Choose screenshot folder": {
+    "Choose screenshot folder": ""
+  },
   "Choose wallpaper folder": {
     "Choose wallpaper folder": "Elekti dosierujon de fonbildoj"
   },
@@ -1667,6 +1811,9 @@
   "Click through": {
     "Click through": "Klaki tra"
   },
+  "Click to add, or drag into place": {
+    "Click to add, or drag into place": ""
+  },
   "Click to capture": {
     "Click to capture": "Klaku por kapti"
   },
@@ -1688,8 +1835,14 @@
   "Clicking a workspace from another display moves it to the display of the bar you clicked": {
     "Clicking a workspace from another display moves it to the display of the bar you clicked": ""
   },
+  "Clicking or hovering the home face opens this tab": {
+    "Clicking or hovering the home face opens this tab": ""
+  },
   "Clicks on empty bar space reach the windows below": {
     "Clicks on empty bar space reach the windows below": "Alklakoj sur malplena breta spaco atingas la fenestrojn sube"
+  },
+  "Client certificate": {
+    "Client certificate": ""
   },
   "Client fullscreen state": {
     "Client fullscreen state": ""
@@ -1730,6 +1883,9 @@
   "Clocks, monitors, plugins": {
     "Clocks, monitors, plugins": "Horloĝoj, ekranoj, kromprogramoj"
   },
+  "Cloned MAC address": {
+    "Cloned MAC address": ""
+  },
   "Close Active Window": {
     "Close Active Window": ""
   },
@@ -1742,6 +1898,9 @@
   "Close on window focus": {
     "Close on window focus": "Fermi ĉe fenestra fokuso"
   },
+  "Clover": {
+    "Clover": ""
+  },
   "Codec switched successfully": {
     "Codec switched successfully": "Kodeko sukcese ŝanĝita"
   },
@@ -1753,6 +1912,12 @@
   },
   "Collapse": {
     "Collapse": "Faldi"
+  },
+  "Collapsed background": {
+    "Collapsed background": ""
+  },
+  "Collapsed content": {
+    "Collapsed content": ""
   },
   "Color %1 copied": {
     "Color %1 copied": "Koloro %1 kopiita"
@@ -1820,6 +1985,9 @@
   "Comma-separated list of session names to hide. Wrap in slashes for regex (e.g., /^_.*/).": {
     "Comma-separated list of session names to hide. Wrap in slashes for regex (e.g., /^_.*/).": "Perkome disigita listo de seancnomoj kaŝendaj. Envolvu en oblikvoj por regula esprimo (ekz., /^_.*/)."
   },
+  "Comma-separated plugin or IPC source IDs that never show here": {
+    "Comma-separated plugin or IPC source IDs that never show here": ""
+  },
   "Command": {
     "Command": "Komando"
   },
@@ -1844,6 +2012,9 @@
   "Compact mode": {
     "Compact mode": "Kompakta reĝimo"
   },
+  "Compare": {
+    "Compare": ""
+  },
   "Completed": {
     "Completed": "Plenumita"
   },
@@ -1856,6 +2027,9 @@
   "Compositor and shell key bindings": {
     "Compositor and shell key bindings": "Kunmetilaj kaj ŝelaj klavkombinoj"
   },
+  "Compositor animations": {
+    "Compositor animations": ""
+  },
   "Compression": {
     "Compression": ""
   },
@@ -1864,6 +2038,9 @@
   },
   "Config action: %1": {
     "Config action: %1": "Agorda ago: %1"
+  },
+  "Config files DMS writes, stop managing": {
+    "Config files DMS writes, stop managing": ""
   },
   "Config validation failed": {
     "Config validation failed": "Kontrolo de agordo malsukcesis"
@@ -1904,6 +2081,9 @@
   "Confirm password": {
     "Confirm password": "Konfirmi pasvorton"
   },
+  "Confirm region": {
+    "Confirm region": ""
+  },
   "Confirmation": {
     "Confirmation": "Konfirmo"
   },
@@ -1928,6 +2108,9 @@
   "Connected Device": {
     "Connected Device": "Konektita aparato"
   },
+  "Connected popouts": {
+    "Connected popouts": ""
+  },
   "Connected to %1": {
     "Connected to %1": "Konektita al %1"
   },
@@ -1951,6 +2134,9 @@
   },
   "Connections and autoconnect": {
     "Connections and autoconnect": "Konektoj kaj aŭtomata konektado"
+  },
+  "Connectivity checking": {
+    "Connectivity checking": ""
   },
   "Connects to the internet": {
     "Connects to the internet": ""
@@ -1997,6 +2183,9 @@
   "Convertible": {
     "Convertible": ""
   },
+  "Cookie": {
+    "Cookie": ""
+  },
   "Cooldown": {
     "Cooldown": "Malvarmiĝo"
   },
@@ -2006,6 +2195,9 @@
   "Copied!": {
     "Copied!": "Kopiite!"
   },
+  "Copies the saved file too, so terminals paste its path": {
+    "Copies the saved file too, so terminals paste its path": ""
+  },
   "Copies the screenshot to the clipboard": {
     "Copies the screenshot to the clipboard": "Kopias la ekrankopion al la tondujo"
   },
@@ -2014,6 +2206,9 @@
   },
   "Copy %1": {
     "Copy %1": ""
+  },
+  "Copy App ID": {
+    "Copy App ID": ""
   },
   "Copy Full Command": {
     "Copy Full Command": "Kopii tutan komandon"
@@ -2030,6 +2225,12 @@
   "Copy Text": {
     "Copy Text": "Kopii tekston"
   },
+  "Copy Title": {
+    "Copy Title": ""
+  },
+  "Copy as file": {
+    "Copy as file": ""
+  },
   "Copy report": {
     "Copy report": ""
   },
@@ -2038,6 +2239,9 @@
   },
   "Copy target (%1)": {
     "Copy target (%1)": "Kopii celon (%1)"
+  },
+  "Copy to clipboard": {
+    "Copy to clipboard": ""
   },
   "Core clock": {
     "Core clock": ""
@@ -2162,6 +2366,9 @@
   "Cursor auto-hide timeout": {
     "Cursor auto-hide timeout": "Tempolimo por aŭtomata kaŝo de kursoro"
   },
+  "Cursor theme not installed": {
+    "Cursor theme not installed": ""
+  },
   "Curve": {
     "Curve": "kurbo"
   },
@@ -2213,8 +2420,14 @@
   "Custom update command": {
     "Custom update command": "Propra ĝisdatiga komando"
   },
+  "Custom, based on %1": {
+    "Custom, based on %1": ""
+  },
   "Customizable empty space": {
     "Customizable empty space": "Agordebla malplena spaco"
+  },
+  "Cut": {
+    "Cut": ""
   },
   "DDC/CI monitor": {
     "DDC/CI monitor": "DDC/CI-ekrano"
@@ -2257,6 +2470,9 @@
   },
   "DMS stops drawing wallpapers on every display": {
     "DMS stops drawing wallpapers on every display": "DMS ĉesas desegni fonbildojn sur ĉiu ekrano"
+  },
+  "DMS will then manage %1 animations and override animation settings in your config.": {
+    "DMS will then manage %1 animations and override animation settings in your config.": ""
   },
   "Daemon": {
     "Daemon": ""
@@ -2309,6 +2525,9 @@
   "Dashboard": {
     "Dashboard": "Stirpanelo"
   },
+  "Dashboard opens to": {
+    "Dashboard opens to": ""
+  },
   "Dashboard tabs": {
     "Dashboard tabs": ""
   },
@@ -2356,6 +2575,9 @@
   },
   "Declared by the author, not enforced": {
     "Declared by the author, not enforced": ""
+  },
+  "Decrease font size": {
+    "Decrease font size": ""
   },
   "Default": {
     "Default": "Defaŭlta"
@@ -2498,6 +2720,9 @@
   "Did you mean": {
     "Did you mean": ""
   },
+  "Different length": {
+    "Different length": ""
+  },
   "Digital": {
     "Digital": "Cifereca"
   },
@@ -2525,6 +2750,12 @@
   "Disable %1?": {
     "Disable %1?": ""
   },
+  "Disable All": {
+    "Disable All": ""
+  },
+  "Disable TLS 1.3": {
+    "Disable TLS 1.3": ""
+  },
   "Disable autoconnect": {
     "Disable autoconnect": "Malŝalti aŭtomatan konekton"
   },
@@ -2539,6 +2770,9 @@
   },
   "Disable while typing": {
     "Disable while typing": "Malŝalti dum tajpado"
+  },
+  "Disable wireless radios": {
+    "Disable wireless radios": ""
   },
   "Disable with external mouse": {
     "Disable with external mouse": "Malebligi kun ekstera muso"
@@ -2555,11 +2789,11 @@
   "Disabled by Click through": {
     "Disabled by Click through": ""
   },
+  "Disabled by Connected popouts": {
+    "Disabled by Connected popouts": ""
+  },
   "Disabled by Frame Mode": {
     "Disabled by Frame Mode": "Malŝaltita de Kadra Reĝimo"
-  },
-  "Disabling WiFi...": {
-    "Disabling WiFi...": "Malŝaltante WiFi-on..."
   },
   "Disabling auto-login on startup...": {
     "Disabling auto-login on startup...": "Malŝaltante aŭtomatan ensaluti ĉe ekfunkciigo..."
@@ -2581,9 +2815,6 @@
   },
   "Disconnected": {
     "Disconnected": "Malkonektita"
-  },
-  "Disconnected from WiFi": {
-    "Disconnected from WiFi": "Malkonektita de WiFi"
   },
   "Discover community plugins. Review their code before installing, and audit changes before updating.": {
     "Discover community plugins. Review their code before installing, and audit changes before updating.": "Malkovru komunumajn kromprogramojn. Reviziu ilian kodon antaŭ ol instali, kaj kontrolu ŝanĝojn antaŭ ol ĝisdatigi."
@@ -2675,6 +2906,9 @@
   "Displays, taskbar, auto-hide": {
     "Displays, taskbar, auto-hide": "Ekranoj, taskbreto, aŭtomata kaŝo"
   },
+  "Dissolve folder": {
+    "Dissolve folder": ""
+  },
   "Distribution": {
     "Distribution": "Distribuaĵo"
   },
@@ -2714,8 +2948,8 @@
   "Documents": {
     "Documents": "Dokumentoj"
   },
-  "Domain (optional)": {
-    "Domain (optional)": "Domajno (laŭvola)"
+  "Does not fit here. Drag to another spot.": {
+    "Does not fit here. Drag to another spot.": ""
   },
   "Dominant": {
     "Dominant": "Superreganta"
@@ -2765,8 +2999,14 @@
   "Drag to move, click to open activities": {
     "Drag to move, click to open activities": "Trenu por movi, alklaku por malfermi aktivecojn"
   },
+  "Drag widgets in, or click one to add it": {
+    "Drag widgets in, or click one to add it": ""
+  },
   "Dragged displays line up with neighboring edges without overlapping": {
     "Dragged displays line up with neighboring edges without overlapping": "Trenitaj ekranoj viciĝas kun najbaraj randoj sen interkovro"
+  },
+  "Draw, highlight and add text on a region before it is saved": {
+    "Draw, highlight and add text on a region before it is saved": ""
   },
   "Driver": {
     "Driver": "Pelilo"
@@ -2792,6 +3032,9 @@
   "Duo": {
     "Duo": "Duo"
   },
+  "Duplex": {
+    "Duplex": ""
+  },
   "Duplicate": {
     "Duplicate": "Duobligi"
   },
@@ -2800,9 +3043,6 @@
   },
   "Dusk (Astronomical Twilight)": {
     "Dusk (Astronomical Twilight)": "Krepasko (astronomia krepasko)"
-  },
-  "Dusk (Civil Twighlight)": {
-    "Dusk (Civil Twighlight)": "Krepasko (civila krepasko)"
   },
   "Dusk (Nautical Twilight)": {
     "Dusk (Nautical Twilight)": "Krepasko (naŭtika krepasko)"
@@ -2882,6 +3122,9 @@
   "Edit event": {
     "Edit event": "Redaktu eventon"
   },
+  "Edit layout": {
+    "Edit layout": ""
+  },
   "Edit mode": {
     "Edit mode": "Redakta reĝimo"
   },
@@ -2927,8 +3170,8 @@
   "Empty placeholders fill the switcher up to the count": {
     "Empty placeholders fill the switcher up to the count": "Malplenaj lokokupiloj plenigas la ŝaltilon ĝis la nombro"
   },
-  "Enable Wi-Fi before starting the hotspot.": {
-    "Enable Wi-Fi before starting the hotspot.": "Ebligu Wi-Fi antaŭ ol startigi la retkaptejon."
+  "Empty space": {
+    "Empty space": ""
   },
   "Enable autoconnect": {
     "Enable autoconnect": "Ŝalti aŭtomatan konekton"
@@ -2945,9 +3188,6 @@
   "Enabled": {
     "Enabled": "Ŝaltita"
   },
-  "Enabling WiFi...": {
-    "Enabling WiFi...": "Ŝaltas WiFi-on..."
-  },
   "Enabling cellular...": {
     "Enabling cellular...": "Ebligante ĉelan reton..."
   },
@@ -2959,6 +3199,9 @@
   },
   "End process tree": {
     "End process tree": ""
+  },
+  "Endpoint": {
+    "Endpoint": ""
   },
   "Enter 6-digit passkey": {
     "Enter 6-digit passkey": "Enigu 6-ciferan pasŝlosilon"
@@ -2983,6 +3226,9 @@
   },
   "Enter custom top bar format (e.g., ddd MMM d)": {
     "Enter custom top bar format (e.g., ddd MMM d)": "Enigu propran suprabretan formaton (ekz., ddd MMM d)"
+  },
+  "Enter edit mode on the dock to rearrange or remove items": {
+    "Enter edit mode on the dock to rearrange or remove items": ""
   },
   "Enter launch prefix (e.g., 'uwsm-app')": {
     "Enter launch prefix (e.g., 'uwsm-app')": "Enigu lanĉ-prefikson (ekz., 'uwsm-app')"
@@ -3019,6 +3265,9 @@
   },
   "Environment Variables": {
     "Environment Variables": "Mediaj variabloj"
+  },
+  "Eraser": {
+    "Eraser": ""
   },
   "Error": {
     "Error": "Eraro"
@@ -3077,6 +3326,12 @@
   "Expand by default": {
     "Expand by default": "Malfaldi defaŭlte"
   },
+  "Expanded background": {
+    "Expanded background": ""
+  },
+  "Expanded opacity": {
+    "Expanded opacity": ""
+  },
   "Expansion mode": {
     "Expansion mode": "Malfalda reĝimo"
   },
@@ -3091,6 +3346,9 @@
   },
   "Exponential": {
     "Exponential": "Eksponenta"
+  },
+  "Export": {
+    "Export": ""
   },
   "Expose the arcs": {
     "Expose the arcs": "Malkovru la Arkojn"
@@ -3128,6 +3386,9 @@
   "Fade to lock screen": {
     "Fade to lock screen": "Dissolvi al ŝlosekrano"
   },
+  "Fades content at the top and bottom of scrollable views": {
+    "Fades content at the top and bottom of scrollable views": ""
+  },
   "Fades the screen out first. Input during the fade cancels it": {
     "Fades the screen out first. Input during the fade cancels it": "Fadas la ekranon unue. Enigo dum la fado nuligas ĝin"
   },
@@ -3158,6 +3419,9 @@
   "Failed to change priority of %1": {
     "Failed to change priority of %1": ""
   },
+  "Failed to check connectivity": {
+    "Failed to check connectivity": ""
+  },
   "Failed to configure hotspot": {
     "Failed to configure hotspot": "Malsukcesis agordi retkaptejon"
   },
@@ -3182,6 +3446,9 @@
   "Failed to delete printer": {
     "Failed to delete printer": "Malsukcesis forigi presilon"
   },
+  "Failed to delete profile": {
+    "Failed to delete profile": ""
+  },
   "Failed to disable job acceptance": {
     "Failed to disable job acceptance": "Malsukcesis malŝalti task-akcepton"
   },
@@ -3191,23 +3458,23 @@
   "Failed to disable plugin: %1": {
     "Failed to disable plugin: %1": "Malsukcesis malŝalti kromprogramon: %1"
   },
+  "Failed to disconnect": {
+    "Failed to disconnect": ""
+  },
   "Failed to disconnect VPN": {
     "Failed to disconnect VPN": "Malsukcesis malkonekti VPN"
   },
   "Failed to disconnect VPNs": {
     "Failed to disconnect VPNs": "Malsukcesis malkonekti VPN-ojn"
   },
-  "Failed to disconnect WiFi": {
-    "Failed to disconnect WiFi": "Malsukcesis malkonekti WiFi-on"
+  "Failed to duplicate %1": {
+    "Failed to duplicate %1": ""
   },
   "Failed to empty trash": {
     "Failed to empty trash": "Malsukcesis malplenigi rubujon"
   },
   "Failed to enable IP location": {
     "Failed to enable IP location": "Malsukcesis ŝalti IP-lokon"
-  },
-  "Failed to enable WiFi": {
-    "Failed to enable WiFi": "Malsukcesis ŝalti WiFi-on"
   },
   "Failed to enable job acceptance": {
     "Failed to enable job acceptance": "Malsukcesis ŝalti task-akcepton"
@@ -3218,14 +3485,26 @@
   "Failed to enable plugin: %1": {
     "Failed to enable plugin: %1": "Malsukcesis ebligi kromprogramon: %1"
   },
+  "Failed to export": {
+    "Failed to export": ""
+  },
+  "Failed to export profile": {
+    "Failed to export profile": ""
+  },
   "Failed to extract theme": {
     "Failed to extract theme": "Malsukcesis eltiri etoson"
   },
   "Failed to fetch network QR code: %1": {
     "Failed to fetch network QR code: %1": "Malsukcesis alporti retan QR-kodon: %1"
   },
+  "Failed to forget %1": {
+    "Failed to forget %1": ""
+  },
   "Failed to generate QR code: %1": {
     "Failed to generate QR code: %1": "Malsukcesis generi QR-kodon: %1"
+  },
+  "Failed to generate key": {
+    "Failed to generate key": ""
   },
   "Failed to generate systemd override": {
     "Failed to generate systemd override": "Malsukcesis generi sisteman anstataŭigon"
@@ -3235,6 +3514,9 @@
   },
   "Failed to import VPN": {
     "Failed to import VPN": "Malsukcesis importi VPN"
+  },
+  "Failed to import profile": {
+    "Failed to import profile": ""
   },
   "Failed to load VPN config": {
     "Failed to load VPN config": "Malsukcesis ŝargi VPN-agordon"
@@ -3323,8 +3605,14 @@
   "Failed to save profile": {
     "Failed to save profile": "Malsukcesis konservi profilon"
   },
+  "Failed to save screenshot": {
+    "Failed to save screenshot": ""
+  },
   "Failed to set brightness": {
     "Failed to set brightness": "Malsukcesis agordi brilecon"
+  },
+  "Failed to set network preference": {
+    "Failed to set network preference": ""
   },
   "Failed to set next boot entry": {
     "Failed to set next boot entry": "Malsukcesis agordi sekvan praŝargan elementon"
@@ -3344,9 +3632,6 @@
   "Failed to set profile image": {
     "Failed to set profile image": "Malsukcesis agordi profilbildon"
   },
-  "Failed to set profile image: %1": {
-    "Failed to set profile image: %1": "Malsukcesis agordi profilbildon: %1"
-  },
   "Failed to start connection to %1": {
     "Failed to start connection to %1": "Malsukcesis lanĉi konekton al %1"
   },
@@ -3364,6 +3649,9 @@
   },
   "Failed to switch port": {
     "Failed to switch port": "Malsukcesis ŝanĝi pordon"
+  },
+  "Failed to toggle airplane mode": {
+    "Failed to toggle airplane mode": ""
   },
   "Failed to toggle cellular": {
     "Failed to toggle cellular": "Malsukcesis baskuligi ĉelan reton"
@@ -3385,6 +3673,9 @@
   },
   "Failed to update clipboard": {
     "Failed to update clipboard": "Malsukcesis ĝisdatigi la tondujo"
+  },
+  "Failed to update connectivity checking": {
+    "Failed to update connectivity checking": ""
   },
   "Failed to write autostart entry": {
     "Failed to write autostart entry": "Malsukcesis skribi aŭtomatan enskribon"
@@ -3494,6 +3785,9 @@
   "Fires with any modifiers held": {
     "Fires with any modifiers held": ""
   },
+  "Firewall zone": {
+    "Firewall zone": ""
+  },
   "Firmware": {
     "Firmware": ""
   },
@@ -3517,6 +3811,9 @@
   },
   "Fixed": {
     "Fixed": "Fiksita"
+  },
+  "Fixed height": {
+    "Fixed height": ""
   },
   "Flat": {
     "Flat": "Plata"
@@ -3617,6 +3914,12 @@
   "Fog": {
     "Fog": "Nebulo"
   },
+  "Folder already added": {
+    "Folder already added": ""
+  },
+  "Folder match theme colors": {
+    "Folder match theme colors": ""
+  },
   "Folder, interval, daily time": {
     "Folder, interval, daily time": "Dosierujo, intervalo, ĉiutaga horo"
   },
@@ -3655,9 +3958,6 @@
   },
   "Fonts & motion": {
     "Fonts & motion": "Tiparoj kaj movo"
-  },
-  "Fonts, scale, animations": {
-    "Fonts, scale, animations": "Tiparoj, skalo, animacioj"
   },
   "For %1": {
     "For %1": "Dum %1"
@@ -3745,6 +4045,9 @@
   },
   "From %1": {
     "From %1": "De %1"
+  },
+  "From an archive or a folder. Nothing inside it is run.": {
+    "From an archive or a folder. Nothing inside it is run.": ""
   },
   "From wallpaper": {
     "From wallpaper": "El fonbildo"
@@ -3854,11 +4157,17 @@
   "Garden": {
     "Garden": "Ĝardeno"
   },
+  "Gateway": {
+    "Gateway": ""
+  },
   "Gaussian": {
     "Gaussian": "Gaŭsa"
   },
   "General": {
     "General": "Ĝenerala"
+  },
+  "Generate": {
+    "Generate": ""
   },
   "Generate Theme at Startup": {
     "Generate Theme at Startup": "Generi etoson ĉe lanĉo"
@@ -3878,11 +4187,11 @@
   "Get Started": {
     "Get Started": "Komenci"
   },
-  "Git": {
-    "Git": "Git"
-  },
   "Global fonts can be configured in Settings → Personalization": {
     "Global fonts can be configured in Settings → Personalization": "Tutmondaj tiparoj povas esti agorditaj en Agordoj → Personigo"
+  },
+  "Global shortcuts": {
+    "Global shortcuts": ""
   },
   "Globally": {
     "Globally": "Ĉie"
@@ -3908,11 +4217,17 @@
   "Grant administrator privileges": {
     "Grant administrator privileges": "Donu administrantajn privilegiojn"
   },
+  "Grant permission": {
+    "Grant permission": ""
+  },
   "Granted administrator privileges": {
     "Granted administrator privileges": "Koncedis privilegiojn de administranto"
   },
   "Granted greeter login access": {
     "Granted greeter login access": "Koncedis salutan aliron"
+  },
+  "Graph": {
+    "Graph": ""
   },
   "Graph time range": {
     "Graph time range": "Tempa amplekso de grafikaĵo"
@@ -3922,6 +4237,9 @@
   },
   "Graphics driver": {
     "Graphics driver": ""
+  },
+  "Graphs": {
+    "Graphs": ""
   },
   "Green": {
     "Green": "Verda"
@@ -3986,6 +4304,9 @@
   "HTML copied to clipboard": {
     "HTML copied to clipboard": "HTML-o kopiita al la tondujo"
   },
+  "Half": {
+    "Half": ""
+  },
   "Hardware": {
     "Hardware": ""
   },
@@ -4028,6 +4349,9 @@
   "Hex": {
     "Hex": "Deksesuma"
   },
+  "Hexagon": {
+    "Hexagon": ""
+  },
   "Hibernate failed": {
     "Hibernate failed": "Hibernado malsukcesis"
   },
@@ -4036,6 +4360,9 @@
   },
   "Hidden (%1)": {
     "Hidden (%1)": "Kaŝita (%1)"
+  },
+  "Hidden activity sources": {
+    "Hidden activity sources": ""
   },
   "Hidden apps": {
     "Hidden apps": "Kaŝitaj aplikaĵoj"
@@ -4124,6 +4451,9 @@
   "Highlight weekends": {
     "Highlight weekends": "Emfazi semajnfinojn"
   },
+  "Highlighter": {
+    "Highlighter": ""
+  },
   "History": {
     "History": "Historio"
   },
@@ -4187,8 +4517,17 @@
   "Hover popouts": {
     "Hover popouts": "Ŝvebaj ŝprucaĵoj"
   },
+  "How far a wiggle tilts or a pulse grows": {
+    "How far a wiggle tilts or a pulse grows": ""
+  },
   "How far terminal colors shift toward the wallpaper color": {
     "How far terminal colors shift toward the wallpaper color": ""
+  },
+  "How long a new activity stays open before the island returns to its usual content": {
+    "How long a new activity stays open before the island returns to its usual content": ""
+  },
+  "How long the title stays after a track change": {
+    "How long the title stays after a track change": ""
   },
   "Hue": {
     "Hue": "Nuanco"
@@ -4244,17 +4583,26 @@
   "IP sharing setup failed. Check that %1 is installed.": {
     "IP sharing setup failed. Check that %1 is installed.": ""
   },
-  "IPv6": {
-    "IPv6": ""
-  },
   "ISO date": {
     "ISO date": "ISO-dato"
   },
   "Icon": {
     "Icon": "Piktogramo"
   },
+  "Icon animation intensity": {
+    "Icon animation intensity": ""
+  },
+  "Icon animation speed": {
+    "Icon animation speed": ""
+  },
+  "Icon columns": {
+    "Icon columns": ""
+  },
   "Icon scale": {
     "Icon scale": "Skalo de piktogramoj"
+  },
+  "Icon shape": {
+    "Icon shape": ""
   },
   "Icon size": {
     "Icon size": "Grando de piktogramoj"
@@ -4264,6 +4612,9 @@
   },
   "Icon theme changed outside DMS; switched to System Default": {
     "Icon theme changed outside DMS; switched to System Default": "Piktograma etoso ŝanĝiĝis ekster DMS; ŝanĝita al sistema defaŭlto"
+  },
+  "Icon theme not installed": {
+    "Icon theme not installed": ""
   },
   "Icons": {
     "Icons": "Piktogramoj"
@@ -4343,6 +4694,9 @@
   "Import VPN": {
     "Import VPN": "Importi VPN"
   },
+  "In use": {
+    "In use": ""
+  },
   "Inactive display color": {
     "Inactive display color": "Koloro de neaktiva ekrano"
   },
@@ -4351,6 +4705,9 @@
   },
   "Include Flatpak updates": {
     "Include Flatpak updates": "Inkluzivi ĝisdatigojn de Flatpak"
+  },
+  "Include cursor": {
+    "Include cursor": ""
   },
   "Include files in All tab": {
     "Include files in All tab": "Inkluzivi dosierojn en langeto 'Ĉio'"
@@ -4376,6 +4733,9 @@
   "Incorrect password - try again": {
     "Incorrect password - try again": "Nekorekta pasvorto - provu denove"
   },
+  "Increase font size": {
+    "Increase font size": ""
+  },
   "Index centering": {
     "Index centering": "Indeksa centrado"
   },
@@ -4393,6 +4753,9 @@
   },
   "Info": {
     "Info": "Informoj"
+  },
+  "Infrastructure": {
+    "Infrastructure": ""
   },
   "Inherit": {
     "Inherit": "Heredi"
@@ -4414,9 +4777,6 @@
   },
   "Initial title": {
     "Initial title": ""
-  },
-  "Initialised": {
-    "Initialised": "Iniciatigita"
   },
   "Injected palettes": {
     "Injected palettes": "Injektitaj paletroj"
@@ -4466,14 +4826,17 @@
   "Install Plugin": {
     "Install Plugin": "Instali kromprogramon"
   },
-  "Install Theme": {
-    "Install Theme": "Instali etoson"
-  },
   "Install color themes from the DMS theme registry": {
     "Install color themes from the DMS theme registry": "Instali kolor-etosojn el la DMS-etosa registro"
   },
+  "Install cursor theme": {
+    "Install cursor theme": ""
+  },
   "Install failed: %1": {
     "Install failed: %1": "Instalado malsukcesis: %1"
+  },
+  "Install icon theme": {
+    "Install icon theme": ""
   },
   "Install plugin '%1' from the DMS registry?": {
     "Install plugin '%1' from the DMS registry?": "Ĉu instali kromprogramon '%1' el la DMS-registro?"
@@ -4526,6 +4889,9 @@
   "Intensity, color, light direction": {
     "Intensity, color, light direction": "Intenseco, koloro, lumdirekto"
   },
+  "Interact with windows": {
+    "Interact with windows": ""
+  },
   "Interface": {
     "Interface": "Interfaco"
   },
@@ -4570,6 +4936,18 @@
   },
   "Island": {
     "Island": "Insulo"
+  },
+  "Island activities": {
+    "Island activities": ""
+  },
+  "Island summary": {
+    "Island summary": ""
+  },
+  "Island widgets": {
+    "Island widgets": ""
+  },
+  "Island widgets above the clock sit before it, the rest after it": {
+    "Island widgets above the clock sit before it, the rest after it": ""
   },
   "Isolate displays": {
     "Isolate displays": "Izoli ekranojn"
@@ -4637,6 +5015,9 @@
   "Key combination": {
     "Key combination": "Klavkombino"
   },
+  "Key style": {
+    "Key style": ""
+  },
   "Keybinds": {
     "Keybinds": "Klavkombinoj"
   },
@@ -4675,6 +5056,9 @@
   },
   "LabWC website": {
     "LabWC website": "LabWC-retejo"
+  },
+  "Label": {
+    "Label": ""
   },
   "Label overrides": {
     "Label overrides": "Superregoj de etikedoj"
@@ -4820,11 +5204,26 @@
   "Left-handed": {
     "Left-handed": "Maldekstramana"
   },
+  "Legend": {
+    "Legend": ""
+  },
+  "Length of one animation cycle": {
+    "Length of one animation cycle": ""
+  },
   "Length padding": {
     "Length padding": "Longeca marĝeno"
   },
+  "Let activities tint their slot and highlight warnings and errors": {
+    "Let activities tint their slot and highlight warnings and errors": ""
+  },
+  "Let plugins and IPC clients show progress, timers and other live updates in the island": {
+    "Let plugins and IPC clients show progress, timers and other live updates in the island": ""
+  },
   "Level": {
     "Level": "Nivelo"
+  },
+  "Library": {
+    "Library": ""
   },
   "Light": {
     "Light": "Hela"
@@ -4868,8 +5267,14 @@
   "Limit set to %1%": {
     "Limit set to %1%": "Limo agordita al %1%"
   },
+  "Limited connectivity": {
+    "Limited connectivity": ""
+  },
   "Line": {
     "Line": "Linio"
+  },
+  "Line synced": {
+    "Line synced": ""
   },
   "Line: %1": {
     "Line: %1": "Linio: %1"
@@ -4883,11 +5288,17 @@
   "Link copied": {
     "Link copied": ""
   },
+  "Link negotiation": {
+    "Link negotiation": ""
+  },
   "Link your DMS settings so the login screen follows them.": {
     "Link your DMS settings so the login screen follows them.": "Ligu viajn DMS-agordojn por ke la salutekrano sekvu ilin."
   },
   "Link your DMS settings so the login screen follows them. Administrator access is required.": {
     "Link your DMS settings so the login screen follows them. Administrator access is required.": "Ligu viajn DMS-agordojn por ke la salutekrano sekvu ilin. Administranta aliro estas bezonata."
+  },
+  "Link-local": {
+    "Link-local": ""
   },
   "Linked": {
     "Linked": "Ligita"
@@ -4895,8 +5306,14 @@
   "Linked as a snapshot": {
     "Linked as a snapshot": "Ligita kiel momentfoto"
   },
+  "Linux": {
+    "Linux": ""
+  },
   "List": {
     "List": "Listo"
+  },
+  "Listen port": {
+    "Listen port": ""
   },
   "Listening": {
     "Listening": ""
@@ -4907,14 +5324,23 @@
   "Lists workspaces from whichever display has focus": {
     "Lists workspaces from whichever display has focus": "Listigas laborspacojn de tiu ekrano kiu havas fokuson"
   },
+  "Live activities": {
+    "Live activities": ""
+  },
   "Live activities that grow out of the bar": {
     "Live activities that grow out of the bar": "Vivaj aktivecoj kiuj kreskas el la breto"
+  },
+  "Live activity": {
+    "Live activity": ""
   },
   "Lively palette with saturated accents.": {
     "Lively palette with saturated accents.": "Viva paletro kun sataj akcentoj."
   },
   "Load Average": {
     "Load Average": "Mezuma ŝargo"
+  },
+  "Loading": {
+    "Loading": ""
   },
   "Loading codecs...": {
     "Loading codecs...": "Ŝargante kodekojn..."
@@ -4970,6 +5396,12 @@
   "Locked": {
     "Locked": "Ŝlosita"
   },
+  "Log in": {
+    "Log in": ""
+  },
+  "Log in to network": {
+    "Log in to network": ""
+  },
   "Log out": {
     "Log out": "Elsaluti"
   },
@@ -4987,6 +5419,12 @@
   },
   "Long press": {
     "Long press": "Longa premo"
+  },
+  "Longer": {
+    "Longer": ""
+  },
+  "Longer titles scroll inside this width": {
+    "Longer titles scroll inside this width": ""
   },
   "Longitude": {
     "Longitude": "Longitudo"
@@ -5009,6 +5447,9 @@
   "Lower display refresh rate on battery": {
     "Lower display refresh rate on battery": "Malpliigi ekranan refreŝigan rapidon ĉe baterio"
   },
+  "Lower keeps up with faster scrolling but uses more CPU": {
+    "Lower keeps up with faster scrolling but uses more CPU": ""
+  },
   "Lower only if a mode fails for lack of bandwidth": {
     "Lower only if a mode fails for lack of bandwidth": ""
   },
@@ -5024,20 +5465,29 @@
   "Lyrics providers": {
     "Lyrics providers": "Tekstaj provizantoj"
   },
+  "M3 Expressive motion sized by surface": {
+    "M3 Expressive motion sized by surface": ""
+  },
   "MAC address": {
     "MAC address": ""
   },
   "MIT License": {
     "MIT License": "Permesilo MIT"
   },
-  "MTU": {
-    "MTU": ""
+  "Mac": {
+    "Mac": ""
+  },
+  "Magic packet": {
+    "Magic packet": ""
   },
   "Magnification": {
     "Magnification": "Pligrandigo"
   },
   "Mail": {
     "Mail": "retpoŝti"
+  },
+  "Main value": {
+    "Main value": ""
   },
   "Major page faults": {
     "Major page faults": ""
@@ -5047,6 +5497,15 @@
   },
   "Manage Registries": {
     "Manage Registries": "Mastrumi registrojn"
+  },
+  "Manage all connections": {
+    "Manage all connections": ""
+  },
+  "Manage profiles": {
+    "Manage profiles": ""
+  },
+  "Manage themes": {
+    "Manage themes": ""
   },
   "Managed by Frame in Connected Mode": {
     "Managed by Frame in Connected Mode": "Administrita de Frame en Konektita Reĝimo"
@@ -5059,6 +5518,9 @@
   },
   "Managed by the primary PAM source": {
     "Managed by the primary PAM source": "Mastrumata de la ĉefa PAM-fonto"
+  },
+  "Managed files": {
+    "Managed files": ""
   },
   "Mango Options": {
     "Mango Options": "Mango-Ebloj"
@@ -5137,6 +5599,9 @@
   },
   "Matches player identity or desktop file name, case-insensitive": {
     "Matches player identity or desktop file name, case-insensitive": "Kongruas kun ludila identeco aŭ labortabla dosiernomo, usklec-sendepende"
+  },
+  "Matches the current settings": {
+    "Matches the current settings": ""
   },
   "Material": {
     "Material": "ŝtofo"
@@ -5225,6 +5690,9 @@
   "Maximum pinned entries reached": {
     "Maximum pinned entries reached": "Maksimumaj fiksitaj eroj atingitaj"
   },
+  "Maximum title width": {
+    "Maximum title width": ""
+  },
   "Media / Launcher": {
     "Media / Launcher": "Aŭdvidaĵo / Lanĉilo"
   },
@@ -5264,9 +5732,6 @@
   "Memory controller": {
     "Memory controller": ""
   },
-  "Memory graph": {
-    "Memory graph": "Memora grafikaĵo"
-  },
   "Memory usage": {
     "Memory usage": "Memora uzado"
   },
@@ -5275,6 +5740,21 @@
   },
   "Message Content": {
     "Message Content": "Mesaĝa enhavo"
+  },
+  "Meter": {
+    "Meter": ""
+  },
+  "Metered": {
+    "Metered": ""
+  },
+  "Method": {
+    "Method": ""
+  },
+  "Metric": {
+    "Metric": ""
+  },
+  "Metrics": {
+    "Metrics": ""
   },
   "Microphone": {
     "Microphone": "Mikrofono"
@@ -5363,6 +5843,9 @@
   "Monitor": {
     "Monitor": "Ekrano"
   },
+  "Monitoring can keep it from sleeping": {
+    "Monitoring can keep it from sleeping": ""
+  },
   "Monitoring off": {
     "Monitoring off": ""
   },
@@ -5444,6 +5927,9 @@
   "Mouse behavior": {
     "Mouse behavior": ""
   },
+  "Move notification popups below an open bar popout instead of covering it": {
+    "Move notification popups below an open bar popout instead of covering it": ""
+  },
   "Move out of scratchpad": {
     "Move out of scratchpad": "Movi el notbloko"
   },
@@ -5455,6 +5941,12 @@
   },
   "Move workspace to this display": {
     "Move workspace to this display": ""
+  },
+  "Movement": {
+    "Movement": ""
+  },
+  "Moves an activity's icon to draw attention to it": {
+    "Moves an activity's icon to draw attention to it": ""
   },
   "Moves focus along with the column": {
     "Moves focus along with the column": "Movas fokuson kune kun la kolumno"
@@ -5485,12 +5977,6 @@
   },
   "Mute popups for %1": {
     "Mute popups for %1": "Silentigi ŝprucfenestrojn por %1"
-  },
-  "Mute popups for %1 (1 hour)": {
-    "Mute popups for %1 (1 hour)": ""
-  },
-  "Mute popups for %1 (4 hours)": {
-    "Mute popups for %1 (4 hours)": ""
   },
   "Mute, ignore and priority rules per app": {
     "Mute, ignore and priority rules per app": "Silentigaj, malatentaj kaj priorittaj reguloj por ĉiu aplikaĵo"
@@ -5540,14 +6026,14 @@
   "Needs": {
     "Needs": ""
   },
+  "Needs Plugin activities on and the workspace source shown": {
+    "Needs Plugin activities on and the workspace source shown": ""
+  },
   "Nested chip": {
     "Nested chip": "Enmetita peco"
   },
   "Network": {
     "Network": "Reto"
-  },
-  "Network Info": {
-    "Network Info": "Retaj informoj"
   },
   "Network Information": {
     "Network Information": "Retaj informoj"
@@ -5558,14 +6044,8 @@
   "Network download and upload speed display": {
     "Network download and upload speed display": "Vidigo de reta elŝuta kaj alŝuta rapido"
   },
-  "Network graph": {
-    "Network graph": "Reta grafikaĵo"
-  },
   "Network speed monitor": {
     "Network speed monitor": "Monitorado de reta rapido"
-  },
-  "Networks, saved networks, hotspot": {
-    "Networks, saved networks, hotspot": "Retoj, konservitaj retoj, retpunkto"
   },
   "Neutral": {
     "Neutral": "Neŭtra"
@@ -5759,6 +6239,9 @@
   "No configurable settings": {
     "No configurable settings": "Neniuj agordeblaj agordoj"
   },
+  "No cursor theme found there": {
+    "No cursor theme found there": ""
+  },
   "No custom theme file": {
     "No custom theme file": "Neniu propra etosa dosiero"
   },
@@ -5815,6 +6298,9 @@
   },
   "No human user accounts found.": {
     "No human user accounts found.": "Neniuj homaj uzantkontoj trovitaj."
+  },
+  "No icon theme found there": {
+    "No icon theme found there": ""
   },
   "No info items": {
     "No info items": "Neniuj informaj eroj"
@@ -5990,6 +6476,9 @@
   "No window rules configured": {
     "No window rules configured": "Neniuj fenestraj reguloj estas agorditaj"
   },
+  "No wireless devices available": {
+    "No wireless devices available": ""
+  },
   "No wobble": {
     "No wobble": ""
   },
@@ -6056,6 +6545,9 @@
   "Not linked": {
     "Not linked": "Ne ligita"
   },
+  "Not managed, set up from its page": {
+    "Not managed, set up from its page": ""
+  },
   "Not on click": {
     "Not on click": ""
   },
@@ -6067,6 +6559,9 @@
   },
   "Not shown on this bar, so its section widgets stay hidden": {
     "Not shown on this bar, so its section widgets stay hidden": ""
+  },
+  "Not supported in Settings": {
+    "Not supported in Settings": ""
   },
   "Notch": {
     "Notch": ""
@@ -6155,6 +6650,9 @@
   "Off lets the compositor decorate DMS windows. Open windows update when reopened.": {
     "Off lets the compositor decorate DMS windows. Open windows update when reopened.": ""
   },
+  "Off matches the bar's opacity": {
+    "Off matches the bar's opacity": ""
+  },
   "Office": {
     "Office": "Oficejo"
   },
@@ -6179,6 +6677,12 @@
   "On button down": {
     "On button down": "Ĉe butonpremo"
   },
+  "On change": {
+    "On change": ""
+  },
+  "On change shows the song title for a moment when the track changes": {
+    "On change shows the song title for a moment when the track changes": ""
+  },
   "On indefinitely": {
     "On indefinitely": "Sur senfine"
   },
@@ -6196,6 +6700,9 @@
   },
   "Once a week": {
     "Once a week": "Unufoje semajne"
+  },
+  "Ongoing activities kept as small icons beside the island content. 0 hides them": {
+    "Ongoing activities kept as small icons beside the island content. 0 hides them": ""
   },
   "Online": {
     "Online": "rektlinee"
@@ -6215,11 +6722,17 @@
   "Only the main process of a system service can be restarted.": {
     "Only the main process of a system service can be restarted.": ""
   },
+  "Only themes in your own icon folder can be removed": {
+    "Only themes in your own icon folder can be removed": ""
+  },
   "Opacity": {
     "Opacity": "Opakeco"
   },
   "Opaque": {
     "Opaque": "Opaka"
+  },
+  "Open Appearance": {
+    "Open Appearance": ""
   },
   "Open Frame": {
     "Open Frame": "Malfermu Kadron"
@@ -6236,6 +6749,9 @@
   "Open a new note": {
     "Open a new note": "Malfermi novan noton"
   },
+  "Open and close": {
+    "Open and close": ""
+  },
   "Open as window": {
     "Open as window": "Malfermu kiel fenestron"
   },
@@ -6250,6 +6766,9 @@
   },
   "Open folder": {
     "Open folder": "Malfermi dosierujon"
+  },
+  "Open in %1": {
+    "Open in %1": ""
   },
   "Open in terminal": {
     "Open in terminal": "Malfermi en terminalo"
@@ -6271,6 +6790,9 @@
   },
   "Open with": {
     "Open with": "Malfermi per"
+  },
+  "OpenSSL ciphers": {
+    "OpenSSL ciphers": ""
   },
   "Opening GitHub to remove the upvote": {
     "Opening GitHub to remove the upvote": ""
@@ -6295,6 +6817,9 @@
   },
   "Operating system": {
     "Operating system": ""
+  },
+  "Operator permission needed": {
+    "Operator permission needed": ""
   },
   "Optional description": {
     "Optional description": "Laŭvola priskribo"
@@ -6392,6 +6917,9 @@
   "Overflow button position": {
     "Overflow button position": "Pozicio de superflua butono"
   },
+  "Overflow moves to the next page": {
+    "Overflow moves to the next page": ""
+  },
   "Overflow priority": {
     "Overflow priority": ""
   },
@@ -6437,6 +6965,9 @@
   "PDF reader": {
     "PDF reader": "PDF-Leganto"
   },
+  "PEAP version": {
+    "PEAP version": ""
+  },
   "PID": {
     "PID": "PID"
   },
@@ -6460,6 +6991,9 @@
   },
   "Padding": {
     "Padding": "Interna marĝeno"
+  },
+  "Page %1 of %2": {
+    "Page %1 of %2": ""
   },
   "Page faults": {
     "Page faults": ""
@@ -6511,6 +7045,9 @@
   },
   "Parents": {
     "Parents": ""
+  },
+  "Partial apply": {
+    "Partial apply": ""
   },
   "Partition table": {
     "Partition table": ""
@@ -6572,11 +7109,20 @@
   "Pause night mode while one of these apps has focus": {
     "Pause night mode while one of these apps has focus": "Paŭzi noktan reĝimon dum unu el ĉi tiuj aplikaĵoj havas fokuson"
   },
+  "Pause video wallpaper on battery": {
+    "Pause video wallpaper on battery": ""
+  },
   "Paused": {
     "Paused": "Paŭzita"
   },
   "Peak": {
     "Peak": ""
+  },
+  "Peers": {
+    "Peers": ""
+  },
+  "Pen": {
+    "Pen": ""
   },
   "Pending": {
     "Pending": "Atendanta"
@@ -6605,11 +7151,20 @@
   "Performance": {
     "Performance": "Rendimento"
   },
+  "Permanent": {
+    "Permanent": ""
+  },
   "Permanently delete %1 item(s)? This cannot be undone.": {
     "Permanently delete %1 item(s)? This cannot be undone.": "Ĉu konstante forigi %1 elemento(j)n? "
   },
   "Permission denied to set profile image.": {
     "Permission denied to set profile image.": "Permeso malakceptita por agordi profilbildon."
+  },
+  "Persistent activity slots": {
+    "Persistent activity slots": ""
+  },
+  "Persistent keepalive": {
+    "Persistent keepalive": ""
   },
   "Petal": {
     "Petal": "Petalo"
@@ -6622,6 +7177,9 @@
   },
   "Pick an app from the list above or the dashboard tab": {
     "Pick an app from the list above or the dashboard tab": "Elektu aplikaĵon el la supra listo aŭ el la instrumentpanela langeto"
+  },
+  "Pick an icon theme first": {
+    "Pick an icon theme first": ""
   },
   "Pick how long to pause notifications": {
     "Pick how long to pause notifications": "Elektu kiom longe paŭzi sciigojn"
@@ -6637,6 +7195,9 @@
   },
   "Pill": {
     "Pill": "Pilolo"
+  },
+  "Pill shape": {
+    "Pill shape": ""
   },
   "Pills": {
     "Pills": "Piloloj"
@@ -6683,6 +7244,9 @@
   "Playback": {
     "Playback": "Ludado"
   },
+  "Playback controls": {
+    "Playback controls": ""
+  },
   "Playback error: %1": {
     "Playback error: %1": ""
   },
@@ -6718,6 +7282,9 @@
   },
   "Plugin Source Code": {
     "Plugin Source Code": "Fontkodo de kromprogramo"
+  },
+  "Plugin activities": {
+    "Plugin activities": ""
   },
   "Plugin dependency missing": {
     "Plugin dependency missing": "Mankas dependeco de kromprogramo"
@@ -6772,9 +7339,6 @@
   },
   "Popouts": {
     "Popouts": "Ŝprucfenestroj"
-  },
-  "Popouts and modals use the main animation duration": {
-    "Popouts and modals use the main animation duration": "Ŝprucaĵoj kaj modaloj uzas la ĉefan animacian daŭron"
   },
   "Popular": {
     "Popular": ""
@@ -6869,6 +7433,9 @@
   "Power profiles": {
     "Power profiles": "Energiaj profiloj"
   },
+  "Power saving": {
+    "Power saving": ""
+  },
   "Power source": {
     "Power source": "Fonto de potenco"
   },
@@ -6877,6 +7444,9 @@
   },
   "Pre-release": {
     "Pre-release": "Antaŭeldono"
+  },
+  "Pre-shared key": {
+    "Pre-shared key": ""
   },
   "Precipitation": {
     "Precipitation": "Precipitaĵo"
@@ -6892,6 +7462,9 @@
   },
   "Presentation": {
     "Presentation": "Prezentaĵo"
+  },
+  "Preserve": {
+    "Preserve": ""
   },
   "Preserve split": {
     "Preserve split": "Konservi dividon"
@@ -6911,6 +7484,9 @@
   "Press Enter and the audio system will restart to apply the change": {
     "Press Enter and the audio system will restart to apply the change": "Premu Enigan klavon kaj la sonsistemo restartos por apliki la ŝanĝon"
   },
+  "Press Enter or Space to capture. Off captures when the mouse is released.": {
+    "Press Enter or Space to capture. Off captures when the mouse is released.": ""
+  },
   "Press key...": {
     "Press key...": "Premu klavon..."
   },
@@ -6922,6 +7498,15 @@
   },
   "Preview": {
     "Preview": "Antaŭrigardo"
+  },
+  "Preview duration": {
+    "Preview duration": ""
+  },
+  "Preview, install and remove cursor themes": {
+    "Preview, install and remove cursor themes": ""
+  },
+  "Preview, install and remove icon themes": {
+    "Preview, install and remove icon themes": ""
   },
   "Preview: %1": {
     "Preview: %1": "Antaŭrigardo: %1"
@@ -6995,6 +7580,9 @@
   "Private Key Password": {
     "Private Key Password": "Pasvorto de privata ŝlosilo"
   },
+  "Private key": {
+    "Private key": ""
+  },
   "Process": {
     "Process": ""
   },
@@ -7064,6 +7652,12 @@
   "Protocol": {
     "Protocol": "Protokolo"
   },
+  "Public key": {
+    "Public key": ""
+  },
+  "Pulse": {
+    "Pulse": ""
+  },
   "Pulse animation": {
     "Pulse animation": "Pulsa animacio"
   },
@@ -7109,6 +7703,9 @@
   "Quick tiles": {
     "Quick tiles": ""
   },
+  "Quick with a slight bounce on movement": {
+    "Quick with a slight bounce on movement": ""
+  },
   "Quit": {
     "Quit": ""
   },
@@ -7117,6 +7714,9 @@
   },
   "Quit or restart": {
     "Quit or restart": ""
+  },
+  "R": {
+    "R": ""
   },
   "Radius": {
     "Radius": "Radiuso"
@@ -7147,6 +7747,9 @@
   },
   "Reach local network devices while using an exit node": {
     "Reach local network devices while using an exit node": "Atingu lokajn retajn aparatojn dum vi uzas elirnodon"
+  },
+  "Read": {
+    "Read": ""
   },
   "Read the blog post": {
     "Read the blog post": "Legi la blogaĵon"
@@ -7220,8 +7823,17 @@
   "Record app usage and past queries. Turning this off clears what is stored.": {
     "Record app usage and past queries. Turning this off clears what is stored.": ""
   },
+  "Rectangle": {
+    "Rectangle": ""
+  },
   "Red": {
     "Red": "Ruĝa"
+  },
+  "Redo": {
+    "Redo": ""
+  },
+  "Redraws only what changed on screen": {
+    "Redraws only what changed on screen": ""
   },
   "Reduce motion": {
     "Reduce motion": "Redukti movon"
@@ -7313,14 +7925,29 @@
   "Remove \"%1\" from the %2 group?": {
     "Remove \"%1\" from the %2 group?": "Ĉu forigi \"%1\" el la grupo %2?"
   },
+  "Remove '%1' from your icon folder?": {
+    "Remove '%1' from your icon folder?": ""
+  },
   "Remove Shortcut?": {
     "Remove Shortcut?": "Ĉu forigi ŝparvojon?"
   },
   "Remove admin": {
     "Remove admin": "Forigi administranton"
   },
+  "Remove all shortcuts": {
+    "Remove all shortcuts": ""
+  },
   "Remove condition": {
     "Remove condition": ""
+  },
+  "Remove cursor theme": {
+    "Remove cursor theme": ""
+  },
+  "Remove every global shortcut %1 has registered?": {
+    "Remove every global shortcut %1 has registered?": ""
+  },
+  "Remove from folder": {
+    "Remove from folder": ""
   },
   "Remove from recent colors": {
     "Remove from recent colors": ""
@@ -7330,6 +7957,12 @@
   },
   "Remove greeter login access": {
     "Remove greeter login access": "Forigi salutan aliron"
+  },
+  "Remove icon theme": {
+    "Remove icon theme": ""
+  },
+  "Remove its include from your compositor config by hand.": {
+    "Remove its include from your compositor config by hand.": ""
   },
   "Remove match": {
     "Remove match": "Forigi matĉon"
@@ -7358,6 +7991,9 @@
   "Rename Workspace": {
     "Rename Workspace": "Renomi laborspacon"
   },
+  "Render control": {
+    "Render control": ""
+  },
   "Renderer": {
     "Renderer": "Bildigilo"
   },
@@ -7382,14 +8018,29 @@
   "Repeats while the key is held": {
     "Repeats while the key is held": "Ripetiĝas dum la klavo estas tenata"
   },
+  "Replace": {
+    "Replace": ""
+  },
   "Replace a displayed layout label with custom text, e.g. \"am-phonetic-alt\" → \"am": {
     "Replace a displayed layout label with custom text, e.g. \"am-phonetic-alt\" → \"am\"": "Anstataŭigi montratan aranĝetikedon per propra teksto, ekz. \"am-phonetic-alt\" → \"am\""
+  },
+  "Replace cursor theme": {
+    "Replace cursor theme": ""
+  },
+  "Replace icon theme": {
+    "Replace icon theme": ""
+  },
+  "Replace settings of profile \"%1\"?": {
+    "Replace settings of profile \"%1\"?": ""
   },
   "Replacement": {
     "Replacement": "Anstataŭigo"
   },
   "Report": {
     "Report": "Raporti"
+  },
+  "Required": {
+    "Required": ""
   },
   "Required plugin: %1": {
     "Required plugin: %1": ""
@@ -7436,6 +8087,9 @@
   "Reset Size": {
     "Reset Size": "Rekomencigi grandon"
   },
+  "Reset to %1": {
+    "Reset to %1": ""
+  },
   "Reset to default": {
     "Reset to default": "Restarigi al defaŭlta"
   },
@@ -7472,17 +8126,26 @@
   "Resume": {
     "Resume": "Daŭrigi"
   },
+  "Resume drawing": {
+    "Resume drawing": ""
+  },
   "Retention": {
     "Retention": "Konservoperiodo"
   },
   "Retry": {
     "Retry": "Reprovi"
   },
+  "Reuses the compiled interface from the last start": {
+    "Reuses the compiled interface from the last start": ""
+  },
   "Reverse scroll direction": {
     "Reverse scroll direction": "Inversigi rulumdirekton"
   },
   "Revert": {
     "Revert": "Malfari"
+  },
+  "Revision": {
+    "Revision": ""
   },
   "Right": {
     "Right": "Dekstre"
@@ -7501,6 +8164,9 @@
   },
   "Right-click a notification and choose \"Allow in Do Not Disturb\" to add an app": {
     "Right-click a notification and choose \"Allow in Do Not Disturb\" to add an app": "Dekstre alklaku sciigon kaj elektu «Permesi en Ne ĝenu» por aldoni aplikaĵon"
+  },
+  "Right-click a widget for options": {
+    "Right-click a widget for options": ""
   },
   "Right-click an app in the launcher and choose 'Edit App'": {
     "Right-click an app in the launcher and choose 'Edit App'": "Dekstre alklaku aplikaĵon en la lanĉilo kaj elektu 'Redakti aplikaĵon'"
@@ -7535,8 +8201,14 @@
   "Rounded": {
     "Rounded": "Rondigita"
   },
+  "Rounded square": {
+    "Rounded square": ""
+  },
   "Route Bluetooth headset controls to the active DMS media player": {
     "Route Bluetooth headset controls to the active DMS media player": "Direkti regilojn de Bluetooth-aŭdilo al la aktiva aŭdvidaĵa ludilo de DMS"
+  },
+  "Routes": {
+    "Routes": ""
   },
   "Routes launcher, dash, control center and notification shortcuts. Bar widget clicks always open their own popout": {
     "Routes launcher, dash, control center and notification shortcuts. Bar widget clicks always open their own popout": ""
@@ -7574,6 +8246,9 @@
   "Run DMS templates": {
     "Run DMS templates": "Lanĉi DMS-ŝablonojn"
   },
+  "Run Tailscale SSH server": {
+    "Run Tailscale SSH server": ""
+  },
   "Run a program (e.g., firefox, kitty)": {
     "Run a program (e.g., firefox, kitty)": "Lanĉi programon (ekz., firefox, kitty)"
   },
@@ -7582,6 +8257,9 @@
   },
   "Run an external command on each wallpaper change and merge its JSON palette into %1 under a namespace, so templates can use e.g. %2. The command receives the wallpaper as %3 and the mode as %4.": {
     "Run an external command on each wallpaper change and merge its JSON palette into %1 under a namespace, so templates can use e.g. %2. The command receives the wallpaper as %3 and the mode as %4.": ""
+  },
+  "Run as exit node": {
+    "Run as exit node": ""
   },
   "Run full sync": {
     "Run full sync": "Ruli plenan sinkronigon"
@@ -7607,11 +8285,17 @@
   "Runs in a terminal.": {
     "Runs in a terminal.": "Ruliĝas en terminalo."
   },
+  "Runs past the end": {
+    "Runs past the end": ""
+  },
   "Runs programs on your computer": {
     "Runs programs on your computer": ""
   },
   "Runs shell commands": {
     "Runs shell commands": ""
+  },
+  "Runtime": {
+    "Runtime": ""
   },
   "S": {
     "S": "S"
@@ -7627,9 +8311,6 @@
   },
   "SE": {
     "SE": "SO"
-  },
-  "SSID": {
-    "SSID": "SSID"
   },
   "SW": {
     "SW": "SU"
@@ -7664,8 +8345,17 @@
   "Save credentials": {
     "Save credentials": "Konservi salutilojn"
   },
+  "Save location, format, capture behavior": {
+    "Save location, format, capture behavior": ""
+  },
   "Save password": {
     "Save password": "Konservi pasvorton"
+  },
+  "Save permanently": {
+    "Save permanently": ""
+  },
+  "Save to file": {
+    "Save to file": ""
   },
   "Save your work first. Open apps will close.": {
     "Save your work first. Open apps will close.": ""
@@ -7690,6 +8380,9 @@
   },
   "Saves its state": {
     "Saves its state": ""
+  },
+  "Saving": {
+    "Saving": ""
   },
   "Saving...": {
     "Saving...": "Konservante..."
@@ -7739,6 +8432,9 @@
   "Screen time history": {
     "Screen time history": "Historio de ekrantempo"
   },
+  "Screenshot": {
+    "Screenshot": ""
+  },
   "Screenshot unavailable": {
     "Screenshot unavailable": "Ekrankopio nedisponebla"
   },
@@ -7751,8 +8447,17 @@
   "Scroll GitHub": {
     "Scroll GitHub": "Ruli GitHub-on"
   },
+  "Scroll capture interval": {
+    "Scroll capture interval": ""
+  },
+  "Scroll lyrics": {
+    "Scroll lyrics": ""
+  },
   "Scroll method": {
     "Scroll method": "Ruluma metodo"
+  },
+  "Scroll shadows": {
+    "Scroll shadows": ""
   },
   "Scroll song title": {
     "Scroll song title": "Ruli kantotitolon"
@@ -7780,6 +8485,9 @@
   },
   "Search devices...": {
     "Search devices...": "Serĉu aparatojn..."
+  },
+  "Search domains": {
+    "Search domains": ""
   },
   "Search or press a shortcut...": {
     "Search or press a shortcut...": ""
@@ -7862,6 +8570,9 @@
   "Select": {
     "Select": "Elekti"
   },
+  "Select All": {
+    "Select All": ""
+  },
   "Select Application": {
     "Select Application": "Elekti aplikaĵon"
   },
@@ -7916,6 +8627,9 @@
   "Select network": {
     "Select network": "Elekti reton"
   },
+  "Select settings to import": {
+    "Select settings to import": ""
+  },
   "Selected image file not found.": {
     "Selected image file not found.": "Elektita bild-dosiero ne estis trovita."
   },
@@ -7961,6 +8675,9 @@
   "Server": {
     "Server": "Servilo"
   },
+  "Server is not verified without a CA certificate": {
+    "Server is not verified without a CA certificate": ""
+  },
   "Service": {
     "Service": ""
   },
@@ -7972,6 +8689,9 @@
   },
   "Session switching requires loginctl/elogind": {
     "Session switching requires loginctl/elogind": ""
+  },
+  "Set by activity": {
+    "Set by activity": ""
   },
   "Set custom device name": {
     "Set custom device name": "Agordi propran aparat-nomon"
@@ -8024,6 +8744,9 @@
   "Setup": {
     "Setup": "Agordo"
   },
+  "Shaded icons": {
+    "Shaded icons": ""
+  },
   "Shadow": {
     "Shadow": "Ombro"
   },
@@ -8032,6 +8755,9 @@
   },
   "Shadows": {
     "Shadows": "Ombroj"
+  },
+  "Shape of the album cover in the pill": {
+    "Shape of the album cover in the pill": ""
   },
   "Shapes use the %1 theme's colors": {
     "Shapes use the %1 theme's colors": "Formoj uzas la kolorojn de la etoso %1"
@@ -8051,8 +8777,14 @@
   "Shared shortcuts": {
     "Shared shortcuts": "Kunhavataj fulmklavoj"
   },
+  "Sheet": {
+    "Sheet": ""
+  },
   "Shell": {
     "Shell": "Ŝelo"
+  },
+  "Shell animations": {
+    "Shell animations": ""
   },
   "Shift+Enter to copy": {
     "Shift+Enter to copy": "Shift+Enter por kopii"
@@ -8069,17 +8801,26 @@
   "Shortcut (%1)": {
     "Shortcut (%1)": "Mallongigo (%1)"
   },
+  "Shortcut hints": {
+    "Shortcut hints": ""
+  },
   "Shortcuts": {
     "Shortcuts": "Mallongigoj"
   },
   "Shortcuts (%1)": {
     "Shortcuts (%1)": "Mallongigoj (%1)"
   },
+  "Shortcuts apps use from any window": {
+    "Shortcuts apps use from any window": ""
+  },
   "Shortcuts, keyboard, mouse": {
     "Shortcuts, keyboard, mouse": "Fulmklavoj, klavaro, muso"
   },
   "Shortens the bar at both ends": {
     "Shortens the bar at both ends": "Mallongigas la breton ĉe ambaŭ finaĵoj"
+  },
+  "Shorter": {
+    "Shorter": ""
   },
   "Show": {
     "Show": "Montri"
@@ -8089,6 +8830,9 @@
   },
   "Show AM/PM": {
     "Show AM/PM": ""
+  },
+  "Show Edit widgets in app context menu": {
+    "Show Edit widgets in app context menu": ""
   },
   "Show I/O": {
     "Show I/O": "Montri eneligon"
@@ -8104,6 +8848,18 @@
   },
   "Show all tags": {
     "Show all tags": "Montri ĉiujn etikedojn"
+  },
+  "Show an icon and title in the island; keep the original notification in the notification center": {
+    "Show an icon and title in the island; keep the original notification in the notification center": ""
+  },
+  "Show app descriptions": {
+    "Show app descriptions": ""
+  },
+  "Show app icons": {
+    "Show app icons": ""
+  },
+  "Show app name": {
+    "Show app name": ""
   },
   "Show apps": {
     "Show apps": "Montri aplikaĵojn"
@@ -8189,6 +8945,9 @@
   "Show mount path": {
     "Show mount path": "Montru montovojon"
   },
+  "Show notification": {
+    "Show notification": ""
+  },
   "Show occupied only": {
     "Show occupied only": "Montri nur okupitajn"
   },
@@ -8227,6 +8986,9 @@
   },
   "Show restart DMS": {
     "Show restart DMS": "Montri restartigon de DMS"
+  },
+  "Show running apps": {
+    "Show running apps": ""
   },
   "Show scratchpads": {
     "Show scratchpads": "Montri notblokojn"
@@ -8278,6 +9040,12 @@
   },
   "Show window": {
     "Show window": "Montri fenestron"
+  },
+  "Show window title": {
+    "Show window title": ""
+  },
+  "Show workspace changes in the island instead of the regular OSD": {
+    "Show workspace changes in the island instead of the regular OSD": ""
   },
   "Shown only while the microphone, camera or screen sharing is in use": {
     "Shown only while the microphone, camera or screen sharing is in use": "Montrata nur dum mikrofono, fotilo aŭ ekrana kunhavigo estas uzata"
@@ -8360,6 +9128,9 @@
   "Slots used": {
     "Slots used": ""
   },
+  "Slowdown": {
+    "Slowdown": ""
+  },
   "Small": {
     "Small": "Malgranda"
   },
@@ -8441,6 +9212,12 @@
   "Sources for plugins and themes. Registries are git repositories with a plugins/ or themes/ directory.": {
     "Sources for plugins and themes. Registries are git repositories with a plugins/ or themes/ directory.": "Fontoj por kromprogramoj kaj etosoj. Registroj estas git-deponejoj kun dosierujo plugins/ aŭ themes/."
   },
+  "Space reserved for editing\nFinish to apply the selected height.": {
+    "Space reserved for editing\nFinish to apply the selected height.": ""
+  },
+  "Space reserved for stable page height": {
+    "Space reserved for stable page height": ""
+  },
   "Space-separated; {image} and {mode} are substituted": {
     "Space-separated; {image} and {mode} are substituted": "Spaco-apartigitaj; {image} kaj {mode} estas anstataŭigitaj"
   },
@@ -8467,6 +9244,9 @@
   },
   "Speed, scrolling, tap to click": {
     "Speed, scrolling, tap to click": "Rapido, rulumado, frapeto por alklako"
+  },
+  "Spin": {
+    "Spin": ""
   },
   "Spin-up time": {
     "Spin-up time": ""
@@ -8510,8 +9290,14 @@
   "Square": {
     "Square": "Kvadrata"
   },
+  "Squircle": {
+    "Squircle": ""
+  },
   "Stable": {
     "Stable": "Stabila"
+  },
+  "Stable privacy": {
+    "Stable privacy": ""
   },
   "Stack": {
     "Stack": "Stako"
@@ -8552,6 +9338,9 @@
   "Startup Behavior": {
     "Startup Behavior": "Lanĉa konduto"
   },
+  "Startup cache": {
+    "Startup cache": ""
+  },
   "State": {
     "State": "Stato"
   },
@@ -8564,11 +9353,20 @@
   "Stays visible while the workspace has no windows": {
     "Stays visible while the workspace has no windows": "Restas videbla dum la laborspaco havas neniujn fenestrojn"
   },
+  "Stock %1 animations": {
+    "Stock %1 animations": ""
+  },
   "Stop": {
     "Stop": "Haltigi"
   },
   "Stop ignoring %1": {
     "Stop ignoring %1": "Ĉesi malatenti %1"
+  },
+  "Stop managing": {
+    "Stop managing": ""
+  },
+  "Stop managing comments out the include in your %1 config and keeps the DMS file, so your own settings take over. Setup on the page turns it back on.": {
+    "Stop managing comments out the include in your %1 config and keeps the DMS file, so your own settings take over. Setup on the page turns it back on.": ""
   },
   "Stopped": {
     "Stopped": "Haltigita"
@@ -8578,6 +9376,9 @@
   },
   "Stopping": {
     "Stopping": "Haltigante"
+  },
+  "Stopping...": {
+    "Stopping...": ""
   },
   "Stops syncing your DMS settings to the greeter. Set up links them again.": {
     "Stops syncing your DMS settings to the greeter. Set up links them again.": "Ĉesas sinkronigi viajn DMS-agordojn al la salutekrano. Agordi ligos ilin denove."
@@ -8600,11 +9401,23 @@
   "Style, search, hidden apps": {
     "Style, search, hidden apps": "Stilo, serĉo, kaŝitaj aplikaĵoj"
   },
+  "Style, speed, bounce": {
+    "Style, speed, bounce": ""
+  },
   "Styles outside of Default use more GPU": {
     "Styles outside of Default use more GPU": ""
   },
+  "Subnet routes": {
+    "Subnet routes": ""
+  },
   "Success": {
     "Success": "Sukceso"
+  },
+  "Suffix": {
+    "Suffix": ""
+  },
+  "Summarize matching notifications": {
+    "Summarize matching notifications": ""
   },
   "Summary": {
     "Summary": "Resumo"
@@ -8687,6 +9500,9 @@
   "Switch between display configurations": {
     "Switch between display configurations": "Ŝanĝu inter ekranaj agordoj"
   },
+  "Switch between saved setups": {
+    "Switch between saved setups": ""
+  },
   "Switch between the first input method and the active one": {
     "Switch between the first input method and the active one": ""
   },
@@ -8708,6 +9524,9 @@
   "Sync": {
     "Sync": "Sinkronigi"
   },
+  "Sync changes to this profile": {
+    "Sync changes to this profile": ""
+  },
   "Sync completed successfully.": {
     "Sync completed successfully.": "Sinkronigo finiĝis sukcese."
   },
@@ -8720,14 +9539,14 @@
   "Sync needs sudo authentication. Opening terminal so you can use password or fingerprint.": {
     "Sync needs sudo authentication. Opening terminal so you can use password or fingerprint.": "Sinkronigo bezonas sudo-aŭtentigon. Malfermas terminalon por ke vi povu uzi pasvorton aŭ fingrospuron."
   },
-  "Sync popouts and modals": {
-    "Sync popouts and modals": "Sinkronigi ŝprucaĵojn kaj modalojn"
-  },
   "Sync position across displays": {
     "Sync position across displays": "Sinkronigi pozicion trans ekranoj"
   },
   "Sync with portal": {
     "Sync with portal": "Sinkronigi kun portalo"
+  },
+  "Synchronized": {
+    "Synchronized": ""
   },
   "Syncing...": {
     "Syncing...": "Sinkronigante..."
@@ -8786,9 +9605,6 @@
   "Systemd unit": {
     "Systemd unit": ""
   },
-  "TRIM": {
-    "TRIM": ""
-  },
   "Tab": {
     "Tab": "Langeto"
   },
@@ -8828,6 +9644,9 @@
   "Tailscale not available": {
     "Tailscale not available": "Vostoskalo ne havebla"
   },
+  "Take screenshot": {
+    "Take screenshot": ""
+  },
   "Tap and drag": {
     "Tap and drag": "Frapeti kaj treni"
   },
@@ -8842,6 +9661,9 @@
   },
   "Teal": {
     "Teal": "Bluverda"
+  },
+  "Temp": {
+    "Temp": ""
   },
   "Temperature": {
     "Temperature": "Temperaturo"
@@ -8863,6 +9685,9 @@
   },
   "Terminals always dark": {
     "Terminals always dark": "Terminaloj ĉiam malhelaj"
+  },
+  "Terminals and file managers paste the saved file": {
+    "Terminals and file managers paste the saved file": ""
   },
   "Tertiary": {
     "Tertiary": "triaranga"
@@ -8891,6 +9716,9 @@
   "Text editor": {
     "Text editor": "Tekstredaktilo"
   },
+  "Text rendering": {
+    "Text rendering": ""
+  },
   "Text style": {
     "Text style": "Teksta stilo"
   },
@@ -8908,9 +9736,6 @@
   },
   "The Island takes its place on this bar": {
     "The Island takes its place on this bar": ""
-  },
-  "The WiFi adapter could not start access point mode.": {
-    "The WiFi adapter could not start access point mode.": "La vifia adaptilo ne povis startigi alirpunktan reĝimon."
   },
   "The arrow points in the direction the wind is blowing. The label shows where it comes from.": {
     "The arrow points in the direction the wind is blowing. The label shows where it comes from.": "La sago indikas la direkton en kiu la vento blovas. La etikedo montras de kie ĝi venas."
@@ -8954,6 +9779,9 @@
   "The login screen stops following your DMS theme, wallpaper, widgets and settings. greetd, authentication and other users are not affected.": {
     "The login screen stops following your DMS theme, wallpaper, widgets and settings. greetd, authentication and other users are not affected.": "La salutekrano ĉesas sekvi viajn DMS-etoson, fonbildon, fenestraĵojn kaj agordojn. greetd, aŭtentigo kaj aliaj uzantoj ne estas tuŝataj."
   },
+  "The new profile uses your current settings for the groups selected below": {
+    "The new profile uses your current settings for the groups selected below": ""
+  },
   "The next enabled provider is used when one fails.": {
     "The next enabled provider is used when one fails.": ""
   },
@@ -8987,6 +9815,12 @@
   "Theme color": {
     "Theme color": "Etosa koloro"
   },
+  "Theme color behind the collapsed island": {
+    "Theme color behind the collapsed island": ""
+  },
+  "Theme color behind the expanded island": {
+    "Theme color behind the expanded island": ""
+  },
   "Theme colors come from this display's wallpaper": {
     "Theme colors come from this display's wallpaper": "Etosaj koloroj venas de la fonbildo de ĉi tiu ekrano"
   },
@@ -9002,8 +9836,8 @@
   "Theme, light and dark, matugen": {
     "Theme, light and dark, matugen": "Etoso, hela kaj malhela, matugen"
   },
-  "Theme, palette, dark mode": {
-    "Theme, palette, dark mode": "Etoso, paletro, malhela reĝimo"
+  "Themed app icons": {
+    "Themed app icons": ""
   },
   "Themes": {
     "Themes": "Etosoj"
@@ -9026,11 +9860,20 @@
   "Third-party plugins are created by the community and are not officially supported by %1.\n\nThese plugins may pose security and privacy risks - install at your own risk.": {
     "Third-party plugins are created by the community and are not officially supported by %1.\n\nThese plugins may pose security and privacy risks - install at your own risk.": ""
   },
+  "This Wi-Fi adapter can't host a WPA3 hotspot. Use WPA2.": {
+    "This Wi-Fi adapter can't host a WPA3 hotspot. Use WPA2.": ""
+  },
   "This bar is the Island": {
     "This bar is the Island": "Ĉi tiu breto estas la Insulo"
   },
   "This bind is overridden by %1": {
     "This bind is overridden by %1": ""
+  },
+  "This command has options the editor doesn't manage, so edit them in your config file": {
+    "This command has options the editor doesn't manage, so edit them in your config file": ""
+  },
+  "This connection is temporary and is lost on reboot.": {
+    "This connection is temporary and is lost on reboot.": ""
   },
   "This device": {
     "This device": "Ĉi tiu aparato"
@@ -9098,6 +9941,9 @@
   "Tiled State": {
     "Tiled State": "Kaheligita stato"
   },
+  "Tiles": {
+    "Tiles": ""
+  },
   "Tiling": {
     "Tiling": "Kaheligado"
   },
@@ -9154,6 +10000,9 @@
   },
   "Title regex (optional)": {
     "Title regex (optional)": "Titola regula esprimo (laŭvola)"
+  },
+  "Title template": {
+    "Title template": ""
   },
   "To Full": {
     "To Full": "Ĝis plena"
@@ -9341,6 +10190,9 @@
   "Typing reveals the field. Escape hides it again. The editor always shows it.": {
     "Typing reveals the field. Escape hides it again. The editor always shows it.": "Tajpado malkaŝas la kampon. Esk kaŝas ĝin denove. La redaktilo ĉiam montras ĝin."
   },
+  "Typography": {
+    "Typography": ""
+  },
   "URL": {
     "URL": "URL"
   },
@@ -9388,9 +10240,6 @@
   },
   "Unknown Artist": {
     "Unknown Artist": "Nekonata artisto"
-  },
-  "Unknown Config": {
-    "Unknown Config": "Nekonata agordo"
   },
   "Unknown Device": {
     "Unknown Device": "Nekonata aparato"
@@ -9503,6 +10352,9 @@
   "Update failed: %1": {
     "Update failed: %1": "Ĝisdatigo malsukcesis: %1"
   },
+  "Update from current settings": {
+    "Update from current settings": ""
+  },
   "Update plugin": {
     "Update plugin": "Ĝisdatigi kromprogramon"
   },
@@ -9557,6 +10409,12 @@
   "Use Monospace Font": {
     "Use Monospace Font": "Uzi ekspaceta tiparon"
   },
+  "Use Tailscale DNS settings": {
+    "Use Tailscale DNS settings": ""
+  },
+  "Use Tailscale subnets": {
+    "Use Tailscale subnets": ""
+  },
   "Use a security key for lock screen authentication": {
     "Use a security key for lock screen authentication": "Uzi sekurecŝlosilon por aŭtentigo de ŝlosekrano"
   },
@@ -9578,11 +10436,17 @@
   "Use fingerprint authentication for the lock screen": {
     "Use fingerprint authentication for the lock screen": "Uzi fingrospuran aŭtentigon por la ŝlosekrano"
   },
+  "Use fully rounded ends for the collapsed island": {
+    "Use fully rounded ends for the collapsed island": ""
+  },
   "Use inline expansion": {
     "Use inline expansion": "Uzi enlinian etendon"
   },
   "Use keys 1-3 or arrows, Enter/Space to select": {
     "Use keys 1-3 or arrows, Enter/Space to select": "Uzu klavojn 1-3 aŭ sagojn, Enigu/Spaco por elekti"
+  },
+  "Use only for resources on its network": {
+    "Use only for resources on its network": ""
   },
   "Use overlay layer": {
     "Use overlay layer": "Uzu Overlay Tavolo"
@@ -9596,8 +10460,14 @@
   "Use system PAM authentication": {
     "Use system PAM authentication": "Uzi sisteman PAM-aŭtentigon"
   },
+  "Use system certificates": {
+    "Use system certificates": ""
+  },
   "Use the scaled battery level for alert thresholds and percentages": {
     "Use the scaled battery level for alert thresholds and percentages": ""
+  },
+  "Use {summary}, {body}, or {appName} to insert notification text": {
+    "Use {summary}, {body}, or {appName} to insert notification text": ""
   },
   "Used": {
     "Used": ""
@@ -9806,14 +10676,11 @@
   "W": {
     "W": "U"
   },
-  "WPA2 password": {
-    "WPA2 password": "WPA2-pasvorto"
-  },
-  "WWN": {
-    "WWN": ""
-  },
   "Waiting": {
     "Waiting": ""
+  },
+  "Wake on LAN": {
+    "Wake on LAN": ""
   },
   "Wallpaper": {
     "Wallpaper": "Fonbildo"
@@ -9827,11 +10694,17 @@
   "Wallpaper fill mode": {
     "Wallpaper fill mode": "Fonbilda plenig-reĝimo"
   },
+  "Wallpaper layer": {
+    "Wallpaper layer": ""
+  },
   "Wallpaper processing failed": {
     "Wallpaper processing failed": "Malsukcesis procezi fonbildon"
   },
   "Wallpaper processing failed - check wallpaper path": {
     "Wallpaper processing failed - check wallpaper path": "Malsukcesis procezi fonbildon - kontrolu vojon de fonbildo"
+  },
+  "Wallpaper, colors, typography": {
+    "Wallpaper, colors, typography": ""
   },
   "Wallpapers": {
     "Wallpapers": "Fonbildoj"
@@ -9887,6 +10760,9 @@
   "When locked": {
     "When locked": "Kiam ŝlosita"
   },
+  "Where the widget list sits while editing the Control Center": {
+    "Where the widget list sits while editing the Control Center": ""
+  },
   "Which PAM service the lock screen uses to authenticate": {
     "Which PAM service the lock screen uses to authenticate": "Kiun PAM-servon la ŝlosekrano uzas por aŭtentigi"
   },
@@ -9898,6 +10774,12 @@
   },
   "While download and upload are both under 1 KB/s": {
     "While download and upload are both under 1 KB/s": ""
+  },
+  "While playing": {
+    "While playing": ""
+  },
+  "While playing hides the meter when paused, so the pill narrows": {
+    "While playing hides the meter when paused, so the pill narrows": ""
   },
   "White": {
     "White": "Blanka"
@@ -9917,12 +10799,6 @@
   "Wi-Fi and Ethernet connection": {
     "Wi-Fi and Ethernet connection": "Konektoj de Wi-Fi kaj Ethernet"
   },
-  "Wi-Fi is disabled": {
-    "Wi-Fi is disabled": "Wi-Fi estas malebligita"
-  },
-  "Wi-Fi is disabled. You can still edit and save hotspot settings, but starting the hotspot requires Wi-Fi to be enabled.": {
-    "Wi-Fi is disabled. You can still edit and save hotspot settings, but starting the hotspot requires Wi-Fi to be enabled.": "Wi-Fi estas malebligita. Vi ankoraŭ povas redakti kaj konservi agordojn de retkaptejo, sed startigo de la retkaptejo postulas ke Wi-Fi estu ebligita."
-  },
   "Wi-Fi network": {
     "Wi-Fi network": ""
   },
@@ -9931,18 +10807,6 @@
   },
   "Wi-Fi, Ethernet, VPN": {
     "Wi-Fi, Ethernet, VPN": "Wi-Fi, Eterreto, VPN"
-  },
-  "WiFi QR code for %1": {
-    "WiFi QR code for %1": ""
-  },
-  "WiFi disabled": {
-    "WiFi disabled": "WiFi estas malŝaltita"
-  },
-  "WiFi enabled": {
-    "WiFi enabled": "WiFi estas ŝaltita"
-  },
-  "WiFi is off": {
-    "WiFi is off": "WiFi estas malŝaltita"
   },
   "Wide (BT2020)": {
     "Wide (BT2020)": "Larĝa (BT2020)"
@@ -9982,6 +10846,9 @@
   },
   "Width": {
     "Width": "Larĝo"
+  },
+  "Wiggle": {
+    "Wiggle": ""
   },
   "Will disconnect \"%1": {
     "Will disconnect \"%1\"": "Malkonektos \"%1\""
@@ -10046,6 +10913,9 @@
   "Word processor": {
     "Word processor": "Tekstprilaborilo"
   },
+  "Word synced": {
+    "Word synced": ""
+  },
   "Working directory": {
     "Working directory": ""
   },
@@ -10082,6 +10952,9 @@
   "Wrap the app command. %command% is replaced with the actual executable": {
     "Wrap the app command. %command% is replaced with the actual executable": "Envolvu la aplikan komandon. "
   },
+  "Write": {
+    "Write": ""
+  },
   "Write cache": {
     "Write cache": ""
   },
@@ -10115,6 +10988,9 @@
   "Y axis": {
     "Y axis": "Akso Y"
   },
+  "Year": {
+    "Year": ""
+  },
   "Yellow": {
     "Yellow": "Flava"
   },
@@ -10123,6 +10999,9 @@
   },
   "Yesterday": {
     "Yesterday": "Hieraŭ"
+  },
+  "You don't have permission to change this connection.": {
+    "You don't have permission to change this connection.": ""
   },
   "You have unsaved changes. Save before continuing?": {
     "You have unsaved changes. Save before continuing?": "Vi havas nekonservitajn ŝanĝojn. Ĉu konservi antaŭ ol daŭrigi?"
@@ -10147,9 +11026,6 @@
   },
   "Your hotspot is running.": {
     "Your hotspot is running.": "Via retkaptejo funkcias."
-  },
-  "Your hotspot profile is saved and ready to start.": {
-    "Your hotspot profile is saved and ready to start.": "Via retkapteja profilo estas konservita kaj preta por starti."
   },
   "Your keyboard layout puts %1 above the first level, so this bind will never fire. Pick a key the layout types without an extra layer.": {
     "Your keyboard layout puts %1 above the first level, so this bind will never fire. Pick a key the layout types without an extra layer.": "Via klavara aranĝo metas %1 super la unua nivelo, tial ĉi tiu ligo neniam aktiviĝos. Elektu klavon kiun la aranĝo tajpas sen ekstra tavolo."
@@ -10247,9 +11123,6 @@
   "e.g., scratch, /^tmp_.*/, build": {
     "e.g., scratch, /^tmp_.*/, build": "ekz., scratch, /^tmp_.*/, build"
   },
-  "efibootmgr failed": {
-    "efibootmgr failed": "efibootmgr malsukcesis"
-  },
   "expires in %1": {
     "expires in %1": ""
   },
@@ -10268,17 +11141,11 @@
   "keyboard tab key name": {
     "Tab": "Langeto"
   },
-  "khal": {
-    "khal": "khal"
-  },
   "last seen %1": {
     "last seen %1": "laste vidita %1"
   },
   "leave empty for default": {
     "leave empty for default": "lasu malplena por defaŭlto"
-  },
-  "loginctl activate failed (exit %1)": {
-    "loginctl activate failed (exit %1)": "loginctl-aktivigo malsukcesis (eliro %1)"
   },
   "loginctl integration": {
     "loginctl integration": "Integriĝo kun loginctl"
@@ -10373,6 +11240,12 @@
   "source": {
     "source": "fonto"
   },
+  "system monitor bars: short marker for disk write": {
+    "W": ""
+  },
+  "system monitor layout option: bar meters, not the shell bars": {
+    "Bars": ""
+  },
   "the Qt 6 Multimedia QML module": {
     "the Qt 6 Multimedia QML module": "la QML-modulo de Qt 6 Multimedia"
   },
@@ -10394,15 +11267,6 @@
   "updated": {
     "updated": ""
   },
-  "useradd failed (exit %1)": {
-    "useradd failed (exit %1)": "useradd malsukcesis (eliro %1)"
-  },
-  "userdel failed (exit %1)": {
-    "userdel failed (exit %1)": "userdel malsukcesis (eliro %1)"
-  },
-  "usermod failed (exit %1)": {
-    "usermod failed (exit %1)": "uzantmodo malsukcesis (eliro %1)"
-  },
   "verb, clipboard entry action button tooltip": {
     "Preview": "Antaŭrigardo"
   },
@@ -10414,35 +11278,5 @@
   },
   "wifi network status, network has a saved profile": {
     "Saved": "Konservita"
-  },
-  "• M - Month (1-12)": {
-    "• M - Month (1-12)": "• M - Monato (1-12)"
-  },
-  "• MM - Month (01-12)": {
-    "• MM - Month (01-12)": "• MM - Monato (01-12)"
-  },
-  "• MMM - Month (Jan)": {
-    "• MMM - Month (Jan)": "• MMM - Monato (Jan)"
-  },
-  "• MMMM - Month (January)": {
-    "• MMMM - Month (January)": "• MMMM - Monato (Januaro)"
-  },
-  "• d - Day (1-31)": {
-    "• d - Day (1-31)": "• d - Tago (1-31)"
-  },
-  "• dd - Day (01-31)": {
-    "• dd - Day (01-31)": "• dd - Tago (01-31)"
-  },
-  "• ddd - Day name (Mon)": {
-    "• ddd - Day name (Mon)": "• ddd - Tagnomo (Lun)"
-  },
-  "• dddd - Day name (Monday)": {
-    "• dddd - Day name (Monday)": "• dddd - Tagnomo (Lundo)"
-  },
-  "• yy - Year (24)": {
-    "• yy - Year (24)": "• yy - Jaro (24)"
-  },
-  "• yyyy - Year (2024)": {
-    "• yyyy - Year (2024)": "• yyyy - Jaro (2024)"
   }
 }

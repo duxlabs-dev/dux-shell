@@ -217,7 +217,6 @@ Item {
 
             y: Theme.spacingS
             width: parent.width
-            height: item?.implicitHeight ?? 0
             active: root.isPlain
 
             sourceComponent: StyledText {

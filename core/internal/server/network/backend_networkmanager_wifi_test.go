@@ -206,54 +206,6 @@ func TestNetworkManagerBackend_WiFiReplacementBeforeRemoval(t *testing.T) {
 	assert.Same(t, wifi, wireless)
 }
 
-func TestNetworkManagerBackend_SetWiFiEnabled(t *testing.T) {
-	mockNM := mock_gonetworkmanager.NewMockNetworkManager(t)
-
-	backend, err := NewNetworkManagerBackend(mockNM)
-	assert.NoError(t, err)
-
-	mockNM.EXPECT().SetPropertyWirelessEnabled(true).Return(nil)
-
-	err = backend.SetWiFiEnabled(true)
-	assert.NoError(t, err)
-
-	backend.stateMutex.RLock()
-	assert.True(t, backend.state.WiFiEnabled)
-	backend.stateMutex.RUnlock()
-}
-
-func TestNetworkManagerBackend_ScanWiFi_Disabled(t *testing.T) {
-	mockNM := mock_gonetworkmanager.NewMockNetworkManager(t)
-	mockDeviceWireless := mock_gonetworkmanager.NewMockDeviceWireless(t)
-
-	backend, err := NewNetworkManagerBackend(mockNM)
-	assert.NoError(t, err)
-
-	backend.wifiDevice = mockDeviceWireless
-	backend.wifiDev = mockDeviceWireless
-
-	backend.stateMutex.Lock()
-	backend.state.WiFiEnabled = false
-	backend.stateMutex.Unlock()
-
-	err = backend.ScanWiFi()
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "WiFi is disabled")
-}
-
-func TestNetworkManagerBackend_ConnectWiFi_NoDevice(t *testing.T) {
-	mockNM := mock_gonetworkmanager.NewMockNetworkManager(t)
-
-	backend, err := NewNetworkManagerBackend(mockNM)
-	assert.NoError(t, err)
-
-	backend.wifiDevice = nil
-	req := ConnectionRequest{SSID: "TestNetwork", Password: "password"}
-	err = backend.ConnectWiFi(req)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "no WiFi device available")
-}
-
 func TestNetworkManagerBackend_ConnectWiFi_AlreadyConnected(t *testing.T) {
 	mockNM := mock_gonetworkmanager.NewMockNetworkManager(t)
 	mockDeviceWireless := mock_gonetworkmanager.NewMockDeviceWireless(t)
@@ -285,25 +237,12 @@ func TestNetworkManagerBackend_ConnectWiFi_AlreadyConnected(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-func TestNetworkManagerBackend_IsConnectingTo(t *testing.T) {
-	mockNM := mock_gonetworkmanager.NewMockNetworkManager(t)
-
-	backend, err := NewNetworkManagerBackend(mockNM)
-	assert.NoError(t, err)
-
-	backend.stateMutex.Lock()
-	backend.state.IsConnecting = true
-	backend.state.ConnectingSSID = "TestNetwork"
-	backend.stateMutex.Unlock()
-
-	assert.True(t, backend.IsConnectingTo("TestNetwork"))
-	assert.False(t, backend.IsConnectingTo("OtherNetwork"))
-}
-
 func TestNetworkManagerBackend_UpdateSavedWiFiNetworksPreservesVisibleSavedNetworks(t *testing.T) {
 	mockNM := mock_gonetworkmanager.NewMockNetworkManager(t)
 	mockSettings := mock_gonetworkmanager.NewMockSettings(t)
 	mockConn := mock_gonetworkmanager.NewMockConnection(t)
+	mockOfficeConn := mock_gonetworkmanager.NewMockConnection(t)
+	mockCafeConn := mock_gonetworkmanager.NewMockConnection(t)
 
 	backend, err := NewNetworkManagerBackend(mockNM)
 	assert.NoError(t, err)
@@ -316,20 +255,31 @@ func TestNetworkManagerBackend_UpdateSavedWiFiNetworksPreservesVisibleSavedNetwo
 			Signal: 76,
 		},
 	}
+	// wlan0's device snapshot is stale (Cafe is gone, Home was stronger);
+	// Office is only in range of the second radio.
+	backend.state.WiFiDevice = "wlan0"
+	backend.state.WiFiDevices = []WiFiDevice{
+		{Name: "wlan0", Networks: []WiFiNetwork{{SSID: "Home", Signal: 90, Device: "wlan0"}, {SSID: "Cafe", Signal: 60, Device: "wlan0"}}},
+		{Name: "wlan1", Networks: []WiFiNetwork{{SSID: "Office", Signal: 40, Device: "wlan1"}}},
+	}
 	backend.stateMutex.Unlock()
 
-	settings := gonetworkmanager.ConnectionSettings{
-		"connection": {
-			"type":        "802-11-wireless",
-			"autoconnect": true,
-		},
-		"802-11-wireless": {
-			"ssid": []byte("Home"),
-		},
-		"802-11-wireless-security": {},
+	wifiSettings := func(ssid string) gonetworkmanager.ConnectionSettings {
+		return gonetworkmanager.ConnectionSettings{
+			"connection": {
+				"type":        "802-11-wireless",
+				"autoconnect": true,
+			},
+			"802-11-wireless": {
+				"ssid": []byte(ssid),
+			},
+			"802-11-wireless-security": {},
+		}
 	}
-	mockSettings.EXPECT().ListConnections().Return([]gonetworkmanager.Connection{mockConn}, nil)
-	mockConn.EXPECT().GetSettings().Return(settings, nil)
+	mockSettings.EXPECT().ListConnections().Return([]gonetworkmanager.Connection{mockConn, mockOfficeConn, mockCafeConn}, nil)
+	mockConn.EXPECT().GetSettings().Return(wifiSettings("Home"), nil)
+	mockOfficeConn.EXPECT().GetSettings().Return(wifiSettings("Office"), nil)
+	mockCafeConn.EXPECT().GetSettings().Return(wifiSettings("Cafe"), nil)
 
 	err = backend.updateSavedWiFiNetworks()
 	assert.NoError(t, err)
@@ -341,22 +291,17 @@ func TestNetworkManagerBackend_UpdateSavedWiFiNetworksPreservesVisibleSavedNetwo
 
 	assert.Len(t, wifiNetworks, 1)
 	assert.True(t, wifiNetworks[0].Saved)
-	assert.Len(t, savedNetworks, 1)
+	require.Len(t, savedNetworks, 3)
 	assert.Equal(t, "Home", savedNetworks[0].SSID)
 	assert.True(t, savedNetworks[0].Saved)
 	assert.False(t, savedNetworks[0].OutOfRange)
 	assert.Equal(t, uint8(76), savedNetworks[0].Signal)
-}
-
-func TestNetworkManagerBackend_FindConnection_NoSettings(t *testing.T) {
-	mockNM := mock_gonetworkmanager.NewMockNetworkManager(t)
-
-	backend, err := NewNetworkManagerBackend(mockNM)
-	assert.NoError(t, err)
-
-	backend.settings = nil
-	_, err = backend.findConnection("NonExistentNetwork")
-	assert.Error(t, err)
+	assert.Empty(t, savedNetworks[0].Device)
+	assert.Equal(t, "Office", savedNetworks[1].SSID)
+	assert.False(t, savedNetworks[1].OutOfRange)
+	assert.Equal(t, "wlan1", savedNetworks[1].Device)
+	assert.Equal(t, "Cafe", savedNetworks[2].SSID)
+	assert.True(t, savedNetworks[2].OutOfRange)
 }
 
 func TestAPNeedsCredentials(t *testing.T) {

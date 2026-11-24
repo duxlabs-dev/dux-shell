@@ -20,10 +20,7 @@ import (
 	"github.com/duxlabs-dev/dux-shell/core/internal/version"
 )
 
-const (
-	forceQuickshellGit = false
-	forceDMSGit        = false
-)
+const forceDMSGit = false
 
 // BaseDistribution provides common functionality for all distributions
 type BaseDistribution struct {
@@ -272,75 +269,6 @@ func (b *BaseDistribution) detectHyprlandTools() []deps.Dependency {
 // Hyprland 0.52+ calls hyprland-dialog and friends from hyprland-guiutils and complains when they are missing.
 func (b *BaseDistribution) detectHyprlandGuiutils() deps.Dependency {
 	return b.detectPackage("hyprland-guiutils", "Hyprland dialogs and helper apps", b.commandExists("hyprland-dialog"))
-}
-
-func (b *BaseDistribution) detectQuickshell() deps.Dependency {
-	if !b.commandExists("qs") {
-		return deps.Dependency{
-			Name:        "quickshell",
-			Status:      deps.StatusMissing,
-			Description: "QtQuick based desktop shell toolkit",
-			Required:    true,
-			Variant:     deps.VariantStable,
-			CanToggle:   true,
-		}
-	}
-
-	cmd := exec.Command("qs", "--version")
-	output, err := cmd.Output()
-	if err != nil {
-		return deps.Dependency{
-			Name:        "quickshell",
-			Status:      deps.StatusNeedsReinstall,
-			Description: "QtQuick based desktop shell toolkit (version check failed)",
-			Required:    true,
-			Variant:     deps.VariantStable,
-			CanToggle:   true,
-		}
-	}
-
-	versionStr := string(output)
-	versionRegex := regexp.MustCompile(`(?i)quickshell (\d+\.\d+\.\d+)`)
-	matches := versionRegex.FindStringSubmatch(versionStr)
-
-	if len(matches) < 2 {
-		return deps.Dependency{
-			Name:        "quickshell",
-			Status:      deps.StatusNeedsReinstall,
-			Description: "QtQuick based desktop shell toolkit (unknown version)",
-			Required:    true,
-			Variant:     deps.VariantStable,
-			CanToggle:   true,
-		}
-	}
-
-	installedVersion := matches[1]
-	variant := deps.VariantStable
-	if strings.Contains(versionStr, "git") || strings.Contains(versionStr, "+") {
-		variant = deps.VariantGit
-	}
-
-	if version.CompareVersions(installedVersion, "0.2.0") >= 0 {
-		return deps.Dependency{
-			Name:        "quickshell",
-			Status:      deps.StatusInstalled,
-			Version:     installedVersion,
-			Description: "QtQuick based desktop shell toolkit",
-			Required:    true,
-			Variant:     variant,
-			CanToggle:   true,
-		}
-	}
-
-	return deps.Dependency{
-		Name:        "quickshell",
-		Status:      deps.StatusNeedsUpdate,
-		Variant:     variant,
-		CanToggle:   true,
-		Version:     installedVersion,
-		Description: "QtQuick based desktop shell toolkit (needs 0.2.0+)",
-		Required:    true,
-	}
 }
 
 var (

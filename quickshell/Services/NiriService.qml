@@ -10,6 +10,7 @@ import qs.Services
 import qs.DCommon.Common as DCommon
 import "../Common/OutputModel.js" as OutputModel
 import "../Common/BlurStrength.js" as BlurStrength
+import "../Common/CompositorAnimations.js" as CompositorAnimations
 
 Singleton {
     id: root
@@ -51,7 +52,6 @@ Singleton {
     property string configValidationOutput: ""
     property bool hasInitialConnection: false
     property bool suppressConfigToast: true
-    property bool suppressNextConfigToast: false
     property bool matugenSuppression: false
     property bool configGenerationPending: false
     property int _layoutRequestRevision: 0
@@ -120,13 +120,13 @@ Singleton {
 
     Timer {
         id: suppressToastTimer
-        interval: 3000
+        interval: Timing.holdMedium
         onTriggered: root.suppressConfigToast = false
     }
 
     Timer {
         id: suppressResetTimer
-        interval: 5000
+        interval: Timing.holdLong
         onTriggered: root.matugenSuppression = false
     }
 
@@ -153,9 +153,16 @@ Singleton {
         target: DMSService
         function onCapabilitiesReceived() {
             const supported = DMSService.capabilities.includes("niri.config-next");
-            if (supported === root.configNextSupported)
-                return;
+            const changed = supported !== root.configNextSupported;
             root.configNextSupported = supported;
+            if (changed || root.configGenerationPending)
+                root.generateNiriLayoutConfig();
+            if (root._overviewRulePending) {
+                root._overviewRulePending = false;
+                root.ensureOverviewRule();
+            }
+            if (!changed)
+                return;
             // input.kdl is first written before the DMS socket reports capabilities
             if (SettingsData.touchpadPinchSensitivity !== 1.0)
                 root.generateNiriInputConfig();
@@ -743,12 +750,8 @@ Singleton {
             configGenerationAction.schedule();
         configReloaded();
 
-        if (hasInitialConnection && !suppressConfigToast && !suppressNextConfigToast && !matugenSuppression && SessionData.showConfigReloadToast) {
+        if (hasInitialConnection && !suppressConfigToast && !matugenSuppression && SessionData.showConfigReloadToast)
             ToastService.showInfo(I18n.tr("niri: config reloaded"), "", "", "niri-config");
-        } else if (suppressNextConfigToast) {
-            suppressNextConfigToast = false;
-            suppressResetTimer.stop();
-        }
 
         if (!hasInitialConnection) {
             hasInitialConnection = true;
@@ -812,12 +815,17 @@ Singleton {
         }
     }
 
+    // niri reports the shell's own window previews as casts once they request a second frame.
+    function isOwnCast(cast) {
+        return cast.pid === Quickshell.processId;
+    }
+
     function handleCastsChanged(data) {
-        casts = data.casts || [];
+        casts = (data.casts || []).filter(cast => !isOwnCast(cast));
     }
 
     function handleCastStartedOrChanged(data) {
-        if (!data.cast)
+        if (!data.cast || isOwnCast(data.cast))
             return;
         const cast = data.cast;
         const existingIndex = casts.findIndex(c => c.stream_id === cast.stream_id);
@@ -1286,6 +1294,8 @@ blur {
             loadLayoutXrayState();
             return;
         }
+        if (DMSService.capabilities.length === 0)
+            return;
         configGenerationPending = false;
         log.debug("Generating layout config...");
 
@@ -1299,9 +1309,7 @@ blur {
         const borderSize = (typeof SettingsData !== "undefined" && SettingsData.niriLayoutBorderSize >= 0) ? SettingsData.niriLayoutBorderSize : defaultBorderSize;
         const frameEnabled = typeof SettingsData !== "undefined" && SettingsData.frameEnabled;
         // dms:frame only in separate mode — connected-mode frame blur overlaps windows via popouts/arcs
-        const excludeNamespaces = ["dms:bar"];
-        if (typeof SettingsData !== "undefined" && SettingsData.dankIslandEnabled)
-            excludeNamespaces.push("dms:dankisland");
+        const excludeNamespaces = ["dms:bar", "dms:dankisland"];
         if (frameEnabled && SettingsData.frameMode !== "connected")
             excludeNamespaces.push("dms:frame");
 
@@ -1387,11 +1395,23 @@ window-rule {
         if (_dmsConfigFilesEnsured)
             return;
         _dmsConfigFilesEnsured = true;
-        const script = `mkdir -p "${niriDmsDir}" && for f in outputs binds cursor windowrules colors alttab layout input; do [ -f "${niriDmsDir}/$f.kdl" ] || touch "${niriDmsDir}/$f.kdl"; done`;
+        const script = `mkdir -p "${niriDmsDir}" && for f in outputs binds cursor windowrules colors alttab layout input animations; do [ -f "${niriDmsDir}/$f.kdl" ] || touch "${niriDmsDir}/$f.kdl"; done`;
         Proc.runCommand("niri-ensure-dms-configs", ["sh", "-c", script], (output, exitCode) => {
             if (exitCode !== 0)
                 log.warn("Failed to ensure dms config files, exit code:", exitCode);
         });
+    }
+
+    property bool _overviewRulePending: false
+
+    function ensureOverviewRule() {
+        if (DMSService.capabilities.length === 0) {
+            _overviewRulePending = true;
+            return;
+        }
+        if (!configNextSupported)
+            return;
+        Proc.runCommand("niri-ensure-overview-rule", ["sh", "-c", `grep -qs focus-on-type-in-overview "\${XDG_CONFIG_HOME:-\$HOME/.config}/niri/dms/windowrules.kdl" || "${Proc.dmsBin}" config windowrules reorder niri "[]"`]);
     }
 
     function generateNiriBlurrule() {
@@ -1405,6 +1425,21 @@ window-rule {
         writeBlurruleProcess.blurrulePath = blurrulePath;
         writeBlurruleProcess.command = ["sh", "-c", `${targetFileCommand(blurrulePath)} && cp --no-preserve=mode "${sourceBlurrulePath}" "$target.$$.tmp" && mv -f "$target.$$.tmp" "$target"`];
         writeBlurruleProcess.running = true;
+    }
+
+    function generateNiriAnimationsConfig() {
+        if (!CompositorService.isNiri)
+            return;
+
+        const configDir = Paths.strip(StandardPaths.writableLocation(StandardPaths.ConfigLocation));
+        const animationsPath = configDir + "/niri/dms/animations.kdl";
+        const content = CompositorAnimations.generate("niri", typeof SettingsData !== "undefined" ? SettingsData : {});
+
+        // Same-id calls coalesce in Proc's debounce, so a burst of setting writes is one file write
+        Proc.runCommand("niri-write-animations", ["sh", "-c", replaceFileCommand(animationsPath, content)], (output, exitCode) => {
+            if (exitCode !== 0)
+                log.warn("Failed to write animations config, exit code:", exitCode);
+        });
     }
 
     function generateNiriCursorConfig() {
@@ -1717,7 +1752,7 @@ window-rule {
             return send({
                 "Action": {
                     "UnsetWorkspaceName": {
-                        "workspace": null
+                        "reference": null
                     }
                 }
             });

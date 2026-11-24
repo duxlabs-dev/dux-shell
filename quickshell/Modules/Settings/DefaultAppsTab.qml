@@ -219,111 +219,119 @@ Item {
     SettingsPage {
         id: mainColumn
 
-        SettingsCard {
-            settingKey: "defaultAppsInternet"
-            tags: ["browser", "mail", "email", "web"]
-            title: I18n.tr("Internet", "Internet")
-            iconName: "public"
+        SettingsDeferred {
+            SettingsCard {
+                settingKey: "defaultAppsInternet"
+                tags: ["browser", "mail", "email", "web"]
+                title: I18n.tr("Internet", "Internet")
+                iconName: "public"
 
-            AppSelector {
-                text: I18n.tr("Web browser")
-                tags: ["web", "browser", "internet", "links", "html"]
-                category: root.appCategory.WebBrowser
-            }
+                AppSelector {
+                    text: I18n.tr("Web browser")
+                    tags: ["web", "browser", "internet", "links", "html"]
+                    category: root.appCategory.WebBrowser
+                }
 
-            AppSelector {
-                text: I18n.tr("Mail", "Mail")
-                category: root.appCategory.Mail
-                tags: ["mail", "email", "mailto"]
-            }
+                AppSelector {
+                    text: I18n.tr("Mail", "Mail")
+                    category: root.appCategory.Mail
+                    tags: ["mail", "email", "mailto"]
+                }
 
-            AppSelector {
-                text: I18n.tr("Maps", "Maps")
-                category: root.appCategory.Maps
-                tags: ["maps", "geo", "location"]
+                AppSelector {
+                    text: I18n.tr("Maps", "Maps")
+                    category: root.appCategory.Maps
+                    tags: ["maps", "geo", "location"]
+                }
             }
         }
 
-        SettingsCard {
-            settingKey: "defaultAppsUtilities"
-            tags: ["file", "manager", "terminal", "editor", "archive", "zip"]
-            title: I18n.tr("Utilities", "Utilities")
-            iconName: "terminal"
+        SettingsDeferred {
+            SettingsCard {
+                settingKey: "defaultAppsUtilities"
+                tags: ["file", "manager", "terminal", "editor", "archive", "zip"]
+                title: I18n.tr("Utilities", "Utilities")
+                iconName: "terminal"
 
-            AppSelector {
-                text: I18n.tr("File manager")
-                tags: ["file", "manager", "directory", "sftp"]
-                category: root.appCategory.FileManager
-            }
-            AppSelector {
-                text: I18n.tr("Terminal", "Terminal")
-                category: root.appCategory.Terminal
-                tags: ["terminal", "console", "xdg-terminal-exec"]
-            }
-            AppSelector {
-                text: I18n.tr("Calendar", "Calendar")
-                category: root.appCategory.Calendar
-                tags: ["calendar", "events"]
-            }
-            AppSelector {
-                text: I18n.tr("Archive manager", "default app selector label for archive manager program for zip and tar files")
-                category: root.appCategory.ArchiveManager
-                tags: ["archive", "zip", "tar", "compress"]
+                AppSelector {
+                    text: I18n.tr("File manager")
+                    tags: ["file", "manager", "directory", "sftp"]
+                    category: root.appCategory.FileManager
+                }
+                AppSelector {
+                    text: I18n.tr("Terminal", "Terminal")
+                    category: root.appCategory.Terminal
+                    tags: ["terminal", "console", "xdg-terminal-exec"]
+                }
+                AppSelector {
+                    text: I18n.tr("Calendar", "Calendar")
+                    category: root.appCategory.Calendar
+                    tags: ["calendar", "events"]
+                }
+                AppSelector {
+                    text: I18n.tr("Archive manager", "default app selector label for archive manager program for zip and tar files")
+                    category: root.appCategory.ArchiveManager
+                    tags: ["archive", "zip", "tar", "compress"]
+                }
             }
         }
 
-        SettingsCard {
-            settingKey: "defaultAppsDocuments"
-            tags: ["pdf", "text", "reader", "office", "word", "spreadsheet", "presentation"]
-            title: I18n.tr("Documents", "Documents")
-            iconName: "edit_document"
+        SettingsDeferred {
+            SettingsCard {
+                settingKey: "defaultAppsDocuments"
+                tags: ["pdf", "text", "reader", "office", "word", "spreadsheet", "presentation"]
+                title: I18n.tr("Documents", "Documents")
+                iconName: "edit_document"
 
-            AppSelector {
-                text: I18n.tr("Text editor")
-                category: root.appCategory.TextEditor
-                tags: ["text", "editor"]
-            }
-            AppSelector {
-                text: I18n.tr("PDF reader")
-                category: root.appCategory.PDFReader
-                tags: ["pdf", "reader"]
-            }
-            AppSelector {
-                text: I18n.tr("Word processor", "default app selector label for word processor program")
-                category: root.appCategory.WordProcessor
-                tags: ["word", "document", "docs", "office", "writer"]
-            }
-            AppSelector {
-                text: I18n.tr("Spreadsheet", "default app selector label for spreadsheet program")
-                category: root.appCategory.Spreadsheet
-                tags: ["spreadsheet", "excel", "calc", "csv", "office"]
-            }
-            AppSelector {
-                text: I18n.tr("Presentation", "default app selector label for slide presentation program, not presentation mode")
-                category: root.appCategory.Presentation
-                tags: ["presentation", "powerpoint", "ppt", "slides", "office"]
+                AppSelector {
+                    text: I18n.tr("Text editor")
+                    category: root.appCategory.TextEditor
+                    tags: ["text", "editor"]
+                }
+                AppSelector {
+                    text: I18n.tr("PDF reader")
+                    category: root.appCategory.PDFReader
+                    tags: ["pdf", "reader"]
+                }
+                AppSelector {
+                    text: I18n.tr("Word processor", "default app selector label for word processor program")
+                    category: root.appCategory.WordProcessor
+                    tags: ["word", "document", "docs", "office", "writer"]
+                }
+                AppSelector {
+                    text: I18n.tr("Spreadsheet", "default app selector label for spreadsheet program")
+                    category: root.appCategory.Spreadsheet
+                    tags: ["spreadsheet", "excel", "calc", "csv", "office"]
+                }
+                AppSelector {
+                    text: I18n.tr("Presentation", "default app selector label for slide presentation program, not presentation mode")
+                    category: root.appCategory.Presentation
+                    tags: ["presentation", "powerpoint", "ppt", "slides", "office"]
+                }
             }
         }
 
-        SettingsCard {
-            settingKey: "defaultAppsMultimedia"
-            tags: ["image", "video", "music", "viewer", "player"]
-            title: I18n.tr("Multimedia", "Multimedia")
-            iconName: "movie"
-            AppSelector {
-                text: I18n.tr("Image viewer")
-                category: root.appCategory.ImageViewer
-                tags: ["image", "viewer"]
-            }
-            AppSelector {
-                text: I18n.tr("Video player")
-                category: root.appCategory.VideoPlayer
-                tags: ["video", "player"]
-            }
-            AppSelector {
-                text: I18n.tr("Music player")
-                category: root.appCategory.MusicPlayer
-                tags: ["music", "player", "audio"]
+        SettingsDeferred {
+            SettingsCard {
+                settingKey: "defaultAppsMultimedia"
+                tags: ["image", "video", "music", "viewer", "player"]
+                title: I18n.tr("Multimedia", "Multimedia")
+                iconName: "movie"
+                AppSelector {
+                    text: I18n.tr("Image viewer")
+                    category: root.appCategory.ImageViewer
+                    tags: ["image", "viewer"]
+                }
+                AppSelector {
+                    text: I18n.tr("Video player")
+                    category: root.appCategory.VideoPlayer
+                    tags: ["video", "player"]
+                }
+                AppSelector {
+                    text: I18n.tr("Music player")
+                    category: root.appCategory.MusicPlayer
+                    tags: ["music", "player", "audio"]
+                }
             }
         }
     }

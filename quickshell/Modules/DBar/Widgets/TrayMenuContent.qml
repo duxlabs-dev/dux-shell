@@ -154,10 +154,8 @@ Item {
             }
         }
 
-        Rectangle {
+        DDivider {
             visible: entryStack.count === 0
-            width: parent.width
-            height: Theme.dividerWidth
             color: Theme.outlineHeavy
         }
 
@@ -198,10 +196,8 @@ Item {
             }
         }
 
-        Rectangle {
+        DDivider {
             visible: entryStack.count > 0
-            width: parent.width
-            height: Theme.dividerWidth
             color: Theme.outlineHeavy
         }
 

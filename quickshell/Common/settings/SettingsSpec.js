@@ -26,6 +26,10 @@ function followFocusMode(v) {
     return Number.isInteger(v) && v >= 0 && v <= 2 ? v : undefined;
 }
 
+function controlCenterEditLayout(v) {
+    return v === "docked" || v === "sheet" ? v : undefined;
+}
+
 var LOCAL_SPEC = {
     dockConfigs: {
         def: [DockConfig.create("dock", "Dock")]
@@ -149,6 +153,18 @@ var LOCAL_SPEC = {
     niriLayoutBorderSize: {
         def: -1,
         onChange: "updateCompositorLayout"
+    },
+    compositorAnimationPreset: {
+        def: "dms",
+        onChange: "updateCompositorAnimations"
+    },
+    compositorAnimationSlowdown: {
+        def: 1.0,
+        onChange: "updateCompositorAnimations"
+    },
+    compositorAnimationOverrides: {
+        def: {},
+        onChange: "updateCompositorAnimations"
     },
     hyprlandLayoutGapsOverride: {
         def: -1,
@@ -512,14 +528,11 @@ var LOCAL_SPEC = {
     windSpeedUnit: {
         def: "kmh"
     },
-    syncComponentAnimationSpeeds: {
+    qmlCacheEnabled: {
         def: true
     },
-    popoutAnimationDuration: {
-        def: 150
-    },
-    modalAnimationDuration: {
-        def: 150
+    renderControlEnabled: {
+        def: true
     },
     reduceMotion: {
         def: false
@@ -537,6 +550,15 @@ var LOCAL_SPEC = {
     interfaceStyle: {
         def: "expressive",
         onChange: "applyInterfaceStyle"
+    },
+    screenCornersEnabled: {
+        def: false
+    },
+    screenCornerRadius: {
+        def: 23
+    },
+    screenCornersOverFullscreen: {
+        def: false
     },
     m3ElevationEnabled: {
         def: true
@@ -602,6 +624,9 @@ var LOCAL_SPEC = {
     blurWallpaperOnOverview: {
         def: false
     },
+    pauseVideoWallpaperOnBattery: {
+        def: false
+    },
     systemTrayIconTintMode: {
         def: "none"
     },
@@ -612,17 +637,25 @@ var LOCAL_SPEC = {
         def: 135
     },
     controlCenterColumns: {
-        def: 8
+        def: 7
+    },
+    controlCenterRows: {
+        def: 0,
+        coerce: v => Number.isInteger(v) && v >= 0 ? v : undefined
     },
     controlCenterIconScale: {
         def: 1.0
+    },
+    controlCenterEditLayout: {
+        def: "docked",
+        coerce: controlCenterEditLayout
     },
     controlCenterWidgets: {
         def: [
             {
                 id: "user",
                 enabled: true,
-                w: 5,
+                w: 4,
                 h: 1
             },
             {
@@ -649,81 +682,88 @@ var LOCAL_SPEC = {
             {
                 id: "brightnessSlider",
                 enabled: true,
-                w: 4,
+                w: 3.5,
                 h: 1,
                 small: true
             },
             {
                 id: "volumeSlider",
                 enabled: true,
-                w: 4,
+                w: 3.5,
                 h: 1,
                 small: true
             },
             {
                 id: "wifi",
                 enabled: true,
-                w: 4,
+                w: 3.5,
                 h: 1
             },
             {
                 id: "bluetooth",
                 enabled: true,
-                w: 4,
+                w: 3.5,
                 h: 1
             },
             {
                 id: "audioOutput",
                 enabled: true,
-                w: 4,
+                w: 3.5,
                 h: 1
             },
             {
                 id: "audioInput",
                 enabled: true,
-                w: 4,
+                w: 3.5,
                 h: 1
             },
             {
-                id: "darkMode",
+                id: "airplaneMode",
                 enabled: true,
-                w: 2,
-                h: 1
-            },
-            {
-                id: "nightMode",
-                enabled: true,
-                w: 2,
-                h: 1
-            },
-            {
-                id: "doNotDisturb",
-                enabled: true,
-                w: 2,
-                h: 1
-            },
-            {
-                id: "idleInhibitor",
-                enabled: true,
-                w: 2,
-                h: 1
-            },
-            {
-                id: "battery",
-                enabled: true,
-                w: 4,
+                w: 3.5,
                 h: 1
             },
             {
                 id: "diskUsage",
                 enabled: true,
-                w: 4,
+                w: 3.5,
+                h: 1
+            },
+            {
+                id: "doNotDisturb",
+                enabled: true,
+                w: 3.5,
+                h: 1
+            },
+            {
+                id: "idleInhibitor",
+                enabled: true,
+                w: 3.5,
+                h: 1
+            },
+            {
+                id: "nightMode",
+                enabled: true,
+                w: 3.5,
+                h: 1
+            },
+            {
+                id: "darkMode",
+                enabled: true,
+                w: 3.5,
                 h: 1
             },
             {
                 id: "runningApps",
                 enabled: true,
-                w: 7,
+                w: 5,
+                h: 1,
+                small: true
+            },
+            {
+                id: "colorPicker",
+                enabled: true,
+                w: 1,
                 h: 1,
                 small: true
             },
@@ -843,6 +883,9 @@ var LOCAL_SPEC = {
     browserPickerViewMode: {
         def: "grid"
     },
+    configProfilePickerView: {
+        def: "carousel"
+    },
     appPickerViewMode: {
         def: "grid"
     },
@@ -851,6 +894,9 @@ var LOCAL_SPEC = {
     },
     appLauncherGridColumns: {
         def: 4
+    },
+    appLauncherIconColumns: {
+        def: 5
     },
     closeNiriOverviewOnWindowFocus: {
         def: true
@@ -884,6 +930,12 @@ var LOCAL_SPEC = {
         def: "compact"
     },
     dankLauncherV2ShowSourceBadges: {
+        def: true
+    },
+    dankLauncherV2ShowAppIcons: {
+        def: true
+    },
+    dankLauncherV2ShowAppDescriptions: {
         def: true
     },
     dankLauncherV2BorderEnabled: {
@@ -922,6 +974,9 @@ var LOCAL_SPEC = {
     keybindsFloatingWindow: {
         def: false
     },
+    keybindsModifierStyle: {
+        def: "windows"
+    },
     dashTabPosition: {
         def: "auto"
     },
@@ -952,6 +1007,10 @@ var LOCAL_SPEC = {
             },
             {
                 id: "notifications",
+                enabled: false
+            },
+            {
+                id: "profiles",
                 enabled: false
             },
             {
@@ -1014,6 +1073,46 @@ var LOCAL_SPEC = {
     },
     iconThemePerMode: {
         def: false,
+        onChange: "applyStoredIconTheme"
+    },
+    iconFolderRecolor: {
+        def: false,
+        onChange: "applyStoredIconTheme"
+    },
+    iconAppStyle: {
+        def: "themed",
+        onChange: "applyStoredIconTheme"
+    },
+    iconShape: {
+        def: "squircle",
+        onChange: "applyStoredIconTheme"
+    },
+    iconGradient: {
+        def: false,
+        onChange: "applyStoredIconTheme"
+    },
+    iconTileColor: {
+        def: "edge",
+        onChange: "applyStoredIconTheme"
+    },
+    iconColorSource: {
+        def: "common",
+        onChange: "applyStoredIconTheme"
+    },
+    iconTileStyle: {
+        def: "tonal",
+        onChange: "applyStoredIconTheme"
+    },
+    iconTileTone: {
+        def: -1,
+        onChange: "applyStoredIconTheme"
+    },
+    iconOwnTone: {
+        def: -1,
+        onChange: "applyStoredIconTheme"
+    },
+    iconFileStyle: {
+        def: "color",
         onChange: "applyStoredIconTheme"
     },
     availableIconThemes: {
@@ -1349,6 +1448,9 @@ var LOCAL_SPEC = {
     notificationPopupBodyInvokesAction: {
         def: false
     },
+    notificationPopupAvoidPopouts: {
+        def: true
+    },
     notificationForegroundLayers: {
         def: true
     },
@@ -1443,9 +1545,6 @@ var LOCAL_SPEC = {
     notificationPopupPosition: {
         def: 0
     },
-    notificationAnimationDuration: {
-        def: 200
-    },
     notificationHistoryEnabled: {
         def: true
     },
@@ -1506,6 +1605,9 @@ var LOCAL_SPEC = {
     osdIdleInhibitorEnabled: {
         def: true
     },
+    osdDoNotDisturbEnabled: {
+        def: false
+    },
     osdMicMuteEnabled: {
         def: true
     },
@@ -1525,6 +1627,9 @@ var LOCAL_SPEC = {
         def: true
     },
     osdTouchpadEnabled: {
+        def: true
+    },
+    osdAirplaneModeEnabled: {
         def: true
     },
     osdPowerProfileEnabled: {
@@ -1663,6 +1768,7 @@ var LOCAL_SPEC = {
                 gothCornersEnabled: false,
                 gothCornerRadiusOverride: false,
                 gothCornerRadiusValue: 12,
+                connectedPopouts: false,
                 borderEnabled: false,
                 borderColor: "surfaceText",
                 borderOpacity: 1.0,
@@ -1688,7 +1794,7 @@ var LOCAL_SPEC = {
                 scrollXBehavior: "focusWindow",
                 scrollYBehavior: "workspace",
                 middleClickAction: "none",
-                rightClickAction: "none",
+                rightClickAction: "edit-widgets",
                 clickActionFollowMouse: false,
                 shadowIntensity: 0,
                 shadowOpacity: 60,
@@ -1735,6 +1841,42 @@ var LOCAL_SPEC = {
     },
     clipboardVisibleEntryActions: {
         def: ["pin", "edit", "delete"]
+    },
+    screenshotDir: {
+        def: ""
+    },
+    screenshotFormat: {
+        def: "png"
+    },
+    screenshotQuality: {
+        def: 90
+    },
+    screenshotCursor: {
+        def: false
+    },
+    screenshotClipboard: {
+        def: true
+    },
+    screenshotClipboardFile: {
+        def: false
+    },
+    screenshotSaveFile: {
+        def: true
+    },
+    screenshotNotify: {
+        def: true
+    },
+    screenshotConfirmRegion: {
+        def: true
+    },
+    screenshotAnnotate: {
+        def: false
+    },
+    screenshotHud: {
+        def: "auto"
+    },
+    screenshotScrollInterval: {
+        def: 45
     },
     launcherPluginVisibility: {
         def: {}

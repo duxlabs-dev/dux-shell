@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/duxlabs-dev/dux-shell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/pubsub"
 )
 
 func NewManager() (*Manager, error) {
@@ -16,8 +17,10 @@ func NewManager() (*Manager, error) {
 
 func NewManagerWithOptions(exponential bool) (*Manager, error) {
 	m := &Manager{
-		stopChan:    make(chan struct{}),
-		exponential: exponential,
+		stopChan:          make(chan struct{}),
+		exponential:       exponential,
+		subscribers:       pubsub.Broker[State]{BufSize: 16},
+		updateSubscribers: pubsub.Broker[DeviceUpdate]{BufSize: 16},
 	}
 
 	go m.initLogind()
@@ -360,11 +363,5 @@ func (m *Manager) broadcastDeviceUpdate(deviceID string) {
 
 	log.Debugf("Broadcasting device update: %s at %d%%", deviceID, targetDevice.CurrentPercent)
 
-	m.updateSubscribers.Range(func(key string, ch chan DeviceUpdate) bool {
-		select {
-		case ch <- update:
-		default:
-		}
-		return true
-	})
+	m.updateSubscribers.Publish(update)
 }

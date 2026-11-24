@@ -208,11 +208,9 @@ Singleton {
         if (!serviceType)
             return "VPN";
 
-        const plugin = plugins.find(p => p.serviceType === serviceType);
-        if (plugin)
-            return plugin.name;
-
         const svc = serviceType.toLowerCase();
+        if (svc.includes("protun"))
+            return "Proton VPN";
         if (svc.includes("openvpn"))
             return "OpenVPN";
         if (svc.includes("wireguard"))
@@ -233,6 +231,10 @@ Singleton {
             return "Cisco (vpnc)";
         if (svc.includes("sstp"))
             return "SSTP";
+
+        const plugin = plugins.find(p => p.serviceType === serviceType);
+        if (plugin && plugin.name)
+            return plugin.name;
 
         const parts = serviceType.split('.');
         return parts[parts.length - 1] || "VPN";

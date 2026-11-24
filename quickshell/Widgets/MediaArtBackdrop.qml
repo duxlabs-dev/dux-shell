@@ -62,7 +62,7 @@ Item {
         const back = _showA ? layerB : layerA;
         if (layer !== back || layer.art != curArt)
             return;
-        const animate = onScreen && !SettingsData.reduceMotion && Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None;
+        const animate = onScreen && !Theme.reduceMotion;
         _showA = (layer === layerA);
         if (animate)
             layer.reveal();

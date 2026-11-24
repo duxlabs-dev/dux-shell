@@ -11,7 +11,8 @@ Item {
 
     property var barContent: null
     property var surfaceContext: barContent?.surfaceContext ?? null
-    property var widgetsModel: barContent?.[section + "WidgetsModel"] ?? null
+    property bool live: true
+    property var widgetsModel: live ? (barContent?.[section + "WidgetsModel"] ?? null) : null
     property var components: barContent?.allComponents ?? null
     property bool noBackground: barConfig?.noBackground ?? false
     required property var axis
@@ -21,6 +22,7 @@ Item {
     property real barThickness: barContent?.barWindow?.effectiveBarThickness ?? 48
     property real barSpacing: barConfig?.spacing ?? 4
     property var barConfig: barContent?.barConfig ?? null
+    readonly property bool editing: barContent?.barWindow?.editingWidgets ?? false
     property var blurBarWindow: barContent?.blurBarWindow ?? null
     property real sectionAvailablePrimarySize: 0
     property bool overrideAxisLayout: false

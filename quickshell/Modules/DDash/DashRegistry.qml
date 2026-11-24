@@ -4,7 +4,6 @@ import QtQuick
 import Quickshell
 import qs.Common
 import qs.Services
-import qs.Modules.DDash.Overview
 import "utils/options.js" as Options
 
 Singleton {
@@ -99,7 +98,7 @@ Singleton {
             "icon": "dashboard",
             "description": I18n.tr("Clock, calendar, system info and profile"),
             "tab": {
-                "component": overviewTab
+                "source": Qt.resolvedUrl("OverviewTab.qml")
             }
         },
         {
@@ -108,12 +107,12 @@ Singleton {
             "icon": "music_note",
             "description": I18n.tr("Now playing and media controls"),
             "tab": {
-                "component": mediaTab,
+                "source": Qt.resolvedUrl("MediaPlayerTab.qml"),
                 "async": true,
                 "sizeToContent": true
             },
             "card": {
-                "component": mediaCard,
+                "source": Qt.resolvedUrl("Overview/MediaOverviewCard.qml"),
                 "w": 2,
                 "h": 1,
                 "minW": 1,
@@ -156,7 +155,7 @@ Singleton {
             "icon": "wallpaper",
             "description": I18n.tr("Browse and set wallpapers"),
             "tab": {
-                "component": wallpaperTab,
+                "source": Qt.resolvedUrl("WallpaperTab.qml"),
                 "async": true,
                 "sizeToContent": true
             },
@@ -182,12 +181,12 @@ Singleton {
             "description": SettingsData.weatherEnabled ? I18n.tr("Forecast and conditions") : I18n.tr("Hidden until weather is enabled"),
             "available": SettingsData.weatherEnabled,
             "tab": {
-                "component": weatherTab,
+                "source": Qt.resolvedUrl("WeatherTab.qml"),
                 "async": true,
                 "sizeToContent": true
             },
             "card": {
-                "component": weatherCard,
+                "source": Qt.resolvedUrl("Overview/WeatherOverviewCard.qml"),
                 "w": 1,
                 "h": 2,
                 "minW": 1,
@@ -202,12 +201,12 @@ Singleton {
             "description": SettingsData.wellbeingEnabled ? I18n.tr("Screen time and app limits", "settings sidebar hint and dashboard tab description for digital wellbeing") : I18n.tr("Hidden until screen time tracking is enabled", "dashboard tab description while digital wellbeing is off"),
             "available": SettingsData.wellbeingEnabled,
             "tab": {
-                "component": wellbeingTab,
+                "source": Qt.resolvedUrl("WellbeingTab.qml"),
                 "async": true,
                 "sizeToContent": true
             },
             "card": {
-                "component": wellbeingCard,
+                "source": Qt.resolvedUrl("Overview/WellbeingOverviewCard.qml"),
                 "w": 2,
                 "h": 1,
                 "minW": 1,
@@ -220,14 +219,24 @@ Singleton {
             "text": I18n.tr("Notifications"),
             "icon": "notifications",
             "tab": {
-                "component": notificationsTab
+                "source": Qt.resolvedUrl("NotificationsTab.qml")
             },
             "card": {
-                "component": notificationsCard,
+                "source": Qt.resolvedUrl("Overview/NotificationsOverviewCard.qml"),
                 "w": 3,
                 "h": 5,
                 "minW": 3,
                 "minH": 2
+            }
+        },
+        {
+            "id": "profiles",
+            "text": I18n.tr("Profiles", "dashboard tab name"),
+            "icon": "style",
+            "tab": {
+                "source": Qt.resolvedUrl("../ProfilePicker/ProfilePickerTab.qml"),
+                "async": true,
+                "sizeToContent": true
             }
         },
         {
@@ -242,7 +251,8 @@ Singleton {
             "text": I18n.tr("Clock"),
             "icon": "schedule",
             "card": {
-                "component": clockCard,
+                "allowMultiple": true,
+                "source": Qt.resolvedUrl("Overview/ClockCard.qml"),
                 "w": 2,
                 "h": 2,
                 "minW": 1,
@@ -264,7 +274,7 @@ Singleton {
             "text": I18n.tr("Calendar"),
             "icon": "calendar_month",
             "card": {
-                "component": calendarCard,
+                "source": Qt.resolvedUrl("Overview/CalendarOverviewCard.qml"),
                 "w": 3,
                 "h": 3,
                 "minW": 3,
@@ -278,7 +288,7 @@ Singleton {
             "text": I18n.tr("User"),
             "icon": "person",
             "card": {
-                "component": userCard,
+                "source": Qt.resolvedUrl("Overview/UserInfoCard.qml"),
                 "w": 3,
                 "h": 1,
                 "minW": 1,
@@ -292,7 +302,7 @@ Singleton {
             "text": I18n.tr("System Monitor"),
             "icon": "monitoring",
             "card": {
-                "component": sysmonCard,
+                "source": Qt.resolvedUrl("Overview/SystemMonitorCard.qml"),
                 "w": 2,
                 "h": 1,
                 "minW": 1,
@@ -305,7 +315,7 @@ Singleton {
             "text": I18n.tr("CPU"),
             "icon": "memory",
             "card": {
-                "component": cpuCard,
+                "source": Qt.resolvedUrl("Overview/CpuCard.qml"),
                 "w": 1,
                 "h": 1,
                 "minW": 1,
@@ -319,7 +329,7 @@ Singleton {
             "text": I18n.tr("Memory"),
             "icon": "developer_board",
             "card": {
-                "component": memoryCard,
+                "source": Qt.resolvedUrl("Overview/MemoryCard.qml"),
                 "w": 1,
                 "h": 1,
                 "minW": 1,
@@ -333,7 +343,7 @@ Singleton {
             "text": I18n.tr("Network"),
             "icon": "swap_vert",
             "card": {
-                "component": networkCard,
+                "source": Qt.resolvedUrl("Overview/NetworkCard.qml"),
                 "w": 2,
                 "h": 1,
                 "minW": 1,
@@ -347,7 +357,7 @@ Singleton {
             "text": I18n.tr("Disk"),
             "icon": "hard_drive",
             "card": {
-                "component": diskCard,
+                "source": Qt.resolvedUrl("Overview/DiskCard.qml"),
                 "w": 1,
                 "h": 1,
                 "minW": 1,
@@ -363,7 +373,7 @@ Singleton {
             "description": BatteryService.batteryAvailable ? "" : I18n.tr("No battery", "battery status"),
             "available": BatteryService.batteryAvailable,
             "card": {
-                "component": batteryCard,
+                "source": Qt.resolvedUrl("Overview/BatteryCard.qml"),
                 "w": 1,
                 "h": 1,
                 "minW": 1,
@@ -491,7 +501,7 @@ Singleton {
 
     readonly property var cardEntries: entries.filter(e => e.card)
     readonly property var placed: Array.isArray(SettingsData.dashCards) ? SettingsData.dashCards : []
-    readonly property var unplaced: cardEntries.filter(e => e.available !== false && !placed.some(c => c.id === e.id))
+    readonly property var addableCards: cardEntries.filter(e => e.available !== false && (e.card.allowMultiple === true || !placed.some(c => c.id === e.id)))
 
     function pluginOption(pluginId, raw) {
         if (!raw || typeof raw.key !== "string" || raw.key === "" || raw.key === widgetsKey)
@@ -541,7 +551,15 @@ Singleton {
         return sheetOptionSpecs(id, tabScope).length > 0;
     }
 
-    function storedOptions(id) {
+    function instanceIndex(id, instanceId) {
+        return placed.findIndex(c => c.id === id && c.instanceId === instanceId);
+    }
+
+    function storedOptions(id, instanceId = "") {
+        if (instanceId !== "") {
+            const options = placed[instanceIndex(id, instanceId)]?.options;
+            return options && typeof options === "object" && !Array.isArray(options) ? options : {};
+        }
         const all = SettingsData.dashOptions;
         if (!all || typeof all !== "object")
             return {};
@@ -549,8 +567,8 @@ Singleton {
         return mine && typeof mine === "object" ? mine : {};
     }
 
-    function hasStoredOptions(id) {
-        const stored = storedOptions(id);
+    function hasStoredOptions(id, instanceId = "") {
+        const stored = storedOptions(id, instanceId);
         return optionSpecs(id).some(spec => spec.key in stored);
     }
 
@@ -565,20 +583,43 @@ Singleton {
         return Options.value(spec, value);
     }
 
-    function option(id, key) {
-        return resolvedOptions(id)[key];
+    function option(id, key, instanceId = "") {
+        return resolvedOptions(id, storedOptions(id, instanceId))[key];
     }
 
-    function setOption(id, key, value) {
+    function setOption(id, key, value, instanceId = "") {
         setOptions(id, {
             [key]: value
-        });
+        }, instanceId);
     }
 
-    function setOptions(id, values) {
-        const specs = optionSpecs(id);
+    function saveOptions(id, mine, instanceId) {
+        const empty = Object.keys(mine).length === 0;
+        if (instanceId !== "") {
+            const index = instanceIndex(id, instanceId);
+            if (index < 0)
+                return;
+            const cards = placed.slice();
+            const card = Object.assign({}, cards[index]);
+            if (empty)
+                delete card.options;
+            else
+                card.options = mine;
+            cards[index] = card;
+            SettingsData.set("dashCards", cards);
+            return;
+        }
         const all = Object.assign({}, SettingsData.dashOptions ?? {});
-        const mine = Object.assign({}, storedOptions(id));
+        if (empty)
+            delete all[id];
+        else
+            all[id] = mine;
+        SettingsData.set("dashOptions", all);
+    }
+
+    function setOptions(id, values, instanceId = "") {
+        const specs = optionSpecs(id);
+        const mine = Object.assign({}, storedOptions(id, instanceId));
         let changed = false;
         for (const key in values) {
             const spec = specs.find(s => s.key === key);
@@ -593,13 +634,8 @@ Singleton {
                 mine[key] = value;
             changed = true;
         }
-        if (!changed)
-            return;
-        if (Object.keys(mine).length === 0)
-            delete all[id];
-        else
-            all[id] = mine;
-        SettingsData.set("dashOptions", all);
+        if (changed)
+            saveOptions(id, mine, instanceId);
     }
 
     function setPanelSize(id, columns, rows) {
@@ -616,18 +652,13 @@ Singleton {
         setPanelSize(id, DashMetrics.defaultGridColumns, DashMetrics.defaultRowsFor(id));
     }
 
-    function resetOptions(id) {
-        if (!hasStoredOptions(id))
+    function resetOptions(id, instanceId = "") {
+        if (!hasStoredOptions(id, instanceId))
             return;
-        const all = Object.assign({}, SettingsData.dashOptions ?? {});
-        const mine = Object.assign({}, storedOptions(id));
+        const mine = Object.assign({}, storedOptions(id, instanceId));
         for (const spec of optionSpecs(id))
             delete mine[spec.key];
-        if (Object.keys(mine).length === 0)
-            delete all[id];
-        else
-            all[id] = mine;
-        SettingsData.set("dashOptions", all);
+        saveOptions(id, mine, instanceId);
     }
 
     function widgetLayout(id) {
@@ -674,13 +705,25 @@ Singleton {
         return visibleTabIds.includes(id);
     }
 
-    function tabComponentFor(id) {
+    // Only the first build of a tab or card compiles its types, so later builds run synchronously.
+    property var builtSources: ({})
+
+    function markBuilt(source) {
+        if (source === "" || builtSources[source])
+            return;
+        builtSources = Object.assign({}, builtSources, {
+            [source]: true
+        });
+    }
+
+    // Loading by URL parents the object's context to the Loader, so unloading the dash clears its handlers.
+    function tabSourceFor(id) {
         const e = entry(id);
         if (!e?.tab)
-            return null;
+            return "";
         if (!e.isPlugin)
-            return e.tab.component;
-        return PluginService.pluginDashComponents[e.pluginId] ?? null;
+            return e.tab.source;
+        return PluginService.pluginDashComponents[e.pluginId]?.url ?? "";
     }
 
     function indexId(index) {
@@ -710,13 +753,13 @@ Singleton {
         return !!e?.card && e.available !== false;
     }
 
-    function cardComponentFor(id) {
+    function cardSourceFor(id) {
         const e = entry(id);
         if (!e?.card)
-            return null;
+            return "";
         if (!e.isPlugin)
-            return e.card.component;
-        return PluginService.pluginDashCardComponents[e.pluginId] ?? null;
+            return e.card.source;
+        return PluginService.pluginDashCardComponents[e.pluginId]?.url ?? "";
     }
 
     function clampSize(id, w, h) {
@@ -749,100 +792,5 @@ Singleton {
             "w": 1,
             "h": 1
         };
-    }
-
-    Component {
-        id: overviewTab
-        OverviewTab {}
-    }
-
-    Component {
-        id: mediaTab
-        MediaPlayerTab {}
-    }
-
-    Component {
-        id: wallpaperTab
-        WallpaperTab {}
-    }
-
-    Component {
-        id: weatherTab
-        WeatherTab {}
-    }
-
-    Component {
-        id: notificationsTab
-        NotificationsTab {}
-    }
-
-    Component {
-        id: notificationsCard
-        NotificationsOverviewCard {}
-    }
-
-    Component {
-        id: wellbeingTab
-        WellbeingTab {}
-    }
-
-    Component {
-        id: wellbeingCard
-        WellbeingOverviewCard {}
-    }
-
-    Component {
-        id: clockCard
-        ClockCard {}
-    }
-
-    Component {
-        id: weatherCard
-        WeatherOverviewCard {}
-    }
-
-    Component {
-        id: userCard
-        UserInfoCard {}
-    }
-
-    Component {
-        id: calendarCard
-        CalendarOverviewCard {}
-    }
-
-    Component {
-        id: mediaCard
-        MediaOverviewCard {}
-    }
-
-    Component {
-        id: sysmonCard
-        SystemMonitorCard {}
-    }
-
-    Component {
-        id: cpuCard
-        CpuCard {}
-    }
-
-    Component {
-        id: memoryCard
-        MemoryCard {}
-    }
-
-    Component {
-        id: networkCard
-        NetworkCard {}
-    }
-
-    Component {
-        id: diskCard
-        DiskCard {}
-    }
-
-    Component {
-        id: batteryCard
-        BatteryCard {}
     }
 }

@@ -7,6 +7,7 @@ import Quickshell.Io
 import qs.Common
 import qs.Services
 import qs.Modules.DDash
+import "../Common/CompositorAnimations.js" as CompositorAnimations
 
 Singleton {
     id: root
@@ -20,7 +21,14 @@ Singleton {
     property var settingsIndex: []
     property bool indexLoaded: false
     property var _translatedCache: []
-    property bool _cacheDirty: false
+    property bool _reading: false
+    property var _buildItems: []
+    property var _buildCache: []
+    property bool _rebuildQueued: false
+    property bool _building: false
+    property var _squashMemo: null
+    readonly property url indexUrl: Qt.resolvedUrl("../translations/settings_search_index.json")
+    readonly property int buildSliceMs: 2
     property int _scrollPass: 0
     property int _stablePasses: 0
     property real _appliedY: 0
@@ -69,6 +77,30 @@ Singleton {
         }
     }
 
+    Connections {
+        target: PopoutService
+
+        function onSettingsModalChanged() {
+            if (PopoutService.settingsModal)
+                root._prepareIndex();
+        }
+    }
+
+    // Settings creates this service, so its first open lands here rather than in onSettingsModalChanged.
+    Component.onCompleted: _prepareIndex()
+
+    // The index reads as settings opens, and its cache builds in short slices between events.
+    function _buildStep() {
+        if (!_building)
+            return;
+        if (!_buildSlice(buildSliceMs)) {
+            Qt.callLater(_buildStep);
+            return;
+        }
+        if (query)
+            results = _searchEntries(query, 15);
+    }
+
     readonly property var conditionMap: ({
             "isNiri": () => CompositorService.isNiri,
             "pointerCapable": () => CompositorService.supportsPointerConfig,
@@ -82,10 +114,14 @@ Singleton {
             "isNiriOrMango": () => CompositorService.isNiri || CompositorService.isMango,
             "windowRulesCapable": () => CompositorService.supportsWindowRules,
             "layoutCapable": () => CompositorService.supportsLayoutConfig,
+            "animationsCapable": () => CompositorService.supportsAnimationsConfig,
+            "animationsPopupsCapable": () => CompositorAnimations.groups(CompositorService.compositor).includes("popups"),
             "keybindsAvailable": () => KeybindsService.available,
+            "globalShortcutsAvailable": () => GlobalShortcutsService.available,
             "soundsAvailable": () => !MultimediaService.unavailable,
             "cupsAvailable": () => CupsService.cupsAvailable,
             "networkAvailable": () => NetworkService.networkAvailable,
+            "wallpaperFoldersAdded": () => SessionData.wallpaperFolders.length > 0,
             "dmsConnected": () => DMSService.isConnected && DMSService.apiVersion >= 23,
             "matugenAvailable": () => Theme.matugenAvailable,
             "greeterAvailable": () => GreeterService.available,
@@ -95,6 +131,10 @@ Singleton {
             "islandDocked": () => root.islandBarFor("islandDocked") !== null,
             "dotEnabled": () => SettingsData.dotBarConfig?.enabled ?? false,
             "cellularAvailable": () => NetworkService.cellularAvailable,
+            "connectionEditorAvailable": () => NetworkService.connectionEditorSupported,
+            "wifiDeviceAvailable": () => NetworkService.wifiDevicePresent,
+            "hotspotAvailable": () => NetworkService.hotspotAvailable,
+            "tailscaleAvailable": () => TailscaleService.available,
             "fcitx5Available": () => Fcitx5Service.available,
             "dockEnabled": () => (SettingsData.dockConfigs ?? []).some(dock => dock.enabled)
         })
@@ -116,10 +156,8 @@ Singleton {
 
     property var pluginSettingLabels: ({})
 
-    Component.onCompleted: indexFile.reload()
-
     Instantiator {
-        model: (PluginService.availablePluginsList || []).filter(plugin => !!plugin.settingsPath)
+        model: root.indexLoaded ? (PluginService.availablePluginsList || []).filter(plugin => !!plugin.settingsPath) : []
 
         FileView {
             required property var modelData
@@ -199,26 +237,83 @@ Singleton {
 
     FileView {
         id: indexFile
-        path: Qt.resolvedUrl("../translations/settings_search_index.json")
+        blockLoading: true
         onLoaded: {
-            try {
-                const labels = {};
-                root.settingsIndex = JSON.parse(text()).filter(entry => {
-                    if (entry.runtimeType !== "barWidgetOption")
-                        return true;
-                    labels[entry.optionFile] = (labels[entry.optionFile] ?? []).concat(entry.label);
-                    return false;
-                });
-                root.barWidgetLabels = labels;
-                root.indexLoaded = true;
-                root._rebuildTranslationCache();
-            } catch (e) {
-                log.warn("Failed to parse index:", e);
-                root.settingsIndex = [];
-                root._translatedCache = [];
-            }
+            if (root._reading)
+                root._readIndex();
         }
-        onLoadFailed: error => log.warn("Failed to load index:", error)
+        onLoadFailed: error => root.log.warn("Failed to load index:", error)
+    }
+
+    // The index and its search cache stay once built; they build off the open path so neither settings nor a keystroke waits.
+    function _prepareIndex() {
+        if (indexLoaded || _reading)
+            return;
+        _reading = true;
+        indexFile.path = indexUrl;
+    }
+
+    // Blocks until the cache is built; a search only waits on it before the first build finishes.
+    function ensureIndex() {
+        if (!indexLoaded)
+            _readIndex();
+        while (_building)
+            _buildSlice(Number.POSITIVE_INFINITY);
+    }
+
+    function _readIndex() {
+        _reading = false;
+        indexFile.path = indexUrl;
+        const text = indexFile.text();
+        Qt.callLater(() => {
+            if (!root._reading)
+                indexFile.path = "";
+        });
+        try {
+            const labels = {};
+            settingsIndex = JSON.parse(text).filter(entry => {
+                if (entry.runtimeType !== "barWidgetOption")
+                    return true;
+                labels[entry.optionFile] = (labels[entry.optionFile] ?? []).concat(entry.label);
+                return false;
+            });
+            barWidgetLabels = labels;
+            indexLoaded = true;
+            _startBuild();
+        } catch (e) {
+            log.warn("Failed to parse index:", e);
+            settingsIndex = [];
+            _translatedCache = [];
+        }
+    }
+
+    function _startBuild() {
+        _buildItems = settingsIndex.concat(_runtimeSearchEntries());
+        _buildCache = [];
+        _rebuildQueued = false;
+        _squashMemo = new Map();
+        _building = true;
+        Qt.callLater(_buildStep);
+    }
+
+    // Returns true once the cache is complete and no rebuild is queued.
+    function _buildSlice(budgetMs) {
+        const deadline = Date.now() + budgetMs;
+        const items = _buildItems;
+        const cache = _buildCache;
+        while (cache.length < items.length && Date.now() < deadline)
+            cache.push(_cacheEntry(items[cache.length], cache.length));
+        if (cache.length < items.length)
+            return false;
+        _building = false;
+        _squashMemo = null;
+        _translatedCache = cache;
+        _buildItems = [];
+        _buildCache = [];
+        if (!_rebuildQueued)
+            return true;
+        _startBuild();
+        return false;
     }
 
     function registerCard(settingKey, item, flickable, collapsible) {
@@ -252,7 +347,7 @@ Singleton {
         _scrollPass = 0;
         _stablePasses = 0;
         _lastGeometry = "";
-        scrollTimer.interval = 50;
+        scrollTimer.interval = Timing.settleShort;
         const entry = registeredCards[section];
         if (!entry)
             return;
@@ -312,7 +407,7 @@ Singleton {
 
     function _finishScroll() {
         targetSection = "";
-        scrollTimer.interval = 50;
+        scrollTimer.interval = Timing.settleShort;
     }
 
     function clearHighlight() {
@@ -321,13 +416,13 @@ Singleton {
 
     Timer {
         id: scrollTimer
-        interval: 50
+        interval: Timing.settleShort
         onTriggered: root.scrollToTarget()
     }
 
     Timer {
         id: highlightTimer
-        interval: 2500
+        interval: Timing.holdMedium
         onTriggered: root.highlightSection = ""
     }
 
@@ -391,41 +486,40 @@ Singleton {
         }
     }
 
-    function _rebuildTranslationCache() {
-        _cacheDirty = false;
-        var cache = [];
-        var items = settingsIndex.concat(_runtimeSearchEntries());
-        for (var i = 0; i < items.length; i++) {
-            var item = items[i];
-            var t = translateItem(item);
-            var sourceDescription = _withArgs(item.description || "", item.descriptionArgs);
-            var labelLower = _lowerVariants([item.label, t.label]);
-            var categoryLower = _lowerVariants([item.category, item.parentLabel, t.category]);
-            var descriptionLower = item.runtimeType === "plugin" ? [] : _lowerVariants([sourceDescription, t.description]);
-            cache.push({
-                section: t.section,
-                label: t.label,
-                tabIndex: t.tabIndex,
-                category: t.category,
-                keywords: t.keywords,
-                icon: t.icon,
-                description: t.description,
-                conditionKey: t.conditionKey,
-                runtimeType: t.runtimeType,
-                runtimeId: t.runtimeId,
-                page: t.page,
-                level: _entryLevel(t.section),
-                order: i,
-                labelSearch: labelLower,
-                categorySearch: categoryLower,
-                descriptionSearch: descriptionLower,
-                labelSquash: _squashVariants(labelLower),
-                categorySquash: _squashVariants(categoryLower),
-                descriptionSquash: _squashVariants(descriptionLower),
-                keywordsSquash: _squashVariants(t.keywords)
-            });
-        }
-        _translatedCache = cache;
+    function _cacheEntry(item, order) {
+        const t = translateItem(item);
+        const sourceDescription = _withArgs(item.description || "", item.descriptionArgs);
+        const labelLower = _lowerVariants([item.label, t.label]);
+        const categoryLower = _lowerVariants([item.category, item.parentLabel, t.category]);
+        const descriptionLower = item.runtimeType === "plugin" ? [] : _lowerVariants([sourceDescription, t.description]);
+        const labelSquash = _squashVariants(labelLower);
+        const categorySquash = _squashVariants(categoryLower);
+        const descriptionSquash = _squashVariants(descriptionLower);
+        const keywordsSquash = _squashVariants(t.keywords);
+        return {
+            section: t.section,
+            label: t.label,
+            tabIndex: t.tabIndex,
+            category: t.category,
+            keywords: t.keywords,
+            icon: t.icon,
+            description: t.description,
+            conditionKey: t.conditionKey,
+            runtimeType: t.runtimeType,
+            runtimeId: t.runtimeId,
+            page: t.page,
+            level: _entryLevel(t.section),
+            order: order,
+            labelSearch: labelLower,
+            categorySearch: categoryLower,
+            descriptionSearch: descriptionLower,
+            labelSquash: labelSquash,
+            categorySquash: categorySquash,
+            descriptionSquash: descriptionSquash,
+            keywordsSquash: keywordsSquash,
+            haystack: labelLower.concat(categoryLower, descriptionLower, t.keywords).join("\n"),
+            haystackSquash: labelSquash.concat(categorySquash, descriptionSquash, keywordsSquash).join("\n")
+        };
     }
 
     function _runtimeSearchEntries() {
@@ -495,12 +589,24 @@ Singleton {
         return String(value).toLowerCase().replace(/[^a-z0-9]+/g, "");
     }
 
+    // Labels, categories and keywords repeat across entries, and the regex dominates the build.
+    function _squashMemoized(value) {
+        if (!_squashMemo)
+            return _squash(value);
+        let squashed = _squashMemo.get(value);
+        if (squashed === undefined) {
+            squashed = _squash(value);
+            _squashMemo.set(value, squashed);
+        }
+        return squashed;
+    }
+
     function _squashVariants(values) {
         var out = [];
         for (var i = 0; i < values.length; i++) {
             if (!values[i])
                 continue;
-            var squashed = _squash(values[i]);
+            var squashed = _squashMemoized(values[i]);
             if (squashed && out.indexOf(squashed) === -1)
                 out.push(squashed);
         }
@@ -594,10 +700,25 @@ Singleton {
         return false;
     }
 
+    // Every score needs the query, its singular or each of its words inside one field.
+    function _mayMatch(entry, query, querySingular, querySquash, squashSingular, queryWords) {
+        if (entry.haystack.includes(query) || entry.haystack.includes(querySingular))
+            return true;
+        if (querySquash && (entry.haystackSquash.includes(querySquash) || entry.haystackSquash.includes(squashSingular)))
+            return true;
+        if (queryWords.length < 2)
+            return false;
+        return queryWords.every(word => entry.haystack.includes(word));
+    }
+
     function _refreshTranslatedCache() {
+        if (_building) {
+            _rebuildQueued = true;
+            return;
+        }
         if (!indexLoaded)
             return;
-        _cacheDirty = true;
+        _startBuild();
         if (query)
             results = _searchEntries(query, 15);
     }
@@ -606,17 +727,21 @@ Singleton {
         var queryLower = (text || "").toLowerCase().trim();
         if (!queryLower)
             return [];
+        if (_translatedCache.length === 0)
+            ensureIndex();
 
-        if (_cacheDirty)
-            _rebuildTranslationCache();
         var querySquash = _squash(queryLower);
         var queryWords = queryLower.split(/\s+/).filter(w => w.length > 0);
+        var querySingular = _singular(queryLower);
+        var squashSingular = _singular(querySquash);
         var scored = [];
         var cache = _translatedCache;
         var limit = maxResults > 0 ? maxResults : 15;
 
         for (var i = 0; i < cache.length; i++) {
             var entry = cache[i];
+            if (!_mayMatch(entry, queryLower, querySingular, querySquash, squashSingular, queryWords))
+                continue;
             if (!checkCondition(entry))
                 continue;
 

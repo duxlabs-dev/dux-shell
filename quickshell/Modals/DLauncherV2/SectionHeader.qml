@@ -35,6 +35,11 @@ Item {
             label: I18n.tr("Grid", "noun, grid view mode and layout option")
         },
         {
+            mode: "icons",
+            icon: "apps",
+            label: I18n.tr("Icons")
+        },
+        {
             mode: "tile",
             icon: "view_module",
             label: I18n.tr("Tile")

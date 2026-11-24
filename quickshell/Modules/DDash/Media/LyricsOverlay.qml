@@ -26,7 +26,7 @@ FocusScope {
     readonly property bool synced: controller.synced
     readonly property bool unsynced: ready && !synced
     readonly property bool showFollow: ready && synced && !following
-    readonly property bool animationsEnabled: !SettingsData.reduceMotion && Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
+    readonly property bool animationsEnabled: !Theme.reduceMotion
     readonly property bool sweep: (root.player?.smoothLyrics ?? MediaOptions.defaults.smoothLyrics) && animationsEnabled
     readonly property bool playing: controller.playing
     readonly property real sampleTime: controller.sampleTime
@@ -262,7 +262,6 @@ FocusScope {
     // the new line instead of starting over.
     SpringMotion {
         id: scrollSpring
-        enabled: !Theme.springMotionDisabled
         stiffness: DashMetrics.lyricsScrollStiffness
         damping: DashMetrics.lyricsScrollDamping
         positionEpsilon: DashMetrics.lyricsScrollSettleDistance
@@ -286,15 +285,6 @@ FocusScope {
         running: root.visible && root.ready && root.synced && root.playing && root.needsClock
         onTriggered: root.now = root.controller.shownTime()
         onRunningChanged: root.now = root.controller.shownTime()
-    }
-
-    NumberAnimation on opacity {
-        running: root.animationsEnabled
-        from: 0
-        to: 1
-        duration: Theme.expressiveDurations.expressiveEffects
-        easing.type: Easing.BezierSpline
-        easing.bezierCurve: Theme.expressiveCurves.expressiveEffects
     }
 
     Rectangle {
@@ -396,6 +386,8 @@ FocusScope {
                 displaced: null
                 move: null
                 onCountChanged: root.requestFollow(false)
+                // A row still incubating when a loader drops the overlay logs a failed delegate.
+                Component.onDestruction: model = null
                 header: Item {
                     width: transcript.width
                     height: root.endPadding

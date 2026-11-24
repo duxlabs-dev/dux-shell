@@ -1,6 +1,5 @@
 import QtQuick
 import qs.Common
-import qs.Modules.ControlCenter.Details
 import qs.Services
 
 LevelOSD {
@@ -31,14 +30,7 @@ LevelOSD {
     unit: BrightnessService.brightnessUnit(device)
     available: BrightnessService.brightnessAvailable
 
-    sheet: OsdDetailSheet {
-        BrightnessDetail {
-            anchors.fill: parent
-            initialDeviceName: root.device?.name ?? ""
-            screenName: root.screen?.name ?? ""
-            screenModel: root.screen?.model ?? ""
-        }
-    }
+    sheetSource: Qt.resolvedUrl("BrightnessOsdSheet.qml")
 
     onLevelRequested: level => {
         displayLevel = level;
@@ -50,7 +42,7 @@ LevelOSD {
 
         function onBrightnessChanged(showOsd) {
             root.displayLevel = BrightnessService.brightnessLevel;
-            if (showOsd && SettingsData.osdBrightnessEnabled)
+            if (showOsd)
                 root.show();
         }
     }

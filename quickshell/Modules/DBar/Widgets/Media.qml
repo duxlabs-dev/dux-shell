@@ -37,9 +37,11 @@ BasePill {
     readonly property string coverArtUrl: coverArtEnabled && activePlayer && TrackArtService.artReadyFor(activePlayer) ? TrackArtService.resolvedArtUrl : ""
     readonly property bool hasCoverArt: coverArtUrl !== ""
     readonly property bool visualizerEnabled: CavaService.cavaAvailable && SettingsData.audioVisualizerEnabled
+    // With the visualizer the cover slot stays reserved while art loads, so skipping tracks never resizes the pill.
+    readonly property bool showCoverSlot: hasCoverArt || (coverArtEnabled && visualizerEnabled && playerAvailable)
     readonly property bool showIconSlot: visualizerEnabled || !hasCoverArt
     readonly property real badgeSize: BarMetrics.mediaControlSize * contentScale
-    readonly property real badgeExtent: (hasCoverArt ? badgeSize + Theme.spacingXS : 0) + (showIconSlot ? badgeSize + Theme.spacingXS : 0)
+    readonly property real badgeExtent: (showCoverSlot ? badgeSize + Theme.spacingXS : 0) + (showIconSlot ? badgeSize + Theme.spacingXS : 0)
     readonly property string trackSummary: [MprisController.stableTitle, MprisController.stableArtist, MprisController.stableAlbum].filter(part => part).join(" • ")
     readonly property bool lyricActive: {
         if (!lyricsEnabled)
@@ -178,11 +180,12 @@ BasePill {
         width: root.badgeSize
         height: root.badgeSize
         radius: Theme.cornerRadiusXS
-        color: "transparent"
-        visible: root.hasCoverArt
+        color: root.hasCoverArt ? "transparent" : Theme.chipSurfaceNested
+        visible: root.showCoverSlot
 
         Image {
             anchors.fill: parent
+            visible: root.hasCoverArt
             source: root.coverArtUrl
             sourceSize: Qt.size(Math.round(width * root.dpr), Math.round(height * root.dpr))
             fillMode: Image.PreserveAspectCrop
@@ -215,12 +218,15 @@ BasePill {
         height: width
         visible: root.playerAvailable
 
-        DIconButton {
+        MediaTransportButton {
             anchors.centerIn: parent
             width: parent.width
             height: parent.height
             buttonSize: parent.width
             iconSize: 14 * root.contentScale
+            mediaAction: "play"
+            // A browser hover preview autoplays without the user asking, so the pill keeps showing play.
+            playing: root._isPlaying
             radius: {
                 if (!Theme.shapeMorph)
                     return Theme.cornerRadiusS;
@@ -230,23 +236,24 @@ BasePill {
             }
             variant: "filled"
             round: false
-            checkable: true
-            checked: root._isPlaying
-            iconFilled: false
-            iconName: root._isPlaying ? "pause" : "play_arrow"
-            Accessible.name: root._isPlaying ? I18n.tr("Pause") : I18n.tr("Play")
-            enabled: root.activePlayer?.canTogglePlaying ?? false
-            onClicked: root.activePlayer.togglePlaying()
         }
+    }
+
+    component NavButton: MediaTransportButton {
+        width: BarMetrics.mediaControlSize * root.contentScale
+        height: width
+        buttonSize: width
+        iconSize: 12 * root.contentScale
+        visible: root.playerAvailable
+        iconColor: root.contentColor
     }
 
     content: Component {
         Item {
             id: contentRoot
-            readonly property real naturalTextWidth: {
+            readonly property real measuredNaturalTextWidth: {
                 if (!root.playerAvailable || root.maxTextWidth <= 0)
                     return 0;
-                // Preserve the fixed-width text slot even if metadata is briefly empty.
                 if (!root.adaptiveWidthEnabled || root.lyricActive)
                     return root.maxTextWidth;
                 if (textContainer.displayText.length === 0)
@@ -255,6 +262,17 @@ BasePill {
                 if (!isFinite(rawWidth) || rawWidth <= 0)
                     return 0;
                 return Math.min(root.maxTextWidth, Math.ceil(rawWidth));
+            }
+            // Metadata is briefly empty between tracks; keep the last width so the pill does not collapse and regrow.
+            property real heldTextWidth: 0
+            onMeasuredNaturalTextWidthChanged: {
+                if (measuredNaturalTextWidth > 0)
+                    heldTextWidth = measuredNaturalTextWidth;
+            }
+            readonly property real naturalTextWidth: {
+                if (!root.playerAvailable || root.maxTextWidth <= 0)
+                    return 0;
+                return measuredNaturalTextWidth > 0 ? measuredNaturalTextWidth : Math.min(root.maxTextWidth, heldTextWidth);
             }
             readonly property real fixedContentWidth: root.badgeExtent + 64 * root.contentScale + Theme.spacingXS * 2
             readonly property real textBudget: root.allottedPrimarySize > 0 ? Math.max(0, root.allottedPrimarySize - root.horizontalPadding * 2 - fixedContentWidth - Theme.spacingXS) : Infinity
@@ -268,23 +286,25 @@ BasePill {
 
             Behavior on opacity {
                 NumberAnimation {
-                    duration: Theme.shortDuration
-                    easing.type: Theme.standardEasing
+                    duration: Theme.expressiveDurations.expressiveFastEffects
+                    easing.type: Easing.BezierSpline
+                    easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
                 }
             }
 
             Behavior on implicitWidth {
                 NumberAnimation {
-                    duration: Theme.mediumDuration
+                    duration: Theme.expressiveDurations.expressiveDefaultSpatial
                     easing.type: Easing.BezierSpline
-                    easing.bezierCurve: Theme.expressiveCurves.emphasizedDecel
+                    easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
                 }
             }
 
             Behavior on implicitHeight {
                 NumberAnimation {
-                    duration: Theme.shortDuration
-                    easing.type: Theme.standardEasing
+                    duration: Theme.expressiveDurations.expressiveDefaultSpatial
+                    easing.type: Easing.BezierSpline
+                    easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
                 }
             }
 
@@ -378,9 +398,9 @@ BasePill {
 
                         Behavior on width {
                             NumberAnimation {
-                                duration: Theme.mediumDuration
+                                duration: Theme.expressiveDurations.expressiveDefaultSpatial
                                 easing.type: Easing.BezierSpline
-                                easing.bezierCurve: Theme.expressiveCurves.emphasizedDecel
+                                easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
                             }
                         }
 
@@ -404,6 +424,8 @@ BasePill {
                             color: root.contentColor
                             font.pixelSize: mediaText.font.pixelSize
                             live: root.surfaceLive
+                            playing: root.surfaceLive && root._isPlaying
+                            scroll: SettingsData.widgetOption("music", root.widgetData, "mediaScrollLyrics")
                             sweep: SettingsData.widgetOption("music", root.widgetData, "mediaSmoothLyrics")
                         }
 
@@ -423,60 +445,18 @@ BasePill {
                     spacing: Theme.spacingXS
                     anchors.verticalCenter: parent.verticalCenter
 
-                    Rectangle {
-                        width: BarMetrics.mediaControlSize * root.contentScale
-                        height: BarMetrics.mediaControlSize * root.contentScale
-                        radius: Theme.cornerRadiusFull
+                    NavButton {
+                        mediaAction: "previous"
                         anchors.verticalCenter: parent.verticalCenter
-                        color: "transparent"
-                        visible: root.playerAvailable
-                        opacity: (activePlayer && activePlayer.canGoPrevious) ? 1 : 0.3
-
-                        DIcon {
-                            anchors.centerIn: parent
-                            name: "skip_previous"
-                            size: 12 * root.contentScale
-                            color: root.contentColor
-                        }
-
-                        StateLayer {
-                            id: prevArea
-                            enabled: root.playerAvailable
-                            stateColor: root.contentColor
-                            onClicked: MprisController.previousOrRewind()
-                        }
                     }
 
                     PlayButton {
                         anchors.verticalCenter: parent.verticalCenter
                     }
 
-                    Rectangle {
-                        width: BarMetrics.mediaControlSize * root.contentScale
-                        height: BarMetrics.mediaControlSize * root.contentScale
-                        radius: Theme.cornerRadiusFull
+                    NavButton {
+                        mediaAction: "next"
                         anchors.verticalCenter: parent.verticalCenter
-                        color: "transparent"
-                        visible: playerAvailable
-                        opacity: (activePlayer && activePlayer.canGoNext) ? 1 : 0.3
-
-                        DIcon {
-                            anchors.centerIn: parent
-                            name: "skip_next"
-                            size: 12 * root.contentScale
-                            color: root.contentColor
-                        }
-
-                        StateLayer {
-                            id: nextArea
-                            enabled: root.playerAvailable
-                            stateColor: root.contentColor
-                            onClicked: {
-                                if (activePlayer) {
-                                    MprisController.next();
-                                }
-                            }
-                        }
                     }
                 }
             }

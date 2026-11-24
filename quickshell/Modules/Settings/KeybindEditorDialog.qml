@@ -13,15 +13,13 @@ import "../../Common/KeybindActions.js" as Actions
 DDialog {
     id: root
 
-    readonly property var log: Log.scoped("KeybindEditorDialog")
-
     property var bindData: ({})
     property bool isNew: false
     property bool readOnly: false
     property bool busy: false
     property var panelWindow: null
 
-    property bool recording: false
+    readonly property alias recording: keyCapture.recording
     property int editingKeyIndex: -1
     property bool addingNewKey: false
     property string editKey: ""
@@ -35,10 +33,8 @@ DDialog {
     property string editTrigger: ""
     property string editReleaseAction: ""
     property var editPassThrough: undefined
-    property var _loneModifiers: []
     property bool hasChanges: false
     property bool useCustomCompositor: false
-    property bool _altShiftGhost: false
 
     readonly property var keys: bindData.keys || []
     readonly property var editingKey: keys[editingKeyIndex] ?? null
@@ -59,7 +55,8 @@ DDialog {
     readonly property var dmsParsedArgs: argConfig?.type === "dms" ? Actions.parseDmsActionArgs(editAction) : null
     readonly property var dmsArgDefs: dmsParsedArgs?.base ? (Actions.getDmsActionArgs()[dmsParsedArgs.base]?.args ?? []) : []
     readonly property var dmsFlagArgs: dmsArgDefs.filter(arg => arg.type === "flag")
-    readonly property bool showDmsArgs: actionType === "dms" && argConfig?.type === "dms"
+    readonly property bool dmsArgsOpaque: dmsParsedArgs?.opaque === true
+    readonly property bool showDmsArgs: actionType === "dms" && argConfig?.type === "dms" && !dmsArgsOpaque
     readonly property bool showCompositorPicker: actionType === "compositor" && !useCustomCompositor
     readonly property var compositorParsedArgs: Actions.parseCompositorActionArgs(KeybindsService.currentProvider, editAction)
     readonly property var compositorArgDefs: argConfig?.config?.args ?? []
@@ -99,7 +96,7 @@ DDialog {
         // Needed to tell a key the layout cannot reach from one it can, and
         // the layout may have changed since the editor was last open.
         KeybindsService.loadFirstLevelKeymap();
-        recording = false;
+        keyCapture.stopRecording();
         bindData = bind;
         isNew = newBind;
         loadKey(keyIndex);
@@ -257,7 +254,7 @@ DDialog {
         }
         if (!canSubmit)
             return;
-        recording = false;
+        keyCapture.stopRecording();
         const data = {
             "key": editKey,
             "action": editAction,
@@ -276,108 +273,23 @@ DDialog {
         saveRequested(addingNewKey ? "" : originalKey, data);
     }
 
-    function startRecording() {
-        if (readOnly) {
-            KeybindsService.showHyprlandReadOnlyWarning();
-            return;
-        }
-        _loneModifiers = [];
-        recording = true;
-    }
-
-    function stopRecording() {
-        _loneModifiers = [];
-        recording = false;
-    }
-
-    function captureKey(event) {
-        if (KeyUtils.modifierFromQtKey(event.key)) {
-            if (isNiri)
-                _loneModifiers = KeyUtils.heldModifiers(event.key, event.modifiers, _loneModifiers);
-            return;
-        }
-        switch (event.key) {
-        // lock keys are toggles; NumLock picks the numpad keysym (KP_7 vs KP_Home) and must not become the bind
-        case Qt.Key_NumLock:
-        case Qt.Key_CapsLock:
-        case Qt.Key_ScrollLock:
-            return;
-        }
-
-        if (event.key === 0 && (event.modifiers & Qt.AltModifier)) {
-            _altShiftGhost = true;
-            if (_loneModifiers.length)
-                _loneModifiers = KeyUtils.heldModifiers(Qt.Key_Shift, event.modifiers, _loneModifiers);
-            return;
-        }
-        _loneModifiers = [];
-
-        const mods = KeyUtils.modsFromEvent(event.modifiers);
-
-        if (_altShiftGhost && (event.modifiers & Qt.AltModifier) && !mods.includes("Shift"))
-            mods.push("Shift");
-        _altShiftGhost = false;
-
-        const token = KeyUtils.chordToken(event.key, event.modifiers, mods, event.nativeScanCode, KeybindsService.modKey, KeybindsService.modSymbol);
-        if (!token) {
-            log.warn("Unknown key:", event.key, "mods:", event.modifiers);
-            return;
-        }
-
-        updateEdit({
-            "key": token
-        });
-        stopRecording();
-    }
-
     // A lone modifier binds release-only so its chords keep working.
-    function captureKeyRelease(event) {
-        if (_loneModifiers.length === 0 || !KeyUtils.modifierFromQtKey(event.key))
+    function applyCapturedKey(key, loneModifier) {
+        if (!loneModifier) {
+            updateEdit({
+                "key": key
+            });
             return;
-        const token = KeyUtils.bareModifierToken(_loneModifiers, KeybindsService.modKey, KeybindsService.modSymbol);
+        }
         updateEdit({
-            "key": token,
+            "key": key,
             "trigger": "release",
             "repeat": undefined
         });
-        stopRecording();
-    }
-
-    function captureWheel(wheel) {
-        let mods = [];
-        if (wheel.modifiers & Qt.ControlModifier)
-            mods.push("Ctrl");
-        if (wheel.modifiers & Qt.ShiftModifier)
-            mods.push("Shift");
-        if (wheel.modifiers & Qt.AltModifier)
-            mods.push("Alt");
-        if (wheel.modifiers & Qt.MetaModifier)
-            mods.push("Super");
-        mods = KeyUtils.withSymbolicMod(mods, KeybindsService.modKey, KeybindsService.modSymbol);
-
-        const wheelKey = wheelKeyName(wheel.angleDelta);
-        if (!wheelKey)
-            return;
-        updateEdit({
-            "key": KeyUtils.formatToken(mods, wheelKey)
-        });
-        stopRecording();
-    }
-
-    function wheelKeyName(delta) {
-        if (delta.y > 0)
-            return "WheelScrollUp";
-        if (delta.y < 0)
-            return "WheelScrollDown";
-        if (delta.x > 0)
-            return "WheelScrollRight";
-        if (delta.x < 0)
-            return "WheelScrollLeft";
-        return "";
     }
 
     function setDmsArgs(changes) {
-        if (!dmsParsedArgs)
+        if (!dmsParsedArgs || dmsArgsOpaque)
             return;
         const args = Object.assign({}, dmsParsedArgs.args, changes);
         updateEdit({
@@ -429,10 +341,12 @@ DDialog {
 
     function dmsFlagLabel(name) {
         switch (name) {
-        case "no-file":
+        case "save":
             return I18n.tr("Save");
-        case "no-clipboard":
+        case "clipboard":
             return I18n.tr("Clipboard");
+        case "clipboard-file":
+            return I18n.tr("Copy path");
         case "cursor":
             return I18n.tr("Pointer");
         default:
@@ -442,10 +356,12 @@ DDialog {
 
     function dmsFlagTooltip(name) {
         switch (name) {
-        case "no-file":
+        case "save":
             return saveTooltip;
-        case "no-clipboard":
+        case "clipboard":
             return I18n.tr("Copies the screenshot to the clipboard", "keybind screenshot option tooltip");
+        case "clipboard-file":
+            return I18n.tr("Copies the saved file too, so terminals paste its path", "keybind screenshot option tooltip");
         case "cursor":
             return pointerTooltip;
         default:
@@ -454,13 +370,14 @@ DDialog {
     }
 
     function dmsFlagChecked(flag) {
-        const set = dmsParsedArgs?.args[flag.name] === true;
-        return flag.inverted ? !set : set;
+        const state = dmsParsedArgs?.args[flag.name];
+        return state === undefined ? Actions.dmsFlagDefault(flag, dmsParsedArgs?.args, SettingsData) : state;
     }
 
+    // Matching the default drops the flag so the bind keeps following Settings.
     function setDmsFlag(flag, checked) {
         const changes = {};
-        changes[flag.name] = flag.inverted ? !checked : checked;
+        changes[flag.name] = checked === Actions.dmsFlagDefault(flag, dmsParsedArgs?.args, SettingsData) ? undefined : checked;
         setDmsArgs(changes);
     }
 
@@ -848,109 +765,15 @@ DDialog {
                 width: parent.width
                 spacing: Theme.spacingS
 
-                FocusScope {
-                    id: captureScope
-
-                    readonly property bool rootRecording: root.recording
-
+                KeyCaptureField {
+                    id: keyCapture
                     width: parent.width
-                    height: Theme.iconButtonSize
-                    Accessible.role: Accessible.Button
-                    Accessible.name: I18n.tr("Key", "noun, keybind editor row label for the key combination")
-                    Accessible.description: captureHint.visible ? captureHint.text : root.editKey
-                    Accessible.onPressAction: root.startRecording()
-
-                    onRootRecordingChanged: {
-                        if (rootRecording)
-                            forceActiveFocus();
-                    }
-
-                    onActiveFocusChanged: {
-                        if (!activeFocus)
-                            root.stopRecording();
-                    }
-
-                    Keys.onPressed: event => {
-                        if (!root.recording)
-                            return;
-                        event.accepted = true;
-                        root.captureKey(event);
-                    }
-
-                    Keys.onReleased: event => {
-                        if (!root.recording)
-                            return;
-                        event.accepted = true;
-                        root.captureKeyRelease(event);
-                    }
-
-                    Rectangle {
-                        anchors.fill: parent
-                        radius: Theme.cornerRadiusXS
-                        color: "transparent"
-                        border.color: root.recording ? Theme.primary : Theme.outline
-                        border.width: root.recording ? Theme.outlineWidthFocused : Theme.outlineWidth
-                    }
-
-                    MouseArea {
-                        anchors.fill: parent
-                        cursorShape: root.recording ? Qt.CrossCursor : Qt.PointingHandCursor
-                        onClicked: {
-                            if (!root.recording)
-                                root.startRecording();
-                        }
-                        onWheel: wheel => {
-                            if (!root.recording) {
-                                wheel.accepted = false;
-                                return;
-                            }
-                            wheel.accepted = true;
-                            root.captureWheel(wheel);
-                        }
-                    }
-
-                    Row {
-                        anchors.left: parent.left
-                        anchors.leftMargin: Theme.spacingM
-                        anchors.right: recordButton.left
-                        anchors.rightMargin: Theme.spacingS
-                        anchors.verticalCenter: parent.verticalCenter
-                        spacing: Theme.spacingM
-
-                        DIcon {
-                            name: "keyboard"
-                            size: Theme.iconSize
-                            color: Theme.surfaceVariantText
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
-
-                        DKeycap {
-                            text: root.editKey
-                            visible: root.editKey !== "" && !root.recording
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
-
-                        StyledText {
-                            id: captureHint
-                            text: root.recording ? I18n.tr("Press key...") : I18n.tr("Click to capture")
-                            font.pixelSize: Theme.fontSizeMedium
-                            color: Theme.surfaceVariantText
-                            visible: root.editKey === "" || root.recording
-                            anchors.verticalCenter: parent.verticalCenter
-                        }
-                    }
-
-                    DActionButton {
-                        id: recordButton
-                        anchors.right: parent.right
-                        anchors.rightMargin: Theme.spacingXS
-                        anchors.verticalCenter: parent.verticalCenter
-                        focusPolicy: Qt.TabFocus
-                        iconName: root.recording ? "close" : "radio_button_checked"
-                        iconColor: root.recording ? Theme.error : Theme.primary
-                        tooltipText: root.recording ? I18n.tr("Stop") : I18n.tr("Record", "verb, tooltip on button that captures a key combination")
-                        onClicked: root.recording ? root.stopRecording() : root.startRecording()
-                    }
+                    key: root.editKey
+                    modKey: KeybindsService.modKey
+                    modSymbol: KeybindsService.modSymbol
+                    capturesLoneModifiers: root.isNiri
+                    capturesWheel: true
+                    onCaptured: (key, loneModifier) => root.applyCapturedKey(key, loneModifier)
                 }
 
                 Row {
@@ -1203,6 +1026,12 @@ DDialog {
                         "tab": root.dashTabValue(value)
                     })
             }
+        }
+
+        SettingsRow {
+            visible: root.actionType === "dms" && root.dmsArgsOpaque
+            iconName: "terminal"
+            subtitle: I18n.tr("This command has options the editor doesn't manage, so edit them in your config file", "keybind editor notice for a hand-written screenshot bind with extra options")
         }
 
         SettingsRow {

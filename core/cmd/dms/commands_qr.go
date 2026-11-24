@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/duxlabs-dev/dux-go/ipc"
-	"github.com/duxlabs-dev/dux-shell/core/internal/clipboard"
 	"github.com/duxlabs-dev/dux-shell/core/internal/qrcode"
 	"github.com/mattn/go-isatty"
 	"github.com/spf13/cobra"
@@ -170,7 +169,7 @@ func emitQR(text string) {
 	}
 
 	if qrCopyText {
-		if err := clipboard.CopyText(text); err != nil {
+		if err := copyDataToClipboard([]byte(text), "text/plain;charset=utf-8"); err != nil {
 			fatalf("Error copying text: %v", err)
 		}
 	}
@@ -207,7 +206,7 @@ func emitPNG(png []byte, toStdout bool) {
 		os.Stdout.Write(png)
 	}
 	if qrClipboard {
-		if err := clipboard.Copy(png, "image/png"); err != nil {
+		if err := copyDataToClipboard(png, "image/png"); err != nil {
 			fatalf("Error copying image: %v", err)
 		}
 	}

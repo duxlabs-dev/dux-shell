@@ -6,7 +6,6 @@ import qs.Widgets
 import qs.Modules.SurfaceWidgets
 import qs.Modules.DBar
 import qs.Modules.DBar.Widgets as BarWidgets
-import qs.Modules.ControlCenter.Widgets
 import "../../Common/settings/DockConfig.js" as DockConfig
 
 FocusScope {
@@ -23,7 +22,6 @@ FocusScope {
         if (!editMode)
             return;
         closeExpansion();
-        tooltipRevealDelay.stop();
         dockTooltip.hide();
         forceActiveFocus();
     }
@@ -178,7 +176,6 @@ FocusScope {
     readonly property bool motionRunning: surfaceMotion.running || slideXSpring.running || slideYSpring.running
     VectorSpringMotion {
         id: surfaceMotion
-        reducedMotion: Theme.springMotionDisabled
         enabled: dock.visible
         stiffness: dock.slideSpringParams.stiffness
         damping: dock.slideSpringParams.damping
@@ -187,7 +184,8 @@ FocusScope {
     }
     readonly property bool isVertical: dock.config.position === SettingsData.Position.Left || dock.config.position === SettingsData.Position.Right
 
-    property bool autoHide: dock.config.autoHide || dock.config.smartAutoHide
+    readonly property bool smartAutoHideActive: dock.config.smartAutoHide && CompositorService.supportsSmartDock
+    property bool autoHide: dock.config.autoHide || smartAutoHideActive
     property real backgroundTransparency: SettingsData.barTransparency(dock.config)
     property bool groupByApp: dock.config.groupByApp
     readonly property int borderThickness: dock.config.borderEnabled ? dock.config.borderThickness : 0
@@ -344,7 +342,7 @@ FocusScope {
         onTriggered: dock._syncDockChromeState()
     }
 
-    readonly property var slideSpringParams: dock.usesConnectedFrameChrome ? Theme.springPreset("default", Theme.variantDuration(Theme.popoutAnimationDuration, dock.reveal)) : Theme.springPreset("fast", Theme.shortDuration)
+    readonly property var slideSpringParams: Theme.springPreset(dock.usesConnectedFrameChrome ? "defaultSpatial" : "fastSpatial")
 
     SpringMotion {
         id: slideXSpring
@@ -354,8 +352,12 @@ FocusScope {
         damping: dock.slideSpringParams.damping
         value: dockSlide.targetX
 
-        onRunningChanged: if (!running)
-            dock._syncDockChromeState()
+        onRunningChanged: {
+            if (running)
+                return;
+            dock._syncDockChromeState();
+            dock.showTooltipForHoveredButton();
+        }
     }
 
     SpringMotion {
@@ -366,15 +368,19 @@ FocusScope {
         damping: dock.slideSpringParams.damping
         value: dockSlide.targetY
 
-        onRunningChanged: if (!running)
-            dock._syncDockChromeState()
+        onRunningChanged: {
+            if (running)
+                return;
+            dock._syncDockChromeState();
+            dock.showTooltipForHoveredButton();
+        }
     }
 
     property bool contextMenuOpen: !!(widgetStrip.interactionActive || (dock.contextMenu && dock.contextMenu.visible && dock.contextMenu.surfaceContext?.host === dock) || (dock.trashContextMenu && dock.trashContextMenu.visible && dock.trashContextMenu.surfaceContext?.host === dock))
     property bool revealSticky: false
 
     readonly property bool shouldHideForWindows: {
-        if (!dock.config.smartAutoHide)
+        if (!smartAutoHideActive)
             return false;
         CompositorService.windowStateRevision;
         return CompositorService.windowsOverlapDock(dock.modelData?.name ?? "", dock.config.position, dockGeometry.motionThickness, dock.screen?.width ?? 0, dock.screen?.height ?? 0);
@@ -382,7 +388,7 @@ FocusScope {
 
     Timer {
         id: revealHold
-        interval: 250
+        interval: Timing.settle
         repeat: false
         onTriggered: dock.revealSticky = false
     }
@@ -398,13 +404,14 @@ FocusScope {
 
     Timer {
         id: startupRevealTimer
-        interval: 200
+        interval: Timing.settle
         running: true
         onTriggered: dock.startupRevealDone = true
     }
 
     readonly property bool overviewReveal: dock.config.openOnOverview && CompositorService.overviewActiveForScreen(dock._dockScreenName)
-    readonly property bool hoverOrActive: dockMouseArea.containsMouse || dock.interactionActive || contextMenuOpen || revealSticky
+    readonly property bool windowPreviewOpen: appProvider.item?.stripItem?.previewOpen ?? false
+    readonly property bool hoverOrActive: dockMouseArea.containsMouse || dock.interactionActive || contextMenuOpen || revealSticky || windowPreviewOpen
 
     onOverviewRevealChanged: {
         if (overviewReveal && usesConnectedFrameChrome) {
@@ -427,7 +434,7 @@ FocusScope {
         if (hiddenForFullscreen || !dock.config.enabled)
             return false;
 
-        if (dock.config.smartAutoHide)
+        if (smartAutoHideActive)
             return !shouldHideForWindows || hoverOrActive;
 
         return !autoHide || hoverOrActive;
@@ -435,6 +442,13 @@ FocusScope {
 
     onContextMenuOpenChanged: {
         if (!contextMenuOpen && autoHide && !dockMouseArea.containsMouse) {
+            revealSticky = true;
+            revealHold.restart();
+        }
+    }
+
+    onWindowPreviewOpenChanged: {
+        if (!windowPreviewOpen && autoHide && !dockMouseArea.containsMouse) {
             revealSticky = true;
             revealHold.restart();
         }
@@ -453,11 +467,10 @@ FocusScope {
             editMode = false;
         dock._syncDockChromeState();
         if (!reveal) {
-            tooltipRevealDelay.stop();
             dockTooltip.hide();
-        } else {
-            tooltipRevealDelay.restart();
+            return;
         }
+        Qt.callLater(dock.showTooltipForHoveredButton);
     }
     onHoveredButtonChanged: showTooltipForHoveredButton()
     onWidthChanged: dock._syncDockChromeState()
@@ -577,6 +590,11 @@ FocusScope {
     readonly property alias inputMaskItem: maskItem
 
     readonly property var hoveredButton: widgetStrip.hoveredButton
+    readonly property real hoveredButtonOffset: dock.hoveredButton?.hoverAnimOffset ?? 0
+    onHoveredButtonOffsetChanged: {
+        if (dockTooltip.shown && dock.config.magnification)
+            showTooltipForHoveredButton();
+    }
 
     DTooltip {
         id: dockTooltip
@@ -584,35 +602,29 @@ FocusScope {
         persistent: dock.config.enabled && (dock.hostWindow?.visible ?? false) && !dock.fullscreenOnScreen
     }
 
-    Timer {
-        id: tooltipRevealDelay
-        interval: 250
-        repeat: false
-        onTriggered: dock.showTooltipForHoveredButton()
-    }
-
     function showTooltipForHoveredButton() {
         dockTooltip.hide();
-        if (dock.editMode || !dock.hoveredButton || !dock.reveal || slideXSpring.running || slideYSpring.running)
+        if (dock.editMode || !dock.hoveredButton || dock.hoveredButton.showsWindowPreview || !dock.reveal || slideXSpring.running || slideYSpring.running)
             return;
 
-        const buttonLocalPos = dock.hoveredButton.mapToItem(null, 0, 0);
+        const btnW = dock.hoveredButton.width;
+        const btnH = dock.hoveredButton.height;
+        const buttonCenter = dock.hoveredButton.mapToItem(null, btnW / 2, btnH / 2);
         const tooltipText = dock.hoveredButton.tooltipText || "";
         if (!tooltipText)
             return;
 
-        const screenHeight = dock.screen ? dock.screen.height : 0;
-
         const gap = Theme.spacingS;
         const bgMargin = dockGeometry.bodyEdgeMargin;
-        const btnW = dock.hoveredButton.width;
-        const btnH = dock.hoveredButton.height;
+        const magnificationScale = dock.config.magnification ? Math.max(1.05, Math.min(2.0, (dock.config.magnificationScale ?? 130) / 100)) : 1.0;
+        const magnificationOverhang = ((dock.isVertical ? btnW : btnH) + Math.abs(dock.hoveredButtonOffset)) * (magnificationScale - 1.0);
 
         if (!dock.isVertical) {
             const isBottom = dock.config.position === SettingsData.Position.Bottom;
-            const tooltipX = buttonLocalPos.x + btnW / 2 + adjacentLeftBarWidth;
-            const tooltipHeight = 32;
-            const totalFromEdge = bgMargin + dockBackground.height + dock.borderThickness + gap;
+            const screenHeight = dock.screen ? dock.screen.height : 0;
+            const tooltipX = buttonCenter.x + adjacentLeftBarWidth;
+            const tooltipHeight = dockTooltip.tooltipHeight;
+            const totalFromEdge = bgMargin + dockBackground.height + dock.borderThickness + gap + magnificationOverhang;
             const screenRelativeY = isBottom ? (screenHeight - totalFromEdge - tooltipHeight) : totalFromEdge;
             dockTooltip.show(tooltipText, tooltipX, screenRelativeY, dock.screen, false, false);
             return;
@@ -620,9 +632,9 @@ FocusScope {
 
         const isLeft = dock.config.position === SettingsData.Position.Left;
         const screenWidth = dock.screen ? dock.screen.width : 0;
-        const totalFromEdge = bgMargin + dockBackground.width + dock.borderThickness + gap;
+        const totalFromEdge = bgMargin + dockBackground.width + dock.borderThickness + gap + magnificationOverhang;
         const tooltipX = isLeft ? totalFromEdge : (screenWidth - totalFromEdge);
-        const screenRelativeY = buttonLocalPos.y + btnH / 2 + adjacentTopBarHeight;
+        const screenRelativeY = buttonCenter.y + adjacentTopBarHeight;
         dockTooltip.show(tooltipText, tooltipX, screenRelativeY, dock.screen, isLeft, !isLeft);
     }
 
@@ -634,8 +646,9 @@ FocusScope {
 
         Behavior on opacity {
             NumberAnimation {
-                duration: Theme.shortDuration
-                easing.type: Easing.OutCubic
+                duration: Theme.expressiveDurations.expressiveFastEffects
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
             }
         }
 
@@ -693,16 +706,18 @@ FocusScope {
             Behavior on height {
                 enabled: !dock._switchingPosition
                 NumberAnimation {
-                    duration: Theme.shortDuration
-                    easing.type: Easing.OutCubic
+                    duration: Theme.expressiveDurations.expressiveDefaultSpatial
+                    easing.type: Easing.BezierSpline
+                    easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
                 }
             }
 
             Behavior on width {
                 enabled: !dock._switchingPosition
                 NumberAnimation {
-                    duration: Theme.shortDuration
-                    easing.type: Easing.OutCubic
+                    duration: Theme.expressiveDurations.expressiveDefaultSpatial
+                    easing.type: Easing.BezierSpline
+                    easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
                 }
             }
 
@@ -881,23 +896,29 @@ FocusScope {
         }
     }
 
-    DockEditChrome {
-        id: editChrome
-        readonly property real edgeInset: dockGeometry.surfaceThickness + Theme.spacingL
-        title: dock.config.name
-        canAdd: dock.addableWidgets.length > 0
-        x: Math.round(dock.isVertical ? (dock.config.position === SettingsData.Position.Left ? edgeInset : dock.width - width - edgeInset) : (dock.width - width) / 2)
-        y: Math.round(dock.isVertical ? (dock.height - height) / 2 : (dock.config.position === SettingsData.Position.Top ? edgeInset : dock.height - height - edgeInset))
-        opacity: dock.editMode ? 1 : 0
-        visible: opacity > 0
-        onAddRequested: dock.widgetLibraryOpen = true
-        onSettingsRequested: dock.openWidgetSettings()
-        onFinished: dock.editMode = false
+    // Stays loaded until the fade-out ends.
+    Loader {
+        active: dock.editMode || (item?.visible ?? false)
+        sourceComponent: DockEditChrome {
+            readonly property real edgeInset: dockGeometry.surfaceThickness + Theme.spacingL
+            property bool shown: false
+            title: dock.config.name
+            canAdd: dock.addableWidgets.length > 0
+            x: Math.round(dock.isVertical ? (dock.config.position === SettingsData.Position.Left ? edgeInset : dock.width - width - edgeInset) : (dock.width - width) / 2)
+            y: Math.round(dock.isVertical ? (dock.height - height) / 2 : (dock.config.position === SettingsData.Position.Top ? edgeInset : dock.height - height - edgeInset))
+            opacity: shown ? 1 : 0
+            visible: opacity > 0
+            onAddRequested: dock.widgetLibraryOpen = true
+            onSettingsRequested: dock.openWidgetSettings()
+            onFinished: dock.editMode = false
+            Component.onCompleted: shown = Qt.binding(() => dock.editMode)
 
-        Behavior on opacity {
-            NumberAnimation {
-                duration: Theme.shortDuration
-                easing.type: Easing.OutCubic
+            Behavior on opacity {
+                NumberAnimation {
+                    duration: Theme.expressiveDurations.expressiveFastEffects
+                    easing.type: Easing.BezierSpline
+                    easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
+                }
             }
         }
     }
@@ -924,16 +945,8 @@ FocusScope {
     Loader {
         anchors.centerIn: parent
         active: dock.widgetLibraryOpen
-        sourceComponent: CcWidgetLibrary {
-            width: Math.min(implicitWidth, dock.width - Theme.spacingL * 2)
-            height: Math.min(implicitHeight, dock.height - Theme.spacingL * 2)
-            widgets: dock.addableWidgets
-            Component.onCompleted: reset()
-            onChosen: widgetId => {
-                dock.addWidget(widgetId);
-                dock.closeWidgetLibrary();
-            }
-            onDismissed: dock.closeWidgetLibrary()
-        }
+        Component.onCompleted: setSource("DockWidgetLibrary.qml", {
+            dock: dock
+        })
     }
 }

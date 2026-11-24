@@ -4,7 +4,9 @@ import QtQuick
 import qs.Common
 import qs.DCommon.Widgets
 import qs.Modals.DLauncherV2
+import qs.Widgets as Widgets
 import "../../../Common/htmlElide.js" as HtmlElide
+import "../ControllerUtils.js" as ControllerUtils
 
 DListItem {
     id: root
@@ -20,7 +22,7 @@ DListItem {
     property real iconUnicodeScale: Theme.fontSizeXLarge / Theme.iconSizeLarge
     property real iconSize: LauncherMetrics.iconSize
     // Dense keeps file paths and setting categories: those names repeat across folders and pages
-    property bool showDescription: Theme.densityLevel > -2 || item?.type === "file" || item?.type === "setting"
+    property bool showDescription: ((SettingsData.dankLauncherV2ShowAppDescriptions || item?.type !== "app") && Theme.densityLevel > -2) || item?.type === "file" || item?.type === "setting"
     property var item: null
     property var controller: null
     property int flatIndex: -1
@@ -47,8 +49,6 @@ DListItem {
             return "material:" + (item.icon || "apps");
         case "unicode":
             return "unicode:" + (item.icon || "");
-        case "composite":
-            return item.iconFull || "";
         case "image":
         default:
             return item.icon || "";
@@ -62,6 +62,18 @@ DListItem {
         return "file://" + raw;
     }
     readonly property bool hasClipboardPreview: item?.type === "clipboard" && !!item?.data?.isImage && String(item?.data?.mimeType ?? "").startsWith("image/")
+    readonly property string filePreviewPath: (item?.type === "file" && !item?.data?.is_dir) ? (item?.data?.path || item?.id || "") : ""
+    readonly property bool hasFilePreview: filePreviewPath.length > 0 && ControllerUtils.isPreviewableMedia(filePreviewPath)
+    readonly property bool isFolder: item?.type === "folder"
+    readonly property bool showLeadingIcon: isFolder || ((SettingsData.dankLauncherV2ShowAppIcons || item?.type !== "app") && !(item?.type === "dmenu" && item?.data?.nonSelectable && !item?.icon))
+    readonly property int folderMemberCount: item?.data?.members?.length ?? 0
+    readonly property string subtitleText: {
+        if (!isFolder)
+            return item?.subtitle ?? "";
+        if (folderMemberCount === 1)
+            return I18n.tr("%1 app", "launcher folder member count, singular, %1 is 1").arg(folderMemberCount);
+        return I18n.tr("%1 apps", "launcher folder member count, plural, %1 is a number").arg(folderMemberCount);
+    }
 
     width: parent?.width ?? Theme.fieldDefaultWidth
     height: LauncherMetrics.rowHeight
@@ -74,8 +86,8 @@ DListItem {
         anchors.left: parent.left
         anchors.leftMargin: LauncherMetrics.rowPadding
         anchors.verticalCenter: parent.verticalCenter
-        visible: !(root.item?.type === "dmenu" && root.item?.data?.nonSelectable && !root.item?.icon)
-        iconValue: root.iconValue
+        visible: !root.isFolder && root.showLeadingIcon
+        iconValue: root.isFolder ? "" : root.iconValue
         iconMargins: root.iconMargins
         fallbackLeftMargin: root.iconFallbackLeftMargin
         fallbackRightMargin: root.iconFallbackRightMargin
@@ -90,9 +102,19 @@ DListItem {
         iconColor: root.contentColor
     }
 
+    Loader {
+        anchors.fill: iconRenderer
+        active: root.isFolder
+        visible: active
+        sourceComponent: Widgets.AppFolderIcon {
+            members: root.item?.data?.members ?? []
+            materialIcon: root.item?.icon ?? ""
+        }
+    }
+
     Item {
         id: textColumn
-        anchors.left: iconRenderer.right
+        anchors.left: root.showLeadingIcon ? iconRenderer.right : parent.left
         anchors.leftMargin: LauncherMetrics.rowPadding
         anchors.right: rightContent.left
         anchors.rightMargin: rightContent.width > 0 ? Theme.spacingM : 0
@@ -105,7 +127,8 @@ DListItem {
             anchors.right: parent.right
             anchors.top: parent.top
             text: root.item?._hName ?? root.item?.name ?? ""
-            textFormat: root.item?._hRich ? Text.RichText : Text.PlainText
+            // RichText ignores elide and maximumLineCount, so only dmenu markup rows get it.
+            textFormat: !root.item?._hRich ? Text.PlainText : root.item.data?.markup ? Text.RichText : Text.StyledText
             font.pixelSize: Theme.fontSizeLarge
             font.weight: (root.item?.type === "dmenu" && root.item?.data?.urgent) ? Theme.fontWeightBold : Theme.fontWeightMedium
             font.family: Theme.fontFamily
@@ -137,15 +160,15 @@ DListItem {
             anchors.right: parent.right
             anchors.top: nameText.bottom
             anchors.topMargin: Theme.spacingXXS
-            text: root.item?._hRich ? HtmlElide.elideRichText(root.item._hSub ?? "", textColumn._richBudget) : (root.item?.subtitle ?? "")
-            textFormat: root.item?._hRich ? Text.RichText : Text.PlainText
+            text: root.item?._hRich ? HtmlElide.elideRichText(root.item._hSub ?? "", textColumn._richBudget) : root.subtitleText
+            textFormat: !root.item?._hRich ? Text.PlainText : root.item.data?.markup ? Text.RichText : Text.StyledText
             font.pixelSize: Theme.fontSizeSmall
             font.family: Theme.fontFamily
             color: root.supportingContentColor
             wrapMode: Text.WordWrap
             maximumLineCount: 1
             elide: Text.ElideRight
-            visible: root.showDescription && (root.item?.subtitle ?? "").length > 0
+            visible: root.showDescription && root.subtitleText.length > 0
             horizontalAlignment: Text.AlignLeft
         }
     }
@@ -165,7 +188,7 @@ DListItem {
             anchors.verticalCenter: parent.verticalCenter
         }
 
-        DIcon {  // dmenu --multi-select checkbox
+        DIcon {
             name: root.item?.data?.checked ? "check_box" : "check_box_outline_blank"
             size: Theme.iconSizeSmall
             color: root.item?.data?.checked ? Theme.primary : root.contentColor
@@ -176,7 +199,7 @@ DListItem {
         Image {
             width: LauncherMetrics.previewWidth
             height: LauncherMetrics.previewHeight
-            visible: root.previewSource.length > 0 && !root.hasClipboardPreview
+            visible: root.previewSource.length > 0 && !root.hasClipboardPreview && !root.hasFilePreview
             source: visible ? root.previewSource : ""
             asynchronous: true
             sourceSize.width: width * 2
@@ -193,6 +216,17 @@ DListItem {
             anchors.verticalCenter: parent.verticalCenter
             sourceComponent: ClipboardLauncherPreview {
                 entry: root.item?.data ?? null
+            }
+        }
+
+        Loader {
+            active: root.hasFilePreview
+            visible: active && (item?.previewReady ?? false)
+            width: visible ? LauncherMetrics.previewWidth : 0
+            height: root.iconSize
+            anchors.verticalCenter: parent.verticalCenter
+            sourceComponent: FileLauncherPreview {
+                filePath: root.filePreviewPath
             }
         }
 
@@ -238,7 +272,7 @@ DListItem {
         }
 
         Rectangle {
-            visible: !!root.item?.type && root.item.type !== "app" && root.item.type !== "plugin_browse" && root.item.type !== "dmenu" && (!root.controller?.activePluginName || (root.item.badgeLabel ?? "").length > 0)
+            visible: !!root.item?.type && root.item.type !== "app" && root.item.type !== "folder" && root.item.type !== "plugin_browse" && root.item.type !== "dmenu" && (!root.controller?.activePluginName || (root.item.badgeLabel ?? "").length > 0)
             width: typeBadge.implicitWidth + Theme.spacingS * 2
             height: Theme.iconSizeMedium
             radius: Theme.fullRadius(width, height)
@@ -270,6 +304,14 @@ DListItem {
                 font.pixelSize: Theme.fontSizeSmall
                 color: root.supportingContentColor
             }
+        }
+
+        DIcon {
+            visible: root.isFolder
+            anchors.verticalCenter: parent.verticalCenter
+            name: I18n.isRtl ? "chevron_left" : "chevron_right"
+            size: Theme.iconSizeSmall
+            color: root.supportingContentColor
         }
 
         SourceBadge {

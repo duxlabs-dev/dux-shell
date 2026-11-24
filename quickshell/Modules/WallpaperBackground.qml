@@ -19,6 +19,15 @@ Variants {
     readonly property bool desktopMenuEnabled: CompositorService.desktopContextMenuEnabled
     // niri skips place-within-backdrop surfaces when hit-testing, so the wallpaper never sees clicks there.
     readonly property bool desktopMenuOnWallpaper: desktopMenuEnabled && !CompositorService.isNiri
+    readonly property int desktopEdgeInset: Theme.spacingXS
+
+    function desktopInputInset(screen, edge) {
+        const layout = ShellLayout.forScreen(screen);
+        const band = layout?.edges[edge];
+        const barReservation = (layout?.frameStyled && !layout.manualPlacement ? band?.frameReservation : band?.reservation) ?? 0;
+        const dockReservation = SettingsData.dockReservationForEdge(screen, edge);
+        return barReservation + dockReservation + desktopEdgeInset;
+    }
     model: SettingsData.getFilteredScreens("wallpaper")
 
     PanelWindow {
@@ -40,20 +49,32 @@ Variants {
 
         visible: root.contentReady && !root.surfaceBounce
 
-        updatesEnabled: root.renderActive || root._settleFrames > 0
-
         Region {
             id: emptyRegion
         }
 
-        mask: variants.desktopMenuOnWallpaper ? null : emptyRegion
+        Region {
+            id: desktopMenuRegion
+            item: desktopMenuArea
+        }
+
+        mask: variants.desktopMenuOnWallpaper ? desktopMenuRegion : emptyRegion
 
         MouseArea {
+            id: desktopMenuArea
+
+            readonly property real leftInset: variants.desktopInputInset(wallpaperWindow.screen, "left")
+            readonly property real topInset: variants.desktopInputInset(wallpaperWindow.screen, "top")
+
             anchors.fill: parent
+            anchors.leftMargin: leftInset
+            anchors.rightMargin: variants.desktopInputInset(wallpaperWindow.screen, "right")
+            anchors.topMargin: topInset
+            anchors.bottomMargin: variants.desktopInputInset(wallpaperWindow.screen, "bottom")
             z: 1
             enabled: variants.desktopMenuOnWallpaper
             acceptedButtons: Qt.RightButton
-            onClicked: mouse => PopoutService.desktopContextMenu?.open(wallpaperWindow.screen, mouse.x, mouse.y, false)
+            onClicked: mouse => PopoutService.desktopMenu()?.open(wallpaperWindow.screen, mouse.x + leftInset, mouse.y + topInset, false)
         }
 
         Loader {
@@ -72,10 +93,29 @@ Variants {
                 anchors.left: true
                 anchors.right: true
 
+                mask: Region {
+                    item: niriDesktopMenuArea
+                }
+
+                // Assigned, not bound: upstream quickshell has no inputOnly and a binding would fail the whole window.
+                Component.onCompleted: {
+                    if ("inputOnly" in this)
+                        inputOnly = true;
+                }
+
                 MouseArea {
+                    id: niriDesktopMenuArea
+
+                    readonly property real leftInset: variants.desktopInputInset(wallpaperWindow.screen, "left")
+                    readonly property real topInset: variants.desktopInputInset(wallpaperWindow.screen, "top")
+
                     anchors.fill: parent
+                    anchors.leftMargin: leftInset
+                    anchors.rightMargin: variants.desktopInputInset(wallpaperWindow.screen, "right")
+                    anchors.topMargin: topInset
+                    anchors.bottomMargin: variants.desktopInputInset(wallpaperWindow.screen, "bottom")
                     acceptedButtons: Qt.RightButton
-                    onClicked: mouse => PopoutService.desktopContextMenu?.open(wallpaperWindow.screen, mouse.x, mouse.y, false)
+                    onClicked: mouse => PopoutService.desktopMenu()?.open(wallpaperWindow.screen, mouse.x + leftInset, mouse.y + topInset, false)
                 }
             }
         }
@@ -173,9 +213,6 @@ Variants {
             property bool useNextForEffect: false
             property string pendingWallpaper: ""
             property string _deferredSource: ""
-            // Held true from the moment a wallpaper change is initiated until it
-            // settles, so the paused render loop wakes and drives the async load
-            // and transition even when nothing else marks the window dirty.
             property bool changePending: false
             // Image is released after srcCurrent grabs it, only the texture stays resident
             property string currentSource: ""
@@ -184,23 +221,17 @@ Variants {
             readonly property bool overviewBlurActive: CompositorService.isNiri && SettingsData.blurWallpaperOnOverview && NiriService.inOverview && (currentSource !== "" || showsBackdrop)
             readonly property var backingWindow: Window.window
             readonly property bool showsBackdrop: !source || isColorSource || currentWallpaper.status === Image.Error
-            readonly property bool backdropBusy: showsBackdrop && !(backdropLoader.item?.ready ?? false)
-            readonly property bool renderActive: backdropBusy || effectActive || overviewBlurActive || pendingWallpaper !== "" || _deferredSource !== "" || changePending || _freezeWaitFrames > 0 || frameAnim.running || currentWallpaper.status === Image.Loading || nextWallpaper.status === Image.Loading || parallaxImage.status === Image.Loading || lockScrollSampler.busy || videoRendering
-            property int _settleFrames: 3
 
             readonly property bool fullscreenOnScreen: isVideoSource && CompositorService.fullscreenToplevelOnScreen(modelData)
-            // Nothing decodes while the video cannot be seen.
-            readonly property bool videoShouldPlay: isVideoSource && wallpaperWindow.visible && !IdleService.isShellLocked && !IdleService.monitorsOff && !overviewBlurActive && !fullscreenOnScreen
+            readonly property bool pausedOnBattery: SettingsData.pauseVideoWallpaperOnBattery && BatteryService.batteryAvailable && !BatteryService.isPluggedIn
+            // Nothing decodes while the video cannot be seen or while paused on battery.
+            readonly property bool videoShouldPlay: isVideoSource && wallpaperWindow.visible && !IdleService.isShellLocked && !IdleService.monitorsOff && !overviewBlurActive && !fullscreenOnScreen && !pausedOnBattery
             readonly property bool videoRendering: videoLoader.item?.rendering ?? false
 
             function invalidate() {
-                _settleFrames = 3;
                 backingWindow?.update();
-                if (!_wedgeBounced)
-                    wedgeWatchdog.restart();
             }
 
-            onRenderActiveChanged: invalidate()
             onBackingWindowChanged: regenerate()
             onTextureWidthChanged: regenerate()
             onTextureHeightChanged: regenerate()
@@ -246,30 +277,9 @@ Variants {
                 Qt.callLater(() => root.changeWallpaper(pending));
             }
 
-            // No swap after a requested frame: dropped frame callback left the window
-            // unexposed (qtwayland mFrameCallbackTimedOut); only surface re-attach recovers.
-            property bool _wedgeBounced: false
-
-            Timer {
-                id: wedgeWatchdog
-                interval: 3000
-                repeat: false
-                onTriggered: {
-                    if (!root.backingWindow || !wallpaperWindow.visible || IdleService.isShellLocked)
-                        return;
-                    log.warn("no frame swapped on", modelData.name, "since last invalidate, re-attaching surface");
-                    root._wedgeBounced = true;
-                    surfaceReattach.restart();
-                }
-            }
-
             Connections {
                 target: root.backingWindow
                 function onFrameSwapped() {
-                    if (root._settleFrames > 0)
-                        root._settleFrames--;
-                    root._wedgeBounced = false;
-                    wedgeWatchdog.stop();
                     if (root._freezeWaitFrames === 0)
                         return;
                     if (--root._freezeWaitFrames === 0) {
@@ -437,11 +447,12 @@ Variants {
                 let newTargetY = 50.0;
 
                 if (CompositorService.isNiri) {
-                    const outputWorkspaces = NiriService.allWorkspaces.filter(ws => ws.output === modelData.name);
+                    const outputWorkspaces = NiriService.allWorkspaces.filter(ws => ws.output === modelData.name && !WorkspaceModel.niriScratchpad(ws));
+                    const activeIndex = outputWorkspaces.findIndex(ws => ws.is_active);
+                    if (activeIndex < 0)
+                        return;
                     totalWorkspaces = outputWorkspaces.length;
-
-                    const activeWs = outputWorkspaces.find(ws => ws.is_active);
-                    currentWorkspaceIndex = activeWs ? activeWs.idx : 0;
+                    currentWorkspaceIndex = activeIndex + 1;
 
                     const scrollPercent = totalWorkspaces > 1 ? ((currentWorkspaceIndex - 1) / (totalWorkspaces - 1)) * 100.0 : 0.0;
 
@@ -561,9 +572,7 @@ Variants {
                     if (running) {
                         currentTime = Date.now() / 1000.0;
                     } else {
-                        root.publishScrollPosition();  // Animation settled
-                        // Hold the render loop open so the final settled frame
-                        // commits before updatesEnabled drops out from under us.
+                        root.publishScrollPosition();
                         root.invalidate();
                     }
                 }
@@ -711,7 +720,7 @@ Variants {
 
             Timer {
                 id: transitionDelayTimer
-                interval: 16
+                interval: Timing.frame
                 repeat: false
                 onTriggered: transitionAnimation.start()
             }

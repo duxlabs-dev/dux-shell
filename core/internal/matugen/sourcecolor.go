@@ -1,24 +1,12 @@
 package matugen
 
 import (
-	"cmp"
 	"fmt"
-	"image"
-	_ "image/gif"
-	_ "image/jpeg"
-	_ "image/png"
-	"math"
 	"os"
-	"slices"
 
 	"github.com/duxlabs-dev/dux-go/material/color"
-	"github.com/duxlabs-dev/dux-go/material/dislike"
-	"github.com/duxlabs-dev/dux-go/material/num"
 	"github.com/duxlabs-dev/dux-go/material/quantizer"
-	_ "golang.org/x/image/bmp"
-	xdraw "golang.org/x/image/draw"
-	_ "golang.org/x/image/tiff"
-	_ "golang.org/x/image/webp"
+	"github.com/duxlabs-dev/dux-shell/core/internal/colorseed"
 )
 
 // Source color modes. Anything else, including the empty string, means
@@ -65,12 +53,6 @@ const (
 	sourceSampleMaxDim = 512
 	// Palette size, matching Caelestia's ImageQuantizeCelebi(image, 1, 128).
 	sourceMaxColors = 128
-
-	// Scoring weights, ported from caelestia-cli's Score class.
-	scoreTargetChroma      = 48.0
-	scoreWeightProportion  = 0.7
-	scoreWeightChromaAbove = 0.3
-	scoreWeightChromaBelow = 0.1
 )
 
 // ExtractSourceColor picks a wallpaper's seed color the way caelestia-cli does:
@@ -97,7 +79,8 @@ func ExtractSourceColor(imagePath string) (string, error) {
 	}
 
 	population := quantizer.QuantizeCelebi(pixels, sourceMaxColors)
-	seed, ok := scoreColors(population)
+	// The caelestia-cli Score port, which the icon tiles share.
+	seed, ok := colorseed.Score(population)
 	if !ok {
 		return "", fmt.Errorf("no usable color in %s", imagePath)
 	}
@@ -112,93 +95,5 @@ func samplePixels(path string) ([]color.ARGB, error) {
 		return nil, fmt.Errorf("open wallpaper: %w", err)
 	}
 	defer f.Close()
-
-	img, _, err := image.Decode(f)
-	if err != nil {
-		return nil, fmt.Errorf("decode %s: %w", path, err)
-	}
-
-	bounds := img.Bounds()
-	if w, h := bounds.Dx(), bounds.Dy(); w > sourceSampleMaxDim || h > sourceSampleMaxDim {
-		scale := float64(sourceSampleMaxDim) / math.Max(float64(w), float64(h))
-		scaled := image.NewRGBA(image.Rect(0, 0, max(int(float64(w)*scale), 1), max(int(float64(h)*scale), 1)))
-		xdraw.ApproxBiLinear.Scale(scaled, scaled.Bounds(), img, bounds, xdraw.Src, nil)
-		img, bounds = scaled, scaled.Bounds()
-	}
-
-	pixels := make([]color.ARGB, 0, bounds.Dx()*bounds.Dy())
-	for y := bounds.Min.Y; y < bounds.Max.Y; y++ {
-		for x := bounds.Min.X; x < bounds.Max.X; x++ {
-			r, g, b, a := img.At(x, y).RGBA()
-			if a < 0xffff {
-				continue
-			}
-			pixels = append(pixels, color.NewARGB(255, uint8(r>>8), uint8(g>>8), uint8(b>>8)))
-		}
-	}
-	return pixels, nil
-}
-
-// scoreColors ports caelestia-cli's Score.score. It differs from stock Material
-// scoring in two ways that matter: no filtering, and the descending cutoff loop
-// at the end, which walks the chroma/tone bar down until something clears it.
-// That bar is what pushes the pick toward a colorful, well-lit color instead of
-// whichever muted color covers the most pixels.
-func scoreColors(population map[color.ARGB]int) (color.Hct, bool) {
-	// Sorted so the stable sort below and the cutoff scan resolve ties the same
-	// way every run; Go map iteration order is randomized.
-	keys := make([]color.ARGB, 0, len(population))
-	for argb := range population {
-		keys = append(keys, argb)
-	}
-	slices.Sort(keys)
-
-	huePopulation := make([]int, 360)
-	total := 0
-	colors := make([]color.Hct, 0, len(keys))
-	for _, argb := range keys {
-		hct := argb.ToHct()
-		colors = append(colors, hct)
-		huePopulation[num.NormalizeDegreeInt(int(hct.Hue))] += population[argb]
-		total += population[argb]
-	}
-	if total == 0 {
-		return color.Hct{}, false
-	}
-
-	// Hues with more usage in a neighboring 30 degree slice score higher.
-	excited := make([]float64, 360)
-	for hue := range 360 {
-		proportion := float64(huePopulation[hue]) / float64(total)
-		for i := hue - 14; i < hue+16; i++ {
-			excited[num.NormalizeDegreeInt(i)] += proportion
-		}
-	}
-
-	type scoredColor struct {
-		hct   color.Hct
-		score float64
-	}
-	scored := make([]scoredColor, 0, len(colors))
-	for _, hct := range colors {
-		proportion := excited[num.NormalizeDegreeInt(int(math.Round(hct.Hue)))]
-		chromaWeight := scoreWeightChromaAbove
-		if hct.Chroma < scoreTargetChroma {
-			chromaWeight = scoreWeightChromaBelow
-		}
-		scored = append(scored, scoredColor{
-			hct:   hct,
-			score: proportion*100.0*scoreWeightProportion + (hct.Chroma-scoreTargetChroma)*chromaWeight,
-		})
-	}
-	slices.SortStableFunc(scored, func(a, b scoredColor) int { return cmp.Compare(b.score, a.score) })
-
-	for cutoff := 20.0; cutoff >= 0; cutoff-- {
-		for _, s := range scored {
-			if s.hct.Chroma > cutoff && s.hct.Tone > cutoff*3 {
-				return dislike.FixIfDisliked(s.hct), true
-			}
-		}
-	}
-	return color.Hct{}, false
+	return colorseed.DecodePixels(f, path, sourceSampleMaxDim, colorseed.Opaque)
 }

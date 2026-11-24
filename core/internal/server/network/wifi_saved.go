@@ -45,6 +45,26 @@ func wiFiNetworksBySSID(networks []WiFiNetwork, visibleOnly bool) map[string]WiF
 	return visible
 }
 
+// visibleWiFiNetworks keeps the strongest in-range entry per SSID across the
+// primary list and every other radio; on a tie the primary entry wins.
+func visibleWiFiNetworks(primary []WiFiNetwork, primaryDevice string, devices []WiFiDevice) map[string]WiFiNetwork {
+	visible := wiFiNetworksBySSID(primary, true)
+	for _, device := range devices {
+		if device.Name == primaryDevice {
+			continue
+		}
+		for _, network := range device.Networks {
+			if network.OutOfRange {
+				continue
+			}
+			if existing, ok := visible[network.SSID]; !ok || network.Signal > existing.Signal {
+				visible[network.SSID] = network
+			}
+		}
+	}
+	return visible
+}
+
 func refreshSavedWiFiState(networks []WiFiNetwork, profiles map[string]savedWiFiProfile, currentSSID string, wifiConnected bool) ([]WiFiNetwork, []WiFiNetwork) {
 	mergedNetworks := mergeSavedProfilesIntoWiFiNetworks(networks, profiles, currentSSID, wifiConnected)
 	visibleNetworks := wiFiNetworksBySSID(mergedNetworks, true)

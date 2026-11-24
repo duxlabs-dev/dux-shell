@@ -1,0 +1,12 @@
+{
+  "themes": ["Adwaita"],
+  "icons": ["folder", "folder-*", "folder_*", "user-*", "inode-directory", "stock_folder", "gtk-directory"],
+  "colors": {
+    "#3f8ae5": ["back", "glyph"],
+    "#438de6": ["back", "glyph"],
+    "#62a0ea": "back",
+    "#a4caee": "front",
+    "#afd4ff": "front",
+    "#c0d5ea": "front"
+  }
+}

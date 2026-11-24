@@ -12,21 +12,25 @@ DListItem {
     required property var process
     property real rowHeight: ProcessListMetrics.rowHeight
     property bool isExpanded: false
+    property bool groupOpen: false
     readonly property string command: process?.command ?? ""
     readonly property string fullCommand: process?.fullCommand ?? command
 
     property var columns: ProcessColumns.DEFAULT_COLUMNS
     readonly property int childCount: process?.childCount ?? 0
+    readonly property bool member: process?.memberOf !== undefined
     readonly property var appEntry: ProcessListMetrics.appEntry(process)
-    readonly property string displayName: appEntry?.name || command
+    readonly property string displayName: ProcessListMetrics.displayName(process, appEntry)
 
     // The part of a sideways-scrolling table that is on screen; the details stay inside it.
     property real detailX: 0
     property real detailWidth: -1
 
     signal actionRequested(string action)
+    signal groupToggled
+    signal expansionSettled
 
-    readonly property real leadWidth: ProcessListMetrics.appIconSize + Theme.spacingS
+    readonly property real leadWidth: ProcessListMetrics.expanderWidth + (member ? ProcessListMetrics.appIconSize : 0) + ProcessListMetrics.appIconSize + Theme.spacingS
     readonly property real cellsWidth: columns.reduce((sum, id) => sum + cellWidth(id) + Theme.spacingXS, 0)
     readonly property bool paused: ProcessActions.isPaused(process)
     readonly property real nameWidth: Math.max(0, cells.width - leadWidth - Theme.spacingXS - cellsWidth - (paused ? Theme.iconSizeSmall + cells.spacing : 0))
@@ -45,15 +49,17 @@ DListItem {
 
     // Opening one strip closes another; animating both shows where the selection went.
     Behavior on height {
-        enabled: Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
         NumberAnimation {
             id: heightSlide
             duration: Theme.expressiveDurations.expressiveDefaultSpatial
             easing.type: Easing.BezierSpline
             easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
             onRunningChanged: {
-                if (!running)
-                    Qt.callLater(details.release);
+                if (running)
+                    return;
+                Qt.callLater(details.release);
+                if (root.isExpanded)
+                    root.expansionSettled();
             }
         }
     }
@@ -78,6 +84,20 @@ DListItem {
         visible: root.isSelected || root.visualFocus
     }
 
+    DActionButton {
+        anchors.left: parent.left
+        anchors.leftMargin: (Theme.spacingL + ProcessListMetrics.expanderWidth - buttonSize) / 2
+        y: (root.rowHeight - height) / 2
+        visible: root.childCount > 0 && (root.process?.children?.length ?? 0) > 0
+        activeFocusOnTab: false
+        buttonSize: Theme.spacingL + Theme.spacingXS
+        iconSize: Theme.iconSizeSmall
+        iconName: I18n.isRtl ? "chevron_left" : "chevron_right"
+        rotation: root.groupOpen ? (I18n.isRtl ? -90 : 90) : 0
+        tooltipText: root.groupOpen ? I18n.tr("Collapse") : I18n.tr("Expand")
+        onClicked: root.groupToggled()
+    }
+
     Row {
         id: cells
         anchors.left: parent.left
@@ -95,7 +115,8 @@ DListItem {
 
             IconImage {
                 id: appIcon
-                anchors.left: parent.left
+                anchors.right: parent.right
+                anchors.rightMargin: Theme.spacingS
                 anchors.verticalCenter: parent.verticalCenter
                 width: ProcessListMetrics.appIconSize
                 height: width
@@ -109,7 +130,7 @@ DListItem {
                 anchors.fill: appIcon
                 visible: !appIcon.visible
                 radius: Theme.cornerRadiusXS
-                color: Theme.surfaceContainerHighest
+                color: Theme.chipSurfaceNested
 
                 StyledText {
                     anchors.centerIn: parent
@@ -138,7 +159,7 @@ DListItem {
             width: root.nameWidth
             height: root.rowHeight
             verticalAlignment: Text.AlignVCenter
-            text: root.childCount > 0 ? root.displayName + " (" + root.childCount + ")" : root.displayName
+            text: root.childCount > 0 ? root.displayName + " (" + (root.childCount + 1) + ")" : root.displayName
             font.pixelSize: Theme.fontSizeMedium
             color: root.contentColor
             textFormat: Text.PlainText
@@ -231,7 +252,6 @@ DListItem {
         opacity: root.isExpanded ? 1 : 0
 
         Behavior on opacity {
-            enabled: Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
             NumberAnimation {
                 duration: Theme.expressiveDurations.expressiveDefaultSpatial
                 easing.type: Easing.BezierSpline

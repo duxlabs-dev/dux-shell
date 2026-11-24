@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import qs.DCommon.Common as DC
 
 QtObject {
     id: root
@@ -8,16 +9,14 @@ QtObject {
     property bool enabled: true
     property bool running: false
     property bool reducedMotion: false
+    readonly property bool snaps: reducedMotion || DC.Style.motionOff
 
     property real stiffness: 560
     property real damping: 37
     property real mass: 1
     property real positionEpsilon: 0.035
     property real velocityEpsilon: 0.035
-    property real maximumFrameTime: 1 / 30
-    property real integrationStep: 1 / 240
-    property int maximumSubsteps: 256
-    readonly property real timeConstantMs: reducedMotion ? 0 : 2000 * mass / Math.max(1, damping)
+    readonly property real timeConstantMs: snaps ? 0 : 2000 * mass / Math.max(1, damping)
 
     property real currentWidth: 176
     property real currentHeight: 42
@@ -46,8 +45,7 @@ QtObject {
     property real velocityBottomLeftRadius: 0
     property real velocityBottomRightRadius: 0
 
-    // One per integration step, so consumers copy the body once instead of binding to eight currents.
-    signal stepped()
+    signal stepped
 
     function matchesTarget(target) {
         return targetWidth === target.width && targetHeight === target.height && targetOffsetAlong === target.offsetAlong && targetOffsetCross === target.offsetCross && targetTopLeftRadius === target.topLeftRadius && targetTopRightRadius === target.topRightRadius && targetBottomLeftRadius === target.bottomLeftRadius && targetBottomRightRadius === target.bottomRightRadius;
@@ -70,7 +68,7 @@ QtObject {
             velocityOffsetCross = seedVelocity.offsetCross ?? velocityOffsetCross;
         }
 
-        if (reducedMotion) {
+        if (snaps) {
             settle();
             return;
         }
@@ -139,30 +137,21 @@ QtObject {
     }
 
     function advance(rawFrameTime) {
-        if (!enabled || !running || reducedMotion)
+        if (!enabled || !running || snaps)
             return;
 
-        const frameTime = Math.min(Math.max(rawFrameTime, 0), maximumFrameTime);
-        if (frameTime <= 0)
+        if (rawFrameTime <= 0)
             return;
-
-        const inverseMass = 1 / Math.max(0.001, mass);
-        // Short animation speeds scale stiffness by 1/f², so shrink the step until explicit Euler stays stable.
-        const stableStep = 1 / Math.max(1, damping * inverseMass, Math.sqrt(stiffness * inverseMass));
-        const steps = Math.min(maximumSubsteps, Math.max(1, Math.ceil(frameTime / Math.min(integrationStep, stableStep))));
-        const step = frameTime / steps;
-        const k = stiffness;
-        const c = damping;
+        const matrix = DC.SpringSolver.frameCoefficients(stiffness, damping, mass, rawFrameTime);
         const target = [targetWidth, targetHeight, targetOffsetAlong, targetOffsetCross, targetTopLeftRadius, targetTopRightRadius, targetBottomLeftRadius, targetBottomRightRadius];
         const current = [currentWidth, currentHeight, currentOffsetAlong, currentOffsetCross, currentTopLeftRadius, currentTopRightRadius, currentBottomLeftRadius, currentBottomRightRadius];
         const velocity = [velocityWidth, velocityHeight, velocityOffsetAlong, velocityOffsetCross, velocityTopLeftRadius, velocityTopRightRadius, velocityBottomLeftRadius, velocityBottomRightRadius];
 
-        // Integrate in locals and write once per frame; every property write re-runs its bindings.
-        for (let i = 0; i < steps; i++) {
-            for (let j = 0; j < 8; j++) {
-                velocity[j] += (k * (target[j] - current[j]) - c * velocity[j]) * inverseMass * step;
-                current[j] += velocity[j] * step;
-            }
+        for (let i = 0; i < current.length; i++) {
+            const displacement = current[i] - target[i];
+            const speed = velocity[i];
+            current[i] = target[i] + matrix[0] * displacement + matrix[1] * speed;
+            velocity[i] = matrix[2] * displacement + matrix[3] * speed;
         }
 
         if (!current.every(Number.isFinite) || !velocity.every(Number.isFinite)) {
@@ -194,16 +183,17 @@ QtObject {
     }
 
     onEnabledChanged: {
-        if (!enabled) settle();
+        if (!enabled)
+            settle();
     }
 
-    onReducedMotionChanged: {
-        if (reducedMotion)
+    onSnapsChanged: {
+        if (snaps)
             settle();
     }
 
     property FrameAnimation frameAnimation: FrameAnimation {
-        running: root.enabled && root.running && !root.reducedMotion
+        running: root.enabled && root.running && !root.snaps
         onTriggered: root.advance(frameTime)
     }
 }

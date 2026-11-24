@@ -1,6 +1,5 @@
 import QtQuick
 import qs.Common
-import qs.Modules.ControlCenter.Details
 import qs.Services
 
 LevelOSD {
@@ -21,36 +20,30 @@ LevelOSD {
     available: !!audio
     displayText: audio?.muted ? I18n.tr("Muted") : ""
 
-    sheet: OsdDetailSheet {
-        AudioOutputDetail {
-            anchors.fill: parent
-        }
-    }
+    sheetSource: Qt.resolvedUrl("VolumeOsdSheet.qml")
 
     onIconClicked: AudioService.toggleMute()
     onLevelRequested: level => {
         SessionData.suppressOSDTemporarily();
-        audio.volume = level / 100;
+        AudioService.setNodeVolume(AudioService.sink, level / 100);
     }
 
     Connections {
         target: root.audio
 
         function onVolumeChanged() {
-            if (SettingsData.osdVolumeEnabled)
-                root.show();
+            root.show();
         }
 
         function onMutedChanged() {
-            if (SettingsData.osdVolumeEnabled)
-                root.show();
+            root.show();
         }
     }
 
     readonly property var audioSink: AudioService.sink
 
     onAudioSinkChanged: {
-        if (shouldBeVisible && SettingsData.osdVolumeEnabled)
+        if (shouldBeVisible)
             show();
     }
 }

@@ -11,6 +11,16 @@ Singleton {
     property string shellVersion: ""
     property string shellCodename: ""
     property string semverVersion: ""
+    readonly property string runtimeLibrary: runtimeValue("LIBRARY")
+    readonly property string runtimeName: runtimeLibrary ? "dux-qt-base" : "Quickshell"
+    readonly property string runtimeVersion: runtimeValue("VERSION") || Qt.application.version
+    readonly property string runtimeRevision: runtimeValue("REVISION")
+
+    function runtimeValue(field) {
+        if (Quickshell.env("QTBASE_RUNTIME_PID") !== String(Quickshell.processId))
+            return "";
+        return Quickshell.env("QTBASE_RUNTIME_" + field) || "";
+    }
 
     function getParsedShellVersion() {
         return parseVersion(semverVersion);

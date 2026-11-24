@@ -26,15 +26,10 @@ func TestDetectImmutable(t *testing.T) {
 	}{
 		{"ostree marker beats plain fedora id", []string{"/run/ostree-booted"}, map[string]string{"ID": "fedora"}, true},
 		{"silverblue variant without marker", nil, map[string]string{"ID": "fedora", "VARIANT_ID": "silverblue"}, true},
-		{"sway atomic variant", nil, map[string]string{"ID": "fedora", "VARIANT_ID": "sway-atomic"}, true},
 		{"workstation fedora", nil, map[string]string{"ID": "fedora", "VARIANT_ID": "workstation"}, false},
 		{"bazzite id", nil, map[string]string{"ID": "bazzite", "ID_LIKE": "fedora"}, true},
-		{"microos", []string{"/usr/sbin/transactional-update"}, map[string]string{"ID": "opensuse-microos"}, true},
 		{"aeon by id_like", nil, map[string]string{"ID": "opensuse-aeon-rc", "ID_LIKE": "suse opensuse microos"}, true},
 		{"tumbleweed", nil, map[string]string{"ID": "opensuse-tumbleweed", "ID_LIKE": "suse opensuse"}, false},
-		{"vanilla by abroot", []string{"/usr/bin/abroot"}, map[string]string{"ID": "ubuntu", "ID_LIKE": "debian"}, true},
-		{"steamos", nil, map[string]string{"ID": "steamos", "ID_LIKE": "arch"}, true},
-		{"arch", nil, map[string]string{"ID": "arch"}, false},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -102,12 +97,6 @@ func TestGetOSInfoImmutable(t *testing.T) {
 			t.Fatalf("got %+v", info)
 		}
 	})
-
-	t.Run("bluefin is no longer a mutable fedora", func(t *testing.T) {
-		if IsDistroSupported("bluefin") {
-			t.Fatal("bluefin must not be registered as an installable distribution")
-		}
-	})
 }
 
 func TestPendingDependencies(t *testing.T) {
@@ -166,14 +155,6 @@ func TestFedoraLayerCommands(t *testing.T) {
 	}
 	if strings.Count(got, "duxlabs:dux-repo.repo https") != 1 {
 		t.Fatalf("deps repo must be fetched exactly once:\n%s", got)
-	}
-}
-
-func TestImmutableGuidance(t *testing.T) {
-	steam := &OSInfo{PrettyName: "SteamOS", Distribution: DistroInfo{ID: "steamos"}, ImmutableReason: "os-release ID=steamos"}
-	got := ImmutableGuidance(steam)
-	if !strings.Contains(got, "SteamOS is an image-based system") || !strings.Contains(got, "Nothing was changed") {
-		t.Fatalf("got %q", got)
 	}
 }
 

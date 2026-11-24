@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/duxlabs-dev/dux-shell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/pubsub"
 	"github.com/duxlabs-dev/dux-shell/core/pkg/ipp"
 )
 
@@ -150,46 +151,14 @@ func isNoPrintersError(err error) bool {
 
 func (m *Manager) notifier() {
 	defer m.notifierWg.Done()
-	const minGap = 100 * time.Millisecond
-	timer := time.NewTimer(minGap)
-	timer.Stop()
-	var pending bool
-	for {
-		select {
-		case <-m.stopChan:
-			timer.Stop()
-			return
-		case <-m.dirty:
-			if pending {
-				continue
-			}
-			pending = true
-			timer.Reset(minGap)
-		case <-timer.C:
-			if !pending {
-				continue
-			}
-
-			currentState := m.snapshotState()
-
-			if m.lastNotifiedState != nil && !stateChanged(m.lastNotifiedState, &currentState) {
-				pending = false
-				continue
-			}
-
-			m.subscribers.Range(func(key string, ch chan CUPSState) bool {
-				select {
-				case ch <- currentState:
-				default:
-				}
-				return true
-			})
-
-			stateCopy := currentState
-			m.lastNotifiedState = &stateCopy
-			pending = false
-		}
-	}
+	pubsub.RunDebouncedNotifier(pubsub.DebouncedConfig[CUPSState]{
+		MinGap:   100 * time.Millisecond,
+		Stop:     m.stopChan,
+		Dirty:    m.dirty,
+		Snapshot: m.snapshotState,
+		Changed:  stateChanged,
+		Broker:   &m.subscribers,
+	})
 }
 
 func (m *Manager) notifySubscribers() {
@@ -226,18 +195,11 @@ func (m *Manager) snapshotState() CUPSState {
 }
 
 func (m *Manager) Subscribe(id string) chan CUPSState {
-	ch := make(chan CUPSState, 64)
-
 	m.subLifecycleMu.Lock()
 	defer m.subLifecycleMu.Unlock()
 
-	wasEmpty := true
-	m.subscribers.Range(func(key string, ch chan CUPSState) bool {
-		wasEmpty = false
-		return false
-	})
-
-	m.subscribers.Store(id, ch)
+	wasEmpty := m.subscribers.Len() == 0
+	ch := m.subscribers.Subscribe(id)
 
 	if !wasEmpty || m.subscription == nil {
 		return ch
@@ -254,21 +216,13 @@ func (m *Manager) Subscribe(id string) chan CUPSState {
 	return ch
 }
 
-func (m *Manager) Unsubscribe(id string) {
+func (m *Manager) Unsubscribe(id string, ch chan CUPSState) {
 	m.subLifecycleMu.Lock()
 	defer m.subLifecycleMu.Unlock()
 
-	if val, ok := m.subscribers.LoadAndDelete(id); ok {
-		close(val)
-	}
+	m.subscribers.Unsubscribe(id, ch)
 
-	isEmpty := true
-	m.subscribers.Range(func(key string, ch chan CUPSState) bool {
-		isEmpty = false
-		return false
-	})
-
-	if !isEmpty || m.subscription == nil {
+	if m.subscribers.Len() > 0 || m.subscription == nil {
 		return
 	}
 
@@ -288,11 +242,7 @@ func (m *Manager) Close() {
 	m.eventWG.Wait()
 	m.notifierWg.Wait()
 
-	m.subscribers.Range(func(key string, ch chan CUPSState) bool {
-		close(ch)
-		m.subscribers.Delete(key)
-		return true
-	})
+	m.subscribers.Close()
 }
 
 func stateChanged(old, new *CUPSState) bool {

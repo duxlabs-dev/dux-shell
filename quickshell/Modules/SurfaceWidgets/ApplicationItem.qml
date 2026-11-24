@@ -52,23 +52,13 @@ Item {
         else
             dockButton?.activate();
     }
-    property var dockButton: {
-        switch (itemData.type) {
-        case "launcher":
-            return launcherButton;
-        case "trash":
-            return trashButton;
-        case "overflow-toggle":
-            return overflowButton;
-        default:
-            return button;
-        }
-    }
+    readonly property Item dockButton: buttonLoader.item
+    readonly property bool isAppButton: !["separator", "launcher", "trash", "overflow-toggle"].includes(itemData.type)
     property var itemData: modelData
     readonly property bool isOverflowToggle: itemData.type === "overflow-toggle"
     readonly property bool isTrash: itemData.type === "trash"
     readonly property bool isInOverflow: itemData.isInOverflow === true
-    readonly property bool isDragging: button.dragging
+    readonly property bool isDragging: isAppButton && (dockButton?.dragging ?? false)
 
     clip: false
     z: isDragging ? 100 : 0
@@ -90,15 +80,17 @@ Item {
 
     Behavior on opacity {
         NumberAnimation {
-            duration: Theme.shortDuration
-            easing.type: Easing.OutCubic
+            duration: Theme.expressiveDurations.expressiveFastEffects
+            easing.type: Easing.BezierSpline
+            easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
         }
     }
 
     Behavior on scale {
         NumberAnimation {
-            duration: Theme.shortDuration
-            easing.type: Easing.OutCubic
+            duration: Theme.expressiveDurations.expressiveFastSpatial
+            easing.type: Easing.BezierSpline
+            easing.bezierCurve: Theme.expressiveCurves.expressiveFastSpatial
         }
     }
 
@@ -122,7 +114,7 @@ Item {
         return 0;
     }
 
-    readonly property var shiftSpringParams: Theme.springPreset("fast", 150)
+    readonly property var shiftSpringParams: Theme.springPreset("fastSpatial")
 
     SpringMotion {
         id: shiftSpring
@@ -151,61 +143,78 @@ Item {
         anchors.centerIn: parent
     }
 
-    DockOverflowButton {
+    Loader {
+        id: buttonLoader
+        anchors.centerIn: parent
+        width: delegateItem.width
+        height: delegateItem.height
+        sourceComponent: {
+            switch (delegateItem.itemData.type) {
+            case "separator":
+                return null;
+            case "launcher":
+                return launcherButton;
+            case "trash":
+                return trashButton;
+            case "overflow-toggle":
+                return overflowButton;
+            default:
+                return appButton;
+            }
+        }
+    }
+
+    Component {
         id: overflowButton
-        options: strip.options
-        visible: isOverflowToggle
-        anchors.centerIn: parent
-        width: delegateItem.width
-        height: delegateItem.height
-        actualIconSize: strip.iconSize * (strip.options.iconSizePercentage ?? 100) / 100
-        overflowCount: itemData.overflowCount || 0
-        overflowExpanded: strip.overflowExpanded
-        isVertical: strip.isVertical
-        onClicked: strip.overflowExpanded = !strip.overflowExpanded
+
+        DockOverflowButton {
+            options: delegateItem.strip.options
+            actualIconSize: delegateItem.strip.iconSize * (delegateItem.strip.options.iconSizePercentage ?? 100) / 100
+            overflowCount: delegateItem.itemData.overflowCount || 0
+            overflowExpanded: delegateItem.strip.overflowExpanded
+            isVertical: delegateItem.strip.isVertical
+            onClicked: delegateItem.strip.overflowExpanded = !delegateItem.strip.overflowExpanded
+        }
     }
 
-    DockLauncherButton {
+    Component {
         id: launcherButton
-        options: strip.options
-        visible: itemData.type === "launcher"
-        anchors.centerIn: parent
-        width: delegateItem.width
-        height: delegateItem.height
-        actualIconSize: strip.iconSize * (strip.options.iconSizePercentage ?? 100) / 100
-        dockApps: strip
+
+        DockLauncherButton {
+            options: delegateItem.strip.options
+            actualIconSize: delegateItem.strip.iconSize * (delegateItem.strip.options.iconSizePercentage ?? 100) / 100
+            dockApps: delegateItem.strip
+        }
     }
 
-    DockTrashButton {
+    Component {
         id: trashButton
-        options: strip.options
-        visible: itemData.type === "trash"
-        anchors.centerIn: parent
-        width: delegateItem.width
-        height: delegateItem.height
-        actualIconSize: strip.iconSize * (strip.options.iconSizePercentage ?? 100) / 100
-        dockApps: strip
-        contextMenu: strip.trashContextMenu
-        parentDockScreen: strip.dockScreen
+
+        DockTrashButton {
+            options: delegateItem.strip.options
+            actualIconSize: delegateItem.strip.iconSize * (delegateItem.strip.options.iconSizePercentage ?? 100) / 100
+            dockApps: delegateItem.strip
+            contextMenu: delegateItem.strip.trashContextMenu
+            parentDockScreen: delegateItem.strip.dockScreen
+        }
     }
 
-    DockAppButton {
-        id: button
-        options: strip.options
-        visible: !isOverflowToggle && itemData.type !== "separator" && itemData.type !== "launcher" && itemData.type !== "trash"
-        anchors.centerIn: parent
-        width: delegateItem.width
-        height: delegateItem.height
-        actualIconSize: strip.iconSize * (strip.options.iconSizePercentage ?? 100) / 100
-        appData: itemData
-        contextMenu: strip.contextMenu
-        dockApps: strip
-        index: delegateItem.index
-        parentDockScreen: strip.dockScreen
-        showWindowTitle: itemData?.type === "window" || itemData?.type === "grouped"
-        windowTitle: {
-            const title = itemData?.toplevel?.title || "(Unnamed)";
-            return title.length > 50 ? title.substring(0, 47) + "..." : title;
+    Component {
+        id: appButton
+
+        DockAppButton {
+            options: delegateItem.strip.options
+            actualIconSize: delegateItem.strip.iconSize * (delegateItem.strip.options.iconSizePercentage ?? 100) / 100
+            appData: delegateItem.itemData
+            contextMenu: delegateItem.strip.contextMenu
+            dockApps: delegateItem.strip
+            index: delegateItem.index
+            parentDockScreen: delegateItem.strip.dockScreen
+            showWindowTitle: delegateItem.itemData?.type === "window" || delegateItem.itemData?.type === "grouped"
+            windowTitle: {
+                const title = delegateItem.itemData?.toplevel?.title || "(Unnamed)";
+                return title.length > 50 ? title.substring(0, 47) + "..." : title;
+            }
         }
     }
 }

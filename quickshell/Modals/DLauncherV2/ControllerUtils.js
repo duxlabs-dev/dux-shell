@@ -1,4 +1,23 @@
 .pragma library
+.import "../../Common/WallpaperFormats.js" as WallpaperFormats
+
+var AUDIO_EXTENSIONS = ["mp3", "wav", "flac", "ogg", "opus", "m4a", "aac", "wma"];
+
+function isImage(path) {
+    return WallpaperFormats.IMAGE_EXTENSIONS.indexOf(WallpaperFormats.extension(path)) >= 0;
+}
+
+function isVideo(path) {
+    return WallpaperFormats.isVideo(path);
+}
+
+function isAudio(path) {
+    return AUDIO_EXTENSIONS.indexOf(WallpaperFormats.extension(path)) >= 0;
+}
+
+function isPreviewableMedia(path) {
+    return isImage(path) || isVideo(path) || isAudio(path);
+}
 
 function getFileIcon(filename) {
     var ext = filename.lastIndexOf(".") > 0 ? filename.substring(filename.lastIndexOf(".") + 1).toLowerCase() : "";
@@ -112,6 +131,12 @@ function classifyAppSource(app) {
     var exec = execRaw.toLowerCase();
     var cmd0 = (app.command && app.command.length > 0) ? String(app.command[0]).toLowerCase() : "";
     var id = (app.id || "").toLowerCase();
+
+    if (exec.indexOf("steam://rungameid/") !== -1)
+        return "steam";
+
+    if (cmd0 === "waydroid" || /(^|[\s/])waydroid\s+app\s/.test(exec))
+        return "waydroid";
 
     if (cmd0 === "flatpak" || exec.indexOf("flatpak run ") !== -1)
         return "flatpak";

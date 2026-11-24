@@ -7,6 +7,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/duxlabs-dev/dux-shell/core/internal/errdefs"
@@ -78,6 +79,48 @@ const introspectXML = `
 		</method>
 	</interface>
 </node>`
+
+type agentAnswerKey struct{ uuid, setting string }
+
+type agentAnswer struct{ secrets nmVariantMap }
+
+// agentAnswers holds secrets the user just entered, so DMS's agent can hand
+// them to NM while a save re-reads the connection's secrets.
+var agentAnswers = struct {
+	sync.Mutex
+	m map[agentAnswerKey]*agentAnswer
+}{m: map[agentAnswerKey]*agentAnswer{}}
+
+// offerAgentSecrets lets the agent answer with secrets per setting for the
+// connection until the returned func is called.
+func offerAgentSecrets(uuid string, secrets nmSettingMap) func() {
+	added := map[agentAnswerKey]*agentAnswer{}
+	agentAnswers.Lock()
+	for setting, values := range secrets {
+		k := agentAnswerKey{uuid, setting}
+		added[k] = &agentAnswer{values}
+		agentAnswers.m[k] = added[k]
+	}
+	agentAnswers.Unlock()
+	return func() {
+		agentAnswers.Lock()
+		defer agentAnswers.Unlock()
+		for k, a := range added {
+			if agentAnswers.m[k] == a {
+				delete(agentAnswers.m, k)
+			}
+		}
+	}
+}
+
+func offeredAgentSecrets(uuid, setting string) nmVariantMap {
+	agentAnswers.Lock()
+	defer agentAnswers.Unlock()
+	if a := agentAnswers.m[agentAnswerKey{uuid, setting}]; a != nil {
+		return a.secrets
+	}
+	return nil
+}
 
 func NewSecretAgent(prompts PromptBroker, manager *Manager, backend *NetworkManagerBackend) (*SecretAgent, error) {
 	c, err := dbus.SystemBus()
@@ -152,6 +195,11 @@ func (a *SecretAgent) GetSecrets(
 
 	connUuid := readConnUUID(conn)
 
+	if offered := offeredAgentSecrets(connUuid, settingName); offered != nil {
+		log.Infof("[SecretAgent] Answering with the secrets being saved for %s", path)
+		return nmSettingMap{settingName: offered}, nil
+	}
+
 	// Phase 1: Determine if this connection is ours and what fields we need.
 	if a.backend != nil {
 		a.backend.stateMutex.RLock()
@@ -188,6 +236,16 @@ func (a *SecretAgent) GetSecrets(
 
 				if !isConnectingVPN {
 					log.Infof("[SecretAgent] VPN with empty hints - deferring to other agents for %s", vpnSvc)
+					return nil, dbus.NewError("org.freedesktop.NetworkManager.SecretAgent.Error.NoSecrets", nil)
+				}
+
+				// ConnectVPN already ran the plugin's dialog; anything it didn't return is saved for NM.
+				if pluginAuthDialog(vpnSvc, vpnDataFromSettings(conn)) != nil {
+					if cached := a.backend.takeCachedVPNSecrets(connUuid); cached != nil {
+						log.Infof("[SecretAgent] Using cached VPN authentication for %s", connUuid)
+						return vpnSecretsResponse(settingName, cached.Secrets), nil
+					}
+					log.Infof("[SecretAgent] VPN with empty hints and no cached login - deferring to system secrets for %s", vpnSvc)
 					return nil, dbus.NewError("org.freedesktop.NetworkManager.SecretAgent.Error.NoSecrets", nil)
 				}
 
@@ -304,17 +362,11 @@ func (a *SecretAgent) GetSecrets(
 		}
 		a.backend.cachedVPNCredsMu.Unlock()
 
-		a.backend.cachedOpenConnectMu.Lock()
-		cachedOpenConnect := a.backend.cachedOpenConnectAuth
-		if cachedOpenConnect != nil && cachedOpenConnect.ConnectionUUID == connUuid {
-			a.backend.cachedOpenConnectAuth = nil
-			a.backend.cachedOpenConnectMu.Unlock()
+		if cachedSecrets := a.backend.takeCachedVPNSecrets(connUuid); cachedSecrets != nil {
+			log.Infof("[SecretAgent] Using cached VPN authentication for %s", connUuid)
 
-			log.Infof("[SecretAgent] Using cached OpenConnect authentication for %s", connUuid)
-
-			return buildOpenConnectSecretsResponse(settingName, cachedOpenConnect.Cookie, cachedOpenConnect.Host, cachedOpenConnect.Fingerprint), nil
+			return vpnSecretsResponse(settingName, cachedSecrets.Secrets), nil
 		}
-		a.backend.cachedOpenConnectMu.Unlock()
 
 		if len(fields) == 1 && fields[0] == "fortinet-saml" {
 			data := vpnDataFromSettings(conn)
@@ -336,14 +388,12 @@ func (a *SecretAgent) GetSecrets(
 				return nil, dbus.MakeFailedError(fmt.Errorf("SAML authentication failed for the Fortinet gateway: %w", err))
 			}
 
-			a.backend.cachedOpenConnectMu.Lock()
-			a.backend.cachedOpenConnectAuth = &cachedOpenConnectAuth{
+			a.backend.cachedVPNSecretsMu.Lock()
+			a.backend.cachedVPNSecrets = &cachedVPNSecrets{
 				ConnectionUUID: connUuid,
-				Cookie:         authResult.Cookie,
-				Host:           authResult.Host,
-				Fingerprint:    authResult.Fingerprint,
+				Secrets:        openConnectSecrets(authResult.Cookie, authResult.Host, authResult.Fingerprint),
 			}
-			a.backend.cachedOpenConnectMu.Unlock()
+			a.backend.cachedVPNSecretsMu.Unlock()
 
 			return buildOpenConnectSecretsResponse(settingName, authResult.Cookie, authResult.Host, authResult.Fingerprint), nil
 		}
@@ -381,15 +431,12 @@ func (a *SecretAgent) GetSecrets(
 
 			log.Infof("[SecretAgent] GlobalProtect SAML authentication successful, returning cookie to NetworkManager")
 
-			a.backend.cachedOpenConnectMu.Lock()
-			a.backend.cachedOpenConnectAuth = &cachedOpenConnectAuth{
+			a.backend.cachedVPNSecretsMu.Lock()
+			a.backend.cachedVPNSecrets = &cachedVPNSecrets{
 				ConnectionUUID: connUuid,
-				Cookie:         authResult.Cookie,
-				Host:           authResult.Host,
-				User:           authResult.User,
-				Fingerprint:    authResult.Fingerprint,
+				Secrets:        openConnectSecrets(authResult.Cookie, authResult.Host, authResult.Fingerprint),
 			}
-			a.backend.cachedOpenConnectMu.Unlock()
+			a.backend.cachedVPNSecretsMu.Unlock()
 
 			return buildOpenConnectSecretsResponse(settingName, authResult.Cookie, authResult.Host, authResult.Fingerprint), nil
 		}
@@ -572,7 +619,7 @@ func (a *SecretAgent) GetSecrets(
 		out[settingName] = secretsOnly
 
 		if identity, ok := reply.Secrets["identity"]; ok && identity != "" {
-			a.save8021xIdentity(path, identity)
+			save8021xIdentity(a.conn.Object("org.freedesktop.NetworkManager", path), identity)
 		}
 		log.Infof("[SecretAgent] Returning 802-1x enterprise secrets with %d fields", len(secretsOnly))
 	default:
@@ -686,54 +733,17 @@ func (a *SecretAgent) Introspect() (string, *dbus.Error) {
 	return introspectXML, nil
 }
 
-// save8021xIdentity persists a prompted identity into the profile. Update2
-// replaces the whole connection, so the full settings must round-trip with
-// stored secrets merged back, or system-owned passwords would be wiped.
-func (a *SecretAgent) save8021xIdentity(path dbus.ObjectPath, identity string) {
-	connObj := a.conn.Object("org.freedesktop.NetworkManager", path)
-	var settings map[string]map[string]dbus.Variant
-	if err := connObj.Call("org.freedesktop.NetworkManager.Settings.Connection.GetSettings", 0).Store(&settings); err != nil {
-		log.Warnf("[SecretAgent] Failed to get settings for identity save: %v", err)
-		return
-	}
-
-	dot1x, ok := settings["802-1x"]
-	if !ok {
-		dot1x = make(map[string]dbus.Variant)
-		settings["802-1x"] = dot1x
-	}
-	dot1x["identity"] = dbus.MakeVariant(identity)
-
-	mergeStoredSecretsRaw(connObj, settings)
-
-	var result map[string]dbus.Variant
-	if err := connObj.Call("org.freedesktop.NetworkManager.Settings.Connection.Update2", 0,
-		settings, uint32(0x1), map[string]dbus.Variant{}).Store(&result); err != nil {
+// save8021xIdentity persists a prompted identity into the profile.
+func save8021xIdentity(connObj dbus.BusObject, identity string) {
+	err := updateConnectionSettings(connObj, true, func(s nmSettings) error {
+		setSettingValue(s, "802-1x", "identity", identity)
+		return nil
+	})
+	if err != nil {
 		log.Warnf("[SecretAgent] Failed to save 802.1x identity: %v", err)
 		return
 	}
 	log.Infof("[SecretAgent] Saved 802.1x identity to connection profile")
-}
-
-func mergeStoredSecretsRaw(connObj dbus.BusObject, settings map[string]map[string]dbus.Variant) {
-	for _, setting := range []string{"802-11-wireless-security", "802-1x", "vpn"} {
-		section, ok := settings[setting]
-		if !ok {
-			continue
-		}
-
-		var secrets map[string]map[string]dbus.Variant
-		if err := connObj.Call("org.freedesktop.NetworkManager.Settings.Connection.GetSecrets", 0, setting).Store(&secrets); err != nil {
-			continue
-		}
-
-		for k, v := range secrets[setting] {
-			if _, exists := section[k]; exists {
-				continue
-			}
-			section[k] = v
-		}
-	}
 }
 
 func readConnUUID(conn map[string]nmVariantMap) string {
@@ -946,6 +956,17 @@ func buildFieldsInfo(setting string, fields []string, hints []string, vpnService
 	return result
 }
 
+func (b *NetworkManagerBackend) takeCachedVPNSecrets(uuid string) *cachedVPNSecrets {
+	b.cachedVPNSecretsMu.Lock()
+	defer b.cachedVPNSecretsMu.Unlock()
+	cached := b.cachedVPNSecrets
+	if cached == nil || cached.ConnectionUUID != uuid {
+		return nil
+	}
+	b.cachedVPNSecrets = nil
+	return cached
+}
+
 func vpnDataFromSettings(conn map[string]nmVariantMap) map[string]string {
 	vpnSettings, ok := conn["vpn"]
 	if !ok {
@@ -1051,6 +1072,13 @@ func secretFlagsNotRequired(flags string) bool {
 		return false
 	}
 	return n&0x4 != 0
+}
+
+// Secrets with neither agent-owned (1) nor not-saved (2) set are saved for the system,
+// and NetworkManager supplies those itself during activation. Not-required (4) is skipped.
+func secretFlagsAgentAsks(flags string) bool {
+	n, err := strconv.Atoi(flags)
+	return err == nil && n&0x3 != 0 && n&0x4 == 0
 }
 
 func needsExternalBrowserAuth(protocol, authType, username string, data map[string]string) bool {
@@ -1205,16 +1233,17 @@ func buildWiFiSecretsResponse(settingName string, secrets map[string]string) nmS
 }
 
 func buildOpenConnectSecretsResponse(settingName, cookie, host, fingerprint string) nmSettingMap {
-	out := nmSettingMap{}
-	vpnSec := nmVariantMap{}
+	return vpnSecretsResponse(settingName, openConnectSecrets(cookie, host, fingerprint))
+}
 
-	secrets := map[string]string{
+func openConnectSecrets(cookie, host, fingerprint string) map[string]string {
+	return map[string]string{
 		"cookie":  cookie,
 		"gateway": host,
 		"gwcert":  fingerprint,
 	}
-	vpnSec["secrets"] = dbus.MakeVariant(secrets)
+}
 
-	out[settingName] = vpnSec
-	return out
+func vpnSecretsResponse(settingName string, secrets map[string]string) nmSettingMap {
+	return nmSettingMap{settingName: nmVariantMap{"secrets": dbus.MakeVariant(secrets)}}
 }

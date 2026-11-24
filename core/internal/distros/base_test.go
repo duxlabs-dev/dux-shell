@@ -2,51 +2,11 @@ package distros
 
 import (
 	"context"
-	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 
 	"github.com/duxlabs-dev/dux-shell/core/internal/deps"
 )
-
-func TestBaseDistribution_detectDMS_NotInstalled(t *testing.T) {
-	originalHome := os.Getenv("HOME")
-	defer os.Setenv("HOME", originalHome)
-
-	tempDir := t.TempDir()
-	os.Setenv("HOME", tempDir)
-
-	logChan := make(chan string, 10)
-	defer close(logChan)
-
-	base := NewBaseDistribution(logChan)
-	dep := base.detectDMS()
-
-	if dep.Status != deps.StatusMissing {
-		t.Errorf("Expected StatusMissing, got %d", dep.Status)
-	}
-}
-
-func TestBaseDistribution_detectDMS_DirectoryWithoutGit(t *testing.T) {
-	tempDir := t.TempDir()
-	dmsPath := filepath.Join(tempDir, ".config", "quickshell", "dms")
-	os.MkdirAll(dmsPath, 0o755)
-
-	originalHome := os.Getenv("HOME")
-	defer os.Setenv("HOME", originalHome)
-	os.Setenv("HOME", tempDir)
-
-	logChan := make(chan string, 10)
-	defer close(logChan)
-
-	base := NewBaseDistribution(logChan)
-	dep := base.detectDMS()
-
-	if dep.Status == deps.StatusMissing {
-		t.Error("Expected DMS to be detected as present")
-	}
-}
 
 func TestParseHyprlandVersion(t *testing.T) {
 	tests := []struct{ name, out, want string }{

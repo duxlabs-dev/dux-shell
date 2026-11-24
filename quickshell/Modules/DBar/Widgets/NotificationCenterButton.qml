@@ -2,13 +2,22 @@ import QtQuick
 import qs.Common
 import qs.Modules.Notifications
 import qs.Modules.Plugins
+import qs.Services
 import qs.DCommon.Widgets
 
 BasePill {
     id: root
 
+    property var widgetData: null
     property bool hasUnread: false
     property bool isActive: false
+
+    readonly property bool hideWhenEmpty: SettingsData.widgetOption("notificationButton", widgetData, "hideWhenEmpty")
+    readonly property bool shouldHide: hideWhenEmpty && widgetData?.enabled !== false && NotificationService.notifications.length === 0
+
+    width: shouldHide ? 0 : (isVerticalOrientation ? barThickness : visualWidth)
+    height: shouldHide ? 0 : (isVerticalOrientation ? visualHeight : barThickness)
+    visible: !shouldHide
 
     content: Component {
         Item {

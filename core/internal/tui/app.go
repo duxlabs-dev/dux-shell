@@ -15,6 +15,7 @@ type Model struct {
 
 	osInfo       *distros.OSInfo
 	resume       *layerResume
+	layerScript  string
 	dependencies []deps.Dependency
 	err          error
 
@@ -28,6 +29,7 @@ type Model struct {
 	logMessages         []string
 	logChan             chan string
 	logFilePath         string
+	greeterSetupFailed  bool
 	packageProgressChan chan packageInstallProgressMsg
 	packageProgress     packageInstallProgressMsg
 	installationLogs    []string

@@ -203,15 +203,14 @@ Item {
         }
     }
 
-    MouseArea {
-        anchors.fill: parent
-        acceptedButtons: Qt.NoButton
-        onWheel: wheel => {
-            const delta = wheel.angleDelta.y !== 0 ? wheel.angleDelta.y : wheel.angleDelta.x;
+    WheelHandler {
+        acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
+        onWheel: event => {
+            const delta = event.angleDelta.y !== 0 ? event.angleDelta.y : event.angleDelta.x;
             if (delta === 0)
                 return;
             root.requestStep(-Math.sign(delta));
-            wheel.accepted = true;
+            event.accepted = true;
         }
     }
 }

@@ -1,7 +1,6 @@
 import QtQuick
 import qs.Common
 import qs.Services
-import qs.Modules.BuiltinDesktopPlugins
 import qs.Modules.Lock.Widgets
 
 Loader {
@@ -20,9 +19,9 @@ Loader {
     readonly property var activeComponent: {
         switch (pluginId) {
         case "desktopClock":
-            return clockComponent;
+            return Qt.createComponent("../BuiltinDesktopPlugins/DesktopClockWidget.qml");
         case "systemMonitor":
-            return systemMonitorComponent;
+            return Qt.createComponent("../BuiltinDesktopPlugins/SystemMonitorWidget.qml");
         case "lockDate":
             return lockDateComponent;
         case "lockAuth":
@@ -45,14 +44,6 @@ Loader {
     readonly property real contentDefaultWidth: item?.defaultWidth ?? ((item?.implicitWidth ?? 0) > 0 ? item.implicitWidth : 280)
     readonly property real contentDefaultHeight: item?.defaultHeight ?? ((item?.implicitHeight ?? 0) > 0 ? item.implicitHeight : 180)
     readonly property bool acceptsKeyboardFocus: item?.acceptsKeyboardFocus ?? false
-
-    property Component clockComponent: Component {
-        DesktopClockWidget {}
-    }
-
-    property Component systemMonitorComponent: Component {
-        SystemMonitorWidget {}
-    }
 
     property Component lockDateComponent: Component {
         LockDateWidget {}
@@ -94,8 +85,9 @@ Loader {
         property: "opacity"
         from: 0
         to: 1
-        duration: Theme.mediumDuration
-        easing.type: Theme.standardEasing
+        duration: Theme.expressiveDurations.expressiveSlowEffects
+        easing.type: Easing.BezierSpline
+        easing.bezierCurve: Theme.expressiveCurves.expressiveSlowEffects
     }
 
     QtObject {

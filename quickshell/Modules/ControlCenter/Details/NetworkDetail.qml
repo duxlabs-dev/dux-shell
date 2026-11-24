@@ -8,6 +8,7 @@ import qs.Modals.Common
 import qs.Modules.ControlCenter
 import qs.Modules.ControlCenter.Widgets
 import qs.Modules.Network
+import qs.Modules.Settings.Widgets
 import qs.Services
 import qs.DCommon.Widgets
 import qs.Widgets
@@ -63,7 +64,7 @@ Item {
     readonly property bool showHotspotRow: wifiMode && NetworkService.hotspotAvailable && NetworkService.hotspotConfigured && hotspotRelevant
     readonly property bool hotspotWorking: NetworkService.hotspotBusy || NetworkService.hotspotActivating
     readonly property var pinnedNetworks: QmlUtils.normalizePinList((CacheData.wifiNetworkPins || {})["preferredWifi"])
-    readonly property bool wifiScanningEmpty: wifiMode && NetworkService.wifiEnabled && !NetworkService.wifiToggling && NetworkService.wifiInterface && (NetworkService.wifiNetworks?.length ?? 0) < 1 && (NetworkService.isScanning || transitioning)
+    readonly property bool wifiScanningEmpty: wifiMode && NetworkService.wifiEnabled && !NetworkService.wifiToggling && NetworkService.wifiInterface && (NetworkService.wifiNetworks?.length ?? 0) < 1 && ((NetworkService.isScanning && !NetworkService.wifiScannedOnce) || transitioning)
     readonly property bool wifiListVisible: wifiMode && NetworkService.wifiEnabled && !NetworkService.wifiToggling && !wifiScanningEmpty
 
     readonly property bool paneSwitchSupported: connectionTypes.length > 1 && networkManager && DMSService.apiVersion > 10
@@ -85,18 +86,6 @@ Item {
 
     readonly property Item headerActions: Row {
         spacing: Theme.spacingS
-
-        DDropdown {
-            anchors.verticalCenter: parent.verticalCenter
-            visible: root.wifiMode && (NetworkService.wifiDevices?.length ?? 0) > 1
-            compactMode: true
-            dropdownWidth: CcMetrics.headerDropdownWidth
-            popupWidth: CcMetrics.headerPopupWidth
-            alignPopupRight: true
-            options: [I18n.tr("Auto")].concat((NetworkService.wifiDevices || []).map(d => d.name))
-            currentValue: NetworkService.wifiDeviceOverride || I18n.tr("Auto")
-            onValueChanged: value => NetworkService.setWifiDeviceOverride(value === I18n.tr("Auto") ? "" : value)
-        }
 
         DRefreshButton {
             Accessible.name: I18n.tr("Scan")
@@ -134,10 +123,6 @@ Item {
         return false;
     }
 
-    function explainHotspotNeedsWiFi() {
-        ToastService.showError(I18n.tr("Wi-Fi is disabled", "hotspot start error title"), I18n.tr("Enable Wi-Fi before starting the hotspot.", "hotspot WiFi requirement message"));
-    }
-
     function startHotspotWithConfirm() {
         if (!NetworkService.hotspotWouldDisconnectWifi) {
             NetworkService.startHotspot();
@@ -173,11 +158,20 @@ Item {
                     })
             },
             {
-                "label": I18n.tr("Network Info"),
+                "label": I18n.tr("Network Information"),
                 "iconName": "info",
                 "action": () => {
                     networkInfoModalLoader.active = true;
                     networkInfoModalLoader.item.showNetworkInfo(ssid, NetworkService.getNetworkInfo(ssid));
+                }
+            },
+            {
+                "label": I18n.tr("Edit"),
+                "iconName": "edit",
+                "visible": saved && NetworkService.connectionEditorSupported,
+                "action": () => {
+                    PopoutService.closeControlCenter();
+                    NetworkService.findWifiProfile(ssid, p => p ? PopoutService.openConnectionEditor(p.uuid, ssid) : PopoutService.openSettingsWithTab("network_connections"));
                 }
             },
             {
@@ -197,33 +191,32 @@ Item {
         wifiMenu.openAt(anchor);
     }
 
-    function openWiredMenu(connection, anchor) {
-        const connected = connection.isActive;
-        wiredMenu.items = [
+    function wiredMenuItems(adapter, profiles) {
+        const uuid = adapter.connectionUuid;
+        const editable = profiles.find(c => c.uuid === uuid) ?? (profiles.length === 1 ? profiles[0] : null);
+        return [
             {
-                "label": I18n.tr("Activate"),
-                "iconName": "lan",
-                "visible": !connected,
-                "action": () => NetworkService.connectToSpecificWiredConfig(connection.uuid)
-            },
-            {
-                "label": I18n.tr("Disconnect"),
-                "iconName": "link_off",
-                "destructive": true,
-                "visible": connected,
-                "action": () => NetworkService.toggleNetworkConnection("ethernet")
-            },
-            {
-                "label": I18n.tr("Network Info"),
+                "label": I18n.tr("Network Information"),
                 "iconName": "info",
-                "visible": connected,
+                "visible": !!adapter.connected && !!uuid,
+                "action": () => root.showWiredInfo(adapter, uuid)
+            },
+            {
+                "label": I18n.tr("Edit"),
+                "iconName": "edit",
+                "visible": !!editable && NetworkService.connectionEditorSupported,
                 "action": () => {
-                    networkWiredInfoModalLoader.active = true;
-                    networkWiredInfoModalLoader.item.showNetworkInfo(connection.id, NetworkService.getWiredNetworkInfo(connection.uuid));
+                    PopoutService.closeControlCenter();
+                    PopoutService.openConnectionEditor(editable.uuid, editable.id || adapter.name);
                 }
             }
         ];
-        wiredMenu.openAt(anchor);
+    }
+
+    function showWiredInfo(adapter, uuid) {
+        const conn = (NetworkService.wiredConnections || []).find(c => c.uuid === uuid);
+        networkWiredInfoModalLoader.active = true;
+        networkWiredInfoModalLoader.item.showNetworkInfo(conn?.id || adapter.name, NetworkService.getWiredNetworkInfo(uuid));
     }
 
     ScriptModel {
@@ -232,36 +225,7 @@ Item {
 
         readonly property bool frozen: wifiMenu.open || root.transitioning
         property var frozenNetworks: []
-        readonly property var sortedNetworks: {
-            const ssid = NetworkService.currentWifiSSID;
-            const pinnedList = root.pinnedNetworks;
-            const sorted = [...(NetworkService.wifiNetworks || [])];
-            sorted.sort((a, b) => {
-                const aPinnedIndex = pinnedList.indexOf(a.ssid);
-                const bPinnedIndex = pinnedList.indexOf(b.ssid);
-                if (aPinnedIndex !== -1 || bPinnedIndex !== -1) {
-                    if (aPinnedIndex === -1)
-                        return 1;
-                    if (bPinnedIndex === -1)
-                        return -1;
-                    return aPinnedIndex - bPinnedIndex;
-                }
-                if (a.ssid === ssid)
-                    return -1;
-                if (b.ssid === ssid)
-                    return 1;
-                const aKnown = !!a.saved && (a.signal || 0) > 0;
-                const bKnown = !!b.saved && (b.signal || 0) > 0;
-                if (aKnown !== bKnown)
-                    return aKnown ? -1 : 1;
-                const aBucket = Math.floor((a.signal || 0) / CcMetrics.wifiSignalBucket);
-                const bBucket = Math.floor((b.signal || 0) / CcMetrics.wifiSignalBucket);
-                if (aBucket !== bBucket)
-                    return bBucket - aBucket;
-                return (a.ssid || "").localeCompare(b.ssid || "");
-            });
-            return sorted;
-        }
+        readonly property var sortedNetworks: WifiConnectionActions.sortNetworks(NetworkService.wifiNetworks, NetworkService.currentWifiSSID, root.pinnedNetworks, network => !!network.saved && (network.signal || 0) > 0 ? 0 : 1)
 
         values: frozen ? frozenNetworks : sortedNetworks
 
@@ -272,20 +236,6 @@ Item {
         onFrozenChanged: {
             if (frozen)
                 frozenNetworks = sortedNetworks;
-        }
-    }
-
-    ScriptModel {
-        id: wiredConnectionsModel
-        objectProp: "uuid"
-        values: {
-            const sorted = [...(NetworkService.wiredConnections || [])];
-            sorted.sort((a, b) => {
-                if (a.isActive !== b.isActive)
-                    return a.isActive ? -1 : 1;
-                return a.id.localeCompare(b.id);
-            });
-            return sorted;
         }
     }
 
@@ -320,6 +270,18 @@ Item {
             spacing: CcMetrics.detailContentGap
             bottomPadding: pageList.count > 0 ? CcMetrics.detailContentGap : 0
 
+            CcGroup {
+                visible: NetworkService.connectivityPortal
+
+                CcListRow {
+                    iconName: "login"
+                    active: true
+                    clickable: true
+                    title: I18n.tr("Log in to network", "captive portal: open the login page")
+                    onClicked: NetworkService.openCaptivePortal()
+                }
+            }
+
             DButtonGroup {
                 anchors.horizontalCenter: parent.horizontalCenter
                 size: "small"
@@ -343,14 +305,31 @@ Item {
                     text: I18n.tr("Wi-Fi", "wireless network, page and section title")
                     description: {
                         if (NetworkService.wifiToggling)
-                            return NetworkService.wifiEnabled ? I18n.tr("Disabling WiFi...") : I18n.tr("Enabling WiFi...");
+                            return NetworkService.wifiEnabled ? I18n.tr("Disabling Wi-Fi...") : I18n.tr("Enabling Wi-Fi...");
                         if (!NetworkService.wifiEnabled)
-                            return I18n.tr("WiFi is off", "network status when the wifi radio is disabled");
+                            return I18n.tr("Wi-Fi is off", "network status when the wifi radio is disabled");
                         return NetworkService.currentWifiSSID || I18n.tr("Not connected", "network status");
                     }
                     checked: NetworkService.wifiEnabled
                     toggling: NetworkService.wifiToggling
                     onToggled: NetworkService.toggleWifiRadio()
+                }
+
+                CcListRow {
+                    visible: NetworkService.wifiEnabled && (NetworkService.wifiDevices?.length ?? 0) > 1
+                    iconName: "settings_input_antenna"
+                    title: I18n.tr("Device")
+
+                    DDropdown {
+                        anchors.verticalCenter: parent.verticalCenter
+                        compactMode: true
+                        dropdownWidth: CcMetrics.rowDropdownWidth
+                        popupWidth: CcMetrics.headerPopupWidth
+                        alignPopupRight: true
+                        options: [I18n.tr("Auto")].concat((NetworkService.wifiDevices || []).map(d => d.name))
+                        currentValue: NetworkService.wifiDeviceOverride || I18n.tr("Auto")
+                        onValueChanged: value => NetworkService.setWifiDeviceOverride(value === I18n.tr("Auto") ? "" : value)
+                    }
                 }
 
                 CcListRow {
@@ -370,7 +349,7 @@ Item {
                         if (NetworkService.hotspotEnabled)
                             return NetworkService.hotspotSSID || I18n.tr("Running", "hotspot active status");
                         if (!NetworkService.wifiEnabled)
-                            return I18n.tr("WiFi disabled", "hotspot unavailable status");
+                            return I18n.tr("Wi-Fi disabled", "hotspot unavailable status");
                         return NetworkService.hotspotSSID || I18n.tr("Ready", "hotspot ready status");
                     }
                     subtitleColor: warnsWifiDrop ? Theme.warning : Theme.surfaceVariantText
@@ -384,21 +363,28 @@ Item {
                         running: visible
                     }
 
+                    DActionButton {
+                        anchors.verticalCenter: parent.verticalCenter
+                        visible: NetworkService.hotspotEnabled && NetworkService.hotspotSecured && NetworkService.hotspotExtendedSupported
+                        buttonSize: Theme.buttonHeightXS
+                        iconSize: Theme.iconSizeMedium
+                        iconName: "qr_code"
+                        tooltipText: I18n.tr("Show QR Code")
+                        iconColor: Theme.surfaceText
+                        onClicked: PopoutService.showWifiQRCodeModal(NetworkService.hotspotSSID)
+                    }
+
                     DToggle {
                         anchors.verticalCenter: parent.verticalCenter
                         hideText: true
                         visible: !root.hotspotWorking
+                        enabled: NetworkService.hotspotEnabled || NetworkService.wifiEnabled
                         checked: NetworkService.hotspotEnabled
                         onToggled: checked => {
-                            if (!checked) {
+                            if (checked)
+                                root.startHotspotWithConfirm();
+                            else
                                 NetworkService.stopHotspot();
-                                return;
-                            }
-                            if (!NetworkService.wifiEnabled) {
-                                root.explainHotspotNeedsWiFi();
-                                return;
-                            }
-                            root.startHotspotWithConfirm();
                         }
                     }
                 }
@@ -407,13 +393,7 @@ Item {
             CcEmptyState {
                 visible: root.wifiMode && NetworkService.wifiToggling
                 spinning: true
-                title: NetworkService.wifiEnabled ? I18n.tr("Disabling WiFi...") : I18n.tr("Enabling WiFi...")
-            }
-
-            CcEmptyState {
-                visible: root.wifiMode && !NetworkService.wifiEnabled && !NetworkService.wifiToggling
-                iconName: "wifi_off"
-                title: I18n.tr("WiFi is off", "network status when the wifi radio is disabled")
+                title: NetworkService.wifiEnabled ? I18n.tr("Disabling Wi-Fi...") : I18n.tr("Enabling Wi-Fi...")
             }
 
             CcEmptyState {
@@ -431,33 +411,85 @@ Item {
                 visible: root.ethernetMode && root.networkManager && DMSService.apiVersion > 10
 
                 Repeater {
-                    model: wiredConnectionsModel
+                    model: NetworkService.ethernetDevices || []
 
-                    CcListRow {
-                        id: wiredRow
+                    Column {
+                        id: adapterItem
 
                         required property var modelData
-
-                        iconName: "lan"
-                        active: modelData.isActive
-                        title: modelData.id || I18n.tr("Unknown Config")
-                        subtitle: active ? I18n.tr("Connected") : I18n.tr("Available")
-                        clickable: true
-                        onClicked: {
-                            if (modelData.uuid === NetworkService.ethernetConnectionUuid)
-                                return;
-                            NetworkService.connectToSpecificWiredConfig(modelData.uuid);
+                        readonly property var profiles: {
+                            const byUuid = {};
+                            for (const c of (NetworkService.wiredConnections || []))
+                                byUuid[c.uuid] = c;
+                            return (modelData.profileUuids || []).map(u => byUuid[u]).filter(c => !!c);
                         }
 
-                        DActionButton {
-                            id: wiredOptionsButton
-                            anchors.verticalCenter: parent.verticalCenter
-                            buttonSize: Theme.buttonHeightXS
-                            iconSize: Theme.iconSizeMedium
-                            iconName: "more_horiz"
-                            Accessible.name: I18n.tr("Options")
-                            iconColor: Theme.surfaceText
-                            onClicked: root.openWiredMenu(wiredRow.modelData, wiredOptionsButton)
+                        width: parent.width
+                        spacing: SettingsMetrics.groupGap
+
+                        CcListRow {
+                            id: adapterRow
+
+                            iconName: "lan"
+                            active: adapterItem.modelData.connected
+                            title: adapterItem.modelData.name
+                            subtitle: {
+                                if (adapterItem.modelData.connected)
+                                    return I18n.tr("Connected") + (adapterItem.modelData.ip ? " • " + adapterItem.modelData.ip : "");
+                                return adapterItem.modelData.state === "unavailable" ? I18n.tr("Unavailable") : I18n.tr("Disconnected");
+                            }
+                            clickable: active && !!adapterItem.modelData.connectionUuid
+                            onClicked: root.showWiredInfo(adapterItem.modelData, adapterItem.modelData.connectionUuid)
+
+                            DActionButton {
+                                anchors.verticalCenter: parent.verticalCenter
+                                visible: NetworkService.ethernetDeviceConnectSupported
+                                buttonSize: Theme.buttonHeightXS
+                                iconSize: Theme.iconSizeMedium
+                                iconName: adapterRow.active ? "link_off" : "link"
+                                tooltipText: adapterRow.active ? I18n.tr("Disconnect") : I18n.tr("Connect")
+                                iconColor: adapterRow.active ? Theme.error : Theme.primary
+                                onClicked: {
+                                    if (adapterRow.active)
+                                        NetworkService.disconnectEthernetDevice(adapterItem.modelData.name);
+                                    else
+                                        NetworkService.connectEthernetDevice(adapterItem.modelData.name);
+                                }
+                            }
+
+                            DActionButton {
+                                id: wiredOptionsButton
+
+                                readonly property var menuItems: root.wiredMenuItems(adapterItem.modelData, adapterItem.profiles)
+
+                                anchors.verticalCenter: parent.verticalCenter
+                                visible: menuItems.some(i => i.visible)
+                                buttonSize: Theme.buttonHeightXS
+                                iconSize: Theme.iconSizeMedium
+                                iconName: "more_horiz"
+                                Accessible.name: I18n.tr("Options")
+                                iconColor: Theme.surfaceText
+                                onClicked: {
+                                    wiredMenu.items = menuItems;
+                                    wiredMenu.openAt(wiredOptionsButton);
+                                }
+                            }
+                        }
+
+                        Repeater {
+                            model: NetworkService.ethernetDeviceConnectSupported && adapterItem.profiles.length > 1 ? adapterItem.profiles : []
+
+                            CcListRow {
+                                id: profileRow
+
+                                required property var modelData
+
+                                paddingH: CcMetrics.rowPaddingH + Theme.spacingL
+                                title: modelData.id
+                                active: modelData.uuid === adapterItem.modelData.connectionUuid
+                                clickable: !active
+                                onClicked: NetworkService.connectToSpecificWiredConfig(modelData.uuid, adapterItem.modelData.name)
+                            }
                         }
                     }
                 }
@@ -582,7 +614,7 @@ Item {
                     return "";
                 if (signalStrength >= CcMetrics.wifiSignalStrong)
                     return "wifi";
-                return signalStrength >= CcMetrics.wifiSignalBucket ? "wifi_2_bar" : "wifi_1_bar";
+                return signalStrength >= WifiConnectionActions.signalBucket ? "wifi_2_bar" : "wifi_1_bar";
             }
             active: isConnected
             title: modelData.ssid || I18n.tr("Unknown Network")

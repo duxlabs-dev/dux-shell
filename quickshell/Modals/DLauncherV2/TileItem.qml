@@ -7,6 +7,7 @@ import qs.Common
 import qs.Services
 import qs.DCommon.Widgets
 import qs.Modals.DLauncherV2.Components
+import qs.Widgets as Widgets
 
 LauncherTile {
     id: root
@@ -41,8 +42,6 @@ LauncherTile {
             return "material:" + (item.icon || "image");
         case "unicode":
             return "unicode:" + (item.icon || "");
-        case "composite":
-            return item.iconFull || "";
         case "image":
         default:
             return item.icon || "";
@@ -83,12 +82,24 @@ LauncherTile {
 
             AppIconRenderer {
                 anchors.fill: parent
-                iconValue: root.imageIconValue
+                iconValue: root.isFolder ? "" : root.imageIconValue
                 iconSize: Math.min(parent.width, parent.height)
                 animate: root.visible && root.item?.data?.animated === true
                 fallbackText: (root.item?.name?.length > 0) ? root.item.name.charAt(0).toUpperCase() : "?"
                 materialIconSizeAdjustment: iconSize * 0.3
-                visible: !root.hasScreencopy
+                visible: !root.hasScreencopy && !root.isFolder
+            }
+
+            Loader {
+                anchors.centerIn: parent
+                width: Math.min(parent.width, parent.height) - Theme.spacingL * 2
+                height: width
+                active: root.isFolder
+                visible: active
+                sourceComponent: Widgets.AppFolderIcon {
+                    members: root.item?.data?.members ?? []
+                    materialIcon: root.item?.icon ?? ""
+                }
             }
 
             Rectangle {
@@ -104,11 +115,13 @@ LauncherTile {
                     anchors.fill: parent
                     anchors.margins: Theme.spacingXS
                     text: root.item?._hName ?? root.item?.name ?? ""
-                    textFormat: root.item?._hRich ? Text.RichText : Text.PlainText
+                    // RichText ignores elide and maximumLineCount, so only dmenu markup rows get it.
+                    textFormat: !root.item?._hRich ? Text.PlainText : root.item.data?.markup ? Text.RichText : Text.StyledText
                     font.pixelSize: Theme.fontSizeSmall
                     font.family: Theme.fontFamily
                     color: root.contentColor
                     elide: Text.ElideRight
+                    maximumLineCount: 2
                     horizontalAlignment: Text.AlignLeft
                     verticalAlignment: Text.AlignVCenter
                 }

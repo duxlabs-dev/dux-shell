@@ -183,79 +183,81 @@ Item {
     SettingsPage {
         id: mainColumn
 
-        SettingsCard {
-            id: notificationRulesCard
-            width: parent.width
-            iconName: "rule_settings"
-            title: I18n.tr("Notification rules", "settings card title, per-app notification rules list")
-            settingKey: "notificationRules"
-            tags: ["notification", "rules", "mute", "ignore", "priority", "regex", "history"]
+        SettingsDeferred {
+            SettingsCard {
+                id: notificationRulesCard
+                width: parent.width
+                iconName: "rule_settings"
+                title: I18n.tr("Notification rules", "settings card title, per-app notification rules list")
+                settingKey: "notificationRules"
+                tags: ["notification", "rules", "mute", "ignore", "priority", "regex", "history"]
 
-            headerActions: DActionButton {
-                buttonSize: 36
-                iconName: "restart_alt"
-                tooltipText: I18n.tr("Reset to default")
-                iconSize: 20
-                visible: JSON.stringify(SettingsData.notificationRules) !== JSON.stringify(SettingsData.getDefaultNotificationRules())
-                iconColor: Theme.surfaceVariantText
-                onClicked: SettingsData.resetNotificationRules()
-            }
+                headerActions: DActionButton {
+                    buttonSize: 36
+                    iconName: "restart_alt"
+                    tooltipText: I18n.tr("Reset to default")
+                    iconSize: 20
+                    visible: JSON.stringify(SettingsData.notificationRules) !== JSON.stringify(SettingsData.getDefaultNotificationRules())
+                    iconColor: Theme.surfaceVariantText
+                    onClicked: SettingsData.resetNotificationRules()
+                }
 
-            SettingsRow {
-                subtitle: I18n.tr("Mute, ignore and priority rules per app")
-            }
+                SettingsRow {
+                    subtitle: I18n.tr("Mute, ignore and priority rules per app")
+                }
 
-            Repeater {
-                // Count model: a rule edit must not rebuild the row holding the focused toggle
-                model: SettingsData.notificationRules.length
+                Repeater {
+                    // Count model: a rule edit must not rebuild the row holding the focused toggle
+                    model: SettingsData.notificationRules.length
 
-                delegate: SettingsRow {
-                    id: ruleRow
+                    delegate: SettingsRow {
+                        id: ruleRow
 
-                    required property int index
-                    readonly property var rule: SettingsData.notificationRules[index] ?? ({})
-                    readonly property var badges: root.outcomeBadges(rule)
+                        required property int index
+                        readonly property var rule: SettingsData.notificationRules[index] ?? ({})
+                        readonly property var badges: root.outcomeBadges(rule)
 
-                    title: rule.pattern || I18n.tr("Rule %1", "notification rule heading, %1 is the rule number").arg(index + 1)
-                    titleColor: rule.enabled !== false ? Theme.surfaceText : Theme.surfaceVariantText
-                    subtitle: root.matchSummary(rule)
+                        title: rule.pattern || I18n.tr("Rule %1", "notification rule heading, %1 is the rule number").arg(index + 1)
+                        titleColor: rule.enabled !== false ? Theme.surfaceText : Theme.surfaceVariantText
+                        subtitle: root.matchSummary(rule)
 
-                    DToggle {
-                        anchors.verticalCenter: parent.verticalCenter
-                        hideText: true
-                        text: ruleRow.title
-                        checked: ruleRow.rule.enabled !== false
-                        onToggled: checked => SettingsData.updateNotificationRuleField(ruleRow.index, "enabled", checked)
-                    }
+                        DToggle {
+                            anchors.verticalCenter: parent.verticalCenter
+                            hideText: true
+                            text: ruleRow.title
+                            checked: ruleRow.rule.enabled !== false
+                            onToggled: checked => SettingsData.updateNotificationRuleField(ruleRow.index, "enabled", checked)
+                        }
 
-                    DActionButton {
-                        anchors.verticalCenter: parent.verticalCenter
-                        iconName: "edit"
-                        Accessible.name: I18n.tr("Edit rule")
-                        onClicked: root.openEditor(ruleRow.index, ruleRow.rule)
-                    }
+                        DActionButton {
+                            anchors.verticalCenter: parent.verticalCenter
+                            iconName: "edit"
+                            Accessible.name: I18n.tr("Edit rule")
+                            onClicked: root.openEditor(ruleRow.index, ruleRow.rule)
+                        }
 
-                    DActionButton {
-                        anchors.verticalCenter: parent.verticalCenter
-                        iconName: "delete"
-                        iconColor: Theme.error
-                        Accessible.name: I18n.tr("Delete rule")
-                        onClicked: SettingsData.removeNotificationRule(ruleRow.index)
-                    }
+                        DActionButton {
+                            anchors.verticalCenter: parent.verticalCenter
+                            iconName: "delete"
+                            iconColor: Theme.error
+                            Accessible.name: I18n.tr("Delete rule")
+                            onClicked: SettingsData.removeNotificationRule(ruleRow.index)
+                        }
 
-                    body: Flow {
-                        width: parent.width
-                        spacing: Theme.spacingXS
-                        visible: ruleRow.badges.length > 0
+                        body: Flow {
+                            width: parent.width
+                            spacing: Theme.spacingXS
+                            visible: ruleRow.badges.length > 0
 
-                        Repeater {
-                            model: ruleRow.badges
+                            Repeater {
+                                model: ruleRow.badges
 
-                            delegate: DBadge {
-                                required property string modelData
-                                text: modelData
-                                color: Theme.primaryContainer
-                                textColor: Theme.onPrimaryContainer
+                                delegate: DBadge {
+                                    required property string modelData
+                                    text: modelData
+                                    color: Theme.primaryContainer
+                                    textColor: Theme.onPrimaryContainer
+                                }
                             }
                         }
                     }
@@ -263,30 +265,32 @@ Item {
             }
         }
 
-        SettingsCard {
-            iconName: "volume_off"
-            title: I18n.tr("Muted apps")
-            settingKey: "mutedApps"
-            tags: ["notification", "mute", "unmute", "popup"]
+        SettingsDeferred {
+            SettingsCard {
+                iconName: "volume_off"
+                title: I18n.tr("Muted apps")
+                settingKey: "mutedApps"
+                tags: ["notification", "mute", "unmute", "popup"]
 
-            SettingsRow {
-                subtitle: root.mutedRules.length > 0 ? I18n.tr("Apps with notification popups muted. Unmute or delete to remove.") : I18n.tr("No apps muted. Right-click a notification and choose \"Mute popups\" to add one here.")
-            }
+                SettingsRow {
+                    subtitle: root.mutedRules.length > 0 ? I18n.tr("Apps with notification popups muted. Unmute or delete to remove.") : I18n.tr("No apps muted. Right-click a notification and choose \"Mute popups\" to add one here.")
+                }
 
-            Repeater {
-                model: root.mutedRules
+                Repeater {
+                    model: root.mutedRules
 
-                delegate: SettingsRow {
-                    required property var modelData
+                    delegate: SettingsRow {
+                        required property var modelData
 
-                    title: modelData.rule?.pattern || I18n.tr("Unknown")
-                    subtitle: root.remainingLabel(modelData.rule)
-                    singleLineTitle: true
+                        title: modelData.rule?.pattern || I18n.tr("Unknown")
+                        subtitle: root.remainingLabel(modelData.rule)
+                        singleLineTitle: true
 
-                    DButton {
-                        text: I18n.tr("Unmute")
-                        variant: "text"
-                        onClicked: SettingsData.removeNotificationRule(modelData.index)
+                        DButton {
+                            text: I18n.tr("Unmute")
+                            variant: "text"
+                            onClicked: SettingsData.removeNotificationRule(modelData.index)
+                        }
                     }
                 }
             }
@@ -303,7 +307,7 @@ Item {
 
     Loader {
         id: editorLoader
-        parent: root.parentModal?.modalFocusScope ?? root
+        parent: root.parentModal?.dialogHostFor(root) ?? root
         anchors.fill: parent
         z: 100
         active: root.editorMounted

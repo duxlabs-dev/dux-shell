@@ -33,7 +33,6 @@ Scope {
     property int lockRetryAttempts: 0
     property bool lockRetryPending: false
     property bool lockPowerOffArmed: false
-    property bool lockWakeAllowed: false
     property bool customLockerSpawned: false
     readonly property bool powerOffOnLock: SettingsData.lockScreenPowerOffMonitorsOnLock || IdleService.lockPowerOffRequested
     property real powerOffFadeTarget: 0
@@ -52,8 +51,6 @@ Scope {
     function applyMonitorsOff() {
         IdleService.monitorsOff = true;
         CompositorService.powerOffMonitors();
-        lockWakeAllowed = false;
-        lockWakeDebounce.restart();
         dpmsReapplyTimer.start();
     }
 
@@ -252,20 +249,12 @@ Scope {
         }
 
         function onLoginctlStateChanged() {
-            if (SessionService.active && pendingLock) {
-                pendingLock = false;
-                lockInitiatedLocally = true;
-                lockPowerOffArmed = powerOffOnLock;
-                shouldLock = true;
+            if (!SessionService.active || !pendingLock)
                 return;
-            }
-            if (SessionService.locked && !shouldLock && !pendingLock) {
-                if (handleLoginctlCustomLock())
-                    return;
-                lockInitiatedLocally = false;
-                lockPowerOffArmed = powerOffOnLock;
-                shouldLock = true;
-            }
+            pendingLock = false;
+            lockInitiatedLocally = true;
+            lockPowerOffArmed = powerOffOnLock;
+            shouldLock = true;
         }
     }
 
@@ -387,7 +376,6 @@ Scope {
                 return;
             if (shouldLock && (IdleService.monitorsOff || lockPowerOffArmed || IdleService.lockPowerOffRequested))
                 return;
-            lockWakeAllowed = false;
             resetPowerOffFade();
             if (IdleService.monitorsOff) {
                 IdleService.monitorsOff = false;
@@ -474,14 +462,14 @@ Scope {
 
     Timer {
         id: lockRetryTimer
-        interval: 1000
+        interval: Timing.settleSlow
         repeat: false
         onTriggered: root.lockRetryPending = false
     }
 
     Timer {
         id: resumeRelockTimer
-        interval: 1000
+        interval: Timing.settleSlow
         repeat: false
         onTriggered: {
             if (!root.shouldLock || sessionLock.locked)
@@ -497,50 +485,8 @@ Scope {
 
     Timer {
         id: dpmsReapplyTimer
-        interval: 100
+        interval: Timing.settleShort
         repeat: false
         onTriggered: IdleService.reapplyDpmsIfNeeded()
-    }
-
-    Timer {
-        id: lockWakeDebounce
-        interval: 200
-        repeat: false
-        onTriggered: {
-            if (!sessionLock.secure)
-                return;
-            if (!powerOffOnLock)
-                return;
-            if (!IdleService.monitorsOff) {
-                lockWakeAllowed = true;
-                return;
-            }
-            if (lockWakeAllowed) {
-                IdleService.monitorsOff = false;
-                CompositorService.powerOnMonitors();
-            } else {
-                lockWakeAllowed = true;
-            }
-        }
-    }
-
-    MouseArea {
-        anchors.fill: parent
-        enabled: sessionLock.secure
-        hoverEnabled: enabled
-        onPressed: lockWakeDebounce.restart()
-        onPositionChanged: lockWakeDebounce.restart()
-        onWheel: lockWakeDebounce.restart()
-    }
-
-    FocusScope {
-        anchors.fill: parent
-        focus: sessionLock.secure
-
-        Keys.onPressed: event => {
-            if (!sessionLock.secure)
-                return;
-            lockWakeDebounce.restart();
-        }
     }
 }

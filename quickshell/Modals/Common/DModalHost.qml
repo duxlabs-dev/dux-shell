@@ -33,12 +33,18 @@ Item {
     readonly property real screenHeight: effectiveScreen?.height ?? 1080
     readonly property real dpr: effectiveScreen ? CompositorService.getScreenScale(effectiveScreen) : 1
     property bool showBackground: modalHandle.showBackground
+    property bool showSurface: modalHandle.showSurface
     property real backgroundOpacity: modalHandle.backgroundOpacity
     property string positioning: modalHandle.positioning
     property point customPosition: modalHandle.customPosition
     property bool closeOnEscapeKey: modalHandle.closeOnEscapeKey
     property bool closeOnBackgroundClick: modalHandle.closeOnBackgroundClick
     property string animationType: modalHandle.animationType
+    readonly property bool dragPassthrough: modalHandle?.dragPassthrough ?? false
+    onDragPassthroughChanged: {
+        if (connected)
+            _queueFullSync();
+    }
 
     property string preferredConnectedBarSide: SettingsData.frameModalEmergeSide
 
@@ -47,7 +53,7 @@ Item {
     readonly property string resolvedConnectedBarSide: frameConnectedMode ? preferredConnectedBarSide : ""
 
     property bool _overStackedModal: false
-    readonly property bool frameOwnsConnectedChrome: frameConnectedMode && resolvedConnectedBarSide !== "" && !allowStacking && !_overStackedModal && effectiveModalLayer === WlrLayer.Top && CompositorService.canShareConnectedFrameChromeForScreen(effectiveScreen)
+    readonly property bool frameOwnsConnectedChrome: frameConnectedMode && showSurface && resolvedConnectedBarSide !== "" && !allowStacking && !_overStackedModal && effectiveModalLayer === WlrLayer.Top && CompositorService.canShareConnectedFrameChromeForScreen(effectiveScreen)
 
     function _dockOccupiesSide(side) {
         return SettingsData.dockOccupiesSide(root.effectiveScreen, side);
@@ -58,15 +64,13 @@ Item {
     property int animationDuration: modalHandle.animationDuration
     property real animationScaleCollapsed: modalHandle.animationScaleCollapsed
     property real animationOffset: modalHandle.animationOffset
-    property list<real> animationEnterCurve: modalHandle.animationEnterCurve
-    property list<real> animationExitCurve: modalHandle.animationExitCurve
     property color backgroundColor: modalHandle.backgroundColor
     property color borderColor: modalHandle.borderColor
     property real borderWidth: modalHandle.borderWidth
     property real cornerRadius: modalHandle.cornerRadius
-    readonly property color effectiveBackgroundColor: frameOwnsConnectedChrome ? Theme.connectedSurfaceColor : backgroundColor
+    readonly property color effectiveBackgroundColor: frameOwnsConnectedChrome ? Theme.connectedSurfaceColor : showSurface ? backgroundColor : "transparent"
     readonly property color effectiveBorderColor: frameOwnsConnectedChrome ? Theme.withAlpha(borderColor, 0) : borderColor
-    readonly property real effectiveBorderWidth: frameOwnsConnectedChrome ? 0 : borderWidth
+    readonly property real effectiveBorderWidth: frameOwnsConnectedChrome || !showSurface ? 0 : borderWidth
     readonly property real effectiveCornerRadius: frameOwnsConnectedChrome ? Theme.connectedSurfaceRadius : cornerRadius
     property bool enableShadow: modalHandle.enableShadow
     property alias modalFocusScope: focusScope
@@ -90,12 +94,12 @@ Item {
     property real frozenMotionOffsetY: 0
     readonly property alias contentWindow: contentWindow
     readonly property bool useHyprlandFocusGrab: CompositorService.useHyprlandFocusGrab
-    readonly property bool useBackground: !connected && showBackground && !FrameTransitionState.effectiveFrameEnabled && SettingsData.modalDarkenBackground
-    readonly property bool useSingleWindow: connected || CompositorService.isHyprland || useBackground
+    readonly property bool useBackground: showBackground && (!showSurface || (!connected && !FrameTransitionState.effectiveFrameEnabled && SettingsData.modalDarkenBackground))
 
     signal opened
     signal dialogClosed
     signal backgroundClicked
+    signal surfaceUnmapping
 
     Timer {
         id: _syncTimer
@@ -105,7 +109,6 @@ Item {
 
     property bool animationsEnabled: true
     property bool _presentPending: false
-    property bool _surfaceFrameReady: false
 
     property bool _fullSyncPending: false
 
@@ -122,8 +125,8 @@ Item {
             surfaceKind: "modal"
             screenName: root._currentScreenName()
             enabled: root.frameOwnsConnectedChrome
-            active: root.shouldBeVisible
-            presented: root.shouldBeVisible || contentWindow.visible
+            active: root.shouldBeVisible && !root.dragPassthrough
+            presented: (root.shouldBeVisible || contentWindow.visible) && !root.dragPassthrough
             dockBlocked: root._dockBlocksEmergence
             dockSide: root.resolvedConnectedBarSide
             onRecoveryRequested: root._queueFullSync()
@@ -133,7 +136,7 @@ Item {
     function _publishModalChromeState() {
         if (!connected)
             return false;
-        const presented = shouldBeVisible || contentWindow.visible;
+        const presented = (shouldBeVisible || contentWindow.visible) && !dragPassthrough;
         const phase = !presented ? "hidden" : (!shouldBeVisible && contentWindow.visible ? "closing" : (!contentWindow.visible ? "opening" : "open"));
         const bodyRect = {
             "x": alignedX + fluidBody.x,
@@ -202,33 +205,10 @@ Item {
         modalChrome.item?.release();
     }
 
-    function _kickBlurCommit() {
-        if (typeof contentWindow.update === "function")
-            contentWindow.update();
-    }
-
-    function _kickBlurCommitUnlessConnected() {
-        if (connected)
-            return;
-        _kickBlurCommit();
-    }
-
-    // Low resource scalar writes: publish synchronously to stay in the same frame
-    function _syncAlignedGeometry() {
-        if (connected) {
-            _syncModalBody();
-            return;
-        }
-        _kickBlurCommit();
-    }
-
     onShouldBeVisibleChanged: {
         morph.retarget(shouldBeVisible ? 1 : 0);
-        if (connected) {
+        if (connected)
             _queueFullSync();
-            return;
-        }
-        _kickBlurCommit();
     }
     onFrameOwnsConnectedChromeChanged: {
         if (!connected)
@@ -245,10 +225,10 @@ Item {
             return;
         _syncModalBody();
     }
-    onAlignedXChanged: _syncAlignedGeometry()
-    onAlignedYChanged: _syncAlignedGeometry()
-    onAlignedWidthChanged: _syncAlignedGeometry()
-    onAlignedHeightChanged: _syncAlignedGeometry()
+    onAlignedXChanged: _syncModalBody()
+    onAlignedYChanged: _syncModalBody()
+    onAlignedWidthChanged: _syncModalBody()
+    onAlignedHeightChanged: _syncModalBody()
 
     function open() {
         if (!contentWindow.visible)
@@ -263,7 +243,7 @@ Item {
     }
 
     function _openConnected() {
-        if (!_fluidMotionActive || !contentWindow.visible)
+        if (!contentWindow.visible)
             animationsEnabled = false;
         const focusedScreen = root.targetScreen ?? CompositorService.getFocusedScreen();
         if (!contentWindow.visible)
@@ -309,10 +289,8 @@ Item {
             _reveal();
             return;
         }
-        if (clickCatcher.item)
-            clickCatcher.item.present();
         contentWindow.visible = true;
-        if (!_surfaceFrameReady) {
+        if (!frameGate.ready) {
             _presentPending = true;
             return;
         }
@@ -322,20 +300,13 @@ Item {
     function _reveal() {
         _presentPending = false;
         shouldBeVisible = true;
-        if (clickCatcher.item)
-            clickCatcher.item.present();
         contentWindow.visible = true;
         opened();
         shouldHaveFocus = Qt.binding(() => shouldBeVisible);
     }
 
-    on_SurfaceFrameReadyChanged: {
-        if (_surfaceFrameReady && _presentPending)
-            _reveal();
-    }
-
     function close() {
-        if (_presentPending || (_fluidMotionActive && (SettingsData.reduceMotion || animationDuration <= 0))) {
+        if (_presentPending || (_fluidMotionActive && (Theme.reduceMotion || animationDuration <= 0))) {
             instantClose();
             return;
         }
@@ -346,6 +317,7 @@ Item {
         shouldHaveFocus = false;
         ModalManager.closeModal(modalHandle);
         closeTimer.restart();
+        _finishCloseIfSettled();
     }
 
     function instantClose() {
@@ -356,7 +328,7 @@ Item {
         shouldHaveFocus = false;
         ModalManager.closeModal(modalHandle);
         closeTimer.stop();
-        contentWindow.visible = false;
+        _unmapWindow();
         _fluidMotionActive = false;
         dialogClosed();
         Qt.callLater(() => animationsEnabled = true);
@@ -399,25 +371,49 @@ Item {
         }
     }
 
+    OpacityMotion {
+        id: contentFade
+        enabled: root.animationsEnabled && (!root._fluidMotionActive || root.useBackground)
+        duration: root.animationDuration
+        target: root.shouldBeVisible ? 1 : 0
+        onRunningChanged: root._finishCloseIfSettled()
+    }
+
+    function _finishCloseIfSettled() {
+        if (shouldBeVisible || _presentPending || !contentWindow.visible || contentFade.running || contentFade.value > 0)
+            return;
+        if ((_fluidMotionActive || (connected && Theme.isDirectionalEffect)) && morph.running)
+            return;
+        _finishClose();
+    }
+
+    function _unmapWindow() {
+        surfaceUnmapping();
+        contentWindow.visible = false;
+    }
+
+    function _finishClose() {
+        if (shouldBeVisible)
+            return;
+        closeTimer.stop();
+        isClosing = false;
+        _unmapWindow();
+        morph.snapTo(0);
+        _fluidMotionActive = false;
+        dialogClosed();
+    }
+
     Timer {
         id: closeTimer
         interval: root.connected ? Math.max(Theme.variantCloseInterval(root.animationDuration), morph.settleDurationMs + 32) : Math.max(root.animationDuration + 50, morph.settleDurationMs + 50)
-        onTriggered: {
-            if (root.shouldBeVisible)
-                return;
-            root.isClosing = false;
-            contentWindow.visible = false;
-            morph.snapTo(0);
-            root._fluidMotionActive = false;
-            root.dialogClosed();
-        }
+        onTriggered: root._finishClose()
     }
+
+    readonly property bool _standardMotion: !connected && !Theme.isDirectionalEffect && !Theme.isDepthEffect && !_fluidMotionActive
+    readonly property var _morphSpringParams: Theme.springPreset(_standardMotion ? "fastSpatial" : "defaultSpatial")
 
     readonly property var shadowLevel: Theme.elevationLevel3
     readonly property real shadowFallbackOffset: Theme.spacingS
-    readonly property real shadowRenderPadding: (root.enableShadow && Theme.elevationEnabled && SettingsData.modalElevationEnabled) ? Theme.elevationRenderPadding(shadowLevel, Theme.elevationLightDirection, shadowFallbackOffset, 8, 16) : 0
-    readonly property real shadowMotionPadding: animationType === "slide" ? 30 : Math.max(0, animationOffset)
-    readonly property real shadowBuffer: Theme.snap(shadowRenderPadding + shadowMotionPadding, dpr)
     readonly property real alignedWidth: Theme.px(modalWidth, dpr)
     readonly property real alignedHeight: Theme.px(modalHeight, dpr)
 
@@ -483,106 +479,48 @@ Item {
             }
         })(), dpr)
 
-    Loader {
-        id: clickCatcher
-        active: !root.connected
-        sourceComponent: Item {
-            id: catcher
-
-            function present() {
-                if (!root.useSingleWindow)
-                    catcherWindow.visible = true;
-            }
-
-            readonly property bool contentWindowVisible: contentWindow.visible
-
-            onContentWindowVisibleChanged: {
-                if (!contentWindowVisible && !root.useSingleWindow)
-                    catcherWindow.visible = false;
-            }
-
-            PanelWindow {
-                id: catcherWindow
-                screen: contentWindow.screen
-                visible: false
-                color: "transparent"
-                updatesEnabled: false
-
-                WlrLayershell.namespace: root.layerNamespace + ":clickcatcher"
-                WlrLayershell.layer: WlrLayershell.Top
-                WlrLayershell.exclusiveZone: -1
-                WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
-
-                anchors {
-                    top: true
-                    left: true
-                    right: true
-                    bottom: true
-                }
-
-                mask: Region {
-                    item: Rectangle {
-                        x: root.alignedX
-                        y: root.alignedY
-                        width: root.alignedWidth
-                        height: root.alignedHeight
-                    }
-                    intersection: Intersection.Xor
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    enabled: root.closeOnBackgroundClick && root.shouldBeVisible
-                    onClicked: root.backgroundClicked()
-                }
-            }
-        }
-    }
-
     PanelWindow {
         id: contentWindow
         visible: false
         color: "transparent"
 
+        Item {
+            id: fullWindowMask
+            anchors.fill: parent
+            visible: false
+        }
+
+        mask: Region {
+            item: root.dragPassthrough ? null : fullWindowMask
+        }
+
         WindowBlur {
             targetWindow: contentWindow
-            blurEnabled: !root.frameOwnsConnectedChrome
+            blurEnabled: root.showSurface && !root.frameOwnsConnectedChrome && !root.dragPassthrough
             surfaceColor: root.effectiveBackgroundColor
             readonly property real s: Math.min(1, modalContainer.scaleValue)
             readonly property real op: Math.max(0, Math.min(1, (morph.value - 0.06) * 2))
             readonly property real visibleScale: root.connected ? s : s * op
             blurX: root._fluidMotionActive ? (modalReveal.x + modalContainer.x + root.fluidBody.x) : modalReveal.x + modalContainer.x + modalContainer.width * (1 - visibleScale) * 0.5 + Theme.snap(modalContainer.animX, root.dpr)
             blurY: root._fluidMotionActive ? (modalReveal.y + modalContainer.y + root.fluidBody.y) : modalReveal.y + modalContainer.y + modalContainer.height * (1 - visibleScale) * 0.5 + Theme.snap(modalContainer.animY, root.dpr)
-            blurWidth: root._fluidMotionActive ? (root.shouldBeVisible ? root.fluidBody.width : 0) : (root.shouldBeVisible && !root.frameOwnsConnectedChrome) ? modalContainer.width * visibleScale : 0
-            blurHeight: root._fluidMotionActive ? (root.shouldBeVisible ? root.fluidBody.height : 0) : (root.shouldBeVisible && !root.frameOwnsConnectedChrome) ? modalContainer.height * visibleScale : 0
+            blurWidth: root.dragPassthrough ? 0 : (root._fluidMotionActive ? (root.shouldBeVisible ? root.fluidBody.width : 0) : (root.shouldBeVisible && !root.frameOwnsConnectedChrome) ? modalContainer.width * visibleScale : 0)
+            blurHeight: root.dragPassthrough ? 0 : (root._fluidMotionActive ? (root.shouldBeVisible ? root.fluidBody.height : 0) : (root.shouldBeVisible && !root.frameOwnsConnectedChrome) ? modalContainer.height * visibleScale : 0)
             blurRadius: root.effectiveCornerRadius
         }
 
         WlrLayershell.namespace: root.layerNamespace
         WlrLayershell.layer: root.effectiveModalLayer
         WlrLayershell.exclusiveZone: -1
-        WlrLayershell.keyboardFocus: KeyboardFocus.keyboardFocus(root.shouldHaveFocus, root.customKeyboardFocus)
+        WlrLayershell.keyboardFocus: root.dragPassthrough ? WlrKeyboardFocus.None : KeyboardFocus.keyboardFocus(root.shouldHaveFocus, root.customKeyboardFocus)
 
         anchors {
             left: true
             top: true
-            right: root.useSingleWindow
-            bottom: root.useSingleWindow
+            right: true
+            bottom: true
         }
-
-        WlrLayershell.margins {
-            left: root.useSingleWindow ? 0 : Math.max(0, Theme.snap(root.alignedX - root.shadowBuffer, root.dpr))
-            top: root.useSingleWindow ? 0 : Math.max(0, Theme.snap(root.alignedY - root.shadowBuffer, root.dpr))
-            right: 0
-            bottom: 0
-        }
-
-        implicitWidth: root.useSingleWindow ? 0 : root.alignedWidth + (root.shadowBuffer * 2)
-        implicitHeight: root.useSingleWindow ? 0 : root.alignedHeight + (root.shadowBuffer * 2)
 
         onVisibleChanged: {
-            if (!visible)
-                root._surfaceFrameReady = false;
             if (!visible && Qt.inputMethod) {
                 Qt.inputMethod.hide();
                 Qt.inputMethod.reset();
@@ -595,18 +533,18 @@ Item {
                 root._releaseModalChrome();
         }
 
-        Connections {
-            target: modalContainer.Window.window
-            enabled: contentWindow.visible && !root._surfaceFrameReady
-
-            function onFrameSwapped() {
-                root._surfaceFrameReady = true;
+        SurfaceFrameGate {
+            id: frameGate
+            surfaceVisible: contentWindow.visible
+            onReadyChanged: {
+                if (ready && root._presentPending)
+                    root._reveal();
             }
         }
 
         MouseArea {
             anchors.fill: parent
-            enabled: root.useSingleWindow && root.closeOnBackgroundClick && root.shouldBeVisible
+            enabled: root.closeOnBackgroundClick && root.shouldBeVisible && !root.dragPassthrough
             z: -2
             onClicked: root.backgroundClicked()
         }
@@ -615,27 +553,19 @@ Item {
             anchors.fill: parent
             z: -1
             color: Theme.backdropColor
-            opacity: root.useBackground ? (root.shouldBeVisible ? root.backgroundOpacity : 0) : 0
+            opacity: (!root.dragPassthrough && root.useBackground) ? root.backgroundOpacity * contentFade.value : 0
             visible: root.useBackground
-
-            Behavior on opacity {
-                enabled: root.animationsEnabled
-                NumberAnimation {
-                    easing.type: Easing.BezierSpline
-                    duration: root.animationDuration
-                    easing.bezierCurve: root.shouldBeVisible ? root.animationEnterCurve : root.animationExitCurve
-                }
-            }
         }
 
         Item {
             id: modalReveal
             // Clip to final footprint while frame-owned chrome grows from the bar edge.
-            x: root.useSingleWindow ? root.alignedX : root.shadowBuffer
-            y: root.useSingleWindow ? root.alignedY : root.shadowBuffer
+            x: root.alignedX
+            y: root.alignedY
             width: root.alignedWidth
             height: root.alignedHeight
             clip: root.frameOwnsConnectedChrome
+            opacity: root.dragPassthrough ? 0 : 1
 
             Item {
                 id: modalContainer
@@ -648,7 +578,7 @@ Item {
 
                 MouseArea {
                     anchors.fill: parent
-                    enabled: root.useSingleWindow && root.shouldBeVisible
+                    enabled: root.shouldBeVisible && !root.dragPassthrough
                     hoverEnabled: false
                     acceptedButtons: Qt.AllButtons
                     onPressed: mouse => mouse.accepted = true
@@ -659,7 +589,8 @@ Item {
                 readonly property bool slide: root.animationType === "slide"
                 readonly property bool directionalEffect: Theme.isDirectionalEffect
                 readonly property bool depthEffect: Theme.isDepthEffect
-                readonly property real directionalTravel: Math.max(root.animationOffset, Math.max(root.alignedWidth, root.alignedHeight) * 0.8)
+                // A surface-less modal spans most of the screen, so travel by its size would start it off-screen.
+                readonly property real directionalTravel: root.showSurface ? Math.max(root.animationOffset, Math.max(root.alignedWidth, root.alignedHeight) * 0.8) : root.animationOffset
                 readonly property real depthTravel: Math.max(root.animationOffset * 0.8, 36)
                 readonly property real customAnchorX: root.alignedX + root.alignedWidth * 0.5
                 readonly property real customAnchorY: root.alignedY + root.alignedHeight * 0.5
@@ -758,16 +689,18 @@ Item {
                     return root.animationOffset;
                 }
 
-                // openProgress spring: 0 = collapsed, 1 = open.
                 SpringMotion {
                     id: morph
+                    onRunningChanged: {
+                        if (!running)
+                            root._finishCloseIfSettled();
+                    }
                     enabled: root.animationsEnabled
-                    onValueChanged: root._kickBlurCommitUnlessConnected()
                     reducedMotion: root.animationDuration <= 0
                     positionEpsilon: Math.max(0.001, 0.25 / root.dpr / modalContainer.morphTravelPx)
                     velocityEpsilon: positionEpsilon * damping / Math.max(0.001, 2 * mass)
-                    stiffness: Theme.springPreset("default", root.animationDuration).stiffness
-                    damping: Theme.springPreset("default", root.animationDuration).damping
+                    stiffness: root._morphSpringParams.stiffness
+                    damping: root._morphSpringParams.damping
 
                     Component.onCompleted: snapTo(root.shouldBeVisible ? 1 : 0)
                 }
@@ -802,17 +735,8 @@ Item {
                         y: root.connected ? 0 : Theme.snap(modalContainer.animY, root.dpr)
                         clip: false
 
-                        opacity: root._fluidMotionActive || (root.connected && Theme.isDirectionalEffect && !Theme.isConnectedEffect) ? 1 : (root.shouldBeVisible ? 1 : 0)
+                        opacity: root._fluidMotionActive || (root.connected && Theme.isDirectionalEffect && !Theme.isConnectedEffect) ? 1 : contentFade.value
                         scale: modalContainer.scaleValue
-
-                        Behavior on opacity {
-                            enabled: root.animationsEnabled && !root._fluidMotionActive && (!root.connected || !Theme.isDirectionalEffect || Theme.isConnectedEffect)
-                            NumberAnimation {
-                                duration: root.connected ? Math.round(Theme.variantDuration(root.animationDuration, root.shouldBeVisible) * Theme.variantOpacityDurationScale) : root.animationDuration
-                                easing.type: Easing.BezierSpline
-                                easing.bezierCurve: root.shouldBeVisible ? root.animationEnterCurve : root.animationExitCurve
-                            }
-                        }
 
                         ElevationShadow {
                             parent: root._fluidMotionActive ? modalContainer : animatedContent
@@ -829,7 +753,7 @@ Item {
                             targetColor: root.frameOwnsConnectedChrome ? Theme.withAlpha(root.effectiveBackgroundColor, 0) : root.effectiveBackgroundColor
                             borderColor: root.frameOwnsConnectedChrome ? Theme.withAlpha(root.effectiveBorderColor, 0) : root.effectiveBorderColor
                             borderWidth: root.frameOwnsConnectedChrome ? 0 : root.effectiveBorderWidth
-                            shadowEnabled: !root.frameOwnsConnectedChrome && root.enableShadow && Theme.elevationEnabled && SettingsData.modalElevationEnabled && Quickshell.env("DMS_DISABLE_LAYER") !== "true" && Quickshell.env("DMS_DISABLE_LAYER") !== "1"
+                            shadowEnabled: root.showSurface && !root.frameOwnsConnectedChrome && root.enableShadow && Theme.elevationEnabled && SettingsData.modalElevationEnabled && Quickshell.env("DMS_DISABLE_LAYER") !== "true" && Quickshell.env("DMS_DISABLE_LAYER") !== "1"
                         }
 
                         Rectangle {
@@ -843,7 +767,7 @@ Item {
                             radius: root.effectiveCornerRadius
                             color: "transparent"
                             border.color: root.frameOwnsConnectedChrome ? Theme.withAlpha(BlurService.borderColor, 0) : BlurService.borderColor
-                            border.width: root.frameOwnsConnectedChrome ? 0 : BlurService.borderWidth
+                            border.width: root.frameOwnsConnectedChrome || !root.showSurface ? 0 : BlurService.borderWidth
                             z: 100
                         }
 
@@ -881,13 +805,33 @@ Item {
 
                             Loader {
                                 id: contentLoader
+
+                                readonly property bool wanted: root.directContent === null && (root.shouldBeVisible || contentWindow.visible)
+
                                 sourceComponent: root.modalHandle.content
                                 anchors.fill: parent
-                                active: root.directContent === null && (root.keepContentLoaded || root.shouldBeVisible || contentWindow.visible)
+                                active: false
+                                Component.onCompleted: {
+                                    if (root.modalHandle.contentSource.toString() !== "")
+                                        setSource(root.modalHandle.contentSource, {
+                                            modal: root.modalHandle
+                                        });
+                                }
                                 asynchronous: false
                                 focus: true
                                 clip: false
                                 visible: root.directContent === null
+
+                                // A close can run under one of the content's own handlers, so unload a turn later.
+                                onWantedChanged: {
+                                    if (wanted) {
+                                        active = true;
+                                        return;
+                                    }
+                                    if (root.keepContentLoaded && root.directContent === null)
+                                        return;
+                                    Qt.callLater(() => contentLoader.active = contentLoader.wanted);
+                                }
 
                                 onLoaded: {
                                     if (item) {

@@ -13,16 +13,19 @@ FocusScope {
 
     property string currentPage: ""
     property var parentModal: null
+    property Item dialogHost: null
+    property real windowButtonsReserve: 0
+    property FloatingWindowControls windowDragControls: null
 
     readonly property bool sessionVisible: parentModal?.shouldBeVisible ?? false
     readonly property list<string> pagePath: (parentModal?.pageHistory ?? []).concat([currentPage])
     readonly property Item currentPageItem: pageStack.currentItem?.item ?? null
-    readonly property bool currentPageSettled: pageStack.currentItem?.page === currentPage && pageStack.currentItem.settled
+    readonly property bool currentPageSettled: pageStack.currentItem?.page === currentPage
     readonly property bool isPluginPage: SettingsTabs.isPluginPage(currentPage)
     readonly property bool isCompactMode: parentModal?.isCompactMode ?? false
     readonly property bool menuHidden: isCompactMode && !(parentModal?.menuVisible ?? true)
     readonly property bool showBack: (parentModal?.canGoBack ?? false) || isPluginPage || menuHidden
-    readonly property bool animationsEnabled: !SettingsData.reduceMotion && Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
+    readonly property bool animationsEnabled: !Theme.reduceMotion
     // Mouse navigation lands parked; only keyboard navigation highlights a control on the page
     property bool keyboardNavigation: true
 
@@ -46,7 +49,7 @@ FocusScope {
                 return;
             if (parentModal?.modalFocusScope?.transientOwnsFocus())
                 return;
-            if (!sessionVisible || !currentPageItem || pageStack.currentItem.page !== currentPage || !pageStack.currentItem.presented)
+            if (!sessionVisible || !currentPageItem || pageStack.currentItem.page !== currentPage)
                 return;
             if (parentModal?.focusPane === "sidebar")
                 return;
@@ -58,7 +61,7 @@ FocusScope {
             const remembered = _validRemembered();
             if (remembered) {
                 remembered.forceActiveFocus(Qt.TabFocusReason);
-                _reveal(remembered);
+                reveal(remembered);
                 return;
             }
             let item = currentPageItem;
@@ -110,7 +113,7 @@ FocusScope {
             const remembered = _validRemembered();
             if (remembered) {
                 remembered.forceActiveFocus(Qt.TabFocusReason);
-                _reveal(remembered);
+                reveal(remembered);
                 return true;
             }
             start = page;
@@ -122,7 +125,7 @@ FocusScope {
                 return false;
         } while (!item.visible || !item.enabled)
         item.forceActiveFocus(forward ? Qt.TabFocusReason : Qt.BacktabFocusReason);
-        _reveal(item);
+        reveal(item);
         return true;
     }
 
@@ -139,7 +142,7 @@ FocusScope {
         return true;
     }
 
-    function _reveal(item) {
+    function reveal(item) {
         for (let f = item.parent; f; f = f.parent) {
             if (typeof f.flick !== "function" || f.contentHeight <= f.height)
                 continue;
@@ -179,6 +182,11 @@ FocusScope {
         event.accepted = true;
     }
 
+    function titleFor(page) {
+        const info = SettingsTabs.page(page);
+        return (info?.titleFrom ? SettingsUiState[info.titleFrom] : "") || (info?.text ?? "");
+    }
+
     function _fileFor(page) {
         if (pageFiles[page])
             return pageFiles[page];
@@ -187,6 +195,14 @@ FocusScope {
         if (SettingsTabs.page(page)?.kind === "hub")
             return "SettingsHubPage.qml";
         return "";
+    }
+
+    function pageSource(page) {
+        return Qt.resolvedUrl("../../Modules/Settings/" + _fileFor(page));
+    }
+
+    function pageProperties(page) {
+        return _propertiesFor(page);
     }
 
     function _propertiesFor(page) {
@@ -198,6 +214,7 @@ FocusScope {
         if (!pageFiles[page] && SettingsTabs.page(page)?.kind === "hub")
             return {
                 "parentModal": Qt.binding(() => root.parentModal),
+                "pageHost": root,
                 "hubId": page
             };
         const properties = {};
@@ -213,22 +230,119 @@ FocusScope {
         return properties;
     }
 
-    function _createPage(page, index) {
-        return pageComponent.createObject(pageStack, {
-            page,
-            pathIndex: index
-        });
+    property var _cache: ({})
+    property var _cacheOrder: []
+    property var _doomed: []
+
+    function _cacheable(page) {
+        return !SettingsTabs.isPluginPage(page) && !SettingsTabs.page(page)?.titleFrom;
     }
 
-    // A navigation that lands mid-transition cuts in rather than queueing behind it
+    // Pages are children of the stack view from the start, parked past its clip while they are prepared: there
+    // they are laid out and drawn once out of sight, and reparenting one later would walk its whole tree
+    function _takePage(page, index) {
+        if (_ahead?.page === page) {
+            const host = _ahead;
+            _ahead = null;
+            host.pathIndex = index;
+            return host;
+        }
+        const cached = _cache[page];
+        if (!cached) {
+            const host = pageComponent.createObject(pageStack, {
+                x: pageStack.width,
+                page,
+                pathIndex: index,
+                width: pageStack.width,
+                height: pageStack.height
+            });
+            host.load();
+            return host;
+        }
+        delete _cache[page];
+        _cacheOrder = _cacheOrder.filter(id => id !== page);
+        cached.pathIndex = index;
+        cached.x = pageStack.width;
+        cached.visible = true;
+        cached.width = pageStack.width;
+        cached.height = pageStack.height;
+        cached.resetScroll();
+        return cached;
+    }
+
+    function _release(host) {
+        host.visible = false;
+        if (!sessionVisible || !_cacheable(host.page) || _cache[host.page]) {
+            _doom(host);
+            return;
+        }
+        _cache[host.page] = host;
+        const order = _cacheOrder.concat([host.page]);
+        while (order.length > SettingsMetrics.pageCacheLimit) {
+            const evicted = order.shift();
+            _doom(_cache[evicted]);
+            delete _cache[evicted];
+        }
+        _cacheOrder = order;
+    }
+
+    // Tearing a page down costs frames, so it happens a card at a time while nothing else is going on
+    function _doom(host) {
+        _doomed = _doomed.concat([host]);
+        if (!sessionVisible)
+            _reap();
+    }
+
+    Timer {
+        interval: SettingsMetrics.pageTeardownInterval
+        repeat: true
+        running: root.sessionVisible && root._doomed.length > 0 && !pageStack.busy && root._staged === null && !root._syncRequested
+        onTriggered: root._reap()
+    }
+
+    function _reap() {
+        if (_doomed.length === 0)
+            return;
+        if (!sessionVisible) {
+            const doomed = _doomed;
+            _doomed = [];
+            for (const host of doomed)
+                host.destroy();
+            return;
+        }
+        const doomed = _doomed.slice();
+        if (!doomed[0].scroller?.unbuildCard?.())
+            doomed.shift().destroy();
+        _doomed = doomed;
+    }
+
+    // StackView leaves an item with an explicit size alone
+    function _fitPages() {
+        for (let i = 0; i < pageStack.depth; i++) {
+            const host = pageStack.get(i, StackView.DontLoad);
+            host.width = pageStack.width;
+            host.height = pageStack.height;
+        }
+    }
+
+    function _dropCache() {
+        for (const page of _cacheOrder)
+            _doom(_cache[page]);
+        _cache = {};
+        _cacheOrder = [];
+    }
+
     function _operation(transition) {
-        const animate = animationsEnabled && pageStack.depth > 0 && !pageStack.busy && (parentModal?.visible ?? false);
+        const animate = animationsEnabled && pageStack.depth > 0 && (parentModal?.visible ?? false);
         return animate ? transition : StackView.Immediate;
     }
 
     function _syncPages() {
+        _discardStaged();
         if (!sessionVisible) {
+            _shelve();
             pageStack.clear(StackView.Immediate);
+            _dropCache();
             return;
         }
         if (!currentPage)
@@ -237,90 +351,186 @@ FocusScope {
         while (shared < Math.min(pageStack.depth, pagePath.length) && pageStack.get(shared).page === pagePath[shared])
             shared++;
         if (shared === pagePath.length) {
-            if (shared < pageStack.depth)
-                pageStack.pop(pageStack.get(shared - 1), _operation(StackView.PopTransition));
+            if (shared === pageStack.depth)
+                return;
+            pageStack.currentItem.holdPose();
+            _slideFrom = -pageStack.slideDistance;
+            pageStack.pop(pageStack.get(shared - 1), _operation(StackView.PopTransition));
             return;
         }
-        const deferred = parentModal?.visible ?? false;
+        if (_ahead && !pagePath.includes(_ahead.page))
+            _shelve();
         const pages = [];
         for (let index = shared; index < pagePath.length; index++) {
-            const top = index === pagePath.length - 1;
-            const page = _createPage(pagePath[index], index);
+            const page = _takePage(pagePath[index], index);
             // StackView only transitions the top of a multi-item push; pages beneath stay painted until hidden here
-            page.visible = top;
-            page.load(deferred && top);
+            page.visible = index === pagePath.length - 1;
             pages.push(page);
         }
-        if (shared < pageStack.depth) {
-            pageStack.replace(pageStack.get(shared), pages, _operation(StackView.ReplaceTransition));
+        _staged = {
+            "pages": pages,
+            "shared": shared
+        };
+    }
+
+    // A transition started in the turn that prepared its page is charged that work on its first tick and skips ahead
+    property var _staged: null
+
+    // A page the pointer rests on is built ahead into the cache, so the click that follows finds it ready
+    property string _anticipated: ""
+    property var _ahead: null
+
+    function anticipate(pageId) {
+        _anticipated = SettingsTabs.resolvePage(pageId);
+        anticipation.restart();
+    }
+
+    function _aheadable(page) {
+        return page && page !== currentPage && !_cache[page] && _cacheable(page);
+    }
+
+    // The page under the pointer first, then, while the cache has room, the sidebar neighbours of the current one
+    function _nextAhead() {
+        if (_aheadable(_anticipated))
+            return _anticipated;
+        if (_cacheOrder.length >= SettingsMetrics.pageCacheLimit)
+            return "";
+        const ids = SettingsTabs.structure.filter(entry => !entry.separator && SettingsTabs.isVisible(entry)).map(entry => SettingsTabs.resolvePage(entry.id));
+        const at = ids.indexOf(pagePath[0]);
+        for (let distance = 1; distance < ids.length; distance++) {
+            if (_aheadable(ids[at + distance]))
+                return ids[at + distance];
+            if (_aheadable(ids[at - distance]))
+                return ids[at - distance];
+        }
+        return "";
+    }
+
+    function _buildAhead() {
+        if (!sessionVisible)
+            return;
+        if (_ahead || _staged || _syncRequested || pageStack.busy) {
+            anticipation.restart();
             return;
         }
-        pageStack.push(pages, _operation(StackView.PushTransition));
+        const page = _nextAhead();
+        if (!page)
+            return;
+        _ahead = _takePage(page, 0);
+        if (_ahead.firstScreenReady)
+            _shelve();
     }
 
-    onPagePathChanged: Qt.callLater(_syncPages)
-    onSessionVisibleChanged: Qt.callLater(_syncPages)
+    function _shelve() {
+        if (!_ahead)
+            return;
+        const host = _ahead;
+        _ahead = null;
+        _release(host);
+        anticipation.restart();
+    }
 
-    // Fade through the pane: the leaving page is gone before the next one starts to show, so nothing blends mid-way
-    component PageExit: Transition {
-        id: exit
+    Timer {
+        id: anticipation
+        interval: SettingsMetrics.pageAnticipationDelay
+        onTriggered: root._buildAhead()
+    }
 
-        property real toX: 0
+    function _discardStaged() {
+        if (!_staged)
+            return;
+        const pages = _staged.pages;
+        _staged = null;
+        for (const page of pages)
+            _release(page);
+    }
 
-        NumberAnimation {
-            property: "x"
-            to: exit.toX
-            duration: SettingsMetrics.exitDuration
-            easing.type: Easing.BezierSpline
-            easing.bezierCurve: Theme.expressiveCurves.standard
-        }
-
-        NumberAnimation {
-            property: "opacity"
-            to: 0
-            duration: SettingsMetrics.exitDuration
-            easing.type: Easing.BezierSpline
-            easing.bezierCurve: Theme.expressiveCurves.expressiveEffects
+    function _commitStaged() {
+        if (!_staged)
+            return;
+        const pages = _staged.pages;
+        const shared = _staged.shared;
+        _staged = null;
+        pageStack.currentItem?.holdPose();
+        for (const page of pages)
+            page.x = 0;
+        if (shared < pageStack.depth) {
+            _slideFrom = 0;
+            pageStack.replace(pageStack.get(shared), pages, _operation(StackView.ReplaceTransition));
+        } else {
+            _slideFrom = pageStack.slideDistance;
+            pageStack.push(pages, _operation(StackView.PushTransition));
         }
     }
 
-    component PageEnter: Transition {
-        id: enter
+    // Each step waits for a frame: the click is answered before the page is prepared, and the prepared page
+    // has been drawn once, out of sight, before its transition starts
+    property bool _syncRequested: false
+    property int _framesWaited: 0
 
-        property real fromX: 0
+    function _requestSync() {
+        if (!sessionVisible) {
+            Qt.callLater(_syncPages);
+            return;
+        }
+        _syncRequested = true;
+        _framesWaited = 0;
+    }
+
+    FrameAnimation {
+        running: root._syncRequested || root._staged !== null
+        onTriggered: {
+            if (root._syncRequested) {
+                if (root._framesWaited++ < 1)
+                    return;
+                root._syncRequested = false;
+                root._framesWaited = 0;
+                Qt.callLater(root._syncPages);
+                return;
+            }
+            if (!root._staged)
+                return;
+            const pages = root._staged.pages;
+            if (!pages[pages.length - 1].firstScreenReady) {
+                root._framesWaited = 0;
+                return;
+            }
+            if (root._framesWaited++ < 1)
+                return;
+            root._commitStaged();
+        }
+    }
+
+    onPagePathChanged: _requestSync()
+    onSessionVisibleChanged: _requestSync()
+
+    // One eased progress drives both pages: the leaving one is gone before the arriving one shows
+    component PageMotion: Transition {
+        id: motion
 
         SequentialAnimation {
             PropertyAction {
                 property: "opacity"
+                value: 1
+            }
+
+            PropertyAction {
+                property: "transitionProgress"
                 value: 0
             }
 
-            PauseAnimation {
-                duration: SettingsMetrics.exitDuration
-            }
-
-            ParallelAnimation {
-                NumberAnimation {
-                    property: "x"
-                    from: enter.fromX
-                    to: 0
-                    duration: SettingsMetrics.transitionDuration
-                    easing.type: Easing.BezierSpline
-                    easing.bezierCurve: Theme.expressiveCurves.standard
-                }
-
-                NumberAnimation {
-                    property: "opacity"
-                    from: 0
-                    to: 1
-                    duration: SettingsMetrics.fadeDuration
-                    easing.type: Easing.BezierSpline
-                    easing.bezierCurve: Theme.expressiveCurves.expressiveEffects
-                }
+            NumberAnimation {
+                property: "transitionProgress"
+                to: 1
+                duration: SettingsMetrics.pageTransitionDuration
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: SettingsMetrics.pageTransitionCurve
             }
         }
     }
 
+    property real _slideFrom: 0
+    readonly property bool _fadeThrough: _slideFrom === 0
     function _scrollerOf(item) {
         if (typeof item.flick === "function")
             return item;
@@ -352,146 +562,208 @@ FocusScope {
             id: host
 
             required property string page
-            required property int pathIndex
+            property int pathIndex: 0
             readonly property bool pageActive: root.sessionVisible && page === root.currentPage && pageStack.currentItem === host
+            // Deferred cards wait for this, so their builds never share frames with the transition
+            readonly property bool pageSettled: pageActive && !pageStack.busy && root._staged === null
             readonly property alias item: loader.item
+            readonly property alias dialogLayer: dialogLayer
             readonly property int status: loader.status
-            readonly property bool settled: !pending && loader.status !== Loader.Loading && (presented || loader.status !== Loader.Ready)
 
-            readonly property var pageInfo: SettingsTabs.page(page)
-            readonly property string pageTitle: (pageInfo?.titleFrom ? SettingsUiState[pageInfo.titleFrom] : "") || (pageInfo?.text ?? "")
+            readonly property string pageTitle: root.titleFor(page)
+            readonly property string crumbPage: pathIndex > 0 ? (root.pagePath[pathIndex - 1] ?? "") : (canGoBack ? parentId : "")
+            readonly property string crumbTitle: root.titleFor(crumbPage)
             readonly property bool showBack: canGoBack || SettingsTabs.isPluginPage(page) || root.menuHidden
             readonly property string parentId: SettingsTabs.parentOf(page)
             readonly property bool canGoBack: pathIndex > 0 || (parentId !== "" && (SettingsTabs.isPluginPage(page) || SettingsTabs.visibleLeaves(parentId).length > 1 || !!SettingsTabs.page(parentId)?.hubHeader))
             property Item rememberedFocus: null
             property Item scroller: null
-            property bool pending: true
-            property bool presented: false
+            readonly property bool firstScreenReady: scroller?.firstScreenBuilt ?? true
+            onFirstScreenReadyChanged: {
+                if (firstScreenReady && root._ahead === host)
+                    root._shelve();
+            }
 
             width: pageStack.width
             height: pageStack.height
-            enabled: pageActive && presented
 
-            StackView.onRemoved: destroy()
-            // An immediate operation skips the nested enter animation, so the final pose is written here
-            StackView.onActivated: {
-                opacity = 1;
-                x = 0;
+            // StackView writes opacity on the pages it manages, so the transition animates this and the stage reads it
+            property real transitionProgress: 1
+            readonly property bool entering: pageStack.currentItem === host
+            // A navigation can land while this page is still arriving; it then leaves from where it had got to
+            property real heldOpacity: 1
+            property real heldX: 0
+            property real heldScale: 1
+
+            function holdPose() {
+                heldOpacity = stage.opacity;
+                heldX = stage.slideX;
+                heldScale = stage.scale;
             }
 
-            function load(deferred) {
+            StackView.onRemoved: root._release(host)
+            // An immediate operation skips the transition, so the final pose is written here
+            StackView.onActivated: {
+                opacity = 1;
+                transitionProgress = 1;
+            }
+
+            function load() {
                 const file = root._fileFor(page);
-                if (file) {
-                    loader.asynchronous = deferred;
-                    presented = !deferred;
+                if (file)
                     loader.setSource(Qt.resolvedUrl("../../Modules/Settings/" + file), root._propertiesFor(page));
-                }
-                pending = false;
+            }
+
+            function resetScroll() {
+                if (scroller)
+                    scroller.contentY = scroller.originY;
             }
 
             Item {
-                id: pageHeader
-                width: Math.min(host.item?.contentMaxWidth ?? SettingsMetrics.contentMaxWidth, parent.width - SettingsMetrics.panePadding * 2)
-                anchors.horizontalCenter: parent.horizontalCenter
-                height: Math.max(SettingsMetrics.pageHeaderHeight, pageHeading.implicitHeight + Theme.spacingM * 2)
+                id: stage
+
+                // A curve that overshoots must not carry the page past its resting pose
+                readonly property real progress: Math.max(0, Math.min(1, host.transitionProgress))
+                readonly property real fadeIn: Math.max(0, (progress - SettingsMetrics.pageFadeThreshold) / (1 - SettingsMetrics.pageFadeThreshold))
+                readonly property real fadeOut: Math.max(0, 1 - progress / SettingsMetrics.pageFadeThreshold)
+
+                readonly property real pixelRatio: Window.window?.devicePixelRatio ?? Screen.devicePixelRatio
+                readonly property real slideX: host.entering ? root._slideFrom * (1 - progress) : host.heldX - root._slideFrom * progress
+                readonly property real enterScale: root._fadeThrough ? SettingsMetrics.pageEnterScale + (1 - SettingsMetrics.pageEnterScale) * progress : 1
+
+                anchors.fill: parent
+                opacity: host.entering ? fadeIn : host.heldOpacity * fadeOut
+                scale: host.entering ? enterScale : host.heldScale
+                // Glyphs sit on whole pixels: scaled live they shake in their rows, so a scaled page is drawn as one image
+                layer.enabled: progress < 1 && scale !== 1
+                layer.smooth: true
+                // Same reason, the slide moves by whole pixels
+                transform: Translate {
+                    x: Theme.px(stage.slideX, stage.pixelRatio)
+                }
+
+                MouseArea {
+                    width: parent.width
+                    height: pageHeader.height
+                    enabled: root.windowDragControls !== null
+                    onPressed: root.windowDragControls.tryStartMove()
+                    onDoubleClicked: root.windowDragControls.tryToggleMaximize()
+                }
 
                 Item {
-                    id: backSlot
+                    id: pageHeader
+                    width: Math.min(host.item?.contentMaxWidth ?? SettingsMetrics.contentMaxWidth, parent.width - SettingsMetrics.panePadding * 2)
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    height: Math.max(SettingsMetrics.pageHeaderHeight, pageHeading.implicitHeight + Theme.spacingS * 2)
 
-                    readonly property real glyphInset: (Theme.iconButtonSize - Theme.iconSize) / 2
+                    Item {
+                        id: backSlot
 
+                        readonly property real glyphInset: (Theme.iconButtonSize - Theme.iconSize) / 2
+
+                        anchors.left: parent.left
+                        anchors.leftMargin: host.showBack ? -glyphInset : 0
+                        anchors.verticalCenter: parent.verticalCenter
+                        width: host.showBack ? Theme.iconButtonSize + Theme.spacingM - glyphInset : 0
+                        height: Theme.iconButtonSize
+
+                        DActionButton {
+                            buttonSize: Theme.iconButtonSize
+                            iconName: I18n.isRtl ? "arrow_forward" : "arrow_back"
+                            Accessible.name: I18n.tr("Back")
+                            iconSize: Theme.iconSize
+                            iconColor: Theme.surfaceText
+                            visible: host.showBack
+                            onClicked: root.goBack()
+                        }
+                    }
+
+                    Flow {
+                        id: pageHeading
+                        anchors.left: backSlot.right
+                        anchors.right: parent.right
+                        anchors.rightMargin: Math.max(0, root.windowButtonsReserve - (host.width - pageHeader.width) / 2)
+                        anchors.verticalCenter: parent.verticalCenter
+                        spacing: Theme.spacingS
+                        visible: host.pageTitle !== ""
+
+                        StyledText {
+                            width: Math.min(implicitWidth, pageHeading.width)
+                            wrapMode: Text.WordWrap
+                            text: host.crumbTitle
+                            font.pixelSize: Theme.fontSizeXXLarge
+                            color: Theme.surfaceVariantText
+                            visible: host.crumbTitle !== ""
+
+                            StateLayer {
+                                anchors.margins: -Theme.spacingXS
+                                cornerRadius: Theme.cornerRadiusS
+                                stateColor: Theme.surfaceText
+                                onClicked: root.goBack()
+                            }
+                        }
+
+                        DIcon {
+                            height: pageTitleLabel.implicitHeight / Math.max(1, pageTitleLabel.lineCount)
+                            name: "chevron_right"
+                            size: Theme.iconSize
+                            color: Theme.surfaceVariantText
+                            rotation: I18n.isRtl ? 180 : 0
+                            visible: host.crumbTitle !== ""
+                        }
+
+                        StyledText {
+                            id: pageTitleLabel
+                            width: Math.min(implicitWidth, pageHeading.width)
+                            wrapMode: Text.WordWrap
+                            text: host.pageTitle
+                            font.pixelSize: Theme.fontSizeXXLarge
+                            color: Theme.surfaceText
+                        }
+                    }
+                }
+
+                Loader {
+                    id: loader
+
+                    anchors.top: pageHeader.bottom
                     anchors.left: parent.left
-                    anchors.leftMargin: host.showBack ? -glyphInset : 0
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: host.showBack ? Theme.iconButtonSize + Theme.spacingM - glyphInset : 0
-                    height: Theme.iconButtonSize
-
-                    DActionButton {
-                        buttonSize: Theme.iconButtonSize
-                        iconName: I18n.isRtl ? "arrow_forward" : "arrow_back"
-                        Accessible.name: I18n.tr("Back")
-                        iconSize: Theme.iconSize
-                        iconColor: Theme.surfaceText
-                        visible: host.showBack
-                        onClicked: root.goBack()
-                    }
-                }
-
-                StyledText {
-                    id: pageHeading
-                    anchors.left: backSlot.right
                     anchors.right: parent.right
-                    wrapMode: Text.WordWrap
-                    anchors.verticalCenter: parent.verticalCenter
-                    text: host.pageTitle
-                    font.pixelSize: Theme.fontSizeXXLarge
-                    color: Theme.surfaceText
-                    visible: host.pageTitle !== ""
+                    anchors.bottom: parent.bottom
+                    anchors.leftMargin: SettingsMetrics.panePadding
+                    anchors.rightMargin: SettingsMetrics.panePadding
+
+                    onLoaded: {
+                        if (item.pageActive !== undefined)
+                            item.pageActive = Qt.binding(() => host.pageActive);
+                        if (item.pageSettled !== undefined)
+                            item.pageSettled = Qt.binding(() => host.pageSettled);
+                        const scroller = root._scrollerOf(item);
+                        host.scroller = scroller;
+                        if (scroller)
+                            scrollerTap.createObject(scroller, {
+                                "parent": scroller
+                            });
+                        root._focusPage();
+                    }
                 }
             }
 
-            Loader {
-                id: loader
-
-                anchors.top: pageHeader.bottom
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.bottom: parent.bottom
-                anchors.leftMargin: SettingsMetrics.panePadding
-                anchors.rightMargin: SettingsMetrics.panePadding
-                opacity: host.presented ? 1 : 0
-                enabled: host.presented
-
-                Behavior on opacity {
-                    enabled: root.animationsEnabled
-                    NumberAnimation {
-                        duration: SettingsMetrics.fadeDuration
-                        easing.type: Easing.BezierSpline
-                        easing.bezierCurve: Theme.expressiveCurves.expressiveEffects
-                    }
-                }
-
-                onLoaded: {
-                    if (item.pageActive !== undefined)
-                        item.pageActive = Qt.binding(() => host.pageActive);
-                    const scroller = root._scrollerOf(item);
-                    host.scroller = scroller;
-                    if (scroller)
-                        scrollerTap.createObject(scroller, {
-                            "parent": scroller
-                        });
-                    root._focusPage();
-                }
+            // Disabling a page walks every control in it, so one on its way in or out is shielded from the pointer
+            MouseArea {
+                anchors.fill: parent
+                visible: !host.pageActive
+                acceptedButtons: Qt.AllButtons
+                hoverEnabled: true
+                onWheel: wheel => wheel.accepted = true
             }
 
-            FrameAnimation {
-                id: settleWatch
+            Item {
+                id: dialogLayer
 
-                property real lastHeight: -1
-                property int stableFrames: 0
-
-                running: loader.status === Loader.Ready && !host.presented
-                onTriggered: {
-                    if (loader.item?.settling) {
-                        stableFrames = 0;
-                        return;
-                    }
-                    const h = loader.item?.contentHeight ?? loader.item?.height ?? 0;
-                    if (h === lastHeight)
-                        stableFrames++;
-                    else {
-                        lastHeight = h;
-                        stableFrames = 0;
-                    }
-                    if (stableFrames < SettingsMetrics.pageSettleFrames && elapsedTime * 1000 < SettingsMetrics.pageSettleDeadline)
-                        return;
-                    host.presented = true;
-                }
-            }
-
-            onPresentedChanged: {
-                if (presented && pageActive)
-                    root._focusPage();
+                parent: root.dialogHost ?? host
+                anchors.fill: parent
+                visible: host.pageActive
             }
 
             onPageActiveChanged: {
@@ -503,6 +775,8 @@ FocusScope {
 
     readonly property var pageFiles: ({
             "wallpaper_cycling": "WallpaperCyclingTab.qml",
+            "wallpaper_folders": "WallpaperFoldersTab.qml",
+            "wallpaper_folder": "WallpaperFolderTab.qml",
             "theme_schedule": "ThemeScheduleTab.qml",
             "surface_shadows": "ShadowsTab.qml",
             "time_weather": "TimeWeatherTab.qml",
@@ -514,7 +788,12 @@ FocusScope {
             "dankbar_appearance": "DBarAppearanceTab.qml",
             "dankbar_dot": "DDotTab.qml",
             "bar_widget": "BarWidgetTab.qml",
+            "network_connections": "NetworkConnectionsTab.qml",
+            "network_connection": "NetworkConnectionTab.qml",
+            "network_wifi_connect": "NetworkWifiConnectTab.qml",
             "compositor_layout": "CompositorLayoutTab.qml",
+            "compositor_animations": "CompositorAnimationsTab.qml",
+            "compositor_includes": "CompositorIncludesTab.qml",
             "dock_general": "DockGeneralTab.qml",
             "dock_widgets": "DockWidgetsTab.qml",
             "dock_appearance": "DockAppearanceTab.qml",
@@ -525,9 +804,13 @@ FocusScope {
             "network_status": "NetworkStatusTab.qml",
             "network_ethernet": "NetworkEthernetTab.qml",
             "network_wifi": "NetworkWifiTab.qml",
+            "network_hotspot": "NetworkHotspotTab.qml",
             "network_vpn": "NetworkVpnTab.qml",
+            "network_tailscale": "NetworkTailscaleTab.qml",
+            "network_tailscale_add": "NetworkTailscaleAddTab.qml",
             "network_cellular": "NetworkCellularTab.qml",
             "printers": "PrinterTab.qml",
+            "global_shortcuts": "GlobalShortcutsTab.qml",
             "launcher": "LauncherTab.qml",
             "theme": "ThemeColorsTab.qml",
             "theme_apps": "ThemeAppsTab.qml",
@@ -535,7 +818,8 @@ FocusScope {
             "lock_screen": "LockScreenTab.qml",
             "greeter": "GreeterTab.qml",
             "about": "AboutTab.qml",
-            "typography": "TypographyMotionTab.qml",
+            "motion": "MotionTab.qml",
+            "accessibility": "AccessibilityTab.qml",
             "sounds": "SoundsTab.qml",
             "media_player": "MediaPlayerTab.qml",
             "notification_rules": "NotificationRulesTab.qml",
@@ -546,6 +830,7 @@ FocusScope {
             "updater_changelog": "ChangelogTab.qml",
             "power_sleep": "PowerSleepTab.qml",
             "clipboard": "ClipboardTab.qml",
+            "screenshot": "ScreenshotTab.qml",
             "desktop_widgets": "DesktopWidgetsTab.qml",
             "desktop_widget": "DesktopWidgetTab.qml",
             "audio": "AudioTab.qml",
@@ -563,10 +848,13 @@ FocusScope {
             "fcitx5": "Fcitx5Tab.qml",
             "fcitx5_addon": "Fcitx5AddonTab.qml",
             "fcitx5_addon_sub": "Fcitx5AddonTab.qml",
-            "plugins_manage": "PluginsManageTab.qml"
+            "plugins_manage": "PluginsManageTab.qml",
+            "profiles": "ProfilesTab.qml",
+            "profile_edit": "ProfileEditTab.qml",
+            "profile_inspect": "ProfileInspectTab.qml"
         })
 
-    readonly property var pagesWithParentModal: ["dankbar_widgets", "window_rules", "notification_rules", "display_config", "users", "time_weather", "weather", "lock_screen", "greeter", "dank_dash", "wallpaper_cycling", "theme_schedule", "surface_shadows", "keybinds", "dankbar_settings", "dankbar_appearance", "bar_widget", "dock_general", "dock_widgets", "dock_appearance", "dock_advanced", "fcitx5", "launcher", "theme", "theme_apps", "media_player", "desktop_widgets", "desktop_widget", "autostart", "compositor_layout", "updater", "display_gamma", "about"]
+    readonly property var pagesWithParentModal: ["dankbar_widgets", "window_rules", "notification_rules", "display_config", "users", "time_weather", "weather", "lock_screen", "greeter", "dank_dash", "wallpaper_cycling", "wallpaper_folders", "wallpaper_folder", "theme_schedule", "surface_shadows", "keybinds", "dankbar_settings", "dankbar_appearance", "bar_widget", "dock_general", "dock_widgets", "dock_appearance", "dock_advanced", "fcitx5", "global_shortcuts", "launcher", "theme", "theme_apps", "media_player", "desktop_widgets", "desktop_widget", "autostart", "compositor_layout", "compositor_includes", "motion", "updater", "display_gamma", "about", "profiles", "profile_edit", "profile_inspect", "network_connections", "network_connection", "network_ethernet", "network_wifi", "network_hotspot", "network_wifi_connect", "network_vpn", "network_cellular", "network_tailscale", "network_tailscale_add", "screenshot", "osd"]
 
     // The page scroller stops at the Loader edges; wheel over the header and gutters lands here instead
     WheelHandler {
@@ -596,45 +884,20 @@ FocusScope {
         anchors.fill: parent
         clip: true
 
-        readonly property real pageOffset: I18n.isRtl ? -Theme.spacingXL : Theme.spacingXL
+        readonly property real slideDistance: I18n.isRtl ? -SettingsMetrics.pageSlideDistance : SettingsMetrics.pageSlideDistance
 
-        pushEnter: PageEnter {
-            fromX: pageStack.pageOffset
-        }
-        pushExit: PageExit {
-            toX: -pageStack.pageOffset
-        }
-        popEnter: PageEnter {
-            fromX: -pageStack.pageOffset
-        }
-        popExit: PageExit {
-            toX: pageStack.pageOffset
-        }
-        replaceEnter: PageEnter {}
-        replaceExit: PageExit {}
+        pushEnter: PageMotion {}
+        pushExit: PageMotion {}
+        popEnter: PageMotion {}
+        popExit: PageMotion {}
+        replaceEnter: PageMotion {}
+        replaceExit: PageMotion {}
 
-        DSpinner {
-            id: pageSpinner
-
-            readonly property bool loading: pageStack.currentItem?.presented === false
-
-            anchors.centerIn: parent
-            z: pageStack.depth
-            visible: false
-            onLoadingChanged: {
-                if (!loading) {
-                    spinnerDelay.stop();
-                    visible = false;
-                    return;
-                }
-                spinnerDelay.restart();
-            }
-
-            Timer {
-                id: spinnerDelay
-                interval: SettingsMetrics.pageSpinnerDelay
-                onTriggered: pageSpinner.visible = pageSpinner.loading
-            }
+        onWidthChanged: root._fitPages()
+        onHeightChanged: root._fitPages()
+        onBusyChanged: {
+            if (!busy)
+                anticipation.restart();
         }
     }
 }

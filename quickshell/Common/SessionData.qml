@@ -10,15 +10,18 @@ import qs.Services
 import "settings/SessionSpec.js" as Spec
 import "../DCommon/Common/MaterialWallpaper.js" as MaterialWallpaper
 import "settings/SessionStore.js" as Store
+import "settings/AppFolders.js" as AppFolders
+import "settings/DockPins.js" as DockPins
 import "../DCommon/Common/settings/SpecUtil.js" as SpecUtil
 
 Singleton {
     id: root
     readonly property var log: Log.scoped("SessionData")
 
-    readonly property int sessionConfigVersion: 7
+    readonly property int sessionConfigVersion: 8
 
     signal loaded
+    signal saved
     signal brightnessDisplayHintChanged(string deviceName)
     signal loadErrorOccurred(string file, string message)
 
@@ -89,7 +92,7 @@ Singleton {
 
     Timer {
         id: screenShareReleaseTimer
-        interval: 4000
+        interval: Timing.holdLong
         repeat: false
         running: false
         onTriggered: root._endScreenShareDnd()
@@ -113,7 +116,7 @@ Singleton {
 
     Timer {
         id: osdSuppressTimer
-        interval: 2000
+        interval: Timing.hold
         running: true
         onTriggered: root.suppressOSD = false
     }
@@ -222,6 +225,9 @@ Singleton {
     property string wallpaperCyclingTime: "06:00"
     property string wallpaperCyclingFolderPath: ""
     property bool wallpaperCyclingVideoEnd: false
+    property var wallpaperFolders: []
+    property var wallpaperFolderSelection: []
+    property bool wallpaperHideMismatched: false
     property var monitorCyclingSettings: ({})
 
     property bool nightModeEnabled: false
@@ -250,7 +256,7 @@ Singleton {
     property bool themeModeShareGammaSettings: true
     property string themeModeNextTransition: ""
 
-    property var dockPins: ({})
+    property var dockPins: SpecUtil.cloneDef(Spec.SPEC.dockPins.def)
     property var barPinnedApps: []
     property var hiddenTrayIds: []
     property var trayItemOrder: []
@@ -275,6 +281,8 @@ Singleton {
 
     property var hiddenApps: []
     property var appOverrides: ({})
+    property var launcherFolders: []
+    readonly property bool hasLauncherLayout: launcherFolders.length > 0
     property bool searchAppActions: true
 
     property string vpnLastConnected: ""
@@ -285,6 +293,7 @@ Singleton {
     property string pinnedPlayerIdentity: ""
 
     property var deviceMaxVolumes: ({})
+    property var deviceBalances: ({})
     property var hiddenOutputDeviceNames: []
     property var hiddenInputDeviceNames: []
 
@@ -295,6 +304,7 @@ Singleton {
 
     property var niriOutputSettings: ({})
     property var hyprlandOutputSettings: ({})
+    property string activeConfigProfile: ""
     property var activeDisplayProfile: ({})
     property var activeDisplayProfileModes: ({})
     property var desktopWidgetGridSettings: ({})
@@ -307,6 +317,8 @@ Singleton {
     property bool greeterSyncPending: false
     property var greeterSyncBaseline: ({})
     property string lastAppliedIconTheme: ""
+    // Generated folder overlays may be on disk; SettingsData clears them once the feature is off.
+    property bool iconFoldersPresent: false
 
     property string launcherLastMode: "all"
     property string launcherLastFileSearchType: "all"
@@ -485,6 +497,69 @@ Singleton {
         settingsFile.setText(getCurrentSessionJson());
         if (_isReadOnly)
             _checkSessionWritable();
+        saved();
+    }
+
+    function profileValues(keys) {
+        const out = {};
+        for (const key of keys) {
+            if (key in Spec.SPEC)
+                out[key] = SpecUtil.cloneDef(root[key]);
+        }
+        return out;
+    }
+
+    function applyProfileValues(values) {
+        const themeKeys = ["perModeWallpaper", "perMonitorWallpaper", "monitorWallpapers", "materialWallpapers", "materialWallpaperProfiles"];
+        const modeSlotKeys = ["wallpaperPathLight", "wallpaperPathDark", "monitorWallpapersLight", "monitorWallpapersDark"];
+        let changed = false;
+        let themeChanged = false;
+        let slotChanged = false;
+        for (const key of Object.keys(values)) {
+            if (key === "isLightMode" || key === "wallpaperPath" || !(key in Spec.SPEC))
+                continue;
+            const coerce = Spec.SPEC[key].coerce;
+            const value = SpecUtil.cloneDef(values[key]);
+            const coerced = coerce ? coerce(value) : value;
+            // An equal object still fires change handlers, which would drop a loading wallpaper transition.
+            if (coerced === undefined || SpecUtil.stableStringify(coerced) === SpecUtil.stableStringify(root[key]))
+                continue;
+            root[key] = coerced;
+            changed = true;
+            if (themeKeys.includes(key))
+                themeChanged = true;
+            else if (modeSlotKeys.includes(key))
+                slotChanged = true;
+        }
+        if (slotChanged && perModeWallpaper)
+            themeChanged = true;
+
+        if ("isLightMode" in values && values.isLightMode !== isLightMode) {
+            themeChanged = true;
+            // Theme.setLightMode also turns off matugenSmartMode, which the profile sets itself.
+            setLightMode(values.isLightMode, true);
+            SettingsData.updateCosmicThemeMode(values.isLightMode);
+        }
+
+        // With per-mode wallpapers the stored single path may belong to the other mode; the slots decide.
+        const path = !perModeWallpaper || perMonitorWallpaper ? values.wallpaperPath : undefined;
+        if (path !== undefined && path !== wallpaperPath)
+            themeChanged = true;
+        if (!themeChanged) {
+            if (changed)
+                saveSettings();
+            return;
+        }
+        if (!perModeWallpaper && path !== undefined) {
+            setWallpaper(path);
+            return;
+        }
+        if (path !== undefined)
+            wallpaperPath = path;
+        syncWallpaperForCurrentMode();
+        saveSettings();
+        if (typeof Theme !== "undefined")
+            Theme.generateSystemThemesFromCurrentTheme();
     }
 
     function set(key, value) {
@@ -918,6 +993,17 @@ Singleton {
         if (typeof Theme !== "undefined") {
             Theme.generateSystemThemesFromCurrentTheme();
         }
+    }
+
+    function applyWallpaperPick(screenName, path) {
+        if (perMonitorWallpaper && screenName) {
+            setMonitorWallpaper(screenName, path);
+            setMonitorCyclingFolderPath(screenName, "");
+            return;
+        }
+        setWallpaper(path);
+        wallpaperCyclingFolderPath = "";
+        saveSettings();
     }
 
     function setWallpaperColor(color) {
@@ -1412,6 +1498,15 @@ Singleton {
         });
         saveSettings();
     }
+    function isDockAppPinned(id, appId) {
+        return DockPins.contains(getDockPins(id), appId);
+    }
+    function setDockAppPinned(id, appId, pinned) {
+        const pins = getDockPins(id);
+        const next = pinned ? DockPins.add(pins, appId) : DockPins.remove(pins, appId);
+        if (next !== pins)
+            setDockPins(id, next);
+    }
     function removeDockPins(id) {
         const next = Object.assign({}, dockPins);
         delete next[id];
@@ -1423,7 +1518,7 @@ Singleton {
             return;
         const next = {};
         for (const id in dockPins)
-            next[id] = dockPins[id].filter(pin => pin !== appId);
+            next[id] = DockPins.remove(dockPins[id], appId);
         dockPins = next;
         saveSettings();
     }
@@ -1588,14 +1683,13 @@ Singleton {
     }
 
     function hideApp(appId) {
-        if (!appId)
+        if (!appId || hiddenApps.indexOf(appId) !== -1)
             return;
-        const current = [...hiddenApps];
-        if (current.indexOf(appId) === -1) {
-            current.push(appId);
-            hiddenApps = current;
-            saveSettings();
-        }
+        hiddenApps = [...hiddenApps, appId];
+        const folders = AppFolders.removeApp(launcherFolders, appId);
+        if (folders !== launcherFolders)
+            launcherFolders = folders;
+        saveSettings();
     }
 
     function showApp(appId) {
@@ -1635,6 +1729,57 @@ Singleton {
         delete newOverrides[appId];
         appOverrides = newOverrides;
         saveSettings();
+    }
+
+    function _setLauncherFolders(folders) {
+        if (folders === launcherFolders)
+            return;
+        launcherFolders = folders;
+        saveSettings();
+    }
+
+    function createLauncherFolder(name, appIds, slot = 0) {
+        const result = AppFolders.createFolder(launcherFolders, name, appIds, slot);
+        if (!result.id)
+            return "";
+        _setLauncherFolders(result.folders);
+        return result.id;
+    }
+
+    function setLauncherFolderSlot(id, slot) {
+        _setLauncherFolders(AppFolders.setFolderSlot(launcherFolders, id, slot));
+    }
+
+    function renameLauncherFolder(id, name) {
+        _setLauncherFolders(AppFolders.renameFolder(launcherFolders, id, name));
+    }
+
+    function setLauncherFolderIcon(id, icon) {
+        _setLauncherFolders(AppFolders.setFolderIcon(launcherFolders, id, icon));
+    }
+
+    function addAppToLauncherFolder(folderId, appId) {
+        _setLauncherFolders(AppFolders.addApp(launcherFolders, folderId, appId));
+    }
+
+    function removeAppFromLauncherFolder(appId) {
+        _setLauncherFolders(AppFolders.removeApp(launcherFolders, appId));
+    }
+
+    function moveAppInLauncherFolder(folderId, sourceId, targetId) {
+        _setLauncherFolders(AppFolders.moveAppById(launcherFolders, folderId, sourceId, targetId));
+    }
+
+    function dissolveLauncherFolder(id) {
+        _setLauncherFolders(AppFolders.dissolveFolder(launcherFolders, id));
+    }
+
+    function getLauncherFolder(id) {
+        return AppFolders.folderById(launcherFolders, id);
+    }
+
+    function launcherFolderForApp(appId) {
+        return AppFolders.folderForApp(launcherFolders, appId);
     }
 
     function setSearchAppActions(enabled) {
@@ -1679,6 +1824,26 @@ Singleton {
         if (!nodeName)
             return 100;
         return deviceMaxVolumes[nodeName] ?? 100;
+    }
+
+    function setDeviceBalance(nodeName, balancePercent) {
+        if (!nodeName)
+            return;
+        const updated = Object.assign({}, deviceBalances);
+        const clamped = Math.max(-100, Math.min(100, Math.round(balancePercent)));
+        if (clamped === 0) {
+            delete updated[nodeName];
+        } else {
+            updated[nodeName] = clamped;
+        }
+        deviceBalances = updated;
+        saveSettings();
+    }
+
+    function getDeviceBalance(nodeName) {
+        if (!nodeName)
+            return 0;
+        return deviceBalances[nodeName] ?? 0;
     }
 
     function updateLocale() {

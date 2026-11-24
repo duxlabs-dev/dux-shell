@@ -11,6 +11,7 @@ import qs.Common
 import qs.Common.settings
 import qs.Services
 import "GSettings.js" as GSettings
+import "IconFolders.js" as IconFolders
 import "LayoutResolver.js" as LayoutResolver
 import "NotificationRuleExpiry.js" as RuleExpiry
 import "settings/SettingsSpec.js" as Spec
@@ -24,7 +25,7 @@ Singleton {
     id: root
     readonly property var log: Log.scoped("SettingsData")
 
-    readonly property int settingsConfigVersion: 43
+    readonly property int settingsConfigVersion: 47
 
     enum Position {
         Top,
@@ -35,14 +36,6 @@ Singleton {
         BottomCenter,
         LeftCenter,
         RightCenter
-    }
-
-    enum AnimationSpeed {
-        None,
-        Short,
-        Medium,
-        Long,
-        Custom
     }
 
     enum AnimationEffect {
@@ -81,6 +74,7 @@ Singleton {
     readonly property string _configUrl: StandardPaths.writableLocation(StandardPaths.ConfigLocation)
     readonly property string _configDir: Paths.strip(_configUrl)
     readonly property string _iconThemeBackup: _configDir + "/gtk-3.0/icon-theme.dms-backup"
+    readonly property string _stateDir: Paths.strip(StandardPaths.writableLocation(StandardPaths.GenericCacheLocation)) + "/dms"
     readonly property string pluginSettingsPath: _configDir + "/dms/plugin_settings.json"
     readonly property bool qtengineActive: Quickshell.env("QT_QPA_PLATFORMTHEME") === "qtengine" || Quickshell.env("QT_QPA_PLATFORMTHEME_QT6") === "qtengine"
 
@@ -89,6 +83,7 @@ Singleton {
     property bool _parseError: false
     property bool _pluginParseError: false
     property bool _hasLoaded: false
+    property bool _storesLoaded: false
     property bool isReadOnly: false
     property bool unsavedUserChanges: false
     property var pluginSettings: ({})
@@ -120,6 +115,19 @@ Singleton {
     property string clipboardSize: Spec.SPEC.clipboardSize.def
     property string clipboardTypeFilter: Spec.SPEC.clipboardTypeFilter.def
     property var clipboardVisibleEntryActions: Spec.SPEC.clipboardVisibleEntryActions.def
+
+    property string screenshotDir: Spec.SPEC.screenshotDir.def
+    property string screenshotFormat: Spec.SPEC.screenshotFormat.def
+    property int screenshotQuality: Spec.SPEC.screenshotQuality.def
+    property bool screenshotCursor: Spec.SPEC.screenshotCursor.def
+    property bool screenshotClipboard: Spec.SPEC.screenshotClipboard.def
+    property bool screenshotClipboardFile: Spec.SPEC.screenshotClipboardFile.def
+    property bool screenshotSaveFile: Spec.SPEC.screenshotSaveFile.def
+    property bool screenshotNotify: Spec.SPEC.screenshotNotify.def
+    property bool screenshotConfirmRegion: Spec.SPEC.screenshotConfirmRegion.def
+    property bool screenshotAnnotate: Spec.SPEC.screenshotAnnotate.def
+    property string screenshotHud: Spec.SPEC.screenshotHud.def
+    property int screenshotScrollInterval: Spec.SPEC.screenshotScrollInterval.def
 
     property var launcherPluginVisibility: Spec.SPEC.launcherPluginVisibility.def
 
@@ -200,11 +208,17 @@ Singleton {
     property int containerSaturation: Spec.SPEC.containerSaturation.def
     property int radiusStrength: Spec.SPEC.radiusStrength.def
     property string radiusMode: Spec.SPEC.radiusMode.def
+    property bool screenCornersEnabled: Spec.SPEC.screenCornersEnabled.def
+    property int screenCornerRadius: Spec.SPEC.screenCornerRadius.def
+    property bool screenCornersOverFullscreen: Spec.SPEC.screenCornersOverFullscreen.def
     property int fixedRadius: Spec.SPEC.fixedRadius.def
     readonly property real cornerRadius: Shape.radius("m", Shape.scaleForStrength(radiusStrength), radiusMode === "fixed" ? fixedRadius : -1)
     property int niriLayoutGapsOverride: Spec.SPEC.niriLayoutGapsOverride.def
     property int niriLayoutRadiusOverride: Spec.SPEC.niriLayoutRadiusOverride.def
     property int niriLayoutBorderSize: Spec.SPEC.niriLayoutBorderSize.def
+    property string compositorAnimationPreset: Spec.SPEC.compositorAnimationPreset.def
+    property real compositorAnimationSlowdown: Spec.SPEC.compositorAnimationSlowdown.def
+    property var compositorAnimationOverrides: Spec.SPEC.compositorAnimationOverrides.def
     property int hyprlandLayoutGapsOverride: Spec.SPEC.hyprlandLayoutGapsOverride.def
     property int hyprlandLayoutGapsOutOverride: Spec.SPEC.hyprlandLayoutGapsOutOverride.def
     property int hyprlandLayoutRadiusOverride: Spec.SPEC.hyprlandLayoutRadiusOverride.def
@@ -309,11 +323,9 @@ Singleton {
     property bool showAmPm: Spec.SPEC.showAmPm.def
     property bool useFahrenheit: Spec.SPEC.useFahrenheit.def
     property string windSpeedUnit: Spec.SPEC.windSpeedUnit.def
-    property int animationDuration: Spec.SPEC.animationDuration.def
-    property bool syncComponentAnimationSpeeds: Spec.SPEC.syncComponentAnimationSpeeds.def
-    onSyncComponentAnimationSpeedsChanged: saveSettings()
-    property int popoutAnimationDuration: Spec.SPEC.popoutAnimationDuration.def
-    property int modalAnimationDuration: Spec.SPEC.modalAnimationDuration.def
+    property int motionDuration: Spec.SPEC.motionDuration.def
+    property bool qmlCacheEnabled: Spec.SPEC.qmlCacheEnabled.def
+    property bool renderControlEnabled: Spec.SPEC.renderControlEnabled.def
     property bool reduceMotion: Spec.SPEC.reduceMotion.def
     onReduceMotionChanged: saveSettings()
     property int springBounce: Spec.SPEC.springBounce.def
@@ -322,6 +334,10 @@ Singleton {
     onEnableRippleEffectsChanged: saveSettings()
     property bool scrollbarsEnabled: Spec.SPEC.scrollbarsEnabled.def
     onScrollbarsEnabledChanged: saveSettings()
+    property bool scrollShadowsEnabled: Spec.SPEC.scrollShadowsEnabled.def
+    onScrollShadowsEnabledChanged: saveSettings()
+    property bool switchStateIcons: Spec.SPEC.switchStateIcons.def
+    onSwitchStateIconsChanged: saveSettings()
     property int motionEffect: SettingsData.AnimationEffect.Standard
     onMotionEffectChanged: saveSettings()
     property string density: Spec.SPEC.density.def
@@ -371,6 +387,7 @@ Singleton {
     property string wallpaperFillMode: Spec.SPEC.wallpaperFillMode.def
     property bool blurredWallpaperLayer: Spec.SPEC.blurredWallpaperLayer.def
     property bool blurWallpaperOnOverview: Spec.SPEC.blurWallpaperOnOverview.def
+    property bool pauseVideoWallpaperOnBattery: Spec.SPEC.pauseVideoWallpaperOnBattery.def
     property string wallpaperBackgroundColorMode: Spec.SPEC.wallpaperBackgroundColorMode.def
     property string wallpaperBackgroundCustomColor: Spec.SPEC.wallpaperBackgroundCustomColor.def
     readonly property color effectiveWallpaperBackgroundColor: wallpaperBackgroundColorFor(wallpaperBackgroundColorMode)
@@ -454,7 +471,9 @@ Singleton {
     property int systemTrayIconTintStrength: Spec.SPEC.systemTrayIconTintStrength.def
 
     property int controlCenterColumns: Spec.SPEC.controlCenterColumns.def
+    property int controlCenterRows: Spec.SPEC.controlCenterRows.def
     property real controlCenterIconScale: Spec.SPEC.controlCenterIconScale.def
+    property string controlCenterEditLayout: Spec.SPEC.controlCenterEditLayout.def
     property var controlCenterWidgets: Spec.SPEC.controlCenterWidgets.def
 
     property var workspaceNameIcons: Spec.SPEC.workspaceNameIcons.def
@@ -475,9 +494,11 @@ Singleton {
     property bool greeterEnableU2f: Spec.SPEC.greeterEnableU2f.def
 
     property string browserPickerViewMode: Spec.SPEC.browserPickerViewMode.def
+    property string configProfilePickerView: Spec.SPEC.configProfilePickerView.def
     property string appPickerViewMode: Spec.SPEC.appPickerViewMode.def
     property bool sortAppsAlphabetically: Spec.SPEC.sortAppsAlphabetically.def
     property int appLauncherGridColumns: Spec.SPEC.appLauncherGridColumns.def
+    property int appLauncherIconColumns: Spec.SPEC.appLauncherIconColumns.def
     property bool closeNiriOverviewOnWindowFocus: Spec.SPEC.closeNiriOverviewOnWindowFocus.def
     property bool rememberLastQuery: Spec.SPEC.rememberLastQuery.def
     property bool launcherHistoryEnabled: Spec.SPEC.launcherHistoryEnabled.def
@@ -491,6 +512,8 @@ Singleton {
     property string niriOverviewLauncherStyle: Spec.SPEC.niriOverviewLauncherStyle.def
     property string dankLauncherV2Size: Spec.SPEC.dankLauncherV2Size.def
     property bool dankLauncherV2ShowSourceBadges: Spec.SPEC.dankLauncherV2ShowSourceBadges.def
+    property bool dankLauncherV2ShowAppIcons: Spec.SPEC.dankLauncherV2ShowAppIcons.def
+    property bool dankLauncherV2ShowAppDescriptions: Spec.SPEC.dankLauncherV2ShowAppDescriptions.def
     property bool dankLauncherV2BorderEnabled: Spec.SPEC.dankLauncherV2BorderEnabled.def
     property int dankLauncherV2BorderThickness: Spec.SPEC.dankLauncherV2BorderThickness.def
     property string dankLauncherV2BorderColor: Spec.SPEC.dankLauncherV2BorderColor.def
@@ -504,6 +527,8 @@ Singleton {
     property bool spotlightBarShowModeChips: Spec.SPEC.spotlightBarShowModeChips.def
     property bool keybindsFloatingWindow: Spec.SPEC.keybindsFloatingWindow.def
     onKeybindsFloatingWindowChanged: saveSettings()
+    property string keybindsModifierStyle: Spec.SPEC.keybindsModifierStyle.def
+    onKeybindsModifierStyleChanged: saveSettings()
 
     property string _legacyWeatherLocation: "New York, NY"
     property string _legacyWeatherCoordinates: "40.7128,-74.0060"
@@ -537,6 +562,10 @@ Singleton {
         },
         {
             "id": "notifications",
+            "enabled": false
+        },
+        {
+            "id": "profiles",
             "enabled": false
         },
         {
@@ -660,9 +689,44 @@ Singleton {
     property string iconThemeDark: Spec.SPEC.iconThemeDark.def
     property string iconThemeLight: Spec.SPEC.iconThemeLight.def
     property bool iconThemePerMode: Spec.SPEC.iconThemePerMode.def
+    property bool iconFolderRecolor: Spec.SPEC.iconFolderRecolor.def
+    property string iconAppStyle: Spec.SPEC.iconAppStyle.def
+    property string iconShape: Spec.SPEC.iconShape.def
+    property bool iconGradient: Spec.SPEC.iconGradient.def
+    property string iconTileColor: Spec.SPEC.iconTileColor.def
+    property string iconColorSource: Spec.SPEC.iconColorSource.def
+    property string iconTileStyle: Spec.SPEC.iconTileStyle.def
+    property int iconTileTone: Spec.SPEC.iconTileTone.def
+    property int iconOwnTone: Spec.SPEC.iconOwnTone.def
+    property string iconFileStyle: Spec.SPEC.iconFileStyle.def
+    readonly property string iconStyle: IconFolders.style(iconAppStyle, iconShape, iconGradient, {
+        "color": iconTileColor,
+        "source": iconColorSource,
+        "style": iconTileStyle,
+        "tone": iconTileTone,
+        "ownTone": iconOwnTone,
+        "files": iconFileStyle
+    })
+    readonly property var iconStyleRunArgs: IconFolders.runArgs(iconTheme, iconStyle)
     readonly property string iconTheme: resolveIconTheme()
     property var availableIconThemes: Spec.SPEC.availableIconThemes.def
     property string systemDefaultIconTheme: Spec.SPEC.systemDefaultIconTheme.def
+    property var iconFolderState: null
+    // Name handed to the toolkits this session; lastAppliedIconTheme lags it by a process.
+    property string _requestedIconTheme: ""
+    // Generator requests in flight, last finished, and whether a corrective retry was spent.
+    property string _iconFoldersRunning: ""
+    property string _iconFoldersDone: ""
+    property string _iconFoldersRetried: ""
+    property bool _iconFoldersGenerated: false
+
+    // The core generates a theme for the pick: recolored folders, or all of Dux Icons.
+    readonly property bool iconThemeGenerated: IconFolders.generates(iconTheme, iconFolderRecolor)
+
+    onIconThemeGeneratedChanged: {
+        if (!iconThemeGenerated)
+            iconFolderState = null;
+    }
 
     property var cursorSettings: Spec.SPEC.cursorSettings.def
     property var availableCursorThemes: Spec.SPEC.availableCursorThemes.def
@@ -818,6 +882,7 @@ Singleton {
     property bool notificationPopupShadowEnabled: Spec.SPEC.notificationPopupShadowEnabled.def
     property bool notificationPopupPrivacyMode: Spec.SPEC.notificationPopupPrivacyMode.def
     property bool notificationPopupBodyInvokesAction: Spec.SPEC.notificationPopupBodyInvokesAction.def
+    property bool notificationPopupAvoidPopouts: Spec.SPEC.notificationPopupAvoidPopouts.def
     property bool notificationForegroundLayers: Spec.SPEC.notificationForegroundLayers.def
     property int overviewRows: Spec.SPEC.overviewRows.def
     property int overviewColumns: Spec.SPEC.overviewColumns.def
@@ -883,7 +948,6 @@ Singleton {
     property bool notificationShowTimeoutBar: Spec.SPEC.notificationShowTimeoutBar.def
     property bool notificationDedupeEnabled: Spec.SPEC.notificationDedupeEnabled.def
     property int notificationPopupPosition: SettingsData.Position.Top
-    property int notificationAnimationDuration: Spec.SPEC.notificationAnimationDuration.def
     property bool notificationHistoryEnabled: Spec.SPEC.notificationHistoryEnabled.def
     property string notificationLeadingShortcut: Spec.SPEC.notificationLeadingShortcut.def
     property string notificationTrailingShortcut: Spec.SPEC.notificationTrailingShortcut.def
@@ -1029,6 +1093,20 @@ Singleton {
         return edge === "left" || edge === "right";
     }
 
+    // Popouts hold a snapshot of their bar's config, so this reads the live one.
+    function barCanConnectPopouts(bc) {
+        const config = getBarConfig(bc?.id) ?? bc;
+        if (frameEnabled || !config || config.visible === false || config.enabled === false)
+            return false;
+        if (!isIslandBarConfig(config))
+            return !config.useOverlayLayer && barTransparency(config) > 0;
+        return !isDotBarConfig(config) && !islandSetting(config, "islandUseOverlayLayer") && islandSetting(config, "islandSatellitesEnabled") && islandSetting(config, "islandSatelliteBackground") && islandSatelliteTransparency(config) > 0;
+    }
+
+    function barConnectsPopouts(bc) {
+        return !!(getBarConfig(bc?.id) ?? bc)?.connectedPopouts && barCanConnectPopouts(bc);
+    }
+
     function islandStripThickness(bc) {
         return LayoutResolver.islandThickness(islandSettings(bc), islandDefaultsFor(bc));
     }
@@ -1082,14 +1160,32 @@ Singleton {
             "enabled": false
         }
     ]
-    function getIslandHomeLayout(bc) {
+    function isIslandHomeGroup(id) {
+        return _islandHomeGroupIds.indexOf(id) >= 0;
+    }
+
+    // A removed group stays removed; only the clock anchor comes back.
+    function islandWidgetEntries(bc) {
         const layout = islandSettings(bc).islandHomeLayout;
-        const stored = Array.isArray(layout) ? layout : [];
+        const source = Array.isArray(layout) ? layout : _islandHomeLayoutDefault;
+        const barWidgets = isIslandBarConfig(bc) && !isDotBarConfig(bc);
         const result = [];
         const seen = {};
-        for (const entry of stored) {
-            const id = entry && entry.id;
-            if (_islandHomeGroupIds.indexOf(id) < 0 || seen[id])
+        for (const raw of source) {
+            const entry = typeof raw === "string" ? {
+                "id": raw
+            } : raw;
+            const id = entry?.id;
+            if (!id)
+                continue;
+            if (!isIslandHomeGroup(id)) {
+                if (barWidgets)
+                    result.push(Object.assign({}, entry, {
+                        "enabled": entry.enabled !== false
+                    }));
+                continue;
+            }
+            if (seen[id])
                 continue;
             seen[id] = true;
             result.push({
@@ -1097,11 +1193,32 @@ Singleton {
                 "enabled": id === "clock" || entry.enabled !== false
             });
         }
+        if (!seen.clock)
+            result.push({
+                "id": "clock",
+                "enabled": true
+            });
+        return result;
+    }
+
+    function islandHomeLayoutDefault() {
+        return _islandHomeLayoutDefault.map(entry => Object.assign({}, entry));
+    }
+
+    function setIslandWidgetEntries(barId, entries) {
+        setIslandSettings(barId, {
+            islandHomeLayout: entries
+        });
+    }
+
+    // Groups only, every group present; a missing one reads as hidden.
+    function getIslandHomeLayout(bc) {
+        const result = islandWidgetEntries(bc).filter(entry => isIslandHomeGroup(entry.id));
         for (const fallback of _islandHomeLayoutDefault) {
-            if (!seen[fallback.id])
+            if (!result.some(group => group.id === fallback.id))
                 result.push({
                     "id": fallback.id,
-                    "enabled": fallback.enabled
+                    "enabled": false
                 });
         }
         return result;
@@ -1113,26 +1230,24 @@ Singleton {
     }
 
     function setIslandHomeLayoutOrder(barId, ids) {
-        const current = getIslandHomeLayout(getBarConfig(barId));
+        const config = getBarConfig(barId);
+        const current = getIslandHomeLayout(config);
         const ordered = ids.map(id => current.find(g => g.id === id)).filter(g => g);
-        for (const entry of current) {
-            if (ids.indexOf(entry.id) < 0)
-                ordered.push(entry);
-        }
-        setIslandSettings(barId, {
-            islandHomeLayout: ordered
-        });
+        setIslandWidgetEntries(barId, ordered.concat(islandWidgetEntries(config).filter(entry => ids.indexOf(entry.id) < 0)));
     }
 
     function setIslandHomeGroupEnabled(barId, id, on) {
         if (id === "clock")
             return;
-        setIslandSettings(barId, {
-            islandHomeLayout: getIslandHomeLayout(getBarConfig(barId)).map(g => g.id === id ? {
-                    "id": g.id,
-                    "enabled": on
-                } : g)
-        });
+        const entries = islandWidgetEntries(getBarConfig(barId));
+        if (!entries.some(entry => entry.id === id))
+            entries.push({
+                "id": id,
+                "enabled": on
+            });
+        setIslandWidgetEntries(barId, entries.map(entry => entry.id === id ? Object.assign({}, entry, {
+                "enabled": on
+            }) : entry));
     }
 
     property bool osdAlwaysShowValue: Spec.SPEC.osdAlwaysShowValue.def
@@ -1143,6 +1258,7 @@ Singleton {
     property bool osdMediaPlaybackEnabled: Spec.SPEC.osdMediaPlaybackEnabled.def
     property bool osdBrightnessEnabled: Spec.SPEC.osdBrightnessEnabled.def
     property bool osdIdleInhibitorEnabled: Spec.SPEC.osdIdleInhibitorEnabled.def
+    property bool osdDoNotDisturbEnabled: Spec.SPEC.osdDoNotDisturbEnabled.def
     property bool osdMicMuteEnabled: Spec.SPEC.osdMicMuteEnabled.def
     property bool osdMicVolumeEnabled: Spec.SPEC.osdMicVolumeEnabled.def
     property bool osdCapsLockEnabled: Spec.SPEC.osdCapsLockEnabled.def
@@ -1150,6 +1266,7 @@ Singleton {
     property bool osdKeyboardLayoutEnabled: Spec.SPEC.osdKeyboardLayoutEnabled.def
     property bool osdInputMethodEnabled: Spec.SPEC.osdInputMethodEnabled.def
     property bool osdTouchpadEnabled: Spec.SPEC.osdTouchpadEnabled.def
+    property bool osdAirplaneModeEnabled: Spec.SPEC.osdAirplaneModeEnabled.def
     property bool osdPowerProfileEnabled: Spec.SPEC.osdPowerProfileEnabled.def
     property bool osdAudioOutputEnabled: Spec.SPEC.osdAudioOutputEnabled.def
     property bool osdWorkspaceEnabled: Spec.SPEC.osdWorkspaceEnabled.def
@@ -1290,35 +1407,6 @@ Singleton {
         set("greeterWidgetInstances", Spec.greeterWidgetDefaults().map(inst => inst.widgetType === "greeterSession" ? inst : Object.assign(inst, {
                 id: "gw_" + inst.id
             })));
-    }
-
-    function getDefaultSystemMonitorConfig() {
-        return {
-            showHeader: true,
-            transparency: 0.8,
-            colorMode: "primary",
-            customColor: "#ffffff",
-            showCpu: true,
-            showCpuGraph: true,
-            showCpuTemp: true,
-            showGpuTemp: false,
-            gpuPciId: "",
-            showMemory: true,
-            showMemoryGraph: true,
-            showNetwork: true,
-            showNetworkGraph: true,
-            showDisk: true,
-            showTopProcesses: false,
-            topProcessCount: 3,
-            topProcessSortBy: "cpu",
-            layoutMode: "auto",
-            graphInterval: 60,
-            x: -1,
-            y: -1,
-            width: 320,
-            height: 480,
-            displayPreferences: ["all"]
-        };
     }
 
     function widgetInstanceListKey(instanceId) {
@@ -1472,7 +1560,9 @@ Singleton {
     signal blurStrengthRefreshNeeded
     signal compositorInputRefreshNeeded
     signal compositorCursorRefreshNeeded
+    signal compositorAnimationsRefreshNeeded
     signal notificationPopupsInvalidated
+    signal settingsSaved
 
     function refreshAuthAvailability() {
         Processes.detectAuthCapabilities();
@@ -1513,6 +1603,10 @@ Singleton {
         compositorInputRefreshNeeded();
     }
 
+    function updateCompositorAnimations() {
+        compositorAnimationsRefreshNeeded();
+    }
+
     function updateBlurStrength() {
         blurStrengthRefreshNeeded();
     }
@@ -1528,14 +1622,156 @@ Singleton {
         return iconThemeDark;
     }
 
+    function resolveAppliedIconTheme() {
+        return IconFolders.appliedName(resolveIconTheme(), _generatesIconTheme(), iconFolderState);
+    }
+
+    // Read in handlers that can run before the iconThemeGenerated binding has caught up.
+    function _generatesIconTheme() {
+        return IconFolders.generates(resolveIconTheme(), iconFolderRecolor);
+    }
+
     function applyStoredIconTheme() {
-        if (resolveIconTheme() !== "System Default") {
-            updateGtkIconTheme();
-            updateQtIconTheme();
-            updateCosmicIconTheme();
+        const picked = resolveIconTheme();
+        if (picked === "System Default") {
+            _requestedIconTheme = "";
+            restoreIconTheme();
+            _syncIconFolders();
             return;
         }
-        restoreIconTheme();
+        _syncIconFolders();
+        // A pack waiting on its overlay is applied once the state lands, as one name change.
+        if (_generatesIconTheme() && _iconFoldersRunning !== "" && !IconFolders.covers(iconFolderState, picked))
+            return;
+        _applyIconTheme();
+    }
+
+    function _applyIconTheme() {
+        _requestedIconTheme = resolveAppliedIconTheme();
+        updateGtkIconTheme();
+        updateQtIconTheme();
+        updateCosmicIconTheme();
+    }
+
+    function _reapplyIconThemeIfChanged() {
+        if (resolveIconTheme() === "System Default")
+            return;
+        if (resolveAppliedIconTheme() === (_requestedIconTheme || SessionData.lastAppliedIconTheme))
+            return;
+        _applyIconTheme();
+    }
+
+    function _wantedIconFolders() {
+        return IconFolders.wanted(resolveIconTheme(), iconFolderRecolor, SessionData.iconFoldersPresent, iconStyle);
+    }
+
+    function _setIconFoldersPresent(present) {
+        if (SessionData.iconFoldersPresent === present)
+            return;
+        SessionData.iconFoldersPresent = present;
+        SessionData.saveSettings();
+    }
+
+    // One generator call at a time, so a clear and an apply never overlap.
+    function _syncIconFolders() {
+        const want = _wantedIconFolders();
+        if (IconFolders.packOf(want))
+            _setIconFoldersPresent(true);
+        if (_iconFoldersRunning !== "")
+            return;
+        if (want !== "clear")
+            iconFoldersClearDelay.stop();
+        if (want === "")
+            return;
+        if (!IconFolders.needsRun(want, _iconFoldersDone, _iconFoldersRetried, _iconFoldersGenerated, IconFolders.covers(iconFolderState, resolveIconTheme())))
+            return;
+        if (want === "clear") {
+            // Delayed so the name switch reaches the toolkits before the overlay directories go.
+            iconFoldersClearDelay.start();
+            return;
+        }
+        _startIconFolders(want);
+    }
+
+    function _startIconFolders(want) {
+        _iconFoldersRetried = want === _iconFoldersDone ? want : "";
+        _iconFoldersRunning = want;
+        iconFoldersProcess.command = [Proc.dmsBin].concat(IconFolders.args(want, SessionData.isLightMode ? "light" : "dark", _stateDir));
+        iconFoldersProcess.running = true;
+    }
+
+    function _startIconFoldersClear() {
+        if (_iconFoldersRunning === "" && _wantedIconFolders() === "clear")
+            _startIconFolders("clear");
+    }
+
+    function _iconFoldersFinished(output) {
+        const ran = _iconFoldersRunning;
+        const result = IconFolders.parseState(output);
+        const cleared = ran === "clear" && result !== null;
+        _iconFoldersRunning = "";
+        _iconFoldersGenerated = IconFolders.covers(result, IconFolders.packOf(ran));
+        // After a clear, the next apply is owed again once something is generated.
+        _iconFoldersDone = cleared ? "" : ran;
+        if (cleared && _wantedIconFolders() === "clear")
+            _setIconFoldersPresent(false);
+        if (_generatesIconTheme()) {
+            iconFolderStateView.reload();
+            return;
+        }
+        _syncIconFolders();
+    }
+
+    // A newly installed app has no tile until the pack is built again; an unchanged build keeps its name.
+    function appsChanged() {
+        if (IconFolders.isSelf(IconFolders.packOf(_wantedIconFolders())))
+            iconAppsRebuildDelay.restart();
+    }
+
+    // A recipe plugin going on or off decides whether the picked pack takes the folder colors.
+    function iconRecipesChanged() {
+        if (IconFolders.packOf(_wantedIconFolders()))
+            iconAppsRebuildDelay.restart();
+    }
+
+    function _rebuildIcons() {
+        const want = _wantedIconFolders();
+        if (_iconFoldersRunning === "" && want === _iconFoldersDone && IconFolders.packOf(want))
+            _startIconFolders(want);
+    }
+
+    function _iconFoldersStartFailed() {
+        if (_iconFoldersRunning !== "" && !iconFoldersProcess.running)
+            _iconFoldersFinished("");
+    }
+
+    function _initIconFolders() {
+        if (_generatesIconTheme()) {
+            _syncIconFolders();
+            return;
+        }
+        // The shell went down between turning the feature off and clearing what it generated.
+        if (SessionData.iconFoldersPresent)
+            applyStoredIconTheme();
+    }
+
+    function themeRunFinished(withIconFolders) {
+        if (_generatesIconTheme()) {
+            iconFolderStateView.reload();
+            return;
+        }
+        if (!withIconFolders)
+            return;
+        // Started before the feature went off, so it may have generated after the clear.
+        _setIconFoldersPresent(true);
+        _syncIconFolders();
+    }
+
+    function _setIconFolderState(state) {
+        iconFolderState = state;
+        _syncIconFolders();
+        if (_iconFoldersRunning === "")
+            _reapplyIconThemeIfChanged();
     }
 
     function _shellQuote(arg) {
@@ -1548,8 +1784,9 @@ Singleton {
         const script = `b=${_shellQuote(_iconThemeBackup)}; cur=$(${current}); if saved=$(cat "$b" 2>/dev/null); then rm -f "$b"; [ "$cur" = ${_shellQuote(SessionData.lastAppliedIconTheme)} ] && { printf 'restore:%s' "$saved"; exit 0; }; fi; printf '%s' "$cur"`;
         Proc.runCommand("restoreIconTheme", ["sh", "-c", script], output => {
             const out = (output || "").trim();
-            const restored = out.startsWith("restore:") ? out.substring(8) : "";
-            const theme = restored || out;
+            // A folder overlay was never the system theme, and it is about to be removed.
+            const restored = IconFolders.baseName(out.startsWith("restore:") ? out.substring(8) : "");
+            const theme = restored || IconFolders.baseName(out);
             if (theme)
                 root.systemDefaultIconTheme = theme;
             root.updateGtkIconTheme();
@@ -1562,6 +1799,7 @@ Singleton {
         iconThemePerMode = false;
         iconThemeDark = "System Default";
         iconThemeLight = "System Default";
+        _requestedIconTheme = "";
         SessionData.lastAppliedIconTheme = "";
         SessionData.saveSettings();
         saveSettings();
@@ -1578,7 +1816,7 @@ Singleton {
             const platform = (output || "").trim();
             if (!platform)
                 return;
-            if (platform === SessionData.lastAppliedIconTheme || platform === root.iconThemeDark || platform === root.iconThemeLight)
+            if (IconFolders.isOwn(platform, SessionData.lastAppliedIconTheme, [root.iconThemeDark, root.iconThemeLight]))
                 return;
             root.setIconThemeUnmanaged();
             ToastService.showWarning(I18n.tr("Icon theme changed outside DMS; switched to System Default", "shown when an external tool overrides the icon theme DMS applied"));
@@ -1615,7 +1853,7 @@ Singleton {
     function updateCosmicIconTheme() {
         if (!cosmicIntegrationAvailable())
             return;
-        const resolved = resolveIconTheme();
+        const resolved = resolveAppliedIconTheme();
         let cosmicThemeName = (resolved === "System Default") ? systemDefaultIconTheme : resolved;
         if (!cosmicThemeName || cosmicThemeName === "System Default") {
             const detectScript = GSettings.getCmd("org.gnome.desktop.interface", "icon-theme");
@@ -1623,7 +1861,7 @@ Singleton {
             Proc.runCommand("detectCosmicIconTheme", ["sh", "-c", detectScript], (output, exitCode) => {
                 if (exitCode !== 0)
                     return;
-                const detected = (output || "").trim();
+                const detected = IconFolders.baseName((output || "").trim());
                 if (!detected || detected === "System Default")
                     return;
                 const detectedEscaped = detected.replace(/'/g, "'\\''");
@@ -1650,15 +1888,15 @@ Singleton {
     }
 
     function updateGtkIconTheme() {
-        const resolved = resolveIconTheme();
-        if (resolved === "System Default") {
+        const picked = resolveIconTheme();
+        if (picked === "System Default") {
             _writeGtkIconTheme(systemDefaultIconTheme);
             return;
         }
+        const applied = resolveAppliedIconTheme();
         // The portal write in _writeGtkIconTheme lands before its script, so back up first.
-        const current = GSettings.getCmd("org.gnome.desktop.interface", "icon-theme");
-        const backup = `b=${_shellQuote(_iconThemeBackup)}; [ -e "$b" ] && exit 0; cur=$(${current}); case "$cur" in ''|${_shellQuote(resolved)}) ;; *) mkdir -p "$(dirname "$b")" && printf '%s\\n' "$cur" > "$b" ;; esac`;
-        Proc.runCommand("backupIconTheme", ["sh", "-c", backup], () => root._writeGtkIconTheme(resolved));
+        const backup = IconFolders.backupScript(_shellQuote(_iconThemeBackup), GSettings.getCmd("org.gnome.desktop.interface", "icon-theme"), _shellQuote(picked));
+        Proc.runCommand("backupIconTheme", ["sh", "-c", backup], () => root._writeGtkIconTheme(applied));
     }
 
     function _writeGtkIconTheme(gtkThemeName) {
@@ -1696,7 +1934,7 @@ Singleton {
     }
 
     function updateQtIconTheme(restored) {
-        const resolved = restored || resolveIconTheme();
+        const resolved = restored || resolveAppliedIconTheme();
         const qtThemeName = (resolved === "System Default") ? "" : resolved;
         if (!qtThemeName)
             return;
@@ -1722,7 +1960,12 @@ Singleton {
         fi
         }
         update_qt_icon_theme ${_configDir}/qt5ct/qt5ct.conf '${qtThemeNameEscaped}'
-        update_qt_icon_theme ${_configDir}/qt6ct/qt6ct.conf '${qtThemeNameEscaped}'`;
+        update_qt_icon_theme ${_configDir}/qt6ct/qt6ct.conf '${qtThemeNameEscaped}'
+        for kwrite in kwriteconfig6 kwriteconfig5; do
+        command -v "$kwrite" >/dev/null 2>&1 || continue
+        "$kwrite" --file ${_configDir}/kdeglobals --group Icons --key Theme '${qtThemeNameEscaped}'
+        break
+        done`;
 
         Quickshell.execDetached(["sh", "-lc", script]);
 
@@ -1831,6 +2074,7 @@ Singleton {
             "applyStoredIconTheme": applyStoredIconTheme,
             "updateBarConfigs": updateBarConfigs,
             "updateCompositorCursor": updateCompositorCursor,
+            "updateCompositorAnimations": updateCompositorAnimations,
             "scheduleAuthApply": scheduleAuthApply,
             "scheduleGreeterAutoLoginSync": scheduleGreeterAutoLoginSync,
             "markGreeterSyncPending": markGreeterSyncPending,
@@ -1940,7 +2184,7 @@ Singleton {
         _commitBarConfigs(configs);
     }
 
-    function _loadSettings() {
+    function _loadSettings(skipTheme) {
         const isInitial = !_hasLoaded || _settingsStage === SettingsData.Stage.Partial;
         let unsavedChanges;
         let obj = _getSettingsObjectFromFiles();
@@ -2025,8 +2269,10 @@ Singleton {
             _mergeSessionState();
             Qt.callLater(checkIconThemeDrift);
         }
-        applyStoredTheme();
-        updateCompositorCursor();
+        if (!skipTheme) {
+            applyStoredTheme();
+            updateCompositorCursor();
+        }
         if (!isInitial) {
             // External edits reload under _loading, which skips the per-property transition triggers
             const frameChanged = (frameEnabled !== prevFrameEnabled || (frameEnabled && frameMode !== prevFrameMode));
@@ -2045,6 +2291,10 @@ Singleton {
     function _mergeSessionState() {
         if (!_hasLoaded || !SessionData._hasLoaded)
             return;
+        if (!_storesLoaded) {
+            _storesLoaded = true;
+            Qt.callLater(_initIconFolders);
+        }
         pruneGreeterSyncPending();
 
         const pluginState = SessionData.builtInPluginState || {};
@@ -2196,12 +2446,86 @@ Singleton {
             file.setSettings(fileSettings, userChanges);
         }
         unsavedUserChanges = _anySettingsFile(file => file.fileUnsavedUserChanges);
+        settingsSaved();
     }
 
     function savePluginSettings() {
         if (_pluginSettingsLoading || _pluginParseError)
             return;
         pluginSettingsFile.setText(JSON.stringify(pluginSettings, null, 2));
+        settingsSaved();
+    }
+
+    function profileSettingsSnapshot() {
+        return Store.toJson(root, new Set());
+    }
+
+    // A key in scope but missing from values goes back to its default. Like a save, a default stays
+    // out of the files unless a file already holds that key.
+    function applyProfileSettings(values, scope) {
+        if (_parseError || !_hasLoaded || _loading)
+            return false;
+        values = values || {};
+        const keys = scope.filter(key => key in Spec.SPEC);
+        if (!keys.length)
+            return true;
+        const held = new Set();
+        for (const file of _settingsFiles.values()) {
+            for (const key in file.settings)
+                held.add(key);
+        }
+        const next = _getCurrentSettings();
+        const before = {};
+        const incoming = key => keys.includes(key) ? values[key] ?? Spec.SPEC[key].def : root[key];
+        for (const key of keys) {
+            before[key] = root[key];
+            const def = Store.densityDefault(key, incoming("density"), incoming("interfaceStyle"));
+            const value = key in values ? values[key] : SpecUtil.cloneDef(def);
+            if (!held.has(key) && SpecUtil.isDefault(value, def))
+                delete next[key];
+            else
+                next[key] = value;
+        }
+        next.configVersion = settingsConfigVersion;
+
+        const splitSettings = _splitSettingsByFile(next);
+        for (const path in splitSettings)
+            _settingsFiles.get(path).setSettings(splitSettings[path], true);
+
+        _loading = true;
+        try {
+            _loadSettings(true);
+            _mergeSessionState();
+        } finally {
+            _loading = false;
+        }
+
+        const skipped = ["applyStoredTheme", "regenSystemThemes"];
+        // These feed Theme.switchTheme but have no onChange hook, since Settings switches the theme itself.
+        const themeKeys = ["currentThemeCategory", "customThemeFile", "registryThemeVariants"];
+        let theme = "";
+        const replayed = new Set();
+        for (const key of keys) {
+            if (SpecUtil.stableStringify(before[key]) === SpecUtil.stableStringify(root[key]))
+                continue;
+            if (key === "frameEnabled" || key === "frameMode" || key === "frameScreenPreferences")
+                Qt.callLater(_reconcileConnectedFrameBarStyles);
+            const hookName = Spec.SPEC[key].onChange;
+            if (hookName === "applyStoredTheme" || themeKeys.includes(key))
+                theme = "applyStoredTheme";
+            else if (hookName === "regenSystemThemes" && !theme)
+                theme = "regenSystemThemes";
+            if (!_hooks[hookName] || skipped.includes(hookName) || replayed.has(hookName))
+                continue;
+            replayed.add(hookName);
+            _hooks[hookName](root, key, before[key]);
+        }
+        if (theme)
+            _hooks[theme](root);
+        // The density and style hooks write sizes, which a normal set() saves afterward.
+        if (replayed.size)
+            saveSettings();
+        return true;
     }
 
     function _connectedFrameBarStyleSnapshot(config) {
@@ -2292,30 +2616,23 @@ Singleton {
 
         const script = `
             echo "SYSDEFAULT:$(${GSettings.getCmd("org.gnome.desktop.interface", "icon-theme")})"
-            for dir in ${pathsArg}; do
-                [ -d "$dir" ] || continue
-                for theme in "$dir"/*/; do
-                    [ -d "$theme" ] || continue
-                    basename "$theme"
+            {
+                for dir in ${pathsArg}; do
+                    [ -d "$dir" ] || continue
+                    for theme in "$dir"/*/; do
+                        [ -d "$theme" ] || continue
+                        basename "$theme"
+                    done
                 done
-            done | grep -v '^icons$' | grep -v '^default$' | grep -v '^hicolor$' | grep -v '^locolor$' | sort -u
+                ${IconFolders.shListSelf()}
+            } | grep -v '^icons$' | grep -v '^default$' | grep -v '^hicolor$' | grep -v '^locolor$' | sort -u
         `;
 
         Proc.runCommand("detectIconThemes", ["sh", "-c", script], (output, exitCode) => {
-            const themes = ["System Default"];
-            if (output && output.trim()) {
-                const lines = output.trim().split('\n');
-                for (let i = 0; i < lines.length; i++) {
-                    const line = lines[i].trim();
-                    if (line.startsWith("SYSDEFAULT:")) {
-                        systemDefaultIconTheme = line.substring(11).trim();
-                        continue;
-                    }
-                    if (line)
-                        themes.push(line);
-                }
-            }
-            availableIconThemes = themes;
+            const found = IconFolders.parseThemeList(output);
+            if (found.systemDefault !== null)
+                systemDefaultIconTheme = found.systemDefault;
+            availableIconThemes = found.themes;
         });
     }
 
@@ -2432,7 +2749,7 @@ Singleton {
 
     function dockReservationForEdge(screen, side) {
         const config = dockConfigForScreenEdge(screen, side);
-        if (!config?.enabled || config.autoHide || config.smartAutoHide)
+        if (!config?.enabled || config.autoHide || (config.smartAutoHide && CompositorService.supportsSmartDock))
             return 0;
         return Math.max(0, DockConfig.effectiveThickness(config) + (config.mode === "taskbar" || (!config.useOverlayLayer && CompositorService.usesConnectedFrameChromeForScreen(screen)) ? 0 : config.margin + config.bottomGap));
     }
@@ -2600,7 +2917,7 @@ Singleton {
         return null;
     }
 
-    function addBarWidget(barId, sectionId, widgetId) {
+    function addBarWidget(barId, sectionId, widgetId, index = -1) {
         const config = getBarConfig(barId);
         if (!config)
             return -1;
@@ -2621,22 +2938,63 @@ Singleton {
             break;
         }
         const listKey = sectionId + "Widgets";
-        const list = (config[listKey] ?? []).slice();
+        const list = barSectionWidgets(config, sectionId).slice();
+        const position = index < 0 ? list.length : Math.min(index, list.length);
         if (widgetId === "island") {
+            if (sectionId === "island")
+                return -1;
             if (isIslandBarConfig(config) || islandWidgetBlocked(config) || _islandWidgetLocation(config))
                 return -1;
             const configs = JSON.parse(JSON.stringify(barConfigs));
             const target = configs.find(cfg => cfg.id === barId);
-            list.push(entry);
+            list.splice(position, 0, entry);
             target[listKey] = list;
             _commitIslandOwner(configs, target);
-            return list.length - 1;
+            return position;
         }
-        list.push(entry);
-        const patch = {};
-        patch[listKey] = list;
-        updateBarConfig(barId, patch);
-        return list.length - 1;
+        list.splice(position, 0, entry);
+        _commitBarSection(barId, sectionId, list);
+        return position;
+    }
+
+    function removeBarWidget(barId, sectionId, index) {
+        const list = barSectionWidgets(getBarConfig(barId), sectionId).slice();
+        if (index < 0 || index >= list.length)
+            return;
+        list.splice(index, 1);
+        _commitBarSection(barId, sectionId, list);
+    }
+
+    // toIndex counts slots in the target section before the widget is lifted out.
+    function moveBarWidget(barId, fromSection, fromIndex, toSection, toIndex) {
+        const config = getBarConfig(barId);
+        const source = barSectionWidgets(config, fromSection).slice();
+        if (fromIndex < 0 || fromIndex >= source.length)
+            return;
+        const sameSection = fromSection === toSection;
+        const target = sameSection ? source : barSectionWidgets(config, toSection).slice();
+        const entry = source.splice(fromIndex, 1)[0];
+        const slot = sameSection && toIndex > fromIndex ? toIndex - 1 : toIndex;
+        target.splice(Math.max(0, Math.min(slot, target.length)), 0, entry);
+        const updates = {
+            [fromSection + "Widgets"]: source
+        };
+        updates[toSection + "Widgets"] = target;
+        updateBarConfig(barId, updates);
+    }
+
+    function barSectionWidgets(config, sectionId) {
+        return sectionId === "island" ? islandWidgetEntries(config) : (config?.[sectionId + "Widgets"] ?? []);
+    }
+
+    function _commitBarSection(barId, sectionId, list) {
+        if (sectionId === "island") {
+            setIslandWidgetEntries(barId, list);
+            return;
+        }
+        updateBarConfig(barId, {
+            [sectionId + "Widgets"]: list
+        });
     }
 
     function locateBarWidget(widgetId, preferredBarId) {
@@ -2660,8 +3018,7 @@ Singleton {
 
     function updateBarWidget(barId, sectionId, index, updates) {
         const config = getBarConfig(barId);
-        const listKey = sectionId + "Widgets";
-        const list = (config?.[listKey] ?? []).slice();
+        const list = barSectionWidgets(config, sectionId).slice();
         if (index < 0 || index >= list.length)
             return;
         const entry = typeof list[index] === "string" ? {
@@ -2670,9 +3027,7 @@ Singleton {
         } : Object.assign({}, list[index]);
         Object.assign(entry, updates);
         list[index] = entry;
-        const patch = {};
-        patch[listKey] = list;
-        updateBarConfig(barId, patch);
+        _commitBarSection(barId, sectionId, list);
     }
 
     function setBarIsland(barId, on, dot) {
@@ -3005,6 +3360,7 @@ Singleton {
         case "launcher":
             return "islandRouteLauncher";
         case "home":
+        case "profiles":
             return "islandRouteDash";
         case "media":
             return "islandRouteMedia";
@@ -3296,8 +3652,9 @@ Singleton {
 
             [ "$current_theme" = "$theme_name" ] && [ "$current_size" = "$cursor_size" ] && exit 0
 
-            if [ -f "$xresources_file" ]; then
-                cp "$xresources_file" "\${xresources_file}.backup$(date +%s)"
+            backup_file="\${xresources_file}.bak"
+            if [ -f "$xresources_file" ] && [ ! -e "$backup_file" ]; then
+                cp "$xresources_file" "$backup_file"
             fi
 
             temp_file="\${xresources_file}.tmp.$$"
@@ -3491,12 +3848,28 @@ Singleton {
     }
 
     function requestNotificationRuleForNotification(appName, desktopEntry) {
-        const pattern = desktopEntry || appName || "";
-        pendingNotificationRule = _newNotificationRule(pattern ? {
-            field: desktopEntry ? "desktopEntry" : "appName",
-            pattern: pattern,
-            matchType: "exact"
-        } : {});
+        pendingNotificationRule = _newNotificationRule(_appRuleKey(appName, desktopEntry));
+    }
+
+    // A sender with neither (a host app through the notification portal) is keyed on its empty app name.
+    function _appRuleKey(appName, desktopEntry) {
+        if (desktopEntry)
+            return {
+                field: "desktopEntry",
+                pattern: desktopEntry,
+                matchType: "exact"
+            };
+        if (appName)
+            return {
+                field: "appName",
+                pattern: appName,
+                matchType: "exact"
+            };
+        return {
+            field: "appName",
+            pattern: "^$",
+            matchType: "regex"
+        };
     }
 
     function _isMuteRule(rule) {
@@ -3527,27 +3900,23 @@ Singleton {
     function _appRuleIndex(rules, appName, desktopEntry, predicate) {
         const app = (appName || "").toString().toLowerCase();
         const desktop = (desktopEntry || "").toString().toLowerCase();
-        if (!app && !desktop)
-            return -1;
         return rules.findIndex(rule => {
-            if (!predicate(rule) || (rule.matchType || "contains").toString().toLowerCase() !== "exact" || (rule.conditions || []).length > 0)
+            if (!predicate(rule) || (rule.conditions || []).length > 0)
                 return false;
+            const matchType = (rule.matchType || "contains").toString().toLowerCase();
             const pattern = (rule.pattern || "").toString().toLowerCase();
+            if (!app && !desktop)
+                return matchType === "regex" && (!rule.field || rule.field === "appName") && pattern === "^$";
+            if (matchType !== "exact")
+                return false;
             const value = !rule.field || rule.field === "appName" ? app : rule.field === "desktopEntry" ? desktop : "";
             return pattern !== "" && pattern === value;
         });
     }
 
     function _addAppRule(appName, desktopEntry, overrides) {
-        const pattern = desktopEntry || appName || "";
-        if (!pattern)
-            return;
         var rules = JSON.parse(JSON.stringify(notificationRules || []));
-        const rule = _newNotificationRule(Object.assign({
-            field: desktopEntry ? "desktopEntry" : "appName",
-            pattern: pattern,
-            matchType: "exact"
-        }, overrides));
+        const rule = _newNotificationRule(Object.assign(_appRuleKey(appName, desktopEntry), overrides));
         if (!rule.expiresAt)
             delete rule.expiresAt;
         rules.push(rule);
@@ -3773,6 +4142,18 @@ Singleton {
         savePluginSettings();
     }
 
+    function removePluginSetting(pluginId, key) {
+        if (!pluginSettings[pluginId] || !(key in pluginSettings[pluginId]))
+            return false;
+        const updated = JSON.parse(JSON.stringify(pluginSettings));
+        delete updated[pluginId][key];
+        if (Object.keys(updated[pluginId]).length === 0)
+            delete updated[pluginId];
+        pluginSettings = updated;
+        savePluginSettings();
+        return true;
+    }
+
     function getPluginSettingsForPlugin(pluginId) {
         const settings = pluginSettings[pluginId];
         return settings ? JSON.parse(JSON.stringify(settings)) : {};
@@ -3840,7 +4221,7 @@ Singleton {
 
         property Timer timer: Timer {
             id: settingsFileReloadDebounce
-            interval: 50
+            interval: Timing.debounceFast
             onTriggered: settingsFileView.reload()
             repeat: false
         }
@@ -4070,7 +4451,7 @@ Singleton {
     }
     Timer {
         id: settingsFilesModelSyncDebounce
-        interval: 50
+        interval: Timing.debounceFast
         repeat: false
         running: false
         onTriggered: _syncSettingsFilesModels()
@@ -4161,9 +4542,52 @@ Singleton {
         }
     }
 
+    // Waits for both stores, so the first load compares against the last applied name.
+    FileView {
+        id: iconFolderStateView
+
+        path: root.iconThemeGenerated && root._storesLoaded ? root._stateDir + "/icon-folders.json" : ""
+        blockLoading: false
+        printErrors: false
+        watchChanges: true
+        onLoaded: root._setIconFolderState(IconFolders.parseState(iconFolderStateView.text()))
+        onLoadFailed: root._setIconFolderState(null)
+        onFileChanged: iconFolderStateView.reload()
+    }
+
+    Process {
+        id: iconFoldersProcess
+
+        running: false
+        stdout: StdioCollector {
+            id: iconFoldersOutput
+        }
+        onExited: root._iconFoldersFinished(iconFoldersOutput.text)
+        // FailedToStart only flips running, it never emits exited
+        onRunningChanged: {
+            if (!running)
+                Qt.callLater(root._iconFoldersStartFailed);
+        }
+    }
+
+    Timer {
+        id: iconFoldersClearDelay
+
+        interval: 2000
+        onTriggered: root._startIconFoldersClear()
+    }
+
+    // An install writes its desktop entry and its icons in separate steps.
+    Timer {
+        id: iconAppsRebuildDelay
+
+        interval: 3000
+        onTriggered: root._rebuildIcons()
+    }
+
     Timer {
         id: settingsSaveDebounce
-        interval: 50
+        interval: Timing.debounceFast
         repeat: false
         running: false
         onTriggered: _saveSettings(true)

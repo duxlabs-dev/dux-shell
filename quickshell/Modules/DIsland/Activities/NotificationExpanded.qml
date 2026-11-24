@@ -7,6 +7,9 @@ import qs.DCommon.Widgets
 Item {
     id: root
 
+    property color foreground: Theme.surfaceText
+    property color secondaryForeground: Theme.surfaceTextSecondary
+    property color bodyForeground: Theme.surfaceTextMedium
     required property var notificationModel
 
     Item {
@@ -44,7 +47,7 @@ Item {
                 StyledText {
                     width: parent.width
                     text: root.notificationModel.appName
-                    color: Theme.surfaceText
+                    color: root.foreground
                     font.pixelSize: Theme.fontSizeMedium
                     font.weight: Theme.fontWeightMedium
                     elide: Text.ElideRight
@@ -53,7 +56,7 @@ Item {
                 StyledText {
                     width: parent.width
                     text: root.notificationModel.timeText
-                    color: Theme.surfaceTextSecondary
+                    color: root.secondaryForeground
                     font.pixelSize: Theme.fontSizeSmall
                     elide: Text.ElideRight
                 }
@@ -85,7 +88,7 @@ Item {
             StyledText {
                 width: parent.width
                 text: root.notificationModel.summary
-                color: Theme.surfaceText
+                color: root.foreground
                 font.pixelSize: Theme.fontSizeLarge
                 font.weight: Theme.fontWeightMedium
                 wrapMode: Text.WrapAtWordBoundaryOrAnywhere
@@ -96,7 +99,7 @@ Item {
             StyledText {
                 width: parent.width
                 text: root.notificationModel.body
-                color: Theme.surfaceTextMedium
+                color: root.bodyForeground
                 font.pixelSize: Theme.fontSizeSmall
                 wrapMode: Text.WrapAtWordBoundaryOrAnywhere
                 maximumLineCount: 3

@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import qs.Common
 import qs.Services
+import qs.Widgets
 import qs.DCommon.Widgets
 import qs.Modals.DLauncherV2.Components
 
@@ -132,15 +133,14 @@ Rectangle {
     Behavior on height {
         NumberAnimation {
             id: heightAnimation
-            duration: Theme.shortDuration
-            easing.type: Theme.standardEasing
+            duration: Theme.expressiveDurations.expressiveDefaultSpatial
+            easing.type: Easing.BezierSpline
+            easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
         }
     }
 
-    Rectangle {
+    DDivider {
         anchors.top: parent.top
-        width: parent.width
-        height: Theme.outlineWidth
         color: Theme.outlineMedium
     }
 

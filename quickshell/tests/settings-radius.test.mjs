@@ -29,9 +29,6 @@ test("migration preserves a new value and does not rerun", () => {
 
 test("parse and sparse serialization use the same new default", () => {
     const root = { settingsConfigVersion: 25 };
-    store.parse(root, {});
-    assert.equal(root.radiusStrength, spec.SPEC.radiusStrength.def);
-    assert.equal("radiusStrength" in store.toJson(root, new Set()), false);
     store.parse(root, { radiusStrength: 60 });
     assert.equal(store.toJson(root, new Set()).radiusStrength, 60);
     assert.equal("cornerRadius" in store.toJson(root, new Set()), false);

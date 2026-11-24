@@ -11,6 +11,8 @@ Singleton {
     readonly property real appIconRadius: Theme.cornerRadiusM
     readonly property var shortcutDashPattern: [2, 2]
     readonly property real shortcutTileWidth: Theme.buttonHeightM + Theme.spacingM
+    readonly property real footerHeight: Theme.minimumTouchTargetSize
+    readonly property real shortcutWidth: footerHeight + Theme.spacingM
     readonly property real iconSpacing: compact ? Theme.spacingS : Theme.spacingM
     readonly property real thumbnailSize: compact ? Theme.buttonHeightXS : Theme.buttonHeightM
     readonly property real imageMaxHeight: Theme.listItemHeight * 4
@@ -24,6 +26,9 @@ Singleton {
     readonly property real popupRadius: Theme.windowRadius
     readonly property real menuRadius: Theme.cornerRadiusM
     readonly property real popupWidth: 400
+    readonly property real popupShadowBlur: Math.max(Theme.elevationLevel3?.blurPx ?? 12, Theme.elevationLevel4?.blurPx ?? 16)
+    readonly property real popupShadowOffset: Math.max(Math.abs(Theme.elevationOffsetX(Theme.elevationLevel3)), Math.abs(Theme.elevationOffsetX(Theme.elevationLevel4)), Math.abs(Theme.elevationOffsetY(Theme.elevationLevel3, 6)), Math.abs(Theme.elevationOffsetY(Theme.elevationLevel4, 8)))
+    readonly property real popupShadowPad: Math.max(16, popupShadowBlur + popupShadowOffset + 8)
     readonly property real popupMinWidth: 320
     readonly property real popupScreenRatio: 0.23
     readonly property real menuWidth: 280
@@ -55,13 +60,19 @@ Singleton {
     readonly property real bodySize: SettingsData.notificationBodyFontSize || Theme.fontSizeSmall
     readonly property real lineHeight: 1.2
     readonly property real estimatedCardHeight: cardPadding * 2 + controlSize + contentSpacing * 3 + summarySize * lineHeight + bodySize * lineHeight * collapsedLines + actionHeight
-    readonly property bool animationsEnabled: !SettingsData.reduceMotion && Theme.notificationAnimationBaseDuration > 0
-    readonly property var heightCurve: Theme.expressiveCurves.standard
-    readonly property var enterCurve: Theme.expressiveCurves.emphasizedDecel
-    readonly property var exitCurve: Theme.expressiveCurves.standardAccel
-    readonly property var stackSpring: Theme.springPreset("default", Theme.notificationStackShiftDuration)
+    readonly property bool animationsEnabled: !Theme.reduceMotion
+    readonly property var heightCurve: Theme.expressiveCurves.expressiveDefaultSpatial
+    readonly property int heightDuration: Theme.expressiveDurations.expressiveDefaultSpatial
+    readonly property var enterCurve: Theme.expressiveCurves.expressiveDefaultSpatial
+    readonly property int enterDuration: Theme.expressiveDurations.expressiveDefaultSpatial
+    readonly property var exitCurve: Theme.expressiveCurves.expressiveFastSpatial
+    readonly property int exitDuration: Theme.expressiveDurations.expressiveFastSpatial
+    readonly property var stackSpring: Theme.springPreset("defaultSpatial")
+    readonly property int stackStaggerDuration: Theme.shorterDuration
     readonly property var expandCurve: Theme.expressiveCurves.expressiveDefaultSpatial
+    readonly property int expandDuration: Theme.expressiveDurations.expressiveDefaultSpatial
     readonly property var dismissCurve: Theme.expressiveCurves.expressiveFastSpatial
+    readonly property int dismissDuration: Theme.expressiveDurations.expressiveFastSpatial
 
     function swipeSpring(stiffness, dampingRatio) {
         return {

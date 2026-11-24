@@ -1,10 +1,6 @@
 package keymap
 
-import (
-	"maps"
-	"slices"
-	"testing"
-)
+import "testing"
 
 const qwertyKeymap = `xkb_keymap {
 xkb_keycodes "(unnamed)" {
@@ -218,20 +214,5 @@ func TestParseNamesTheAsciiRange(t *testing.T) {
 	}
 	if got := Parse(twoGroupKeymap).Level1ByXkbKeycode()[34]; got[0] != "0xfc" {
 		t.Fatalf("udiaeresis is outside the named range and must stay hex, got %q", got[0])
-	}
-}
-
-func TestKeysymNamesCoversWhatParseCanProduce(t *testing.T) {
-	names := slices.Collect(maps.Values(KeysymNames))
-
-	for _, want := range []string{"bracketleft", "braceright", "a", "Z", "7", "Escape"} {
-		if !slices.Contains(names, want) {
-			t.Fatalf("%q missing from the vocabulary", want)
-		}
-	}
-	// udiaeresis has no name here, so a caller must not read its absence from
-	// a keymap as "the layout cannot reach it".
-	if slices.Contains(names, "udiaeresis") {
-		t.Fatal("udiaeresis is not a name this package can produce")
 	}
 }

@@ -42,57 +42,6 @@ func (m *mockNetConn) Close() error {
 
 func (m *mockNetConn) SetWriteDeadline(t time.Time) error { return nil }
 
-func TestHandleGetState(t *testing.T) {
-	manager := &Manager{
-		state: &NetworkState{
-			NetworkStatus: StatusWiFi,
-			WiFiSSID:      "TestNetwork",
-			WiFiConnected: true,
-		},
-	}
-
-	mc := newMockNetConn()
-	conn := ipc.NewConnWriter(mc)
-	req := ipc.Request{ID: 123, Method: "network.getState"}
-
-	handleGetState(conn, req, manager)
-
-	var resp ipc.Response[NetworkState]
-	err := json.NewDecoder(mc.writeBuf).Decode(&resp)
-	require.NoError(t, err)
-
-	assert.Equal(t, 123, resp.ID)
-	assert.Empty(t, resp.Error)
-	require.NotNil(t, resp.Result)
-	assert.Equal(t, StatusWiFi, resp.Result.NetworkStatus)
-	assert.Equal(t, "TestNetwork", resp.Result.WiFiSSID)
-}
-
-func TestHandleConnectWiFi(t *testing.T) {
-	t.Run("missing ssid parameter", func(t *testing.T) {
-		manager := &Manager{
-			state: &NetworkState{},
-		}
-
-		mc := newMockNetConn()
-		conn := ipc.NewConnWriter(mc)
-		req := ipc.Request{
-			ID:     123,
-			Method: "network.wifi.connect",
-			Params: map[string]any{},
-		}
-
-		handleConnectWiFi(conn, req, manager)
-
-		var resp ipc.Response[any]
-		err := json.NewDecoder(mc.writeBuf).Decode(&resp)
-		require.NoError(t, err)
-
-		assert.Equal(t, 123, resp.ID)
-		assert.Contains(t, resp.Error, "missing or invalid 'ssid' parameter")
-	})
-}
-
 func TestHandleHotspotRequests(t *testing.T) {
 	t.Run("configure dispatches request", func(t *testing.T) {
 		iwdBackend, err := NewIWDBackend()

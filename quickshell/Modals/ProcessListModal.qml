@@ -137,7 +137,7 @@ DFloatingWindow {
         focus: true
 
         Keys.onPressed: event => {
-            if (processContextMenu.visible || processContextMenu.confirmationOpen || columnPicker.shown)
+            if (processContextMenu.menuOpen || processContextMenu.confirmationOpen || columnPicker.shown)
                 return;
 
             switch (event.key) {

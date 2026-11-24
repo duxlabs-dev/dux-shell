@@ -26,8 +26,13 @@ Item {
     property bool _hitTestPending: false
     property bool _barHovered: false
     property var _pendingHoverHit: null
+    property var _activeHoverWidgetItem: null
     property string _pendingHoverTrigger: ""
     property string _hoverReopenSuppressedTrigger: ""
+    // Set when the island takes the pointer: the last bar point is stale unless a popout reported a newer one since.
+    property bool _pointerOnIsland: false
+    property real _islandEntryX: 0
+    property real _islandEntryY: 0
 
     property bool _candidateCacheValid: false
     property var _candidateCache: []
@@ -49,6 +54,7 @@ Item {
         cancelQueuedHitTest();
         _cancelPendingHover();
         _hoverCloseTimer.stop();
+        _pointerOnIsland = false;
         if (hasOpenHoverSurface() && !isActiveHoverSurfacePinned())
             closeHoverSurfaces();
         activeHoverTrigger = "";
@@ -110,6 +116,34 @@ Item {
         }
     }
 
+    readonly property int safeZoneDwellInterval: 300
+
+    // Resting 300 ms on another popout's widget inside the open popout's safe zone switches to it; any move restarts the rest.
+    Timer {
+        id: _safeZoneDwellTimer
+        interval: root.safeZoneDwellInterval
+        repeat: false
+        onTriggered: {
+            const hit = root._pendingHoverHit;
+            const cur = root.findWidgetAtGlobalPoint(root._lastHoverGlobalX, root._lastHoverGlobalY);
+            if (!hit || !cur || root._triggerKeyForHit(cur, root._lastHoverGlobalX, root._lastHoverGlobalY) !== root._pendingHoverTrigger) {
+                root._cancelPendingHover();
+                return;
+            }
+            root._commitPendingHover(true);
+        }
+    }
+
+    // Resting on the bar inside the safe zone, away from the popout and its widget, closes the popout.
+    Timer {
+        id: _zoneRestTimer
+        interval: root.safeZoneDwellInterval
+        onTriggered: {
+            if (PopoutManager.hoverCursorGlobalX === root._lastHoverGlobalX && PopoutManager.hoverCursorGlobalY === root._lastHoverGlobalY && root.hasOpenHoverSurface() && !root.isActiveHoverSurfacePinned())
+                root.closeHoverSurfaces();
+        }
+    }
+
     Timer {
         id: _hoverIntentTimer
         interval: root.hoverPopoutDelay
@@ -120,12 +154,13 @@ Item {
     // Grace timer to prevent flicker when crossing gaps.
     Timer {
         id: _hoverCloseTimer
-        interval: 120
+        interval: Timing.debounce
         repeat: false
         onTriggered: root._commitHoverClose()
     }
 
     function queueHoverPoint(gx, gy) {
+        _pointerOnIsland = false;
         _lastHoverGlobalX = gx;
         _lastHoverGlobalY = gy;
         _barHovered = true;
@@ -137,15 +172,31 @@ Item {
     function updateBarHovered(hovered) {
         _barHovered = hovered;
         if (hovered) {
+            _pointerOnIsland = false;
             _hoverCloseTimer.stop();
             return;
         }
 
         cancelQueuedHitTest();
         _cancelPendingHover();
+        _zoneRestTimer.stop();
         _hoverReopenSuppressedTrigger = "";
         if (!hoverPopoutsEnabled || isActiveHoverSurfacePinned())
             return;
+        _hoverCloseTimer.restart();
+    }
+
+    function pointerMovedToIsland() {
+        if (!hoverPopoutsEnabled)
+            return;
+        if (!hasOpenHoverSurface())
+            return;
+        cancelQueuedHitTest();
+        _cancelPendingHover();
+        _pointerOnIsland = true;
+        _zoneRestTimer.stop();
+        _islandEntryX = PopoutManager.hoverCursorGlobalX;
+        _islandEntryY = PopoutManager.hoverCursorGlobalY;
         _hoverCloseTimer.restart();
     }
 
@@ -162,6 +213,7 @@ Item {
         cancelQueuedHitTest();
         _cancelPendingHover();
         _hoverCloseTimer.stop();
+        _pointerOnIsland = false;
         _hoverReopenSuppressedTrigger = "";
         barContent.cancelQueuedWidgetPopout();
 
@@ -632,7 +684,7 @@ Item {
         if (PopoutManager.cursorOverBar(gx, gy, undefined, excludedBarWindow))
             return true;
         const popout = PopoutManager.getActivePopout(barWindow?.screen);
-        if (popout?.containsGlobalPoint?.(gx, gy))
+        if (popout?.hoverSafeContains ? popout.hoverSafeContains(gx, gy) : popout?.containsGlobalPoint?.(gx, gy))
             return true;
         if (notepadContainsGlobalPoint(gx, gy))
             return true;
@@ -833,6 +885,14 @@ Item {
             _hoverReopenSuppressedTrigger = "";
 
         _hoverCloseTimer.stop();
+        _zoneRestTimer.stop();
+
+        if (_blockedByActiveSafeZone(hit, triggerKey, gx, gy)) {
+            _startSafeZoneDwell(hit, triggerKey);
+            return;
+        }
+        if (_safeZoneDwellTimer.running)
+            _cancelPendingHover();
 
         if (triggerKey === activeHoverTrigger && hasOpenHoverSurface() && PopoutManager.getActivePopout(barWindow?.screen)?.isClosing !== true) {
             _cancelPendingHover();
@@ -849,8 +909,30 @@ Item {
         }
     }
 
+    function _startSafeZoneDwell(hit, triggerKey) {
+        _hoverIntentTimer.stop();
+        _pendingHoverHit = hit;
+        _pendingHoverTrigger = triggerKey;
+        _safeZoneDwellTimer.restart();
+    }
+
+    // Brushing another popout's widget on the way into the open popout doesn't switch to it.
+    function _blockedByActiveSafeZone(hit, triggerKey, gx, gy) {
+        if (triggerKey === activeHoverTrigger || !pointInActiveHoverSafeZone(gx, gy))
+            return false;
+        return hit.widgetItem !== _activeHoverWidgetItem && !_hitTargetsActivePopout(hit);
+    }
+
+    function pointInActiveHoverSafeZone(gx, gy) {
+        if (activeHoverTrigger === "")
+            return false;
+        const active = PopoutManager.getActivePopout(barWindow?.screen);
+        return !!active && active.isClosing !== true && active.hoverSafeContains?.(gx, gy) === true;
+    }
+
     function _cancelPendingHover() {
         _hoverIntentTimer.stop();
+        _safeZoneDwellTimer.stop();
         _pendingHoverHit = null;
         _pendingHoverTrigger = "";
     }
@@ -865,7 +947,7 @@ Item {
         return barContent.resolvePopoutFromLoader(loader) === active;
     }
 
-    function _commitPendingHover() {
+    function _commitPendingHover(ignoreSafeZone = false) {
         const hit = _pendingHoverHit;
         const triggerKey = _pendingHoverTrigger;
         _pendingHoverHit = null;
@@ -876,6 +958,10 @@ Item {
             return;
         if (!PopoutManager.cursorOverBar(_lastHoverGlobalX, _lastHoverGlobalY))
             return;
+        if (!ignoreSafeZone && _blockedByActiveSafeZone(hit, triggerKey, _lastHoverGlobalX, _lastHoverGlobalY)) {
+            _startSafeZoneDwell(hit, triggerKey);
+            return;
+        }
 
         const activePopout = PopoutManager.getActivePopout(barWindow?.screen);
         const targetLoader = _loaderForWidgetId(hit.widgetId);
@@ -897,6 +983,7 @@ Item {
         }
 
         activeHoverTrigger = triggerKey;
+        _activeHoverWidgetItem = hit.widgetItem;
     }
 
     function scheduleHoverClose(gx, gy) {
@@ -908,8 +995,11 @@ Item {
             return;
         if (isActiveHoverSurfacePinned())
             return;
-        if (cursorOverHoverChain(gx, gy, barWindow?.hostWindow ?? null))
+        if (cursorOverHoverChain(gx, gy, barWindow?.hostWindow ?? null)) {
+            if (pointInActiveHoverSafeZone(gx, gy))
+                _zoneRestTimer.restart();
             return;
+        }
         _hoverCloseTimer.restart();
     }
 
@@ -932,8 +1022,14 @@ Item {
     function _commitHoverClose() {
         const gx = PopoutManager.hoverCursorGlobalX;
         const gy = PopoutManager.hoverCursorGlobalY;
+        const onIsland = _pointerOnIsland;
+        _pointerOnIsland = false;
         if (isActiveHoverSurfacePinned())
             return;
+        if (onIsland && gx === _islandEntryX && gy === _islandEntryY) {
+            closeHoverSurfaces();
+            return;
+        }
         // A popout surface mapping can pull pointer focus off the bar on Hyprland; a leave
         // with the cursor still resting on the trigger widget is not a real exit (#3248).
         if (_cursorRestsOnActiveTrigger(gx, gy))

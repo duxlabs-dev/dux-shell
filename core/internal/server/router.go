@@ -17,6 +17,7 @@ import (
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/evdev"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/fcitx5"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/freedesktop"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/globalshortcuts"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/location"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/loginctl"
 	serverLyrics "github.com/duxlabs-dev/dux-shell/core/internal/server/lyrics"
@@ -26,6 +27,7 @@ import (
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/notifyactions"
 	serverPlugins "github.com/duxlabs-dev/dux-shell/core/internal/server/plugins"
 	serverRegistries "github.com/duxlabs-dev/dux-shell/core/internal/server/registries"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/rfkill"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/sysupdate"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/tailscale"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/thememode"
@@ -214,6 +216,14 @@ func newRequestMux(readiness *systemd.Readiness) *ipc.Mux {
 		evdev.HandleRequest(conn, req, evdevManager)
 	}))
 
+	mux.HandlePrefix("rfkill.", requestHandler(func(conn *ipc.ConnWriter, req ipc.Request) {
+		if rfkillManager == nil {
+			conn.RespondError(req.ID, "rfkill manager not initialized")
+			return
+		}
+		rfkill.HandleRequest(conn, req, rfkillManager)
+	}))
+
 	mux.HandlePrefix("dbus.", func(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request, _ *ipc.Subscriber) {
 		if dbusManager == nil {
 			conn.RespondError(req.ID, "dbus manager not initialized")
@@ -244,6 +254,14 @@ func newRequestMux(readiness *systemd.Readiness) *ipc.Mux {
 			return
 		}
 		wellbeing.HandleRequest(conn, req, wellbeingManager)
+	}))
+
+	mux.HandlePrefix("globalshortcuts.", requestHandler(func(conn *ipc.ConnWriter, req ipc.Request) {
+		if globalShortcutsManager == nil {
+			conn.RespondError(req.ID, "global shortcuts manager not initialized")
+			return
+		}
+		globalshortcuts.HandleRequest(conn, req, globalShortcutsManager)
 	}))
 
 	mux.HandlePrefix("notify.", requestHandler(func(conn *ipc.ConnWriter, req ipc.Request) {

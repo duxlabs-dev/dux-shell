@@ -7,6 +7,7 @@ import qs.Modules.DDash
 import qs.Modules.DIsland.Activities
 import qs.Services
 import qs.Widgets
+import "../../Common/IslandActivities.js" as Activities
 
 Item {
     id: root
@@ -19,8 +20,8 @@ Item {
     property var launcherTransientSurfaceTracker: null
     property var effectiveScreen: null
     property bool reducedMotion: false
-    property real springStiffness: 560
-    property real springDamping: 37
+    property real springStiffness: 600
+    property real springDamping: 49
     property real springMass: 1
     property real hostOriginX: 0
     property real hostOriginY: 0
@@ -63,7 +64,7 @@ Item {
 
     readonly property color surfaceColor: {
         if (root.highContrast)
-            return Theme.surfaceContainerHighest;
+            return Theme.highContrastSurface;
         switch (root.palette) {
         case "bright":
             return Theme.surfaceBright;
@@ -74,7 +75,28 @@ Item {
     }
     readonly property bool popupStyled: root.controller.expanded
     readonly property real islandOpacity: Math.max(0, Math.min(1, root.transparency))
-    readonly property color effectiveSurfaceColor: root.embedded ? root.bandColor : root.highContrast ? Theme.surfaceContainerHighest : Theme.withAlpha(root.surfaceColor, root.islandOpacity)
+    readonly property bool activityColors: SettingsData.islandSetting(root.controller.barConfig, "islandActivityColors")
+    readonly property var liveActivity: root.controller.liveActive ? root.controller.liveEntry : null
+    readonly property string activityRole: {
+        if (!root.activityColors)
+            return "";
+        const override = root.controller.expanded ? (root.liveActivity?.expandedBackground || root.liveActivity?.background) : root.liveActivity?.background;
+        if (override)
+            return override;
+        if (root.controller.notificationActive && root.notificationModel.critical)
+            return "error";
+        return Activities.severityRole(root.liveActivity?.severity);
+    }
+    readonly property string configuredRole: Activities.surfaceRole(SettingsData.islandSetting(root.controller.barConfig, root.controller.expanded ? "islandExpandedColor" : "islandCompactColor"))
+    readonly property string surfaceRole: root.highContrast ? "" : (root.activityRole || root.configuredRole)
+    readonly property bool ownColor: root.surfaceRole !== ""
+    readonly property color surfaceForeground: root.ownColor ? root.controller.roleForeground(root.surfaceRole) : Theme.surfaceText
+    readonly property color activityForeground: !root.highContrast && root.activityColors && root.liveActivity?.foreground ? root.controller.roleForeground(root.liveActivity.foreground) : root.surfaceForeground
+    readonly property color effectiveSurfaceColor: {
+        if (root.ownColor)
+            return Theme.withAlpha(root.controller.roleFill(root.surfaceRole), root.islandOpacity);
+        return root.embedded ? root.bandColor : root.highContrast ? Theme.highContrastSurface : Theme.withAlpha(root.surfaceColor, root.islandOpacity);
+    }
     readonly property real surfaceOpacity: root.effectiveSurfaceColor.a
     readonly property bool shadowEnabled: !root.chromeless && root.surfaceOpacity > 0 && Theme.elevationEnabled && SettingsData.barElevationEnabled
     readonly property string autoBarShadowDirection: root.controller.edge
@@ -148,6 +170,20 @@ Item {
         readonly property real renderedX: root.currentScreenX
         readonly property real renderedY: root.currentScreenY
 
+        function controlCenterXFor(width) {
+            const target = root.resolveTarget(root.controller.controlCenterTargetFor(width));
+            if (!root.isVertical)
+                return Math.round((root.alongExtent - target.width) / 2 + target.offsetAlong) + root.hostOriginX;
+            return (root.farEdge ? root.crossExtent - Math.round(target.offsetCross) - target.width : Math.round(target.offsetCross)) + root.hostOriginX;
+        }
+
+        function controlCenterYFor(height) {
+            const target = root.resolveTarget(root.controller.controlCenterTargetFor(root.controller.controlCenterSheetWidth + root.controller.controlCenterSheetInset, height));
+            if (root.isVertical)
+                return Math.round((root.alongExtent - target.height) / 2 + target.offsetAlong) + root.hostOriginY;
+            return (root.farEdge ? root.crossExtent - Math.round(target.offsetCross) - target.height : Math.round(target.offsetCross)) + root.hostOriginY;
+        }
+
         function screenXFor(width) {
             if (!root.isVertical)
                 return Math.round((root.alongExtent - width) / 2 + (root.embedded ? root.clampAnchored(root.controller.alongOffset + root.anchorAlong, width) : motion.targetOffsetAlong)) + root.hostOriginX;
@@ -219,9 +255,14 @@ Item {
                 "height": target.height + (root.isVertical ? 0 : inset)
             });
         }
-        if (!root.freeMode)
-            return target;
-        const x = root.clampFree(root.anchor.x - target.width / 2, target.width, root.width);
+        if (!root.freeMode) {
+            if (target.centerOffsetX === undefined || root.isVertical)
+                return target;
+            return Object.assign({}, target, {
+                "offsetAlong": root.clampAnchored(target.offsetAlong, target.width)
+            });
+        }
+        const x = root.clampFree(root.anchor.x - target.width / 2 + (target.centerOffsetX ?? 0), target.width, root.width);
         const y = root.clampFree(root.anchor.y - target.height / 2, target.height, root.height);
         return Object.assign({}, target, {
             "offsetAlong": root.isVertical ? y + target.height / 2 - root.height / 2 : x + target.width / 2 - root.width / 2,
@@ -288,6 +329,8 @@ Item {
         SettingsData.recordBarInteraction(root.effectiveScreen, root.controller.barConfig?.id);
         if (button === Qt.RightButton)
             root.controller.toggleMediaFace();
+        else if (root.controller.hoverExpandBlocked)
+            root.controller.blockingPopoutDismissRequested();
         else
             root.controller.requestToggle(true);
     }
@@ -336,7 +379,7 @@ Item {
     VectorSpringMotion {
         id: motion
 
-        reducedMotion: root.reducedMotion
+        reducedMotion: root.reducedMotion || root.controller.panelResizing
         stiffness: root.springStiffness
         damping: root.springDamping
         mass: root.springMass
@@ -349,6 +392,8 @@ Item {
     Item {
         id: inputEnvelope
 
+        readonly property real editPadding: root.controller.editingActivity === "controlcenter" ? PopoutMetrics.editOverflow : 0
+        readonly property real inputPadding: overshootBudget + editPadding
         readonly property real overshootBudget: {
             if (!motion.running)
                 return 0;
@@ -363,10 +408,11 @@ Item {
             return Math.ceil(span * Math.exp(-Math.PI * zeta / Math.sqrt(1 - zeta * zeta)));
         }
 
-        x: (motion.running ? Math.min(root.motionStartBounds.x, root.targetVisualX) : root.targetVisualX) - overshootBudget
-        y: (motion.running ? Math.min(root.motionStartBounds.y, root.targetVisualY) : root.targetVisualY) - overshootBudget
-        width: (motion.running ? Math.max(root.motionStartBounds.x + root.motionStartBounds.width, root.targetVisualX + motion.targetWidth) : root.targetVisualX + motion.targetWidth) + overshootBudget - x
-        height: (motion.running ? Math.max(root.motionStartBounds.y + root.motionStartBounds.height, root.targetVisualY + motion.targetHeight) : root.targetVisualY + motion.targetHeight) + overshootBudget - y
+        // Keep the grab inside the Wayland input region while it travels beyond either resize edge.
+        x: root.controller.panelResizing ? -root.hostOriginX : (motion.running ? Math.min(root.motionStartBounds.x, root.targetVisualX) : root.targetVisualX) - inputPadding
+        y: root.controller.panelResizing ? -root.hostOriginY : (motion.running ? Math.min(root.motionStartBounds.y, root.targetVisualY) : root.targetVisualY) - inputPadding
+        width: root.controller.panelResizing ? (root.effectiveScreen?.width ?? root.width) : (motion.running ? Math.max(root.motionStartBounds.x + root.motionStartBounds.width, root.targetVisualX + motion.targetWidth) : root.targetVisualX + motion.targetWidth) + inputPadding - x
+        height: root.controller.panelResizing ? (root.effectiveScreen?.height ?? root.height) : (motion.running ? Math.max(root.motionStartBounds.y + root.motionStartBounds.height, root.targetVisualY + motion.targetHeight) : root.targetVisualY + motion.targetHeight) + inputPadding - y
     }
 
     Loader {
@@ -385,27 +431,29 @@ Item {
         width: root.currentVisualWidth
         height: root.currentVisualHeight
         // Embedded, the band already paints the in-band strip; overhangFill draws the rest, so a translucent band never double-alphas.
-        color: root.embedded ? "transparent" : root.effectiveSurfaceColor
+        color: root.embedded && !root.ownColor ? "transparent" : root.effectiveSurfaceColor
         border.width: root.notificationAccentColor !== "transparent" ? 1.5 : root.embedded ? 0 : (root.highContrast ? 2 : (root.popupStyled && !root.notch ? BlurService.borderWidth : 0))
         border.color: root.notificationAccentColor !== "transparent" ? root.notificationAccentColor : (root.highContrast ? Theme.outlineStrong : (root.popupStyled && !root.notch ? BlurService.borderColor : "transparent"))
 
         Behavior on color {
             ColorAnimation {
-                duration: root.reducedMotion ? 0 : Theme.shortDuration
-                easing.type: Easing.OutCubic
+                duration: root.reducedMotion ? 0 : Theme.expressiveDurations.expressiveFastEffects
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
             }
         }
 
         Behavior on border.color {
             ColorAnimation {
-                duration: root.reducedMotion ? 0 : Theme.shortDuration
-                easing.type: Easing.OutCubic
+                duration: root.reducedMotion ? 0 : Theme.expressiveDurations.expressiveFastEffects
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
             }
         }
 
         Rectangle {
             anchors.fill: parent
-            visible: root.compactBackground && opacity > 0
+            visible: root.compactBackground && !root.ownColor && opacity > 0
             opacity: 1 - root.morphProgress
             color: root.compactBackgroundColor
             topLeftRadius: parent.topLeftRadius
@@ -448,6 +496,9 @@ Item {
             expanded: root.controller.expanded
             pointerInside: root.controller.pointerInside
             activityId: root.controller.activeActivity
+            foreground: root.surfaceForeground
+            liveCompactComponent: compactLiveComponent
+            liveExpandedComponent: expandedLiveComponent
             homeCompactComponent: compactHomeComponent
             homeExpandedComponent: expandedHomeComponent
             mediaCompactComponent: compactMediaComponent
@@ -472,12 +523,15 @@ Item {
             clipboardExpandedComponent: expandedClipboardComponent
             powerMenuCompactComponent: compactPowerMenuComponent
             powerMenuExpandedComponent: expandedPowerMenuComponent
+            profilesCompactComponent: compactProfilesComponent
+            profilesExpandedComponent: expandedProfilesComponent
         }
 
         HoverHandler {
             id: islandHover
 
             onHoveredChanged: root.updateFittsPointerInside()
+            onPointChanged: root.updatePointer(point.scenePosition)
         }
 
         // Above the content so the face takes focus before the pressed control; a handler on the parent runs after it.
@@ -495,7 +549,12 @@ Item {
     }
 
     function updateFittsPointerInside() {
-        root.controller.updatePointerInside(islandHover.hovered || stripHover.hovered);
+        const p = (islandHover.hovered ? islandHover : stripHover).point.scenePosition;
+        root.controller.updatePointerInside(islandHover.hovered || stripHover.hovered, p.x + root.controller.sectionOriginX, p.y + root.controller.sectionOriginY);
+    }
+
+    function updatePointer(p) {
+        root.controller.pointerMoved(p.x + root.controller.sectionOriginX, p.y + root.controller.sectionOriginY);
     }
 
     // Fitts zone from the island edge to the screen edge — hover/click count as island.
@@ -520,6 +579,7 @@ Item {
             id: stripHover
 
             onHoveredChanged: root.updateFittsPointerInside()
+            onPointChanged: root.updatePointer(point.scenePosition)
         }
 
         MouseArea {
@@ -642,6 +702,25 @@ Item {
             controller: root.controller
             onWindowRequested: windowName => root.openAfterCollapse(windowName)
             resizeGeometry: root.resizeGeometry
+        }
+    }
+
+    Component {
+        id: compactLiveComponent
+        LiveActivityFace {
+            controller: root.controller
+            activity: root.controller.liveEntry
+            foreground: root.activityForeground
+        }
+    }
+
+    Component {
+        id: expandedLiveComponent
+        LiveActivityFace {
+            controller: root.controller
+            activity: root.controller.liveEntry
+            foreground: root.activityForeground
+            expanded: true
         }
     }
 
@@ -836,6 +915,8 @@ Item {
         id: compactNotificationComponent
 
         NotificationCompact {
+            foreground: root.activityForeground
+            secondaryForeground: Theme.withAlpha(root.activityForeground, Theme.surfaceTextSecondary.a)
             notificationModel: root.notificationModel
             controller: root.controller
             dense: root.controller.compactDense
@@ -911,9 +992,34 @@ Item {
     }
 
     Component {
+        id: compactProfilesComponent
+
+        DestinationCompact {
+            controller: root.controller
+            activityId: "profiles"
+            iconName: "style"
+            label: I18n.tr("Profiles", "island compact face: config profile picker label")
+        }
+    }
+
+    Component {
+        id: expandedProfilesComponent
+
+        ProfilePickerExpanded {
+            controller: root.controller
+            onWindowRequested: windowName => root.openAfterCollapse(windowName)
+            resizeGeometry: root.resizeGeometry
+            effectiveScreen: root.effectiveScreen
+        }
+    }
+
+    Component {
         id: expandedNotificationComponent
 
         NotificationExpanded {
+            foreground: root.activityForeground
+            secondaryForeground: Theme.withAlpha(root.activityForeground, Theme.surfaceTextSecondary.a)
+            bodyForeground: Theme.withAlpha(root.activityForeground, Theme.surfaceTextMedium.a)
             notificationModel: root.notificationModel
         }
     }

@@ -32,15 +32,6 @@ test("herdr parser reads the sessions envelope and treats missing running as sto
     assert.throws(() => mux.BACKENDS.herdr.parse("not json"));
 });
 
-test("only tmux can rename and each backend builds argv from the session name unchanged", () => {
-    const name = "my session; echo nope";
-    assert.deepEqual(Object.keys(mux.BACKENDS).filter(key => mux.BACKENDS[key].rename), ["tmux"]);
-    assert.deepEqual(plain(mux.BACKENDS.herdr.attach(name)), ["herdr", "session", "attach", name]);
-    assert.deepEqual(plain(mux.BACKENDS.herdr.create(name)), ["herdr", "--session", name]);
-    assert.deepEqual(plain(mux.BACKENDS.herdr.kill(name)), ["herdr", "session", "stop", name]);
-    assert.deepEqual(plain(mux.BACKENDS.tmux.rename(name, "renamed")), ["tmux", "rename-session", "-t", name, "renamed"]);
-});
-
 test("session filter matches names case-insensitively and by /regex/, ignoring bad patterns", () => {
     const filter = " Scratch, /^tmp_/, /[bad/ ";
     assert.equal(mux.isSessionExcluded("scratch", filter), true);

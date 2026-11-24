@@ -8,13 +8,16 @@ Item {
     required property string json
     required property var grid
 
-    readonly property var slot: grid.slotLayout.slots[index] ?? null
+    property var retainedSlot: null
+    readonly property var slot: grid.slotLayout.slots[index] ?? retainedSlot
     readonly property bool dragging: grid.draggingSourceIndex === index
     readonly property bool resizing: grid.sizePreview?.index === index
     property var resizeOrigin: null
     property var dragOrigin: null
     property Item passthrough: null
     property int restCursor: Qt.OpenHandCursor
+    property real hoverMargin: 0
+    readonly property bool hovered: hoverTracker.hovered
     property bool raised: dragging || resizing
     readonly property bool interactionEnabled: resizeOrigin !== null || dragOrigin !== null || !grid.interacting
 
@@ -112,7 +115,7 @@ Item {
     }
 
     Behavior on width {
-        enabled: !root.dragging && root.resizeOrigin === null && root.grid.animationsEnabled && root.grid.animateLayout && !root.grid.holdLayout
+        enabled: !root.dragging && root.resizeOrigin === null && root.grid.animateLayout && !root.grid.holdLayout
         NumberAnimation {
             duration: Theme.expressiveDurations.expressiveFastSpatial
             easing.type: Easing.BezierSpline
@@ -121,7 +124,7 @@ Item {
     }
 
     Behavior on height {
-        enabled: !root.dragging && root.resizeOrigin === null && root.grid.animationsEnabled && root.grid.animateLayout && !root.grid.holdLayout
+        enabled: !root.dragging && root.resizeOrigin === null && root.grid.animateLayout && !root.grid.holdLayout
         NumberAnimation {
             duration: Theme.expressiveDurations.expressiveFastSpatial
             easing.type: Easing.BezierSpline
@@ -130,7 +133,7 @@ Item {
     }
 
     Behavior on x {
-        enabled: !root.dragging && root.resizeOrigin === null && root.grid.animationsEnabled && root.grid.animateLayout && !root.grid.holdLayout
+        enabled: !root.dragging && root.resizeOrigin === null && root.grid.animateLayout && !root.grid.holdLayout
         NumberAnimation {
             duration: Theme.expressiveDurations.expressiveDefaultSpatial
             easing.type: Easing.BezierSpline
@@ -139,7 +142,7 @@ Item {
     }
 
     Behavior on y {
-        enabled: !root.dragging && root.resizeOrigin === null && root.grid.animationsEnabled && root.grid.animateLayout && !root.grid.holdLayout
+        enabled: !root.dragging && root.resizeOrigin === null && root.grid.animateLayout && !root.grid.holdLayout
         NumberAnimation {
             duration: Theme.expressiveDurations.expressiveDefaultSpatial
             easing.type: Easing.BezierSpline
@@ -151,6 +154,7 @@ Item {
     HoverHandler {
         id: hoverTracker
         enabled: root.grid.editMode
+        margin: root.hoverMargin
     }
 
     MouseArea {
@@ -161,11 +165,17 @@ Item {
         visible: root.grid.editMode
         enabled: visible && (root.dragOrigin !== null || !root.grid.interacting)
         hoverEnabled: enabled
-        acceptedButtons: Qt.LeftButton
+        acceptedButtons: Qt.LeftButton | Qt.RightButton
         cursorShape: root.dragging ? Qt.ClosedHandCursor : root.restCursor
         containmentMask: root.passthrough ? passthroughMask : null
         onPressAndHold: root.pressAndHold()
-        onClicked: root.clicked()
+        onClicked: mouse => {
+            if (mouse.button === Qt.RightButton) {
+                root.pressAndHold();
+                return;
+            }
+            root.clicked();
+        }
         onWheel: wheel => wheel.accepted = true
     }
 

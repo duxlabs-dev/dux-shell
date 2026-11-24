@@ -4,6 +4,7 @@ import QtQuick
 import Quickshell.Widgets
 import qs.Common
 import qs.Services
+import qs.Widgets
 import qs.DCommon.Widgets
 import qs.Modals.DLauncherV2.Components
 import "../../Common/LauncherKeybinds.js" as LauncherKeybinds
@@ -26,24 +27,26 @@ FocusScope {
     // Off for hosts that animate their own size, where this would only slide the bottom fade.
     property bool resizeAnimated: true
     property real resultsInset: LauncherMetrics.spotlightInset
+    property real resultsBottomInset: Theme.spacingS
 
     property bool editMode: false
     property var editingApp: null
     property string editAppId: ""
 
-    readonly property bool _hasQuery: root.showResultsWithoutQuery || searchInput.text.length > 0 || root.controller.searchMode === "dmenu"
+    readonly property bool _hasQuery: root.showResultsWithoutQuery || searchInput.text.length > 0 || root.controller.searchMode === "dmenu" || !!root.controller.activeFolderId
     readonly property real _searchBarH: LauncherMetrics.pillHeight
     readonly property real _searchAreaH: _searchBarH
     readonly property alias searchAreaHeight: root._searchAreaH
     readonly property real actionPanelHeight: actionPanel.height
     readonly property real _statusH: Theme.listItemTwoLineHeight + Theme.spacingXL
     readonly property bool _firstSectionShowsHeader: !!(root.controller.sections?.[0]?.title?.length > 0)
-    readonly property real _resultsTopGap: _firstSectionShowsHeader ? LauncherMetrics.resultsGap : root.resultsInset
+    readonly property real _headerlessTopGap: Math.max(LauncherMetrics.resultsGap, root.resultsInset)
+    readonly property real _resultsTopGap: _firstSectionShowsHeader ? LauncherMetrics.resultsGap : _headerlessTopGap
     readonly property real _rowsHeightBudget: _resultsTopGap + ((root.controller.searchMode === "dmenu" && root.controller.dmenuLines > 0) ? (root.controller.dmenuLines * (LauncherMetrics.rowHeight + LauncherMetrics.rowGap) + (_firstSectionShowsHeader ? LauncherMetrics.sectionBand : 0) + LauncherMetrics.fadeLength) : LauncherMetrics.maxResultsHeight)
-    readonly property real _maxResultsH: root.maxResultsHeight > 0 ? root.maxResultsHeight : Math.max(0, Math.min(_rowsHeightBudget + resultsList.bottomInset, (parentModal?.screenHeight ?? Theme.mediumBreakpoint) - (parentModal?.modalY ?? 0) - LauncherMetrics.pillHeight - actionPanel.height - Theme.spacingL))
-    readonly property real _resultsContentH: resultsList.contentHeight > 0 ? _resultsTopGap + resultsList.contentHeight + resultsList.bottomInset : _statusH
-    readonly property real _resultsH: _hasQuery ? Math.min(_resultsContentH, _resultsTopGap + resultsList.fittedHeight + resultsList.bottomInset) : 0
-    readonly property int _resizeDuration: Theme.expressiveDurations.expressiveFastSpatial
+    readonly property real _maxResultsH: root.maxResultsHeight > 0 ? root.maxResultsHeight : Math.max(0, Math.min(_rowsHeightBudget + resultsBottomInset, (parentModal?.screenHeight ?? Theme.mediumBreakpoint) - (parentModal?.modalY ?? 0) - LauncherMetrics.pillHeight - actionPanel.height - Theme.spacingL))
+    readonly property real _resultsContentH: resultsList.contentHeight > 0 ? _resultsTopGap + resultsList.contentHeight + resultsBottomInset : _statusH
+    // The popup needs space beyond the underlying result rows.
+    readonly property real _resultsH: !_hasQuery ? 0 : root.controller.activeFolderId ? _maxResultsH : Math.min(_resultsContentH, _resultsTopGap + resultsList.fittedHeight + resultsBottomInset)
     readonly property real _frameClipRadius: Math.max(0, (parentModal?.frameBottomRadius ?? 0) - resultsInset)
     readonly property real _editAvailableH: maxResultsHeight > 0 ? maxResultsHeight + _searchAreaH : Math.max(LauncherMetrics.maxResultsHeight, (parentModal?.screenHeight ?? Theme.mediumBreakpoint) - (parentModal?.modalY ?? 0) - Theme.spacingL)
     readonly property real _editH: Math.min(editLoader.implicitHeight, _editAvailableH)
@@ -113,6 +116,11 @@ FocusScope {
     }
 
     function _handleKey(event) {
+        if (root.parentModal && !root.parentModal.spotlightOpen) {
+            event.accepted = false;
+            return;
+        }
+
         if (root.editMode) {
             if (event.key === Qt.Key_Escape) {
                 root.closeEditMode();
@@ -143,10 +151,20 @@ FocusScope {
             return;
         }
 
+        if (root.controller.activeFolderId && root.controller.handleFolderKey(event)) {
+            event.accepted = true;
+            return;
+        }
+
         switch (event.key) {
         case Qt.Key_Escape:
             if (actionPanel.expanded) {
                 actionPanel.hide();
+                event.accepted = true;
+                return;
+            }
+            if (root.controller.activeFolderId) {
+                root.controller.closeLauncherFolder();
                 event.accepted = true;
                 return;
             }
@@ -162,6 +180,11 @@ FocusScope {
             return;
         case Qt.Key_Backspace:
             if (searchInput.text.length === 0) {
+                if (root.controller.activeFolderId) {
+                    root.controller.closeLauncherFolder();
+                    event.accepted = true;
+                    return;
+                }
                 if (root.controller.clearPluginFilter()) {
                     event.accepted = true;
                     return;
@@ -334,6 +357,10 @@ FocusScope {
             searchInput.text = query;
             root._focusSearch();
         }
+        function onFolderContextMenuRequested() {
+            const scenePos = resultsList.getSelectedItemPosition();
+            root._showContextMenu(root.controller.folderMemberAt(root.controller.folderSelectedIndex), scenePos.x, scenePos.y, true);
+        }
     }
 
     Item {
@@ -404,13 +431,11 @@ FocusScope {
         }
     }
 
-    Rectangle {
+    DDivider {
         anchors.top: mesgRow.bottom
         anchors.left: parent.left
         anchors.right: parent.right
-        height: Theme.outlineWidth
         z: 1
-        color: Theme.outlineVariant
         visible: !root.editMode && root._hasQuery && !(Theme.focusRingWidth > 0 && searchInput.getActiveFocus())
     }
 
@@ -430,9 +455,9 @@ FocusScope {
         Behavior on height {
             enabled: root.resizeAnimated && root._animateResize
             NumberAnimation {
-                duration: root._resizeDuration
+                duration: Theme.expressiveDurations.expressiveDefaultSpatial
                 easing.type: Easing.BezierSpline
-                easing.bezierCurve: Theme.expressiveCurves.standard
+                easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
             }
         }
 
@@ -440,8 +465,7 @@ FocusScope {
             id: resultsList
             focusReturnTarget: searchInput
             keyForwardTargets: [searchKeyHandler]
-            readonly property real bottomInset: Theme.spacingS
-            availableHeight: Math.max(0, root._maxResultsH - root._resultsTopGap - bottomInset)
+            availableHeight: Math.max(0, root._maxResultsH - root._resultsTopGap - root.resultsBottomInset)
             resizing: actionPanel.animating
             anchors.fill: parent
             anchors.topMargin: root._resultsTopGap
@@ -480,6 +504,7 @@ FocusScope {
             focus: true
             editingApp: root.editingApp
             editAppId: root.editAppId
+            transientSurfaceTracker: root.transientSurfaceTracker
             onCloseRequested: root.closeEditMode()
         }
 

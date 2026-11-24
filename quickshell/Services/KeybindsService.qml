@@ -660,7 +660,11 @@ Singleton {
         if (!dmsStatus.exists || dmsStatus.included)
             return;
         _hyprlandLegacyWarnShown = true;
-        ToastService.showWarning(I18n.tr("Hyprland config include missing"), I18n.tr("DMS Settings writes Lua keybinds. Add the DMS include so edits apply."), "dms setup", "hyprland-migration");
+        // A commented-out include means the user stopped managing binds, so there is nothing to nag about
+        Proc.runCommand("keybinds-opted-out", ["sh", "-c", ConfigIncludeResolve.optedOutScriptFor("binds", "hyprland", configDir)], (output, exitCode) => {
+            if (exitCode !== 0)
+                ToastService.showWarning(I18n.tr("Hyprland config include missing"), I18n.tr("DMS Settings writes Lua keybinds. Add the DMS include so edits apply."), "dms setup", "hyprland-migration");
+        });
     }
 
     function showHyprlandReadOnlyWarning() {

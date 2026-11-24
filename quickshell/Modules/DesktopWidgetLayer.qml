@@ -27,6 +27,8 @@ Variants {
                 continue;
             if (!PluginService.availablePlugins[pluginId])
                 continue;
+            if ((CacheData.disabledPluginsSnapshot || []).includes(pluginId))
+                continue;
             PluginService.enablePlugin(pluginId);
         }
     }
@@ -78,7 +80,7 @@ Variants {
         onPluginReadyKeyChanged: rebuildDebounce.restart()
 
         property Timer rebuildDebounce: Timer {
-            interval: 150
+            interval: Timing.debounce
             repeat: false
             onTriggered: {
                 screenDelegate.rebuilding = true;
@@ -87,7 +89,7 @@ Variants {
         }
 
         property Timer rebuildApply: Timer {
-            interval: 32
+            interval: Timing.settleShort
             repeat: false
             onTriggered: screenDelegate.rebuilding = false
         }

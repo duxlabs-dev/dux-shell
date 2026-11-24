@@ -1,12 +1,8 @@
 import QtQuick
-import qs.Common
+import qs.Widgets
 
-Rectangle {
-    property bool vertical: false
-
-    width: vertical ? Theme.dividerWidth : parent?.width ?? 0
-    height: vertical ? SettingsMetrics.splitDividerHeight : Theme.dividerWidth
-    color: Theme.outlineVariant
+DDivider {
+    height: vertical ? SettingsMetrics.splitDividerHeight : thickness
     visible: !(parent?.isSettingsGroupHost ?? false)
     anchors.verticalCenter: vertical ? parent?.verticalCenter : undefined
 }

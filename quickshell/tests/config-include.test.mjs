@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { execFileSync } from "node:child_process";
+import { existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { execFileSync, spawnSync } from "node:child_process";
 import { loadScript } from "./qml-script.mjs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
@@ -9,20 +9,6 @@ import test from "node:test";
 
 const resolve = vm.createContext({});
 vm.runInContext(readFileSync(new URL("../Common/ConfigIncludeResolve.js", import.meta.url), "utf8").replace(/^\.pragma.*$/m, ""), resolve);
-const plain = value => JSON.parse(JSON.stringify(value));
-
-test("includePaths joins the compositor directory, with hypr for hyprland", () => {
-    const hyprland = resolve.includePaths("layout", "hyprland", "/home/u/.config");
-    assert.equal(hyprland.configFile, "/home/u/.config/hypr/hyprland.lua");
-    assert.deepEqual(plain(hyprland.fragmentFiles), ["/home/u/.config/hypr/dms/layout.lua"]);
-    assert.equal(resolve.includePaths("colors", "mango", "/home/u/.config"), null, "no spec, no paths");
-});
-
-test("resolveIncludeArgs spells mango as mangowc and names the fragment", () => {
-    assert.deepEqual(plain(resolve.resolveIncludeArgs("outputs", "niri")), ["niri", "outputs.kdl"]);
-    assert.deepEqual(plain(resolve.resolveIncludeArgs("windowrules", "mango")), ["mangowc", "windowrules.conf"]);
-    assert.equal(resolve.resolveIncludeArgs("colors", "mango"), null, "no spec, no args");
-});
 
 test("repair preserves config and fragments, backs up, and adds live includes only once", t => {
     const directory = mkdtempSync(join(tmpdir(), "dms-includes-"));
@@ -31,11 +17,12 @@ test("repair preserves config and fragments, backs up, and adds live includes on
         const configDir = join(directory, compositor + " space's");
         const paths = resolve.includePaths(kind, compositor, configDir);
         mkdirSync(dirname(paths.configFile), { recursive: true });
-        const original = prefix + " user config\n" + paths.includes.map(entry => prefix + " " + entry.includeLine + "\n").join("");
+        const original = prefix + " user config\n" + paths.includes.map(entry => prefix + " was " + entry.includeLine + "\n").join("");
         writeFileSync(paths.configFile, original);
         const fragment = paths.fragmentFiles[0];
         mkdirSync(dirname(fragment), { recursive: true });
         writeFileSync(fragment, "existing fragment\n");
+        assert.notEqual(spawnSync("sh", ["-c", resolve.optedOutScriptFor(kind, compositor, configDir)]).status, 0, compositor + " a mention is not an opt out");
         const backup = paths.configFile + ".backup";
         execFileSync("sh", ["-c", resolve.repairScriptFor(kind, compositor, configDir, backup)]);
         assert.equal(readFileSync(backup, "utf8"), original);
@@ -51,6 +38,102 @@ test("repair preserves config and fragments, backs up, and adds live includes on
             assert.ok(live.indexOf(paths.includes[0].includeLine) < live.indexOf(paths.includes[1].includeLine));
         execFileSync("sh", ["-c", resolve.repairScriptFor(kind, compositor, configDir, "")]);
         assert.equal(readFileSync(paths.configFile, "utf8"), repaired);
+    }
+});
+
+test("stop managing comments the include out in place, keeps the fragment, and setup restores it", t => {
+    const directory = mkdtempSync(join(tmpdir(), "dms-disable-"));
+    t.after(() => rmSync(directory, { recursive: true, force: true }));
+    const dms = directory + "/dms";
+    writeFileSync(dms, '#!/bin/sh\nprintf \'{"exists":true,"included":false}\\n\'\n', { mode: 0o755 });
+    for (const [compositor, kind, configName, before, live, after] of [
+        ["niri", "animations", undefined, '// include "dms/animations.kdl"\ninclude optional=true "dms/layout.kdl"\n', ['include optional=true "dms/animations.kdl"'], '\nanimations {\n    slowdown 2.0\n}\n'],
+        ["hyprland", "binds", undefined, 'require("dms.outputs")\n', ['require("dms.binds")', '    require "dms.binds-user"'], 'hl.bind("SUPER + Q", hl.dsp.exit())\n'],
+        ["mango", "cursor", undefined, "source=./dms/layout.conf\n", ["source = ./dms/cursor.conf"], "cursor_size=24\n"],
+        ["mango", "cursor", "config.toml", 'source = [\n    "./dms/layout.conf",\n', ['    "./dms/cursor.conf",'], ']\n[global]\nsource = "./dms/cursorx.conf"\n']
+    ]) {
+        const configDir = join(directory, compositor + (configName ?? ""));
+        const paths = resolve.includePaths(kind, compositor, configDir, configName);
+        const real = join(directory, "dotfiles-" + compositor + (configName ?? ""));
+        const original = before + live.join("\n") + "\n" + after;
+        writeFileSync(real, original);
+        mkdirSync(dirname(paths.fragmentFiles[0]), { recursive: true });
+        symlinkSync(real, paths.configFile);
+        writeFileSync(paths.fragmentFiles[0], "fragment\n");
+
+        const backup = paths.configFile + ".backup";
+        const disable = resolve.disableScriptFor(kind, compositor, configDir, backup, configName);
+        execFileSync("sh", ["-c", disable]);
+        const token = compositor === "niri" ? "//" : compositor === "hyprland" ? "--" : "#";
+        const disabled = before + live.map(line => token + " " + line).join("\n") + "\n" + after;
+        assert.equal(readFileSync(paths.configFile, "utf8"), disabled, compositor + " disable");
+        assert.equal(readFileSync(backup, "utf8"), original);
+        assert.ok(lstatSync(paths.configFile).isSymbolicLink(), "a dotfiles symlink stays a link");
+        assert.equal(readFileSync(paths.fragmentFiles[0], "utf8"), "fragment\n");
+        spawnSync("sh", ["-c", disable]);
+        assert.equal(readFileSync(paths.configFile, "utf8"), disabled, compositor + " disable twice");
+
+        assert.equal(spawnSync("sh", ["-c", resolve.optedOutScriptFor(kind, compositor, configDir, configName)]).status, 0, compositor + " opted out");
+        execFileSync("sh", ["-c", resolve.repairScriptFor(kind, compositor, configDir, "", configName, dms)]);
+        assert.equal(readFileSync(paths.configFile, "utf8"), original, compositor + " setup restores in place");
+    }
+});
+
+test("stop managing splits a one-line mango toml source array to comment out one element", t => {
+    const configDir = mkdtempSync(join(tmpdir(), "dms-disable-array-"));
+    t.after(() => rmSync(configDir, { recursive: true, force: true }));
+    const dms = configDir + "/dms";
+    writeFileSync(dms, '#!/bin/sh\nprintf \'{"exists":true,"included":false}\\n\'\n', { mode: 0o755 });
+    const paths = resolve.includePaths("cursor", "mango", configDir, "config.toml");
+    mkdirSync(dirname(paths.configFile), { recursive: true });
+    const tail = '[bind.default]\n"SUPER+Return" = "spawn,foot"\n';
+    writeFileSync(paths.configFile, '[global]\n  source = [ "./dms/layout.conf", "./dms/cursor.conf" ,"./dms/input.conf" ]\n' + tail);
+    const split = element => '[global]\n  source = [\n      "./dms/layout.conf",\n' + element + '\n      "./dms/input.conf",\n  ]\n' + tail;
+
+    execFileSync("sh", ["-c", resolve.disableScriptFor("cursor", "mango", configDir, "", "config.toml")]);
+    assert.equal(readFileSync(paths.configFile, "utf8"), split('#       "./dms/cursor.conf",'));
+    execFileSync("sh", ["-c", resolve.repairScriptFor("cursor", "mango", configDir, "", "config.toml", dms)]);
+    assert.equal(readFileSync(paths.configFile, "utf8"), split('      "./dms/cursor.conf",'));
+});
+
+test("stop managing touches only a line that is just the include, in the table mango reads it from", t => {
+    const directory = mkdtempSync(join(tmpdir(), "dms-disable-edge-"));
+    t.after(() => rmSync(directory, { recursive: true, force: true }));
+    const dms = directory + "/dms";
+    writeFileSync(dms, '#!/bin/sh\nprintf \'{"exists":true,"included":false}\\n\'\n', { mode: 0o755 });
+    for (const [name, compositor, configName, original, disabled] of [
+        ["a lua statement after the include", "hyprland", undefined, 'require("dms.cursor"); hl.config({})\n', null],
+        ["a kdl node after the include", "niri", undefined, 'include "dms/cursor.kdl"; cursor { }\n', null],
+        ["a comma inside a quoted toml path", "mango", "config.toml", '[global]\nsource = ["./other,a.conf", "./dms/cursor.conf"]\n', null],
+        ["a lua comment after the include", "hyprland", undefined, 'require("dms.cursor") -- mine\n', '-- require("dms.cursor") -- mine\n'],
+        ["a conf comment after the include", "mango", undefined, "source=./dms/cursor.conf # mine\n", "# source=./dms/cursor.conf # mine\n"],
+        ["a single-quoted toml source with a comment", "mango", "config.toml", "[global]\nsource = './dms/cursor.conf' # mine\n", "[global]\n# source = './dms/cursor.conf' # mine\n"],
+        ["an [env] variable named source", "mango", "config.toml", '[env]\nsource = "./dms/cursor.conf"\n[global]\nsource = "./dms/cursor.conf"\n', '[env]\nsource = "./dms/cursor.conf"\n[global]\n# source = "./dms/cursor.conf"\n'],
+        ["no final newline", "mango", undefined, "a=1\nsource=./dms/cursor.conf", "a=1\n# source=./dms/cursor.conf"]
+    ]) {
+        const configDir = join(directory, name.replace(/\W+/g, "-"));
+        const paths = resolve.includePaths("cursor", compositor, configDir, configName);
+        mkdirSync(dirname(paths.fragmentFiles[0]), { recursive: true });
+        writeFileSync(paths.configFile, original);
+        spawnSync("sh", ["-c", resolve.disableScriptFor("cursor", compositor, configDir, "", configName)]);
+        assert.equal(readFileSync(paths.configFile, "utf8"), disabled ?? original, name);
+        if (!disabled)
+            continue;
+        execFileSync("sh", ["-c", resolve.repairScriptFor("cursor", compositor, configDir, "", configName, dms)]);
+        assert.equal(readFileSync(paths.configFile, "utf8"), original, name + " restored");
+    }
+});
+
+test("animations include resolves for every compositor that writes a fragment", () => {
+    for (const [compositor, configName, fragment, includeLine] of [
+        ["hyprland", undefined, "/c/hypr/dms/animations.lua", 'require("dms.animations")'],
+        ["mango", undefined, "/c/mango/dms/animations.conf", "source=./dms/animations.conf"],
+        ["mango", "config.toml", "/c/mango/dms/animations.conf", '[global]\nsource = "./dms/animations.conf"']
+    ]) {
+        const paths = resolve.includePaths("animations", compositor, "/c", configName);
+        assert.ok(paths, compositor);
+        assert.equal(paths.fragmentFiles.join(), fragment);
+        assert.equal(paths.includes.map(entry => entry.includeLine).join(), includeLine);
     }
 });
 

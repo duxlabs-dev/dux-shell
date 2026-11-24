@@ -237,6 +237,10 @@ const DMS_ACTIONS = [
         label: "Power Menu: Close"
     },
     {
+        id: "spawn dms ipc call config-profile toggle",
+        label: "Profile Picker: Toggle"
+    },
+    {
         id: "spawn dms ipc call control-center toggle",
         label: "Control Center: Toggle"
     },
@@ -329,6 +333,21 @@ const DMS_ACTIONS = [
     {
         id: "spawn dms ipc call keybinds close",
         label: "Keybinds Cheatsheet: Close"
+    },
+    {
+        id: "spawn dms ipc call scratchpad toggle \"\"",
+        label: "Scratchpad: Toggle",
+        compositor: ["niri", "hyprland"]
+    },
+    {
+        id: "spawn dms ipc call scratchpad move \"\"",
+        label: "Scratchpad: Move Window",
+        compositor: ["niri", "hyprland"]
+    },
+    {
+        id: "spawn dms ipc call scratchpad restore",
+        label: "Scratchpad: Restore Window",
+        compositor: ["niri", "hyprland"]
     },
     {
         id: "spawn dms ipc call lock lock",
@@ -561,6 +580,22 @@ const DMS_ACTIONS = [
     {
         id: "spawn dms screenshot window",
         label: "Screenshot: Window"
+    },
+    {
+        id: "spawn dms screenshot scroll",
+        label: "Screenshot: Scrolling"
+    },
+    {
+        id: "spawn dms screenshot draw",
+        label: "Screenshot: Draw"
+    },
+    {
+        id: "spawn dms ipc call annotate toggle",
+        label: "Annotate: Toggle"
+    },
+    {
+        id: "spawn dms ipc call annotate passthrough",
+        label: "Annotate: Toggle Click-Through"
     },
     {
         id: "spawn dms ipc call hypr toggleOverview",
@@ -2789,26 +2824,41 @@ const ACTION_ARGS = {
     hyprland: HYPRLAND_ACTION_ARGS
 };
 
+// An unset flag follows Settings > Screenshot.
 const SCREENSHOT_FLAGS = [
     {
-        name: "no-file",
+        name: "save",
         type: "flag",
-        flag: "--no-file",
         label: "Save",
-        inverted: true
+        setting: "screenshotSaveFile",
+        keeps: "clipboard",
+        on: "--no-file=false",
+        off: "--no-file"
     },
     {
-        name: "no-clipboard",
+        name: "clipboard",
         type: "flag",
-        flag: "--no-clipboard",
         label: "Clipboard",
-        inverted: true
+        setting: "screenshotClipboard",
+        keeps: "save",
+        on: "--no-clipboard=false",
+        off: "--no-clipboard"
+    },
+    {
+        name: "clipboard-file",
+        type: "flag",
+        label: "Copy path",
+        setting: "screenshotClipboardFile",
+        on: "--clipboard-file",
+        off: "--clipboard-file=false"
     },
     {
         name: "cursor",
         type: "flag",
-        flag: "--cursor=on",
-        label: "Pointer"
+        label: "Pointer",
+        setting: "screenshotCursor",
+        on: "--cursor=on",
+        off: "--cursor=off"
     }
 ];
 
@@ -2938,6 +2988,14 @@ const DMS_ACTION_ARGS = {
     "screenshot window": {
         base: "spawn dms screenshot window",
         args: SCREENSHOT_FLAGS
+    },
+    "screenshot scroll": {
+        base: "spawn dms screenshot scroll",
+        args: SCREENSHOT_FLAGS.filter(flag => flag.name !== "cursor")
+    },
+    "screenshot draw": {
+        base: "spawn dms screenshot draw",
+        args: SCREENSHOT_FLAGS
     }
 };
 
@@ -2973,20 +3031,9 @@ function getDmsActions(isNiri, isHyprland) {
     const result = [];
     for (let i = 0; i < DMS_ACTIONS.length; i++) {
         const action = DMS_ACTIONS[i];
-        if (!action.compositor) {
+        const compositors = [].concat(action.compositor ?? []);
+        if (compositors.length === 0 || (isNiri && compositors.includes("niri")) || (isHyprland && compositors.includes("hyprland")))
             result.push(action);
-            continue;
-        }
-        switch (action.compositor) {
-        case "niri":
-            if (isNiri)
-                result.push(action);
-            break;
-        case "hyprland":
-            if (isHyprland)
-                result.push(action);
-            break;
-        }
     }
     return result;
 }
@@ -3581,6 +3628,13 @@ function buildCompositorAction(compositor, base, args) {
     return parts.join(" ");
 }
 
+// Core keeps the other output on when a bind turns one off.
+function dmsFlagDefault(flag, args, settings) {
+    if (flag.keeps && args?.[flag.keeps] === false)
+        return true;
+    return settings?.[flag.setting] === true;
+}
+
 function parseDmsActionArgs(action) {
     if (!action)
         return {
@@ -3604,6 +3658,23 @@ function parseDmsActionArgs(action) {
 
     if (!rest)
         return result;
+
+    var flagDefs = config.args.filter(a => a.type === "flag");
+    if (flagDefs.length > 0) {
+        // Only the words the editor writes are read; a rewrite would lose anything else, so that bind stays as typed.
+        var words = rest.split(/ +/);
+        for (var w = 0; w < words.length; w++) {
+            var def = flagDefs.find(d => d.on === words[w] || d.off === words[w]);
+            if (!def)
+                return {
+                    base: key,
+                    args: {},
+                    opaque: true
+                };
+            result.args[def.name] = def.on === words[w];
+        }
+        return result;
+    }
 
     var tokens = [];
     var current = "";
@@ -3636,14 +3707,9 @@ function parseDmsActionArgs(action) {
     var positional = tokens.filter(t => !t.startsWith("--"));
     var p = 0;
     for (var j = 0; j < config.args.length; j++) {
-        var argDef = config.args[j];
-        if (argDef.type === "flag") {
-            result.args[argDef.name] = tokens.indexOf(argDef.flag) !== -1;
-            continue;
-        }
         if (p >= positional.length)
             break;
-        result.args[argDef.name] = positional[p++];
+        result.args[config.args[j].name] = positional[p++];
     }
 
     return result;
@@ -3674,8 +3740,9 @@ function buildDmsAction(baseKey, args) {
     }
 
     for (var f = 0; f < flags.length; f++) {
-        if (args?.[flags[f].name] === true)
-            parts.push(flags[f].flag);
+        var state = args?.[flags[f].name];
+        if (state !== undefined)
+            parts.push(state ? flags[f].on : flags[f].off);
     }
 
     return parts.join(" ");

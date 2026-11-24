@@ -69,8 +69,9 @@ Rectangle {
             font.pixelSize: Theme.fontSizeMedium
             placeholderText: I18n.tr("Search widgets...")
             onAccepted: {
-                if (root.matches.length > 0)
-                    root.chosen(root.matches[0].id);
+                const first = root.matches.find(widget => !widget.added);
+                if (first)
+                    root.chosen(first.id);
             }
             Keys.onPressed: event => {
                 if (event.key !== Qt.Key_Escape)

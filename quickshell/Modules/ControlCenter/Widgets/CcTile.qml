@@ -63,7 +63,7 @@ Item {
     }
     property bool showExpand: false
     property bool opensPage: false
-    property color restIconColor: CcMetrics.tileInactiveIcon
+    property color restIconColor: CcMetrics.tileInactiveContent
     property Component tallContent: null
     // The tile's own state. The island disables a face while it fades in, and that must not restyle the tile.
     property bool available: true
@@ -85,6 +85,16 @@ Item {
         return tall ? Math.min(CcMetrics.tallTileRadius, width / 2, height / 2) : CcMetrics.pillRadius(width, bodyHeight);
     }
     property bool acceptsInput: interactive && enabled
+    readonly property bool pressed: bodyLayer.pressed || boxLayer.pressed
+    // The loader sizes and configures a tile after it is built, which is not a change to animate.
+    property bool settled: false
+    readonly property bool morphs: settled && CcMetrics.animationsEnabled
+
+    function settle() {
+        settled = true;
+    }
+
+    Component.onCompleted: Qt.callLater(settle)
     readonly property bool bodyActive: showsActive && !hasIconBox && !bare
     readonly property color bodyColor: {
         if (bare)
@@ -176,7 +186,7 @@ Item {
 
     // Animated so a half-row resize reads as the body shrinking.
     Behavior on bodyInset {
-        enabled: CcMetrics.animationsEnabled
+        enabled: root.morphs
         NumberAnimation {
             duration: Theme.expressiveDurations.expressiveFastSpatial
             easing.type: Easing.BezierSpline
@@ -185,7 +195,7 @@ Item {
     }
 
     Behavior on bodyRadius {
-        enabled: CcMetrics.animationsEnabled && !SettingsData.reduceMotion
+        enabled: root.morphs
         NumberAnimation {
             duration: Theme.expressiveDurations.expressiveEffects
             easing.type: Easing.BezierSpline
@@ -194,7 +204,7 @@ Item {
     }
 
     Behavior on iconBoxRadius {
-        enabled: CcMetrics.animationsEnabled && !SettingsData.reduceMotion
+        enabled: root.morphs
         NumberAnimation {
             duration: Theme.expressiveDurations.expressiveEffects
             easing.type: Easing.BezierSpline
@@ -214,7 +224,7 @@ Item {
         border.color: Theme.outlineMedium
 
         Behavior on color {
-            enabled: CcMetrics.animationsEnabled && !SettingsData.reduceMotion
+            enabled: root.morphs
             ColorAnimation {
                 duration: Theme.expressiveDurations.expressiveEffects
                 easing.type: Easing.BezierSpline
@@ -229,8 +239,15 @@ Item {
             anchors.bottomMargin: root.expanded ? root.height - root.headerHeight - root.tilePadding * 2 : 0
             stateColor: root.contentColor
             cornerRadius: root.bodyRadius
+            acceptedButtons: Qt.LeftButton | Qt.RightButton
             tooltipText: root.tooltips && root.compact ? [root.title, root.subtitle].filter(text => text !== "").join(" · ") : ""
-            onClicked: root.activate()
+            onClicked: mouse => {
+                if (mouse.button === Qt.RightButton) {
+                    root.expand();
+                    return;
+                }
+                root.activate();
+            }
             onPressAndHold: root.expand()
             onWheel: wheelEvent => {
                 wheelEvent.accepted = false;

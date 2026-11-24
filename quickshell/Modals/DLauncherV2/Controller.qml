@@ -10,6 +10,8 @@ import "Scorer.js" as Scorer
 import "ControllerUtils.js" as Utils
 import "NavigationHelpers.js" as Nav
 import "ItemTransformers.js" as Transform
+import "../../Common/settings/LauncherFolders.js" as FolderModel
+import qs.Modals.DLauncherV2.Components
 
 Item {
     id: root
@@ -35,13 +37,53 @@ Item {
     property var sectionViewModes: ({})
     property var pluginViewPreferences: ({})
     property int gridColumns: SettingsData.appLauncherGridColumns
+    property int iconColumns: SettingsData.appLauncherIconColumns
     property int viewModeVersion: 0
     property string viewModeContext: "spotlight"
     property bool forceLinearNavigation: false
     property bool explicitQuerySession: false
+    property string activeFolderId: ""
+    readonly property var activeFolder: activeFolderId ? SessionData.getLauncherFolder(activeFolderId) : null
+    property bool folderRenamePending: false
+    property int folderOriginFlatIndex: -1
+    property int folderSelectedIndex: 0
+    readonly property var folderMembers: {
+        const folder = activeFolder;
+        if (!folder)
+            return [];
+        void (AppSearchService.cacheVersion);
+        const apps = AppSearchService.searchApplications("");
+        const itemsById = {};
+        for (let i = 0; i < apps.length; i++) {
+            const item = getOrTransformApp(apps[i]);
+            itemsById[item.id] = item;
+        }
+        const coreApps = AppSearchService.getCoreApps("");
+        for (let i = 0; i < coreApps.length; i++) {
+            const item = transformCoreApp(coreApps[i]);
+            itemsById[item.id] = item;
+        }
+        const members = FolderModel.folderMembers(folder, itemsById);
+        // Cached members can retain search highlights.
+        _applyHighlights([
+            {
+                items: members
+            }
+        ], "");
+        return members;
+    }
+    readonly property int folderColumns: Math.min(LauncherMetrics.folderMaxColumns, Math.max(1, folderMembers.length))
 
-    // dmenu mode items
-    // come from a socket opened by `dms dmenu`, not from AppSearchService
+    onFolderMembersChanged: {
+        if (!activeFolderId)
+            return;
+        if (folderMembers.length === 0) {
+            closeLauncherFolder();
+            return;
+        }
+        folderSelectedIndex = Math.min(folderSelectedIndex, folderMembers.length - 1);
+    }
+
     property string dmenuSocketPath: ""
     property var dmenuItems: []
     property string dmenuPrompt: "dmenu"
@@ -154,6 +196,8 @@ Item {
     signal viewModeChanged(string sectionId, string mode)
     signal searchQueryRequested(string query)
     signal sectionExpanded(string sectionId)
+    signal folderOpened(string folderId)
+    signal folderContextMenuRequested
 
     Ref {
         service: AppSearchService
@@ -189,10 +233,15 @@ Item {
         selectedFlatIndex = -1;
         selectedItem = null;
         keyboardNavigationActive = false;
+        // The scorer is a library singleton; drop prepared names (often piped dmenu input) once the launcher closes.
+        Scorer.clearPreparedNames();
         if (retainResultsOnClose && searchMode !== "dmenu")
             return;
         sections = [];
         flatModel = [];
+        activeFolderId = "";
+        folderRenamePending = false;
+        folderOriginFlatIndex = -1;
         _clearModeCache();
     }
 
@@ -576,7 +625,7 @@ Item {
 
     Timer {
         id: searchDebounce
-        interval: 60
+        interval: Timing.debounceFast
         onTriggered: {
             if (!root._searchPending)
                 return;
@@ -585,9 +634,19 @@ Item {
         }
     }
 
+    // Each search rescans every item received so far, so searching per socket read is quadratic.
+    Timer {
+        id: dmenuStreamSearch
+        interval: Timing.debounceShort
+        onTriggered: {
+            if (root.searchMode === "dmenu")
+                root.performSearch();
+        }
+    }
+
     Timer {
         id: pluginPhaseTimer
-        interval: 16
+        interval: Timing.frame
         onTriggered: {
             if (!root._pluginPhasePending)
                 return;
@@ -601,7 +660,7 @@ Item {
 
     Timer {
         id: fileSearchDebounce
-        interval: 200
+        interval: Timing.debounceLong
         onTriggered: root.performFileSearch()
     }
 
@@ -610,6 +669,11 @@ Item {
     }
 
     function setSearchQuery(query) {
+        if (query && activeFolderId) {
+            activeFolderId = "";
+            folderRenamePending = false;
+            folderOriginFlatIndex = -1;
+        }
         _searchVersion++;
         _queryDrivenSearch = true;
         _pluginPhasePending = false;
@@ -659,6 +723,9 @@ Item {
         } else {
             autoSwitchedToFiles = false;
         }
+        activeFolderId = "";
+        folderRenamePending = false;
+        folderOriginFlatIndex = -1;
         searchMode = mode;
         if (mode === "files") {
             DSearchService.recheck();
@@ -715,6 +782,9 @@ Item {
         appCategories = [];
         pluginFilter = "";
         collapsedSections = {};
+        activeFolderId = "";
+        folderRenamePending = false;
+        folderOriginFlatIndex = -1;
         _clearModeCache();
         _queryDrivenSearch = false;
     }
@@ -746,6 +816,9 @@ Item {
         activePluginCategories = [];
         activePluginCategory = "";
         pluginFilter = "";
+        activeFolderId = "";
+        folderRenamePending = false;
+        folderOriginFlatIndex = -1;
         selectedFlatIndex = 0;
         selectedItem = null;
         _queryDrivenSearch = false;
@@ -798,6 +871,7 @@ Item {
     }
 
     function _endDmenuSession() {
+        dmenuStreamSearch.stop();
         dmenuSocketLoader.active = false;
         dmenuSocketPath = "";
     }
@@ -848,9 +922,11 @@ Item {
                 markup: dmenuMarkupRows,
                 row: msg.row || null
             }));
-            Qt.callLater(performSearch);
+            if (!dmenuStreamSearch.running)
+                dmenuStreamSearch.start();
             break;
         case "end":
+            dmenuStreamSearch.stop();
             performSearch();
             _applyDmenuSelect();
             break;
@@ -950,7 +1026,7 @@ Item {
         else
             newSel.splice(pos, 1);
         dmenuMultiSelected = newSel;
-        performSearch();  // re-render to update the checkbox
+        performSearch();
     }
 
     function toggleDmenuMultiSelectHighlighted() {
@@ -983,7 +1059,6 @@ Item {
                 return;
             }
         }
-        // Nothing checked: fall back to the normal single-accept path.
         if (selectedItem && selectedItem.type === "dmenu" && !selectedItem.data.nonSelectable) {
             _sendDmenuRowSelection(selectedItem);
             itemExecuted();
@@ -1404,6 +1479,7 @@ Item {
             var scoredItems = Scorer.scoreItems(allItems, searchQuery, getFrecencyForItem);
             var sortAlpha = !searchQuery && SettingsData.sortAppsAlphabetically;
             var newSections = Scorer.groupBySection(scoredItems, buildDynamicSectionDefs(allItems), sortAlpha, searchQuery ? 50 : 500);
+            _placeFolders(newSections, allItems);
 
             for (var sid in collapsedSections) {
                 for (var i = 0; i < newSections.length; i++) {
@@ -1519,6 +1595,7 @@ Item {
         var scoredItems = Scorer.scoreItems(allItems, searchQuery, getFrecencyForItem);
         var sortAlpha = !searchQuery && SettingsData.sortAppsAlphabetically;
         var newSections = Scorer.groupBySection(scoredItems, dynamicDefs, sortAlpha, searchQuery ? 50 : 500);
+        _placeFolders(newSections, allItems);
 
         if (currentVersion !== _searchVersion) {
             isSearching = false;
@@ -1665,6 +1742,7 @@ Item {
         var scoredItems = Scorer.scoreItems(allItems, searchQuery, getFrecencyForItem);
         var sortAlpha = !searchQuery && SettingsData.sortAppsAlphabetically;
         var newSections = Scorer.groupBySection(scoredItems, dynamicDefs, sortAlpha, searchQuery ? 50 : 500);
+        _placeFolders(newSections, allItems);
 
         for (var i = 0; i < newSections.length; i++) {
             var sid = newSections[i].id;
@@ -1862,7 +1940,157 @@ Item {
             items.push(transformCoreApp(coreApps[i]));
         }
 
+        if (!query)
+            items = FolderModel.foldApps(items, SessionData.launcherFolders || [], I18n.tr("Open"));
+
         return items;
+    }
+
+    function _placeFolders(sectionsData, sourceItems) {
+        if (searchQuery)
+            return;
+        for (var i = 0; i < sectionsData.length; i++) {
+            if (sectionsData[i].id !== "apps")
+                continue;
+            sectionsData[i].items = FolderModel.placeFolders(sectionsData[i].items, SessionData.launcherFolders || [], sourceItems);
+            return;
+        }
+    }
+
+    function appsSlotOf(flatIndex) {
+        var entry = flatModel[flatIndex];
+        if (!entry || entry.isHeader || entry.sectionId !== "apps")
+            return -1;
+        return entry.indexInSection;
+    }
+
+    function moveLauncherFolder(folderId, targetFlatIndex) {
+        var slot = appsSlotOf(targetFlatIndex);
+        if (!folderId || slot < 0)
+            return;
+        SessionData.setLauncherFolderSlot(folderId, slot);
+    }
+
+    function openLauncherFolder(folderId, renamePending = false) {
+        if (!folderId || !SessionData.getLauncherFolder(folderId))
+            return;
+        if (activeFolderId === folderId) {
+            folderRenamePending = renamePending;
+            return;
+        }
+        // Clear the query before folder state: the UI may synchronously reset the controller.
+        if (searchQuery)
+            searchQueryRequested("");
+        if (flatModel.length === 0)
+            performSearch();
+        folderOriginFlatIndex = _flatIndexOfItem("folder:" + folderId);
+        folderSelectedIndex = 0;
+        activeFolderId = folderId;
+        folderRenamePending = renamePending;
+        if (activeFolderId !== folderId)
+            return;
+        folderOpened(folderId);
+    }
+
+    function closeLauncherFolder() {
+        if (!activeFolderId)
+            return;
+        var closedIndex = _flatIndexOfItem("folder:" + activeFolderId);
+        if (closedIndex >= 0) {
+            selectedFlatIndex = closedIndex;
+            updateSelectedItem();
+        }
+        activeFolderId = "";
+        folderRenamePending = false;
+        folderOriginFlatIndex = -1;
+    }
+
+    function _flatIndexOfItem(itemId) {
+        if (flatModel[selectedFlatIndex]?.item?.id === itemId)
+            return selectedFlatIndex;
+        for (var i = 0; i < flatModel.length; i++) {
+            if (!flatModel[i].isHeader && flatModel[i].item?.id === itemId)
+                return i;
+        }
+        return -1;
+    }
+
+    function folderMemberAt(index) {
+        return folderMembers[index] ?? null;
+    }
+
+    function moveFolderSelection(dx, dy) {
+        const count = folderMembers.length;
+        if (count === 0)
+            return;
+        keyboardNavigationActive = true;
+        const cols = folderColumns;
+        const row = Math.floor(folderSelectedIndex / cols);
+        const column = folderSelectedIndex % cols;
+        const lastRow = Math.floor((count - 1) / cols);
+        const nextRow = Math.max(0, Math.min(lastRow, row + dy));
+        const nextColumn = Math.max(0, Math.min(cols - 1, column + dx));
+        folderSelectedIndex = Math.min(count - 1, nextRow * cols + nextColumn);
+    }
+
+    function executeFolderSelected() {
+        executeItem(folderMemberAt(folderSelectedIndex), true);
+    }
+
+    function handleFolderKey(event) {
+        const hasCtrl = event.modifiers & Qt.ControlModifier;
+        const forward = I18n.isRtl ? -1 : 1;
+        switch (event.key) {
+        case Qt.Key_Up:
+            moveFolderSelection(0, -1);
+            return true;
+        case Qt.Key_Down:
+            moveFolderSelection(0, 1);
+            return true;
+        case Qt.Key_Left:
+            moveFolderSelection(-forward, 0);
+            return true;
+        case Qt.Key_Right:
+            moveFolderSelection(forward, 0);
+            return true;
+        case Qt.Key_K:
+        case Qt.Key_J:
+            if (!hasCtrl)
+                return false;
+            moveFolderSelection(0, event.key === Qt.Key_J ? 1 : -1);
+            return true;
+        case Qt.Key_H:
+        case Qt.Key_L:
+            if (!hasCtrl)
+                return false;
+            moveFolderSelection(event.key === Qt.Key_L ? forward : -forward, 0);
+            return true;
+        case Qt.Key_Return:
+        case Qt.Key_Enter:
+            executeFolderSelected();
+            return true;
+        case Qt.Key_Tab:
+        case Qt.Key_Backtab:
+            return !hasCtrl;
+        case Qt.Key_PageUp:
+        case Qt.Key_PageDown:
+            return true;
+        case Qt.Key_Menu:
+        case Qt.Key_F10:
+            folderContextMenuRequested();
+            return true;
+        }
+        return false;
+    }
+
+    function createFolderWith(appIds) {
+        if (!appIds || appIds.length === 0)
+            return;
+        var slot = appsSlotOf(_flatIndexOfItem(appIds[0]));
+        var folderId = SessionData.createLauncherFolder(I18n.tr("Folder"), appIds, slot < 0 ? 0 : slot);
+        if (!folderId)
+            return;
+        openLauncherFolder(folderId, true);
     }
 
     function transformApp(app) {
@@ -2298,7 +2526,10 @@ Item {
         _modeSectionsCache = {};
     }
 
+    // The disk cache cannot serialize live folder members.
     function _saveDiskCache(sectionsData) {
+        if (SessionData.hasLauncherLayout)
+            return;
         var serializable = [];
         for (var i = 0; i < sectionsData.length; i++) {
             var s = sectionsData[i];
@@ -2311,9 +2542,8 @@ Item {
                     type: it.type,
                     name: it.name || "",
                     subtitle: it.subtitle || "",
-                    icon: it.icon || "",
+                    icon: it.isCore ? "" : it.icon || "",
                     iconType: it.iconType || "image",
-                    iconFull: it.iconFull || "",
                     section: it.section || "",
                     isCore: it.isCore || false,
                     isBuiltInLauncher: it.isBuiltInLauncher || false,
@@ -2370,6 +2600,8 @@ Item {
     }
 
     function _loadDiskCache() {
+        if (SessionData.hasLauncherLayout)
+            return null;
         var cached = CacheData.loadLauncherCache();
         if (!cached || !Array.isArray(cached) || cached.length === 0)
             return null;
@@ -2410,7 +2642,6 @@ Item {
                     subtitle: it.subtitle || "",
                     icon: it.icon || "",
                     iconType: it.iconType || "image",
-                    iconFull: it.iconFull || "",
                     section: it.section || "",
                     source: it.source || "",
                     data: {
@@ -2512,7 +2743,7 @@ Item {
     }
 
     function getGridColumns(sectionId) {
-        return Nav.getGridColumns(getSectionViewMode(sectionId), gridColumns);
+        return Nav.getGridColumns(getSectionViewMode(sectionId), gridColumns, iconColumns);
     }
 
     function _cancelPendingSelectionReset() {
@@ -2523,7 +2754,7 @@ Item {
     function selectNext() {
         keyboardNavigationActive = true;
         _cancelPendingSelectionReset();
-        var newIndex = forceLinearNavigation ? Nav.findNextNonHeaderIndex(flatModel, selectedFlatIndex + 1) : Nav.calculateNextIndex(flatModel, selectedFlatIndex, null, null, gridColumns, getSectionViewMode);
+        var newIndex = forceLinearNavigation ? Nav.findNextNonHeaderIndex(flatModel, selectedFlatIndex + 1) : Nav.calculateNextIndex(flatModel, selectedFlatIndex, null, null, gridColumns, getSectionViewMode, iconColumns);
         if (newIndex === -1)
             newIndex = selectedFlatIndex;
         if (newIndex !== selectedFlatIndex) {
@@ -2535,7 +2766,7 @@ Item {
     function selectPrevious() {
         keyboardNavigationActive = true;
         _cancelPendingSelectionReset();
-        var newIndex = forceLinearNavigation ? Nav.findPrevNonHeaderIndex(flatModel, selectedFlatIndex - 1) : Nav.calculatePrevIndex(flatModel, selectedFlatIndex, null, null, gridColumns, getSectionViewMode);
+        var newIndex = forceLinearNavigation ? Nav.findPrevNonHeaderIndex(flatModel, selectedFlatIndex - 1) : Nav.calculatePrevIndex(flatModel, selectedFlatIndex, null, null, gridColumns, getSectionViewMode, iconColumns);
         if (newIndex === -1)
             newIndex = selectedFlatIndex;
         if (newIndex !== selectedFlatIndex) {
@@ -2674,6 +2905,10 @@ Item {
     function executeItem(item, isKeyboard = false, newInstance = false) {
         if (!item)
             return;
+        if (item.type === "folder") {
+            openLauncherFolder(item.data?.folderId);
+            return;
+        }
 
         if (searchMode !== "dmenu" || !dmenuDisableHistory)
             SessionData.addLauncherHistory(searchQuery, explicitQuerySession);
@@ -2753,6 +2988,10 @@ Item {
             executeItem(item);
             break;
         case "open":
+            if (item.type === "folder") {
+                openLauncherFolder(item.data?.folderId);
+                return;
+            }
             openFile(item.data.path);
             break;
         case "open_folder":

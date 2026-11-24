@@ -16,8 +16,10 @@ Item {
     property string currentPage: ""
     property string activeCategoryId: ""
     property var parentModal: null
+    property real topInset: 0
 
     signal pageRequested(string pageId)
+    signal pageAnticipated(string pageId)
 
     property bool searchActive: searchField.text.length > 0
     property bool searchFocused: false
@@ -45,6 +47,7 @@ Item {
         searchField.forceActiveFocus();
     }
 
+    // Choosing a page keeps the keyboard in the list; only a search result picked by key lands in the page
     function focusAfterNavigation(keyboard) {
         if (keyboard || (parentModal?.isCompactMode && !parentModal.menuVisible)) {
             parentModal?.focusCurrentPage(keyboard);
@@ -128,11 +131,20 @@ Item {
             return;
         pageRequested(keyboardHighlightId);
         keyboardHighlightId = "";
-        root.focusAfterNavigation(true);
+        root.focusAfterNavigation(false);
     }
 
+    function _inList(item) {
+        for (let p = item; p; p = p.parent) {
+            if (p === sidebarFlickable.contentItem)
+                return true;
+        }
+        return false;
+    }
+
+    // The search field sits above the list; scrolling it "into view" would throw the list back to the top
     function ensureRowVisible(item) {
-        if (!item || sidebarFlickable.height <= 0)
+        if (!item || sidebarFlickable.height <= 0 || !_inList(item))
             return;
         const itemY = item.mapToItem(sidebarFlickable.contentItem, 0, 0).y;
         const viewH = sidebarFlickable.height;
@@ -216,22 +228,12 @@ Item {
     DSearchField {
         id: searchField
 
-        property real sideInset: root.searchActive ? Theme.spacingS : SettingsMetrics.paneMargin
-
-        Behavior on sideInset {
-            enabled: Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
-            NumberAnimation {
-                duration: Theme.expressiveDurations.expressiveFastSpatial
-                easing.type: Easing.BezierSpline
-                easing.bezierCurve: Theme.expressiveCurves.expressiveFastSpatial
-            }
-        }
-
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: parent.top
-        anchors.leftMargin: sideInset
-        anchors.rightMargin: sideInset
+        anchors.topMargin: root.topInset
+        anchors.leftMargin: SettingsMetrics.paneMargin
+        anchors.rightMargin: SettingsMetrics.paneMargin
         placeholderText: I18n.tr("Search settings", "settings search field placeholder")
         rightAccessoryWidth: avatarButton.visible ? avatarButton.width + Theme.spacingXS : 0
         onFocusStateChanged: hasFocus => {
@@ -463,8 +465,14 @@ Item {
                                     }
                                     readonly property bool isHighlighted: root.keyboardHighlightId === modelData.id
                                     onIsHighlightedChanged: {
-                                        if (isHighlighted)
-                                            Qt.callLater(root.ensureRowVisible, categoryRow);
+                                        if (!isHighlighted)
+                                            return;
+                                        root.pageAnticipated(modelData.id);
+                                        Qt.callLater(root.ensureRowVisible, categoryRow);
+                                    }
+                                    onHoveredChanged: {
+                                        if (hovered)
+                                            root.pageAnticipated(modelData.id);
                                     }
 
                                     width: groupColumn.width
@@ -477,10 +485,10 @@ Item {
                                     accent: SettingsTabs.accentFor(modelData.id)
                                     active: root.activeCategoryId === modelData.id && !SettingsTabs.isPluginPage(root.currentPage)
                                     highlighted: isHighlighted
-                                    onClicked: keyboard => {
+                                    onClicked: {
                                         root.keyboardHighlightId = "";
                                         root.pageRequested(modelData.id);
-                                        root.focusAfterNavigation(keyboard);
+                                        root.focusAfterNavigation(false);
                                     }
                                 }
                             }

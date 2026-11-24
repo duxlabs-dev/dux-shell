@@ -2,6 +2,7 @@ import QtQuick
 import qs.Common
 import qs.Modules.Settings.Widgets
 import qs.Services
+import qs.Widgets
 import qs.DCommon.Widgets
 
 Item {
@@ -172,9 +173,7 @@ Item {
                 }
             }
 
-            Rectangle {
-                width: parent.width
-                height: 1
+            DDivider {
                 color: Theme.outlineMedium
                 opacity: 0.3
             }
@@ -381,9 +380,7 @@ Item {
                 }
             }
 
-            Rectangle {
-                width: parent.width
-                height: 1
+            DDivider {
                 color: Theme.outlineMedium
                 opacity: 0.3
                 visible: root.hasKeybinds
@@ -479,9 +476,7 @@ Item {
                 }
             }
 
-            Rectangle {
-                width: parent.width
-                height: 1
+            DDivider {
                 color: Theme.outlineMedium
                 opacity: 0.3
             }

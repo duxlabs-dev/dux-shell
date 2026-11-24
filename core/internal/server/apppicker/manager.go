@@ -1,48 +1,27 @@
 package apppicker
 
-import (
-	"sync"
-
-	"github.com/duxlabs-dev/dux-go/syncmap"
-)
+import "github.com/duxlabs-dev/dux-shell/core/internal/server/pubsub"
 
 type Manager struct {
-	subscribers syncmap.Map[string, chan OpenEvent]
-	closeOnce   sync.Once
+	broker *pubsub.Broker[OpenEvent]
 }
 
 func NewManager() *Manager {
-	return &Manager{}
+	return &Manager{broker: pubsub.NewBroker[OpenEvent](16)}
 }
 
 func (m *Manager) Subscribe(id string) chan OpenEvent {
-	ch := make(chan OpenEvent, 16)
-	m.subscribers.Store(id, ch)
-	return ch
+	return m.broker.Subscribe(id)
 }
 
-func (m *Manager) Unsubscribe(id string) {
-	if val, ok := m.subscribers.LoadAndDelete(id); ok {
-		close(val)
-	}
+func (m *Manager) Unsubscribe(id string, ch chan OpenEvent) {
+	m.broker.Unsubscribe(id, ch)
 }
 
 func (m *Manager) RequestOpen(event OpenEvent) {
-	m.subscribers.Range(func(key string, ch chan OpenEvent) bool {
-		select {
-		case ch <- event:
-		default:
-		}
-		return true
-	})
+	m.broker.Publish(event)
 }
 
 func (m *Manager) Close() {
-	m.closeOnce.Do(func() {
-		m.subscribers.Range(func(key string, ch chan OpenEvent) bool {
-			close(ch)
-			m.subscribers.Delete(key)
-			return true
-		})
-	})
+	m.broker.Close()
 }

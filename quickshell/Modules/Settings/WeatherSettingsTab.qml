@@ -19,37 +19,39 @@ Item {
     }
 
     SettingsPage {
-        SettingsCard {
-            title: I18n.tr("General")
-            tab: "weather"
-            settingKey: "weather"
-
-            SettingsToggleRow {
+        SettingsDeferred {
+            SettingsCard {
+                title: I18n.tr("General")
                 tab: "weather"
-                settingKey: "weatherEnabled"
-                tags: ["weather", "enable", "forecast"]
-                text: I18n.tr("Weather")
-                checked: SettingsData.weatherEnabled
-                onToggled: checked => SettingsData.set("weatherEnabled", checked)
-            }
+                settingKey: "weather"
 
-            SettingsToggleRow {
-                tab: "weather"
-                settingKey: "useFahrenheit"
-                tags: ["weather", "imperial", "fahrenheit", "celsius", "units", "mph"]
-                text: I18n.tr("Imperial units")
-                checked: SettingsData.useFahrenheit
-                onToggled: checked => SettingsData.set("useFahrenheit", checked)
-            }
+                SettingsToggleRow {
+                    tab: "weather"
+                    settingKey: "weatherEnabled"
+                    tags: ["weather", "enable", "forecast"]
+                    text: I18n.tr("Weather")
+                    checked: SettingsData.weatherEnabled
+                    onToggled: checked => SettingsData.set("weatherEnabled", checked)
+                }
 
-            SettingsToggleRow {
-                enabled: !SettingsData.useFahrenheit
-                tab: "weather"
-                settingKey: "windSpeedUnit"
-                tags: ["weather", "wind", "speed", "units", "metric"]
-                text: I18n.tr("Wind speed in m/s")
-                checked: SettingsData.windSpeedUnit === "ms"
-                onToggled: checked => SettingsData.set("windSpeedUnit", checked ? "ms" : "kmh")
+                SettingsToggleRow {
+                    tab: "weather"
+                    settingKey: "useFahrenheit"
+                    tags: ["weather", "imperial", "fahrenheit", "celsius", "units", "mph"]
+                    text: I18n.tr("Imperial units")
+                    checked: SettingsData.useFahrenheit
+                    onToggled: checked => SettingsData.set("useFahrenheit", checked)
+                }
+
+                SettingsToggleRow {
+                    enabled: !SettingsData.useFahrenheit
+                    tab: "weather"
+                    settingKey: "windSpeedUnit"
+                    tags: ["weather", "wind", "speed", "units", "metric"]
+                    text: I18n.tr("Wind speed in m/s")
+                    checked: SettingsData.windSpeedUnit === "ms"
+                    onToggled: checked => SettingsData.set("windSpeedUnit", checked ? "ms" : "kmh")
+                }
             }
         }
 
@@ -122,77 +124,81 @@ Item {
             }
         }
 
-        SettingsCard {
-            title: I18n.tr("Weather providers", "Weather data source priority settings")
-            tab: "weather"
-            settingKey: "weatherProviders"
-            tags: ["weather", "provider", "source", "fallback", "priority", "order", "open-meteo", "met norway"]
+        SettingsDeferred {
+            SettingsCard {
+                title: I18n.tr("Weather providers", "Weather data source priority settings")
+                tab: "weather"
+                settingKey: "weatherProviders"
+                tags: ["weather", "provider", "source", "fallback", "priority", "order", "open-meteo", "met norway"]
 
-            headerActions: DActionButton {
-                iconName: "restart_alt"
-                tooltipText: I18n.tr("Reset to default")
-                enabled: !SettingsData.isDefault(["weatherProviders"])
-                onClicked: SettingsData.resetToDefault(["weatherProviders"])
-            }
+                headerActions: DActionButton {
+                    iconName: "restart_alt"
+                    tooltipText: I18n.tr("Reset to default")
+                    enabled: !SettingsData.isDefault(["weatherProviders"])
+                    onClicked: SettingsData.resetToDefault(["weatherProviders"])
+                }
 
-            SettingsRow {
-                title: I18n.tr("Drag to reorder")
-                subtitle: I18n.tr("The next enabled provider is used when one fails.", "weather providers fallback hint")
-            }
+                SettingsRow {
+                    title: I18n.tr("Drag to reorder")
+                    subtitle: I18n.tr("The next enabled provider is used when one fails.", "weather providers fallback hint")
+                }
 
-            SettingsReorderList {
-                id: weatherProviderList
-                model: WeatherService.providerOrder.split(",")
-                onReordered: indices => WeatherService.reorderProviders(indices)
+                SettingsReorderList {
+                    id: weatherProviderList
+                    model: WeatherService.providerOrder.split(",")
+                    onReordered: indices => WeatherService.reorderProviders(indices)
 
-                delegate: SettingsReorderRow {
-                    id: providerRow
-                    required property string modelData
-                    readonly property var provider: WeatherService.providers.find(provider => provider.id === modelData)
-                    reorderList: weatherProviderList
-                    title: provider?.text ?? ""
-                    clickable: true
-                    onClicked: WeatherService.setProviderEnabled(modelData, !provider?.enabled)
+                    delegate: SettingsReorderRow {
+                        id: providerRow
+                        required property string modelData
+                        readonly property var provider: WeatherService.providers.find(provider => provider.id === modelData)
+                        reorderList: weatherProviderList
+                        title: provider?.text ?? ""
+                        clickable: true
+                        onClicked: WeatherService.setProviderEnabled(modelData, !provider?.enabled)
 
-                    DToggle {
-                        hideText: true
-                        Accessible.name: providerRow.title
-                        checked: providerRow.provider?.enabled ?? false
-                        onToggled: checked => WeatherService.setProviderEnabled(providerRow.modelData, checked)
+                        DToggle {
+                            hideText: true
+                            Accessible.name: providerRow.title
+                            checked: providerRow.provider?.enabled ?? false
+                            onToggled: checked => WeatherService.setProviderEnabled(providerRow.modelData, checked)
+                        }
                     }
                 }
             }
         }
 
-        SettingsCard {
-            title: I18n.tr("Display")
-            tab: "weather"
-            settingKey: "weatherDisplay"
-
-            SettingsToggleRow {
-                readonly property var lockStatus: SettingsData.lockWidgetInstance("lockStatus")
-
+        SettingsDeferred {
+            SettingsCard {
+                title: I18n.tr("Display")
                 tab: "weather"
-                settingKey: "lockStatusWeather"
-                tags: ["weather", "lock", "screen"]
-                visible: lockStatus !== null
-                text: I18n.tr("Lock screen")
-                checked: lockStatus?.config?.showWeather ?? true
-                onToggled: checked => SettingsData.updateDesktopWidgetInstanceConfig(lockStatus.id, {
-                        showWeather: checked
-                    })
-            }
+                settingKey: "weatherDisplay"
 
-            SettingsNavRow {
-                title: I18n.tr("Dashboard")
-                iconName: "space_dashboard"
-                onClicked: keyboard => root.parentModal?.navigateTo("dank_dash", keyboard)
-            }
+                SettingsToggleRow {
+                    readonly property var lockStatus: SettingsData.lockWidgetInstance("lockStatus")
 
-            SettingsNavRow {
-                title: I18n.tr("Bar widgets")
-                iconName: "widgets"
-                onClicked: keyboard => root.parentModal?.navigateTo("dankbar_widgets", keyboard)
+                    tab: "weather"
+                    settingKey: "lockStatusWeather"
+                    tags: ["weather", "lock", "screen"]
+                    visible: lockStatus !== null
+                    text: I18n.tr("Lock screen")
+                    checked: lockStatus?.config?.showWeather ?? true
+                    onToggled: checked => SettingsData.updateDesktopWidgetInstanceConfig(lockStatus.id, {
+                            showWeather: checked
+                        })
+                }
+
+                SettingsNavRow {
+                    title: I18n.tr("Dashboard")
+                    iconName: "space_dashboard"
+                    onClicked: keyboard => root.parentModal?.navigateTo("dank_dash", keyboard)
+                }
+
+                SettingsNavRow {
+                    title: I18n.tr("Bar widgets")
+                    iconName: "widgets"
+                    onClicked: keyboard => root.parentModal?.navigateTo("dankbar_widgets", keyboard)
+                }
             }
         }
     }

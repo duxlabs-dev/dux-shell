@@ -5,7 +5,6 @@ import (
 	"os"
 	"runtime/debug"
 
-	"github.com/duxlabs-dev/dux-shell/core/internal/clipboard"
 	"github.com/duxlabs-dev/dux-shell/core/internal/colorpicker"
 	"github.com/duxlabs-dev/dux-shell/core/internal/site"
 	"github.com/spf13/cobra"
@@ -151,7 +150,7 @@ func runColorPick(cmd *cobra.Command, args []string) {
 }
 
 func copyToClipboard(text string) {
-	if err := clipboard.CopyText(text); err != nil {
+	if err := copyDataToClipboard([]byte(text), "text/plain;charset=utf-8"); err != nil {
 		fmt.Fprintln(os.Stderr, "clipboard copy failed:", err)
 	}
 }

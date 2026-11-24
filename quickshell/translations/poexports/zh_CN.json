@@ -2,8 +2,17 @@
   " (%1 left)": {
     " (%1 left)": " （剩余 %1）"
   },
+  "%1 %2": {
+    "%1 %2": ""
+  },
   "%1 (+%2 more)": {
     "%1 (+%2 more)": "%1（另有 %2 项）"
+  },
+  "%1 (UI)": {
+    "%1 (UI)": ""
+  },
+  "%1 (recommended)": {
+    "%1 (recommended)": ""
   },
   "%1 DMS bind may be overridden by config binds that come after the include.": {
     "%1 DMS bind may be overridden by config binds that come after the include.": "%1 个 Dux 绑定可能被 include 之后的配置绑定覆盖。"
@@ -41,6 +50,12 @@
   "%1 already holds this screen edge": {
     "%1 already holds this screen edge": "%1 已占用此屏幕边缘"
   },
+  "%1 app": {
+    "%1 app": ""
+  },
+  "%1 apps": {
+    "%1 apps": ""
+  },
   "%1 before": {
     "%1 before": "%1 前"
   },
@@ -49,6 +64,9 @@
   },
   "%1 breaking": {
     "%1 breaking": "%1 项不兼容变更"
+  },
+  "%1 can use these shortcuts from any window. Change them later in Settings.": {
+    "%1 can use these shortcuts from any window. Change them later in Settings.": ""
   },
   "%1 character": {
     "%1 character": "%1 个字符"
@@ -67,6 +85,9 @@
   },
   "%1 cores, %2 threads": {
     "%1 cores, %2 threads": ""
+  },
+  "%1 could not be read": {
+    "%1 could not be read": ""
   },
   "%1 day": {
     "%1 day": "%1 天"
@@ -98,17 +119,14 @@
   "%1 fixes": {
     "%1 fixes": "%1 项修复"
   },
-  "%1 h": {
-    "%1 h": "%1 小时"
-  },
-  "%1 h %2 m": {
-    "%1 h %2 m": "%1 小时 %2 分"
-  },
   "%1 h %2 m left": {
     "%1 h %2 m left": "剩余 %1 小时 %2 分"
   },
   "%1 h left": {
     "%1 h left": "剩余 %1 小时"
+  },
+  "%1 has no folders that can be recolored": {
+    "%1 has no folders that can be recolored": ""
   },
   "%1 holds this edge, so the dock stays hidden there": {
     "%1 holds this edge, so the dock stays hidden there": "%1 占用此边缘，因此 Dock 会在此处隐藏"
@@ -122,14 +140,26 @@
   "%1 is %2 and may use a lot of memory.": {
     "%1 is %2 and may use a lot of memory.": "%1 大小为 %2，打开后可能占用大量内存。"
   },
+  "%1 is already installed. Replace it?": {
+    "%1 is already installed. Replace it?": ""
+  },
+  "%1 is not installed": {
+    "%1 is not installed": ""
+  },
   "%1 is not installed. Install the package to manage the greeter.": {
     "%1 is not installed. Install the package to manage the greeter.": "%1 尚未安装。请安装该软件包以管理登录界面。"
+  },
+  "%1 is not supported": {
+    "%1 is not supported": ""
   },
   "%1 is now included in config": {
     "%1 is now included in config": "%1 现在已被你的合成器配置引用"
   },
   "%1 is running and will create duplicate Bluetooth players. Disable it with: %2": {
     "%1 is running and will create duplicate Bluetooth players. Disable it with: %2": "%1 正在运行，会创建重复的蓝牙播放器。请通过以下方式停用它：%2"
+  },
+  "%1 is still included": {
+    "%1 is still included": ""
   },
   "%1 issue found": {
     "%1 issue found": "发现 %1 个问题"
@@ -176,6 +206,9 @@
   "%1 not found": {
     "%1 not found": "未找到 %1"
   },
+  "%1 not removed": {
+    "%1 not removed": ""
+  },
   "%1 notifications": {
     "%1 notifications": "%1 条通知"
   },
@@ -212,14 +245,14 @@
   "%1 processes": {
     "%1 processes": ""
   },
-  "%1 procs": {
-    "%1 procs": "%1 进程"
-  },
   "%1 second": {
     "%1 second": "%1 秒"
   },
   "%1 seconds": {
     "%1 seconds": "%1 秒"
+  },
+  "%1 still uses it": {
+    "%1 still uses it": ""
   },
   "%1 tasks": {
     "%1 tasks": "%1 项任务"
@@ -264,7 +297,7 @@
     "%1: %2": "%1: %2"
   },
   "%1d ago": {
-    "%1d ago": ""
+    "%1d ago": "%1 天前"
   },
   "%1h": {
     "%1h": "%1 小时"
@@ -273,7 +306,7 @@
     "%1h %2m": "%1 小时 %2 分"
   },
   "%1h ago": {
-    "%1h ago": ""
+    "%1h ago": "%1 小时前"
   },
   "%1m": {
     "%1m": "%1 分"
@@ -300,7 +333,7 @@
     "0 stops the animation and saves GPU": ""
   },
   "1 hour before": {
-    "1 hour before": ""
+    "1 hour before": "1 小时前"
   },
   "1 notification": {
     "1 notification": "1 条通知"
@@ -322,6 +355,9 @@
   },
   "50 uses Material shapes. Lower values reduce rounding; higher values increase it.": {
     "50 uses Material shapes. Lower values reduce rounding; higher values increase it.": "数值为 50 时使用 Material 形状。较低值会减少圆角，较高值会增加圆角。"
+  },
+  "6 GHz": {
+    "6 GHz": ""
   },
   "A custom seed color overrides this": {
     "A custom seed color overrides this": "自定义种子颜色会覆盖此设置"
@@ -352,9 +388,6 @@
   },
   "AC power": {
     "AC power": "交流电源"
-  },
-  "API": {
-    "API": "API"
   },
   "AUR helpers are interactive — see the terminal window for prompts. This popout will return to idle when the upgrade exits.": {
     "AUR helpers are interactive — see the terminal window for prompts. This popout will return to idle when the upgrade exits.": "AUR 助手需要交互操作，请查看终端窗口中的提示。升级结束后，此弹出面板会恢复为空闲状态。"
@@ -440,6 +473,21 @@
   "Active: None": {
     "Active: None": "活动：无"
   },
+  "Activity colors": {
+    "Activity colors": ""
+  },
+  "Activity icon animation": {
+    "Activity icon animation": ""
+  },
+  "Activity position": {
+    "Activity position": ""
+  },
+  "Activity sources": {
+    "Activity sources": ""
+  },
+  "Ad-hoc": {
+    "Ad-hoc": ""
+  },
   "Adapters": {
     "Adapters": "适配器"
   },
@@ -467,14 +515,26 @@
   "Add Title": {
     "Add Title": "添加标题"
   },
+  "Add a profile in Settings": {
+    "Add a profile in Settings": ""
+  },
   "Add a task...": {
     "Add a task...": "添加任务…"
+  },
+  "Add a widget here": {
+    "Add a widget here": ""
+  },
+  "Add account": {
+    "Add account": ""
   },
   "Add by address": {
     "Add by address": "按地址添加"
   },
   "Add condition": {
     "Add condition": "添加条件"
+  },
+  "Add connection": {
+    "Add connection": ""
   },
   "Add entry": {
     "Add entry": "添加条目"
@@ -497,6 +557,9 @@
   "Add printer": {
     "Add printer": "添加打印机"
   },
+  "Add routes for allowed IPs": {
+    "Add routes for allowed IPs": ""
+  },
   "Add rule": {
     "Add rule": "添加规则"
   },
@@ -505,6 +568,9 @@
   },
   "Add substitution": {
     "Add substitution": "添加替换规则"
+  },
+  "Add to %1": {
+    "Add to %1": ""
   },
   "Add to autostart": {
     "Add to autostart": "添加到自动启动"
@@ -529,6 +595,9 @@
   },
   "Added in front of every app launch command": {
     "Added in front of every app launch command": "添加到每个应用启动命令的开头"
+  },
+  "Address generation": {
+    "Address generation": ""
   },
   "Adds a compositor window rule so DMS windows such as Settings open floating": {
     "Adds a compositor window rule so DMS windows such as Settings open floating": "添加合成器窗口规则，让设置等 Dux 窗口以浮动方式打开"
@@ -560,11 +629,20 @@
   "Advanced comma-separated libxkbcommon options.": {
     "Advanced comma-separated libxkbcommon options.": "高级 libxkbcommon 选项（逗号分隔）。"
   },
+  "Advanced options": {
+    "Advanced options": ""
+  },
   "After %1": {
     "After %1": "%1 之后"
   },
+  "After capture": {
+    "After capture": ""
+  },
   "Afternoon": {
     "Afternoon": "下午"
+  },
+  "Airplane mode": {
+    "Airplane mode": ""
   },
   "Album art backdrop": {
     "Album art backdrop": "专辑封面背景"
@@ -583,6 +661,9 @@
   },
   "All checks passed": {
     "All checks passed": "所有检查均已通过"
+  },
+  "All connections": {
+    "All connections": ""
   },
   "All day": {
     "All day": "全天"
@@ -608,6 +689,9 @@
   "Allow LAN access": {
     "Allow LAN access": "允许局域网访问"
   },
+  "Allow TLS 1.0 and 1.1": {
+    "Allow TLS 1.0 and 1.1": ""
+  },
   "Allow critical": {
     "Allow critical": "允许关键通知"
   },
@@ -619,6 +703,12 @@
   },
   "Allow in Do Not Disturb": {
     "Allow in Do Not Disturb": "在勿扰模式下允许"
+  },
+  "Allow incoming connections": {
+    "Allow incoming connections": ""
+  },
+  "Allowed IPs": {
+    "Allowed IPs": ""
   },
   "Allowed cores": {
     "Allowed cores": ""
@@ -692,14 +782,17 @@
   "Anchor": {
     "Anchor": "锚点"
   },
-  "Animation duration": {
-    "Animation duration": "动画时长"
-  },
   "Animation style": {
     "Animation style": "动画样式"
   },
   "Animations": {
     "Animations": "动画"
+  },
+  "Animations and motion": {
+    "Animations and motion": ""
+  },
+  "Annotate region captures": {
+    "Annotate region captures": ""
   },
   "Anonymous": {
     "Anonymous": ""
@@ -815,11 +908,17 @@
   "Apps that capture the keyboard can block it": {
     "Apps that capture the keyboard can block it": "捕获键盘输入的应用可能阻止此快捷键"
   },
+  "Apps that register global shortcuts appear here.": {
+    "Apps that register global shortcuts appear here.": ""
+  },
   "Apps with notification popups muted. Unmute or delete to remove.": {
     "Apps with notification popups muted. Unmute or delete to remove.": "已暂停弹出通知的应用。恢复通知或删除条目即可移除。"
   },
   "Arc extender": {
     "Arc extender": "弧形扩展器"
+  },
+  "Archive": {
+    "Archive": ""
   },
   "Archive manager": {
     "Archive manager": "归档管理器"
@@ -830,17 +929,26 @@
   "Arguments": {
     "Arguments": "参数"
   },
+  "Arrange dock items": {
+    "Arrange dock items": ""
+  },
   "Arrangement": {
     "Arrangement": "排列"
   },
   "Arrangement, resolution, scale, profiles": {
     "Arrangement, resolution, scale, profiles": "排列、分辨率、缩放和配置文件"
   },
+  "Arrow": {
+    "Arrow": ""
+  },
   "Artwork": {
     "Artwork": "专辑封面"
   },
   "Asleep": {
     "Asleep": ""
+  },
+  "At least one group must remain selected": {
+    "At least one group must remain selected": ""
   },
   "At least one output must remain enabled": {
     "At least one output must remain enabled": "至少应有一个输出保持启用"
@@ -947,6 +1055,9 @@
   "Auto follows bar spacing, Off keeps your %1 config": {
     "Auto follows bar spacing, Off keeps your %1 config": "自动跟随状态栏间距，关闭后保留你的 %1 配置"
   },
+  "Auto height": {
+    "Auto height": ""
+  },
   "Auto location": {
     "Auto location": "自动定位"
   },
@@ -1007,6 +1118,9 @@
   "Autoconnect enabled": {
     "Autoconnect enabled": "自动连接已启用"
   },
+  "Automatic DNS": {
+    "Automatic DNS": ""
+  },
   "Automatic control": {
     "Automatic control": "自动控制"
   },
@@ -1015,6 +1129,9 @@
   },
   "Automatic placement": {
     "Automatic placement": "自动放置"
+  },
+  "Automatic routes": {
+    "Automatic routes": ""
   },
   "Automatically enable while screen sharing": {
     "Automatically enable while screen sharing": "共享屏幕时自动启用"
@@ -1049,11 +1166,14 @@
   "Available networks": {
     "Available networks": "可用网络"
   },
+  "Available to all users": {
+    "Available to all users": ""
+  },
   "Avatar ring": {
     "Avatar ring": "头像圆环"
   },
-  "BIOS": {
-    "BIOS": ""
+  "Avoid open popouts": {
+    "Avoid open popouts": ""
   },
   "Backend": {
     "Backend": "后端"
@@ -1159,6 +1279,9 @@
   },
   "Bento style only": {
     "Bento style only": ""
+  },
+  "Bind keys to region, screen, window and scroll captures": {
+    "Bind keys to region, screen, window and scroll captures": ""
   },
   "Bind the %1 IPC action in your compositor config.": {
     "Bind the %1 IPC action in your compositor config.": "在合成器配置中绑定 %1 IPC 操作。"
@@ -1289,6 +1412,12 @@
   "Bottom section": {
     "Bottom section": "底部区域"
   },
+  "Bounce": {
+    "Bounce": ""
+  },
+  "Brackets": {
+    "Brackets": ""
+  },
   "Bright": {
     "Bright": "明亮"
   },
@@ -1349,11 +1478,11 @@
   "Button color": {
     "Button color": "按钮颜色"
   },
+  "CA certificate": {
+    "CA certificate": ""
+  },
   "CPU": {
     "CPU": "CPU"
-  },
-  "CPU graph": {
-    "CPU graph": "CPU 图表"
   },
   "CPU temperature": {
     "CPU temperature": "CPU 温度"
@@ -1418,6 +1547,9 @@
   "Candidates per page": {
     "Candidates per page": ""
   },
+  "Cannot delete the active profile": {
+    "Cannot delete the active profile": ""
+  },
   "Cannot delete the only administrator": {
     "Cannot delete the only administrator": "无法删除唯一的管理员"
   },
@@ -1450,6 +1582,12 @@
   },
   "Caps lock": {
     "Caps lock": "Caps Lock"
+  },
+  "Capture": {
+    "Capture": ""
+  },
+  "Card": {
+    "Card": ""
   },
   "Card backgrounds": {
     "Card backgrounds": ""
@@ -1498,6 +1636,9 @@
   },
   "Change Volume": {
     "Change Volume": "调整音量"
+  },
+  "Change where an activity sits, what it shows when collapsed and what a click opens": {
+    "Change where an activity sits, what it shows when collapsed and what a click opens": ""
   },
   "Changes save to %1": {
     "Changes save to %1": "更改将保存到 %1"
@@ -1589,6 +1730,9 @@
   "Choose colors from palette": {
     "Choose colors from palette": "从调色板中选择颜色"
   },
+  "Choose screenshot folder": {
+    "Choose screenshot folder": ""
+  },
   "Choose wallpaper folder": {
     "Choose wallpaper folder": "选择壁纸文件夹"
   },
@@ -1620,7 +1764,7 @@
     "Classes": "类别"
   },
   "Classic": {
-    "Classic": ""
+    "Classic": "经典"
   },
   "Clear All": {
     "Clear All": "清空"
@@ -1667,6 +1811,9 @@
   "Click through": {
     "Click through": "点击穿透"
   },
+  "Click to add, or drag into place": {
+    "Click to add, or drag into place": ""
+  },
   "Click to capture": {
     "Click to capture": "点击以捕获"
   },
@@ -1688,8 +1835,14 @@
   "Clicking a workspace from another display moves it to the display of the bar you clicked": {
     "Clicking a workspace from another display moves it to the display of the bar you clicked": ""
   },
+  "Clicking or hovering the home face opens this tab": {
+    "Clicking or hovering the home face opens this tab": ""
+  },
   "Clicks on empty bar space reach the windows below": {
     "Clicks on empty bar space reach the windows below": "对状态栏空白区域的点击会传递给下方窗口"
+  },
+  "Client certificate": {
+    "Client certificate": ""
   },
   "Client fullscreen state": {
     "Client fullscreen state": "客户端全屏状态"
@@ -1730,6 +1883,9 @@
   "Clocks, monitors, plugins": {
     "Clocks, monitors, plugins": "时钟、监视器与插件"
   },
+  "Cloned MAC address": {
+    "Cloned MAC address": ""
+  },
   "Close Active Window": {
     "Close Active Window": "关闭活动窗口"
   },
@@ -1742,6 +1898,9 @@
   "Close on window focus": {
     "Close on window focus": "窗口获得焦点时关闭"
   },
+  "Clover": {
+    "Clover": ""
+  },
   "Codec switched successfully": {
     "Codec switched successfully": "编解码器已成功切换"
   },
@@ -1753,6 +1912,12 @@
   },
   "Collapse": {
     "Collapse": "收起"
+  },
+  "Collapsed background": {
+    "Collapsed background": ""
+  },
+  "Collapsed content": {
+    "Collapsed content": ""
   },
   "Color %1 copied": {
     "Color %1 copied": "已复制 HEX 颜色 %1"
@@ -1812,13 +1977,16 @@
     "Columns": "列数"
   },
   "Comfortable": {
-    "Comfortable": ""
+    "Comfortable": "舒适"
   },
   "Comma-separated list of layout names. Leave empty to use the system keyboard settings.": {
     "Comma-separated list of layout names. Leave empty to use the system keyboard settings.": "逗号分隔的布局名称列表。留空以使用系统键盘设置。"
   },
   "Comma-separated list of session names to hide. Wrap in slashes for regex (e.g., /^_.*/).": {
     "Comma-separated list of session names to hide. Wrap in slashes for regex (e.g., /^_.*/).": "要隐藏的会话名称的逗号分隔列表。使用正则表达式时用斜杠包裹（例如：/^_.*/）。"
+  },
+  "Comma-separated plugin or IPC source IDs that never show here": {
+    "Comma-separated plugin or IPC source IDs that never show here": ""
   },
   "Command": {
     "Command": "命令"
@@ -1844,6 +2012,9 @@
   "Compact mode": {
     "Compact mode": "紧凑模式"
   },
+  "Compare": {
+    "Compare": ""
+  },
   "Completed": {
     "Completed": "已完成"
   },
@@ -1856,6 +2027,9 @@
   "Compositor and shell key bindings": {
     "Compositor and shell key bindings": "合成器与桌面环境的快捷键绑定"
   },
+  "Compositor animations": {
+    "Compositor animations": ""
+  },
   "Compression": {
     "Compression": ""
   },
@@ -1864,6 +2038,9 @@
   },
   "Config action: %1": {
     "Config action: %1": "配置操作：%1"
+  },
+  "Config files DMS writes, stop managing": {
+    "Config files DMS writes, stop managing": ""
   },
   "Config validation failed": {
     "Config validation failed": "配置验证失败"
@@ -1904,6 +2081,9 @@
   "Confirm password": {
     "Confirm password": "确认密码"
   },
+  "Confirm region": {
+    "Confirm region": ""
+  },
   "Confirmation": {
     "Confirmation": "确认"
   },
@@ -1928,6 +2108,9 @@
   "Connected Device": {
     "Connected Device": "已连接的设备"
   },
+  "Connected popouts": {
+    "Connected popouts": ""
+  },
   "Connected to %1": {
     "Connected to %1": "已连接至 %1"
   },
@@ -1951,6 +2134,9 @@
   },
   "Connections and autoconnect": {
     "Connections and autoconnect": "连接和自动连接"
+  },
+  "Connectivity checking": {
+    "Connectivity checking": ""
   },
   "Connects to the internet": {
     "Connects to the internet": "连接网络"
@@ -1997,6 +2183,9 @@
   "Convertible": {
     "Convertible": ""
   },
+  "Cookie": {
+    "Cookie": ""
+  },
   "Cooldown": {
     "Cooldown": "冷却"
   },
@@ -2006,6 +2195,9 @@
   "Copied!": {
     "Copied!": "已复制！"
   },
+  "Copies the saved file too, so terminals paste its path": {
+    "Copies the saved file too, so terminals paste its path": ""
+  },
   "Copies the screenshot to the clipboard": {
     "Copies the screenshot to the clipboard": "将截图复制到剪贴板"
   },
@@ -2014,6 +2206,9 @@
   },
   "Copy %1": {
     "Copy %1": "复制 %1"
+  },
+  "Copy App ID": {
+    "Copy App ID": ""
   },
   "Copy Full Command": {
     "Copy Full Command": "复制完整命令"
@@ -2030,6 +2225,12 @@
   "Copy Text": {
     "Copy Text": "复制文本"
   },
+  "Copy Title": {
+    "Copy Title": ""
+  },
+  "Copy as file": {
+    "Copy as file": ""
+  },
   "Copy report": {
     "Copy report": ""
   },
@@ -2038,6 +2239,9 @@
   },
   "Copy target (%1)": {
     "Copy target (%1)": "复制目标（%1）"
+  },
+  "Copy to clipboard": {
+    "Copy to clipboard": ""
   },
   "Core clock": {
     "Core clock": ""
@@ -2162,6 +2366,9 @@
   "Cursor auto-hide timeout": {
     "Cursor auto-hide timeout": "光标自动隐藏超时"
   },
+  "Cursor theme not installed": {
+    "Cursor theme not installed": ""
+  },
   "Curve": {
     "Curve": "曲线"
   },
@@ -2213,8 +2420,14 @@
   "Custom update command": {
     "Custom update command": "自定义更新命令"
   },
+  "Custom, based on %1": {
+    "Custom, based on %1": ""
+  },
   "Customizable empty space": {
     "Customizable empty space": "可调节留白"
+  },
+  "Cut": {
+    "Cut": ""
   },
   "DDC/CI monitor": {
     "DDC/CI monitor": "DDC/CI 监视器"
@@ -2257,6 +2470,9 @@
   },
   "DMS stops drawing wallpapers on every display": {
     "DMS stops drawing wallpapers on every display": "Dux 停止在所有显示器上绘制壁纸"
+  },
+  "DMS will then manage %1 animations and override animation settings in your config.": {
+    "DMS will then manage %1 animations and override animation settings in your config.": ""
   },
   "Daemon": {
     "Daemon": ""
@@ -2309,6 +2525,9 @@
   "Dashboard": {
     "Dashboard": "仪表盘"
   },
+  "Dashboard opens to": {
+    "Dashboard opens to": ""
+  },
   "Dashboard tabs": {
     "Dashboard tabs": ""
   },
@@ -2356,6 +2575,9 @@
   },
   "Declared by the author, not enforced": {
     "Declared by the author, not enforced": "由作者声明，不强制执行"
+  },
+  "Decrease font size": {
+    "Decrease font size": ""
   },
   "Default": {
     "Default": "默认"
@@ -2436,7 +2658,7 @@
     "Deletes all stored screen time": "删除所有已保存的屏幕使用时间记录"
   },
   "Dense": {
-    "Dense": ""
+    "Dense": "紧凑"
   },
   "Dependencies & documentation": {
     "Dependencies & documentation": "依赖与文档"
@@ -2498,6 +2720,9 @@
   "Did you mean": {
     "Did you mean": "您是不是要找"
   },
+  "Different length": {
+    "Different length": ""
+  },
   "Digital": {
     "Digital": "数字式"
   },
@@ -2525,6 +2750,12 @@
   "Disable %1?": {
     "Disable %1?": ""
   },
+  "Disable All": {
+    "Disable All": ""
+  },
+  "Disable TLS 1.3": {
+    "Disable TLS 1.3": ""
+  },
   "Disable autoconnect": {
     "Disable autoconnect": "禁用自动连接"
   },
@@ -2540,6 +2771,9 @@
   "Disable while typing": {
     "Disable while typing": "输入时禁用"
   },
+  "Disable wireless radios": {
+    "Disable wireless radios": ""
+  },
   "Disable with external mouse": {
     "Disable with external mouse": "使用外部鼠标时禁用"
   },
@@ -2550,16 +2784,16 @@
     "Disabled (%1)": ""
   },
   "Disabled by Auto": {
-    "Disabled by Auto": ""
+    "Disabled by Auto": "已自动禁用"
   },
   "Disabled by Click through": {
     "Disabled by Click through": "因开启“点击穿透”而禁用"
   },
+  "Disabled by Connected popouts": {
+    "Disabled by Connected popouts": ""
+  },
   "Disabled by Frame Mode": {
     "Disabled by Frame Mode": "已被框架模式禁用"
-  },
-  "Disabling WiFi...": {
-    "Disabling WiFi...": "正在禁用 Wi-Fi…"
   },
   "Disabling auto-login on startup...": {
     "Disabling auto-login on startup...": "正在禁用开机自动登录…"
@@ -2581,9 +2815,6 @@
   },
   "Disconnected": {
     "Disconnected": "已断开连接"
-  },
-  "Disconnected from WiFi": {
-    "Disconnected from WiFi": "Wi-Fi 已断开"
   },
   "Discover community plugins. Review their code before installing, and audit changes before updating.": {
     "Discover community plugins. Review their code before installing, and audit changes before updating.": "发现社区插件。安装前请查看其代码，更新前请检查更改。"
@@ -2675,6 +2906,9 @@
   "Displays, taskbar, auto-hide": {
     "Displays, taskbar, auto-hide": "显示器、任务栏、自动隐藏"
   },
+  "Dissolve folder": {
+    "Dissolve folder": ""
+  },
   "Distribution": {
     "Distribution": "发行版"
   },
@@ -2714,8 +2948,8 @@
   "Documents": {
     "Documents": "文档"
   },
-  "Domain (optional)": {
-    "Domain (optional)": "域名（可选）"
+  "Does not fit here. Drag to another spot.": {
+    "Does not fit here. Drag to another spot.": ""
   },
   "Dominant": {
     "Dominant": "主导色"
@@ -2727,7 +2961,7 @@
     "Don't change": "不更改"
   },
   "Don't dim unfocused apps": {
-    "Don't dim unfocused apps": ""
+    "Don't dim unfocused apps": "不调暗未聚焦的应用"
   },
   "Door Open": {
     "Door Open": "打印机维护口已打开"
@@ -2765,8 +2999,14 @@
   "Drag to move, click to open activities": {
     "Drag to move, click to open activities": "拖动以移动，点击以打开活动"
   },
+  "Drag widgets in, or click one to add it": {
+    "Drag widgets in, or click one to add it": ""
+  },
   "Dragged displays line up with neighboring edges without overlapping": {
     "Dragged displays line up with neighboring edges without overlapping": "拖动显示器时对齐相邻边缘，并避免重叠"
+  },
+  "Draw, highlight and add text on a region before it is saved": {
+    "Draw, highlight and add text on a region before it is saved": ""
   },
   "Driver": {
     "Driver": "驱动程序"
@@ -2792,6 +3032,9 @@
   "Duo": {
     "Duo": "双色"
   },
+  "Duplex": {
+    "Duplex": ""
+  },
   "Duplicate": {
     "Duplicate": "创建副本"
   },
@@ -2800,9 +3043,6 @@
   },
   "Dusk (Astronomical Twilight)": {
     "Dusk (Astronomical Twilight)": "黄昏（天文暮光）"
-  },
-  "Dusk (Civil Twighlight)": {
-    "Dusk (Civil Twighlight)": "黄昏（民用暮光）"
   },
   "Dusk (Nautical Twilight)": {
     "Dusk (Nautical Twilight)": "黄昏（航海暮光）"
@@ -2882,6 +3122,9 @@
   "Edit event": {
     "Edit event": "编辑事务"
   },
+  "Edit layout": {
+    "Edit layout": ""
+  },
   "Edit mode": {
     "Edit mode": "编辑模式"
   },
@@ -2927,8 +3170,8 @@
   "Empty placeholders fill the switcher up to the count": {
     "Empty placeholders fill the switcher up to the count": "用空白占位补足工作区切换器中的数量"
   },
-  "Enable Wi-Fi before starting the hotspot.": {
-    "Enable Wi-Fi before starting the hotspot.": "启动热点前请启用 Wi-Fi。"
+  "Empty space": {
+    "Empty space": ""
   },
   "Enable autoconnect": {
     "Enable autoconnect": "启用自动连接"
@@ -2945,9 +3188,6 @@
   "Enabled": {
     "Enabled": "已启用"
   },
-  "Enabling WiFi...": {
-    "Enabling WiFi...": "正在启用 Wi-Fi…"
-  },
   "Enabling cellular...": {
     "Enabling cellular...": "正在启用蜂窝网络…"
   },
@@ -2959,6 +3199,9 @@
   },
   "End process tree": {
     "End process tree": ""
+  },
+  "Endpoint": {
+    "Endpoint": ""
   },
   "Enter 6-digit passkey": {
     "Enter 6-digit passkey": "输入六位数通行密钥"
@@ -2983,6 +3226,9 @@
   },
   "Enter custom top bar format (e.g., ddd MMM d)": {
     "Enter custom top bar format (e.g., ddd MMM d)": "输入自定义状态栏格式（例如：ddd MMM d）"
+  },
+  "Enter edit mode on the dock to rearrange or remove items": {
+    "Enter edit mode on the dock to rearrange or remove items": ""
   },
   "Enter launch prefix (e.g., 'uwsm-app')": {
     "Enter launch prefix (e.g., 'uwsm-app')": "输入启动前缀（例如：uwsm-app）"
@@ -3019,6 +3265,9 @@
   },
   "Environment Variables": {
     "Environment Variables": "环境变量"
+  },
+  "Eraser": {
+    "Eraser": ""
   },
   "Error": {
     "Error": "错误"
@@ -3077,6 +3326,12 @@
   "Expand by default": {
     "Expand by default": "默认展开"
   },
+  "Expanded background": {
+    "Expanded background": ""
+  },
+  "Expanded opacity": {
+    "Expanded opacity": ""
+  },
   "Expansion mode": {
     "Expansion mode": "展开模式"
   },
@@ -3091,6 +3346,9 @@
   },
   "Exponential": {
     "Exponential": "指数"
+  },
+  "Export": {
+    "Export": ""
   },
   "Expose the arcs": {
     "Expose the arcs": "显示弧线"
@@ -3128,6 +3386,9 @@
   "Fade to lock screen": {
     "Fade to lock screen": "渐变至锁屏"
   },
+  "Fades content at the top and bottom of scrollable views": {
+    "Fades content at the top and bottom of scrollable views": ""
+  },
   "Fades the screen out first. Input during the fade cancels it": {
     "Fades the screen out first. Input during the fade cancels it": "先淡出屏幕。淡出期间的输入会取消操作"
   },
@@ -3158,6 +3419,9 @@
   "Failed to change priority of %1": {
     "Failed to change priority of %1": ""
   },
+  "Failed to check connectivity": {
+    "Failed to check connectivity": ""
+  },
   "Failed to configure hotspot": {
     "Failed to configure hotspot": "配置热点失败"
   },
@@ -3182,6 +3446,9 @@
   "Failed to delete printer": {
     "Failed to delete printer": "删除打印机失败"
   },
+  "Failed to delete profile": {
+    "Failed to delete profile": ""
+  },
   "Failed to disable job acceptance": {
     "Failed to disable job acceptance": "禁用任务接受失败"
   },
@@ -3191,23 +3458,23 @@
   "Failed to disable plugin: %1": {
     "Failed to disable plugin: %1": "禁用插件失败：%1"
   },
+  "Failed to disconnect": {
+    "Failed to disconnect": ""
+  },
   "Failed to disconnect VPN": {
     "Failed to disconnect VPN": "断开 VPN 失败"
   },
   "Failed to disconnect VPNs": {
     "Failed to disconnect VPNs": "断开所有 VPN 失败"
   },
-  "Failed to disconnect WiFi": {
-    "Failed to disconnect WiFi": "断开 Wi-Fi 连接失败"
+  "Failed to duplicate %1": {
+    "Failed to duplicate %1": ""
   },
   "Failed to empty trash": {
     "Failed to empty trash": "清空回收站失败"
   },
   "Failed to enable IP location": {
     "Failed to enable IP location": "启用 IP 定位失败"
-  },
-  "Failed to enable WiFi": {
-    "Failed to enable WiFi": "启用 Wi-Fi 失败"
   },
   "Failed to enable job acceptance": {
     "Failed to enable job acceptance": "启用任务接受失败"
@@ -3218,14 +3485,26 @@
   "Failed to enable plugin: %1": {
     "Failed to enable plugin: %1": "启用插件失败：%1"
   },
+  "Failed to export": {
+    "Failed to export": ""
+  },
+  "Failed to export profile": {
+    "Failed to export profile": ""
+  },
   "Failed to extract theme": {
     "Failed to extract theme": "提取主题失败"
   },
   "Failed to fetch network QR code: %1": {
     "Failed to fetch network QR code: %1": "获取网络二维码失败：%1"
   },
+  "Failed to forget %1": {
+    "Failed to forget %1": ""
+  },
   "Failed to generate QR code: %1": {
     "Failed to generate QR code: %1": "生成二维码失败：%1"
+  },
+  "Failed to generate key": {
+    "Failed to generate key": ""
   },
   "Failed to generate systemd override": {
     "Failed to generate systemd override": "生成 systemd override 失败"
@@ -3235,6 +3514,9 @@
   },
   "Failed to import VPN": {
     "Failed to import VPN": "导入 VPN 失败"
+  },
+  "Failed to import profile": {
+    "Failed to import profile": ""
   },
   "Failed to load VPN config": {
     "Failed to load VPN config": "加载 VPN 配置失败"
@@ -3323,8 +3605,14 @@
   "Failed to save profile": {
     "Failed to save profile": "保存配置失败"
   },
+  "Failed to save screenshot": {
+    "Failed to save screenshot": ""
+  },
   "Failed to set brightness": {
     "Failed to set brightness": "设置亮度失败"
+  },
+  "Failed to set network preference": {
+    "Failed to set network preference": ""
   },
   "Failed to set next boot entry": {
     "Failed to set next boot entry": "设置下次启动项失败"
@@ -3344,9 +3632,6 @@
   "Failed to set profile image": {
     "Failed to set profile image": "设置用户头像失败"
   },
-  "Failed to set profile image: %1": {
-    "Failed to set profile image: %1": "设置用户头像失败：%1"
-  },
   "Failed to start connection to %1": {
     "Failed to start connection to %1": "连接至 %1 失败"
   },
@@ -3364,6 +3649,9 @@
   },
   "Failed to switch port": {
     "Failed to switch port": "切换端口失败"
+  },
+  "Failed to toggle airplane mode": {
+    "Failed to toggle airplane mode": ""
   },
   "Failed to toggle cellular": {
     "Failed to toggle cellular": "切换蜂窝网络失败"
@@ -3385,6 +3673,9 @@
   },
   "Failed to update clipboard": {
     "Failed to update clipboard": "更新剪贴板失败"
+  },
+  "Failed to update connectivity checking": {
+    "Failed to update connectivity checking": ""
   },
   "Failed to write autostart entry": {
     "Failed to write autostart entry": "写入自启动项失败"
@@ -3494,6 +3785,9 @@
   "Fires with any modifiers held": {
     "Fires with any modifiers held": "按住任意修饰键时也会触发"
   },
+  "Firewall zone": {
+    "Firewall zone": ""
+  },
   "Firmware": {
     "Firmware": ""
   },
@@ -3517,6 +3811,9 @@
   },
   "Fixed": {
     "Fixed": "固定"
+  },
+  "Fixed height": {
+    "Fixed height": ""
   },
   "Flat": {
     "Flat": "平坦"
@@ -3617,6 +3914,12 @@
   "Fog": {
     "Fog": "雾天"
   },
+  "Folder already added": {
+    "Folder already added": ""
+  },
+  "Folder match theme colors": {
+    "Folder match theme colors": ""
+  },
   "Folder, interval, daily time": {
     "Folder, interval, daily time": "文件夹、间隔、每日时间"
   },
@@ -3655,9 +3958,6 @@
   },
   "Fonts & motion": {
     "Fonts & motion": "字体和动画"
-  },
-  "Fonts, scale, animations": {
-    "Fonts, scale, animations": "字体、缩放与动画"
   },
   "For %1": {
     "For %1": "持续 %1"
@@ -3745,6 +4045,9 @@
   },
   "From %1": {
     "From %1": "来自 %1"
+  },
+  "From an archive or a folder. Nothing inside it is run.": {
+    "From an archive or a folder. Nothing inside it is run.": ""
   },
   "From wallpaper": {
     "From wallpaper": "来自壁纸"
@@ -3854,11 +4157,17 @@
   "Garden": {
     "Garden": "花园"
   },
+  "Gateway": {
+    "Gateway": ""
+  },
   "Gaussian": {
     "Gaussian": "高斯"
   },
   "General": {
     "General": "常规"
+  },
+  "Generate": {
+    "Generate": ""
   },
   "Generate Theme at Startup": {
     "Generate Theme at Startup": "启动时生成主题"
@@ -3878,11 +4187,11 @@
   "Get Started": {
     "Get Started": "开始使用"
   },
-  "Git": {
-    "Git": "Git"
-  },
   "Global fonts can be configured in Settings → Personalization": {
     "Global fonts can be configured in Settings → Personalization": "可在“设置 → 个性化”中配置全局字体"
+  },
+  "Global shortcuts": {
+    "Global shortcuts": ""
   },
   "Globally": {
     "Globally": "全局"
@@ -3908,11 +4217,17 @@
   "Grant administrator privileges": {
     "Grant administrator privileges": "授予管理员权限"
   },
+  "Grant permission": {
+    "Grant permission": ""
+  },
   "Granted administrator privileges": {
     "Granted administrator privileges": "已授予管理员权限"
   },
   "Granted greeter login access": {
     "Granted greeter login access": "已授予登录界面访问权限"
+  },
+  "Graph": {
+    "Graph": ""
   },
   "Graph time range": {
     "Graph time range": "图表时间范围"
@@ -3922,6 +4237,9 @@
   },
   "Graphics driver": {
     "Graphics driver": ""
+  },
+  "Graphs": {
+    "Graphs": ""
   },
   "Green": {
     "Green": "绿色"
@@ -3986,6 +4304,9 @@
   "HTML copied to clipboard": {
     "HTML copied to clipboard": "HTML 已复制到剪贴板"
   },
+  "Half": {
+    "Half": ""
+  },
   "Hardware": {
     "Hardware": ""
   },
@@ -4028,6 +4349,9 @@
   "Hex": {
     "Hex": "十六进制"
   },
+  "Hexagon": {
+    "Hexagon": ""
+  },
   "Hibernate failed": {
     "Hibernate failed": "休眠失败"
   },
@@ -4036,6 +4360,9 @@
   },
   "Hidden (%1)": {
     "Hidden (%1)": "已隐藏（%1）"
+  },
+  "Hidden activity sources": {
+    "Hidden activity sources": ""
   },
   "Hidden apps": {
     "Hidden apps": "隐藏的应用"
@@ -4124,6 +4451,9 @@
   "Highlight weekends": {
     "Highlight weekends": "突出显示周末"
   },
+  "Highlighter": {
+    "Highlighter": ""
+  },
   "History": {
     "History": "历史记录"
   },
@@ -4187,8 +4517,17 @@
   "Hover popouts": {
     "Hover popouts": "悬停弹出面板"
   },
+  "How far a wiggle tilts or a pulse grows": {
+    "How far a wiggle tilts or a pulse grows": ""
+  },
   "How far terminal colors shift toward the wallpaper color": {
     "How far terminal colors shift toward the wallpaper color": "终端色彩随壁纸颜色的晕染程度"
+  },
+  "How long a new activity stays open before the island returns to its usual content": {
+    "How long a new activity stays open before the island returns to its usual content": ""
+  },
+  "How long the title stays after a track change": {
+    "How long the title stays after a track change": ""
   },
   "Hue": {
     "Hue": "色相"
@@ -4244,17 +4583,26 @@
   "IP sharing setup failed. Check that %1 is installed.": {
     "IP sharing setup failed. Check that %1 is installed.": "IP 共享设置失败。请检查 %1 是否已安装。"
   },
-  "IPv6": {
-    "IPv6": ""
-  },
   "ISO date": {
     "ISO date": "ISO 日期"
   },
   "Icon": {
     "Icon": "图标"
   },
+  "Icon animation intensity": {
+    "Icon animation intensity": ""
+  },
+  "Icon animation speed": {
+    "Icon animation speed": ""
+  },
+  "Icon columns": {
+    "Icon columns": ""
+  },
   "Icon scale": {
     "Icon scale": "图标缩放"
+  },
+  "Icon shape": {
+    "Icon shape": ""
   },
   "Icon size": {
     "Icon size": "图标大小"
@@ -4264,6 +4612,9 @@
   },
   "Icon theme changed outside DMS; switched to System Default": {
     "Icon theme changed outside DMS; switched to System Default": "图标主题在 Dux 之外变更，切换至系统默认"
+  },
+  "Icon theme not installed": {
+    "Icon theme not installed": ""
   },
   "Icons": {
     "Icons": "图标"
@@ -4343,6 +4694,9 @@
   "Import VPN": {
     "Import VPN": "导入 VPN"
   },
+  "In use": {
+    "In use": ""
+  },
   "Inactive display color": {
     "Inactive display color": "非活动显示器颜色"
   },
@@ -4351,6 +4705,9 @@
   },
   "Include Flatpak updates": {
     "Include Flatpak updates": "包括 Flatpak 更新"
+  },
+  "Include cursor": {
+    "Include cursor": ""
   },
   "Include files in All tab": {
     "Include files in All tab": "在“全部”标签中包含文件"
@@ -4376,6 +4733,9 @@
   "Incorrect password - try again": {
     "Incorrect password - try again": "密码错误 - 请重试"
   },
+  "Increase font size": {
+    "Increase font size": ""
+  },
   "Index centering": {
     "Index centering": "索引居中"
   },
@@ -4393,6 +4753,9 @@
   },
   "Info": {
     "Info": "信息"
+  },
+  "Infrastructure": {
+    "Infrastructure": ""
   },
   "Inherit": {
     "Inherit": "继承"
@@ -4414,9 +4777,6 @@
   },
   "Initial title": {
     "Initial title": "初始标题"
-  },
-  "Initialised": {
-    "Initialised": "已初始化"
   },
   "Injected palettes": {
     "Injected palettes": "注入调色板"
@@ -4466,14 +4826,17 @@
   "Install Plugin": {
     "Install Plugin": "安装插件"
   },
-  "Install Theme": {
-    "Install Theme": "安装主题"
-  },
   "Install color themes from the DMS theme registry": {
     "Install color themes from the DMS theme registry": "从 Dux 主题仓库安装颜色主题"
   },
+  "Install cursor theme": {
+    "Install cursor theme": ""
+  },
   "Install failed: %1": {
     "Install failed: %1": "安装失败：%1"
+  },
+  "Install icon theme": {
+    "Install icon theme": ""
   },
   "Install plugin '%1' from the DMS registry?": {
     "Install plugin '%1' from the DMS registry?": "要从 Dux 插件仓库安装插件 %1 吗？"
@@ -4526,6 +4889,9 @@
   "Intensity, color, light direction": {
     "Intensity, color, light direction": "强度、颜色和光线方向"
   },
+  "Interact with windows": {
+    "Interact with windows": ""
+  },
   "Interface": {
     "Interface": "网络接口"
   },
@@ -4570,6 +4936,18 @@
   },
   "Island": {
     "Island": "灵动岛"
+  },
+  "Island activities": {
+    "Island activities": ""
+  },
+  "Island summary": {
+    "Island summary": ""
+  },
+  "Island widgets": {
+    "Island widgets": ""
+  },
+  "Island widgets above the clock sit before it, the rest after it": {
+    "Island widgets above the clock sit before it, the rest after it": ""
   },
   "Isolate displays": {
     "Isolate displays": "隔离显示器"
@@ -4637,6 +5015,9 @@
   "Key combination": {
     "Key combination": "按键组合"
   },
+  "Key style": {
+    "Key style": ""
+  },
   "Keybinds": {
     "Keybinds": "快捷键绑定"
   },
@@ -4675,6 +5056,9 @@
   },
   "LabWC website": {
     "LabWC website": "LabWC 网站"
+  },
+  "Label": {
+    "Label": ""
   },
   "Label overrides": {
     "Label overrides": "标签覆盖"
@@ -4820,11 +5204,26 @@
   "Left-handed": {
     "Left-handed": "左手模式"
   },
+  "Legend": {
+    "Legend": ""
+  },
+  "Length of one animation cycle": {
+    "Length of one animation cycle": ""
+  },
   "Length padding": {
     "Length padding": "长度内边距"
   },
+  "Let activities tint their slot and highlight warnings and errors": {
+    "Let activities tint their slot and highlight warnings and errors": ""
+  },
+  "Let plugins and IPC clients show progress, timers and other live updates in the island": {
+    "Let plugins and IPC clients show progress, timers and other live updates in the island": ""
+  },
   "Level": {
     "Level": "电量级别"
+  },
+  "Library": {
+    "Library": ""
   },
   "Light": {
     "Light": "浅色"
@@ -4868,8 +5267,14 @@
   "Limit set to %1%": {
     "Limit set to %1%": "电量限制设置为 %1%"
   },
+  "Limited connectivity": {
+    "Limited connectivity": ""
+  },
   "Line": {
     "Line": "线条"
+  },
+  "Line synced": {
+    "Line synced": ""
   },
   "Line: %1": {
     "Line: %1": "行：%1"
@@ -4883,11 +5288,17 @@
   "Link copied": {
     "Link copied": "链接已复制"
   },
+  "Link negotiation": {
+    "Link negotiation": ""
+  },
   "Link your DMS settings so the login screen follows them.": {
     "Link your DMS settings so the login screen follows them.": "关联你的 Dux 设置，让登录界面跟随这些设置。"
   },
   "Link your DMS settings so the login screen follows them. Administrator access is required.": {
     "Link your DMS settings so the login screen follows them. Administrator access is required.": "关联你的 Dux 设置，让登录界面跟随这些设置。需要管理员权限。"
+  },
+  "Link-local": {
+    "Link-local": ""
   },
   "Linked": {
     "Linked": "已关联"
@@ -4895,8 +5306,14 @@
   "Linked as a snapshot": {
     "Linked as a snapshot": "已关联快照"
   },
+  "Linux": {
+    "Linux": ""
+  },
   "List": {
     "List": "列表"
+  },
+  "Listen port": {
+    "Listen port": ""
   },
   "Listening": {
     "Listening": ""
@@ -4907,14 +5324,23 @@
   "Lists workspaces from whichever display has focus": {
     "Lists workspaces from whichever display has focus": "显示当前聚焦的显示器上的工作区"
   },
+  "Live activities": {
+    "Live activities": ""
+  },
   "Live activities that grow out of the bar": {
     "Live activities that grow out of the bar": "从状态栏展开的实时活动"
+  },
+  "Live activity": {
+    "Live activity": ""
   },
   "Lively palette with saturated accents.": {
     "Lively palette with saturated accents.": "生动配色，有着饱和的强调色。"
   },
   "Load Average": {
     "Load Average": "平均负载"
+  },
+  "Loading": {
+    "Loading": ""
   },
   "Loading codecs...": {
     "Loading codecs...": "正在加载编解码器…"
@@ -4970,6 +5396,12 @@
   "Locked": {
     "Locked": "已锁定"
   },
+  "Log in": {
+    "Log in": ""
+  },
+  "Log in to network": {
+    "Log in to network": ""
+  },
   "Log out": {
     "Log out": "注销"
   },
@@ -4987,6 +5419,12 @@
   },
   "Long press": {
     "Long press": "长按"
+  },
+  "Longer": {
+    "Longer": ""
+  },
+  "Longer titles scroll inside this width": {
+    "Longer titles scroll inside this width": ""
   },
   "Longitude": {
     "Longitude": "经度"
@@ -5009,6 +5447,9 @@
   "Lower display refresh rate on battery": {
     "Lower display refresh rate on battery": "电池供电时降低显示器刷新率"
   },
+  "Lower keeps up with faster scrolling but uses more CPU": {
+    "Lower keeps up with faster scrolling but uses more CPU": ""
+  },
   "Lower only if a mode fails for lack of bandwidth": {
     "Lower only if a mode fails for lack of bandwidth": ""
   },
@@ -5024,20 +5465,29 @@
   "Lyrics providers": {
     "Lyrics providers": "歌词提供方"
   },
+  "M3 Expressive motion sized by surface": {
+    "M3 Expressive motion sized by surface": ""
+  },
   "MAC address": {
     "MAC address": ""
   },
   "MIT License": {
     "MIT License": "MIT 许可证"
   },
-  "MTU": {
-    "MTU": ""
+  "Mac": {
+    "Mac": ""
+  },
+  "Magic packet": {
+    "Magic packet": ""
   },
   "Magnification": {
     "Magnification": "放大效果"
   },
   "Mail": {
     "Mail": "邮件"
+  },
+  "Main value": {
+    "Main value": ""
   },
   "Major page faults": {
     "Major page faults": ""
@@ -5047,6 +5497,15 @@
   },
   "Manage Registries": {
     "Manage Registries": "管理插件仓库"
+  },
+  "Manage all connections": {
+    "Manage all connections": ""
+  },
+  "Manage profiles": {
+    "Manage profiles": ""
+  },
+  "Manage themes": {
+    "Manage themes": ""
   },
   "Managed by Frame in Connected Mode": {
     "Managed by Frame in Connected Mode": "受连接模式下的框架管理"
@@ -5059,6 +5518,9 @@
   },
   "Managed by the primary PAM source": {
     "Managed by the primary PAM source": "由主要 PAM 来源管理"
+  },
+  "Managed files": {
+    "Managed files": ""
   },
   "Mango Options": {
     "Mango Options": "Mango 配置选项"
@@ -5137,6 +5599,9 @@
   },
   "Matches player identity or desktop file name, case-insensitive": {
     "Matches player identity or desktop file name, case-insensitive": "匹配播放器标识或桌面文件名，不区分大小写"
+  },
+  "Matches the current settings": {
+    "Matches the current settings": ""
   },
   "Material": {
     "Material": "Material"
@@ -5225,6 +5690,9 @@
   "Maximum pinned entries reached": {
     "Maximum pinned entries reached": "已达固定项目最多数量"
   },
+  "Maximum title width": {
+    "Maximum title width": ""
+  },
   "Media / Launcher": {
     "Media / Launcher": "媒体 / 启动器"
   },
@@ -5264,9 +5732,6 @@
   "Memory controller": {
     "Memory controller": ""
   },
-  "Memory graph": {
-    "Memory graph": "内存图表"
-  },
   "Memory usage": {
     "Memory usage": "内存使用情况"
   },
@@ -5275,6 +5740,21 @@
   },
   "Message Content": {
     "Message Content": "消息内容"
+  },
+  "Meter": {
+    "Meter": ""
+  },
+  "Metered": {
+    "Metered": ""
+  },
+  "Method": {
+    "Method": ""
+  },
+  "Metric": {
+    "Metric": ""
+  },
+  "Metrics": {
+    "Metrics": ""
   },
   "Microphone": {
     "Microphone": "麦克风"
@@ -5363,6 +5843,9 @@
   "Monitor": {
     "Monitor": "显示器"
   },
+  "Monitoring can keep it from sleeping": {
+    "Monitoring can keep it from sleeping": ""
+  },
   "Monitoring off": {
     "Monitoring off": ""
   },
@@ -5444,6 +5927,9 @@
   "Mouse behavior": {
     "Mouse behavior": ""
   },
+  "Move notification popups below an open bar popout instead of covering it": {
+    "Move notification popups below an open bar popout instead of covering it": ""
+  },
   "Move out of scratchpad": {
     "Move out of scratchpad": "移出暂存区"
   },
@@ -5455,6 +5941,12 @@
   },
   "Move workspace to this display": {
     "Move workspace to this display": ""
+  },
+  "Movement": {
+    "Movement": ""
+  },
+  "Moves an activity's icon to draw attention to it": {
+    "Moves an activity's icon to draw attention to it": ""
   },
   "Moves focus along with the column": {
     "Moves focus along with the column": "焦点随列一起移动"
@@ -5485,12 +5977,6 @@
   },
   "Mute popups for %1": {
     "Mute popups for %1": "暂停 %1 的弹出通知"
-  },
-  "Mute popups for %1 (1 hour)": {
-    "Mute popups for %1 (1 hour)": "暂停 %1 的弹出通知（1 小时）"
-  },
-  "Mute popups for %1 (4 hours)": {
-    "Mute popups for %1 (4 hours)": "暂停 %1 的弹出通知（4 小时）"
   },
   "Mute, ignore and priority rules per app": {
     "Mute, ignore and priority rules per app": "每个应用的静音、忽略和优先级规则"
@@ -5540,14 +6026,14 @@
   "Needs": {
     "Needs": "依赖项"
   },
+  "Needs Plugin activities on and the workspace source shown": {
+    "Needs Plugin activities on and the workspace source shown": ""
+  },
   "Nested chip": {
     "Nested chip": "嵌套标签块"
   },
   "Network": {
     "Network": "网络"
-  },
-  "Network Info": {
-    "Network Info": "网络信息"
   },
   "Network Information": {
     "Network Information": "网络信息"
@@ -5558,14 +6044,8 @@
   "Network download and upload speed display": {
     "Network download and upload speed display": "显示网络下载与上传速度"
   },
-  "Network graph": {
-    "Network graph": "网络图表"
-  },
   "Network speed monitor": {
     "Network speed monitor": "网络速度监视器"
-  },
-  "Networks, saved networks, hotspot": {
-    "Networks, saved networks, hotspot": "网络、已保存网络和热点"
   },
   "Neutral": {
     "Neutral": "中性"
@@ -5759,6 +6239,9 @@
   "No configurable settings": {
     "No configurable settings": "无可配置设置"
   },
+  "No cursor theme found there": {
+    "No cursor theme found there": ""
+  },
   "No custom theme file": {
     "No custom theme file": "缺失自定义主题文件"
   },
@@ -5815,6 +6298,9 @@
   },
   "No human user accounts found.": {
     "No human user accounts found.": "未找到普通用户账户。"
+  },
+  "No icon theme found there": {
+    "No icon theme found there": ""
   },
   "No info items": {
     "No info items": "无信息项目"
@@ -5990,6 +6476,9 @@
   "No window rules configured": {
     "No window rules configured": "未配置窗口规则"
   },
+  "No wireless devices available": {
+    "No wireless devices available": ""
+  },
   "No wobble": {
     "No wobble": "无摇晃"
   },
@@ -6056,6 +6545,9 @@
   "Not linked": {
     "Not linked": "未关联"
   },
+  "Not managed, set up from its page": {
+    "Not managed, set up from its page": ""
+  },
   "Not on click": {
     "Not on click": ""
   },
@@ -6067,6 +6559,9 @@
   },
   "Not shown on this bar, so its section widgets stay hidden": {
     "Not shown on this bar, so its section widgets stay hidden": "未在当前状态栏显示，故其分区部件保持隐藏"
+  },
+  "Not supported in Settings": {
+    "Not supported in Settings": ""
   },
   "Notch": {
     "Notch": "刘海"
@@ -6155,6 +6650,9 @@
   "Off lets the compositor decorate DMS windows. Open windows update when reopened.": {
     "Off lets the compositor decorate DMS windows. Open windows update when reopened.": "关闭时由合成器装饰 Dux 窗口。已打开的窗口重新打开后更新。"
   },
+  "Off matches the bar's opacity": {
+    "Off matches the bar's opacity": ""
+  },
   "Office": {
     "Office": "办公"
   },
@@ -6179,6 +6677,12 @@
   "On button down": {
     "On button down": "按下按钮时"
   },
+  "On change": {
+    "On change": ""
+  },
+  "On change shows the song title for a moment when the track changes": {
+    "On change shows the song title for a moment when the track changes": ""
+  },
   "On indefinitely": {
     "On indefinitely": "无限期"
   },
@@ -6196,6 +6700,9 @@
   },
   "Once a week": {
     "Once a week": "每周一次"
+  },
+  "Ongoing activities kept as small icons beside the island content. 0 hides them": {
+    "Ongoing activities kept as small icons beside the island content. 0 hides them": ""
   },
   "Online": {
     "Online": "在线"
@@ -6215,11 +6722,17 @@
   "Only the main process of a system service can be restarted.": {
     "Only the main process of a system service can be restarted.": ""
   },
+  "Only themes in your own icon folder can be removed": {
+    "Only themes in your own icon folder can be removed": ""
+  },
   "Opacity": {
     "Opacity": "不透明度"
   },
   "Opaque": {
     "Opaque": "不透明"
+  },
+  "Open Appearance": {
+    "Open Appearance": ""
   },
   "Open Frame": {
     "Open Frame": "打开框架"
@@ -6236,6 +6749,9 @@
   "Open a new note": {
     "Open a new note": "打开新笔记"
   },
+  "Open and close": {
+    "Open and close": ""
+  },
   "Open as window": {
     "Open as window": "以窗口形式打开"
   },
@@ -6250,6 +6766,9 @@
   },
   "Open folder": {
     "Open folder": "打开文件夹"
+  },
+  "Open in %1": {
+    "Open in %1": ""
   },
   "Open in terminal": {
     "Open in terminal": "在终端打开"
@@ -6271,6 +6790,9 @@
   },
   "Open with": {
     "Open with": "打开方式"
+  },
+  "OpenSSL ciphers": {
+    "OpenSSL ciphers": ""
   },
   "Opening GitHub to remove the upvote": {
     "Opening GitHub to remove the upvote": "打开 Github 以取消点赞"
@@ -6295,6 +6817,9 @@
   },
   "Operating system": {
     "Operating system": ""
+  },
+  "Operator permission needed": {
+    "Operator permission needed": ""
   },
   "Optional description": {
     "Optional description": "可选描述"
@@ -6392,6 +6917,9 @@
   "Overflow button position": {
     "Overflow button position": "溢出菜单按钮位置"
   },
+  "Overflow moves to the next page": {
+    "Overflow moves to the next page": ""
+  },
   "Overflow priority": {
     "Overflow priority": ""
   },
@@ -6437,6 +6965,9 @@
   "PDF reader": {
     "PDF reader": "PDF 阅读器"
   },
+  "PEAP version": {
+    "PEAP version": ""
+  },
   "PID": {
     "PID": "PID"
   },
@@ -6460,6 +6991,9 @@
   },
   "Padding": {
     "Padding": "内边距"
+  },
+  "Page %1 of %2": {
+    "Page %1 of %2": ""
   },
   "Page faults": {
     "Page faults": ""
@@ -6511,6 +7045,9 @@
   },
   "Parents": {
     "Parents": ""
+  },
+  "Partial apply": {
+    "Partial apply": ""
   },
   "Partition table": {
     "Partition table": ""
@@ -6572,11 +7109,20 @@
   "Pause night mode while one of these apps has focus": {
     "Pause night mode while one of these apps has focus": "这些应用中的任意一个获得焦点时暂停夜间模式"
   },
+  "Pause video wallpaper on battery": {
+    "Pause video wallpaper on battery": ""
+  },
   "Paused": {
     "Paused": "已暂停"
   },
   "Peak": {
     "Peak": ""
+  },
+  "Peers": {
+    "Peers": ""
+  },
+  "Pen": {
+    "Pen": ""
   },
   "Pending": {
     "Pending": "等待中"
@@ -6605,11 +7151,20 @@
   "Performance": {
     "Performance": "性能"
   },
+  "Permanent": {
+    "Permanent": ""
+  },
   "Permanently delete %1 item(s)? This cannot be undone.": {
     "Permanently delete %1 item(s)? This cannot be undone.": "永久删除 %1 个项目？此操作不可撤回。"
   },
   "Permission denied to set profile image.": {
     "Permission denied to set profile image.": "没有权限设置用户头像。"
+  },
+  "Persistent activity slots": {
+    "Persistent activity slots": ""
+  },
+  "Persistent keepalive": {
+    "Persistent keepalive": ""
   },
   "Petal": {
     "Petal": "花瓣"
@@ -6622,6 +7177,9 @@
   },
   "Pick an app from the list above or the dashboard tab": {
     "Pick an app from the list above or the dashboard tab": "从上方列表或仪表盘标签中选择应用"
+  },
+  "Pick an icon theme first": {
+    "Pick an icon theme first": ""
   },
   "Pick how long to pause notifications": {
     "Pick how long to pause notifications": "选择暂停通知的时间"
@@ -6637,6 +7195,9 @@
   },
   "Pill": {
     "Pill": "胶囊"
+  },
+  "Pill shape": {
+    "Pill shape": ""
   },
   "Pills": {
     "Pills": "胶囊"
@@ -6683,6 +7244,9 @@
   "Playback": {
     "Playback": "播放"
   },
+  "Playback controls": {
+    "Playback controls": ""
+  },
   "Playback error: %1": {
     "Playback error: %1": "播放错误：%1"
   },
@@ -6718,6 +7282,9 @@
   },
   "Plugin Source Code": {
     "Plugin Source Code": "插件源码"
+  },
+  "Plugin activities": {
+    "Plugin activities": ""
   },
   "Plugin dependency missing": {
     "Plugin dependency missing": "缺少插件依赖"
@@ -6772,9 +7339,6 @@
   },
   "Popouts": {
     "Popouts": "弹出面板"
-  },
-  "Popouts and modals use the main animation duration": {
-    "Popouts and modals use the main animation duration": "弹出面板和对话框使用主动画时长"
   },
   "Popular": {
     "Popular": "人气推荐"
@@ -6869,6 +7433,9 @@
   "Power profiles": {
     "Power profiles": "电源配置"
   },
+  "Power saving": {
+    "Power saving": ""
+  },
   "Power source": {
     "Power source": "电源"
   },
@@ -6877,6 +7444,9 @@
   },
   "Pre-release": {
     "Pre-release": "预发布版"
+  },
+  "Pre-shared key": {
+    "Pre-shared key": ""
   },
   "Precipitation": {
     "Precipitation": "降水量"
@@ -6892,6 +7462,9 @@
   },
   "Presentation": {
     "Presentation": "演示文稿"
+  },
+  "Preserve": {
+    "Preserve": ""
   },
   "Preserve split": {
     "Preserve split": "保留分割方向"
@@ -6911,6 +7484,9 @@
   "Press Enter and the audio system will restart to apply the change": {
     "Press Enter and the audio system will restart to apply the change": "按下 Enter，音频系统会重启以应用更改"
   },
+  "Press Enter or Space to capture. Off captures when the mouse is released.": {
+    "Press Enter or Space to capture. Off captures when the mouse is released.": ""
+  },
   "Press key...": {
     "Press key...": "按下按键…"
   },
@@ -6922,6 +7498,15 @@
   },
   "Preview": {
     "Preview": "预览"
+  },
+  "Preview duration": {
+    "Preview duration": ""
+  },
+  "Preview, install and remove cursor themes": {
+    "Preview, install and remove cursor themes": ""
+  },
+  "Preview, install and remove icon themes": {
+    "Preview, install and remove icon themes": ""
   },
   "Preview: %1": {
     "Preview: %1": "预览：%1"
@@ -6995,6 +7580,9 @@
   "Private Key Password": {
     "Private Key Password": "私钥密码"
   },
+  "Private key": {
+    "Private key": ""
+  },
   "Process": {
     "Process": ""
   },
@@ -7064,6 +7652,12 @@
   "Protocol": {
     "Protocol": "协议"
   },
+  "Public key": {
+    "Public key": ""
+  },
+  "Pulse": {
+    "Pulse": ""
+  },
   "Pulse animation": {
     "Pulse animation": "脉冲动画"
   },
@@ -7109,6 +7703,9 @@
   "Quick tiles": {
     "Quick tiles": "快捷磁贴"
   },
+  "Quick with a slight bounce on movement": {
+    "Quick with a slight bounce on movement": ""
+  },
   "Quit": {
     "Quit": ""
   },
@@ -7117,6 +7714,9 @@
   },
   "Quit or restart": {
     "Quit or restart": ""
+  },
+  "R": {
+    "R": ""
   },
   "Radius": {
     "Radius": "半径"
@@ -7147,6 +7747,9 @@
   },
   "Reach local network devices while using an exit node": {
     "Reach local network devices while using an exit node": "使用出口节点时访问本地网络设备"
+  },
+  "Read": {
+    "Read": ""
   },
   "Read the blog post": {
     "Read the blog post": "阅读博客文章"
@@ -7220,8 +7823,17 @@
   "Record app usage and past queries. Turning this off clears what is stored.": {
     "Record app usage and past queries. Turning this off clears what is stored.": "记录应用使用情况和历史搜索。关闭后会清除已保存的记录。"
   },
+  "Rectangle": {
+    "Rectangle": ""
+  },
   "Red": {
     "Red": "红色"
+  },
+  "Redo": {
+    "Redo": ""
+  },
+  "Redraws only what changed on screen": {
+    "Redraws only what changed on screen": ""
   },
   "Reduce motion": {
     "Reduce motion": "减少动画"
@@ -7313,14 +7925,29 @@
   "Remove \"%1\" from the %2 group?": {
     "Remove \"%1\" from the %2 group?": "将“%1”从 %2 组中移除吗？"
   },
+  "Remove '%1' from your icon folder?": {
+    "Remove '%1' from your icon folder?": ""
+  },
   "Remove Shortcut?": {
     "Remove Shortcut?": "移除快捷键？"
   },
   "Remove admin": {
     "Remove admin": "移除管理员权限"
   },
+  "Remove all shortcuts": {
+    "Remove all shortcuts": ""
+  },
   "Remove condition": {
     "Remove condition": "移除条件"
+  },
+  "Remove cursor theme": {
+    "Remove cursor theme": ""
+  },
+  "Remove every global shortcut %1 has registered?": {
+    "Remove every global shortcut %1 has registered?": ""
+  },
+  "Remove from folder": {
+    "Remove from folder": ""
   },
   "Remove from recent colors": {
     "Remove from recent colors": "从“最近拾取的颜色”中移除"
@@ -7330,6 +7957,12 @@
   },
   "Remove greeter login access": {
     "Remove greeter login access": "移除登录界面访问权限"
+  },
+  "Remove icon theme": {
+    "Remove icon theme": ""
+  },
+  "Remove its include from your compositor config by hand.": {
+    "Remove its include from your compositor config by hand.": ""
   },
   "Remove match": {
     "Remove match": "移除匹配条件"
@@ -7358,6 +7991,9 @@
   "Rename Workspace": {
     "Rename Workspace": "重命名工作区"
   },
+  "Render control": {
+    "Render control": ""
+  },
   "Renderer": {
     "Renderer": "渲染器"
   },
@@ -7382,14 +8018,29 @@
   "Repeats while the key is held": {
     "Repeats while the key is held": "按住按键时重复触发"
   },
+  "Replace": {
+    "Replace": ""
+  },
   "Replace a displayed layout label with custom text, e.g. \"am-phonetic-alt\" → \"am": {
     "Replace a displayed layout label with custom text, e.g. \"am-phonetic-alt\" → \"am\"": "用自定义文本替换显示的键盘布局标签，例如“am-phonetic-alt” → “am”"
+  },
+  "Replace cursor theme": {
+    "Replace cursor theme": ""
+  },
+  "Replace icon theme": {
+    "Replace icon theme": ""
+  },
+  "Replace settings of profile \"%1\"?": {
+    "Replace settings of profile \"%1\"?": ""
   },
   "Replacement": {
     "Replacement": "替换"
   },
   "Report": {
     "Report": "报告"
+  },
+  "Required": {
+    "Required": ""
   },
   "Required plugin: %1": {
     "Required plugin: %1": "需要插件：%1"
@@ -7436,6 +8087,9 @@
   "Reset Size": {
     "Reset Size": "重置尺寸"
   },
+  "Reset to %1": {
+    "Reset to %1": ""
+  },
   "Reset to default": {
     "Reset to default": "重置为默认值"
   },
@@ -7472,17 +8126,26 @@
   "Resume": {
     "Resume": "恢复"
   },
+  "Resume drawing": {
+    "Resume drawing": ""
+  },
   "Retention": {
     "Retention": "保留时长"
   },
   "Retry": {
     "Retry": "重试"
   },
+  "Reuses the compiled interface from the last start": {
+    "Reuses the compiled interface from the last start": ""
+  },
   "Reverse scroll direction": {
     "Reverse scroll direction": "反转滚动方向"
   },
   "Revert": {
     "Revert": "还原"
+  },
+  "Revision": {
+    "Revision": ""
   },
   "Right": {
     "Right": "右侧"
@@ -7501,6 +8164,9 @@
   },
   "Right-click a notification and choose \"Allow in Do Not Disturb\" to add an app": {
     "Right-click a notification and choose \"Allow in Do Not Disturb\" to add an app": "右键点击通知，然后选择“允许在勿扰模式中显示”以添加应用"
+  },
+  "Right-click a widget for options": {
+    "Right-click a widget for options": ""
   },
   "Right-click an app in the launcher and choose 'Edit App'": {
     "Right-click an app in the launcher and choose 'Edit App'": "右键点击启动器中的应用，然后选择“编辑应用”"
@@ -7535,8 +8201,14 @@
   "Rounded": {
     "Rounded": "圆角"
   },
+  "Rounded square": {
+    "Rounded square": ""
+  },
   "Route Bluetooth headset controls to the active DMS media player": {
     "Route Bluetooth headset controls to the active DMS media player": "将蓝牙耳机控制转发到当前 Dux 媒体播放器"
+  },
+  "Routes": {
+    "Routes": ""
   },
   "Routes launcher, dash, control center and notification shortcuts. Bar widget clicks always open their own popout": {
     "Routes launcher, dash, control center and notification shortcuts. Bar widget clicks always open their own popout": ""
@@ -7574,6 +8246,9 @@
   "Run DMS templates": {
     "Run DMS templates": "运行 Dux 模板"
   },
+  "Run Tailscale SSH server": {
+    "Run Tailscale SSH server": ""
+  },
   "Run a program (e.g., firefox, kitty)": {
     "Run a program (e.g., firefox, kitty)": "运行程序（例如：firefox, kitty）"
   },
@@ -7582,6 +8257,9 @@
   },
   "Run an external command on each wallpaper change and merge its JSON palette into %1 under a namespace, so templates can use e.g. %2. The command receives the wallpaper as %3 and the mode as %4.": {
     "Run an external command on each wallpaper change and merge its JSON palette into %1 under a namespace, so templates can use e.g. %2. The command receives the wallpaper as %3 and the mode as %4.": "在每次壁纸更改时运行外部命令，并在某个命名空间下将其 JSON 调色板合并到 %1 中，以便模板可以使用例如 %2。该命令会将壁纸作为 %3 接收，并将模式作为 %4 接收。"
+  },
+  "Run as exit node": {
+    "Run as exit node": ""
   },
   "Run full sync": {
     "Run full sync": "运行完整同步"
@@ -7607,11 +8285,17 @@
   "Runs in a terminal.": {
     "Runs in a terminal.": "在终端中运行。"
   },
+  "Runs past the end": {
+    "Runs past the end": ""
+  },
   "Runs programs on your computer": {
     "Runs programs on your computer": "在您的电脑上运行程序"
   },
   "Runs shell commands": {
     "Runs shell commands": "运行终端（Shell）命令"
+  },
+  "Runtime": {
+    "Runtime": ""
   },
   "S": {
     "S": "S"
@@ -7627,9 +8311,6 @@
   },
   "SE": {
     "SE": "SE"
-  },
-  "SSID": {
-    "SSID": "SSID"
   },
   "SW": {
     "SW": "SW"
@@ -7664,8 +8345,17 @@
   "Save credentials": {
     "Save credentials": "保存凭据"
   },
+  "Save location, format, capture behavior": {
+    "Save location, format, capture behavior": ""
+  },
   "Save password": {
     "Save password": "保存密码"
+  },
+  "Save permanently": {
+    "Save permanently": ""
+  },
+  "Save to file": {
+    "Save to file": ""
   },
   "Save your work first. Open apps will close.": {
     "Save your work first. Open apps will close.": "请先保存您的工作。所有打开的应用都将被关闭。"
@@ -7690,6 +8380,9 @@
   },
   "Saves its state": {
     "Saves its state": "保存自身状态"
+  },
+  "Saving": {
+    "Saving": ""
   },
   "Saving...": {
     "Saving...": "正在保存…"
@@ -7739,6 +8432,9 @@
   "Screen time history": {
     "Screen time history": "屏幕使用时间历史"
   },
+  "Screenshot": {
+    "Screenshot": ""
+  },
   "Screenshot unavailable": {
     "Screenshot unavailable": "截图不可用"
   },
@@ -7751,8 +8447,17 @@
   "Scroll GitHub": {
     "Scroll GitHub": "Scroll GitHub"
   },
+  "Scroll capture interval": {
+    "Scroll capture interval": ""
+  },
+  "Scroll lyrics": {
+    "Scroll lyrics": ""
+  },
   "Scroll method": {
     "Scroll method": "滚动方式"
+  },
+  "Scroll shadows": {
+    "Scroll shadows": ""
   },
   "Scroll song title": {
     "Scroll song title": "滚动歌曲标题"
@@ -7780,6 +8485,9 @@
   },
   "Search devices...": {
     "Search devices...": "查找设备…"
+  },
+  "Search domains": {
+    "Search domains": ""
   },
   "Search or press a shortcut...": {
     "Search or press a shortcut...": "搜索或按下快捷键…"
@@ -7862,6 +8570,9 @@
   "Select": {
     "Select": "选择"
   },
+  "Select All": {
+    "Select All": ""
+  },
   "Select Application": {
     "Select Application": "选择应用程序"
   },
@@ -7916,6 +8627,9 @@
   "Select network": {
     "Select network": "选择网络"
   },
+  "Select settings to import": {
+    "Select settings to import": ""
+  },
   "Selected image file not found.": {
     "Selected image file not found.": "未找到所选图像文件。"
   },
@@ -7961,6 +8675,9 @@
   "Server": {
     "Server": "服务器"
   },
+  "Server is not verified without a CA certificate": {
+    "Server is not verified without a CA certificate": ""
+  },
   "Service": {
     "Service": ""
   },
@@ -7972,6 +8689,9 @@
   },
   "Session switching requires loginctl/elogind": {
     "Session switching requires loginctl/elogind": "切换会话需要 loginctl/elogind"
+  },
+  "Set by activity": {
+    "Set by activity": ""
   },
   "Set custom device name": {
     "Set custom device name": "设置自定义设备名称"
@@ -8024,6 +8744,9 @@
   "Setup": {
     "Setup": "设置"
   },
+  "Shaded icons": {
+    "Shaded icons": ""
+  },
   "Shadow": {
     "Shadow": "阴影"
   },
@@ -8032,6 +8755,9 @@
   },
   "Shadows": {
     "Shadows": "阴影"
+  },
+  "Shape of the album cover in the pill": {
+    "Shape of the album cover in the pill": ""
   },
   "Shapes use the %1 theme's colors": {
     "Shapes use the %1 theme's colors": "图形使用 %1 主题的颜色"
@@ -8051,8 +8777,14 @@
   "Shared shortcuts": {
     "Shared shortcuts": "共享快捷键"
   },
+  "Sheet": {
+    "Sheet": ""
+  },
   "Shell": {
     "Shell": "Shell"
+  },
+  "Shell animations": {
+    "Shell animations": ""
   },
   "Shift+Enter to copy": {
     "Shift+Enter to copy": "按下 Shift+Enter 复制"
@@ -8069,17 +8801,26 @@
   "Shortcut (%1)": {
     "Shortcut (%1)": "快捷方式（%1）"
   },
+  "Shortcut hints": {
+    "Shortcut hints": ""
+  },
   "Shortcuts": {
     "Shortcuts": "快捷键"
   },
   "Shortcuts (%1)": {
     "Shortcuts (%1)": "快捷键（%1）"
   },
+  "Shortcuts apps use from any window": {
+    "Shortcuts apps use from any window": ""
+  },
   "Shortcuts, keyboard, mouse": {
     "Shortcuts, keyboard, mouse": "快捷键、键盘与鼠标"
   },
   "Shortens the bar at both ends": {
     "Shortens the bar at both ends": "从两端缩短状态栏"
+  },
+  "Shorter": {
+    "Shorter": ""
   },
   "Show": {
     "Show": "显示"
@@ -8089,6 +8830,9 @@
   },
   "Show AM/PM": {
     "Show AM/PM": ""
+  },
+  "Show Edit widgets in app context menu": {
+    "Show Edit widgets in app context menu": ""
   },
   "Show I/O": {
     "Show I/O": "显示 I/O"
@@ -8104,6 +8848,18 @@
   },
   "Show all tags": {
     "Show all tags": "显示所有标签"
+  },
+  "Show an icon and title in the island; keep the original notification in the notification center": {
+    "Show an icon and title in the island; keep the original notification in the notification center": ""
+  },
+  "Show app descriptions": {
+    "Show app descriptions": ""
+  },
+  "Show app icons": {
+    "Show app icons": ""
+  },
+  "Show app name": {
+    "Show app name": ""
   },
   "Show apps": {
     "Show apps": "显示应用"
@@ -8189,6 +8945,9 @@
   "Show mount path": {
     "Show mount path": "显示挂载路径"
   },
+  "Show notification": {
+    "Show notification": ""
+  },
   "Show occupied only": {
     "Show occupied only": "仅显示已占用"
   },
@@ -8227,6 +8986,9 @@
   },
   "Show restart DMS": {
     "Show restart DMS": "显示重启 Dux"
+  },
+  "Show running apps": {
+    "Show running apps": ""
   },
   "Show scratchpads": {
     "Show scratchpads": "显示暂存区"
@@ -8278,6 +9040,12 @@
   },
   "Show window": {
     "Show window": "显示窗口"
+  },
+  "Show window title": {
+    "Show window title": ""
+  },
+  "Show workspace changes in the island instead of the regular OSD": {
+    "Show workspace changes in the island instead of the regular OSD": ""
   },
   "Shown only while the microphone, camera or screen sharing is in use": {
     "Shown only while the microphone, camera or screen sharing is in use": "仅在使用麦克风、摄像头或屏幕共享时显示"
@@ -8360,6 +9128,9 @@
   "Slots used": {
     "Slots used": ""
   },
+  "Slowdown": {
+    "Slowdown": ""
+  },
   "Small": {
     "Small": "较小"
   },
@@ -8441,6 +9212,12 @@
   "Sources for plugins and themes. Registries are git repositories with a plugins/ or themes/ directory.": {
     "Sources for plugins and themes. Registries are git repositories with a plugins/ or themes/ directory.": "插件和主题的来源。仓库是包含 plugins/ 或 themes/ 目录的 Git 仓库。"
   },
+  "Space reserved for editing\nFinish to apply the selected height.": {
+    "Space reserved for editing\nFinish to apply the selected height.": ""
+  },
+  "Space reserved for stable page height": {
+    "Space reserved for stable page height": ""
+  },
   "Space-separated; {image} and {mode} are substituted": {
     "Space-separated; {image} and {mode} are substituted": "以空格分隔；{image} 和 {mode} 会被替换"
   },
@@ -8467,6 +9244,9 @@
   },
   "Speed, scrolling, tap to click": {
     "Speed, scrolling, tap to click": "速度、滚动、轻触点击"
+  },
+  "Spin": {
+    "Spin": ""
   },
   "Spin-up time": {
     "Spin-up time": ""
@@ -8510,8 +9290,14 @@
   "Square": {
     "Square": "直角"
   },
+  "Squircle": {
+    "Squircle": ""
+  },
   "Stable": {
     "Stable": "稳定版"
+  },
+  "Stable privacy": {
+    "Stable privacy": ""
   },
   "Stack": {
     "Stack": "堆栈"
@@ -8552,6 +9338,9 @@
   "Startup Behavior": {
     "Startup Behavior": "启动行为"
   },
+  "Startup cache": {
+    "Startup cache": ""
+  },
   "State": {
     "State": "状态"
   },
@@ -8564,11 +9353,20 @@
   "Stays visible while the workspace has no windows": {
     "Stays visible while the workspace has no windows": "工作区没有窗口时保持可见"
   },
+  "Stock %1 animations": {
+    "Stock %1 animations": ""
+  },
   "Stop": {
     "Stop": "停止"
   },
   "Stop ignoring %1": {
     "Stop ignoring %1": "取消忽略 %1"
+  },
+  "Stop managing": {
+    "Stop managing": ""
+  },
+  "Stop managing comments out the include in your %1 config and keeps the DMS file, so your own settings take over. Setup on the page turns it back on.": {
+    "Stop managing comments out the include in your %1 config and keeps the DMS file, so your own settings take over. Setup on the page turns it back on.": ""
   },
   "Stopped": {
     "Stopped": "已停止"
@@ -8578,6 +9376,9 @@
   },
   "Stopping": {
     "Stopping": "正在停止"
+  },
+  "Stopping...": {
+    "Stopping...": ""
   },
   "Stops syncing your DMS settings to the greeter. Set up links them again.": {
     "Stops syncing your DMS settings to the greeter. Set up links them again.": "停止将 Dux 设置同步到登录界面。重新设置可恢复关联。"
@@ -8600,11 +9401,23 @@
   "Style, search, hidden apps": {
     "Style, search, hidden apps": "样式、搜索与隐藏应用"
   },
+  "Style, speed, bounce": {
+    "Style, speed, bounce": ""
+  },
   "Styles outside of Default use more GPU": {
     "Styles outside of Default use more GPU": "非默认样式会占用更多 GPU"
   },
+  "Subnet routes": {
+    "Subnet routes": ""
+  },
   "Success": {
     "Success": "成功"
+  },
+  "Suffix": {
+    "Suffix": ""
+  },
+  "Summarize matching notifications": {
+    "Summarize matching notifications": ""
   },
   "Summary": {
     "Summary": "概要"
@@ -8687,6 +9500,9 @@
   "Switch between display configurations": {
     "Switch between display configurations": "在显示器配置之间切换"
   },
+  "Switch between saved setups": {
+    "Switch between saved setups": ""
+  },
   "Switch between the first input method and the active one": {
     "Switch between the first input method and the active one": ""
   },
@@ -8708,6 +9524,9 @@
   "Sync": {
     "Sync": "同步"
   },
+  "Sync changes to this profile": {
+    "Sync changes to this profile": ""
+  },
   "Sync completed successfully.": {
     "Sync completed successfully.": "同步已完成。"
   },
@@ -8720,14 +9539,14 @@
   "Sync needs sudo authentication. Opening terminal so you can use password or fingerprint.": {
     "Sync needs sudo authentication. Opening terminal so you can use password or fingerprint.": "同步需要 sudo 身份验证。正在打开终端，以便你可以使用密码或指纹。"
   },
-  "Sync popouts and modals": {
-    "Sync popouts and modals": "同步弹出面板和对话框"
-  },
   "Sync position across displays": {
     "Sync position across displays": "在各显示器间同步位置"
   },
   "Sync with portal": {
     "Sync with portal": "与桌面门户同步"
+  },
+  "Synchronized": {
+    "Synchronized": ""
   },
   "Syncing...": {
     "Syncing...": "同步中…"
@@ -8786,9 +9605,6 @@
   "Systemd unit": {
     "Systemd unit": ""
   },
-  "TRIM": {
-    "TRIM": ""
-  },
   "Tab": {
     "Tab": "标签"
   },
@@ -8828,6 +9644,9 @@
   "Tailscale not available": {
     "Tailscale not available": "Tailscale 不可用"
   },
+  "Take screenshot": {
+    "Take screenshot": ""
+  },
   "Tap and drag": {
     "Tap and drag": "轻触并拖动"
   },
@@ -8842,6 +9661,9 @@
   },
   "Teal": {
     "Teal": "青绿色"
+  },
+  "Temp": {
+    "Temp": ""
   },
   "Temperature": {
     "Temperature": "温度"
@@ -8863,6 +9685,9 @@
   },
   "Terminals always dark": {
     "Terminals always dark": "终端始终使用深色主题"
+  },
+  "Terminals and file managers paste the saved file": {
+    "Terminals and file managers paste the saved file": ""
   },
   "Tertiary": {
     "Tertiary": "三级"
@@ -8891,6 +9716,9 @@
   "Text editor": {
     "Text editor": "文本编辑器"
   },
+  "Text rendering": {
+    "Text rendering": ""
+  },
   "Text style": {
     "Text style": "文本样式"
   },
@@ -8908,9 +9736,6 @@
   },
   "The Island takes its place on this bar": {
     "The Island takes its place on this bar": "灵动岛将固定在此状态栏上"
-  },
-  "The WiFi adapter could not start access point mode.": {
-    "The WiFi adapter could not start access point mode.": "WiFi 适配器无法启动接入点模式。"
   },
   "The arrow points in the direction the wind is blowing. The label shows where it comes from.": {
     "The arrow points in the direction the wind is blowing. The label shows where it comes from.": "箭头指向风吹去的方向。标签显示风的来源方向。"
@@ -8954,6 +9779,9 @@
   "The login screen stops following your DMS theme, wallpaper, widgets and settings. greetd, authentication and other users are not affected.": {
     "The login screen stops following your DMS theme, wallpaper, widgets and settings. greetd, authentication and other users are not affected.": "登录界面停止跟随你的 Dux 主题、壁纸、部件和设置。greetd、身份验证和其他用户不受影响。"
   },
+  "The new profile uses your current settings for the groups selected below": {
+    "The new profile uses your current settings for the groups selected below": ""
+  },
   "The next enabled provider is used when one fails.": {
     "The next enabled provider is used when one fails.": ""
   },
@@ -8987,6 +9815,12 @@
   "Theme color": {
     "Theme color": "主题颜色"
   },
+  "Theme color behind the collapsed island": {
+    "Theme color behind the collapsed island": ""
+  },
+  "Theme color behind the expanded island": {
+    "Theme color behind the expanded island": ""
+  },
   "Theme colors come from this display's wallpaper": {
     "Theme colors come from this display's wallpaper": "主题颜色来自此显示器的壁纸"
   },
@@ -9002,8 +9836,8 @@
   "Theme, light and dark, matugen": {
     "Theme, light and dark, matugen": "主题、浅色和深色、Matugen"
   },
-  "Theme, palette, dark mode": {
-    "Theme, palette, dark mode": "主题、调色板与深色模式"
+  "Themed app icons": {
+    "Themed app icons": ""
   },
   "Themes": {
     "Themes": "主题"
@@ -9026,11 +9860,20 @@
   "Third-party plugins are created by the community and are not officially supported by %1.\n\nThese plugins may pose security and privacy risks - install at your own risk.": {
     "Third-party plugins are created by the community and are not officially supported by %1.\n\nThese plugins may pose security and privacy risks - install at your own risk.": "第三方插件由社区创建，未获得 %1 的官方支持。\n\n此类插件可能存在安全与隐私风险，安装后果由用户自行承担。"
   },
+  "This Wi-Fi adapter can't host a WPA3 hotspot. Use WPA2.": {
+    "This Wi-Fi adapter can't host a WPA3 hotspot. Use WPA2.": ""
+  },
   "This bar is the Island": {
     "This bar is the Island": "此状态栏为灵动岛"
   },
   "This bind is overridden by %1": {
     "This bind is overridden by %1": "此键位已被 %1 覆盖"
+  },
+  "This command has options the editor doesn't manage, so edit them in your config file": {
+    "This command has options the editor doesn't manage, so edit them in your config file": ""
+  },
+  "This connection is temporary and is lost on reboot.": {
+    "This connection is temporary and is lost on reboot.": ""
   },
   "This device": {
     "This device": "此设备"
@@ -9098,6 +9941,9 @@
   "Tiled State": {
     "Tiled State": "平铺状态"
   },
+  "Tiles": {
+    "Tiles": ""
+  },
   "Tiling": {
     "Tiling": "平铺"
   },
@@ -9154,6 +10000,9 @@
   },
   "Title regex (optional)": {
     "Title regex (optional)": "标题正则（可选）"
+  },
+  "Title template": {
+    "Title template": ""
   },
   "To Full": {
     "To Full": "充至满电"
@@ -9341,6 +10190,9 @@
   "Typing reveals the field. Escape hides it again. The editor always shows it.": {
     "Typing reveals the field. Escape hides it again. The editor always shows it.": "输入时显示密码框，按 Esc 再次隐藏。编辑器中始终显示。"
   },
+  "Typography": {
+    "Typography": ""
+  },
   "URL": {
     "URL": "URL"
   },
@@ -9388,9 +10240,6 @@
   },
   "Unknown Artist": {
     "Unknown Artist": "未知艺术家"
-  },
-  "Unknown Config": {
-    "Unknown Config": "未知设置"
   },
   "Unknown Device": {
     "Unknown Device": "未知设备"
@@ -9503,6 +10352,9 @@
   "Update failed: %1": {
     "Update failed: %1": "更新失败：%1"
   },
+  "Update from current settings": {
+    "Update from current settings": ""
+  },
   "Update plugin": {
     "Update plugin": "更新插件"
   },
@@ -9557,6 +10409,12 @@
   "Use Monospace Font": {
     "Use Monospace Font": "使用等宽字体"
   },
+  "Use Tailscale DNS settings": {
+    "Use Tailscale DNS settings": ""
+  },
+  "Use Tailscale subnets": {
+    "Use Tailscale subnets": ""
+  },
   "Use a security key for lock screen authentication": {
     "Use a security key for lock screen authentication": "锁屏使用安全密钥认证"
   },
@@ -9578,11 +10436,17 @@
   "Use fingerprint authentication for the lock screen": {
     "Use fingerprint authentication for the lock screen": "锁屏使用指纹认证"
   },
+  "Use fully rounded ends for the collapsed island": {
+    "Use fully rounded ends for the collapsed island": ""
+  },
   "Use inline expansion": {
     "Use inline expansion": "使用内联展开"
   },
   "Use keys 1-3 or arrows, Enter/Space to select": {
     "Use keys 1-3 or arrows, Enter/Space to select": "使用数字键 1-3 或方向键选择，按 Enter/Space 确认"
+  },
+  "Use only for resources on its network": {
+    "Use only for resources on its network": ""
   },
   "Use overlay layer": {
     "Use overlay layer": "使用叠加层"
@@ -9596,8 +10460,14 @@
   "Use system PAM authentication": {
     "Use system PAM authentication": "使用系统 PAM 认证"
   },
+  "Use system certificates": {
+    "Use system certificates": ""
+  },
   "Use the scaled battery level for alert thresholds and percentages": {
     "Use the scaled battery level for alert thresholds and percentages": ""
+  },
+  "Use {summary}, {body}, or {appName} to insert notification text": {
+    "Use {summary}, {body}, or {appName} to insert notification text": ""
   },
   "Used": {
     "Used": ""
@@ -9806,14 +10676,11 @@
   "W": {
     "W": "W"
   },
-  "WPA2 password": {
-    "WPA2 password": "WPA2 密码"
-  },
-  "WWN": {
-    "WWN": ""
-  },
   "Waiting": {
     "Waiting": ""
+  },
+  "Wake on LAN": {
+    "Wake on LAN": ""
   },
   "Wallpaper": {
     "Wallpaper": "壁纸"
@@ -9827,11 +10694,17 @@
   "Wallpaper fill mode": {
     "Wallpaper fill mode": "壁纸填充模式"
   },
+  "Wallpaper layer": {
+    "Wallpaper layer": ""
+  },
   "Wallpaper processing failed": {
     "Wallpaper processing failed": "壁纸处理失败"
   },
   "Wallpaper processing failed - check wallpaper path": {
     "Wallpaper processing failed - check wallpaper path": "壁纸处理失败，请检查壁纸路径"
+  },
+  "Wallpaper, colors, typography": {
+    "Wallpaper, colors, typography": ""
   },
   "Wallpapers": {
     "Wallpapers": "壁纸"
@@ -9887,6 +10760,9 @@
   "When locked": {
     "When locked": "何时锁定"
   },
+  "Where the widget list sits while editing the Control Center": {
+    "Where the widget list sits while editing the Control Center": ""
+  },
   "Which PAM service the lock screen uses to authenticate": {
     "Which PAM service the lock screen uses to authenticate": "锁屏用于认证的 PAM 服务"
   },
@@ -9898,6 +10774,12 @@
   },
   "While download and upload are both under 1 KB/s": {
     "While download and upload are both under 1 KB/s": "下载和上传都低于 1 KB/s 时"
+  },
+  "While playing": {
+    "While playing": ""
+  },
+  "While playing hides the meter when paused, so the pill narrows": {
+    "While playing hides the meter when paused, so the pill narrows": ""
   },
   "White": {
     "White": "白色"
@@ -9917,12 +10799,6 @@
   "Wi-Fi and Ethernet connection": {
     "Wi-Fi and Ethernet connection": "Wi-Fi 与以太网连接"
   },
-  "Wi-Fi is disabled": {
-    "Wi-Fi is disabled": "Wi-Fi 已禁用"
-  },
-  "Wi-Fi is disabled. You can still edit and save hotspot settings, but starting the hotspot requires Wi-Fi to be enabled.": {
-    "Wi-Fi is disabled. You can still edit and save hotspot settings, but starting the hotspot requires Wi-Fi to be enabled.": "Wi-Fi 已禁用。你仍可编辑并保存热点设置，但启动热点需要先启用 Wi-Fi。"
-  },
   "Wi-Fi network": {
     "Wi-Fi network": ""
   },
@@ -9931,18 +10807,6 @@
   },
   "Wi-Fi, Ethernet, VPN": {
     "Wi-Fi, Ethernet, VPN": "Wi-Fi、以太网与 VPN"
-  },
-  "WiFi QR code for %1": {
-    "WiFi QR code for %1": "用于连接 %1 的 WiFi 二维码"
-  },
-  "WiFi disabled": {
-    "WiFi disabled": "Wi-Fi 已停用"
-  },
-  "WiFi enabled": {
-    "WiFi enabled": "Wi-Fi 已启用"
-  },
-  "WiFi is off": {
-    "WiFi is off": "Wi-Fi 已关闭"
   },
   "Wide (BT2020)": {
     "Wide (BT2020)": "广色域（BT2020）"
@@ -9982,6 +10846,9 @@
   },
   "Width": {
     "Width": "宽度"
+  },
+  "Wiggle": {
+    "Wiggle": ""
   },
   "Will disconnect \"%1": {
     "Will disconnect \"%1\"": "将断开“%1”"
@@ -10046,6 +10913,9 @@
   "Word processor": {
     "Word processor": "文字处理器"
   },
+  "Word synced": {
+    "Word synced": ""
+  },
   "Working directory": {
     "Working directory": ""
   },
@@ -10082,6 +10952,9 @@
   "Wrap the app command. %command% is replaced with the actual executable": {
     "Wrap the app command. %command% is replaced with the actual executable": "封装应用启动命令。`%command%` 会被替换为实际执行文件"
   },
+  "Write": {
+    "Write": ""
+  },
   "Write cache": {
     "Write cache": ""
   },
@@ -10115,6 +10988,9 @@
   "Y axis": {
     "Y axis": "Y 轴"
   },
+  "Year": {
+    "Year": ""
+  },
   "Yellow": {
     "Yellow": "黄色"
   },
@@ -10123,6 +10999,9 @@
   },
   "Yesterday": {
     "Yesterday": "昨天"
+  },
+  "You don't have permission to change this connection.": {
+    "You don't have permission to change this connection.": ""
   },
   "You have unsaved changes. Save before continuing?": {
     "You have unsaved changes. Save before continuing?": "检测到未保存的更改，是否在执行此操作前保存？"
@@ -10147,9 +11026,6 @@
   },
   "Your hotspot is running.": {
     "Your hotspot is running.": "热点正在运行。"
-  },
-  "Your hotspot profile is saved and ready to start.": {
-    "Your hotspot profile is saved and ready to start.": "热点配置文件已保存，可以启动。"
   },
   "Your keyboard layout puts %1 above the first level, so this bind will never fire. Pick a key the layout types without an extra layer.": {
     "Your keyboard layout puts %1 above the first level, so this bind will never fire. Pick a key the layout types without an extra layer.": "你的键盘布局需要额外修饰键才能输入 %1，因此此绑定无法触发。请选择无需额外修饰键即可输入的按键。"
@@ -10218,10 +11094,10 @@
     "Normal": "正常"
   },
   "duration, 2 to 4 form (2, 3, 4, 22, 23, ...) for languages that need one, %1 is a number; leave empty to reuse the plural": {
-    "%1 days": "",
-    "%1 hours": "",
-    "%1 minutes": "",
-    "%1 seconds": ""
+    "%1 days": "%1 天",
+    "%1 hours": "%1 小时",
+    "%1 minutes": "%1 分钟",
+    "%1 seconds": "%1 秒"
   },
   "e.g. /usr/bin/my-script --flag": {
     "e.g. /usr/bin/my-script --flag": "例如：/usr/bin/my-script --flag"
@@ -10247,9 +11123,6 @@
   "e.g., scratch, /^tmp_.*/, build": {
     "e.g., scratch, /^tmp_.*/, build": "例如：scratch, /^tmp_.*/, build"
   },
-  "efibootmgr failed": {
-    "efibootmgr failed": "efibootmgr 执行失败"
-  },
   "expires in %1": {
     "expires in %1": "%1 后过期"
   },
@@ -10268,17 +11141,11 @@
   "keyboard tab key name": {
     "Tab": "Tab"
   },
-  "khal": {
-    "khal": "khal"
-  },
   "last seen %1": {
     "last seen %1": "上次在线：%1"
   },
   "leave empty for default": {
     "leave empty for default": "留空使用默认"
-  },
-  "loginctl activate failed (exit %1)": {
-    "loginctl activate failed (exit %1)": "loginctl activate 失败（退出码 %1）"
   },
   "loginctl integration": {
     "loginctl integration": "loginctl 集成"
@@ -10373,6 +11240,12 @@
   "source": {
     "source": "源"
   },
+  "system monitor bars: short marker for disk write": {
+    "W": ""
+  },
+  "system monitor layout option: bar meters, not the shell bars": {
+    "Bars": ""
+  },
   "the Qt 6 Multimedia QML module": {
     "the Qt 6 Multimedia QML module": "Qt 6 多媒体 QML 模块"
   },
@@ -10394,15 +11267,6 @@
   "updated": {
     "updated": "已更新"
   },
-  "useradd failed (exit %1)": {
-    "useradd failed (exit %1)": "useradd 失败（退出码 %1）"
-  },
-  "userdel failed (exit %1)": {
-    "userdel failed (exit %1)": "userdel 失败（退出码 %1）"
-  },
-  "usermod failed (exit %1)": {
-    "usermod failed (exit %1)": "usermod 失败（退出码 %1）"
-  },
   "verb, clipboard entry action button tooltip": {
     "Preview": "预览"
   },
@@ -10414,35 +11278,5 @@
   },
   "wifi network status, network has a saved profile": {
     "Saved": "已保存"
-  },
-  "• M - Month (1-12)": {
-    "• M - Month (1-12)": "• M - 月（1-12）"
-  },
-  "• MM - Month (01-12)": {
-    "• MM - Month (01-12)": "• MM - 月（01-12）"
-  },
-  "• MMM - Month (Jan)": {
-    "• MMM - Month (Jan)": "• MMM - 月（1 月）"
-  },
-  "• MMMM - Month (January)": {
-    "• MMMM - Month (January)": "• MMMM - 月（一月）"
-  },
-  "• d - Day (1-31)": {
-    "• d - Day (1-31)": "• d - 日（1-31）"
-  },
-  "• dd - Day (01-31)": {
-    "• dd - Day (01-31)": "• dd - 日（01-31）"
-  },
-  "• ddd - Day name (Mon)": {
-    "• ddd - Day name (Mon)": "• ddd - 星期缩写（周一）"
-  },
-  "• dddd - Day name (Monday)": {
-    "• dddd - Day name (Monday)": "• dddd - 星期全称（星期一）"
-  },
-  "• yy - Year (24)": {
-    "• yy - Year (24)": "• yy - 年（24）"
-  },
-  "• yyyy - Year (2024)": {
-    "• yyyy - Year (2024)": "• yyyy - 年（2024）"
   }
 }

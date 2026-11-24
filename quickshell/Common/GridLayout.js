@@ -1,3 +1,16 @@
+function interactionOrder(items, cells, index, external) {
+    const order = items.map((item, i) => i);
+    // Saved order can differ from visual order; settling by it lets untouched tiles leapfrog.
+    if (cells)
+        order.sort((a, b) => (cells[a]?.row ?? 0) - (cells[b]?.row ?? 0) || (cells[a]?.col ?? 0) - (cells[b]?.col ?? 0) || a - b);
+    if (external)
+        return [items.length].concat(order);
+    if (index < 0)
+        return order;
+    order.splice(order.indexOf(index), 1);
+    return [index].concat(order);
+}
+
 function packCells(cards, order, columns, isAvailable, step = 1, gravity = false) {
     const steps = Math.round(columns / step);
     const cells = [];
@@ -219,32 +232,133 @@ function rowAt(layout, y) {
     return band * layout.step;
 }
 
-function cellAt(layout, x, y, cols, rows) {
+function cellAt(layout, x, y, cols, rows, rowLimit = 0) {
     const px = layout.mirror ? layout.width - x - (cols * layout.colW + (cols - 1) * layout.gap) : x;
     const col = Math.round(px / (layout.colW + layout.gap) / layout.step) * layout.step;
     return {
         "col": Math.max(0, Math.min(layout.columns - cols, col)),
-        "row": Math.max(0, rowAt(layout, y))
+        "row": Math.max(0, Math.min(rowAt(layout, y), rowLimit > 0 ? rowLimit - rows : Infinity))
     };
 }
 
-// With gravity, a tile dropped onto the stack it came from rises back toward the hole it left. So the drop tries
-// the target row and the rows below it, packing each, and keeps the one that settles nearest the target.
-function dropInto(items, cells, index, target, pack, step = 1) {
+function bandTop(layout, band) {
+    const pitch = (layout.rowUnit + layout.gap) * layout.step;
+    const tops = layout.bandTops;
+    if (!tops)
+        return band * pitch;
+    if (band < tops.length)
+        return tops[band];
+    return layout.totalHeight + layout.gap + (band - tops.length) * pitch;
+}
+
+function inRows(layout, y, rows) {
+    return !(rows > 0) || y <= bandTop(layout, Math.round(rows / layout.step)) - layout.gap;
+}
+
+function freeCellAt(layout, x, y, bottom, rowLimit = 0, columnStep = 1) {
+    const step = layout.step;
+    const pitchX = layout.colW + layout.gap;
+    const col = Math.floor((layout.mirror ? layout.width - x : x) / pitchX / columnStep) * columnStep;
+    if (!(pitchX > 0) || !(layout.rowUnit + layout.gap > 0) || col < 0 || col >= layout.columns || y < 0)
+        return null;
+    const span = Math.round(1 / step);
+    let band = 0;
+    while (bandTop(layout, band + 1) <= y)
+        band++;
+    const busy = b => b < 0 || layout.slots.some(slot => slot && col < slot.col + slot.cols && slot.col < col + 1 && b * step < slot.row + slot.rows && slot.row < (b + 1) * step);
+    const free = first => first <= Math.round(layout.rows / step) && !Array.from({
+            "length": span
+        }, (_, k) => first + k).some(busy);
+    let first = Array.from({
+        "length": span
+    }, (_, k) => band - k).find(free);
+    if (first === undefined)
+        return null;
+    // Gravity lifts the added tile until it rests, so the spot rises with it.
+    while (first > 0 && !busy(first - 1))
+        first--;
+    if (rowLimit > 0 && first * step + 1 > rowLimit)
+        return null;
+    const top = bandTop(layout, first);
+    const height = bandTop(layout, first + span) - layout.gap - top;
+    if (top + height > bottom)
+        return null;
+    const rect = slotRect(layout, col, 0, 1, 1);
+    return {
+        "col": col,
+        "row": first * step,
+        "x": rect.x,
+        "y": top,
+        "w": rect.w,
+        "h": height
+    };
+}
+
+function freeRun(layout, col, row) {
+    const step = layout.step;
+    const free = c => c >= 0 && c + step <= layout.columns && !layout.slots.some(slot => slot && c < slot.col + slot.cols && slot.col < c + step && row < slot.row + slot.rows && slot.row < row + 1);
+    let from = col;
+    while (free(from - step))
+        from -= step;
+    let to = col;
+    while (free(to))
+        to += step;
+    return {
+        "from": from,
+        "to": to
+    };
+}
+
+function fitInRun(run, col, w) {
+    const width = Math.min(w, run.to - run.from);
+    return {
+        "col": Math.max(run.from, Math.min(col, run.to - width)),
+        "w": width
+    };
+}
+
+// Mostly covering one same-size tile trades places with it; settling only moves the covered tile down, past a fixed last row.
+function swapInto(items, cells, index, target) {
+    const origin = cells[index];
+    const overlap = cell => Math.max(0, Math.min(target.col + origin.cols, cell.col + cell.cols) - Math.max(target.col, cell.col)) * Math.max(0, Math.min(target.row + origin.rows, cell.row + cell.rows) - Math.max(target.row, cell.row));
+    const covered = cells.reduce((hits, cell, i) => i !== index && cell && overlap(cell) > 0 ? hits.concat([i]) : hits, []);
+    if (covered.length !== 1)
+        return null;
+    const other = cells[covered[0]];
+    // Past halfway only, so a small nudge never trades places and a neighboring group keeps its drop target.
+    if (other.cols !== origin.cols || other.rows !== origin.rows || overlap(other) <= overlap(origin))
+        return null;
+    return items.map((item, i) => i === index ? Object.assign({}, item, {
+            "col": other.col,
+            "row": other.row
+        }) : i === covered[0] ? Object.assign({}, item, {
+            "col": origin.col,
+            "row": origin.row
+        }) : item);
+}
+
+// Gravity can lift a drop toward the hole it left.
+function dropInto(items, cells, index, target, pack, step = 1, rowLimit = 0) {
     const origin = cells[index];
     if (!origin || !target || !pack)
         return items;
+    const swapped = target.row === origin.row ? swapInto(items, cells, index, target) : null;
+    if (swapped)
+        return swapped;
     if (target.col < origin.col + origin.cols && origin.col < target.col + origin.cols && target.row < origin.row + origin.rows && origin.row < target.row + origin.rows)
         return items;
+    // Trials past the last row still count: gravity settles one there back onto the tiles it covered.
     const limit = cells.reduce((bottom, cell) => cell ? Math.max(bottom, cell.row + cell.rows) : bottom, 0) + origin.rows;
     let best = null;
-    for (let row = target.row; row <= limit; row += step) {
+    for (let row = rowLimit > 0 ? 0 : target.row; row <= limit; row += step) {
         const trial = items.map((item, i) => i === index ? Object.assign({}, item, {
                 "row": row
             }) : item);
         const landed = pack(trial)[index]?.row;
         if (landed === undefined)
             return items;
+        if (rowLimit > 0 && landed + origin.rows > rowLimit)
+            continue;
         const distance = Math.abs(landed - target.row);
         if (!best || distance < best.distance || (distance === best.distance && landed >= target.row))
             best = {
@@ -254,7 +368,10 @@ function dropInto(items, cells, index, target, pack, step = 1) {
         if (landed >= target.row)
             break;
     }
-    return best.trial;
+    const result = best?.trial ?? items;
+    if (!(rowLimit > 0) || !pack(result).some(cell => cell && cell.row + cell.rows > rowLimit))
+        return result;
+    return swapInto(items, cells, index, target) ?? result;
 }
 
 function placedItems(items, slots) {

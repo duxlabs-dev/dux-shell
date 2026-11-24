@@ -19,7 +19,7 @@ FocusScope {
     property bool keyboardOpened: false
     property bool opened: false
     property real progress: opened ? 1 : 0
-    readonly property bool animationsEnabled: !SettingsData.reduceMotion && Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
+    readonly property bool animationsEnabled: !Theme.reduceMotion
 
     signal chosen(string action)
 
@@ -113,7 +113,7 @@ FocusScope {
         NumberAnimation {
             duration: Theme.expressiveDurations.expressiveEffects
             easing.type: Easing.BezierSpline
-            easing.bezierCurve: Theme.expressiveCurves.emphasizedDecel
+            easing.bezierCurve: Theme.expressiveCurves.expressiveEffects
         }
     }
 

@@ -23,7 +23,7 @@ Item {
             return SettingsData.getDockConfig(dockId)?.widgets.find(item => item.id === SettingsUiState.selectedDockWidgetId) ?? null;
         SettingsData.barConfigs;
         const config = SettingsData.getBarConfig(barId);
-        const raw = (config?.[section + "Widgets"] ?? [])[index];
+        const raw = SettingsData.barSectionWidgets(config, section)[index];
         if (raw === undefined)
             return null;
         return typeof raw === "string" ? ({
@@ -34,7 +34,9 @@ Item {
     readonly property string widgetType: entry?.widgetId ?? entry?.id ?? ""
     readonly property bool sectionAutoOverflow: SettingsData.getBarConfig(barId)?.[section + "OverflowMode"] !== "bar"
     readonly property bool hasPill: !dockHosted && !["spacer", "separator", "island"].includes(widgetType)
-    readonly property bool barBackground: !(SettingsData.barConfigs.find(config => config.id === barId)?.noBackground ?? false)
+    // Widgets inside the island never overflow and draw no pill unless asked.
+    readonly property bool islandHosted: section === "island"
+    readonly property bool barBackground: !islandHosted && !(SettingsData.barConfigs.find(config => config.id === barId)?.noBackground ?? false)
     readonly property var store: ({
             "get": key => root.value(key),
             "set": (key, value) => root.set(key, value),
@@ -136,62 +138,67 @@ Item {
     Component.onCompleted: load()
 
     SettingsPage {
-        SettingsCard {
-            visible: root.widgetType === "weather"
-            title: I18n.tr("Weather")
+        SettingsDeferred {
+            when: root.widgetType === "weather"
 
-            SettingsNavRow {
+            SettingsCard {
                 title: I18n.tr("Weather")
-                iconName: "partly_cloudy_day"
-                onClicked: keyboard => root.parentModal?.navigateTo("weather", keyboard)
+
+                SettingsNavRow {
+                    title: I18n.tr("Weather")
+                    iconName: "partly_cloudy_day"
+                    onClicked: keyboard => root.parentModal?.navigateTo("weather", keyboard)
+                }
             }
         }
 
-        SettingsCard {
-            settingKey: "barWidgetGeneral"
+        SettingsDeferred {
+            SettingsCard {
+                settingKey: "barWidgetGeneral"
 
-            SettingsToggleRow {
-                iconName: SettingsUiState.selectedWidgetIcon
-                text: root.dockHosted ? I18n.tr("Show in dock") : I18n.tr("Show in bar")
-                description: SettingsUiState.selectedWidgetDescription
-                checked: root.entry?.enabled !== false
-                onToggled: checked => root.set("enabled", checked)
-            }
+                SettingsToggleRow {
+                    iconName: SettingsUiState.selectedWidgetIcon
+                    text: root.dockHosted ? I18n.tr("Show in dock") : I18n.tr("Show in bar")
+                    description: SettingsUiState.selectedWidgetDescription
+                    checked: root.entry?.enabled !== false
+                    onToggled: checked => root.set("enabled", checked)
+                }
 
-            SettingsDropdownRow {
-                readonly property string sectionMode: root.sectionAutoOverflow ? "auto" : "bar"
-                readonly property var placementValues: ["section"].concat(["auto", "bar", "always"].filter(mode => mode !== sectionMode))
-                readonly property var placementLabels: [sectionMode].concat(placementValues.slice(1)).map(mode => mode === "auto" ? I18n.tr("Auto") : mode === "bar" ? I18n.tr("Keep in Bar") : I18n.tr("Always in overflow", "bar widget placement option, the widget always lives in the overflow menu"))
-                readonly property string placementValue: root.value("overflowMode") === sectionMode ? "section" : root.value("overflowMode")
+                SettingsDropdownRow {
+                    readonly property string sectionMode: root.sectionAutoOverflow ? "auto" : "bar"
+                    readonly property var placementValues: ["section"].concat(["auto", "bar", "always"].filter(mode => mode !== sectionMode))
+                    readonly property var placementLabels: [sectionMode].concat(placementValues.slice(1)).map(mode => mode === "auto" ? I18n.tr("Auto") : mode === "bar" ? I18n.tr("Keep in Bar") : I18n.tr("Always in overflow", "bar widget placement option, the widget always lives in the overflow menu"))
+                    readonly property string placementValue: root.value("overflowMode") === sectionMode ? "section" : root.value("overflowMode")
 
-                visible: !root.dockHosted && !OverflowLayout.pinned(root.widgetType)
-                resetStore: root.store
-                resetKeys: ["overflowMode"]
-                text: I18n.tr("Placement")
-                description: I18n.tr("Auto moves this widget into overflow when the bar runs out of space", "bar widget placement dropdown description")
-                options: placementLabels
-                currentValue: placementLabels[Math.max(0, placementValues.indexOf(placementValue))]
-                onValueChanged: value => root.set("overflowMode", placementValues[placementLabels.indexOf(value)])
-            }
+                    visible: !root.dockHosted && !root.islandHosted && !OverflowLayout.pinned(root.widgetType)
+                    resetStore: root.store
+                    resetKeys: ["overflowMode"]
+                    text: I18n.tr("Placement")
+                    description: I18n.tr("Auto moves this widget into overflow when the bar runs out of space", "bar widget placement dropdown description")
+                    options: placementLabels
+                    currentValue: placementLabels[Math.max(0, placementValues.indexOf(placementValue))]
+                    onValueChanged: value => root.set("overflowMode", placementValues[placementLabels.indexOf(value)])
+                }
 
-            SettingsSliderRow {
-                visible: !root.dockHosted && !OverflowLayout.pinned(root.widgetType) && OverflowLayout.placement(root.entry, root.sectionAutoOverflow ? "auto" : "bar") === "auto"
-                resetStore: root.store
-                resetKeys: ["overflowPriority"]
-                text: I18n.tr("Overflow priority", "bar widget setting, how early an auto widget moves into overflow")
-                description: I18n.tr("Lower priorities move into overflow first", "bar widget overflow priority slider description")
-                value: root.value("overflowPriority")
-                minimum: -10
-                maximum: 10
-                onSliderValueChanged: value => root.set("overflowPriority", value === 0 ? undefined : value)
-            }
+                SettingsSliderRow {
+                    visible: !root.dockHosted && !root.islandHosted && !OverflowLayout.pinned(root.widgetType) && OverflowLayout.placement(root.entry, root.sectionAutoOverflow ? "auto" : "bar") === "auto"
+                    resetStore: root.store
+                    resetKeys: ["overflowPriority"]
+                    text: I18n.tr("Overflow priority", "bar widget setting, how early an auto widget moves into overflow")
+                    description: I18n.tr("Lower priorities move into overflow first", "bar widget overflow priority slider description")
+                    value: root.value("overflowPriority")
+                    minimum: -10
+                    maximum: 10
+                    onSliderValueChanged: value => root.set("overflowPriority", value === 0 ? undefined : value)
+                }
 
-            SettingsToggleRow {
-                visible: root.hasPill
-                tags: ["widget", "background", "pill", "transparent"]
-                text: I18n.tr("Background")
-                checked: root.entry?.background ?? root.barBackground
-                onToggled: checked => root.set("background", checked === root.barBackground ? undefined : checked)
+                SettingsToggleRow {
+                    visible: root.hasPill
+                    tags: ["widget", "background", "pill", "transparent"]
+                    text: I18n.tr("Background")
+                    checked: root.entry?.background ?? root.barBackground
+                    onToggled: checked => root.set("background", checked === root.barBackground ? undefined : checked)
+                }
             }
         }
 
@@ -202,7 +209,6 @@ Item {
             opacity: status === Loader.Ready ? 1 : 0
 
             Behavior on opacity {
-                enabled: Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
                 NumberAnimation {
                     duration: SettingsMetrics.fadeDuration
                     easing.type: Easing.BezierSpline

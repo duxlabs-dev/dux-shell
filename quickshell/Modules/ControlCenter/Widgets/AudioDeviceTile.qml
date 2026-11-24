@@ -24,7 +24,7 @@ CcTile {
             return I18n.tr("Select device", "audio status");
         if (audio.muted)
             return I18n.tr("Muted", "audio status");
-        const volume = audio.volume;
+        const volume = AudioService.getNodeVolume(root.node);
         if (typeof volume !== "number" || isNaN(volume))
             return "0%";
         return Math.round(volume * 100) + "%";
@@ -39,12 +39,12 @@ CcTile {
                 anchors.verticalCenter: parent.verticalCenter
                 width: Math.min(parent.width, parent.height)
                 height: width
-                value: root.audio ? Math.min(1, root.audio.volume * 100 / root.maxVolume) : -1
+                value: root.audio ? Math.min(1, AudioService.getNodeVolume(root.node) * 100 / root.maxVolume) : -1
                 ringColor: root.active ? Theme.primary : Theme.surfaceVariantText
 
                 StyledText {
                     anchors.centerIn: parent
-                    text: root.audio ? Math.round(root.audio.volume * 100) + "%" : "--"
+                    text: root.audio ? Math.round(AudioService.getNodeVolume(root.node) * 100) + "%" : "--"
                     font.pixelSize: Theme.fontSizeSmall
                     font.weight: Theme.fontWeightMedium
                     color: root.contentColor
@@ -61,10 +61,10 @@ CcTile {
     onWheel: wheelEvent => {
         if (!audio)
             return;
-        const current = audio.volume * 100;
+        const current = AudioService.getNodeVolume(root.node) * 100;
         const step = wheelEvent.angleDelta.y > 0 ? AudioService.wheelVolumeStep : -AudioService.wheelVolumeStep;
         audio.muted = false;
-        audio.volume = Math.max(0, Math.min(maxVolume, current + step)) / 100;
+        AudioService.setNodeVolume(root.node, Math.max(0, Math.min(maxVolume, current + step)) / 100);
         wheelEvent.accepted = true;
     }
     expandedContent: Component {

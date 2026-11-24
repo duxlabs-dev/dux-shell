@@ -9,7 +9,7 @@ import qs.Services
 import qs.DCommon.Widgets
 import qs.Modules.Settings.Widgets
 import "SystemInfo.js" as SystemInfo
-import "Drives.js" as Drives
+import "../../Services/Drives.js" as Drives
 import "../../Services/SysmonDevices.js" as Devices
 
 Item {
@@ -160,12 +160,12 @@ Item {
 
     readonly property var aboutRows: [row("DMS", ShellVersionService.shellVersion), row("Quickshell", SystemInfo.version(f.qs)), row(I18n.tr("Compositor"), compositorText), row(I18n.tr("Distribution", "system info label"), DgopService.distribution), row(I18n.tr("Kernel", "system info label"), DgopService.kernelVersion), row(I18n.tr("CPU"), DgopService.cpuModel), row(I18n.tr("Memory"), memoryText), row(I18n.tr("GPU"), gpus.map(g => g.displayName).join(", ")), row(I18n.tr("Graphics driver", "GPU kernel driver and Mesa version"), graphicsDriver), row(I18n.tr("Display"), displays.map(d => d.value).join("; "))]
 
-    readonly property var dmsRows: [row(I18n.tr("Shell"), ShellVersionService.shellVersion), row(I18n.tr("Codename", "DMS release codename"), ShellVersionService.shellCodename), row(I18n.tr("Backend", "noun, settings label for the backend service in use"), DMSService.cliVersion), row(I18n.tr("API", "about page card title, application programming interface version"), DMSService.apiVersion > 0 ? DMSService.apiVersion : ""), row(I18n.tr("Capabilities"), (DMSService.capabilities ?? []).join(", "), (DMSService.capabilities ?? []).join("\n")), row(I18n.tr("Settings version", "version number of the settings file format"), SettingsData.settingsConfigVersion), row(I18n.tr("Plugins"), Object.keys(PluginService.loadedPlugins ?? {}).length || "", Object.keys(PluginService.loadedPlugins ?? {}).join("\n")), row(I18n.tr("System check"), doctorText, doctorIssues.map(r => r.name + ": " + r.message).join("\n"), false, facts.doctorRunning)]
+    readonly property var dmsRows: [row(I18n.tr("Shell"), ShellVersionService.shellVersion), row(I18n.tr("Codename", "DMS release codename"), ShellVersionService.shellCodename), row(I18n.tr("Backend", "noun, settings label for the backend service in use"), DMSService.cliVersion), row("API", DMSService.apiVersion > 0 ? DMSService.apiVersion : ""), row(I18n.tr("Capabilities"), (DMSService.capabilities ?? []).join(", "), (DMSService.capabilities ?? []).join("\n")), row(I18n.tr("Settings version", "version number of the settings file format"), SettingsData.settingsConfigVersion), row(I18n.tr("Plugins"), Object.keys(PluginService.loadedPlugins ?? {}).length || "", Object.keys(PluginService.loadedPlugins ?? {}).join("\n")), row(I18n.tr("System check"), doctorText, doctorIssues.map(r => r.name + ": " + r.message).join("\n"), false, facts.doctorRunning)]
 
     readonly property var osRows: [row(I18n.tr("Distribution", "system info label"), DgopService.distribution), row(I18n.tr("Kernel", "system info label"), kernelText), row(I18n.tr("Init", "init system, e.g. systemd"), f.init ? f.init.replace(/\s*\(.*\)$/, "") : (DgopService.initSystem ?? "")), row(I18n.tr("Boot", "boot loader and firmware mode"), [f["boot.loader"], f["boot.uefi"] ? "UEFI" : (Object.keys(f).length > 0 ? "BIOS" : "")].filter(x => x).join(", ")), row(I18n.tr("Secure Boot", "UEFI Secure Boot state"), f["boot.secure"] === "1" ? I18n.tr("On") : f["boot.secure"] === "0" ? I18n.tr("Off") : ""), row(I18n.tr("Packages", "installed package counts per package manager"), SystemInfo.packagesText(f)), row(I18n.tr("Uptime"), DgopService.uptime ? DgopService.uptime.slice(3) : "", "", true), row(I18n.tr("Hostname"), DgopService.hostname, "", true), row(I18n.tr("User"), UserInfoService.username, "", true)]
 
     readonly property var hardwareRows: {
-        const rows = [row(I18n.tr("Model", "computer vendor and model"), SystemInfo.dmiModel(f)), row(I18n.tr("Chassis", "computer chassis type"), chassisText), row(I18n.tr("Board", "motherboard model"), [f["dmi.board_vendor"], f["dmi.board_name"]].filter(x => x).join(" ") || (DgopService.bios?.motherboard ?? "")), row(I18n.tr("BIOS", "firmware version and date"), [f["dmi.bios_version"] || DgopService.bios?.version, f["dmi.bios_date"] || DgopService.bios?.date].filter(x => x).join(", ")), row(I18n.tr("CPU"), DgopService.cpuModel), row(I18n.tr("Cores", "CPU core and thread count"), cpuInfo?.physicalCores > 0 ? I18n.tr("%1 cores, %2 threads", "CPU core and thread count").arg(cpuInfo.physicalCores).arg(cpuInfo.count) : ""), row(I18n.tr("Memory"), Devices.memoryModulesSummary(DgopService.memoryModules?.modules) || memoryText)];
+        const rows = [row(I18n.tr("Model", "computer vendor and model"), SystemInfo.dmiModel(f)), row(I18n.tr("Chassis", "computer chassis type"), chassisText), row(I18n.tr("Board", "motherboard model"), [f["dmi.board_vendor"], f["dmi.board_name"]].filter(x => x).join(" ") || (DgopService.bios?.motherboard ?? "")), row("BIOS", [f["dmi.bios_version"] || DgopService.bios?.version, f["dmi.bios_date"] || DgopService.bios?.date].filter(x => x).join(", ")), row(I18n.tr("CPU"), DgopService.cpuModel), row(I18n.tr("Cores", "CPU core and thread count"), cpuInfo?.physicalCores > 0 ? I18n.tr("%1 cores, %2 threads", "CPU core and thread count").arg(cpuInfo.physicalCores).arg(cpuInfo.count) : ""), row(I18n.tr("Memory"), Devices.memoryModulesSummary(DgopService.memoryModules?.modules) || memoryText)];
         for (const g of gpus)
             rows.push(row(I18n.tr("GPU"), g.fullName || g.displayName, g.driver));
         return rows.concat([row(I18n.tr("Graphics driver", "GPU kernel driver and Mesa version"), graphicsDriver), row("Vulkan", [f["vk.api"], f["vk.driver"]].filter(x => x).join(", ")), row(I18n.tr("Audio"), f.pipewire ? "PipeWire " + f.pipewire : ""), row(I18n.tr("Audio Output", "default audio output device"), AudioService.sink ? AudioService.displayName(AudioService.sink) : ""), row(I18n.tr("Power profile"), powerProfileText), row(I18n.tr("Battery"), BatteryService.batteryAvailable ? Math.round(BatteryService.batteryLevel) + "%" : "")]);
@@ -312,12 +312,12 @@ Item {
 
                         Rows {
                             rows: root.aboutRows.slice(0, 5)
-                            slotColor: Theme.surfaceContainer
+                            slotColor: ProcessListMetrics.cardInsetColor
                         }
 
                         Rows {
                             rows: root.aboutRows.slice(5)
-                            slotColor: Theme.surfaceContainer
+                            slotColor: ProcessListMetrics.cardInsetColor
                         }
                     }
                 }
@@ -506,7 +506,7 @@ Item {
                     width: Math.min(Theme.fontSizeSmall * 10, sensor.width / 4)
                     height: Theme.spacingS
                     radius: height / 2
-                    color: Theme.surfaceContainerHighest
+                    color: Theme.chipSurfaceNested
                     opacity: sensor.modelData.ratio == null ? 0 : 1
 
                     Rectangle {

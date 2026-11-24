@@ -75,8 +75,7 @@ func TestSubscribeStreams(t *testing.T) {
 				appPickerManager.RequestOpen(event)
 				<-done
 				synctest.Wait()
-				_, subscribed := capabilitySubscribers.Load(fmt.Sprintf("meta-client-%p-capabilities", writer))
-				require.False(t, subscribed)
+				require.False(t, capabilitySubscribers.Has(fmt.Sprintf("meta-client-%p-capabilities", writer)))
 			})
 		})
 	}
@@ -90,8 +89,7 @@ func TestSubscribeInitialWriteFailure(t *testing.T) {
 		writer := ipc.NewConnWriter(serverConn)
 		handleSubscribe(context.Background(), writer, ipc.Request{Params: map[string]any{"services": []any{"unavailable"}}})
 		synctest.Wait()
-		_, subscribed := capabilitySubscribers.Load(fmt.Sprintf("meta-client-%p-capabilities", writer))
-		require.False(t, subscribed)
+		require.False(t, capabilitySubscribers.Has(fmt.Sprintf("meta-client-%p-capabilities", writer)))
 	})
 }
 
@@ -153,11 +151,6 @@ func TestSubscribeFilesDeliversWatchBatches(t *testing.T) {
 			require.NoError(t, s.conn.Close())
 		}
 		synctest.Wait()
-		subscribers := 0
-		filesEvents.subscribers.Range(func(string, chan any) bool {
-			subscribers++
-			return true
-		})
-		require.Zero(t, subscribers, "no channel outlives its subscription")
+		require.Zero(t, filesEvents.broker.Len(), "no channel outlives its subscription")
 	})
 }

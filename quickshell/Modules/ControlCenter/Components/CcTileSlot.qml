@@ -9,7 +9,14 @@ DEditableGridSlot {
     id: root
 
     readonly property var widgetData: JSON.parse(json)
-    readonly property var sizeSpec: WidgetUtils.sizeSpec(widgetData, grid.columns, grid.maximumRows)
+    readonly property real resizeRows: grid.rowLimit > 0 ? grid.rowLimit - (grid.pinnedCells?.[index]?.row ?? slot?.row ?? 0) : grid.maximumRows
+    readonly property var sizeSpec: {
+        const spec = WidgetUtils.sizeSpec(widgetData, grid.columns, resizeRows);
+        const fit = tileItem?.groupMinimumWidth ?? 0;
+        if (fit > 0)
+            spec.minW = Math.min(spec.maxW, Math.max(spec.minW, Math.ceil(spanOf(fit) / spec.step) * spec.step));
+        return spec;
+    }
     readonly property real cols: slot?.cols ?? 1
     readonly property real rows: slot?.rows ?? 1
     readonly property bool compact: cols <= 2 && rows === 1
@@ -20,6 +27,48 @@ DEditableGridSlot {
     // Small tiles resize from a virtual half row so growing them passes through full size first.
     property real biasH: 0
     readonly property real smallSpanLimit: (1 + CcMetrics.smallRowFraction) / 2
+
+    readonly property bool tilePressed: !grid.editMode && (tileItem?.pressed ?? false)
+
+    onTilePressedChanged: grid.bounce.press(index, tilePressed)
+    Component.onDestruction: {
+        if (tilePressed)
+            grid?.bounce?.press(index, false);
+    }
+
+    readonly property bool overflowing: (grid.interacting || grid.spillPreview) && grid.slotLayout.slots[index] === null && grid.slotLayout.commitSlots?.[index] != null
+    property real overflowProgress: overflowing ? 1 : 0
+    readonly property var shownSlot: grid.slotLayout.slots[index] ?? null
+    property var lastShownSlot: null
+    readonly property real overflowTravel: I18n.isRtl ? -(x + width) : grid.width - x
+    // Latched, so a tile taken back retraces its exit path.
+    property real overflowRise: 0
+    readonly property real riseTarget: !overflowing ? -1 : grid.spillPreview ? grid.spillTop : 0
+
+    onRiseTargetChanged: {
+        if (riseTarget >= 0)
+            overflowRise = riseTarget;
+    }
+
+    onShownSlotChanged: {
+        if (shownSlot)
+            lastShownSlot = shownSlot;
+    }
+
+    // Not the grab snapshot: a tile already pushed down a row would jump back up.
+    retainedSlot: overflowing ? lastShownSlot : null
+    opacity: 1 - overflowProgress
+    enabled: !overflowing
+    visible: slot !== null && (!overflowing || overflowProgress < 1)
+
+    Behavior on overflowProgress {
+        enabled: CcMetrics.animationsEnabled
+        NumberAnimation {
+            duration: Theme.expressiveDurations.expressiveSlowEffects
+            easing.type: Easing.BezierSpline
+            easing.bezierCurve: Theme.expressiveCurves.expressiveSlowEffects
+        }
+    }
 
     readonly property bool swallowed: dragging && grid.swallowPoint !== null
     property real swallowProgress: swallowed ? 1 : 0
@@ -34,13 +83,17 @@ DEditableGridSlot {
     Behavior on swallowProgress {
         enabled: CcMetrics.animationsEnabled
         NumberAnimation {
-            duration: Theme.expressiveDurations.expressiveFastSpatial
+            duration: Theme.expressiveDurations.expressiveSlowEffects
             easing.type: Easing.BezierSpline
-            easing.bezierCurve: Theme.expressiveCurves.standard
+            easing.bezierCurve: Theme.expressiveCurves.expressiveSlowEffects
         }
     }
 
     transform: [
+        Translate {
+            x: root.overflowProgress > 0 ? root.overflowProgress * root.overflowTravel : 0
+            y: root.overflowProgress > 0 ? -root.overflowProgress * root.overflowRise : 0
+        },
         Scale {
             origin.x: root.width / 2
             origin.y: root.height / 2
@@ -56,6 +109,18 @@ DEditableGridSlot {
 
     passthrough: tileItem?.passthrough ?? null
     restCursor: widgetData.id === WidgetUtils.EDIT_ID ? Qt.PointingHandCursor : Qt.OpenHandCursor
+    // Matches the chrome's hitOverflow, so reaching for a button never hides it.
+    hoverMargin: CcMetrics.gridGap / 2
+    readonly property bool editing: grid.editMode
+    readonly property bool configOpen: grid.configIndex >= 0 && grid.savedIndex(index) === grid.configIndex
+    // The origins lead the grid's interacting, so the grip never hides under its own press.
+    readonly property bool chromeShown: configOpen || resizeOrigin !== null || dragOrigin !== null || dragging || resizing || activeFocus || (hovered && !grid.interacting)
+
+    activeFocusOnTab: editing
+    onEditingChanged: {
+        if (!editing)
+            focus = false;
+    }
     raised: dragging || resizing || (tileItem?.memberDragging ?? false)
 
     function reanchor(small) {
@@ -75,7 +140,7 @@ DEditableGridSlot {
     onPressAndHold: {
         if (!WidgetUtils.hasOptions(widgetData.id))
             return;
-        root.grid.configRequested(root.grid.savedIndex(root.index), root.widgetData, chromeBounds);
+        root.grid.configRequested(root.grid.savedIndex(root.index), root.widgetData, root, root);
     }
 
     onResizeRequested: (requestedWidth, requestedHeight) => {
@@ -89,7 +154,7 @@ DEditableGridSlot {
         let height = GridUtils.dimension(Math.round(spanH / step) * step, sizeSpec.minH, sizeSpec.maxH, sizeSpec.h, step);
         const current = WidgetUtils.clampSize(widgetData, grid.columns, grid.maximumRows);
         if (WidgetUtils.isSliderWidget(widgetData.id) && width < 2 && height < 2) {
-            if (width !== current.w && sizeSpec.maxH > 1)
+            if (width !== current.w && sizeSpec.maxH >= 2)
                 height = 2;
             else
                 width = Math.min(2, sizeSpec.maxW);
@@ -105,16 +170,76 @@ DEditableGridSlot {
         grid.previewSize(index, changes);
     }
 
+    // Touch never hovers, so a tap focuses the tile to show its chrome.
+    TapHandler {
+        enabled: root.editing
+        acceptedDevices: PointerDevice.TouchScreen
+        onTapped: root.forceActiveFocus()
+    }
+
+    readonly property var hoveredGroup: (dragging && grid.hoverGroup !== "") ? grid.groupAt(grid.dragScenePoint, index) : null
+    readonly property bool inGroupHover: hoveredGroup !== null && WidgetUtils.canGroup(widgetData)
+    readonly property point _hoverLocal: inGroupHover ? mapFromItem(null, grid.dragScenePoint.x, grid.dragScenePoint.y) : Qt.point(0, 0)
+
     CcTileLoader {
         id: tileLoader
-        anchors.fill: parent
+
+        x: root.inGroupHover ? Math.max(0, Math.min(root.width - width, root._hoverLocal.x - width / 2)) : root.grid.bounce.dx(root.index)
+        y: root.inGroupHover ? Math.max(0, Math.min(root.height - height, root._hoverLocal.y - height / 2)) : 0
+        width: root.inGroupHover ? (root.tileItem?.quickWidth ?? CcMetrics.iconBoxSize) : root.width + root.grid.bounce.dw(root.index)
+        height: root.inGroupHover ? CcMetrics.iconBoxSize : root.height
         grid: root.grid
         widgetData: root.widgetData
         savedIndex: root.grid.savedIndex(root.index)
-        columns: root.cols
-        rows: root.rows
-        compact: root.compact
-        small: root.small
+        columns: root.inGroupHover ? 1 : root.cols
+        rows: root.inGroupHover ? 1 : root.rows
+        compact: root.inGroupHover ? true : root.compact
+        small: root.inGroupHover ? true : root.small
+        bare: root.inGroupHover ? (root.hoveredGroup?.membersBare ?? false) : false
+
+        Behavior on width {
+            enabled: CcMetrics.animationsEnabled && root.dragging
+            NumberAnimation {
+                duration: Theme.expressiveDurations.expressiveFastSpatial
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: Theme.expressiveCurves.expressiveFastSpatial
+            }
+        }
+
+        Behavior on height {
+            enabled: CcMetrics.animationsEnabled && root.dragging
+            NumberAnimation {
+                duration: Theme.expressiveDurations.expressiveFastSpatial
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: Theme.expressiveCurves.expressiveFastSpatial
+            }
+        }
+    }
+
+    // A same-column insertion otherwise covers the outgoing pill with the dock's drag preview.
+    Loader {
+        parent: root.grid.overflowHost
+        active: parent !== null && root.overflowing && root.overflowProgress < 1
+
+        sourceComponent: ShaderEffectSource {
+            readonly property point slotPoint: {
+                root.x;
+                root.y;
+                root.overflowProgress;
+                root.grid.x;
+                root.grid.y;
+                root.grid.scrollOffset;
+                return root.grid.overflowHost.mapFromItem(root, 0, 0);
+            }
+
+            x: slotPoint.x
+            y: slotPoint.y
+            width: root.width
+            height: root.height
+            opacity: root.opacity
+            sourceItem: tileLoader
+            hideSource: true
+        }
     }
 
     Item {
@@ -134,7 +259,8 @@ DEditableGridSlot {
         active: root.grid.editMode || root.resizing
 
         sourceComponent: CcEditChrome {
-            visible: root.grid.editMode
+            id: chrome
+            visible: root.editing && !root.inGroupHover && (root.chromeShown || chrome.keyboardFocused)
             enabled: root.interactionEnabled
             widgetData: root.widgetData
             passthrough: root.passthrough
@@ -150,7 +276,7 @@ DEditableGridSlot {
             onResizeEnded: root.finishResize()
             onResizeCanceled: root.cancelResize()
             onRemoveRequested: root.grid.removeWidget(root.grid.savedIndex(root.index))
-            onConfigRequested: anchor => root.grid.configRequested(root.grid.savedIndex(root.index), root.widgetData, anchor)
+            onConfigRequested: anchor => root.grid.configRequested(root.grid.savedIndex(root.index), root.widgetData, anchor, root)
         }
     }
 }

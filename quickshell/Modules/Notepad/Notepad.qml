@@ -55,7 +55,7 @@ Item {
     Binding {
         target: root.slideout
         property: "hoverDismissSuspended"
-        value: root.anyModalOpen
+        value: root.anyModalOpen || textEditor.contextMenuOpen
         when: root.slideout !== null
         restoreMode: Binding.RestoreBindingOrValue
     }
@@ -317,8 +317,9 @@ Item {
 
         Behavior on height {
             NumberAnimation {
-                duration: Theme.shortDuration
-                easing.type: Theme.standardEasing
+                duration: Theme.expressiveDurations.expressiveDefaultSpatial
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
             }
         }
 
@@ -640,8 +641,8 @@ Item {
                             loadBrowserLoader.item.open();
                     });
                 } else if (root.pendingAction.startsWith("close_tab_")) {
+                    const tabIndex = parseInt(root.pendingAction.split("_")[2]);
                     Qt.callLater(() => {
-                        var tabIndex = parseInt(root.pendingAction.split("_")[2]);
                         performCloseTab(tabIndex);
                     });
                 }
@@ -827,8 +828,9 @@ Item {
 
                                     Behavior on color {
                                         ColorAnimation {
-                                            duration: Theme.shortDuration
-                                            easing.type: Theme.standardEasing
+                                            duration: Theme.expressiveDurations.expressiveFastEffects
+                                            easing.type: Easing.BezierSpline
+                                            easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
                                         }
                                     }
                                 }

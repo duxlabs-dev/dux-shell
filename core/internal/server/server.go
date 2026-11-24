@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/duxlabs-dev/dux-go/ipc"
-	"github.com/duxlabs-dev/dux-go/syncmap"
 	"github.com/duxlabs-dev/dux-shell/core/internal/clipolicy"
 	"github.com/duxlabs-dev/dux-shell/core/internal/config"
 	"github.com/duxlabs-dev/dux-shell/core/internal/geolocation"
@@ -25,10 +24,13 @@ import (
 	serverDgop "github.com/duxlabs-dev/dux-shell/core/internal/server/dgop"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/evdev"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/freedesktop"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/globalshortcuts"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/location"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/loginctl"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/network"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/notifyactions"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/pubsub"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/rfkill"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/sysupdate"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/tailscale"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/thememode"
@@ -43,7 +45,7 @@ import (
 	"github.com/spf13/afero"
 )
 
-const APIVersion = 40
+const APIVersion = 44
 
 var CLIVersion = "dev"
 
@@ -73,6 +75,7 @@ var tailscaleManager *tailscale.Manager
 var brightnessManager *brightness.Manager
 var wlrOutputManager *wlroutput.Manager
 var evdevManager *evdev.Manager
+var rfkillManager *rfkill.Manager
 var clipboardManager *clipboard.Manager
 var dbusManager *serverDbus.Manager
 var wlContext *wlcontext.SharedContext
@@ -83,11 +86,13 @@ var locationManager *location.Manager
 var sysUpdateManager *sysupdate.Manager
 var notifyActionsManager *notifyactions.Manager
 var wellbeingManager *wellbeing.Manager
+var globalShortcutsManager *globalshortcuts.Manager
+var globalShortcutsProvider *globalshortcuts.GnomeProvider
 var geoClientInstance geolocation.Client
 
 const dbusClientID = "dms-dbus-client"
 
-var capabilitySubscribers syncmap.Map[string, chan ServerInfo]
+var capabilitySubscribers pubsub.Broker[ServerInfo]
 var cupsMu sync.Mutex
 var cupsSubscriberCount int
 var cupsEverAvailable bool
@@ -304,6 +309,19 @@ func InitializeEvdevManager() error {
 	return nil
 }
 
+func InitializeRfkillManager() error {
+	manager, err := rfkill.InitializeManager()
+	if err != nil {
+		log.Warnf("Failed to initialize rfkill manager: %v", err)
+		return err
+	}
+
+	rfkillManager = manager
+
+	log.Info("Rfkill manager initialized")
+	return nil
+}
+
 func InitializeClipboardManager() error {
 	log.Info("Attempting to initialize clipboard manager...")
 
@@ -403,6 +421,22 @@ func InitializeNotifyActionsManager() error {
 	return nil
 }
 
+func InitializeGlobalShortcutsManager() error {
+	manager, err := globalshortcuts.NewManager()
+	if err != nil {
+		return err
+	}
+	provider, err := globalshortcuts.StartGnomeProvider(manager)
+	if err != nil {
+		manager.Close()
+		return err
+	}
+	globalShortcutsManager = manager
+	globalShortcutsProvider = provider
+	log.Info("Global shortcuts manager initialized")
+	return nil
+}
+
 func InitializeSysUpdateManager() error {
 	manager, err := sysupdate.NewManager(CLIVersion)
 	if err != nil {
@@ -489,6 +523,10 @@ func getCapabilities() Capabilities {
 		caps = append(caps, "evdev")
 	}
 
+	if rfkillManager != nil {
+		caps = append(caps, "rfkill")
+	}
+
 	if clipboardManager != nil {
 		caps = append(caps, "clipboard")
 	}
@@ -517,6 +555,10 @@ func getCapabilities() Capabilities {
 		caps = append(caps, "sysupdate")
 	}
 
+	if globalShortcutsManager != nil {
+		caps = append(caps, "globalshortcuts")
+	}
+
 	if filesService != nil {
 		caps = append(caps, "files")
 	}
@@ -538,14 +580,7 @@ func getServerInfo() ServerInfo {
 }
 
 func notifyCapabilityChange() {
-	info := getServerInfo()
-	capabilitySubscribers.Range(func(key string, ch chan ServerInfo) bool {
-		select {
-		case ch <- info:
-		default:
-		}
-		return true
-	})
+	capabilitySubscribers.Publish(getServerInfo())
 }
 
 func serviceSubscribed(services []string, service string, includeAll bool) bool {
@@ -586,11 +621,11 @@ func handleSubscribe(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request)
 		wg.Wait()
 	}()
 
-	capChan := make(chan ServerInfo, 64)
-	capabilitySubscribers.Store(clientID+"-capabilities", capChan)
+	capID := clientID + "-capabilities"
+	capChan := capabilitySubscribers.Subscribe(capID)
 
 	forwardSubscription(&wg, eventChan, stopChan, "server", capChan, func() {
-		capabilitySubscribers.Delete(clientID + "-capabilities")
+		capabilitySubscribers.Unsubscribe(capID, capChan)
 	}, nil)
 
 	shouldSubscribe := func(service string) bool {
@@ -602,7 +637,7 @@ func handleSubscribe(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request)
 		id := clientID + "-network"
 		states := mgr.Subscribe(id)
 		forwardSubscription(&wg, eventChan, stopChan, "network", states, func() {
-			mgr.Unsubscribe(id)
+			mgr.Unsubscribe(id, states)
 		}, mgr.GetState)
 	}
 
@@ -611,7 +646,7 @@ func handleSubscribe(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request)
 		id := clientID + "-credentials"
 		prompts := mgr.SubscribeCredentials(id)
 		forwardSubscription(&wg, eventChan, stopChan, "network.credentials", prompts, func() {
-			mgr.UnsubscribeCredentials(id)
+			mgr.UnsubscribeCredentials(id, prompts)
 		}, nil)
 	}
 
@@ -620,7 +655,7 @@ func handleSubscribe(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request)
 		id := clientID + "-loginctl"
 		source := mgr.Subscribe(id)
 		forwardSubscription(&wg, eventChan, stopChan, "loginctl", source, func() {
-			mgr.Unsubscribe(id)
+			mgr.Unsubscribe(id, source)
 		}, mgr.GetState)
 	}
 
@@ -629,7 +664,7 @@ func handleSubscribe(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request)
 		id := clientID + "-freedesktop"
 		source := mgr.Subscribe(id)
 		forwardSubscription(&wg, eventChan, stopChan, "freedesktop", source, func() {
-			mgr.Unsubscribe(id)
+			mgr.Unsubscribe(id, source)
 		}, mgr.GetState)
 	}
 
@@ -638,7 +673,7 @@ func handleSubscribe(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request)
 		id := clientID + "-screensaver"
 		source := mgr.SubscribeScreensaver(id)
 		forwardSubscription(&wg, eventChan, stopChan, "freedesktop.screensaver", source, func() {
-			mgr.UnsubscribeScreensaver(id)
+			mgr.UnsubscribeScreensaver(id, source)
 		}, mgr.GetScreensaverState)
 	}
 
@@ -647,7 +682,7 @@ func handleSubscribe(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request)
 		id := clientID + "-gamma"
 		source := mgr.Subscribe(id)
 		forwardSubscription(&wg, eventChan, stopChan, "gamma", source, func() {
-			mgr.Unsubscribe(id)
+			mgr.Unsubscribe(id, source)
 		}, mgr.GetState)
 	}
 
@@ -656,7 +691,7 @@ func handleSubscribe(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request)
 		id := clientID + "-theme-auto"
 		source := mgr.Subscribe(id)
 		forwardSubscription(&wg, eventChan, stopChan, "theme.auto", source, func() {
-			mgr.Unsubscribe(id)
+			mgr.Unsubscribe(id, source)
 		}, mgr.GetState)
 	}
 
@@ -665,7 +700,7 @@ func handleSubscribe(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request)
 		id := clientID + "-wallpaper"
 		source := mgr.Subscribe(id)
 		forwardSubscription(&wg, eventChan, stopChan, "wallpaper", source, func() {
-			mgr.Unsubscribe(id)
+			mgr.Unsubscribe(id, source)
 		}, mgr.GetState)
 	}
 
@@ -674,7 +709,7 @@ func handleSubscribe(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request)
 		id := clientID + "-bluetooth"
 		source := mgr.Subscribe(id)
 		forwardSubscription(&wg, eventChan, stopChan, "bluetooth", source, func() {
-			mgr.Unsubscribe(id)
+			mgr.Unsubscribe(id, source)
 		}, mgr.GetState)
 	}
 
@@ -696,7 +731,7 @@ func handleSubscribe(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request)
 		id := clientID + "-pairing"
 		source := mgr.SubscribePairing(id)
 		forwardSubscription(&wg, eventChan, stopChan, "bluetooth.pairing", source, func() {
-			mgr.UnsubscribePairing(id)
+			mgr.UnsubscribePairing(id, source)
 		}, nil)
 	}
 
@@ -705,7 +740,7 @@ func handleSubscribe(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request)
 		id := clientID + "-browser"
 		source := mgr.Subscribe(id)
 		forwardSubscription(&wg, eventChan, stopChan, "browser.open_requested", source, func() {
-			mgr.Unsubscribe(id)
+			mgr.Unsubscribe(id, source)
 		}, nil)
 	}
 
@@ -718,7 +753,7 @@ func handleSubscribe(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request)
 		id := clientID + "-tailscale"
 		source := mgr.Subscribe(id)
 		forwardSubscription(&wg, eventChan, stopChan, "tailscale", source, func() {
-			mgr.Unsubscribe(id)
+			mgr.Unsubscribe(id, source)
 		}, mgr.GetState)
 	}
 
@@ -729,10 +764,10 @@ func handleSubscribe(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request)
 		states := mgr.Subscribe(stateID)
 		updates := mgr.SubscribeUpdates(updateID)
 		forwardSubscription(&wg, eventChan, stopChan, "brightness", states, func() {
-			mgr.Unsubscribe(stateID)
+			mgr.Unsubscribe(stateID, states)
 		}, mgr.GetState)
 		forwardSubscription(&wg, eventChan, stopChan, "brightness.update", updates, func() {
-			mgr.UnsubscribeUpdates(updateID)
+			mgr.UnsubscribeUpdates(updateID, updates)
 		}, nil)
 	}
 
@@ -741,7 +776,7 @@ func handleSubscribe(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request)
 		id := clientID + "-wlroutput"
 		source := mgr.Subscribe(id)
 		forwardSubscription(&wg, eventChan, stopChan, "wlroutput", source, func() {
-			mgr.Unsubscribe(id)
+			mgr.Unsubscribe(id, source)
 		}, mgr.GetState)
 	}
 
@@ -750,7 +785,16 @@ func handleSubscribe(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request)
 		id := clientID + "-evdev"
 		source := mgr.Subscribe(id)
 		forwardSubscription(&wg, eventChan, stopChan, "evdev", source, func() {
-			mgr.Unsubscribe(id)
+			mgr.Unsubscribe(id, source)
+		}, mgr.GetState)
+	}
+
+	if shouldSubscribe("rfkill") && rfkillManager != nil {
+		mgr := rfkillManager
+		id := clientID + "-rfkill"
+		source := mgr.Subscribe(id)
+		forwardSubscription(&wg, eventChan, stopChan, "rfkill", source, func() {
+			mgr.Unsubscribe(id, source)
 		}, mgr.GetState)
 	}
 
@@ -759,7 +803,7 @@ func handleSubscribe(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request)
 		id := clientID + "-clipboard"
 		source := mgr.Subscribe(id)
 		forwardSubscription(&wg, eventChan, stopChan, "clipboard", source, func() {
-			mgr.Unsubscribe(id)
+			mgr.Unsubscribe(id, source)
 		}, mgr.GetState)
 	}
 
@@ -768,7 +812,7 @@ func handleSubscribe(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request)
 		id := clientID + "-location"
 		source := mgr.Subscribe(id)
 		forwardSubscription(&wg, eventChan, stopChan, "location", source, func() {
-			mgr.Unsubscribe(id)
+			mgr.Unsubscribe(id, source)
 		}, mgr.GetState)
 	}
 
@@ -777,7 +821,7 @@ func handleSubscribe(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request)
 		id := clientID + "-wellbeing"
 		source := mgr.Subscribe(id)
 		forwardSubscription(&wg, eventChan, stopChan, "wellbeing", source, func() {
-			mgr.Unsubscribe(id)
+			mgr.Unsubscribe(id, source)
 		}, mgr.Snapshot)
 	}
 
@@ -786,7 +830,16 @@ func handleSubscribe(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request)
 		id := clientID + "-sysupdate"
 		source := mgr.Subscribe(id)
 		forwardSubscription(&wg, eventChan, stopChan, "sysupdate", source, func() {
-			mgr.Unsubscribe(id)
+			mgr.Unsubscribe(id, source)
+		}, mgr.GetState)
+	}
+
+	if shouldSubscribe("globalshortcuts") && globalShortcutsManager != nil {
+		mgr := globalShortcutsManager
+		id := clientID + "-globalshortcuts"
+		source := mgr.Subscribe(id)
+		forwardSubscription(&wg, eventChan, stopChan, "globalshortcuts", source, func() {
+			mgr.Unsubscribe(id, source)
 		}, mgr.GetState)
 	}
 
@@ -794,7 +847,7 @@ func handleSubscribe(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request)
 		id := clientID + "-files"
 		source := filesEvents.Subscribe(id)
 		forwardSubscription(&wg, eventChan, stopChan, "files", source, func() {
-			filesEvents.Unsubscribe(id)
+			filesEvents.Unsubscribe(id, source)
 		}, nil)
 	}
 
@@ -858,7 +911,7 @@ func subscribeCups(wg *sync.WaitGroup, events chan<- ServiceEvent, stop <-chan s
 	id := clientID + "-cups"
 	states := mgr.Subscribe(id)
 	forwardSubscription(wg, events, stop, "cups", states, func() {
-		mgr.Unsubscribe(id)
+		mgr.Unsubscribe(id, states)
 		releaseCupsSubscriber()
 	}, mgr.GetState)
 }
@@ -897,6 +950,9 @@ func cleanupManagers() {
 	if evdevManager != nil {
 		evdevManager.Close()
 	}
+	if rfkillManager != nil {
+		rfkillManager.Close()
+	}
 	if clipboardManager != nil {
 		clipboardManager.Close()
 	}
@@ -926,6 +982,12 @@ func cleanupManagers() {
 	}
 	if wellbeingManager != nil {
 		wellbeingManager.Close()
+	}
+	if globalShortcutsProvider != nil {
+		globalShortcutsProvider.Close()
+	}
+	if globalShortcutsManager != nil {
+		globalShortcutsManager.Close()
 	}
 	if geoClientInstance != nil {
 		geoClientInstance.Close()
@@ -1011,7 +1073,8 @@ func (s *Server) Serve(printDocs bool) error {
 		log.Info(" network.getState            - Get current network state")
 		log.Info(" network.wifi.scan           - Scan for WiFi networks (params: device?)")
 		log.Info(" network.wifi.networks       - Get WiFi network list")
-		log.Info(" network.wifi.connect        - Connect to WiFi (params: ssid, password?, username?, device?, eapMethod?, phase2Auth?, caCertPath?, clientCertPath?, privateKeyPath?, useSystemCACerts?)")
+		log.Info(" network.wifi.connect        - Connect to WiFi (params: ssid, password?, device?, hidden?, interactive?, security?, enterprise?, saveOnly?)")
+		log.Info(" network.eapconfig.parse     - Parse an eduroam .eap-config file (params: file)")
 		log.Info(" network.wifi.disconnect     - Disconnect WiFi (params: device?)")
 		log.Info(" network.wifi.forget         - Forget network (params: ssid)")
 		log.Info(" network.wifi.toggle         - Toggle WiFi radio")
@@ -1021,6 +1084,21 @@ func (s *Server) Serve(printDocs bool) error {
 		log.Info(" network.ethernet.connect    - Connect Ethernet")
 		log.Info(" network.ethernet.connect.config - Connect Ethernet to a specific configuration")
 		log.Info(" network.ethernet.disconnect - Disconnect Ethernet")
+		log.Info(" network.connection.list     - List saved connection profiles")
+		log.Info(" network.connection.get      - Get a profile's settings (params: uuid, secrets?)")
+		log.Info(" network.connection.update   - Patch a profile's settings (params: uuid, settings, persist?, enterprise?)")
+		log.Info(" network.connection.add      - Create a profile (params: settings, persist?, enterprise?)")
+		log.Info(" network.connection.activate - Activate a saved profile (params: uuid, device?)")
+		log.Info(" network.connection.deactivate - Deactivate a profile (params: uuid)")
+		log.Info(" network.connection.getEnterprise - Get a profile's 802.1X config, without secrets (params: uuid)")
+		log.Info(" network.connection.firewallZones - List firewalld zones")
+		log.Info(" network.connection.delete   - Delete a saved profile (params: uuid)")
+		log.Info(" network.connection.duplicate - Duplicate a profile (params: uuid, name)")
+		log.Info(" network.connection.export   - Export a WireGuard or VPN profile to a file (params: uuid, file)")
+		log.Info(" network.wireguard.keys      - Generate a WireGuard key pair, or derive the public key (params: privateKey?)")
+		log.Info(" network.connectivity.check - Probe connectivity now (NetworkManager)")
+		log.Info(" network.connectivity.setCheckEnabled - Enable or disable connectivity checking (params: enabled)")
+		log.Info(" network.hotspot.configure - Configure the hotspot (params: ssid, password?, device?, band?, channel?, address?)")
 		log.Info(" network.cellular.connect    - Connect Cellular")
 		log.Info(" network.cellular.connect.config - Connect Cellular to a specific configuration (params: uuid)")
 		log.Info(" network.cellular.disconnect - Disconnect Cellular (params: device?)")
@@ -1170,6 +1248,12 @@ func (s *Server) Serve(printDocs bool) error {
 		log.Info(" wellbeing.setLimits                    - Set daily and per-app limits in seconds (params: daily?, apps?)")
 		log.Info(" wellbeing.summary                      - Per-day screen time ending today (params: days?)")
 		log.Info(" wellbeing.clear                        - Delete the screen time history")
+		log.Info("Global shortcuts:")
+		log.Info(" globalshortcuts.getState               - Apps with saved shortcuts and pending prompts")
+		log.Info(" globalshortcuts.submit                 - Answer a prompt (params: token, shortcuts [{id, triggers}])")
+		log.Info(" globalshortcuts.cancel                 - Deny a prompt (params: token)")
+		log.Info(" globalshortcuts.setTriggers            - Change one saved shortcut (params: appId, id, triggers)")
+		log.Info(" globalshortcuts.remove                 - Forget an app's shortcuts (params: appId)")
 		log.Info("")
 	}
 	log.Info("Initializing managers...")
@@ -1241,7 +1325,7 @@ func (s *Server) Serve(printDocs bool) error {
 		}
 
 		ch := loginctlManager.Subscribe("dms-lock-bridge")
-		defer loginctlManager.Unsubscribe("dms-lock-bridge")
+		defer loginctlManager.Unsubscribe("dms-lock-bridge", ch)
 
 		initial := loginctlManager.GetState()
 		lastLocked := initial.Locked
@@ -1379,6 +1463,14 @@ func (s *Server) Serve(printDocs bool) error {
 	}()
 
 	go func() {
+		if err := InitializeRfkillManager(); err != nil {
+			log.Debugf("Rfkill manager unavailable: %v", err)
+		} else {
+			notifyCapabilityChange()
+		}
+	}()
+
+	go func() {
 		if err := InitializeClipboardManager(); err != nil {
 			log.Warnf("Clipboard manager unavailable: %v", err)
 		}
@@ -1399,6 +1491,17 @@ func (s *Server) Serve(printDocs bool) error {
 	go func() {
 		if err := InitializeNotifyActionsManager(); err != nil {
 			log.Warnf("Notification action manager unavailable: %v", err)
+		}
+	}()
+
+	go func() {
+		switch err := InitializeGlobalShortcutsManager(); {
+		case err == nil:
+			notifyCapabilityChange()
+		case errors.Is(err, globalshortcuts.ErrNoGrabSupport):
+			log.Debugf("Global shortcuts manager unavailable: %v", err)
+		default:
+			log.Warnf("Global shortcuts manager unavailable: %v", err)
 		}
 	}()
 

@@ -7,6 +7,7 @@ QtObject {
     required property var config
     property string kind: "bar"
     property var centerSection: null
+    property var islandController: null
     readonly property string configId: config?.id ?? ""
     property var screen: host?.screen ?? null
     readonly property var hostWindow: host?.hostWindow ?? null

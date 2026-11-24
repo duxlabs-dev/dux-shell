@@ -1,24 +1,10 @@
 package freedesktop
 
 import (
-	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
-
-func TestManager_Close(t *testing.T) {
-	manager := &Manager{
-		state:       &FreedeskState{},
-		stateMutex:  sync.RWMutex{},
-		systemConn:  nil,
-		sessionConn: nil,
-	}
-
-	assert.NotPanics(t, func() {
-		manager.Close()
-	})
-}
 
 func TestManager_SelfEcho_ConsumesRegisteredWrites(t *testing.T) {
 	manager := &Manager{state: &FreedeskState{}}

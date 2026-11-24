@@ -14,6 +14,7 @@ QtObject {
 
     property int columns: CcMetrics.gridColumns
     property int maximumRows: CcMetrics.rowCapFor(CcMetrics.fallbackScreenHeight)
+    property var prepareLayout: null
     property var builtinInstances: ({})
     readonly property var _pluginWidgetsCache: ({})
 
@@ -33,6 +34,10 @@ QtObject {
         {
             "id": "builtin_display_profiles",
             "component": displayProfilesComponent
+        },
+        {
+            "id": "builtin_config_profiles",
+            "component": configProfilesComponent
         }
     ]
 
@@ -47,6 +52,9 @@ QtObject {
     }
     readonly property Component displayProfilesComponent: Component {
         DisplayProfilesWidget {}
+    }
+    readonly property Component configProfilesComponent: Component {
+        ConfigProfilesWidget {}
     }
 
     readonly property Instantiator builtinLoaders: Instantiator {
@@ -75,6 +83,9 @@ QtObject {
     }
     readonly property Component bluetoothTile: Component {
         BluetoothTile {}
+    }
+    readonly property Component airplaneModeTile: Component {
+        AirplaneModeTile {}
     }
     readonly property Component audioOutputTile: Component {
         AudioDeviceTile {}
@@ -111,6 +122,9 @@ QtObject {
     readonly property Component actionTile: Component {
         ActionTile {}
     }
+    readonly property Component spacerTile: Component {
+        SpacerTile {}
+    }
     readonly property Component runningAppsTile: Component {
         RunningAppsTile {}
     }
@@ -146,6 +160,8 @@ QtObject {
             return networkTile;
         case "bluetooth":
             return bluetoothTile;
+        case "airplaneMode":
+            return airplaneModeTile;
         case "audioOutput":
             return audioOutputTile;
         case "audioInput":
@@ -181,6 +197,8 @@ QtObject {
             return runningAppsTile;
         case "quickTiles":
             return quickTilesGroup;
+        case "spacer":
+            return spacerTile;
         default:
             return null;
         }
@@ -205,7 +223,7 @@ QtObject {
             "description": I18n.tr("Profile"),
             "icon": "person",
             "type": "info",
-            "category": "user",
+            "category": "system",
             "enabled": true
         },
         {
@@ -239,7 +257,7 @@ QtObject {
             "id": "edit",
             "text": I18n.tr("Edit"),
             "description": I18n.tr("Edit widgets"),
-            "icon": "edit",
+            "icon": "dashboard_2_edit",
             "type": "action",
             "category": "system",
             "enabled": true
@@ -258,6 +276,16 @@ QtObject {
             "text": I18n.tr("Quick tiles", "control center widget that holds small tiles in one row"),
             "description": I18n.tr("Drag small tiles in to group them", "control center quick tiles widget description"),
             "icon": "view_module",
+            "type": "action",
+            "category": "system",
+            "enabled": true,
+            "allowMultiple": true
+        },
+        {
+            "id": "spacer",
+            "text": I18n.tr("Spacer"),
+            "description": I18n.tr("Empty space"),
+            "icon": "crop_free",
             "type": "action",
             "category": "system",
             "enabled": true,
@@ -319,6 +347,16 @@ QtObject {
             "category": "network",
             "enabled": BluetoothService.available,
             "warning": !BluetoothService.available ? I18n.tr("Bluetooth not available") : undefined
+        },
+        {
+            "id": "airplaneMode",
+            "text": I18n.tr("Airplane mode"),
+            "description": I18n.tr("Disable wireless radios"),
+            "icon": "airplanemode_active",
+            "type": "toggle",
+            "category": "network",
+            "enabled": DMSService.rfkillAvailable,
+            "warning": !DMSService.rfkillAvailable ? I18n.tr("No wireless devices available") : undefined
         },
         {
             "id": "audioOutput",
@@ -439,6 +477,16 @@ QtObject {
             "category": "display",
             "enabled": true,
             "isBuiltinPlugin": true
+        },
+        {
+            "id": "builtin_config_profiles",
+            "text": I18n.tr("Profiles"),
+            "description": I18n.tr("Switch between saved setups", "control center widget description for config profiles"),
+            "icon": "style",
+            "type": "builtin_plugin",
+            "category": "system",
+            "enabled": true,
+            "isBuiltinPlugin": true
         }
     ]
 
@@ -497,16 +545,33 @@ QtObject {
         return baseWidgetDefinitions.find(w => w.id === widgetId);
     }
 
-    function addWidget(widgetId) {
-        WidgetUtils.addWidget(widgetId, columns);
+    function addWidget(widgetId, col, row, page, room) {
+        return WidgetUtils.addWidget(widgetId, columns, col, row, undefined, page, room, prepareLayout);
+    }
+
+    // `placedItems` is the grid's layout with the new tile's slot removed; the caller passes it through withHidden().
+    function addWidgetAt(widgetId, col, row, placedItems, page, size) {
+        WidgetUtils.addWidget(widgetId, columns, col, row, placedItems, page, undefined, prepareLayout, size);
     }
 
     function removeWidget(index) {
         WidgetUtils.removeWidget(index);
     }
 
+    function moveToPage(index, page, base, cell) {
+        WidgetUtils.moveToPage(index, page, base, cell);
+    }
+
+    function isTileShown(widget) {
+        return WidgetUtils.isShown(widget) && componentForWidget(widget) !== null;
+    }
+
+    function compactPages() {
+        WidgetUtils.compactPages(isTileShown);
+    }
+
     function setLayout(widgets) {
-        WidgetUtils.setLayout(widgets);
+        WidgetUtils.setLayout(prepareLayout ? prepareLayout(widgets) : widgets);
     }
 
     function setOption(index, key, value) {

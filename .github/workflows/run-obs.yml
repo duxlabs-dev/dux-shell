@@ -133,6 +133,13 @@ jobs:
             [[ "$OWNERS" == all || "$OWNERS" == "$OWNER" ]] || continue
             echo "==> $OWNER ($PROJECT)"
             plan_owner "$PROJECT"
+            # The legacy AvengeMedia projects are deprecated: stable dms only, dms-git stays frozen there
+            if [[ "$OWNER" == avengemedia ]]; then
+              case "$OWNER_PACKAGES" in
+                all) OWNER_PACKAGES="dms" ;;
+                dms-git) OWNER_PACKAGES="" ;;
+              esac
+            fi
             if [[ -z "$OWNER_PACKAGES" ]]; then
               echo "✓ $OWNER: all packages up to date"
               continue
@@ -174,15 +181,16 @@ jobs:
       - name: Determine packages to update
         id: packages
         run: |
+          STEP_OUT=$(mktemp)
           # Use check-updates outputs when available
           if [[ -n "${{ needs.check-updates.outputs.version }}" ]]; then
             # Use version from check-updates job
-            echo "packages=${{ matrix.packages }}" >> $GITHUB_OUTPUT
-            echo "version=${{ needs.check-updates.outputs.version }}" >> $GITHUB_OUTPUT
+            echo "packages=${{ matrix.packages }}" >> "$STEP_OUT"
+            echo "version=${{ needs.check-updates.outputs.version }}" >> "$STEP_OUT"
             echo "Using version from check-updates: ${{ needs.check-updates.outputs.version }}"
           elif [[ "${{ github.event_name }}" == "schedule" ]]; then
             # Scheduled run - dms-git only
-            echo "packages=${{ matrix.packages }}" >> $GITHUB_OUTPUT
+            echo "packages=${{ matrix.packages }}" >> "$STEP_OUT"
             echo "Triggered by schedule: updating git package"
           elif [[ -n "${{ github.event.inputs.package }}" ]]; then
             # Manual workflow dispatch
@@ -192,7 +200,7 @@ jobs:
             if [[ "${{ github.event.inputs.package }}" == "dms" ]] || [[ "${{ github.event.inputs.package }}" == "all" ]]; then
               LATEST_TAG=$(curl -sL https://api.github.com/repos/duxlabs-dev/dux-shell/releases/latest | grep '"tag_name"' | sed 's/.*"tag_name": "\([^"]*\)".*/\1/' || echo "")
               if [[ -n "$LATEST_TAG" ]]; then
-                echo "version=$LATEST_TAG" >> $GITHUB_OUTPUT
+                echo "version=$LATEST_TAG" >> "$STEP_OUT"
                 echo "Using latest release from API: $LATEST_TAG"
               else
                 echo "ERROR: Could not fetch latest release from API"
@@ -202,19 +210,24 @@ jobs:
 
             # Use filtered packages from check-updates when package="all" and no rebuild/tag specified
             if [[ "${{ github.event.inputs.package }}" == "all" ]] && [[ -z "${{ github.event.inputs.rebuild_release }}" ]] && [[ ! "${{ github.ref }}" =~ ^refs/tags/ ]]; then
-              echo "packages=${{ matrix.packages }}" >> $GITHUB_OUTPUT
+              echo "packages=${{ matrix.packages }}" >> "$STEP_OUT"
               echo "Manual trigger: all (filtered to: ${{ matrix.packages }})"
             else
-              echo "packages=${{ github.event.inputs.package }}" >> $GITHUB_OUTPUT
+              echo "packages=${{ github.event.inputs.package }}" >> "$STEP_OUT"
               echo "Manual trigger: ${{ github.event.inputs.package }}"
             fi
           else
-            echo "packages=${{ matrix.packages }}" >> $GITHUB_OUTPUT
+            echo "packages=${{ matrix.packages }}" >> "$STEP_OUT"
             if [[ -n "${{ needs.check-updates.outputs.version }}" ]]; then
-              echo "version=${{ needs.check-updates.outputs.version }}" >> $GITHUB_OUTPUT
+              echo "version=${{ needs.check-updates.outputs.version }}" >> "$STEP_OUT"
             fi
           fi
 
+          # The legacy AvengeMedia projects are deprecated: never upload dms-git there
+          if [[ "${{ matrix.owner }}" == avengemedia ]]; then
+            sed -i -E '/^packages=/{s/^packages=all$/packages=dms/; s/^packages=dms-git$/packages=/}' "$STEP_OUT"
+          fi
+          cat "$STEP_OUT" >> "$GITHUB_OUTPUT"
       - name: Update dms-git spec version
         if: contains(steps.packages.outputs.packages, 'dms-git')
         run: |

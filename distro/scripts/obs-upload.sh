@@ -70,6 +70,8 @@ fi
 OBS_BASE_PROJECT="${OBS_BASE_PROJECT:-home:AvengeMedia}"
 OBS_BASE="$HOME/.cache/osc-checkouts"
 AVAILABLE_PACKAGES=(dms dms-git)
+# The legacy AvengeMedia projects are deprecated: stable dms only, dms-git stays frozen there
+[[ "$OBS_BASE_PROJECT" == "home:AvengeMedia" ]] && AVAILABLE_PACKAGES=(dms)
 
 if [[ -z "$PACKAGE" ]]; then
     echo "Available packages:"
@@ -314,6 +316,11 @@ dms-git)
 esac
 
 OBS_PROJECT="${OBS_BASE_PROJECT}:${PROJECT}"
+
+if [[ "$OBS_BASE_PROJECT" == "home:AvengeMedia" && "$PACKAGE" == "dms-git" ]]; then
+    echo "Error: dms-git is not published to $OBS_BASE_PROJECT"
+    exit 1
+fi
 
 echo "==> Target: $OBS_PROJECT / $PACKAGE"
 

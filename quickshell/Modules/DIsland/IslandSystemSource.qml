@@ -13,6 +13,13 @@ QtObject {
     // Off: system levels and state changes keep their OSDs and only the face's own controls open this activity.
     property bool enabled: true
     property bool chargingPulseEnabled: true
+    readonly property bool airplaneMode: DMSService.airplaneMode
+    property bool _airplaneModeInitialized: false
+
+    onAirplaneModeChanged: {
+        if (root.enabled && _airplaneModeInitialized && DMSService.rfkillStateInitialized && SettingsData.osdAirplaneModeEnabled)
+            root.show("airplanemode");
+    }
 
     readonly property bool volumeActivity: kind === "volume"
     readonly property bool micActivity: kind === "mic"
@@ -57,10 +64,14 @@ QtObject {
             return I18n.tr("Brightness", "island system face: brightness title");
         case "capslock":
             return I18n.tr("Caps lock", "island system face: caps lock title");
+        case "airplanemode":
+            return I18n.tr("Airplane mode", "island system face: airplane mode title");
         case "powerprofile":
             return I18n.tr("Power profile", "island system face: power profile title");
         case "idleinhibitor":
             return I18n.tr("Idle inhibitor", "island system face: idle inhibitor title");
+        case "dnd":
+            return I18n.tr("Do not disturb");
         case "charging":
             return BatteryService.isPluggedIn ? I18n.tr("Plugged in", "island system face: power connected title") : I18n.tr("Discharging", "island system face: power disconnected title");
         }
@@ -71,10 +82,14 @@ QtObject {
         switch (kind) {
         case "capslock":
             return DMSService.capsLockState ? I18n.tr("On") : I18n.tr("Off");
+        case "airplanemode":
+            return DMSService.airplaneMode ? I18n.tr("On") : I18n.tr("Off");
         case "powerprofile":
             return Theme.getPowerProfileLabel(PowerProfileWatcher.currentProfile);
         case "idleinhibitor":
             return SessionService.idleInhibited ? I18n.tr("On") : I18n.tr("Off");
+        case "dnd":
+            return SessionData.doNotDisturb ? I18n.tr("On") : I18n.tr("Off");
         case "charging":
             return root.chargingValue();
         }
@@ -90,10 +105,14 @@ QtObject {
             return BrightnessService.brightnessIconName(brightnessDevice, value);
         case "capslock":
             return DMSService.capsLockState ? "shift_lock" : "shift_lock_off";
+        case "airplanemode":
+            return DMSService.airplaneMode ? "airplanemode_active" : "airplanemode_inactive";
         case "powerprofile":
             return Theme.getPowerProfileIcon(PowerProfileWatcher.currentProfile);
         case "idleinhibitor":
             return "local_cafe";
+        case "dnd":
+            return SessionData.doNotDisturb ? "notifications_off" : "notifications";
         case "charging":
             return BatteryService.getBatteryIcon();
         }
@@ -109,6 +128,8 @@ QtObject {
             return "battery";
         case "idleinhibitor":
             return "idleInhibitor";
+        case "dnd":
+            return "doNotDisturb";
         }
         return "";
     }
@@ -234,6 +255,16 @@ QtObject {
         }
     }
 
+    property Connections dndConnection: Connections {
+        target: SessionData
+        enabled: root.enabled
+
+        function onDoNotDisturbChanged() {
+            if (SettingsData.osdDoNotDisturbEnabled)
+                root.show("dnd");
+        }
+    }
+
     property Connections batteryConnection: Connections {
         target: BatteryService
         enabled: root.enabled
@@ -243,4 +274,6 @@ QtObject {
                 root.show("charging");
         }
     }
+
+    Component.onCompleted: _airplaneModeInitialized = true
 }

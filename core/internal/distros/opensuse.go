@@ -3,9 +3,7 @@ package distros
 import (
 	"context"
 	"fmt"
-	"os"
 	"os/exec"
-	"path/filepath"
 	"slices"
 	"strings"
 
@@ -74,7 +72,7 @@ func (o *OpenSUSEDistribution) DetectDependenciesWithTerminal(ctx context.Contex
 	// Common detections using base methods
 	dependencies = append(dependencies, o.detectGit())
 	dependencies = append(dependencies, o.detectWindowManager(wm))
-	dependencies = append(dependencies, o.detectQuickshell())
+	dependencies = append(dependencies, o.detectDuxQtBase())
 	dependencies = append(dependencies, o.detectGreeterPackage(o.packageInstalled))
 	dependencies = append(dependencies, o.detectXDGPortal())
 	dependencies = append(dependencies, o.detectAccountsService())
@@ -288,7 +286,7 @@ func (o *OpenSUSEDistribution) GetPackageMappingWithVariants(wm deps.WindowManag
 
 		// DMS packages from OBS
 		"dms (Dux Shell)": o.getDmsMapping(variants["dms (Dux Shell)"]),
-		"quickshell":      o.getQuickshellMapping(variants["quickshell"]),
+		"dux-qt-base":     {Name: "libdux-qt-base0", Repository: RepoTypeOBS, RepoURL: obsDeps},
 		"dux-greeter":     variantMapping("dux-greeter", variants["dux-greeter"], RepoTypeOBS, obsDeps),
 		"ghostty":         {Name: "ghostty", Repository: RepoTypeOBS, RepoURL: obsDeps},
 		"matugen":         {Name: "matugen", Repository: RepoTypeOBS, RepoURL: obsDeps},
@@ -318,13 +316,6 @@ func (o *OpenSUSEDistribution) getDmsMapping(variant deps.PackageVariant) Packag
 		return PackageMapping{Name: "dms-git", Repository: RepoTypeOBS, RepoURL: obsDMSGit}
 	}
 	return PackageMapping{Name: "dms", Repository: RepoTypeOBS, RepoURL: obsDMS}
-}
-
-func (o *OpenSUSEDistribution) getQuickshellMapping(variant deps.PackageVariant) PackageMapping {
-	if forceQuickshellGit || variant == deps.VariantGit {
-		return PackageMapping{Name: "quickshell-git", Repository: RepoTypeOBS, RepoURL: obsDeps}
-	}
-	return PackageMapping{Name: "quickshell", Repository: RepoTypeOBS, RepoURL: obsDeps}
 }
 
 func (o *OpenSUSEDistribution) getNiriMapping(variant deps.PackageVariant) PackageMapping {
@@ -821,132 +812,6 @@ func (o *OpenSUSEDistribution) installZypperPackages(ctx context.Context, packag
 	return nil
 }
 
-func (o *OpenSUSEDistribution) installQuickshell(ctx context.Context, variant deps.PackageVariant, sudoPassword string, progressChan chan<- InstallProgressMsg) error {
-	o.log("Installing quickshell from source (with openSUSE-specific build flags)...")
-
-	homeDir := os.Getenv("HOME")
-	if homeDir == "" {
-		return fmt.Errorf("HOME environment variable not set")
-	}
-
-	cacheDir := filepath.Join(homeDir, ".cache", "duxinstall")
-	if err := os.MkdirAll(cacheDir, 0o755); err != nil {
-		return fmt.Errorf("failed to create cache directory: %w", err)
-	}
-
-	tmpDir := filepath.Join(cacheDir, "quickshell-build")
-	if err := os.MkdirAll(tmpDir, 0o755); err != nil {
-		return fmt.Errorf("failed to create temp directory: %w", err)
-	}
-	defer os.RemoveAll(tmpDir)
-
-	progressChan <- InstallProgressMsg{
-		Phase:       PhaseSystemPackages,
-		Progress:    0.1,
-		Step:        "Cloning quickshell repository...",
-		IsComplete:  false,
-		CommandInfo: "git clone https://github.com/quickshell-mirror/quickshell.git",
-	}
-
-	var cloneCmd *exec.Cmd
-	if forceQuickshellGit || variant == deps.VariantGit {
-		cloneCmd = exec.CommandContext(ctx, "git", "clone", "https://github.com/quickshell-mirror/quickshell.git", tmpDir)
-	} else {
-		latestTag := o.getLatestQuickshellTag(ctx)
-		if latestTag != "" {
-			o.log(fmt.Sprintf("Using latest quickshell tag: %s", latestTag))
-			cloneCmd = exec.CommandContext(ctx, "git", "clone", "--branch", latestTag, "https://github.com/quickshell-mirror/quickshell.git", tmpDir)
-		} else {
-			o.log("Warning: failed to fetch latest tag, using default branch")
-			cloneCmd = exec.CommandContext(ctx, "git", "clone", "https://github.com/quickshell-mirror/quickshell.git", tmpDir)
-		}
-	}
-	if err := cloneCmd.Run(); err != nil {
-		return fmt.Errorf("failed to clone quickshell: %w", err)
-	}
-
-	buildDir := tmpDir + "/build"
-	if err := os.MkdirAll(buildDir, 0o755); err != nil {
-		return fmt.Errorf("failed to create build directory: %w", err)
-	}
-
-	progressChan <- InstallProgressMsg{
-		Phase:       PhaseSystemPackages,
-		Progress:    0.3,
-		Step:        "Configuring quickshell build (with openSUSE flags)...",
-		IsComplete:  false,
-		CommandInfo: "cmake -B build -S . -G Ninja",
-	}
-
-	// Get optflags from rpm
-	optflagsCmd := exec.CommandContext(ctx, "rpm", "--eval", "%{optflags}")
-	optflagsOutput, err := optflagsCmd.Output()
-	optflags := strings.TrimSpace(string(optflagsOutput))
-	if err != nil || optflags == "" {
-		o.log("Warning: Could not get optflags from rpm, using default -O2 -g")
-		optflags = "-O2 -g"
-	}
-
-	// Set openSUSE-specific CFLAGS
-	customCFLAGS := fmt.Sprintf("%s -I/usr/include/wayland", optflags)
-
-	configureCmd := exec.CommandContext(ctx, "cmake", "-GNinja", "-B", "build",
-		"-DCMAKE_BUILD_TYPE=RelWithDebInfo",
-		"-DCRASH_REPORTER=off",
-		"-DCMAKE_CXX_STANDARD=20")
-	configureCmd.Dir = tmpDir
-	configureCmd.Env = append(os.Environ(),
-		"TMPDIR="+cacheDir,
-		"CFLAGS="+customCFLAGS,
-		"CXXFLAGS="+customCFLAGS)
-
-	o.log(fmt.Sprintf("Using CFLAGS: %s", customCFLAGS))
-
-	output, err := configureCmd.CombinedOutput()
-	if err != nil {
-		o.log(fmt.Sprintf("cmake configure failed. Output:\n%s", string(output)))
-		return fmt.Errorf("failed to configure quickshell: %w\nCMake output:\n%s", err, string(output))
-	}
-
-	o.log(fmt.Sprintf("cmake configure successful. Output:\n%s", string(output)))
-
-	progressChan <- InstallProgressMsg{
-		Phase:       PhaseSystemPackages,
-		Progress:    0.4,
-		Step:        "Building quickshell (this may take a while)...",
-		IsComplete:  false,
-		CommandInfo: "cmake --build build",
-	}
-
-	buildCmd := exec.CommandContext(ctx, "cmake", "--build", "build")
-	buildCmd.Dir = tmpDir
-	buildCmd.Env = append(os.Environ(),
-		"TMPDIR="+cacheDir,
-		"CFLAGS="+customCFLAGS,
-		"CXXFLAGS="+customCFLAGS)
-	if err := o.runWithProgressStep(buildCmd, progressChan, PhaseSystemPackages, 0.4, 0.8, "Building quickshell..."); err != nil {
-		return fmt.Errorf("failed to build quickshell: %w", err)
-	}
-
-	progressChan <- InstallProgressMsg{
-		Phase:       PhaseSystemPackages,
-		Progress:    0.8,
-		Step:        "Installing quickshell...",
-		IsComplete:  false,
-		NeedsSudo:   true,
-		CommandInfo: "sudo cmake --install build",
-	}
-
-	installCmd := privesc.ExecCommand(ctx, sudoPassword, "cmake --install build")
-	installCmd.Dir = tmpDir
-	if err := installCmd.Run(); err != nil {
-		return fmt.Errorf("failed to install quickshell: %w", err)
-	}
-
-	o.log("quickshell installed successfully from source")
-	return nil
-}
-
 func (o *OpenSUSEDistribution) installRust(ctx context.Context, sudoPassword string, progressChan chan<- InstallProgressMsg) error {
 	if o.commandExists("cargo") {
 		return nil
@@ -1003,15 +868,8 @@ func (o *OpenSUSEDistribution) InstallManualPackages(ctx context.Context, packag
 	}
 
 	for _, pkg := range packages {
-		variant := variantMap[pkg]
-		if pkg == "quickshell" {
-			if err := o.installQuickshell(ctx, variant, sudoPassword, progressChan); err != nil {
-				return fmt.Errorf("failed to install quickshell: %w", err)
-			}
-		} else {
-			if err := o.ManualPackageInstaller.InstallManualPackages(ctx, []string{pkg}, variantMap, sudoPassword, progressChan); err != nil {
-				return fmt.Errorf("failed to install %s: %w", pkg, err)
-			}
+		if err := o.ManualPackageInstaller.InstallManualPackages(ctx, []string{pkg}, variantMap, sudoPassword, progressChan); err != nil {
+			return fmt.Errorf("failed to install %s: %w", pkg, err)
 		}
 	}
 

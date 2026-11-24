@@ -15,6 +15,8 @@ Rectangle {
 
     signal clicked(bool keyboard)
 
+    readonly property bool hovered: mouseArea.containsMouse
+
     activeFocusOnTab: enabled
     Accessible.role: Accessible.Button
     Accessible.name: title
@@ -45,7 +47,6 @@ Rectangle {
     property real bottomRadius: (active && Theme.shapeMorph) || isLastInGroup ? Theme.groupedListOuterRadius : SettingsMetrics.groupInnerRadius
 
     Behavior on topRadius {
-        enabled: Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
         NumberAnimation {
             duration: Theme.expressiveDurations.expressiveFastSpatial
             easing.type: Easing.BezierSpline
@@ -54,7 +55,6 @@ Rectangle {
     }
 
     Behavior on bottomRadius {
-        enabled: Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
         NumberAnimation {
             duration: Theme.expressiveDurations.expressiveFastSpatial
             easing.type: Easing.BezierSpline
@@ -72,16 +72,13 @@ Rectangle {
     border.width: SettingsMetrics.groupEdgeWidth
     border.color: Theme.outlineMedium
 
-    Rectangle {
-        x: Theme.spacingL
-        width: parent.width - Theme.spacingL * 2
-        height: Theme.dividerWidth
+    DDivider {
+        inset: Theme.spacingL
         visible: SettingsMetrics.continuousGroups && !root.isFirstInGroup && !root.active
         color: SettingsMetrics.groupDividerColor
     }
 
     Behavior on color {
-        enabled: Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
         ColorAnimation {
             duration: SettingsMetrics.fadeDuration
             easing.type: Easing.BezierSpline
@@ -99,7 +96,6 @@ Rectangle {
         opacity: mouseArea.pressed ? Theme.stateLayerPressed : focusRing.visible ? Theme.stateLayerFocus : (mouseArea.containsMouse || root.highlighted ? Theme.stateLayerHover : 0)
 
         Behavior on opacity {
-            enabled: Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
             NumberAnimation {
                 duration: SettingsMetrics.fadeDuration
                 easing.type: Easing.BezierSpline
@@ -128,7 +124,6 @@ Rectangle {
         color: root.badgeColor
 
         Behavior on color {
-            enabled: Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
             ColorAnimation {
                 duration: SettingsMetrics.fadeDuration
                 easing.type: Easing.BezierSpline

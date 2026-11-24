@@ -29,8 +29,6 @@ Variants {
 
         visible: root.contentReady && !root.surfaceBounce
 
-        updatesEnabled: root.renderActive || root._settleFrames > 0
-
         mask: Region {
             item: Item {}
         }
@@ -69,9 +67,6 @@ Variants {
 
             readonly property var backingWindow: Window.window
             readonly property bool showsBackdrop: !source || isColorSource || loadFailed
-            readonly property bool backdropBusy: showsBackdrop && !(backdropLoader.item?.ready ?? false)
-            readonly property bool renderActive: backdropBusy || liveActive || _freezeWaitFrames > 0
-            property int _settleFrames: 3
 
             readonly property int maxTextureSize: 8192
             readonly property int textureWidth: Math.min(modelData.width, maxTextureSize)
@@ -125,8 +120,6 @@ Variants {
                     return;
                 frozenLayer.scheduleUpdate();
                 _freezeWaitFrames = 3;
-                _settleFrames = 3;
-                // No wedge watchdog: an occluded surface may never produce frames, the freeze just waits
                 backingWindow?.update();
             }
 
@@ -145,52 +138,21 @@ Variants {
             onTextureHeightChanged: regenerate()
 
             function invalidate() {
-                _settleFrames = 3;
                 backingWindow?.update();
-                if (!_wedgeBounced)
-                    wedgeWatchdog.restart();
             }
 
-            onRenderActiveChanged: invalidate()
             onBackingWindowChanged: invalidate()
-
-            // Same wedge recovery as WallpaperBackground
-            property bool _wedgeBounced: false
-
-            Timer {
-                id: wedgeWatchdog
-                interval: 3000
-                repeat: false
-                onTriggered: {
-                    if (!root.backingWindow || !blurWallpaperWindow.visible || IdleService.isShellLocked)
-                        return;
-                    log.warn("no frame swapped on", modelData.name, "since last invalidate, re-attaching surface");
-                    root._wedgeBounced = true;
-                    surfaceReattach.restart();
-                }
-            }
-
-            Timer {
-                id: surfaceReattach
-                interval: 0
-                repeat: false
-                onTriggered: {
-                    root.surfaceBounce = true;
-                    Qt.callLater(() => {
-                        root.surfaceBounce = false;
-                    });
-                }
-            }
 
             Connections {
                 target: root.backingWindow
                 function onFrameSwapped() {
-                    if (root._settleFrames > 0)
-                        root._settleFrames--;
-                    root._wedgeBounced = false;
-                    wedgeWatchdog.stop();
-                    if (root._freezeWaitFrames > 0 && --root._freezeWaitFrames === 0)
+                    if (root._freezeWaitFrames <= 0)
+                        return;
+                    if (--root._freezeWaitFrames === 0) {
                         root.completeFreeze();
+                        return;
+                    }
+                    root.invalidate();
                 }
                 function onVisibleChanged() {
                     root.invalidate();

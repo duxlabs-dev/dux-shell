@@ -7,8 +7,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/duxlabs-dev/dux-go/syncmap"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/loginctl"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/pubsub"
 )
 
 type activeSchedule struct {
@@ -27,7 +27,7 @@ type Manager struct {
 	state      *State
 	stateMutex sync.RWMutex
 
-	subscribers syncmap.Map[string, chan State]
+	subscribers pubsub.Broker[State]
 
 	stopChan      chan struct{}
 	updateTrigger chan struct{}
@@ -76,15 +76,11 @@ func (m *Manager) GetState() State {
 }
 
 func (m *Manager) Subscribe(id string) chan State {
-	ch := make(chan State, 64)
-	m.subscribers.Store(id, ch)
-	return ch
+	return m.subscribers.Subscribe(id)
 }
 
-func (m *Manager) Unsubscribe(id string) {
-	if val, ok := m.subscribers.LoadAndDelete(id); ok {
-		close(val)
-	}
+func (m *Manager) Unsubscribe(id string, ch chan State) {
+	m.subscribers.Unsubscribe(id, ch)
 }
 
 func (m *Manager) SetConfig(config Config) {
@@ -123,17 +119,13 @@ func (m *Manager) Close() {
 		close(m.stopChan)
 	}
 	m.wg.Wait()
-	m.subscribers.Range(func(key string, ch chan State) bool {
-		close(ch)
-		m.subscribers.Delete(key)
-		return true
-	})
+	m.subscribers.Close()
 }
 
 func (m *Manager) WatchLoginctl(lm *loginctl.Manager) {
 	ch := lm.Subscribe("wallpaper")
 	m.wg.Go(func() {
-		defer lm.Unsubscribe("wallpaper")
+		defer lm.Unsubscribe("wallpaper", ch)
 		for {
 			select {
 			case <-m.stopChan:
@@ -265,14 +257,7 @@ func (m *Manager) setState(config Config, next time.Time, seq uint64, target str
 }
 
 func (m *Manager) notifySubscribers() {
-	state := m.GetState()
-	m.subscribers.Range(func(key string, ch chan State) bool {
-		select {
-		case ch <- state:
-		default:
-		}
-		return true
-	})
+	m.subscribers.Publish(m.GetState())
 }
 
 func (m *Manager) getConfig() Config {

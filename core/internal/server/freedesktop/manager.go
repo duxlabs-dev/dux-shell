@@ -2,6 +2,7 @@ package freedesktop
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"sync"
@@ -13,13 +14,16 @@ import (
 )
 
 func NewManager() (*Manager, error) {
-	systemConn, err := dbus.SystemBus()
-	if err != nil {
-		return nil, fmt.Errorf("failed to connect to system bus: %w", err)
+	systemConn, systemErr := dbus.SystemBus()
+	sessionConn, sessionErr := dbus.SessionBus()
+	if systemErr != nil && sessionErr != nil {
+		return nil, fmt.Errorf("failed to connect to system or session bus: %w", errors.Join(systemErr, sessionErr))
 	}
-
-	sessionConn, err := dbus.SessionBus()
-	if err != nil {
+	if systemErr != nil {
+		log.Warnf("Accounts service unavailable: %v", systemErr)
+		systemConn = nil
+	}
+	if sessionErr != nil {
 		sessionConn = nil
 	}
 
@@ -30,6 +34,7 @@ func NewManager() (*Manager, error) {
 			Screensaver: ScreensaverState{},
 		},
 		stateMutex:  sync.RWMutex{},
+		motionSeen:  map[string]motionSourceState{},
 		systemConn:  systemConn,
 		sessionConn: sessionConn,
 		currentUID:  uint64(os.Getuid()),
@@ -43,6 +48,13 @@ func NewManager() (*Manager, error) {
 }
 
 func (m *Manager) initializeAccounts() error {
+	if m.systemConn == nil {
+		m.stateMutex.Lock()
+		m.state.Accounts.Available = false
+		m.stateMutex.Unlock()
+		return fmt.Errorf("no system bus connection")
+	}
+
 	accountsManager := m.systemConn.Object(dbusAccountsDest, dbus.ObjectPath(dbusAccountsPath))
 
 	var userPath dbus.ObjectPath
@@ -95,6 +107,7 @@ func (m *Manager) initializeSettings() error {
 	if err := m.updateSettingsState(); err != nil {
 		return fmt.Errorf("failed to update settings state: %w", err)
 	}
+	m.readSystemMotion()
 
 	go m.watchSettingsChanges()
 
@@ -168,30 +181,38 @@ func (m *Manager) watchSettingsChanges() {
 
 		namespace, _ := sig.Body[0].(string)
 		key, _ := sig.Body[1].(string)
-		if namespace != "org.freedesktop.appearance" || key != "color-scheme" {
-			continue
-		}
-
 		variant, ok := sig.Body[2].(dbus.Variant)
 		if !ok {
 			continue
 		}
-		colorScheme, ok := dbusutil.As[uint32](variant)
-		if !ok {
+
+		if source, ok := findMotionSource(namespace, key); ok {
+			m.handleMotionChange(source, variant)
 			continue
 		}
-
-		selfInflicted := m.consumeSelfEcho(colorScheme)
-
-		m.stateMutex.Lock()
-		changed := m.state.Settings.ColorScheme != colorScheme || !m.state.Settings.Available
-		m.state.Settings.ColorScheme = colorScheme
-		m.state.Settings.Available = true
-		m.stateMutex.Unlock()
-
-		if changed && !selfInflicted {
-			m.NotifySubscribers()
+		if namespace != portalAppearanceNamespace || key != portalColorSchemeKey {
+			continue
 		}
+		m.handleColorSchemeChange(variant)
+	}
+}
+
+func (m *Manager) handleColorSchemeChange(variant dbus.Variant) {
+	colorScheme, ok := dbusutil.As[uint32](variant)
+	if !ok {
+		return
+	}
+
+	selfInflicted := m.consumeSelfEcho(colorScheme)
+
+	m.stateMutex.Lock()
+	changed := m.state.Settings.ColorScheme != colorScheme || !m.state.Settings.Available
+	m.state.Settings.ColorScheme = colorScheme
+	m.state.Settings.Available = true
+	m.stateMutex.Unlock()
+
+	if changed && !selfInflicted {
+		m.NotifySubscribers()
 	}
 }
 
@@ -273,40 +294,20 @@ func (m *Manager) GetState() FreedeskState {
 }
 
 func (m *Manager) Subscribe(id string) chan FreedeskState {
-	ch := make(chan FreedeskState, 64)
-	m.subscribers.Store(id, ch)
-	return ch
+	return m.subscribers.Subscribe(id)
 }
 
-func (m *Manager) Unsubscribe(id string) {
-	if val, ok := m.subscribers.LoadAndDelete(id); ok {
-		close(val)
-	}
+func (m *Manager) Unsubscribe(id string, ch chan FreedeskState) {
+	m.subscribers.Unsubscribe(id, ch)
 }
 
 func (m *Manager) NotifySubscribers() {
-	state := m.GetState()
-	m.subscribers.Range(func(key string, ch chan FreedeskState) bool {
-		select {
-		case ch <- state:
-		default:
-		}
-		return true
-	})
+	m.subscribers.PublishLatest(m.GetState())
 }
 
 func (m *Manager) Close() {
-	m.subscribers.Range(func(key string, ch chan FreedeskState) bool {
-		close(ch)
-		m.subscribers.Delete(key)
-		return true
-	})
-
-	m.screensaverSubscribers.Range(func(key string, ch chan ScreensaverState) bool {
-		close(ch)
-		m.screensaverSubscribers.Delete(key)
-		return true
-	})
+	m.subscribers.Close()
+	m.screensaverSubscribers.Close()
 
 	if m.sessionConn != nil {
 		m.sessionConn.RemoveMatchSignal(

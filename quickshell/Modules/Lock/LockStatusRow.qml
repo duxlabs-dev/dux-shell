@@ -3,6 +3,7 @@ import QtQuick.Window
 import Quickshell.Services.Mpris
 import qs.Common
 import qs.Services
+import qs.Widgets
 import qs.DCommon.Widgets
 import qs.DCommon.Session
 import "../../DCommon/Common/LayoutCodes.js" as LayoutCodes
@@ -42,8 +43,8 @@ Row {
     Component.onCompleted: KeyboardLayoutService.consumers++
     Component.onDestruction: KeyboardLayoutService.consumers--
 
-    component Divider: Rectangle {
-        width: Theme.dividerWidth
+    component Divider: DDivider {
+        vertical: true
         height: Theme.iconSize
         color: root.dividerColor
         anchors.verticalCenter: parent.verticalCenter
@@ -114,7 +115,7 @@ Row {
 
                 Timer {
                     running: !CavaService.cavaAvailable && visualizer.live
-                    interval: 256
+                    interval: Timing.settle
                     repeat: true
                     onTriggered: CavaService.values = [Math.random() * 40 + 10, Math.random() * 60 + 20, Math.random() * 50 + 15, Math.random() * 35 + 20, Math.random() * 45 + 15, Math.random() * 55 + 25]
                 }

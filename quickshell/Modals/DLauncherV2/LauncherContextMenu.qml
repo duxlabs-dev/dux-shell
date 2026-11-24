@@ -3,6 +3,7 @@ import qs.Common
 import qs.Services
 import qs.Widgets
 import "ControllerUtils.js" as Utils
+import "../../Common/settings/AppFolders.js" as AppFolders
 
 DContextMenu {
     id: root
@@ -21,11 +22,15 @@ DContextMenu {
             return item?.id || coreAppData?.builtInPluginId || "";
         return desktopEntry?.id || desktopEntry?.execString || "";
     }
-    readonly property bool isPinned: !!appId && SessionData.getDockPins(pinDockId).includes(appId)
+    readonly property bool isPinned: SessionData.isDockAppPinned(pinDockId, appId)
     readonly property bool isRegularApp: item?.type === "app" && !item.isCore && desktopEntry
     readonly property bool isFlatpakApp: isRegularApp && (item?.source === "flatpak" || !!item?.flatpakId || Utils.classifyAppSource(desktopEntry) === "flatpak")
     readonly property string flatpakAppId: item?.flatpakId || (isFlatpakApp ? Utils.extractFlatpakAppId(desktopEntry) : "")
     readonly property bool isPluginItem: item?.type === "plugin"
+    readonly property bool isFolderItem: item?.type === "folder"
+
+    property var pendingAfterHide: null
+    property bool foldersExpanded: false
 
     signal editAppRequested(var app)
 
@@ -33,6 +38,9 @@ DContextMenu {
     keyboardNavigable: true
 
     menuItems: {
+        if (isFolderItem)
+            return folderMenuItems();
+
         if (isPluginItem)
             return getPluginContextMenuActions().map(act => ({
                         type: "item",
@@ -70,6 +78,12 @@ DContextMenu {
                 text: I18n.tr("Edit App"),
                 action: editCurrentApp
             });
+        }
+        if (item?.type === "app") {
+            items.push({
+                type: "separator"
+            });
+            items.push(...appFolderMenuItems());
         }
         if (item?.actions?.length > 0) {
             items.push({
@@ -113,18 +127,24 @@ DContextMenu {
     }
 
     onRenderActiveChanged: {
+        foldersExpanded = false;
         if (renderActive)
             return;
         if (parentHandler)
             parentHandler.enabled = true;
         if (searchField?.visible)
             Qt.callLater(() => searchField.forceActiveFocus());
+        if (!pendingAfterHide)
+            return;
+        // Run after search refocus so the rename field keeps focus.
+        Qt.callLater(pendingAfterHide);
+        pendingAfterHide = null;
     }
 
     function hasContextMenuActions(spotlightItem) {
         if (!spotlightItem)
             return false;
-        if (spotlightItem.type === "app")
+        if (spotlightItem.type === "app" || spotlightItem.type === "folder")
             return true;
         if (spotlightItem.type === "plugin" && spotlightItem.pluginId) {
             const instance = PluginService.pluginInstances[spotlightItem.pluginId];
@@ -134,6 +154,58 @@ DContextMenu {
             return Array.isArray(actions) && actions.length > 0;
         }
         return spotlightItem.actions?.length > 0;
+    }
+
+    function appFolderMenuItems() {
+        if (SessionData.launcherFolderForApp(appId))
+            return [{
+                    type: "item",
+                    icon: "folder_off",
+                    text: I18n.tr("Remove from folder"),
+                    action: removeFromFolder
+                }];
+
+        return [
+            {
+                type: "item",
+                icon: "create_new_folder",
+                text: I18n.tr("Create folder"),
+                action: createFolder
+            }
+        ].concat(AppFolders.addToFolderEntries(SessionData.launcherFolders, {
+            header: I18n.tr("Add to folder"),
+            label: folder => I18n.tr("Add to %1").arg(folder.name),
+            indent: Theme.spacingS,
+            expanded: root.foldersExpanded,
+            toggle: () => root.foldersExpanded = !root.foldersExpanded,
+            add: folder => root.addToFolder(folder.id)
+        }));
+    }
+
+    function folderMenuItems() {
+        return [
+            {
+                type: "item",
+                icon: "folder_open",
+                text: I18n.tr("Open"),
+                action: openFolder
+            },
+            {
+                type: "item",
+                icon: "edit",
+                text: I18n.tr("Rename"),
+                action: renameFolder
+            },
+            {
+                type: "separator"
+            },
+            {
+                type: "item",
+                icon: "folder_delete",
+                text: I18n.tr("Dissolve folder"),
+                action: dissolveFolder
+            }
+        ];
     }
 
     function getPluginContextMenuActions() {
@@ -161,7 +233,8 @@ DContextMenu {
         pinDockId = SettingsData.dockConfigForAction(screenRef)?.id ?? "";
         if (parentHandler)
             parentHandler.enabled = false;
-        open(screenRef, screenRelativeX + Theme.spacingXS, screenRelativeY + Theme.spacingXS, fromKeyboard);
+        IdleSurfaces.surfaceFor("context-menu", screenRef?.name ?? "")?.remap();
+        Qt.callLater(open, screenRef, screenRelativeX + Theme.spacingXS, screenRelativeY + Theme.spacingXS, fromKeyboard);
     }
 
     function executePluginAction(actionOrObj) {
@@ -186,11 +259,57 @@ DContextMenu {
     function togglePin() {
         if (!appId || !SettingsData.getDockConfig(pinDockId))
             return;
-        const pins = SessionData.getDockPins(pinDockId);
         if (!isPinned)
             SettingsData.ensureDockApps(pinDockId);
-        SessionData.setDockPins(pinDockId, isPinned ? pins.filter(id => id !== appId) : pins.concat([appId]));
+        SessionData.setDockAppPinned(pinDockId, appId, !isPinned);
         hide();
+    }
+
+    function removeFromFolder() {
+        if (!appId)
+            return;
+        SessionData.removeAppFromLauncherFolder(appId);
+    }
+
+    function addToFolder(folderId) {
+        if (!appId)
+            return;
+        SessionData.addAppToLauncherFolder(folderId, appId);
+    }
+
+    function runAfterHide(fn) {
+        pendingAfterHide = fn;
+        hide();
+    }
+
+    function createFolder() {
+        if (!appId || !controller)
+            return;
+        const ids = [appId];
+        const target = controller;
+        runAfterHide(() => target.createFolderWith(ids));
+    }
+
+    function openFolder() {
+        const folderId = item?.data?.folderId;
+        if (!folderId)
+            return;
+        controller?.openLauncherFolder(folderId);
+    }
+
+    function renameFolder() {
+        const folderId = item?.data?.folderId;
+        if (!folderId || !controller)
+            return;
+        const target = controller;
+        runAfterHide(() => target.openLauncherFolder(folderId, true));
+    }
+
+    function dissolveFolder() {
+        const folderId = item?.data?.folderId;
+        if (!folderId)
+            return;
+        SessionData.dissolveLauncherFolder(folderId);
     }
 
     function hideCurrentApp() {

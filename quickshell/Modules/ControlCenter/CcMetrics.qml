@@ -7,10 +7,13 @@ import qs.Services
 
 Singleton {
     readonly property real sheetWidthDefault: sheetWidthFor(defaultColumns)
-    readonly property int defaultColumns: 8
+    readonly property int defaultColumns: 7
     readonly property int minimumColumns: 4
     readonly property int osdSheetColumns: 6
     readonly property real sheetPadding: PopoutMetrics.contentPadding
+    readonly property real pageDotVerticalPadding: Theme.spacingXS + Theme.outlineWidth * 2
+    readonly property real pageFooterHeight: pageDotSize + pageDotVerticalPadding * 2
+    readonly property real gridVerticalPadding: sheetPadding + pageFooterHeight
     readonly property real columnWidth: tileHeight
     readonly property real gridStep: 0.5
     property int columnPreview: 0
@@ -43,8 +46,10 @@ Singleton {
     readonly property real maxHeightInset: 100
     // Short-grid floors scale with the row unit, or compact would pad small layouts back out.
     readonly property int minimumRows: 2
-    readonly property real minHeight: sheetPadding * 2 + gridRowUnit * minimumRows
+    readonly property real minHeight: gridVerticalPadding + gridRowUnit * minimumRows
     readonly property real islandInset: Theme.spacingXS
+    // Keeps the island's edit ring clear of the page dots.
+    readonly property real islandChromeInset: Theme.outlineWidthFocused
     readonly property real fallbackScreenHeight: 1080
     readonly property real triggerWidth: 80
 
@@ -89,12 +94,12 @@ Singleton {
     readonly property real runningAppsIconSize: Theme.iconSize * iconScale
     // The resize corner counts a small tile as this many rows and snaps to the nearer of this and a full row.
     readonly property real smallRowFraction: 0.5
-    readonly property real shapeButtonSize: Theme.iconSize
     readonly property real editChromeButtonSize: Theme.iconSize
     // Mirrors DGridEditChrome.contentInset so the options menu anchor keeps the chrome's bounds while the chrome is unloaded.
     readonly property real editChromeInset: Math.max(Theme.minimumTouchTargetSize, editChromeButtonSize) / 2
 
     readonly property real detailDialogPadding: Theme.spacingS
+    readonly property real detailBandRadius: Theme.groupedListOuterRadius + detailDialogPadding
     readonly property real detailHeaderHeight: Theme.iconButtonSize
     readonly property real detailTitleSize: Theme.fontSizeLarge
     readonly property real detailMinContentHeight: Theme.listItemTwoLineHeight * 3
@@ -128,13 +133,24 @@ Singleton {
     readonly property real libraryPanelHeight: 400
     readonly property real widgetSheetHeightRatio: 0.85
     readonly property real previewSize: 76
+    readonly property real dockedPanelWidth: sheetWidthFor(dockedPanelColumns + 1)
+    readonly property real dockedPanelGap: PopoutMetrics.contentGap
+    // Clears the concave flares a connected body draws along the bar.
+    readonly property real dockedPanelConnectedGap: Math.max(PopoutMetrics.contentGap, Theme.connectedCornerRadius + Theme.spacingXS)
+    readonly property real dockedBubbleSize: touchTarget + Theme.spacingS
+    readonly property real dockedLibraryRowHeight: dockedBubbleSize + Theme.spacingS + Theme.fontSizeSmall * 3
+    // One whole category card of two rows.
+    readonly property real dockedLibraryMinHeight: dockedLibraryRowHeight * 2 + Theme.spacingM * 3 + Theme.spacingS + Theme.iconSizeMedium
+    readonly property real widgetPopoverMinHeight: sheetPadding * 2 + Theme.spacingM * 3 + Theme.listItemTwoLineHeight + Theme.fieldHeightLarge + Theme.buttonHeightXS * 2 + Theme.spacingS + dockedLibraryMinHeight
+    readonly property real dockedPanelMinHeight: widgetPopoverMinHeight + Theme.spacingXXS
+    readonly property int dockedPanelColumns: 4
+    readonly property real removeOverlayOpacity: 0.7
     readonly property real configMenuWidth: 260
     readonly property real vpnPopoutListHeight: 200
     readonly property real headerDropdownWidth: 120
     readonly property real rowDropdownWidth: 160
     readonly property real headerPopupWidth: 200
     readonly property real brightnessLowMax: 33
-    readonly property int wifiSignalBucket: 25
     readonly property real diskWarnPercent: 75
     readonly property real diskCriticalPercent: 90
     readonly property int dndRefreshInterval: 1000
@@ -154,13 +170,26 @@ Singleton {
     readonly property color iconBoxInactiveColor: Theme.ccIconBoxInactiveBg
     readonly property color tileInactiveContent: Theme.surfaceText
     readonly property color tileInactiveSubtitle: Theme.surfaceVariantText
-    readonly property color tileInactiveIcon: Theme.primary
     readonly property color bareActiveIcon: Theme.primary
     readonly property real quickBarePadding: Theme.spacingL
     readonly property real quickBareWidth: iconBoxIconSize + quickBarePadding
     readonly property real quickTileGap: Theme.spacingXS
 
-    readonly property bool animationsEnabled: !SettingsData.reduceMotion && Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
+    readonly property real pageDotSize: Theme.spacingS
+    readonly property real pageDotActiveWidth: pageDotSize * 3
+    readonly property color pageDotColor: Theme.onSurfaceVariant_40
+    readonly property real pageSwipeDistance: 0.2
+    readonly property real pageSwipeVelocity: 500
+    readonly property real pageWheelDistance: 0.15
+    readonly property real pageOverscrollRate: 1 / 3
+    // Long enough that a finger resting mid-swipe does not settle it.
+    readonly property int pageTouchpadLostMs: 600
+    // A free-spinning or high-resolution wheel keeps sending notches; one burst flips one page.
+    readonly property int pageWheelQuietMs: 150
+    readonly property int pageCarryHoldMs: 600
+    readonly property var addHintDashPattern: [3, 2]
+
+    readonly property bool animationsEnabled: !Theme.reduceMotion
 
     // The 1.6 detail heights: a detail never shows less than it did there, whatever the grid leaves free.
     function detailHeightFloor(section, pluginHeight) {

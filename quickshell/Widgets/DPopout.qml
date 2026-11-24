@@ -15,21 +15,27 @@ Item {
     property real triggerY: 0
     property real triggerWidth: 40
     property string triggerSection: ""
+    property bool triggerKnown: false
     property string positioning: "center"
     property int animationDuration: Theme.popoutAnimationDuration
     property real animationScaleCollapsed: Theme.effectScaleCollapsed
     property real animationOffset: Theme.effectAnimOffset
-    property list<real> animationEnterCurve: Theme.variantPopoutEnterCurve
-    property list<real> animationExitCurve: Theme.variantPopoutExitCurve
-    property list<real> resizeCurve: Theme.variantPopoutResizeCurve
-    property int resizeDuration: animationDuration
     property bool resizeMotion: false
     property bool resizing: false
-    property real surfacePadding: 0
     // Content hung outside the surface, kept on screen, blurred and clickable.
     property real bottomOverflow: 0
     property real topOverflow: 0
+    property real leftOverflow: 0
+    property real rightOverflow: 0
+    // Side overflow columns reach this far past the body's top or bottom; the body itself stays its own height.
+    property real sideTopOverflow: 0
+    property real sideBottomOverflow: 0
+    // Body-relative rect of a surface hung in the side overflow, blurred like the body.
+    property Item sideBlurItem: null
+    property real sideBlurRadius: 0
     property real inputMargin: 0
+    // Reserved up front: a surface that moves under a pressed pointer reports the drag from its old origin.
+    property real minimumSurfaceWidth: 0
     property bool suspendShadowWhileResizing: false
     property bool shouldBeVisible: false
     property bool hoverDismissEnabled: false
@@ -39,10 +45,7 @@ Item {
     readonly property bool effectiveHoverDismissSuspended: hoverDismissSuspended || (transientSurfaceTracker?.active ?? false)
     property bool backgroundInteractive: true
     property bool contentHandlesKeys: false
-    property bool fullHeightSurface: false
-    property real minimumSurfaceWidth: 0
     property bool _primeContent: false
-    property bool _warmContent: false
 
     property real storedBarThickness: Theme.barThickness(SettingsData.getPrimaryBarConfig()?.innerPadding ?? SettingsData.barInnerPaddingDefault, 1)
     property real storedBarSpacing: 4
@@ -64,6 +67,7 @@ Item {
     property var screen: null
     property int effectiveBarPosition: 0
     property real effectiveBarBottomGap: 0
+    property bool dragPassthrough: false
 
     signal opened
     signal popoutClosed
@@ -72,7 +76,6 @@ Item {
 
     readonly property var contentLoader: impl.item ? impl.item.contentLoader : _fallbackContentLoader
     readonly property var overlayLoader: impl.item ? impl.item.overlayLoader : _fallbackOverlayLoader
-    readonly property var backgroundWindow: impl.item ? impl.item.backgroundWindow : null
     readonly property var contentWindow: impl.item ? impl.item.contentWindow : null
 
     TransientSurfaceTracker {
@@ -81,16 +84,16 @@ Item {
 
     // Hyprland OnDemand grab: whitelist popout surfaces and bars so dismiss clicks still land.
     DFocusGrab {
-        windows: {
-            const list = root.contentWindow ? [root.contentWindow] : [];
-            const transientWindows = root.transientSurfaceTracker?.focusWindows ?? [];
+        id: focusGrab
+
+        keyboardWindow: root.contentWindow
+        peerWindows: {
+            const surfaces = (root.contentWindow?.dismissWindows ?? []).concat(root.transientSurfaceTracker?.focusWindows ?? []);
             if (!(impl.item?.contentActive ?? false) && !root.transientSurfaceTracker?.active)
-                return list.concat(transientWindows);
-            if (root.backgroundWindow && root.backgroundWindow !== root.contentWindow)
-                list.push(root.backgroundWindow);
-            return list.concat(transientWindows).concat(KeyboardFocus.barWindows);
+                return surfaces;
+            return surfaces.concat(KeyboardFocus.barWindows, KeyboardFocus.grabPeerWindows);
         }
-        wanted: KeyboardFocus.wantsGrab(root.shouldBeVisible, root.customKeyboardFocus)
+        wanted: KeyboardFocus.wantsGrab(root.shouldBeVisible && !root.dragPassthrough, root.customKeyboardFocus)
     }
 
     Loader {
@@ -103,7 +106,10 @@ Item {
     }
     readonly property bool isClosing: impl.item ? (impl.item.isClosing ?? false) : false
     readonly property real dpr: impl.item ? impl.item.dpr : 1
-    readonly property color surfaceColor: impl.item?.usesConnectedSurfaceChrome ? Theme.connectedSurfaceColor : Theme.readableSurface
+    readonly property bool usesConnectedSurfaceChrome: impl.item?.usesConnectedSurfaceChrome ?? false
+    // Whether the surface sits on blur while open, steady through open and close.
+    readonly property bool surfaceBlurred: Theme.blurLayersActive && surfaceColor.a < 1 && (!usesConnectedSurfaceChrome || Theme.connectedSurfaceBlurEnabled)
+    readonly property color surfaceColor: usesConnectedSurfaceChrome ? Theme.connectedSurfaceColor : Theme.readableSurface
     readonly property real screenWidth: impl.item ? impl.item.screenWidth : 0
     readonly property real screenHeight: impl.item ? impl.item.screenHeight : 0
     readonly property real alignedX: impl.item ? impl.item.alignedX : 0
@@ -117,12 +123,20 @@ Item {
     readonly property real maxBodyWidth: impl.item ? impl.item.maxBodyWidth : 0
     readonly property real maxBodyHeight: impl.item ? impl.item.maxBodyHeight : 0
 
+    function roomLeftFor(width) {
+        return impl.item?.roomLeftFor(width) ?? 0;
+    }
+
+    function roomRightFor(width) {
+        return impl.item?.roomRightFor(width) ?? 0;
+    }
+
     function alignedXFor(width) {
         return impl.item?.alignedXFor(width) ?? 0;
     }
 
-    function alignedYFor(overTop, overBottom) {
-        return impl.item?.alignedYFor(overTop, overBottom) ?? 0;
+    function alignedYFor(overTop, overBottom, height = popupHeight) {
+        return impl.item?.alignedYFor(overTop, overBottom, height) ?? 0;
     }
     readonly property vector4d surfaceCornerRadii: impl.item?.surfaceCornerRadii ?? Qt.vector4d(Theme.windowRadius, Theme.windowRadius, Theme.windowRadius, Theme.windowRadius)
     readonly property real maskX: impl.item ? impl.item.maskX : 0
@@ -171,7 +185,7 @@ Item {
     }
 
     function _usesConnectedBackendForScreen(targetScreen) {
-        return CompositorService.usesConnectedFrameChromeForScreen(targetScreen);
+        return CompositorService.usesConnectedFrameChromeForScreen(targetScreen) || (!sourceDock && SettingsData.barConnectsPopouts(storedBarConfig) && SettingsData.barConfigCoversScreen(storedBarConfig, targetScreen));
     }
 
     function _maybeResolveBackend() {
@@ -194,6 +208,7 @@ Item {
     }
 
     function open() {
+        dragPassthrough = false;
         _maybeResolveBackend();
         if (impl.item) {
             _pendingOpen = false;
@@ -342,6 +357,7 @@ Item {
         triggerY = y;
         triggerWidth = width;
         triggerSection = section;
+        triggerKnown = true;
         screen = targetScreen;
 
         storedBarThickness = barThickness !== undefined ? barThickness : Theme.barThickness(SettingsData.getPrimaryBarConfig()?.innerPadding ?? SettingsData.barInnerPaddingDefault, 1);
@@ -357,11 +373,6 @@ Item {
         _resolveBackendForScreen(targetScreen);
     }
 
-    function updateSurfacePosition() {
-        if (impl.item)
-            impl.item.updateSurfacePosition();
-    }
-
     function containsGlobalPoint(gx, gy) {
         if (!screen)
             return false;
@@ -369,11 +380,51 @@ Item {
         if (!presented)
             return false;
         const padding = 24;
-        const x = renderedAlignedX - padding;
-        const y = renderedAlignedY - padding;
-        const w = renderedAlignedWidth + padding * 2;
-        const h = renderedAlignedHeight + padding * 2;
+        const x = renderedAlignedX - leftOverflow - padding;
+        const y = renderedAlignedY - topOverflow - sideTopOverflow - padding;
+        const w = renderedAlignedWidth + leftOverflow + rightOverflow + padding * 2;
+        const h = renderedAlignedHeight + topOverflow + bottomOverflow + sideTopOverflow + sideBottomOverflow + padding * 2;
         return gx >= x && gx <= x + w && gy >= y && gy <= y + h;
+    }
+
+    // The body plus the trapezoid from the trigger's span at the screen edge to the body's bar-facing edge.
+    function hoverSafeContains(gx, gy) {
+        if (!screen || !(shouldBeVisible || (impl.item?.isClosing ?? false)))
+            return false;
+        const tolerance = 2;
+        const x = renderedAlignedX, y = renderedAlignedY, w = renderedAlignedWidth, h = renderedAlignedHeight;
+        if (gx >= x - tolerance && gx <= x + w + tolerance && gy >= y - tolerance && gy <= y + h + tolerance)
+            return true;
+        if (!triggerKnown)
+            return false;
+        const vertical = effectiveBarPosition === SettingsData.Position.Left || effectiveBarPosition === SettingsData.Position.Right;
+        let depth, bodyDepth;
+        switch (effectiveBarPosition) {
+        case SettingsData.Position.Top:
+            depth = gy;
+            bodyDepth = y;
+            break;
+        case SettingsData.Position.Bottom:
+            depth = screenHeight - gy;
+            bodyDepth = screenHeight - (y + h);
+            break;
+        case SettingsData.Position.Left:
+            depth = gx;
+            bodyDepth = x;
+            break;
+        default:
+            depth = screenWidth - gx;
+            bodyDepth = screenWidth - (x + w);
+        }
+        if (depth < 0 || depth > bodyDepth)
+            return false;
+        const along = vertical ? gy : gx;
+        const bodyStart = vertical ? y : x;
+        const bodyEnd = bodyStart + (vertical ? h : w);
+        const start = vertical ? triggerY - triggerWidth / 2 : triggerX;
+        const end = start + triggerWidth;
+        const t = bodyDepth > 0 ? depth / bodyDepth : 1;
+        return along >= start + (bodyStart - start) * t && along <= end + (bodyEnd - end) * t;
     }
 
     Loader {
@@ -396,6 +447,7 @@ Item {
                     root.shouldBeVisible = host.shouldBeVisible;
             }
             onOpened: root.opened()
+            onSurfaceUnmapping: focusGrab.releaseBeforeUnmap()
             onCloseAnimationFinished: root.closeAnimationFinished()
             onPopoutClosed: {
                 root.popoutClosed();
@@ -410,8 +462,6 @@ Item {
             root.shouldBeVisible = false;
         if (root._primeContent)
             it.primeContent();
-        if (root._warmContent)
-            it.warmContent();
         if (_pendingOpen)
             _pendingOpenTimer.restart();
     }
@@ -426,12 +476,6 @@ Item {
         _primeContent = false;
         if (impl.item)
             impl.item.clearPrimedContent();
-    }
-
-    function warmContent() {
-        _warmContent = true;
-        if (impl.item)
-            impl.item.warmContent();
     }
 
     onShouldBeVisibleChanged: {

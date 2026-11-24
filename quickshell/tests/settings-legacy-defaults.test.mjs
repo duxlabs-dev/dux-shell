@@ -11,6 +11,7 @@ function migratedDock(settings) {
 test("a default 1.6 dock keeps its size and gaps", () => {
     const dock = migratedDock({});
     assert.equal(dock.enabled, false);
+    assert.equal(dock.smartAutoHide, false);
     assert.equal(dock.iconSize, 40);
     assert.equal(dock.itemSpacing, 4);
     assert.equal(dock.spacing, 4);

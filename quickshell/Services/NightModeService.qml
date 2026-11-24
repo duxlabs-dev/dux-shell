@@ -116,7 +116,7 @@ Singleton {
         if (!excludedApps.length)
             return false;
 
-        const desktopId = DesktopEntries.heuristicLookup(Paths.moddedAppId(appId))?.id ?? "";
+        const desktopId = appId ? DesktopEntries.heuristicLookup(Paths.moddedAppId(appId))?.id ?? "" : "";
         return excludedApps.some(excludedId => Paths.isAppIdMatch(appId, excludedId, desktopId));
     }
 
@@ -392,7 +392,7 @@ Singleton {
 
     Timer {
         id: gammaAdjustTimer
-        interval: 250
+        interval: Timing.debounceLong
         repeat: false
         onTriggered: applyGammaAdjustments()
     }
@@ -400,7 +400,7 @@ Singleton {
     Timer {
         id: restartTimer
         property string nextAction: ""
-        interval: 250
+        interval: Timing.debounceLong
         repeat: false
 
         onTriggered: {
@@ -415,26 +415,21 @@ Singleton {
 
     Timer {
         id: resumeRecoveryTimer
-        interval: 400
+        interval: Timing.resumeRecoverySchedule[0]
         repeat: false
 
         onTriggered: {
             runResumeRecoveryPass();
             resumeRecoveryAttempt++;
 
-            switch (resumeRecoveryAttempt) {
-            case 1:
-                interval = 1400;
-                restart();
-                return;
-            case 2:
-                interval = 2600;
-                restart();
+            if (resumeRecoveryAttempt >= Timing.resumeRecoverySchedule.length) {
+                resumeRecoveryAttempt = 0;
+                interval = Timing.resumeRecoverySchedule[0];
                 return;
             }
 
-            resumeRecoveryAttempt = 0;
-            interval = 400;
+            interval = Timing.resumeRecoverySchedule[resumeRecoveryAttempt];
+            restart();
         }
     }
 
@@ -472,7 +467,7 @@ Singleton {
 
         function onSessionResumed() {
             resumeRecoveryAttempt = 0;
-            resumeRecoveryTimer.interval = 400;
+            resumeRecoveryTimer.interval = Timing.resumeRecoverySchedule[0];
             resumeRecoveryTimer.restart();
         }
     }

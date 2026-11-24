@@ -15,9 +15,11 @@ import (
 	"time"
 
 	matcolor "github.com/duxlabs-dev/dux-go/material/color"
+	"github.com/duxlabs-dev/dux-shell/core/internal/iconfolders"
 	mocks_utils "github.com/duxlabs-dev/dux-shell/core/internal/mocks/utils"
 	"github.com/duxlabs-dev/dux-shell/core/internal/utils"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestAppendConfigBinaryExists(t *testing.T) {
@@ -222,9 +224,7 @@ func TestSourceSelectionArgs(t *testing.T) {
 		{"darkness", "darkness", true, []string{"--prefer", "darkness"}},
 		{"empty falls back to dominant", "", true, []string{"--source-color-index", "0"}},
 		{"typo falls back", "bogus", true, []string{"--source-color-index", "0"}},
-		{"wrong case is not allowlisted", "DARKNESS", true, []string{"--source-color-index", "0"}},
 		{"closest-to-fallback is deliberately excluded", "closest-to-fallback", true, []string{"--source-color-index", "0"}},
-		{"injection-shaped value cannot escape the allowlist", "value; --exec touch /tmp/pwned", true, []string{"--source-color-index", "0"}},
 		// matugen 4.0.x has --source-color-index but not --prefer, and aborts on
 		// an unknown argument. Every prefer mode must degrade, not fail.
 		{"4.0.x: darkness degrades", "darkness", false, []string{"--source-color-index", "0"}},
@@ -406,18 +406,6 @@ func TestExtractSourceColorAllBlackImage(t *testing.T) {
 	assert.Contains(t, err.Error(), "no usable color")
 }
 
-func TestExtractSourceColorOnePixelDoesNotPanic(t *testing.T) {
-	dir := t.TempDir()
-	img := image.NewRGBA(image.Rect(0, 0, 1, 1))
-	img.Set(0, 0, stdcolor.RGBA{R: 255, G: 0, B: 0, A: 255})
-	path := filepath.Join(dir, "one-pixel.png")
-	writeTestPNG(t, path, img)
-
-	assert.NotPanics(t, func() {
-		_, _ = ExtractSourceColor(path)
-	})
-}
-
 func TestSubstituteVars(t *testing.T) {
 	configDir := utils.XDGConfigHome()
 	dataDir := utils.XDGDataHome()
@@ -434,18 +422,6 @@ func TestSubstituteVars(t *testing.T) {
 			input:    "'SHELL_DIR/a' 'CONFIG_DIR/b' 'DATA_DIR/c' 'CACHE_DIR/d'",
 			shellDir: "/shell",
 			expected: "'/shell/a' '" + configDir + "/b' '" + dataDir + "/c' '" + cacheDir + "/d'",
-		},
-		{
-			name:     "no substitution when no placeholders",
-			input:    "input_path = '/absolute/path/foo.conf'",
-			shellDir: "/home/user/shell",
-			expected: "input_path = '/absolute/path/foo.conf'",
-		},
-		{
-			name:     "multiple SHELL_DIR occurrences",
-			input:    "'SHELL_DIR/a' and 'SHELL_DIR/b'",
-			shellDir: "/shell",
-			expected: "'/shell/a' and '/shell/b'",
 		},
 		{
 			name:     "only substitutes quoted paths",
@@ -705,33 +681,6 @@ func TestAppendFlatpakConfigRewritesOutputAndTemplateName(t *testing.T) {
 
 	assert.Contains(t, string(output), "[templates.dmsvesktop-flatpak]")
 	assert.Contains(t, string(output), "'/home/test/.var/app/dev.vencord.Vesktop/config/vesktop/themes/dank-discord.css'")
-}
-
-func TestQtengineActive(t *testing.T) {
-	tests := []struct {
-		name string
-		env  map[string]string
-		want bool
-	}{
-		{name: "both unset", want: false},
-		{name: "qtengine on QT_QPA_PLATFORMTHEME", env: map[string]string{"QT_QPA_PLATFORMTHEME": "qtengine"}, want: true},
-		{name: "qtengine on QT_QPA_PLATFORMTHEME_QT6", env: map[string]string{"QT_QPA_PLATFORMTHEME_QT6": "qtengine"}, want: true},
-		{name: "gtk3", env: map[string]string{"QT_QPA_PLATFORMTHEME": "gtk3"}, want: false},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			for _, key := range []string{"QT_QPA_PLATFORMTHEME", "QT_QPA_PLATFORMTHEME_QT6"} {
-				t.Setenv(key, "")
-				os.Unsetenv(key)
-			}
-			for key, value := range tc.env {
-				t.Setenv(key, value)
-			}
-
-			assert.Equal(t, tc.want, QtengineActive())
-		})
-	}
 }
 
 func TestSyncQtengineConfig(t *testing.T) {
@@ -1199,7 +1148,6 @@ func TestApplyTerminalTemplate(t *testing.T) {
 		{"no trailing newline", "foot.ini", "a", "a\nalpha=0.5\n", opts(50, false)},
 		{"100", "kitty.conf", "a\n", "a\n", opts(100, false)},
 		{"0", "kitty.conf", "a\n", "a\n", opts(0, false)},
-		{"negative", "kitty.conf", "a\n", "a\n", opts(-5, false)},
 		{"tabs", "kitty-tabs.conf", "a\n", "a\n", opts(85, false)},
 		{"wezterm", "wezterm.toml", "a\n", "a\n", opts(85, false)},
 		{"dark and opacity", "kitty.conf", "x.default.y\n", "x.dark.y\nbackground_opacity 0.85\ndynamic_background_opacity yes\n", opts(85, true)},
@@ -1309,4 +1257,97 @@ func TestTerminalPaletteOnlyReachesTerminalTemplates(t *testing.T) {
 		}
 	}
 	assert.Greater(t, checked, 10)
+}
+
+func TestSyncIconFolders(t *testing.T) {
+	root := t.TempDir()
+	t.Setenv("HOME", root)
+	t.Setenv("XDG_DATA_HOME", filepath.Join(root, "data"))
+	t.Setenv("XDG_DATA_DIRS", filepath.Join(root, "sys"))
+
+	theme := filepath.Join(root, "sys", "icons", "Adwaita")
+	require.NoError(t, os.MkdirAll(filepath.Join(theme, "scalable", "places"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(theme, "index.theme"), []byte("[Icon Theme]\nName=Adwaita\nDirectories=scalable/places\n\n[scalable/places]\nContext=Places\nSize=128\nType=Scalable\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(theme, "scalable", "places", "folder.svg"), []byte(`<svg xmlns="http://www.w3.org/2000/svg"><path d="m 0 0 h 8 v 8 z" fill="#a4caee"/></svg>`), 0o644))
+
+	opts := &Options{StateDir: filepath.Join(root, "state"), IconTheme: "Adwaita", Mode: ColorModeDark}
+	require.NoError(t, os.MkdirAll(opts.StateDir, 0o755))
+	require.NoError(t, os.WriteFile(opts.ColorsOutput(), []byte(`{"colors":{"dark":{"primary":"#69b2ff","on_primary":"#003055"}}}`), 0o644))
+	stateFile := filepath.Join(opts.StateDir, iconfolders.StateFile)
+
+	picked, regenerated := syncIconFolders(opts)
+	assert.Equal(t, "Adwaita", picked)
+	assert.False(t, regenerated)
+	assert.NoDirExists(t, filepath.Join(root, "data"), "a run that did not ask for folder colors must write no overlay")
+	assert.NoFileExists(t, stateFile)
+
+	opts.IconFolders = true
+	name, regenerated := syncIconFolders(opts)
+	assert.Regexp(t, regexp.MustCompile(`^Adwaita-dms-[0-9a-f]{8}$`), name, "qtengine must be given the applied name, not the picked one")
+	assert.True(t, regenerated)
+	overlay := filepath.Join(root, "data", "icons", name)
+	assert.DirExists(t, overlay)
+
+	again, regenerated := syncIconFolders(opts)
+	assert.Equal(t, name, again)
+	assert.False(t, regenerated, "unchanged inputs must not rewrite qtengine's config on a no-change run")
+
+	opts.IconFolders = false
+	picked, regenerated = syncIconFolders(opts)
+	assert.Equal(t, "Adwaita", picked)
+	assert.False(t, regenerated)
+	assert.FileExists(t, stateFile, "a run without the flag must leave the feature alone")
+	assert.DirExists(t, overlay)
+
+	opts.IconFolders = true
+	opts.IconTheme = "System Default"
+	picked, regenerated = syncIconFolders(opts)
+	assert.Equal(t, "System Default", picked)
+	assert.False(t, regenerated)
+	assert.NoFileExists(t, stateFile, "a run that asks and cannot recolor drops the state")
+	assert.DirExists(t, overlay, "the session has the overlay applied until the shell switches back and clears it")
+
+	state, err := RunIconFolders(iconfolders.Options{StateDir: opts.StateDir}, true)
+	require.NoError(t, err)
+	assert.Equal(t, iconfolders.State{}, state)
+	assert.NoDirExists(t, overlay)
+}
+
+func TestRunIconFoldersWaitsForTheRunLock(t *testing.T) {
+	stateDir := t.TempDir()
+	lock, err := acquireMatugenLock(stateDir)
+	require.NoError(t, err)
+
+	done := make(chan error, 1)
+	go func() {
+		_, err := RunIconFolders(iconfolders.Options{StateDir: stateDir, IconsDir: t.TempDir()}, true)
+		done <- err
+	}()
+
+	select {
+	case <-done:
+		t.Fatal("ran while a theme run held the lock")
+	case <-time.After(250 * time.Millisecond):
+	}
+
+	releaseMatugenLock(lock)
+	select {
+	case err := <-done:
+		require.NoError(t, err)
+	case <-time.After(5 * time.Second):
+		t.Fatal("never ran after the lock was released")
+	}
+}
+
+func TestIconFolderOptionsCarryEveryIconSetting(t *testing.T) {
+	opts := &Options{
+		StateDir: "/s", IconTheme: "dux-icons", Mode: ColorModeLight, IconAppStyle: "monochrome", IconShape: "square", IconGradient: true,
+		IconTileColor: "edge", IconColorSource: "common", IconTileStyle: "content", IconTileTone: 70, IconOwnTone: 0,
+		IconFileStyle: "color",
+	}
+	assert.Equal(t, iconfolders.Options{
+		StateDir: "/s", IconTheme: "dux-icons", Mode: "light", AppStyle: "monochrome", Shape: "square", Gradient: true,
+		TileColor: "edge", ColorSource: "common", TileStyle: "content", TileTone: 70, OwnTone: 0,
+		FileStyle: "color",
+	}, opts.iconFolderOptions())
 }

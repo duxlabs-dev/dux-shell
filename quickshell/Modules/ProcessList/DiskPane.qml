@@ -3,16 +3,17 @@ import qs.Common
 import qs.Services
 import "../../Common/Format.js" as Format
 import "../../Services/SysmonDevices.js" as SysmonDevices
-import "Drives.js" as Drives
+import "../../Services/Drives.js" as Drives
 
 DevicePane {
     id: root
 
     property string deviceName: ""
 
-    readonly property var history: DgopService.deviceHistory[SysmonDevices.deviceKey("disk", deviceName)] ?? ({})
+    readonly property var historyA: DgopService.history(SysmonDevices.deviceKey("disk", deviceName), "read")
+    readonly property var historyB: DgopService.history(SysmonDevices.deviceKey("disk", deviceName), "write")
     readonly property var rates: (DgopService.diskRates ?? []).find(d => d.device === deviceName) ?? null
-    readonly property real axisMax: SysmonDevices.rateAxisMax(history.a, history.b, 1048576)
+    readonly property real axisMax: SysmonDevices.rateAxisMax(historyA, historyB, 1048576)
 
     readonly property var drive: Drives.driveFor(deviceName, DriveService.drives)
 
@@ -29,7 +30,7 @@ DevicePane {
         return v === null || v === undefined ? null : Format.formatBytes(v, true);
     }
 
-    loaded: (history.a ?? []).length > 0
+    loaded: historyA.length > 0
     title: drive?.model || deviceName
     titleTooltip: drive?.model ? deviceName : ""
     subtitle: Drives.driveSubtitle(drive)
@@ -38,8 +39,8 @@ DevicePane {
     chartValue: rate(rates?.readRate)
     chartSecondaryLabel: I18n.tr("Disk write", "disk write rate")
     chartSecondaryValue: rate(rates?.writeRate)
-    values: history.a ?? []
-    secondaryValues: history.b ?? []
+    values: historyA
+    secondaryValues: historyB
     maximum: axisMax
     maximumText: Format.formatRate(axisMax, 1)
 

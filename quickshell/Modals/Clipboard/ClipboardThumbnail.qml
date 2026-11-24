@@ -84,7 +84,6 @@ ClippingRectangle {
                 thumbnailImage.activeRequest.cancelled = true;
                 thumbnailImage.activeRequest = null;
             }
-            retryTimer.stop();
             visibilityTimer.stop();
             thumbnailImage.loadQueued = false;
             thumbnailImage.activeEntryId = null;
@@ -119,11 +118,19 @@ ClippingRectangle {
                 return;
             }
             thumbnailImage.loadQueued = true;
-            if (modal && modal.activeImageLoads < modal.maxConcurrentLoads) {
-                thumbnailImage.startLoad();
-            } else {
-                retryTimer.restart();
-            }
+            thumbnailImage.startQueuedLoad();
+        }
+
+        readonly property int modalActiveLoads: modal?.activeImageLoads ?? 0
+        // Deferred: starting a load bumps the counter this handler is bound to.
+        onModalActiveLoadsChanged: Qt.callLater(thumbnailImage.startQueuedLoad)
+
+        function startQueuedLoad() {
+            if (!thumbnailImage.loadQueued || thumbnailImage.activeLoad)
+                return;
+            if (!modal || modal.activeImageLoads >= modal.maxConcurrentLoads)
+                return;
+            thumbnailImage.startLoad();
         }
 
         function loadImage() {
@@ -166,21 +173,6 @@ ClippingRectangle {
             });
         }
 
-        Timer {
-            id: retryTimer
-            interval: ClipboardConstants.retryInterval
-            onTriggered: {
-                if (!thumbnailImage.loadQueued) {
-                    return;
-                }
-                if (modal && modal.activeImageLoads < modal.maxConcurrentLoads) {
-                    thumbnailImage.startLoad();
-                } else {
-                    retryTimer.restart();
-                }
-            }
-        }
-
         Component.onCompleted: {
             thumbnailImage.completed = true;
             if (entryType !== "image" || listView.height <= 0 || !thumbnailImage.hasValidEntryId()) {
@@ -204,7 +196,7 @@ ClippingRectangle {
 
         Timer {
             id: visibilityTimer
-            interval: 100
+            interval: Timing.debounceShort
             onTriggered: thumbnailImage.checkVisibility()
         }
 

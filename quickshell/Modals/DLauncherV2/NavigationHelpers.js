@@ -45,18 +45,20 @@ function getSectionBounds(flatModel, sectionId) {
     };
 }
 
-function getGridColumns(viewMode, gridColumns) {
+function getGridColumns(viewMode, gridColumns, iconColumns) {
     switch (viewMode) {
     case "tile":
         return 3;
     case "grid":
         return gridColumns;
+    case "icons":
+        return iconColumns;
     default:
         return 1;
     }
 }
 
-function calculateNextIndex(flatModel, selectedFlatIndex, sectionId, viewMode, gridColumns, getSectionViewModeFn) {
+function calculateNextIndex(flatModel, selectedFlatIndex, sectionId, viewMode, gridColumns, getSectionViewModeFn, iconColumns) {
     if (flatModel.length === 0)
         return selectedFlatIndex;
 
@@ -73,7 +75,7 @@ function calculateNextIndex(flatModel, selectedFlatIndex, sectionId, viewMode, g
     }
 
     var bounds = getSectionBounds(flatModel, entry.sectionId);
-    var cols = getGridColumns(actualViewMode, gridColumns);
+    var cols = getGridColumns(actualViewMode, gridColumns, iconColumns);
     var posInSection = selectedFlatIndex - bounds.start;
     var newPosInSection = posInSection + cols;
 
@@ -91,7 +93,7 @@ function calculateNextIndex(flatModel, selectedFlatIndex, sectionId, viewMode, g
     return nextSection !== -1 ? nextSection : selectedFlatIndex;
 }
 
-function calculatePrevIndex(flatModel, selectedFlatIndex, sectionId, viewMode, gridColumns, getSectionViewModeFn) {
+function calculatePrevIndex(flatModel, selectedFlatIndex, sectionId, viewMode, gridColumns, getSectionViewModeFn, iconColumns) {
     if (flatModel.length === 0)
         return selectedFlatIndex;
 
@@ -108,7 +110,7 @@ function calculatePrevIndex(flatModel, selectedFlatIndex, sectionId, viewMode, g
     }
 
     var bounds = getSectionBounds(flatModel, entry.sectionId);
-    var cols = getGridColumns(actualViewMode, gridColumns);
+    var cols = getGridColumns(actualViewMode, gridColumns, iconColumns);
     var posInSection = selectedFlatIndex - bounds.start;
     var newPosInSection = posInSection - cols;
 

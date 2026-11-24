@@ -21,6 +21,7 @@ Item {
     property color fillColor: "transparent"
     property real clearEdge: NaN
     property real dpr: 1
+    property bool paintedElsewhere: false
 
     readonly property real fullAlongStart: edgeAligned && !trailing ? 0 : alongPos - pad
     readonly property real fullAlongEnd: edgeAligned && trailing ? alongExtent : alongPos + alongSize + pad
@@ -38,6 +39,7 @@ Item {
     readonly property bool startAttached: edgeAligned && !canonicalRightSide
     readonly property bool endAttached: edgeAligned && canonicalRightSide
     readonly property alias body: body
+    readonly property rect chromeRect: Qt.rect(x, y, width, height)
     readonly property real startAlongR: startAttached ? attachedAlongR : sweepR
     readonly property real endAlongR: endAttached ? attachedAlongR : sweepR
     readonly property real startCrossR: startAttached ? sweepR : freeCrossR
@@ -67,6 +69,7 @@ Item {
     Item {
         id: canvas
 
+        visible: !root.paintedElsewhere
         anchors.centerIn: parent
         width: root.chromeAlongSize
         height: root.crossSize

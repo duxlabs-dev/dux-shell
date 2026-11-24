@@ -11,6 +11,7 @@ import (
 
 	"github.com/duxlabs-dev/dux-go/dbusutil"
 	"github.com/duxlabs-dev/dux-shell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/pubsub"
 	"github.com/godbus/dbus/v5"
 )
 
@@ -47,12 +48,13 @@ func NewManager() (*Manager, error) {
 		},
 		stateMutex: sync.RWMutex{},
 
-		stopChan:       make(chan struct{}),
-		dbusConn:       conn,
-		signals:        make(chan *dbus.Signal, 256),
-		dirty:          make(chan struct{}, 1),
-		eventQueue:     make(chan func(), 32),
-		adapterRefresh: make(chan struct{}, 1),
+		stopChan:           make(chan struct{}),
+		dbusConn:           conn,
+		signals:            make(chan *dbus.Signal, 256),
+		dirty:              make(chan struct{}, 1),
+		eventQueue:         make(chan func(), 32),
+		adapterRefresh:     make(chan struct{}, 1),
+		pairingSubscribers: pubsub.Broker[PairingPrompt]{BufSize: 16},
 	}
 
 	broker := NewSubscriptionBroker(m.broadcastPairingPrompt)
@@ -503,48 +505,17 @@ func (m *Manager) eventWorker() {
 
 func (m *Manager) notifier() {
 	defer m.notifierWg.Done()
-	const minGap = 200 * time.Millisecond
-	timer := time.NewTimer(minGap)
-	timer.Stop()
-	var pending bool
-
-	for {
-		select {
-		case <-m.stopChan:
-			timer.Stop()
-			return
-		case <-m.dirty:
-			if pending {
-				continue
-			}
-			pending = true
-			timer.Reset(minGap)
-		case <-timer.C:
-			if !pending {
-				continue
-			}
+	pubsub.RunDebouncedNotifier(pubsub.DebouncedConfig[BluetoothState]{
+		MinGap: 200 * time.Millisecond,
+		Stop:   m.stopChan,
+		Dirty:  m.dirty,
+		Snapshot: func() BluetoothState {
 			m.updateDevices()
-
-			currentState := m.snapshotState()
-
-			if m.lastNotifiedState != nil && !stateChanged(m.lastNotifiedState, &currentState) {
-				pending = false
-				continue
-			}
-
-			m.subscribers.Range(func(key string, ch chan BluetoothState) bool {
-				select {
-				case ch <- currentState:
-				default:
-				}
-				return true
-			})
-
-			stateCopy := currentState
-			m.lastNotifiedState = &stateCopy
-			pending = false
-		}
-	}
+			return m.snapshotState()
+		},
+		Changed: stateChanged,
+		Broker:  &m.subscribers,
+	})
 }
 
 func (m *Manager) notifySubscribers() {
@@ -570,27 +541,19 @@ func (m *Manager) snapshotState() BluetoothState {
 }
 
 func (m *Manager) Subscribe(id string) chan BluetoothState {
-	ch := make(chan BluetoothState, 64)
-	m.subscribers.Store(id, ch)
-	return ch
+	return m.subscribers.Subscribe(id)
 }
 
-func (m *Manager) Unsubscribe(id string) {
-	if ch, ok := m.subscribers.LoadAndDelete(id); ok {
-		close(ch)
-	}
+func (m *Manager) Unsubscribe(id string, ch chan BluetoothState) {
+	m.subscribers.Unsubscribe(id, ch)
 }
 
 func (m *Manager) SubscribePairing(id string) chan PairingPrompt {
-	ch := make(chan PairingPrompt, 16)
-	m.pairingSubscribers.Store(id, ch)
-	return ch
+	return m.pairingSubscribers.Subscribe(id)
 }
 
-func (m *Manager) UnsubscribePairing(id string) {
-	if ch, ok := m.pairingSubscribers.LoadAndDelete(id); ok {
-		close(ch)
-	}
+func (m *Manager) UnsubscribePairing(id string, ch chan PairingPrompt) {
+	m.pairingSubscribers.Unsubscribe(id, ch)
 }
 
 func newPlayerCommandLease() (string, error) {
@@ -720,13 +683,7 @@ func (m *Manager) PublishMPRIS(lease string, snapshot PlayerSnapshot) error {
 }
 
 func (m *Manager) broadcastPairingPrompt(prompt PairingPrompt) {
-	m.pairingSubscribers.Range(func(key string, ch chan PairingPrompt) bool {
-		select {
-		case ch <- prompt:
-		default:
-		}
-		return true
-	})
+	m.pairingSubscribers.Publish(prompt)
 }
 
 func (m *Manager) SubmitPairing(token string, secrets map[string]string, accept bool) error {
@@ -867,17 +824,8 @@ func (m *Manager) Close() {
 		m.agent.Close()
 	}
 
-	m.subscribers.Range(func(key string, ch chan BluetoothState) bool {
-		close(ch)
-		m.subscribers.Delete(key)
-		return true
-	})
-
-	m.pairingSubscribers.Range(func(key string, ch chan PairingPrompt) bool {
-		close(ch)
-		m.pairingSubscribers.Delete(key)
-		return true
-	})
+	m.subscribers.Close()
+	m.pairingSubscribers.Close()
 
 	m.commandMutex.Lock()
 	m.commandSubscribers.Range(func(key string, ch chan PlayerCommand) bool {

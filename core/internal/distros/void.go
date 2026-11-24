@@ -68,7 +68,7 @@ func (v *VoidDistribution) DetectDependenciesWithTerminal(ctx context.Context, w
 	dependencies = append(dependencies, v.detectSpecificTerminal(terminal))
 	dependencies = append(dependencies, v.detectGit())
 	dependencies = append(dependencies, v.detectWindowManager(wm))
-	dependencies = append(dependencies, v.detectQuickshell())
+	dependencies = append(dependencies, v.detectDuxQtBase())
 	dependencies = append(dependencies, v.detectGreeterPackage(v.packageInstalled))
 	dependencies = append(dependencies, v.detectXDGPortal())
 	dependencies = append(dependencies, v.detectAccountsService())
@@ -118,12 +118,6 @@ func (v *VoidDistribution) detectDMS() deps.Dependency {
 		Variant:     variant,
 		CanToggle:   true,
 	}
-}
-
-func (v *VoidDistribution) detectQuickshell() deps.Dependency {
-	dep := v.BaseDistribution.detectQuickshell()
-	dep.CanToggle = false
-	return dep
 }
 
 func (v *VoidDistribution) detectXDGPortal() deps.Dependency {
@@ -310,7 +304,7 @@ func (v *VoidDistribution) GetPackageMappingWithVariants(wm deps.WindowManager, 
 		"elogind":                {Name: "elogind", Repository: RepoTypeSystem},
 		"mesa-dri":               {Name: "mesa-dri", Repository: RepoTypeSystem},
 
-		"quickshell":      {Name: "quickshell", Repository: RepoTypeSystem},
+		"dux-qt-base":     {Name: "dux-qt-base", Repository: RepoTypeXBPS, RepoURL: VoidDepsRepo},
 		"matugen":         {Name: "matugen", Repository: RepoTypeSystem},
 		"dms (Dux Shell)": v.getDmsMapping(variants["dms (Dux Shell)"]),
 		"dux-greeter":     variantMapping("dux-greeter", variants["dux-greeter"], RepoTypeXBPS, VoidDepsRepo),

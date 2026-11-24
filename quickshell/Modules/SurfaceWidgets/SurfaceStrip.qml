@@ -174,10 +174,11 @@ FocusScope {
         restoreMode: Binding.RestoreNone
     }
     Behavior on magnificationProgress {
-        enabled: !SettingsData.reduceMotion && Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
+        enabled: !Theme.reduceMotion
         NumberAnimation {
-            duration: root.hoverActive ? Theme.shorterDuration : Theme.shortDuration
-            easing.type: root.hoverActive ? Easing.OutCubic : Easing.InCubic
+            duration: Theme.expressiveDurations.expressiveFastEffects
+            easing.type: Easing.BezierSpline
+            easing.bezierCurve: Theme.expressiveCurves.expressiveFastEffects
         }
     }
     readonly property var sizes: {
@@ -253,6 +254,8 @@ FocusScope {
     }
 
     function dropIndex(item, x, y, accepts) {
+        if (!contains(item.mapToItem(root, x, y)))
+            return -1;
         const position = contentPosition(item, x, y);
         let last = -1;
         for (let i = 0; i < model.length; i++) {
@@ -263,6 +266,20 @@ FocusScope {
             last = i;
         }
         return last;
+    }
+
+    function centerDropIndex(item, x, y, accepts) {
+        const local = item.mapToItem(root, x, y);
+        if (!root.contains(local))
+            return -1;
+        const position = contentPosition(item, x, y);
+        return model.findIndex((entry, index) => {
+            if (!participating[index])
+                return false;
+            const size = allocatedSizes[index];
+            // Pins shift during a reorder; hit test where they are drawn.
+            return Math.abs(position - ((previewPositions[index] ?? positionAt(index)) + size / 2)) <= size / 4 && accepts(entry);
+        });
     }
 
     signal reorderRequested(string from, string to)
@@ -330,7 +347,7 @@ FocusScope {
                 readonly property bool dragging: root.draggingIndex === index
                 readonly property string unitId: DockConfig.unitOf(modelData)
                 readonly property bool unitDragging: root.draggingUnit === unitId
-                readonly property bool animatesShift: root.dragActive && !dragging && !unitDragging && !SettingsData.reduceMotion && Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
+                readonly property bool animatesShift: root.dragActive && !dragging && !unitDragging && !Theme.reduceMotion
                 readonly property real layoutPosition: unitDragging ? root.positionAt(index) + root.dragOffset : (root.previewPositions[index] ?? 0)
                 readonly property real targetScale: {
                     if (!root.magnificationEnabled || root.magnificationProgress <= 0.001 || slot.flexible)
@@ -499,18 +516,20 @@ FocusScope {
                     onCanceled: root.cancelDrag()
                     onWheel: wheel => wheel.accepted = false
                 }
-                DActionButton {
-                    visible: root.surfaceContext.editMode && slot.modelData.widgetId !== "application" && (root.participating[slot.index] ?? false)
+                Loader {
+                    active: root.surfaceContext.editMode && slot.modelData.widgetId !== "application" && (root.participating[slot.index] ?? false)
                     z: 2
                     anchors.top: parent.top
                     anchors.right: parent.right
-                    buttonSize: Theme.iconSizeMedium
-                    iconSize: Theme.iconSizeSmall
-                    iconName: "close"
-                    backgroundColor: Theme.errorContainer
-                    iconColor: Theme.onErrorContainer
-                    Accessible.name: I18n.tr("Remove")
-                    onClicked: root.removeRequested(slot.modelData.id)
+                    sourceComponent: DActionButton {
+                        buttonSize: Theme.iconSizeMedium
+                        iconSize: Theme.iconSizeSmall
+                        iconName: "close"
+                        backgroundColor: Theme.errorContainer
+                        iconColor: Theme.onErrorContainer
+                        Accessible.name: I18n.tr("Remove")
+                        onClicked: root.removeRequested(slot.modelData.id)
+                    }
                 }
             }
         }

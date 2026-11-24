@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Window
 import qs.Common
+import qs.Widgets
 import qs.DCommon.Widgets
 
 Item {
@@ -12,6 +13,7 @@ Item {
     readonly property bool transparentSlot: true
     readonly property bool inGroup: parent?.isSettingsGroupHost ?? false
     readonly property bool isFirstInGroup: inGroup ? parent.isEdge(root, true) : true
+    readonly property bool isLastInGroup: inGroup ? parent.isEdge(root, false) : true
 
     property string startTitle: ""
     property int startHour: 7
@@ -21,6 +23,7 @@ Item {
     property int endMinute: 0
     property bool is24Hour: false
     property bool showEnd: true
+    property Item dialogHost: null
 
     signal startChanged(int hour, int minute)
     signal endChanged(int hour, int minute)
@@ -50,19 +53,26 @@ Item {
     width: parent?.width ?? 0
     height: halves.implicitHeight
 
-    Rectangle {
-        x: SettingsMetrics.rowPaddingH
+    DDivider {
         z: 1
-        width: parent.width - SettingsMetrics.rowPaddingH * 2
-        height: Theme.dividerWidth
+        inset: SettingsMetrics.rowPaddingH
         visible: SettingsMetrics.continuousGroups && root.inGroup && !root.isFirstInGroup
+        color: SettingsMetrics.groupDividerColor
+    }
+
+    DDivider {
+        vertical: true
+        anchors.horizontalCenter: parent.horizontalCenter
+        z: 1
+        inset: SettingsMetrics.rowPaddingV
+        visible: SettingsMetrics.continuousGroups && root.showEnd
         color: SettingsMetrics.groupDividerColor
     }
 
     Row {
         id: halves
         width: parent.width
-        spacing: Theme.groupedListGap
+        spacing: SettingsMetrics.groupGap
 
         Repeater {
             model: root.showEnd ? 2 : 1
@@ -70,13 +80,18 @@ Item {
             SettingsRow {
                 required property int index
                 readonly property bool isStart: index === 0
+                readonly property bool leftEdge: !root.showEnd || isStart !== (halves.effectiveLayoutDirection === Qt.RightToLeft)
+                readonly property bool rightEdge: !root.showEnd || !leftEdge
 
-                width: root.showEnd ? (root.width - Theme.groupedListGap) / 2 : root.width
+                width: root.showEnd ? (root.width - halves.spacing) / 2 : root.width
                 paintBackground: true
+                rowColor: root.inGroup ? root.parent.slotColor : SettingsMetrics.rowColor
                 inGroup: root.inGroup
                 dividerBefore: false
-                topRadius: Theme.groupedListOuterRadius
-                bottomRadius: Theme.groupedListOuterRadius
+                topLeftRadius: root.isFirstInGroup && leftEdge ? Theme.groupedListOuterRadius : SettingsMetrics.groupInnerRadius
+                topRightRadius: root.isFirstInGroup && rightEdge ? Theme.groupedListOuterRadius : SettingsMetrics.groupInnerRadius
+                bottomLeftRadius: root.isLastInGroup && leftEdge ? Theme.groupedListOuterRadius : SettingsMetrics.groupInnerRadius
+                bottomRightRadius: root.isLastInGroup && rightEdge ? Theme.groupedListOuterRadius : SettingsMetrics.groupInnerRadius
                 title: isStart ? root.startTitle : root.endTitle
                 subtitle: root.formatTime(isStart ? root.startHour : root.endHour, isStart ? root.startMinute : root.endMinute)
                 subtitleColor: Theme.surfaceText
@@ -99,7 +114,7 @@ Item {
         active: false
 
         sourceComponent: DTimePicker {
-            parent: root.Window.contentItem
+            parent: root.dialogHost ?? root.Window.contentItem
             is24Hour: root.is24Hour
             onAccepted: (hour, minute) => {
                 if (root._editingStart) {

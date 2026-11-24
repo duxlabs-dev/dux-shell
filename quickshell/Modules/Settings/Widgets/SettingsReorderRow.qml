@@ -13,7 +13,7 @@ SettingsRow {
     readonly property int position: reorderList.order.indexOf(index)
 
     paintBackground: true
-    rowColor: dragging ? Theme.blend(SettingsMetrics.rowColor, Theme.onSurface, Theme.stateLayerDrag) : SettingsMetrics.rowColor
+    rowColor: dragging ? Theme.blend(slotColor, Theme.onSurface, Theme.stateLayerDrag) : slotColor
     topRadius: dragging || (position === 0 && reorderList.firstInGroup) ? Theme.groupedListOuterRadius : SettingsMetrics.groupInnerRadius
     bottomRadius: dragging || (position === reorderList.count - 1 && reorderList.lastInGroup) ? Theme.groupedListOuterRadius : SettingsMetrics.groupInnerRadius
     z: dragging ? 100 : 0
@@ -65,9 +65,9 @@ SettingsRow {
     ]
 
     Behavior on y {
-        enabled: root.reorderList.animateLayout && !root.dragging && !SettingsData.reduceMotion && Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
+        enabled: root.reorderList.animateLayout && !root.dragging && !Theme.reduceMotion
         NumberAnimation {
-            duration: Theme.expressiveDurations.expressiveDefaultSpatial
+            duration: Theme.expressiveDurations.expressiveFastSpatial
             easing.type: Easing.BezierSpline
             easing.bezierCurve: Theme.expressiveCurves.expressiveFastSpatial
         }

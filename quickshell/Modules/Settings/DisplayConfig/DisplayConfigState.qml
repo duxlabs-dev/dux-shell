@@ -618,13 +618,13 @@ Singleton {
 
     Timer {
         id: manualActivationTimer
-        interval: 2000
+        interval: Timing.hold
         onTriggered: root.manualActivation = false
     }
 
     Timer {
         id: autoSelectDebounceTimer
-        interval: 400
+        interval: Timing.debounceSlow
         onTriggered: {
             if (root.hasPendingChanges)
                 return;
@@ -962,7 +962,7 @@ Singleton {
     }
 
     function filterDisconnectedOnly(parsedOutputs) {
-        return OutputModel.filterDisconnectedOnly(parsedOutputs, outputs, SettingsData.displayNameMode, CompositorService.compositor);
+        return OutputModel.filterDisconnectedOnly(parsedOutputs, outputs, CompositorService.compositor);
     }
 
     function parseOutputsConfig(content) {

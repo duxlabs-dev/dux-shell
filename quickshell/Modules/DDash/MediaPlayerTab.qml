@@ -21,8 +21,11 @@ Item {
     readonly property bool lyricsEnabled: (options?.lyrics ?? MediaOptions.defaults.lyrics) && DMSService.capabilities.includes("lyrics")
     readonly property bool smoothLyrics: options?.smoothLyrics ?? MediaOptions.defaults.smoothLyrics
     property bool lyricsOpen: false
+    // Up while the tab brings its lyrics back, so the art view takes them without the toggle transition.
+    property bool lyricsRestoring: false
     property Item lyricsFocusTarget: null
     property Item lyricsOpener: null
+    property Item lyricsSourceButton: null
     readonly property var presentation: mediaPresentation.current
     readonly property bool idle: !presentation
     property bool wallpaperEnabled: MediaOptions.albumArtBackdrop
@@ -46,7 +49,7 @@ Item {
     }
     readonly property bool volumeAvailable: !!((activePlayer && activePlayer.volumeSupported && !__isChromeBrowser) || (AudioService.sink && AudioService.sink.audio))
     readonly property bool usePlayerVolume: activePlayer && activePlayer.volumeSupported && !__isChromeBrowser
-    readonly property real reportedVolume: usePlayerVolume ? activePlayer.volume : (AudioService.sink?.audio?.volume ?? 0)
+    readonly property real reportedVolume: usePlayerVolume ? activePlayer.volume : AudioService.getNodeVolume(AudioService.sink)
     readonly property real currentVolume: pendingVolume >= 0 ? pendingVolume : reportedVolume
     readonly property real maxVolumePercent: usePlayerVolume ? 100 : AudioService.sinkMaxVolume
 
@@ -88,8 +91,11 @@ Item {
     }
 
     onLyricsOpenChanged: {
-        if (!lyricsOpen)
-            lyricsFocusTimer.restart();
+        if (lyricsOpen)
+            return;
+        lyricsFocusTimer.restart();
+        if (panel === "lyrics")
+            panel = "";
     }
 
     Timer {
@@ -115,13 +121,6 @@ Item {
     MediaPresentation {
         id: mediaPresentation
         player: root
-    }
-
-    Timer {
-        interval: DashMetrics.mediaPositionPollInterval
-        running: root.live && root.activePlayer?.playbackState === MprisPlaybackState.Playing && !root.isSeeking
-        repeat: true
-        onTriggered: MprisController.refreshPosition(root.activePlayer)
     }
 
     function syncAudioRef(wanted) {
@@ -180,8 +179,11 @@ Item {
     }
 
     function restoreLyrics() {
-        if (live && lyricsEnabled && CacheData.mediaLyricsOpen)
-            lyricsOpen = true;
+        if (!live || !lyricsEnabled || !CacheData.mediaLyricsOpen)
+            return;
+        lyricsRestoring = true;
+        lyricsOpen = true;
+        lyricsRestoring = false;
     }
 
     // A plain Item's activeFocus stays false while a child holds focus.
@@ -229,29 +231,13 @@ Item {
         const audio = AudioService.sink?.audio;
         if (!audio)
             return;
-        audio.volume = clamped;
+        AudioService.setNodeVolume(AudioService.sink, clamped);
         if (clamped > 0)
             audio.muted = false;
     }
 
     function adjustVolume(step) {
         setVolume((Math.round(currentVolume * 100) + step) / 100);
-    }
-
-    function cycleLoopState() {
-        if (!activePlayer?.canControl || !activePlayer.loopSupported)
-            return;
-        switch (activePlayer.loopState) {
-        case MprisLoopState.None:
-            activePlayer.loopState = MprisLoopState.Playlist;
-            break;
-        case MprisLoopState.Playlist:
-            activePlayer.loopState = MprisLoopState.Track;
-            break;
-        case MprisLoopState.Track:
-            activePlayer.loopState = MprisLoopState.None;
-            break;
-        }
     }
 
     function toggleMute() {
@@ -331,6 +317,7 @@ Item {
         case Qt.Key_Space:
             if (!activePlayer.canTogglePlaying)
                 return false;
+            SessionData.suppressOSDTemporarily();
             activePlayer.togglePlaying();
             return true;
         case Qt.Key_M:

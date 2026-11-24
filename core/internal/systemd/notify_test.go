@@ -207,12 +207,6 @@ func TestReadinessTimeoutReportsPendingService(t *testing.T) {
 	}
 }
 
-func TestReadinessWithoutSystemd(t *testing.T) {
-	t.Setenv("NOTIFY_SOCKET", "")
-	t.Setenv("DBUS_SESSION_BUS_ADDRESS", "unix:path=/nonexistent")
-	NewReadiness().Wait(context.Background())
-}
-
 func TestReadinessReportsTimeoutWithoutUI(t *testing.T) {
 	t.Setenv("DBUS_SESSION_BUS_ADDRESS", "unix:path=/nonexistent")
 	socket := notifySocket(t)

@@ -7,6 +7,7 @@ import (
 	wlclient "github.com/duxlabs-dev/dux-go/wayland/client"
 	"github.com/duxlabs-dev/dux-shell/core/internal/log"
 	"github.com/duxlabs-dev/dux-shell/core/internal/proto/wlr_output_management"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/pubsub"
 )
 
 func NewManager(display wlclient.WaylandDisplay) (*Manager, error) {
@@ -412,48 +413,14 @@ func (m *Manager) notifier() {
 		}
 	}()
 
-	const minGap = 100 * time.Millisecond
-	timer := time.NewTimer(minGap)
-	timer.Stop()
-	var pending bool
-
-	for {
-		select {
-		case <-m.stopChan:
-			timer.Stop()
-			return
-		case <-m.dirty:
-			if pending {
-				continue
-			}
-			pending = true
-			timer.Reset(minGap)
-		case <-timer.C:
-			if !pending {
-				continue
-			}
-
-			currentState := m.GetState()
-
-			if m.lastNotified != nil && !stateChanged(m.lastNotified, &currentState) {
-				pending = false
-				continue
-			}
-
-			m.subscribers.Range(func(key string, ch chan State) bool {
-				select {
-				case ch <- currentState:
-				default:
-					log.Warn("WlrOutput: subscriber channel full, dropping update")
-				}
-				return true
-			})
-
-			stateCopy := currentState
-			m.lastNotified = &stateCopy
-			pending = false
-		}
-	}
+	pubsub.RunDebouncedNotifier(pubsub.DebouncedConfig[State]{
+		MinGap:   100 * time.Millisecond,
+		Stop:     m.stopChan,
+		Dirty:    m.dirty,
+		Snapshot: m.GetState,
+		Changed:  stateChanged,
+		Broker:   &m.subscribers,
+	})
 }
 
 func (m *Manager) Close() {
@@ -461,11 +428,7 @@ func (m *Manager) Close() {
 	m.wg.Wait()
 	m.notifierWg.Wait()
 
-	m.subscribers.Range(func(key string, ch chan State) bool {
-		close(ch)
-		m.subscribers.Delete(key)
-		return true
-	})
+	m.subscribers.Close()
 
 	m.modes.Range(func(key uint32, mode *modeState) bool {
 		if mode.handle != nil {

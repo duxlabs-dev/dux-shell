@@ -790,7 +790,7 @@ func (r *RegionSelector) createOutputSurface(output *WaylandOutput) (*OutputSurf
 		surface,
 		output.wlOutput,
 		uint32(wlr_layer_shell.ZwlrLayerShellV1LayerOverlay),
-		"dms-screenshot",
+		"dms:screenshot",
 	)
 	if err != nil {
 		return nil, fmt.Errorf("get layer surface: %w", err)

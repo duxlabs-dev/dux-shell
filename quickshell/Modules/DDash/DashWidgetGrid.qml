@@ -23,7 +23,8 @@ Item {
     readonly property var widgets: WidgetUtils.resolve(definitions, DashRegistry.widgetLayout(entryId))
     readonly property var addable: definitions.filter(d => !widgets.some(w => w.id === d.id))
     readonly property Item focusTarget: grid
-    readonly property bool blocksTabNavigation: editMode || addMenu.open || optionsSheet.shown
+    readonly property bool sheetShown: optionsSheet.shown
+    readonly property bool blocksTabNavigation: editMode || addMenu.open || sheetShown
     readonly property bool cardResizing: grid.sizePreview !== null
     readonly property bool cardInteracting: grid.interacting
 

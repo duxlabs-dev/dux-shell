@@ -27,7 +27,7 @@ DPopout {
     onBackgroundClicked: close()
 
     Timer {
-        interval: 1000
+        interval: Timing.second
         repeat: true
         triggeredOnStart: true
         running: root.shouldBeVisible && root.presets === IdleInhibitPresets && IdleInhibitPresets.timed

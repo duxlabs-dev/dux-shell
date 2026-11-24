@@ -113,7 +113,7 @@ Column {
 
         Behavior on height {
             NumberAnimation {
-                duration: SettingsMetrics.transitionDuration
+                duration: SettingsMetrics.expandDuration
                 easing.type: Easing.BezierSpline
                 easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
             }

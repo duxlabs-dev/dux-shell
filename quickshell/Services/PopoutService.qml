@@ -33,9 +33,11 @@ Singleton {
     property var clipboardHistoryPopoutLoader: null
 
     property var desktopContextMenu: null
+    property var desktopContextMenuLoader: null
     property var settingsModal: null
     property var settingsModalLoader: null
     property var clipboardHistoryModal: null
+    property var clipboardHistoryModalLoader: null
     property var dankLauncherV2Modal: null
     property var dankLauncherV2ModalLoader: null
     property var dankIslandRouter: null
@@ -45,6 +47,8 @@ Singleton {
     property var powerMenuModalLoader: null
     property var powerMenuPopout: null
     property var powerMenuPopoutLoader: null
+    property var profilePickerModal: null
+    property var profilePickerModalLoader: null
     property var switchUserModalLoader: null
     property var durationPopout: null
     property var durationPopoutLoader: null
@@ -77,79 +81,23 @@ Singleton {
     property string pendingPluginInstall: ""
     property string pendingWallpaperInstall: ""
 
-    // Deferred unload: keep popouts warm while the session is active and reclaim them on lock/monitors-off.
+    // Closed surfaces unload after a short grace, so a quick reopen keeps its tree.
     property var _pendingUnloads: ({})
 
-    property var _rewarmKeys: []
-
-    Connections {
-        target: SessionService
-        function onSessionLocked() {
-            root._flushPendingUnloads();
-        }
-        function onSessionUnlocked() {
-            root._scheduleRewarm();
-        }
-    }
-
-    Connections {
-        target: IdleService
-        function onMonitorsOffChanged() {
-            if (IdleService.monitorsOff) {
-                root._flushPendingUnloads();
-                return;
-            }
-            root._scheduleRewarm();
-        }
-    }
-
-    function _rewarmBlocked() {
-        return IdleService.isShellLocked || IdleService.monitorsOff;
-    }
-
-    function _scheduleRewarm() {
-        if (!_rewarmKeys.length || _rewarmBlocked())
-            return;
-        rewarmTimer.restart();
-    }
-
-    function _rewarmPopout(key, popoutName, loaderName) {
-        const loader = root[loaderName];
-        if (!loader)
-            return;
-        loader.active = true;
-        const popout = root[popoutName];
-        if (!popout)
-            return;
-        if (!popout.triggerScreen)
-            popout.triggerScreen = CompositorService.getFocusedScreen() ?? Quickshell.screens[0] ?? null;
-        popout.warmContent();
-        _scheduleUnload(key);
-    }
-
     Timer {
-        id: rewarmTimer
-        interval: 1500
-        onTriggered: {
-            if (root._rewarmBlocked())
-                return;
-            const key = root._rewarmKeys[0];
-            root._rewarmKeys = root._rewarmKeys.slice(1);
-            root._rewarmers[key]();
-            if (root._rewarmKeys.length)
-                restart();
-        }
+        id: unloadTimer
+        interval: Timing.holdMedium
+        onTriggered: root._flushPendingUnloads()
     }
 
     function _scheduleUnload(key) {
         _pendingUnloads[key] = true;
+        unloadTimer.restart();
     }
 
     function _flushPendingUnloads() {
         const keys = Object.keys(_pendingUnloads);
         _pendingUnloads = ({});
-        rewarmTimer.stop();
-        _rewarmKeys = _rewarmKeys.concat(keys.filter(key => _rewarmers[key] && !_rewarmKeys.includes(key)));
         for (let i = 0; i < keys.length; i++) {
             const unload = _deferredUnloaders[keys[i]];
             if (unload)
@@ -171,12 +119,6 @@ Singleton {
         loader.active = false;
     }
 
-    readonly property var _rewarmers: ({
-            "dankDash": () => _rewarmPopout("dankDash", "dankDashPopout", "dankDashPopoutLoader"),
-            "controlCenter": () => _rewarmPopout("controlCenter", "controlCenterPopout", "controlCenterLoader"),
-            "notificationCenter": () => _rewarmPopout("notificationCenter", "notificationCenterPopout", "notificationCenterLoader")
-        })
-
     readonly property var _deferredUnloaders: ({
             "dankDash": () => _unloadPopoutNow("dankDashPopout", "dankDashPopoutLoader"),
             "controlCenter": () => _unloadPopoutNow("controlCenterPopout", "controlCenterLoader"),
@@ -194,6 +136,23 @@ Singleton {
             "settings": () => unloadSettingsNow()
         })
 
+    property var _prewarmed: ({})
+
+    // A hover lands a few hundred ms before the click, so the surface's types load off the open path.
+    function prewarm(loader) {
+        const source = loader?.source?.toString() ?? "";
+        if (!source || loader.item || _prewarmed[source])
+            return;
+        const url = source.includes("://") ? source : Qt.resolvedUrl("../" + source);
+        _prewarmed[source] = Qt.createComponent(url, Component.Asynchronous);
+    }
+
+    function desktopMenu() {
+        if (desktopContextMenuLoader)
+            desktopContextMenuLoader.active = true;
+        return desktopContextMenu;
+    }
+
     function setPosition(popout, x, y, width, section, screen) {
         if (popout && popout.setTriggerPosition && arguments.length >= 6) {
             popout.setTriggerPosition(x, y, width, section, screen);
@@ -209,6 +168,25 @@ Singleton {
             screen: target,
             barId: config.id
         };
+    }
+
+    function dashIslandActivity(tabId) {
+        switch (tabId) {
+        case "overview":
+            return "home";
+        case "media":
+        case "wallpaper":
+        case "weather":
+        case "profiles":
+            return tabId;
+        default:
+            return "";
+        }
+    }
+
+    function dashRoutesToIsland(tabId, screen) {
+        const activity = dashIslandActivity(tabId);
+        return activity !== "" && _sharedTriggerIsland(screen, activity) !== null;
     }
 
     readonly property bool islandControlCenterOpen: dankIslandRouter?.controlCenterOpen ?? false
@@ -612,6 +590,11 @@ Singleton {
         }
     }
 
+    function openConnectionEditor(uuid: string, title: string) {
+        SettingsUiState.selectConnection(uuid, title, "");
+        openSettingsWithTab("network_connection");
+    }
+
     function openSettingsWithTabIndex(tabIndex: int) {
         if (settingsModal) {
             if (_settingsWindowDead()) {
@@ -730,10 +713,16 @@ Singleton {
         }
     }
 
+    function clipboardModal() {
+        if (clipboardHistoryModalLoader)
+            clipboardHistoryModalLoader.active = true;
+        return clipboardHistoryModal;
+    }
+
     function openClipboardHistory() {
         if (routeToIsland("clipboard", null, false))
             return;
-        clipboardHistoryModal?.show();
+        clipboardModal()?.show();
     }
 
     function closeClipboardHistory() {
@@ -748,7 +737,7 @@ Singleton {
         }
         if (routeToIsland("clipboard", null, true))
             return;
-        clipboardHistoryModal?.toggle();
+        clipboardModal()?.toggle();
     }
 
     function unloadClipboardHistoryPopout() {
@@ -1039,6 +1028,17 @@ Singleton {
         if (routeToIsland("powermenu", null, true))
             return;
         _powerMenuModalItem()?.openCentered();
+    }
+
+    function toggleProfilePicker() {
+        const modal = profilePickerModalLoader?.item ?? profilePickerModal;
+        if (modal?.shouldBeVisible) {
+            modal.close();
+            return;
+        }
+        if (profilePickerModalLoader)
+            profilePickerModalLoader.active = true;
+        (profilePickerModalLoader?.item ?? profilePickerModal)?.openOn(CompositorService.getFocusedScreen(), SettingsData.configProfilePickerView);
     }
 
     function openSwitchUser() {

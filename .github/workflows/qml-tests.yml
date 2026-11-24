@@ -4,6 +4,9 @@ on:
   push:
     paths:
       - "quickshell/**"
+      - "core/internal/config/embedded/niri-animations.kdl"
+      - "core/internal/config/embedded/hypr-animations.lua"
+      - "core/internal/config/embedded/mango-animations.conf"
       - "dux-qml-common"
       - "Makefile"
       - "core/Makefile"
@@ -16,6 +19,9 @@ on:
     branches: [master, main, "stable-*"]
     paths:
       - "quickshell/**"
+      - "core/internal/config/embedded/niri-animations.kdl"
+      - "core/internal/config/embedded/hypr-animations.lua"
+      - "core/internal/config/embedded/mango-animations.conf"
       - "dux-qml-common"
       - "Makefile"
       - "core/Makefile"

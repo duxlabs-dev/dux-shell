@@ -17,15 +17,15 @@ Rectangle {
     required property var process
 
     readonly property int pid: process?.pid ?? 0
-    readonly property var live: (DgopService.allProcesses ?? []).find(p => p.pid === pid) ?? process
+    readonly property var live: DgopService.findProcess(pid, process?.memberOf) ?? process
     readonly property string command: live?.command ?? ""
     readonly property string fullCommand: live?.fullCommand || command
     readonly property var desktopEntry: ProcessListMetrics.appEntry(live, [sandbox?.id])
-    readonly property string appName: desktopEntry?.name || command
+    readonly property string appName: ProcessListMetrics.displayName(live, desktopEntry)
     readonly property var startTime: live?.startTime ?? null
     readonly property var started: startTime !== null ? new Date(startTime * 1000) : null
     readonly property bool startedToday: started !== null && started.toDateString() === new Date().toDateString()
-    readonly property var parentProcess: (live?.ppid ?? 0) > 0 ? (DgopService.allProcesses ?? []).find(p => p.pid === live.ppid) ?? null : null
+    readonly property var parentProcess: lookup(live?.ppid ?? 0)
 
     property var detail: null
     readonly property string unit: Remotes.unescapeUnit(detail?.unit ?? "")
@@ -75,13 +75,18 @@ Rectangle {
         while (p && names.length < 6) {
             names.push(p.command);
             const ppid = p.ppid;
-            p = ppid > 0 ? (DgopService.allProcesses ?? []).find(x => x.pid === ppid) ?? null : null;
+            p = lookup(ppid);
         }
         return names.join(" › ");
     }
     readonly property string currentTab: tabIds.includes(ProcessListMetrics.processTab) ? ProcessListMetrics.processTab : "overview"
 
     signal actionRequested(string action)
+
+    // A member's parent is usually another member of the same merged row.
+    function lookup(ppid) {
+        return ppid > 0 ? DgopService.findProcess(ppid, process?.memberOf) ?? DgopService.findProcess(ppid) ?? null : null;
+    }
 
     function cell(id) {
         return ProcessColumns.formatCell(id, live ?? ({})) ?? "—";
@@ -181,7 +186,7 @@ Rectangle {
         implicitWidth: chipRow.implicitWidth + Theme.spacingM * 2
         implicitHeight: Theme.buttonHeightXS
         radius: Theme.cornerRadiusS
-        color: emphasis ? Theme.secondaryContainer : Theme.surfaceContainerHighest
+        color: emphasis ? Theme.secondaryContainer : Theme.chipSurfaceNested
         Accessible.role: Accessible.StaticText
         Accessible.name: tip ? tip + ": " + text : text
 
@@ -259,7 +264,7 @@ Rectangle {
             width: parent.width
             customPaddingV: 0
             customPaddingH: Theme.spacingM
-            slotColor: Theme.surfaceContainerHighest
+            slotColor: Theme.chipSurfaceNested
 
             // By count, so a new sample rebinds the rows instead of rebuilding them; hidden tabs build none.
             Repeater {
@@ -279,7 +284,7 @@ Rectangle {
 
     implicitHeight: body.implicitHeight + Theme.spacingL * 2
     radius: Theme.cornerRadiusM
-    color: Theme.surfaceContainerHigh
+    color: Theme.chipSurface
 
     // Clicks between the controls stay here instead of reaching the row, which would collapse the strip.
     MouseArea {
@@ -485,7 +490,7 @@ Rectangle {
                 Layout.alignment: Qt.AlignTop
                 title: I18n.tr("CPU")
                 iconName: "memory"
-                rows: [root.row(I18n.tr("Usage", "chart legend: CPU or GPU utilization"), root.cell("cpu")), root.row(I18n.tr("User time", "CPU time spent in the program itself"), root.seconds(root.detail?.userTime)), root.row(I18n.tr("System time", "CPU time the kernel spent on behalf of the program"), root.seconds(root.detail?.systemTime)), root.row(I18n.tr("Last core", "CPU core the process last ran on"), root.detail?.lastCpu), root.row(I18n.tr("Allowed cores", "CPU affinity list"), root.detail?.affinity), root.row(I18n.tr("Scheduling", "Linux scheduling policy"), root.detail?.policy), root.row(I18n.tr("Priority", "kernel scheduling priority"), root.detail?.priority), root.row(I18n.tr("Nice", "process column: Linux nice value, scheduling priority"), root.cell("nice")), root.row(I18n.tr("I/O priority", "disk scheduling class and level"), root.detail?.ioClass ? root.detail.ioClass + (root.detail.ioLevel != null ? " " + root.detail.ioLevel : "") : null), root.row(I18n.tr("Context switches", "times the process gave up the CPU voluntarily"), root.count(root.detail?.voluntarySwitches)), root.row(I18n.tr("Preempted", "times the process was forced off the CPU"), root.count(root.detail?.involuntarySwitches))]
+                rows: [root.row(I18n.tr("Usage", "chart legend: CPU or GPU utilization"), root.cell("cpu")), root.row(I18n.tr("User time", "CPU time spent in the program itself"), root.seconds(root.detail?.userTime)), root.row(I18n.tr("System time", "CPU time the kernel spent on behalf of the program"), root.seconds(root.detail?.systemTime)), root.row(I18n.tr("Last core", "CPU core the process last ran on"), root.detail?.lastCpu), root.row(I18n.tr("Allowed cores", "CPU affinity list"), root.detail?.affinity), root.row(I18n.tr("Scheduling", "Linux scheduling policy"), root.detail?.policy), root.row(I18n.tr("Nice", "process column: Linux nice value, scheduling priority"), root.cell("nice")), root.row(I18n.tr("I/O priority", "disk scheduling class and level"), root.detail?.ioClass ? root.detail.ioClass + (root.detail.ioLevel != null ? " " + root.detail.ioLevel : "") : null), root.row(I18n.tr("Context switches", "times the process gave up the CPU voluntarily"), root.count(root.detail?.voluntarySwitches)), root.row(I18n.tr("Preempted", "times the process was forced off the CPU"), root.count(root.detail?.involuntarySwitches))]
             }
 
             Section {
@@ -607,7 +612,7 @@ Rectangle {
                     width: parent.width
                     height: Math.max(commandFull.implicitHeight + Theme.spacingS * 2, commandCopy.height + Theme.spacingXS * 2)
                     radius: Theme.cornerRadiusL
-                    color: Theme.surfaceContainerHighest
+                    color: Theme.chipSurfaceNested
 
                     StyledText {
                         id: commandFull
@@ -665,6 +670,7 @@ Rectangle {
                     popupWidth: Theme.fontSizeMedium * 10
                     options: ProcessActions.priorities.map(p => p.label)
                     optionValues: ProcessActions.priorities.map(p => String(p.nice))
+                    optionIcons: ProcessActions.priorities.map(p => p.warning ? "warning" : "")
                     onValueChanged: value => ProcessActions.setPriority(root.live, Number(value))
                 }
             }

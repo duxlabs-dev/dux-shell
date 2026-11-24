@@ -26,6 +26,7 @@ Item {
     readonly property bool embedded: root.chrome !== "own"
     readonly property bool connectedChrome: root.chrome === "none"
     property real bandThickness: 0
+    property real bandInset: 0
     // The visible band along the bar, in host coordinates; a percent-length or padded bar is shorter than its window.
     property real bandAlongStart: 0
     property real bandAlongEnd: root.isVertical ? root.height : root.width
@@ -34,7 +35,7 @@ Item {
     property color bandColor: Theme.hostSurface
     property Item anchorItem: null
     property Item slotItem: null
-    property Item barBody: null
+    property DBarBody barBody: null
     property var leadingSectionRect: null
     property var centerSectionRect: null
     property var trailingSectionRect: null
@@ -68,9 +69,7 @@ Item {
     // Held from expand until the collapse spring settles, so compact-to-compact morphs never resize the bar window.
     property bool sheetOut: false
     readonly property bool surfaceFits: (root.isVertical ? root.windowWidth : root.windowHeight) >= root.hostThickness - 1
-    // A free host lifts to the whole output for the sheet; the expand waits for that size so no frame of the morph is clipped.
-    property bool hostLifted: true
-    readonly property bool hostReady: root.freeMode ? root.hostLifted : (!root.embedded || root.frameHosted || root.surfaceFits)
+    readonly property bool hostReady: root.freeMode || !root.embedded || root.frameHosted || root.surfaceFits
     // Layer surfaces glitch when they resize under a moving sheet: edit room waits for a frame at the grown size, and the grown size outlives the shrink spring.
     readonly property bool surfaceResizes: !root.freeMode && !root.frameHosted
     readonly property int editSurfaceHeight: controller.editSurfaceHeight
@@ -152,9 +151,9 @@ Item {
     // Screen position of the host window's origin; section rects and mapToItem(null) are window-relative.
     readonly property real sectionOriginX: root.hostOriginX - root.originOffsetX - root.hostOffsetX
     readonly property real sectionOriginY: root.hostOriginY - root.originOffsetY - root.hostOffsetY
-    readonly property int outerGap: root.freeMode ? 0 : root.embedded ? root.bandFit.gap : root.islandMetrics.gap
+    readonly property int outerGap: root.freeMode ? 0 : root.embedded ? root.bandInset + root.bandFit.gap : root.islandMetrics.gap
     // An embedded sheet starts inside the band; its content begins past the fold so nothing sits on the bar.
-    readonly property int nearInset: root.embedded ? Math.max(0, Math.round(root.bandThickness) - root.outerGap) : 0
+    readonly property int nearInset: root.embedded ? Math.max(0, Math.round(root.bandThickness + root.bandInset) - root.outerGap) : 0
     readonly property real crossInsetStart: root.freeMode ? 0 : root.frameHosted ? ShellLayout.frameReservation(root.screen, root.isVertical ? "left" : "top") : root.isVertical ? root.windowMarginLeft : root.windowMarginTop
     readonly property real crossInsetEnd: root.freeMode ? 0 : root.frameHosted ? ShellLayout.frameReservation(root.screen, root.isVertical ? "right" : "bottom") : root.isVertical ? root.windowMarginRight : root.windowMarginBottom
     readonly property real alongInset: root.freeMode ? 0 : root.isVertical ? root.windowMarginTop + root.windowMarginBottom : root.windowMarginLeft + root.windowMarginRight
@@ -176,9 +175,8 @@ Item {
     readonly property int hostThickness: outerGap + nearInset + (root.isVertical ? maxActivityWidth : maxActivityHeight) + Theme.spacingS + shadowPadding
     readonly property real maximumAlongOffset: root.isVertical ? Math.max(0, (height - maxActivityHeight) / 2 - Theme.spacingS - shadowPadding) : Math.max(0, (width - maxActivityWidth) / 2 - Theme.spacingS - shadowPadding)
     readonly property bool scrollEnabled: root.barConfig?.scrollEnabled ?? true
-    property bool keyboardFocusArmed: true
     property bool keyboardReclaiming: false
-    readonly property int keyboardFocusPolicy: root.keyboardReclaiming && controller.keyboardDismissRequested ? WlrKeyboardFocus.Exclusive : KeyboardFocus.keyboardFocus(controller.keyboardDismissRequested && root.keyboardFocusArmed && !controller.keyboardYielded, null)
+    readonly property int keyboardFocusPolicy: root.keyboardReclaiming && controller.keyboardDismissRequested ? WlrKeyboardFocus.Exclusive : KeyboardFocus.keyboardFocus(controller.keyboardDismissRequested && !controller.keyboardYielded, null)
     readonly property bool wantsFocusGrab: KeyboardFocus.wantsGrab(controller.keyboardDismissRequested && !controller.keyboardYielded, null)
     readonly property var transientFocusWindows: islandTransientSurfaces.focusWindows
     property var dismissWindow: null
@@ -228,13 +226,8 @@ Item {
     }
 
     function requestKeyboardFocus() {
-        if (!controller.keyboardDismissRequested) {
-            keyboardFocusArmed = false;
-            keyboardRearmTimer.restart();
+        if (!controller.keyboardDismissRequested)
             return;
-        }
-        keyboardRearmTimer.stop();
-        keyboardFocusArmed = true;
         islandFocus.forceActiveFocus(Qt.PopupFocusReason);
         surface.requestActivityFocus();
     }
@@ -372,15 +365,8 @@ Item {
     Timer {
         id: keyboardReclaimTimer
 
-        interval: 80
+        interval: Timing.settleShort
         onTriggered: root.keyboardReclaiming = false
-    }
-
-    Timer {
-        id: keyboardRearmTimer
-
-        interval: 80
-        onTriggered: root.keyboardFocusArmed = true
     }
 
     Connections {
@@ -404,6 +390,12 @@ Item {
         id: controller
 
         onKeyboardDismissRequestedChanged: root.requestKeyboardFocus()
+        onPointerInsideChanged: {
+            if (pointerInside && !safeZoneHeld)
+                root.barBody?.pointerMovedToIsland();
+        }
+        onSafeZoneLeft: root.barBody?.pointerMovedToIsland()
+        inHoverSafeZone: (gx, gy) => root.barBody?.pointInActiveHoverSafeZone(gx, gy) === true
         onKeyboardYieldedChanged: {
             if (keyboardYielded || !keyboardDismissRequested)
                 return;
@@ -432,7 +424,7 @@ Item {
         outerGap: root.outerGap
         compactThickness: root.compactThickness
         cornerRadius: root.connectedChrome ? Theme.connectedSurfaceRadius : Theme.windowRadius
-        pillRadius: BarMetrics.pillRadius(root.compactThickness, root.barConfig?.widgetStyle ?? "pills")
+        pillRadius: root.setting("islandPillShape") ? root.compactThickness / 2 : BarMetrics.pillRadius(root.compactThickness, root.barConfig?.widgetStyle ?? "pills")
         homeCompactTight: root.setting("islandHomeCompactTight")
         homeStatusContent: SettingsData.islandHomeStatusContent(root.barConfig)
         homeClockDisplay: SettingsData.islandClockDisplay(root.barConfig)
@@ -440,10 +432,19 @@ Item {
         homeBrightnessDisplay: SettingsData.islandLevelDisplay(root.barConfig, "islandHomeBrightnessDisplay")
         batteryStyle: root.setting("islandBatteryStyle")
         mediaClockVisible: root.setting("islandMediaClockVisible")
+        mediaControls: root.setting("islandMediaControls")
         mediaLyrics: root.setting("islandMediaLyrics")
+        mediaScrollLyrics: root.setting("islandMediaScrollLyrics")
         dashTabs: root.setting("islandDashTabs")
+        dashDefaultTab: root.setting("islandDashDefaultTab")
         // Home and media share the dot face; see mediaFaceToggleAvailable.
         mediaAutoSwitch: !root.dotMode && root.setting("islandMediaAutoSwitch")
+        liveIconAnimationMode: root.setting("islandActivityIconMotion")
+        liveIconAnimationDuration: root.setting("islandActivityIconMotionDuration")
+        liveIconAnimationIntensity: root.setting("islandActivityIconMotionIntensity")
+        presentationSession: activitySession
+        widgetHost: root.barBody ?? root
+        liveCandidate: activitySession.current?.kind === "activity" ? activitySession.current : null
         launcherCycleEnabled: SettingsData.launcherStyle === "island"
         dashboardAvailableWidth: Math.max(0, (root.screen?.width ?? root.referenceScreenWidth) - (root.isVertical ? root.crossInsetStart + root.crossInsetEnd + root.outerGap + root.nearInset : root.alongInset) - Theme.spacingL * 2)
         dashboardAvailableHeight: Math.max(0, (root.screen?.height ?? root.referenceScreenHeight) - (root.isVertical ? root.alongInset : root.crossInsetStart + root.crossInsetEnd + root.outerGap + root.nearInset) - Theme.spacingL * 2)
@@ -451,6 +452,9 @@ Item {
         unreadNotificationCount: root.setting("islandNotificationBadgeClearOnOpen") ? NotificationService.unreadCount : NotificationService.notifications.length
         hoverOpenDelay: Math.max(0, Math.min(root.maxHoverDelay, root.setting("islandHoverOpenDelay")))
         hoverCloseDelay: Math.max(0, Math.min(root.maxHoverDelay, root.setting("islandHoverCloseDelay")))
+        // With hover popouts on, hover doesn't open the island over a popout opened with a click, like bar widgets.
+        hoverExpandBlocked: hoverExpandEnabled && (root.barConfig?.hoverPopouts ?? false) && (root.popoutRevision, PopoutManager.isActivePopoutPinned(root.screen))
+        onBlockingPopoutDismissRequested: PopoutManager.closePopoutForScreen(root.screen)
     }
 
     DLauncher.Controller {
@@ -478,6 +482,23 @@ Item {
         controller: controller
         enabled: SettingsData.islandSystemOsdHost(root.screen)?.id === root.barId
         chargingPulseEnabled: root.setting("islandChargingPulse")
+    }
+
+    IslandActivitySession {
+        id: activitySession
+        screenName: root.screen?.name ?? ""
+        barId: root.barId
+        enabled: root.setting("islandActivitiesEnabled") && root.barConfig?.visible !== false
+        systemsEnabled: SettingsData.islandSystemOsdHost(root.screen)?.id === root.barId
+        notificationsEnabled: SettingsData.islandNotificationHost(root.screen)?.id === root.barId
+        excludedSources: root.setting("islandExcludedSources")
+        sourceOverrides: root.setting("islandActivitySourceOverrides")
+        slotLimit: root.setting("islandActivitySlotLimit")
+        defaultDuration: root.setting("islandActivityDuration")
+        // Built-in notifications, OSDs and open sheets keep the island; a preview waits, and an interrupted one resumes.
+        blocked: controller.inputSuspended || controller.systemActivityActive || controller.notificationActive || (controller.expanded && !controller.liveActive)
+        held: !controller.liveActive || controller.timeoutSuspended
+        onOpenRequested: entry => controller.openStableEntry(entry)
     }
 
     IslandNotificationSource {
@@ -518,20 +539,21 @@ Item {
         compactBackground: root.embedded && root.setting("islandWidgetBackground") === true && !(root.barConfig?.noBackground ?? false)
         compactBackgroundColor: BarMetrics.widgetFill(root.barConfig)
         opacity: root.freeOpacity
-        reducedMotion: SettingsData.reduceMotion || SettingsData.animationDuration <= 0
-        springStiffness: Math.max(root.springStiffnessRange[0], Math.min(root.springStiffnessRange[1], root.setting("islandSpringStiffness")))
-        springDamping: Math.max(root.springDampingRange[0], Math.min(root.springDampingRange[1], root.setting("islandSpringDamping")))
+        reducedMotion: Theme.reduceMotion
+        springStiffness: Math.max(root.springStiffnessRange[0], Math.min(root.springStiffnessRange[1], root.setting("islandSpringStiffness"))) / (Theme.springScale * Theme.springScale)
+        springDamping: Math.max(root.springDampingRange[0], Math.min(root.springDampingRange[1], root.setting("islandSpringDamping"))) / Theme.springScale
         springMass: Math.max(root.springMassRange[0], Math.min(root.springMassRange[1], root.setting("islandSpringMass")))
         palette: root.setting("islandPalette")
         highContrast: !root.embedded && root.setting("islandHighContrast")
-        transparency: SettingsData.barTransparency(root.barConfig)
+        transparency: controller.expanded && root.setting("islandExpandedOpacity") >= 0 ? root.setting("islandExpandedOpacity") : SettingsData.barTransparency(root.barConfig)
         surfaceBase: SettingsData.barSurfaceColor(root.barConfig)
         onScrollWheel: wheel => root.scrollWheel(wheel)
 
         Behavior on opacity {
             NumberAnimation {
-                duration: surface.reducedMotion ? 0 : Theme.mediumDuration
-                easing.type: Easing.OutCubic
+                duration: surface.reducedMotion ? 0 : Theme.expressiveDurations.expressiveSlowEffects
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: Theme.expressiveCurves.expressiveSlowEffects
             }
         }
     }

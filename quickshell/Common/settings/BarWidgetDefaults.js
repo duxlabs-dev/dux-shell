@@ -37,13 +37,30 @@ var ISLAND_DEFAULTS = {
     islandPalette: "default",
     islandHighContrast: false,
     islandDashTabs: false,
+    islandDashDefaultTab: "overview",
     islandMediaClockVisible: true,
+    islandMediaControls: true,
     islandMediaLyrics: false,
+    islandMediaScrollLyrics: false,
     islandMediaAutoSwitch: false,
+    islandActivityDuration: 5000,
+    islandActivityIconMotion: "activity",
+    islandActivityIconMotionDuration: 650,
+    islandActivityIconMotionIntensity: 65,
+    islandActivitiesEnabled: true,
+    islandExcludedSources: [],
+    islandActivitySlotLimit: 3,
+    islandActivitySourceOverrides: {},
+    islandPillShape: false,
+    islandExpandedOpacity: -1,
+    islandCompactColor: "",
+    islandExpandedColor: "",
+    islandActivityColors: false,
     islandNotificationBadgeClearOnOpen: false,
     islandNotificationExpand: false,
     islandNotificationPopups: false,
     islandSystemOsd: true,
+    islandWorkspaceOsd: false,
     islandChargingPulse: true,
     islandHomeCompactTight: false,
     islandHomeClockDisplay: "both",
@@ -58,8 +75,8 @@ var ISLAND_DEFAULTS = {
     islandSatelliteGothCorners: true,
     islandSatelliteFollowInterfaceStyle: true,
     islandSatelliteTransparency: 1,
-    islandSpringStiffness: 560,
-    islandSpringDamping: 37,
+    islandSpringStiffness: 600,
+    islandSpringDamping: 49,
     islandSpringMass: 1
 };
 
@@ -143,7 +160,13 @@ var DEFAULTS = {
         mediaAdaptiveWidthEnabled: true,
         mediaShowLyrics: true,
         mediaSmoothLyrics: false,
+        mediaScrollLyrics: false,
         mediaShowCoverArt: true,
+        mediaArtworkShape: "rounded",
+        mediaVisualizerMode: "always",
+        mediaTitleMode: "always",
+        mediaTitleDuration: 2400,
+        mediaTitleMaxWidth: 0,
         audioScrollMode: "nothing"
     },
     focusedWindow: {
@@ -250,6 +273,9 @@ var DEFAULTS = {
     },
     systemUpdate: {
         hideWhenIdle: false
+    },
+    notificationButton: {
+        hideWhenEmpty: false
     }
 };
 

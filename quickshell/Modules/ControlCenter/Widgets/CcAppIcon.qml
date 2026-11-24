@@ -2,6 +2,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Widgets
 import qs.Common
+import qs.Services
 import qs.DCommon.Common as DCommon
 import qs.DCommon.Widgets
 
@@ -9,8 +10,9 @@ Item {
     id: root
 
     property string appId: ""
+    property var window: null
     property real iconSize: Theme.iconSize
-    readonly property int iconRequestSize: DCommon.Style.iconRasterSize(iconSize)
+    readonly property int iconRequestSize: DCommon.Style.iconRasterSize(iconSize * Screen.devicePixelRatio)
     property int _desktopEntriesRevision: 0
 
     implicitWidth: iconSize
@@ -34,7 +36,7 @@ Item {
         anchors.fill: parent
         source: {
             root._desktopEntriesRevision;
-            return root.appId ? Paths.getAppIcon(root.appId, DesktopEntries.heuristicLookup(root.appId)) : "";
+            return AppSearchService.windowIcon(root.appId, root.window) || (root.appId ? Paths.getAppIcon(root.appId, DesktopEntries.heuristicLookup(root.appId)) : "");
         }
         backer.sourceSize: Qt.size(root.iconRequestSize, root.iconRequestSize)
         backer.retainWhileLoading: true

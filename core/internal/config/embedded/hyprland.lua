@@ -51,13 +51,6 @@ hl.config({
 	},
 })
 
-hl.animation({ leaf = "windowsIn", enabled = true, speed = 3, bezier = "default" })
-hl.animation({ leaf = "windowsOut", enabled = true, speed = 3, bezier = "default" })
-hl.animation({ leaf = "workspaces", enabled = true, speed = 5, bezier = "default" })
-hl.animation({ leaf = "windowsMove", enabled = true, speed = 4, bezier = "default" })
-hl.animation({ leaf = "fade", enabled = true, speed = 3, bezier = "default" })
-hl.animation({ leaf = "border", enabled = true, speed = 3, bezier = "default" })
-
 hl.window_rule({ match = { class = "^(org\\.wezfurlong\\.wezterm)$" }, tile = true })
 hl.window_rule({ match = { class = "^(org\\.gnome\\.)" }, rounding = 12 })
 hl.window_rule({ match = { class = "^(gnome-control-center)$" }, tile = true })
@@ -84,6 +77,7 @@ hl.layer_rule({ match = { namespace = "^dms:.*" }, no_anim = true })
 require("dms.colors")
 require("dms.outputs")
 require("dms.layout")
+require("dms.animations")
 require("dms.cursor")
 require("dms.input")
 require("dms.binds")

@@ -10,26 +10,6 @@ import (
 
 const testCommit = "0123456789abcdef0123456789abcdef01234567"
 
-func TestPluginLockfileRoundTrip(t *testing.T) {
-	fs := afero.NewMemMapFs()
-	store := NewLockStore(fs, "/config/plugins.lock.json")
-	lock := NewPluginLockfile()
-	lock.Plugins["weather"] = LockedPlugin{
-		Repo:   "https://github.com/example/plugins.git",
-		Path:   "plugins/weather",
-		Commit: testCommit,
-	}
-
-	require.NoError(t, store.Write(lock))
-	loaded, err := store.Load()
-	require.NoError(t, err)
-	assert.Equal(t, lock, loaded)
-
-	data, err := afero.ReadFile(fs, store.Path())
-	require.NoError(t, err)
-	assert.Equal(t, "{\n  \"lockfileVersion\": 1,\n  \"plugins\": {\n    \"weather\": {\n      \"repo\": \"https://github.com/example/plugins.git\",\n      \"path\": \"plugins/weather\",\n      \"commit\": \"0123456789abcdef0123456789abcdef01234567\"\n    }\n  }\n}\n", string(data))
-}
-
 func TestPluginLockfileValidation(t *testing.T) {
 	tests := []struct {
 		name string

@@ -51,6 +51,8 @@ func TestMangoDeployMovesUserRulesAndKeepsBindsByDefault(t *testing.T) {
 
 	assert.Contains(t, readMango(t, home, "config.conf"), "exec_once=dms run")
 	assert.Contains(t, readMango(t, home, "config.conf"), "source=./dms/input.conf")
+	assert.Contains(t, readMango(t, home, "config.conf"), "source=./dms/animations.conf")
+	assert.Equal(t, MangoAnimationsConfig, readMango(t, home, "dms/animations.conf"))
 	assert.Equal(t, "", readMango(t, home, "dms/input.conf"))
 	binds := readMango(t, home, "dms/binds.conf")
 	assert.Contains(t, binds, "bind=SUPER,Return,spawn,foot\nkey_mode=resize\nbind=NONE,h,resizewin,-10,0")

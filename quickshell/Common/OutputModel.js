@@ -35,40 +35,84 @@ function isRotated(name) {
     return ["90", "270", "Flipped90", "Flipped270"].includes(name);
 }
 
-function niriIdentifier(output, name, displayNameMode) {
-    if (displayNameMode !== "model" || !output?.make || !output?.model)
-        return name;
+function hasModelIdentity(output, displayNameMode) {
+    return displayNameMode === "model" && !!output?.make && !!output?.model;
+}
+
+// units reporting the same make, model and serial can only be told apart by connector
+function identifiesByModel(output, displayNameMode) {
+    return hasModelIdentity(output, displayNameMode) && !output.identityShared;
+}
+
+function markSharedIdentities(outputs) {
+    const owners = {};
+    for (const name in outputs) {
+        const output = outputs[name];
+        if (!output.make || !output.model)
+            continue;
+        const identity = niriModelName(output);
+        owners[identity] = (owners[identity] || []).concat(output);
+    }
+    for (const identity in owners) {
+        if (owners[identity].length < 2)
+            continue;
+        for (const output of owners[identity])
+            output.identityShared = true;
+    }
+}
+
+function niriModelName(output) {
     return output.make + " " + output.model + " " + (output.serial || "Unknown");
 }
 
-function hyprlandIdentifier(output, name, displayNameMode) {
-    if (displayNameMode !== "model" || !output?.make || !output?.model)
+function niriIdentifier(output, name, displayNameMode) {
+    if (!identifiesByModel(output, displayNameMode))
         return name;
+    return niriModelName(output);
+}
+
+function hyprlandDescription(output) {
     return ("desc:" + [output.make, output.model, output.serial].filter(p => p).join(" ")).replace(/,/g, "");
 }
 
+function hyprlandIdentifier(output, name, displayNameMode) {
+    if (!identifiesByModel(output, displayNameMode))
+        return name;
+    return hyprlandDescription(output);
+}
+
 // monitors.json keys Hyprland profiles by bare "Make Model Serial", which hl.monitor ignores; only a connector or desc: matches
-function hyprlandProfileOutputIdentifier(output, key, isConnector) {
-    if (isConnector || key.startsWith("desc:") || !output?.make || !output?.model)
+function hyprlandProfileOutputIdentifier(output, key) {
+    if (!isHyprlandModelKey(output, key))
         return key;
-    return hyprlandIdentifier(output, key, "model");
+    return hyprlandDescription(output);
+}
+
+function isHyprlandModelKey(output, key) {
+    if (!output?.make || !output?.model)
+        return false;
+    return key === modelProfileKey(output, "hyprland") || key === modelIdentifier(output);
 }
 
 function modelIdentifier(output) {
     return output.make + " " + output.model;
 }
 
-function profileIdentifier(output, name, displayNameMode, compositor) {
-    if (displayNameMode !== "model" || !output?.make || !output?.model)
-        return name;
+function modelProfileKey(output, compositor) {
     switch (compositor) {
     case "niri":
-        return niriIdentifier(output, name, displayNameMode);
+        return niriModelName(output);
     case "hyprland":
         return [output.make, output.model, output.serial].filter(p => p).join(" ");
     default:
         return modelIdentifier(output);
     }
+}
+
+function profileIdentifier(output, name, displayNameMode, compositor) {
+    if (!identifiesByModel(output, displayNameMode))
+        return name;
+    return modelProfileKey(output, compositor);
 }
 
 // Hyprland profiles were keyed by bare "Make Model" before the serial was added; only a profile of exactly the connected models says which unit a key meant
@@ -639,6 +683,7 @@ function outputsFromWlr(wlrOutputs, liveMonitors) {
         map[output.name].logical.scale = live.scale || 1.0;
         map[output.name].logical.transform = transformName(live.transformIndex ?? 0);
     }
+    markSharedIdentities(map);
     return map;
 }
 
@@ -679,7 +724,9 @@ function outputNeutralConfig(outputName, outputData, niriSettings, hyprlandSetti
 }
 
 function profileKeyMatchesOutput(outputId, output, name, displayNameMode, compositor) {
-    if (name === outputId || profileIdentifier(output, name, displayNameMode, compositor) === outputId)
+    if (name === outputId)
+        return true;
+    if (hasModelIdentity(output, displayNameMode) && modelProfileKey(output, compositor) === outputId)
         return true;
     if (!outputId.startsWith("desc:") || !output?.make)
         return false;
@@ -689,12 +736,13 @@ function profileKeyMatchesOutput(outputId, output, name, displayNameMode, compos
     return want === full || want === noSerial || full.startsWith(want + " ");
 }
 
+function liveOutputsForKey(outputId, outputs, displayNameMode, compositor) {
+    return Object.keys(outputs).filter(name => profileKeyMatchesOutput(outputId, outputs[name], name, displayNameMode, compositor)).map(name => outputs[name]);
+}
+
 function liveOutputForKey(outputId, outputs, displayNameMode, compositor) {
-    for (const name in outputs) {
-        if (profileKeyMatchesOutput(outputId, outputs[name], name, displayNameMode, compositor))
-            return outputs[name];
-    }
-    return null;
+    const claimants = liveOutputsForKey(outputId, outputs, displayNameMode, compositor);
+    return claimants.length === 1 ? claimants[0] : null;
 }
 
 function outputsDataFromConfigEntry(configEntry, outputs, displayNameMode, compositor) {
@@ -702,7 +750,11 @@ function outputsDataFromConfigEntry(configEntry, outputs, displayNameMode, compo
     const cfgOutputs = configEntry.outputs || {};
     for (const outputId in cfgOutputs) {
         const cfg = cfgOutputs[outputId];
-        const liveOutput = liveOutputForKey(outputId, outputs, displayNameMode, compositor);
+        const claimants = liveOutputsForKey(outputId, outputs, displayNameMode, compositor);
+        // a rule under a key several connected outputs answer to would configure all of them
+        if (claimants.length > 1)
+            continue;
+        const liveOutput = claimants[0] ?? null;
         const liveModes = liveOutput?.modes || [];
         const currentMode = liveModes.findIndex(m => {
             const s = m.width + "x" + m.height + "@" + (m.refresh_rate / 1000).toFixed(3);
@@ -830,27 +882,27 @@ function currentOutputSet(outputs, displayNameMode, compositor) {
     return connected.sort();
 }
 
-function liveIdentifiers(outputs, displayNameMode, compositor) {
+function liveIdentifiers(outputs, compositor) {
     const identifiers = {};
     for (const name in outputs) {
         const o = outputs[name];
         identifiers[name] = true;
         if (!o?.make || !o?.model)
             continue;
-        identifiers[(o.make + " " + o.model + " " + (o.serial || "Unknown")).trim()] = true;
-        identifiers[(o.make + " " + o.model).trim()] = true;
+        identifiers[niriModelName(o).trim()] = true;
+        identifiers[modelIdentifier(o).trim()] = true;
         switch (compositor) {
         case "hyprland":
-            identifiers[hyprlandIdentifier(o, name, displayNameMode).trim()] = true;
+            identifiers[hyprlandDescription(o).trim()] = true;
             break;
         }
     }
     return identifiers;
 }
 
-function filterDisconnectedOnly(parsedOutputs, outputs, displayNameMode, compositor) {
+function filterDisconnectedOnly(parsedOutputs, outputs, compositor) {
     const result = {};
-    const live = liveIdentifiers(outputs, displayNameMode, compositor);
+    const live = liveIdentifiers(outputs, compositor);
     for (const savedName in parsedOutputs) {
         if (!live[savedName.trim()])
             result[savedName] = parsedOutputs[savedName];

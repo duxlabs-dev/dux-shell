@@ -3,6 +3,7 @@ package clipboard
 import (
 	"bytes"
 	"cmp"
+	"context"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -19,6 +20,7 @@ import (
 	"runtime/debug"
 	"slices"
 	"strings"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -70,7 +72,6 @@ func NewManager(wlCtx wlcontext.WaylandContext, config Config) (*Manager, error)
 		display:        display,
 		wlCtx:          wlCtx,
 		stopChan:       make(chan struct{}),
-		subscribers:    make(map[string]chan State),
 		dirty:          make(chan struct{}, 1),
 		offerMimeTypes: make(map[any][]string),
 		dbPath:         dbPath,
@@ -92,11 +93,13 @@ func NewManager(wlCtx wlcontext.WaylandContext, config Config) (*Manager, error)
 		log.Errorf("Failed to migrate hashes: %v", err)
 	}
 
+	strayMaxAge := strayFileMaxAge
 	if !config.Disabled {
 		if config.ClearAtStartup {
 			if err := m.clearHistoryInternal(); err != nil {
 				log.Errorf("Failed to clear history at startup: %v", err)
 			}
+			strayMaxAge = 0
 		}
 
 		if config.AutoClearDays > 0 {
@@ -105,6 +108,8 @@ func NewManager(wlCtx wlcontext.WaylandContext, config Config) (*Manager, error)
 			}
 		}
 	}
+	m.pruneStore(strayMaxAge)
+	cleanupExpiredDragFiles(dragTempDir())
 
 	m.alive = true
 	m.updateState()
@@ -139,6 +144,11 @@ func openDB(path string) (*bolt.DB, error) {
 	if renameErr := os.Rename(path, corruptPath); renameErr != nil {
 		os.Remove(salvagePath)
 		return nil, err
+	}
+	// pruneStore ages it out from the salvage, not from the db's last write
+	salvagedAt := time.Now()
+	if err := os.Chtimes(corruptPath, salvagedAt, salvagedAt); err != nil {
+		log.Warnf("Failed to timestamp corrupt clipboard db: %v", err)
 	}
 
 	os.Rename(salvagePath, path)
@@ -181,7 +191,7 @@ func tryOpenDB(path string) (db *bolt.DB, err error) {
 	}()
 	defer armDBFaultPanics()()
 
-	db, err = bolt.Open(path, 0o644, &bolt.Options{
+	db, err = bolt.Open(path, 0o600, &bolt.Options{
 		Timeout: 1 * time.Second,
 	})
 	if err != nil {
@@ -379,6 +389,7 @@ func (m *Manager) bindDataDevice() bool {
 		m.ownerLock.Unlock()
 
 		if wasOwner {
+			m.releaseOffer(offer)
 			return
 		}
 
@@ -988,19 +999,7 @@ func (m *Manager) notifier() {
 
 		m.lastState = &state
 
-		m.subMutex.RLock()
-		subs := make([]chan State, 0, len(m.subscribers))
-		for _, ch := range m.subscribers {
-			subs = append(subs, ch)
-		}
-		m.subMutex.RUnlock()
-
-		for _, ch := range subs {
-			select {
-			case ch <- state:
-			default:
-			}
-		}
+		m.subscribers.Publish(state)
 	}
 }
 
@@ -1058,6 +1057,7 @@ func (m *Manager) DeleteEntry(id uint64) error {
 	})
 
 	if err == nil {
+		removeDragFilesForEntry(dragTempDir(), id)
 		m.updateState()
 		m.notifySubscribers()
 	}
@@ -1102,6 +1102,7 @@ func (m *Manager) deleteUnpinnedWhere(pred entryMatcher) (int, error) {
 	}
 
 	if deleted > 0 {
+		clearDragTempDir(dragTempDir())
 		m.updateState()
 		m.notifySubscribers()
 	}
@@ -1174,9 +1175,68 @@ func (m *Manager) ClearHistory() {
 			log.Errorf("Failed to compact database: %v", err)
 		}
 	}
+	m.pruneStore(0)
+	clearDragTempDir(dragTempDir())
 
 	m.updateState()
 	m.notifySubscribers()
+}
+
+const strayFileMaxAge = 7 * 24 * time.Hour
+
+// pruneStore keeps the store owner-only and deletes files beside the db that
+// are older than maxAge and that no history entry points at.
+func (m *Manager) pruneStore(maxAge time.Duration) {
+	if m.dbPath == "" {
+		return
+	}
+	dir := filepath.Dir(m.dbPath)
+	files, err := os.ReadDir(dir)
+	if err != nil {
+		return
+	}
+	if err := os.Chmod(dir, 0o700); err != nil {
+		log.Warnf("Failed to restrict clipboard store: %v", err)
+	}
+
+	inHistory := m.historyFiles()
+	cutoff := time.Now().Add(-maxAge)
+	for _, file := range files {
+		info, err := file.Info()
+		if err != nil || !info.Mode().IsRegular() {
+			continue
+		}
+		path := filepath.Join(dir, file.Name())
+		if path != m.dbPath && !inHistory[path] && !info.ModTime().After(cutoff) {
+			os.Remove(path)
+			continue
+		}
+		if err := os.Chmod(path, 0o600); err != nil {
+			log.Warnf("Failed to restrict clipboard store: %v", err)
+		}
+	}
+}
+
+func (m *Manager) historyFiles() map[string]bool {
+	var ids []uint64
+	m.readHistory(func(h *historyIndex) {
+		h.eachNewest(nil, func(e *entryMeta) bool {
+			if e.mime == "text/uri-list" {
+				ids = append(ids, e.id)
+			}
+			return true
+		})
+	})
+
+	files := make(map[string]bool, len(ids))
+	for _, id := range ids {
+		entry, err := m.GetEntry(id)
+		if err != nil {
+			continue
+		}
+		files[m.EntryToFile(entry)] = true
+	}
+	return files
 }
 
 func (m *Manager) compactDB() error {
@@ -1207,13 +1267,13 @@ func compactInto(srcPath, dstPath string, txMaxSize int64) (err error) {
 	defer recoverDBPanic(&err)
 	defer armDBFaultPanics()()
 
-	srcDB, err := bolt.Open(srcPath, 0o644, &bolt.Options{ReadOnly: true, Timeout: time.Second})
+	srcDB, err := bolt.Open(srcPath, 0o600, &bolt.Options{ReadOnly: true, Timeout: time.Second})
 	if err != nil {
 		return fmt.Errorf("open source: %w", err)
 	}
 	defer srcDB.Close()
 
-	dstDB, err := bolt.Open(dstPath, 0o644, &bolt.Options{Timeout: time.Second})
+	dstDB, err := bolt.Open(dstPath, 0o600, &bolt.Options{Timeout: time.Second})
 	if err != nil {
 		return fmt.Errorf("open destination: %w", err)
 	}
@@ -1248,7 +1308,7 @@ func (m *Manager) canTakeSelection() bool {
 	return m.deviceBound.Load() && !m.getConfig().Disabled
 }
 
-func (m *Manager) SetClipboard(data []byte, mimeType string) error {
+func (m *Manager) SetClipboard(ctx context.Context, data []byte, mimeType string) error {
 	if !m.canTakeSelection() {
 		return errSelectionUnavailable
 	}
@@ -1259,14 +1319,13 @@ func (m *Manager) SetClipboard(data []byte, mimeType string) error {
 	dataCopy := make([]byte, len(data))
 	copy(dataCopy, data)
 
-	m.takeSelection(wlclipboard.ExpandOffers(dataCopy, mimeType))
-	return nil
+	return m.takeSelection(ctx, wlclipboard.ExpandOffers(dataCopy, mimeType))
 }
 
 // SetClipboardEntry takes the selection serving the entry's primary
 // representation plus its stored alternate, so history restores keep
 // both the text and image sides pasteable.
-func (m *Manager) SetClipboardEntry(entry *Entry) error {
+func (m *Manager) SetClipboardEntry(ctx context.Context, entry *Entry) error {
 	if !m.canTakeSelection() {
 		return errSelectionUnavailable
 	}
@@ -1279,8 +1338,7 @@ func (m *Manager) SetClipboardEntry(entry *Entry) error {
 		offers = append(offers, wlclipboard.ExpandOffers(slices.Clone(entry.AltData), entry.AltMimeType)...)
 	}
 
-	m.takeSelection(offers)
-	return nil
+	return m.takeSelection(ctx, offers)
 }
 
 const selectionWriteTimeout = 30 * time.Second
@@ -1298,83 +1356,161 @@ func writeSelection(fd int, data []byte, timeout time.Duration) {
 	}
 }
 
+var selectionTakeTimeout = 2 * time.Second
+
+var errDispatcherTimeout = errors.New("clipboard dispatcher did not respond")
+
+const (
+	selectionPending int32 = iota
+	selectionRunning
+	selectionCancelled
+)
+
 // takeSelection makes the daemon the selection owner, serving the given
-// offers until another client claims the clipboard.
-func (m *Manager) takeSelection(offers []wlclipboard.Offer) {
+// offers until another client claims the clipboard. It returns a definite
+// outcome: a timeout or an expired ctx cancels only work that has not
+// started, so once the caller sees an error the selection can never be taken
+// later, and a CLI copy may safely serve the selection itself.
+func (m *Manager) takeSelection(ctx context.Context, offers []wlclipboard.Offer) error {
+	done := make(chan error, 1)
+	var state atomic.Int32
 	m.post(func() {
-		if m.dataControlMgr == nil || m.dataDevice == nil {
-			log.Error("Data control manager or device not initialized")
+		if !state.CompareAndSwap(selectionPending, selectionRunning) {
 			return
 		}
-
-		dataMgr := m.dataControlMgr.(*ext_data_control.ExtDataControlManagerV1)
-
-		source, err := dataMgr.CreateDataSource()
-		if err != nil {
-			log.Errorf("Failed to create data source: %v", err)
+		if err := ctx.Err(); err != nil {
+			done <- err
 			return
 		}
-
-		offerData := make(map[string][]byte, len(offers))
-		for _, offer := range offers {
-			if err := source.Offer(offer.MimeType); err != nil {
-				log.Errorf("Failed to offer %s: %v", offer.MimeType, err)
-				return
-			}
-			offerData[offer.MimeType] = offer.Data
-		}
-
-		source.SetSendHandler(func(e ext_data_control.ExtDataControlSourceV1SendEvent) {
-			data, ok := offerData[e.MimeType]
-			if !ok {
-				syscall.Close(e.Fd)
-				return
-			}
-			go writeSelection(e.Fd, data, selectionWriteTimeout)
-		})
-
-		source.SetCancelledHandler(func(e ext_data_control.ExtDataControlSourceV1CancelledEvent) {
-			m.ownerLock.Lock()
-			m.isOwner = false
-			m.ownerLock.Unlock()
-		})
-
-		m.releaseCurrentSource()
-		m.currentSource = source
-
-		m.ownerLock.Lock()
-		m.isOwner = true
-		m.ownerLock.Unlock()
-
-		device := m.dataDevice.(*ext_data_control.ExtDataControlDeviceV1)
-		if err := device.SetSelection(source); err != nil {
-			log.Errorf("Failed to set selection: %v", err)
-		}
+		done <- m.setSelection(offers)
 	})
+
+	timer := time.NewTimer(selectionTakeTimeout)
+	defer timer.Stop()
+	select {
+	case err := <-done:
+		return err
+	case <-timer.C:
+	case <-ctx.Done():
+	}
+	if state.CompareAndSwap(selectionPending, selectionCancelled) {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		return errDispatcherTimeout
+	}
+	return <-done
 }
 
-func (m *Manager) CopyText(text string) error {
-	if err := m.SetClipboard([]byte(text), "text/plain;charset=utf-8"); err != nil {
+// setSelection runs on the dispatcher.
+func (m *Manager) setSelection(offers []wlclipboard.Offer) error {
+	if !m.canTakeSelection() {
+		return errSelectionUnavailable
+	}
+	if m.dataControlMgr == nil || m.dataDevice == nil {
+		return errSelectionUnavailable
+	}
+
+	dataMgr := m.dataControlMgr.(*ext_data_control.ExtDataControlManagerV1)
+
+	source, err := dataMgr.CreateDataSource()
+	if err != nil {
+		return fmt.Errorf("create data source: %w", err)
+	}
+
+	offerData := make(map[string][]byte, len(offers))
+	for _, offer := range offers {
+		if err := source.Offer(offer.MimeType); err != nil {
+			source.Destroy()
+			return fmt.Errorf("offer %s: %w", offer.MimeType, err)
+		}
+		offerData[offer.MimeType] = offer.Data
+	}
+
+	source.SetSendHandler(func(e ext_data_control.ExtDataControlSourceV1SendEvent) {
+		data, ok := offerData[e.MimeType]
+		if !ok {
+			syscall.Close(e.Fd)
+			return
+		}
+		go writeSelection(e.Fd, data, selectionWriteTimeout)
+	})
+
+	// Only the live source may clear ownership, and releasing it here frees
+	// the offered data instead of holding it until the next copy.
+	source.SetCancelledHandler(func(e ext_data_control.ExtDataControlSourceV1CancelledEvent) {
+		if m.currentSource != source {
+			return
+		}
+		m.releaseCurrentSource()
+		m.ownerLock.Lock()
+		m.isOwner = false
+		m.ownerLock.Unlock()
+	})
+
+	m.releaseCurrentSource()
+	m.currentSource = source
+
+	m.ownerLock.Lock()
+	m.isOwner = true
+	m.ownerLock.Unlock()
+
+	device := m.dataDevice.(*ext_data_control.ExtDataControlDeviceV1)
+	if err := device.SetSelection(source); err != nil {
+		m.releaseCurrentSource()
+		m.ownerLock.Lock()
+		m.isOwner = false
+		m.ownerLock.Unlock()
+		return fmt.Errorf("set selection: %w", err)
+	}
+	return nil
+}
+
+func (m *Manager) CopyText(ctx context.Context, text string) error {
+	return m.CopyData(ctx, []byte(text), "text/plain;charset=utf-8")
+}
+
+// CopyData serves the selection from the daemon so the client can exit
+// instead of staying alive as the owner.
+func (m *Manager) CopyData(ctx context.Context, data []byte, mimeType string) error {
+	if err := m.SetClipboard(ctx, data, mimeType); err != nil {
 		return err
 	}
 
-	entry := Entry{
-		Data:      []byte(text),
-		MimeType:  "text/plain;charset=utf-8",
-		Size:      len(text),
-		Timestamp: time.Now(),
-		IsImage:   false,
-		Preview:   m.textPreview([]byte(text)),
-	}
-
-	if err := m.storeEntry(entry); err != nil {
-		log.Errorf("Failed to store clipboard entry: %v", err)
+	if m.db != nil && len(bytes.TrimSpace(data)) > 0 && !m.hasSensitiveMimeType([]string{mimeType}) {
+		m.storeClipboardEntry(data, mimeType, nil, "")
 	}
 
 	m.updateState()
 	m.notifySubscribers()
 
+	if len(data) >= largeEntryBytes {
+		debug.FreeOSMemory()
+	}
 	return nil
+}
+
+// CopyFileContents copies the file's bytes as mimeType, unlike CopyFile,
+// which copies the file itself.
+func (m *Manager) CopyFileContents(ctx context.Context, filePath, mimeType string) error {
+	if !m.canTakeSelection() {
+		return errSelectionUnavailable
+	}
+	info, err := os.Stat(filePath)
+	if err != nil {
+		return fmt.Errorf("file not found: %w", err)
+	}
+	if !info.Mode().IsRegular() {
+		return fmt.Errorf("not a regular file")
+	}
+	if info.Size() > m.getConfig().MaxEntrySize {
+		return fmt.Errorf("data too large")
+	}
+	data, err := os.ReadFile(filePath)
+	if err != nil {
+		return fmt.Errorf("read file: %w", err)
+	}
+	return m.CopyData(ctx, data, mimeType)
 }
 
 func (m *Manager) PasteText() (string, error) {
@@ -1411,12 +1547,7 @@ func (m *Manager) Close() {
 	close(m.dirty)
 	m.notifierWg.Wait()
 
-	m.subMutex.Lock()
-	for _, ch := range m.subscribers {
-		close(ch)
-	}
-	m.subscribers = make(map[string]chan State)
-	m.subMutex.Unlock()
+	m.subscribers.Close()
 
 	m.releaseCurrentSource()
 	m.releaseDataDevice()
@@ -1831,6 +1962,7 @@ func (m *Manager) PinEntry(id uint64) error {
 	})
 
 	if err == nil {
+		removeDragFilesForEntry(dragTempDir(), id)
 		m.updateState()
 		m.notifySubscribers()
 	}
@@ -1868,6 +2000,7 @@ func (m *Manager) UnpinEntry(id uint64) error {
 	})
 
 	if err == nil {
+		removeDragFilesForEntry(dragTempDir(), id)
 		m.updateState()
 		m.notifySubscribers()
 	}
@@ -1875,7 +2008,7 @@ func (m *Manager) UnpinEntry(id uint64) error {
 	return err
 }
 
-func (m *Manager) EditEntry(id uint64, text string) error {
+func (m *Manager) EditEntry(ctx context.Context, id uint64, text string) error {
 	data := []byte(text)
 	mimeType := "text/plain;charset=utf-8"
 
@@ -1938,15 +2071,16 @@ func (m *Manager) EditEntry(id uint64, text string) error {
 		return w.trim(cfg)
 	})
 
-	if err == nil {
-		if clipErr := m.SetClipboard(data, mimeType); clipErr != nil {
-			log.Errorf("Failed to set clipboard selection: %v", clipErr)
-		}
-		m.updateState()
-		m.notifySubscribers()
+	if err != nil {
+		return err
 	}
 
-	return err
+	// The edit is saved either way; the error stops the editor pasting the
+	// previous clipboard.
+	clipErr := m.SetClipboard(ctx, data, mimeType)
+	m.updateState()
+	m.notifySubscribers()
+	return clipErr
 }
 
 func (m *Manager) GetPinnedEntries() []Entry {
@@ -1962,7 +2096,7 @@ func (m *Manager) GetPinnedCount() int {
 	return count
 }
 
-func (m *Manager) CopyFile(filePath string) error {
+func (m *Manager) CopyFile(ctx context.Context, filePath string) error {
 	if !m.canTakeSelection() {
 		return errSelectionUnavailable
 	}
@@ -1989,6 +2123,10 @@ func (m *Manager) CopyFile(filePath string) error {
 		exportedPath = filePath
 	}
 
+	if err := m.takeSelection(ctx, clipboardstore.FileOffers(exportedPath, filePath, fileData)); err != nil {
+		return err
+	}
+
 	if imgData, imgMime, ok := m.tryReadImageFromURI([]byte(encodeFileURI(filePath))); ok {
 		entry := Entry{
 			Data:      imgData,
@@ -2002,12 +2140,7 @@ func (m *Manager) CopyFile(filePath string) error {
 			log.Errorf("Failed to store file entry: %v", err)
 		}
 	} else {
-		entryData := fileData
-		if entryData == nil {
-			// Oversized: store the encoded URI instead of the body so the
-			// entry can be restored through EntryToFile later.
-			entryData = []byte(encodeFileURI(filePath) + "\r\n")
-		}
+		entryData := []byte(encodeFileURI(filePath) + "\r\n")
 		entry := Entry{
 			Data:      entryData,
 			MimeType:  "text/uri-list",
@@ -2023,43 +2156,43 @@ func (m *Manager) CopyFile(filePath string) error {
 
 	m.updateState()
 	m.notifySubscribers()
-
-	m.takeSelection(clipboardstore.FileOffers(exportedPath, filePath, fileData))
 	return nil
 }
 
 func (m *Manager) EntryToFile(entry *Entry) string {
-	switch {
-	case entry.MimeType == "text/uri-list":
-		data := strings.TrimSpace(string(entry.Data))
-		lines := strings.Split(data, "\n")
-		if len(lines) == 0 {
-			return ""
-		}
-		uri := strings.TrimSuffix(strings.TrimSpace(lines[0]), "\r")
-		if strings.HasPrefix(uri, "file://") {
-			return pathFromFileURI(uri)
-		}
-	case entry.IsImage:
-		ext := ".png"
-		if suffix, ok := strings.CutPrefix(entry.MimeType, "image/"); ok {
-			ext = "." + suffix
-		}
-		cacheDir, err := os.UserCacheDir()
-		if err != nil {
-			return ""
-		}
-		clipDir := filepath.Join(cacheDir, "dms", "clipboard")
-		if err := os.MkdirAll(clipDir, 0o755); err != nil {
-			return ""
-		}
-		filePath := filepath.Join(clipDir, fmt.Sprintf("%d%s", time.Now().UnixNano(), ext))
-		if os.WriteFile(filePath, entry.Data, 0o644) != nil {
-			return ""
-		}
-		return filePath
+	if entry.MimeType != "text/uri-list" {
+		return ""
 	}
-	return ""
+	firstLine, _, _ := strings.Cut(strings.TrimSpace(string(entry.Data)), "\n")
+	uri := strings.TrimSpace(firstLine)
+	if !strings.HasPrefix(uri, "file://") {
+		return ""
+	}
+	return pathFromFileURI(uri)
+}
+
+// A uri-list is served as plain paths because browsers treat any uri-list
+// offer as dropped files, which text-only editors paste as nothing.
+func textOnlyPayload(entry *Entry) ([]byte, string) {
+	if entry.AltMimeType != "" {
+		return entry.AltData, entry.AltMimeType
+	}
+	if entry.MimeType != "text/uri-list" {
+		return entry.Data, entry.MimeType
+	}
+
+	var lines []string
+	for line := range strings.Lines(string(entry.Data)) {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		if path := pathFromFileURI(line); path != "" {
+			line = path
+		}
+		lines = append(lines, line)
+	}
+	return []byte(strings.Join(lines, "\n")), "text/plain;charset=utf-8"
 }
 
 func (m *Manager) dbusConnForFlatpak() (*dbus.Conn, error) {

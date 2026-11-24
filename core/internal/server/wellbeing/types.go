@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/duxlabs-dev/dux-go/syncmap"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/pubsub"
 	bolt "go.etcd.io/bbolt"
 )
 
@@ -61,7 +61,7 @@ type Manager struct {
 	limitsSet bool
 	alerted   alertRecord
 
-	subscribers syncmap.Map[string, chan State]
+	subscribers pubsub.Broker[State]
 	wake        chan struct{}
 	stopChan    chan struct{}
 	wg          sync.WaitGroup

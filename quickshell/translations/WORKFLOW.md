@@ -39,7 +39,7 @@
    ```bash
    # Set your locale and restart shell
    export LANG=es_ES.UTF-8
-   qs -p .
+   dms qs -p .
    ```
 
 #### Method 2: Manual Translation
@@ -113,7 +113,7 @@ The shell will auto-detect your system locale. Supported format:
 
 2. **Restart shell**
    ```bash
-   qs -p .
+   dms qs -p .
    ```
 
 3. **Verify translations appear correctly**
@@ -174,7 +174,7 @@ curl -X POST https://api.poeditor.com/v2/projects/upload \
 **Translations not loading?**
 - Check file exists: `~/.config/dms/translations/{language_code}.json`
 - Verify JSON syntax: `python3 -m json.tool translations/es.json`
-- Check console for errors: `qs -v -p .`
+- Check console for errors: `dms qs -v -p .`
 
 **Wrong language loading?**
 - Check system locale: `echo $LANG`

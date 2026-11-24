@@ -86,3 +86,17 @@ test("center placement yields to side sections without overlapping them", () => 
     for (const [bounds, positions] of cases)
         assert.deepEqual(plain(layout.resolve([30, 80, 60], 600, 4, "geometric", bounds)), { positions, totalSize: 178 });
 });
+
+test("moving a bar widget lands on the slot that was pointed at", () => {
+    const config = { id: "bar", leftWidgets: ["a", "b", "c", "d"], centerWidgets: ["x"] };
+    const settings = vm.createContext({
+        getBarConfig: () => config,
+        barSectionWidgets: (cfg, section) => cfg[section + "Widgets"],
+        updateBarConfig: (id, updates) => Object.assign(config, updates)
+    });
+    vm.runInContext(method(read("Common/SettingsData.qml"), "moveBarWidget"), settings);
+    settings.moveBarWidget("bar", "left", 1, "left", 3);
+    assert.deepEqual(plain(config.leftWidgets), ["a", "c", "b", "d"], "a later slot in the same section shifts once the widget is lifted");
+    settings.moveBarWidget("bar", "left", 2, "center", 0);
+    assert.deepEqual(plain([config.leftWidgets, config.centerWidgets]), [["a", "c", "d"], ["b", "x"]]);
+});

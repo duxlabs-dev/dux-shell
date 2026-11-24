@@ -61,7 +61,7 @@ Singleton {
     }
 
     Timer {
-        interval: 30000
+        interval: Timing.pollSlow
         repeat: true
         running: root.polling
         triggeredOnStart: true

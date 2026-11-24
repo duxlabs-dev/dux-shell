@@ -3,10 +3,12 @@ package network
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"sync"
 	"time"
 
 	"github.com/duxlabs-dev/dux-shell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/pubsub"
 	"github.com/yeqown/go-qrcode/v2"
 	"github.com/yeqown/go-qrcode/writer/standard"
 )
@@ -89,8 +91,9 @@ func NewManager() (*Manager, error) {
 		},
 		stateMutex: sync.RWMutex{},
 
-		stopChan: make(chan struct{}),
-		dirty:    make(chan struct{}, 1),
+		stopChan:              make(chan struct{}),
+		dirty:                 make(chan struct{}, 1),
+		credentialSubscribers: pubsub.Broker[CredentialPrompt]{BufSize: 16},
 	}
 
 	broker := NewSubscriptionBroker(m.broadcastCredentialPrompt)
@@ -117,6 +120,185 @@ func NewManager() (*Manager, error) {
 	return m, nil
 }
 
+// ErrConnectionEditorNotSupported is returned when the active backend does not
+// implement the connection editor.
+var ErrConnectionEditorNotSupported = errors.New("connection editor not supported by active network backend")
+
+func (m *Manager) editorBackend() (ConnectionEditorBackend, bool) {
+	backend, ok := m.backend.(ConnectionEditorBackend)
+	return backend, ok
+}
+
+func (m *Manager) ListConnectionProfiles() ([]ConnectionProfile, error) {
+	backend, ok := m.editorBackend()
+	if !ok {
+		return nil, ErrConnectionEditorNotSupported
+	}
+	return backend.ListConnectionProfiles()
+}
+
+func (m *Manager) GetConnectionSettings(uuid string, withSecrets bool) (map[string]map[string]any, error) {
+	backend, ok := m.editorBackend()
+	if !ok {
+		return nil, ErrConnectionEditorNotSupported
+	}
+	return backend.GetConnectionSettings(uuid, withSecrets)
+}
+
+// withEnterprise makes cfg authoritative for the 802-1x section.
+func withEnterprise(patch SettingsPatch, cfg *EnterpriseConfig, isNew bool) (SettingsPatch, error) {
+	if cfg == nil {
+		return patch, nil
+	}
+	section, err := enterprise8021xPatch(*cfg, isNew)
+	if err != nil {
+		return nil, err
+	}
+	if patch == nil {
+		patch = SettingsPatch{}
+	}
+	if _, dup := patch["802-1x"]; dup {
+		log.Debugf("connection editor: dropping 802-1x from settings, enterprise param wins")
+	}
+	patch["802-1x"] = section
+	return patch, nil
+}
+
+func (m *Manager) UpdateConnectionSettings(uuid string, patch SettingsPatch, persist bool, enterprise *EnterpriseConfig) error {
+	backend, ok := m.editorBackend()
+	if !ok {
+		return ErrConnectionEditorNotSupported
+	}
+	patch, err := withEnterprise(patch, enterprise, false)
+	if err != nil {
+		return err
+	}
+	if err := backend.UpdateConnectionSettings(uuid, patch, persist); err != nil {
+		return err
+	}
+	m.notifySubscribers()
+	return nil
+}
+
+func (m *Manager) AddConnectionProfile(settings SettingsPatch, persist bool, enterprise *EnterpriseConfig) (string, error) {
+	backend, ok := m.editorBackend()
+	if !ok {
+		return "", ErrConnectionEditorNotSupported
+	}
+	settings, err := withEnterprise(settings, enterprise, true)
+	if err != nil {
+		return "", err
+	}
+	uuid, err := backend.AddConnectionProfile(settings, persist)
+	if err != nil {
+		return "", err
+	}
+	m.notifySubscribers()
+	return uuid, nil
+}
+
+func (m *Manager) GetConnectionEnterprise(uuid string) (EnterpriseConfig, error) {
+	s, err := m.GetConnectionSettings(uuid, false)
+	if err != nil {
+		return EnterpriseConfig{}, err
+	}
+	cfg, ok := enterpriseConfigFromSettings(s)
+	if !ok {
+		return EnterpriseConfig{}, errors.New("connection has no 802.1X settings")
+	}
+	return cfg, nil
+}
+
+func (m *Manager) ActivateConnectionProfile(uuid, device string) error {
+	backend, ok := m.editorBackend()
+	if !ok {
+		return ErrConnectionEditorNotSupported
+	}
+	if err := backend.ActivateConnectionProfile(uuid, device); err != nil {
+		return err
+	}
+	m.notifySubscribers()
+	return nil
+}
+
+func (m *Manager) DeactivateConnectionProfile(uuid string) error {
+	backend, ok := m.editorBackend()
+	if !ok {
+		return ErrConnectionEditorNotSupported
+	}
+	if err := backend.DeactivateConnectionProfile(uuid); err != nil {
+		return err
+	}
+	m.notifySubscribers()
+	return nil
+}
+
+func (m *Manager) FirewallZones() ([]string, error) {
+	backend, ok := m.editorBackend()
+	if !ok {
+		return nil, ErrConnectionEditorNotSupported
+	}
+	return backend.FirewallZones()
+}
+
+func (m *Manager) DeleteConnectionProfile(uuid string) error {
+	backend, ok := m.editorBackend()
+	if !ok {
+		return ErrConnectionEditorNotSupported
+	}
+	if err := backend.DeleteConnectionProfile(uuid); err != nil {
+		return err
+	}
+	m.notifySubscribers()
+	return nil
+}
+
+func (m *Manager) DuplicateConnectionProfile(uuid, name string) (string, error) {
+	backend, ok := m.editorBackend()
+	if !ok {
+		return "", ErrConnectionEditorNotSupported
+	}
+	newUUID, err := backend.DuplicateConnectionProfile(uuid, name)
+	if err != nil {
+		return "", err
+	}
+	m.notifySubscribers()
+	return newUUID, nil
+}
+
+func (m *Manager) ExportConnectionProfile(uuid, path string) error {
+	backend, ok := m.editorBackend()
+	if !ok {
+		return ErrConnectionEditorNotSupported
+	}
+	return backend.ExportConnectionProfile(uuid, path)
+}
+
+func (m *Manager) CheckConnectivity() (string, error) {
+	backend, ok := m.editorBackend()
+	if !ok {
+		return "", ErrConnectionEditorNotSupported
+	}
+	state, err := backend.CheckConnectivity()
+	if err != nil {
+		return "", err
+	}
+	m.notifySubscribers()
+	return state, nil
+}
+
+func (m *Manager) SetConnectivityCheckEnabled(enabled bool) error {
+	backend, ok := m.editorBackend()
+	if !ok {
+		return ErrConnectionEditorNotSupported
+	}
+	if err := backend.SetConnectivityCheckEnabled(enabled); err != nil {
+		return err
+	}
+	m.notifySubscribers()
+	return nil
+}
+
 func (m *Manager) hotspotBackend() (HotspotBackend, bool) {
 	backend, ok := m.backend.(HotspotBackend)
 	return backend, ok
@@ -128,8 +310,11 @@ func (m *Manager) syncStateFromBackend() error {
 		return err
 	}
 	_, hotspotSupported := m.hotspotBackend()
+	_, editorSupported := m.editorBackend()
 
 	m.stateMutex.Lock()
+	m.state.ConnectionEditorSupported = editorSupported
+	m.state.ConnectionProfilesRevision = backendState.ConnectionProfilesRevision
 	m.state.Backend = backendState.Backend
 	m.state.NetworkStatus = backendState.NetworkStatus
 	m.state.EthernetIP = backendState.EthernetIP
@@ -166,6 +351,11 @@ func (m *Manager) syncStateFromBackend() error {
 		m.state.HotspotDevice = backendState.HotspotDevice
 		m.state.HotspotBand = backendState.HotspotBand
 		m.state.HotspotLastError = backendState.HotspotLastError
+		m.state.HotspotChannel = backendState.HotspotChannel
+		m.state.HotspotAddress = backendState.HotspotAddress
+		m.state.HotspotUUID = backendState.HotspotUUID
+		m.state.HotspotSecurity = backendState.HotspotSecurity
+		m.state.HotspotHidden = backendState.HotspotHidden
 	} else {
 		m.state.HotspotAvailable = false
 		m.state.HotspotConfigured = false
@@ -176,7 +366,16 @@ func (m *Manager) syncStateFromBackend() error {
 		m.state.HotspotDevice = ""
 		m.state.HotspotBand = ""
 		m.state.HotspotLastError = ""
+		m.state.HotspotChannel = 0
+		m.state.HotspotAddress = ""
+		m.state.HotspotUUID = ""
+		m.state.HotspotSecurity = ""
+		m.state.HotspotHidden = false
 	}
+	m.state.Connectivity = backendState.Connectivity
+	m.state.ConnectivityCheckEnabled = backendState.ConnectivityCheckEnabled
+	m.state.ConnectivityCheckAvailable = backendState.ConnectivityCheckAvailable
+	m.state.ConnectivityCheckURI = backendState.ConnectivityCheckURI
 	m.state.WiredConnections = backendState.WiredConnections
 	m.state.VPNProfiles = backendState.VPNProfiles
 	m.state.VPNActive = backendState.VPNActive
@@ -268,6 +467,12 @@ func stateChangedMeaningfully(old, new *NetworkState) bool {
 	if old.HotspotSupported != new.HotspotSupported {
 		return true
 	}
+	if old.ConnectionProfilesRevision != new.ConnectionProfilesRevision {
+		return true
+	}
+	if old.ConnectionEditorSupported != new.ConnectionEditorSupported {
+		return true
+	}
 	if old.HotspotAvailable != new.HotspotAvailable {
 		return true
 	}
@@ -293,6 +498,19 @@ func stateChangedMeaningfully(old, new *NetworkState) bool {
 		return true
 	}
 	if old.HotspotBand != new.HotspotBand {
+		return true
+	}
+	if old.HotspotChannel != new.HotspotChannel ||
+		old.HotspotAddress != new.HotspotAddress ||
+		old.HotspotUUID != new.HotspotUUID ||
+		old.HotspotSecurity != new.HotspotSecurity ||
+		old.HotspotHidden != new.HotspotHidden {
+		return true
+	}
+	if old.Connectivity != new.Connectivity ||
+		old.ConnectivityCheckEnabled != new.ConnectivityCheckEnabled ||
+		old.ConnectivityCheckAvailable != new.ConnectivityCheckAvailable ||
+		old.ConnectivityCheckURI != new.ConnectivityCheckURI {
 		return true
 	}
 	if old.WiFiSignal != new.WiFiSignal && signalChangeSignificant(old.WiFiSignal, new.WiFiSignal) {
@@ -397,6 +615,9 @@ func stateChangedMeaningfully(old, new *NetworkState) bool {
 		if oldNet.IsActive != newNet.IsActive {
 			return true
 		}
+		if oldNet.Device != newNet.Device {
+			return true
+		}
 	}
 
 	for i := range old.EthernetDevices {
@@ -412,6 +633,12 @@ func stateChangedMeaningfully(old, new *NetworkState) bool {
 			return true
 		}
 		if oldDev.IP != newDev.IP {
+			return true
+		}
+		if oldDev.ConnectionUUID != newDev.ConnectionUUID {
+			return true
+		}
+		if !slices.Equal(oldDev.ProfileUUIDs, newDev.ProfileUUIDs) {
 			return true
 		}
 	}
@@ -481,81 +708,35 @@ func (m *Manager) GetState() NetworkState {
 }
 
 func (m *Manager) Subscribe(id string) chan NetworkState {
-	ch := make(chan NetworkState, 64)
-	m.subscribers.Store(id, ch)
-	return ch
+	return m.subscribers.Subscribe(id)
 }
 
-func (m *Manager) Unsubscribe(id string) {
-	if val, ok := m.subscribers.LoadAndDelete(id); ok {
-		close(val)
-	}
+func (m *Manager) Unsubscribe(id string, ch chan NetworkState) {
+	m.subscribers.Unsubscribe(id, ch)
 }
 
 func (m *Manager) SubscribeCredentials(id string) chan CredentialPrompt {
-	ch := make(chan CredentialPrompt, 16)
-	m.credentialSubscribers.Store(id, ch)
-	return ch
+	return m.credentialSubscribers.Subscribe(id)
 }
 
-func (m *Manager) UnsubscribeCredentials(id string) {
-	if ch, ok := m.credentialSubscribers.LoadAndDelete(id); ok {
-		close(ch)
-	}
+func (m *Manager) UnsubscribeCredentials(id string, ch chan CredentialPrompt) {
+	m.credentialSubscribers.Unsubscribe(id, ch)
 }
 
 func (m *Manager) broadcastCredentialPrompt(prompt CredentialPrompt) {
-	m.credentialSubscribers.Range(func(key string, ch chan CredentialPrompt) bool {
-		select {
-		case ch <- prompt:
-		default:
-		}
-		return true
-	})
+	m.credentialSubscribers.Publish(prompt)
 }
 
 func (m *Manager) notifier() {
 	defer m.notifierWg.Done()
-	const minGap = 100 * time.Millisecond
-	timer := time.NewTimer(minGap)
-	timer.Stop()
-	var pending bool
-	for {
-		select {
-		case <-m.stopChan:
-			timer.Stop()
-			return
-		case <-m.dirty:
-			if pending {
-				continue
-			}
-			pending = true
-			timer.Reset(minGap)
-		case <-timer.C:
-			if !pending {
-				continue
-			}
-
-			currentState := m.snapshotState()
-
-			if m.lastNotifiedState != nil && !stateChangedMeaningfully(m.lastNotifiedState, &currentState) {
-				pending = false
-				continue
-			}
-
-			m.subscribers.Range(func(key string, ch chan NetworkState) bool {
-				select {
-				case ch <- currentState:
-				default:
-				}
-				return true
-			})
-
-			stateCopy := currentState
-			m.lastNotifiedState = &stateCopy
-			pending = false
-		}
-	}
+	pubsub.RunDebouncedNotifier(pubsub.DebouncedConfig[NetworkState]{
+		MinGap:   100 * time.Millisecond,
+		Stop:     m.stopChan,
+		Dirty:    m.dirty,
+		Snapshot: m.snapshotState,
+		Changed:  stateChangedMeaningfully,
+		Broker:   &m.subscribers,
+	})
 }
 
 func (m *Manager) notifySubscribers() {
@@ -589,11 +770,8 @@ func (m *Manager) Close() {
 		m.backend.Close()
 	}
 
-	m.subscribers.Range(func(key string, ch chan NetworkState) bool {
-		close(ch)
-		m.subscribers.Delete(key)
-		return true
-	})
+	m.subscribers.Close()
+	m.credentialSubscribers.Close()
 }
 
 func (m *Manager) ScanWiFi() error {
@@ -731,6 +909,9 @@ func (m *Manager) DisableCellular() error {
 }
 
 func (m *Manager) ConnectWiFi(req ConnectionRequest) error {
+	if _, ok := m.editorBackend(); !ok && (req.SaveOnly || req.Enterprise != nil) {
+		return ErrConnectionEditorNotSupported
+	}
 	return m.backend.ConnectWiFi(req)
 }
 
@@ -821,6 +1002,10 @@ func (m *Manager) ConnectEthernet() error {
 	return m.backend.ConnectEthernet()
 }
 
+func (m *Manager) ConnectEthernetDevice(device string) error {
+	return m.backend.ConnectEthernetDevice(device)
+}
+
 func (m *Manager) DisconnectEthernet() error {
 	return m.backend.DisconnectEthernet()
 }
@@ -857,8 +1042,8 @@ func (m *Manager) GetCellularDevices() []CellularDevice {
 	return devices
 }
 
-func (m *Manager) activateConnection(uuid string) error {
-	return m.backend.ActivateWiredConnection(uuid)
+func (m *Manager) activateConnection(uuid, device string) error {
+	return m.backend.ActivateWiredConnection(uuid, device)
 }
 
 func (m *Manager) activateCellularConnection(uuid string) error {

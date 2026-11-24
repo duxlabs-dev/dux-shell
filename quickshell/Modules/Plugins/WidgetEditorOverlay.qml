@@ -194,6 +194,7 @@ FocusScope {
         DashEditControls {
             id: editControls
             canClear: false
+            canDiscard: false
             onAddRequested: {
                 root.optionsInstanceId = "";
                 root.libraryOpen = true;

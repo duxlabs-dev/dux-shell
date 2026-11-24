@@ -616,7 +616,7 @@ Card {
             NumberAnimation {
                 duration: Theme.expressiveDurations.expressiveFastSpatial
                 easing.type: Easing.BezierSpline
-                easing.bezierCurve: Theme.expressiveCurves.standard
+                easing.bezierCurve: Theme.expressiveCurves.expressiveFastSpatial
             }
         }
 

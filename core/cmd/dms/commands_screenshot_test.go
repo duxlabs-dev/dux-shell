@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/duxlabs-dev/dux-shell/core/internal/screenshot"
+	"github.com/spf13/pflag"
 )
 
 func thumbnailTestBuffer(t testing.TB, width, height int) *screenshot.ShmBuffer {
@@ -141,6 +142,50 @@ func BenchmarkBufferToRGBAThumbnail(b *testing.B) {
 			b.ReportAllocs()
 			for b.Loop() {
 				bufferToRGBAThumbnail(buf, 640, uint32(screenshot.FormatXRGB8888))
+			}
+		})
+	}
+}
+
+func TestApplyScreenshotSettings(t *testing.T) {
+	newFlags := func(args ...string) *pflag.FlagSet {
+		fs := pflag.NewFlagSet("screenshot", pflag.ContinueOnError)
+		fs.String("dir", "", "")
+		fs.String("format", "png", "")
+		fs.String("cursor", "off", "")
+		fs.Bool("no-clipboard", false, "")
+		fs.Bool("no-file", false, "")
+		fs.Bool("no-confirm", false, "")
+		fs.Int("interval", 45, "")
+		if err := fs.Parse(args); err != nil {
+			t.Fatal(err)
+		}
+		return fs
+	}
+	settings := []byte(`{"screenshotDir":"/shots","screenshotFormat":"jpg","screenshotCursor":true,"screenshotClipboard":false,"screenshotConfirmRegion":false,"screenshotScrollInterval":120}`)
+
+	cases := []struct {
+		name string
+		data []byte
+		args []string
+		want map[string]string
+	}{
+		{"settings fill defaults", settings, nil, map[string]string{"dir": "/shots", "format": "jpg", "cursor": "on", "no-clipboard": "true", "no-confirm": "true", "interval": "120"}},
+		{"flags win", settings, []string{"--dir=/cli", "--format=png", "--no-clipboard=false", "--interval=250"}, map[string]string{"dir": "/cli", "format": "png", "no-clipboard": "false", "no-confirm": "true", "interval": "250"}},
+		{"missing keys keep defaults", []byte(`{}`), nil, map[string]string{"dir": "", "format": "png", "cursor": "off", "no-clipboard": "false", "no-confirm": "false"}},
+		{"clipboard-only bind keeps the clipboard", []byte(`{"screenshotClipboard":false}`), []string{"--no-file"}, map[string]string{"no-file": "true", "no-clipboard": "false"}},
+		{"file-only bind keeps the file", []byte(`{"screenshotSaveFile":false}`), []string{"--no-clipboard"}, map[string]string{"no-file": "false", "no-clipboard": "true"}},
+		{"both outputs off in settings", []byte(`{"screenshotSaveFile":false,"screenshotClipboard":false}`), nil, map[string]string{"no-file": "true", "no-clipboard": "true"}},
+		{"bad json ignored", []byte(`{`), nil, map[string]string{"format": "png", "no-clipboard": "false"}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			fs := newFlags(tc.args...)
+			applyScreenshotSettings(tc.data, fs)
+			for name, want := range tc.want {
+				if got := fs.Lookup(name).Value.String(); got != want {
+					t.Errorf("%s = %q, want %q", name, got, want)
+				}
 			}
 		})
 	}

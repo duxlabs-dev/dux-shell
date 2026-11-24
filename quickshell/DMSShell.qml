@@ -4,26 +4,12 @@ import QtQuick
 import Quickshell
 import qs.Common
 import qs.Modals
-import qs.Modals.Changelog
-import qs.Modals.Clipboard
-import qs.Modals.Common
-import qs.Modals.Greeter
-import qs.Modals.Settings
-import qs.Modals.DLauncherV2
 import qs.Modules
-import qs.Modules.AppDrawer
-import qs.Modules.DDash
-import qs.Modules.ControlCenter
 import qs.Modules.Dock
 import qs.Modules.Lock
-import qs.Modules.Notepad
-import qs.Modules.Notifications.Center
 import qs.Widgets
 import qs.Modules.Notifications.Popup
 import qs.Modules.OSD
-import qs.Modules.ProcessList
-import qs.Modules.DBar.Popouts
-import qs.Modules.WorkspaceOverlays
 import qs.Modules.Settings.DisplayConfig
 import qs.Services
 
@@ -35,6 +21,12 @@ Item {
     readonly property var _refreshRateServiceRef: RefreshRateService
 
     property var core: null
+    readonly property bool globalShortcutPromptPending: GlobalShortcutsService.prompts.length > 0
+
+    onGlobalShortcutPromptPendingChanged: {
+        if (globalShortcutPromptPending)
+            globalShortcutsModalLoader.active = true;
+    }
 
     property bool osdSurfacesLoaded: false
     property int pendingOsdResumeReloads: 0
@@ -57,12 +49,49 @@ Item {
         osdSurfaceReloadTimer.restart();
     }
 
-    DesktopWidgetLayer {}
+    Variants {
+        model: ShellLayout.realScreens
 
-    DesktopWidgetEditor {}
+        DPopoutSurface {
+            required property var modelData
+            screen: modelData
+        }
+    }
 
-    DesktopContextMenu {
-        Component.onCompleted: PopoutService.desktopContextMenu = this
+    Variants {
+        model: ShellLayout.realScreens
+
+        DTooltipSurface {
+            required property var modelData
+            screen: modelData
+        }
+    }
+
+    Variants {
+        model: ShellLayout.realScreens
+
+        DContextMenuSurface {
+            required property var modelData
+            screen: modelData
+        }
+    }
+
+    Loader {
+        active: SettingsData.desktopWidgetInstances.concat(SettingsData.lockScreenWidgetInstances).some(instance => instance.enabled)
+        source: "Modules/DesktopWidgetLayer.qml"
+    }
+
+    Loader {
+        active: DesktopWidgetRegistry.editing
+        source: "Modules/DesktopWidgetEditor.qml"
+    }
+
+    LazyLoader {
+        id: desktopContextMenuLoader
+        active: false
+        source: "Modules/DesktopContextMenu.qml"
+        Component.onCompleted: PopoutService.desktopContextMenuLoader = desktopContextMenuLoader
+        onItemChanged: PopoutService.desktopContextMenu = item
     }
 
     Lock {
@@ -179,10 +208,7 @@ Item {
         }
 
         function onSurfaceRecoveryPass() {
-            root.dockEnabled = false;
-            Qt.callLater(() => {
-                root.dockEnabled = true;
-            });
+            dockRecreateDebounce.restart();
         }
     }
 
@@ -190,7 +216,7 @@ Item {
 
     Timer {
         id: dockRecreateDebounce
-        interval: 500
+        interval: Timing.settleLong
         repeat: false
         onTriggered: {
             root.dockEnabled = false;
@@ -204,7 +230,7 @@ Item {
         id: loginSoundTimer
         // Half a second delay before playing login sound, otherwise the sound may be cut off
         // 50 is the minimum that seems to work, but 500 is safer
-        interval: 500
+        interval: Timing.settleLong
         repeat: false
         onTriggered: {
             AudioService.playLoginSoundIfApplicable();
@@ -213,7 +239,7 @@ Item {
 
     Timer {
         id: osdResumeRecreateTimer
-        interval: 400
+        interval: Timing.resumeRecoverySchedule[0]
         repeat: false
         onTriggered: {
             root.recreateOsdSurfaces();
@@ -221,25 +247,25 @@ Item {
 
             if (root.pendingOsdResumeReloads <= 0) {
                 root.pendingOsdResumeReloads = 0;
-                interval = 400;
+                interval = Timing.resumeRecoverySchedule[0];
                 return;
             }
 
-            interval = 1400;
+            interval = Timing.resumeRecoverySchedule[1];
             restart();
         }
     }
 
     Timer {
         id: osdSurfaceReloadTimer
-        interval: 120
+        interval: Timing.settle
         repeat: false
         onTriggered: root.osdSurfacesLoaded = true
     }
 
     Timer {
         id: osdStartupTimer
-        interval: 1000
+        interval: Timing.settleSlow
         repeat: false
         onTriggered: root.osdSurfacesLoaded = true
     }
@@ -273,15 +299,6 @@ Item {
             contextMenu: dockContextMenuLoader.item ? dockContextMenuLoader.item : null
             trashContextMenu: dockTrashContextMenuLoader.item ? dockTrashContextMenuLoader.item : null
         }
-
-        onLoaded: {
-            if (item) {
-                dockContextMenuLoader.active = true;
-                if (SettingsData.dockConfigs.some(config => config.showTrash)) {
-                    dockTrashContextMenuLoader.active = true;
-                }
-            }
-        }
     }
 
     Loader {
@@ -289,6 +306,7 @@ Item {
 
         active: false
         asynchronous: false
+        source: "Modules/DDash/DDashPopout.qml"
 
         Component.onCompleted: {
             PopoutService.dankDashPopoutLoader = dankDashPopoutLoader;
@@ -301,11 +319,11 @@ Item {
             }
         }
 
-        sourceComponent: Component {
-            DDashPopout {
-                id: dankDashPopout
+        Connections {
+            target: dankDashPopoutLoader.item
 
-                onPopoutClosed: PopoutService._scheduleUnload("dankDash")
+            function onPopoutClosed() {
+                PopoutService._scheduleUnload("dankDash");
             }
         }
     }
@@ -314,20 +332,14 @@ Item {
         id: dockContextMenuLoader
 
         active: false
-
-        DockContextMenu {
-            id: dockContextMenu
-        }
+        source: "Modules/Dock/DockContextMenu.qml"
     }
 
     LazyLoader {
         id: dockTrashContextMenuLoader
 
         active: false
-
-        DockTrashContextMenu {
-            id: dockTrashContextMenu
-        }
+        source: "Modules/Dock/DockTrashContextMenu.qml"
     }
 
     Binding {
@@ -341,23 +353,11 @@ Item {
         value: dockTrashContextMenuLoader.item
     }
 
-    Connections {
-        target: SettingsData
-        function onDockConfigsChanged() {
-            if (SettingsData.dockConfigs.some(config => config.showTrash)) {
-                dockTrashContextMenuLoader.active = true;
-            }
-        }
-    }
-
     LazyLoader {
         id: emptyTrashConfirmLoader
         active: false
-        readonly property ConfirmModal loadedModal: item as ConfirmModal
-
-        ConfirmModal {
-            id: emptyTrashConfirm
-        }
+        source: "Modals/Common/ConfirmModal.qml"
+        readonly property var loadedModal: item
     }
 
     Connections {
@@ -380,11 +380,8 @@ Item {
     LazyLoader {
         id: uninstallAppConfirmLoader
         active: false
-        readonly property ConfirmModal loadedModal: item as ConfirmModal
-
-        ConfirmModal {
-            id: uninstallAppConfirm
-        }
+        source: "Modals/Common/ConfirmModal.qml"
+        readonly property var loadedModal: item
     }
 
     Connections {
@@ -414,18 +411,22 @@ Item {
         id: notificationCenterLoader
 
         active: false
+        source: "Modules/Notifications/Center/NotificationCenterPopout.qml"
 
         Component.onCompleted: {
             PopoutService.notificationCenterLoader = notificationCenterLoader;
         }
+        onItemChanged: {
+            if (!item)
+                return;
+            PopoutService.notificationCenterPopout = item;
+        }
+    }
 
-        NotificationCenterPopout {
-            id: notificationCenter
-            onPopoutClosed: PopoutService.unloadNotificationCenter()
-
-            Component.onCompleted: {
-                PopoutService.notificationCenterPopout = notificationCenter;
-            }
+    Connections {
+        target: notificationCenterLoader.item
+        function onPopoutClosed() {
+            PopoutService.unloadNotificationCenter();
         }
     }
 
@@ -439,6 +440,7 @@ Item {
         id: controlCenterLoader
 
         active: false
+        source: "Modules/ControlCenter/ControlCenterPopout.qml"
 
         property var modalRef: colorPickerModal
         property LazyLoader powerModalLoaderRef: powerMenuModalLoader
@@ -446,86 +448,91 @@ Item {
         Component.onCompleted: {
             PopoutService.controlCenterLoader = controlCenterLoader;
         }
+        onItemChanged: {
+            if (!item)
+                return;
+            PopoutService.controlCenterPopout = item;
+        }
+    }
 
-        ControlCenterPopout {
-            id: controlCenterPopout
-            colorPickerModal: controlCenterLoader.modalRef
-            powerMenuModalLoader: controlCenterLoader.powerModalLoaderRef
-            onPopoutClosed: PopoutService.unloadControlCenter()
+    Binding {
+        target: controlCenterLoader.item
+        property: "colorPickerModal"
+        value: controlCenterLoader.modalRef
+    }
 
-            onLockRequested: {
-                lock.activate();
-            }
+    Binding {
+        target: controlCenterLoader.item
+        property: "powerMenuModalLoader"
+        value: controlCenterLoader.powerModalLoaderRef
+    }
 
-            Component.onCompleted: {
-                PopoutService.controlCenterPopout = controlCenterPopout;
-            }
+    Connections {
+        target: controlCenterLoader.item
+        function onPopoutClosed() {
+            PopoutService.unloadControlCenter();
+        }
+
+        function onLockRequested() {
+            lock.activate();
         }
     }
 
     LazyLoader {
         id: wifiPasswordModalLoader
         active: false
-        readonly property WifiPasswordModal loadedModal: item as WifiPasswordModal
+        source: "Modals/WifiPasswordModal.qml"
+        readonly property var loadedModal: item
 
         Component.onCompleted: {
             PopoutService.wifiPasswordModalLoader = wifiPasswordModalLoader;
         }
-
-        WifiPasswordModal {
-            id: wifiPasswordModalItem
-
-            Component.onCompleted: {
-                PopoutService.wifiPasswordModal = wifiPasswordModalItem;
-            }
+        onItemChanged: {
+            if (!item)
+                return;
+            PopoutService.wifiPasswordModal = item;
         }
     }
 
     LazyLoader {
         id: wifiQRCodeModalLoader
         active: false
+        source: "Modals/WifiQRCodeModal.qml"
 
         Component.onCompleted: {
             PopoutService.wifiQRCodeModalLoader = wifiQRCodeModalLoader;
         }
-
-        WifiQRCodeModal {
-            id: wifiQRCodeModalItem
-
-            Component.onCompleted: {
-                PopoutService.wifiQRCodeModal = wifiQRCodeModalItem;
-            }
+        onItemChanged: {
+            if (!item)
+                return;
+            PopoutService.wifiQRCodeModal = item;
         }
     }
 
     LazyLoader {
         id: qrGeneratorModalLoader
         active: false
+        source: "Modals/QRGeneratorModal.qml"
 
         Component.onCompleted: {
             PopoutService.qrGeneratorModalLoader = qrGeneratorModalLoader;
         }
-
-        QRGeneratorModal {
-            id: qrGeneratorModalItem
-
-            Component.onCompleted: {
-                PopoutService.qrGeneratorModal = qrGeneratorModalItem;
-            }
+        onItemChanged: {
+            if (!item)
+                return;
+            PopoutService.qrGeneratorModal = item;
         }
     }
 
     LazyLoader {
         id: polkitAuthModalLoader
         active: false
-        readonly property PolkitAuthModal loadedModal: item as PolkitAuthModal
-
-        PolkitAuthModal {
-            id: polkitAuthModal
-
-            Component.onCompleted: {
-                PopoutService.polkitAuthModal = polkitAuthModal;
-            }
+        source: "Modals/PolkitAuthModal.qml"
+        readonly property var loadedModal: item
+        onItemChanged: {
+            if (!item)
+                return;
+            PopoutService.polkitAuthModal = item;
         }
     }
 
@@ -545,15 +552,13 @@ Item {
     LazyLoader {
         id: bluetoothPairingModalLoader
         active: false
+        source: "Modals/BluetoothPairingModal.qml"
 
         Component.onCompleted: PopoutService.bluetoothPairingModalLoader = bluetoothPairingModalLoader
-
-        BluetoothPairingModal {
-            id: bluetoothPairingModal
-
-            Component.onCompleted: {
-                PopoutService.bluetoothPairingModal = bluetoothPairingModal;
-            }
+        onItemChanged: {
+            if (!item)
+                return;
+            PopoutService.bluetoothPairingModal = item;
         }
     }
 
@@ -585,13 +590,11 @@ Item {
         id: networkInfoModalLoader
 
         active: false
-
-        NetworkInfoModal {
-            id: networkInfoModal
-
-            Component.onCompleted: {
-                PopoutService.networkInfoModal = networkInfoModal;
-            }
+        source: "Modals/NetworkInfoModal.qml"
+        onItemChanged: {
+            if (!item)
+                return;
+            PopoutService.networkInfoModal = item;
         }
     }
 
@@ -599,18 +602,22 @@ Item {
         id: batteryPopoutLoader
 
         active: false
+        source: "Modules/DBar/Popouts/BatteryPopout.qml"
 
         Component.onCompleted: {
             PopoutService.batteryPopoutLoader = batteryPopoutLoader;
         }
+        onItemChanged: {
+            if (!item)
+                return;
+            PopoutService.batteryPopout = item;
+        }
+    }
 
-        BatteryPopout {
-            id: batteryPopout
-            onPopoutClosed: PopoutService.unloadBattery()
-
-            Component.onCompleted: {
-                PopoutService.batteryPopout = batteryPopout;
-            }
+    Connections {
+        target: batteryPopoutLoader.item
+        function onPopoutClosed() {
+            PopoutService.unloadBattery();
         }
     }
 
@@ -618,18 +625,22 @@ Item {
         id: layoutPopoutLoader
 
         active: false
+        source: "Modules/DBar/Popouts/DWLLayoutPopout.qml"
 
         Component.onCompleted: {
             PopoutService.layoutPopoutLoader = layoutPopoutLoader;
         }
+        onItemChanged: {
+            if (!item)
+                return;
+            PopoutService.layoutPopout = item;
+        }
+    }
 
-        DWLLayoutPopout {
-            id: layoutPopout
-            onPopoutClosed: PopoutService.unloadLayoutPopout()
-
-            Component.onCompleted: {
-                PopoutService.layoutPopout = layoutPopout;
-            }
+    Connections {
+        target: layoutPopoutLoader.item
+        function onPopoutClosed() {
+            PopoutService.unloadLayoutPopout();
         }
     }
 
@@ -637,18 +648,22 @@ Item {
         id: vpnPopoutLoader
 
         active: false
+        source: "Modules/DBar/Popouts/VpnPopout.qml"
 
         Component.onCompleted: {
             PopoutService.vpnPopoutLoader = vpnPopoutLoader;
         }
+        onItemChanged: {
+            if (!item)
+                return;
+            PopoutService.vpnPopout = item;
+        }
+    }
 
-        VpnPopout {
-            id: vpnPopout
-            onPopoutClosed: PopoutService.unloadVpn()
-
-            Component.onCompleted: {
-                PopoutService.vpnPopout = vpnPopout;
-            }
+    Connections {
+        target: vpnPopoutLoader.item
+        function onPopoutClosed() {
+            PopoutService.unloadVpn();
         }
     }
 
@@ -656,18 +671,22 @@ Item {
         id: colorPickerPopoutLoader
 
         active: false
+        source: "Modules/DBar/Popouts/ColorPickerPopout.qml"
 
         Component.onCompleted: {
             PopoutService.colorPickerPopoutLoader = colorPickerPopoutLoader;
         }
+        onItemChanged: {
+            if (!item)
+                return;
+            PopoutService.colorPickerPopout = item;
+        }
+    }
 
-        ColorPickerPopout {
-            id: colorPickerPopout
-            onPopoutClosed: PopoutService.unloadColorPicker()
-
-            Component.onCompleted: {
-                PopoutService.colorPickerPopout = colorPickerPopout;
-            }
+    Connections {
+        target: colorPickerPopoutLoader.item
+        function onPopoutClosed() {
+            PopoutService.unloadColorPicker();
         }
     }
 
@@ -675,25 +694,34 @@ Item {
         id: processListPopoutLoader
 
         active: false
+        source: "Modules/ProcessList/ProcessListPopout.qml"
 
         Component.onCompleted: {
             PopoutService.processListPopoutLoader = processListPopoutLoader;
         }
+        onItemChanged: {
+            if (!item)
+                return;
+            PopoutService.processListPopout = item;
+        }
+    }
 
-        ProcessListPopout {
-            id: processListPopout
-            onPopoutClosed: PopoutService.unloadProcessListPopout()
-
-            Component.onCompleted: {
-                PopoutService.processListPopout = processListPopout;
-            }
+    Connections {
+        target: processListPopoutLoader.item
+        function onPopoutClosed() {
+            PopoutService.unloadProcessListPopout();
         }
     }
 
     LazyLoader {
         id: settingsModalLoader
 
+        property bool wasShown: false
+
         active: false
+        source: "Modals/Settings/SettingsModal.qml"
+        readonly property var loadedModal: item
+        onItemChanged: wasShown = false
 
         Component.onCompleted: {
             PopoutService.settingsModalLoader = settingsModalLoader;
@@ -705,18 +733,18 @@ Item {
                 PopoutService._onSettingsModalLoaded();
             }
         }
+    }
 
-        SettingsModal {
-            id: settingsModal
-            property bool wasShown: false
+    Connections {
+        target: settingsModalLoader.item
 
-            onVisibleChanged: {
-                if (visible) {
-                    wasShown = true;
-                } else if (wasShown) {
-                    Qt.callLater(() => PopoutService.unloadSettingsNow());
-                }
+        function onVisibleChanged() {
+            if (settingsModalLoader.loadedModal.visible) {
+                settingsModalLoader.wasShown = true;
+                return;
             }
+            if (settingsModalLoader.wasShown)
+                Qt.callLater(() => PopoutService.unloadSettingsNow());
         }
     }
 
@@ -724,18 +752,22 @@ Item {
         id: appDrawerLoader
 
         active: false
+        source: "Modules/AppDrawer/AppDrawerPopout.qml"
 
         Component.onCompleted: {
             PopoutService.appDrawerLoader = appDrawerLoader;
         }
+        onItemChanged: {
+            if (!item)
+                return;
+            PopoutService.appDrawerPopout = item;
+        }
+    }
 
-        AppDrawerPopout {
-            id: appDrawerPopout
-            onPopoutClosed: PopoutService.unloadAppDrawer()
-
-            Component.onCompleted: {
-                PopoutService.appDrawerPopout = appDrawerPopout;
-            }
+    Connections {
+        target: appDrawerLoader.item
+        function onPopoutClosed() {
+            PopoutService.unloadAppDrawer();
         }
     }
 
@@ -743,18 +775,16 @@ Item {
         id: dankLauncherV2ModalLoader
 
         active: false
+        source: "Modals/DLauncherV2/DLauncherV2Modal.qml"
 
         Component.onCompleted: {
             PopoutService.dankLauncherV2ModalLoader = dankLauncherV2ModalLoader;
         }
-
-        DLauncherV2Modal {
-            id: dankLauncherV2Modal
-
-            Component.onCompleted: {
-                PopoutService.dankLauncherV2Modal = dankLauncherV2Modal;
-                PopoutService._onDankLauncherV2ModalLoaded();
-            }
+        onItemChanged: {
+            if (!item)
+                return;
+            PopoutService.dankLauncherV2Modal = item;
+            PopoutService._onDankLauncherV2ModalLoaded();
         }
     }
 
@@ -762,52 +792,70 @@ Item {
         id: spotlightBarModalLoader
 
         active: false
+        source: "Modals/DLauncherV2/DLauncherV2ModalHost.qml"
 
         Component.onCompleted: {
             PopoutService.spotlightBarModalLoader = spotlightBarModalLoader;
         }
-
-        DLauncherV2ModalHost {
-            id: spotlightBarModal
-            connected: false
-            spotlight: true
-
-            Component.onCompleted: {
-                PopoutService.spotlightBarModal = spotlightBarModal;
-                PopoutService._onSpotlightBarModalLoaded();
-            }
+        onItemChanged: {
+            if (!item)
+                return;
+            PopoutService.spotlightBarModal = item;
+            PopoutService._onSpotlightBarModalLoaded();
         }
+    }
+
+    Binding {
+        target: spotlightBarModalLoader.item
+        property: "connected"
+        value: false
+    }
+
+    Binding {
+        target: spotlightBarModalLoader.item
+        property: "spotlight"
+        value: true
     }
 
     LazyLoader {
         id: clipboardHistoryPopoutLoader
 
         active: false
+        source: "Modals/Clipboard/ClipboardHistoryPopout.qml"
 
         Component.onCompleted: {
             PopoutService.clipboardHistoryPopoutLoader = clipboardHistoryPopoutLoader;
         }
-
-        ClipboardHistoryPopout {
-            id: clipboardHistoryPopout
-            onPopoutClosed: PopoutService.unloadClipboardHistoryPopout()
-
-            Component.onCompleted: {
-                PopoutService.clipboardHistoryPopout = clipboardHistoryPopout;
-            }
+        onItemChanged: {
+            if (!item)
+                return;
+            PopoutService.clipboardHistoryPopout = item;
         }
     }
 
-    MuxModal {
-        id: muxModal
+    Connections {
+        target: clipboardHistoryPopoutLoader.item
+        function onPopoutClosed() {
+            PopoutService.unloadClipboardHistoryPopout();
+        }
     }
 
-    ClipboardHistoryModal {
-        id: clipboardHistoryModalPopup
+    LazyLoader {
+        id: muxModalLoader
+        active: false
+        source: "Modals/MuxModal.qml"
+    }
 
-        Component.onCompleted: {
-            PopoutService.clipboardHistoryModal = clipboardHistoryModalPopup;
-        }
+    MuxIpc {
+        loader: muxModalLoader
+    }
+
+    LazyLoader {
+        id: clipboardHistoryModalLoader
+        active: false
+        source: "Modals/Clipboard/ClipboardHistoryModal.qml"
+        Component.onCompleted: PopoutService.clipboardHistoryModalLoader = clipboardHistoryModalLoader
+        onItemChanged: PopoutService.clipboardHistoryModal = item
     }
 
     NotificationModal {
@@ -821,71 +869,15 @@ Item {
     LazyLoader {
         id: browserPickerModalLoader
         active: false
-        readonly property BrowserPickerModal loadedModal: item as BrowserPickerModal
-
-        BrowserPickerModal {
-            id: browserPickerModal
-        }
+        source: "Modals/BrowserPickerModal.qml"
+        readonly property var loadedModal: item
     }
 
     LazyLoader {
         id: filePickerModalLoader
         active: false
-        readonly property AppPickerModal loadedModal: item as AppPickerModal
-
-        AppPickerModal {
-            id: filePickerModal
-            title: I18n.tr("Open with", "app picker title, followed by a list of apps") + "…"
-            viewMode: SettingsData.appPickerViewMode || "grid"
-
-            onViewModeChanged: {
-                SettingsData.set("appPickerViewMode", viewMode);
-            }
-
-            function shellEscape(str) {
-                return "'" + str.replace(/'/g, "'\\''") + "'";
-            }
-
-            onApplicationSelected: (app, filePath) => {
-                if (!app)
-                    return;
-                const entry = SessionService.resolveDesktopId(app.appId);
-                if (entry) {
-                    SessionService.launchDesktopEntry(entry, false, [filePath]);
-                    return;
-                }
-                let cmd = app.exec || "";
-                const escapedPath = shellEscape(filePath);
-                const escapedUri = shellEscape("file://" + filePath);
-
-                let hasField = false;
-                if (cmd.includes("%f")) {
-                    cmd = cmd.replace("%f", escapedPath);
-                    hasField = true;
-                } else if (cmd.includes("%F")) {
-                    cmd = cmd.replace("%F", escapedPath);
-                    hasField = true;
-                } else if (cmd.includes("%u")) {
-                    cmd = cmd.replace("%u", escapedUri);
-                    hasField = true;
-                } else if (cmd.includes("%U")) {
-                    cmd = cmd.replace("%U", escapedUri);
-                    hasField = true;
-                }
-
-                cmd = cmd.replace(/%[ikc]/g, "");
-
-                if (!hasField) {
-                    cmd += " " + escapedPath;
-                }
-
-                log.debug("FilePicker: Launching", cmd);
-
-                Quickshell.execDetached({
-                    command: ["sh", "-c", cmd]
-                });
-            }
-        }
+        source: "Modals/OpenWithModal.qml"
+        readonly property var loadedModal: item
     }
 
     Connections {
@@ -950,7 +942,7 @@ Item {
 
         function onSessionResumed() {
             root.pendingOsdResumeReloads = 2;
-            osdResumeRecreateTimer.interval = 400;
+            osdResumeRecreateTimer.interval = Timing.resumeRecoverySchedule[0];
             osdResumeRecreateTimer.restart();
         }
     }
@@ -967,69 +959,82 @@ Item {
         id: workspaceRenameModalLoader
 
         active: false
+        source: "Modals/WorkspaceRenameModal.qml"
+    }
 
-        WorkspaceRenameModal {
-            id: workspaceRenameModal
-        }
+    LazyLoader {
+        id: globalShortcutsModalLoader
+
+        active: false
+        source: "Modals/GlobalShortcutsModal.qml"
     }
 
     LazyLoader {
         id: windowRuleModalLoader
 
         active: false
+        source: "Modals/WindowRuleModal.qml"
 
         Component.onCompleted: PopoutService.windowRuleModalLoader = windowRuleModalLoader
-
-        WindowRuleModal {
-            id: windowRuleModal
-        }
     }
 
     LazyLoader {
         id: processListModalLoader
 
+        property bool wasShown: false
+
         active: false
+        source: "Modals/ProcessListModal.qml"
+        readonly property var loadedModal: item
 
         Component.onCompleted: PopoutService.processListModalLoader = processListModalLoader
+        onItemChanged: {
+            wasShown = false;
+            if (item)
+                PopoutService.processListModal = item;
+        }
+    }
 
-        ProcessListModal {
-            id: processListModal
-            property bool wasShown: false
+    Connections {
+        target: processListModalLoader.item
 
-            Component.onCompleted: {
-                PopoutService.processListModal = processListModal;
+        function onVisibleChanged() {
+            if (processListModalLoader.loadedModal.visible) {
+                processListModalLoader.wasShown = true;
+                return;
             }
-
-            onVisibleChanged: {
-                if (visible) {
-                    wasShown = true;
-                } else if (wasShown) {
-                    PopoutService.unloadProcessListModal();
-                }
-            }
+            if (processListModalLoader.wasShown)
+                PopoutService.unloadProcessListModal();
         }
     }
 
     LazyLoader {
         id: systemUpdateModalLoader
 
+        property bool wasShown: false
+
         active: false
+        source: "Modals/SystemUpdateModal.qml"
+        readonly property var loadedModal: item
 
         Component.onCompleted: PopoutService.systemUpdateModalLoader = systemUpdateModalLoader
+        onItemChanged: {
+            wasShown = false;
+            if (item)
+                PopoutService.systemUpdateModal = item;
+        }
+    }
 
-        SystemUpdateModal {
-            id: systemUpdateModal
-            property bool wasShown: false
+    Connections {
+        target: systemUpdateModalLoader.item
 
-            Component.onCompleted: PopoutService.systemUpdateModal = systemUpdateModal
-
-            onVisibleChanged: {
-                if (systemUpdateModal.visible) {
-                    wasShown = true;
-                } else if (wasShown) {
-                    PopoutService.unloadSystemUpdateModal();
-                }
+        function onVisibleChanged() {
+            if (systemUpdateModalLoader.loadedModal.visible) {
+                systemUpdateModalLoader.wasShown = true;
+                return;
             }
+            if (systemUpdateModalLoader.wasShown)
+                PopoutService.unloadSystemUpdateModal();
         }
     }
 
@@ -1037,23 +1042,26 @@ Item {
         id: systemUpdateLoader
 
         active: false
+        source: "Modules/DBar/Popouts/SystemUpdatePopout.qml"
+        readonly property var loadedPopout: item
 
         Component.onCompleted: {
             PopoutService.systemUpdateLoader = systemUpdateLoader;
         }
+        onItemChanged: {
+            if (!item)
+                return;
+            PopoutService.systemUpdatePopout = item;
+        }
+    }
 
-        SystemUpdatePopout {
-            id: systemUpdatePopout
-            onPopoutClosed: {
-                if (systemUpdatePopout._reopenAfterUpgrade) {
-                    return;
-                }
-                PopoutService.unloadSystemUpdate();
+    Connections {
+        target: systemUpdateLoader.item
+        function onPopoutClosed() {
+            if (systemUpdateLoader.loadedPopout._reopenAfterUpgrade) {
+                return;
             }
-
-            Component.onCompleted: {
-                PopoutService.systemUpdatePopout = systemUpdatePopout;
-            }
+            PopoutService.unloadSystemUpdate();
         }
     }
 
@@ -1077,16 +1085,10 @@ Item {
                     PopoutService.notepadPopout?.hide();
             }
 
-            content: Component {
-                Notepad {
+            contentSource: Qt.resolvedUrl("Modules/Notepad/NotepadSlideoutContent.qml")
+            contentProperties: ({
                     slideout: notepadSlideout
-                    onHideRequested: notepadSlideout.hide()
-                    onPopoutRequested: {
-                        notepadSlideout.hide();
-                        PopoutService.openNotepadPopout();
-                    }
-                }
-            }
+                })
 
             function toggle() {
                 if (isVisible) {
@@ -1104,6 +1106,7 @@ Item {
     LazyLoader {
         id: notepadPopoutLoader
         active: false
+        source: "Modules/Notepad/NotepadPopoutWindow.qml"
 
         Component.onCompleted: {
             PopoutService.notepadPopoutLoader = notepadPopoutLoader;
@@ -1115,29 +1118,36 @@ Item {
                 PopoutService._onNotepadPopoutLoaded();
             }
         }
-
-        NotepadPopoutWindow {}
     }
 
     LazyLoader {
         id: powerMenuModalLoader
 
         active: false
+        source: "Modals/PowerMenuModal.qml"
 
         Component.onCompleted: {
             PopoutService.powerMenuModalLoader = powerMenuModalLoader;
         }
+        onItemChanged: {
+            if (!item)
+                return;
+            PopoutService.powerMenuModal = item;
+        }
+    }
 
-        PowerMenuModal {
-            id: powerMenuModal
+    Connections {
+        target: powerMenuModalLoader.item
+        function onPowerActionRequested(action, title, message) {
+            root._executePowerAction(action);
+        }
 
-            onPowerActionRequested: (action, title, message) => root._executePowerAction(action)
-            onLockRequested: root._lockFromPowerMenu()
-            onSwitchUserRequested: root._switchUserFromPowerMenu()
+        function onLockRequested() {
+            root._lockFromPowerMenu();
+        }
 
-            Component.onCompleted: {
-                PopoutService.powerMenuModal = powerMenuModal;
-            }
+        function onSwitchUserRequested() {
+            root._switchUserFromPowerMenu();
         }
     }
 
@@ -1159,22 +1169,34 @@ Item {
         id: powerMenuPopoutLoader
 
         active: false
+        source: "Modules/DBar/Popouts/PowerMenuPopout.qml"
 
         Component.onCompleted: {
             PopoutService.powerMenuPopoutLoader = powerMenuPopoutLoader;
         }
+        onItemChanged: {
+            if (!item)
+                return;
+            PopoutService.powerMenuPopout = item;
+        }
+    }
 
-        PowerMenuPopout {
-            id: powerMenuPopout
+    Connections {
+        target: powerMenuPopoutLoader.item
+        function onPowerActionRequested(action) {
+            root._executePowerAction(action);
+        }
 
-            onPowerActionRequested: action => root._executePowerAction(action)
-            onLockRequested: root._lockFromPowerMenu()
-            onSwitchUserRequested: root._switchUserFromPowerMenu()
-            onPopoutClosed: PopoutService.unloadPowerMenuPopout()
+        function onLockRequested() {
+            root._lockFromPowerMenu();
+        }
 
-            Component.onCompleted: {
-                PopoutService.powerMenuPopout = powerMenuPopout;
-            }
+        function onSwitchUserRequested() {
+            root._switchUserFromPowerMenu();
+        }
+
+        function onPopoutClosed() {
+            PopoutService.unloadPowerMenuPopout();
         }
     }
 
@@ -1182,18 +1204,22 @@ Item {
         id: durationPopoutLoader
 
         active: false
+        source: "Modules/DBar/Popouts/DurationPopout.qml"
 
         Component.onCompleted: {
             PopoutService.durationPopoutLoader = durationPopoutLoader;
         }
+        onItemChanged: {
+            if (!item)
+                return;
+            PopoutService.durationPopout = item;
+        }
+    }
 
-        DurationPopout {
-            id: durationPopout
-            onPopoutClosed: PopoutService.unloadDurationPopout()
-
-            Component.onCompleted: {
-                PopoutService.durationPopout = durationPopout;
-            }
+    Connections {
+        target: durationPopoutLoader.item
+        function onPopoutClosed() {
+            PopoutService.unloadDurationPopout();
         }
     }
 
@@ -1201,26 +1227,23 @@ Item {
         id: switchUserModalLoader
 
         active: false
-        readonly property SwitchUserModal loadedModal: item as SwitchUserModal
+        source: "Modals/SwitchUserModal.qml"
+        readonly property var loadedModal: item
 
         Component.onCompleted: PopoutService.switchUserModalLoader = switchUserModalLoader
-
-        SwitchUserModal {
-            id: switchUserModal
-        }
     }
 
     LazyLoader {
         id: hyprKeybindsModalLoader
 
         active: false
+        source: "Modals/KeybindsModal.qml"
 
         Component.onCompleted: PopoutService.keybindsModalLoader = hyprKeybindsModalLoader
-
-        KeybindsModal {
-            id: keybindsModal
-
-            Component.onCompleted: PopoutService.keybindsModal = keybindsModal
+        onItemChanged: {
+            if (!item)
+                return;
+            PopoutService.keybindsModal = item;
         }
     }
 
@@ -1243,6 +1266,8 @@ Item {
     }
 
     DMSShellIPC {
+        id: shellIpc
+
         processListModalLoaderRef: processListModalLoader
         controlCenterLoaderRef: controlCenterLoader
         dankDashPopoutLoaderRef: dankDashPopoutLoader
@@ -1252,12 +1277,84 @@ Item {
         hyprlandOverviewLoader: root.core?.hyprlandOverviewLoader ?? null
         workspaceRenameModalLoaderRef: workspaceRenameModalLoader
         windowRuleModalLoaderRef: windowRuleModalLoader
+        markupOverlayLoaderRef: markupOverlayLoader
+        annotateOverlayLoaderRef: annotateOverlayLoader
+    }
+
+    LazyLoader {
+        id: markupOverlayLoader
+
+        active: false
+        source: "Modules/Markup/MarkupOverlay.qml"
+    }
+
+    Connections {
+        target: markupOverlayLoader.item
+        function onDismissed() {
+            markupOverlayLoader.active = false;
+        }
+    }
+
+    LazyLoader {
+        id: annotateOverlayLoader
+
+        active: false
+        source: "Modules/Markup/AnnotateOverlay.qml"
+    }
+
+    Connections {
+        target: annotateOverlayLoader.item
+        function onDismissed() {
+            annotateOverlayLoader.active = false;
+        }
     }
 
     Variants {
         model: SettingsData.getFilteredScreens("toast")
 
         delegate: Toast {}
+    }
+
+    LazyLoader {
+        active: ConfigProfileService.screenshotPending
+
+        ProfileCaptureBar {}
+    }
+
+    LazyLoader {
+        id: profilePickerModalLoader
+
+        active: false
+        source: "Modals/ProfilePickerModal.qml"
+
+        Component.onCompleted: {
+            PopoutService.profilePickerModalLoader = profilePickerModalLoader;
+        }
+        onItemChanged: {
+            if (!item)
+                return;
+            PopoutService.profilePickerModal = item;
+        }
+    }
+
+    Connections {
+        target: ConfigProfileService
+        function onPickerToggleRequested() {
+            if (SettingsData.configProfilePickerView !== "dash")
+                PopoutService.toggleProfilePicker();
+            else if (PopoutService.dankDashPopout?.dashVisible && PopoutService.dankDashPopout.activeTabId !== "profiles")
+                shellIpc.openDash("profiles", "");
+            else if (!shellIpc.toggleDash("profiles", ""))
+                PopoutService.toggleProfilePicker();
+        }
+
+        // The user closed Settings to set up the screen, so bring back the profile being edited.
+        function onScreenshotEnded(id) {
+            if (PopoutService.settingsModal?.shouldBeVisible ?? false)
+                return;
+            ConfigProfileService.selectForSettings(id, false);
+            PopoutService.openSettingsWithTab("profile_edit");
+        }
     }
 
     Loader {
@@ -1267,6 +1364,15 @@ Item {
 
         sourceComponent: Component {
             Item {
+                Variants {
+                    model: SettingsData.getFilteredScreens("osd")
+
+                    DOSDSurface {
+                        required property var modelData
+                        screen: modelData
+                    }
+                }
+
                 Variants {
                     model: SettingsData.osdVolumeEnabled ? root.legacySystemLevelOsdScreens : []
 
@@ -1301,6 +1407,12 @@ Item {
                     model: SettingsData.osdIdleInhibitorEnabled ? root.legacySystemLevelOsdScreens : []
 
                     delegate: IdleInhibitorOSD {}
+                }
+
+                Variants {
+                    model: SettingsData.osdDoNotDisturbEnabled ? root.legacySystemLevelOsdScreens : []
+
+                    delegate: DoNotDisturbOSD {}
                 }
 
                 Variants {
@@ -1340,6 +1452,12 @@ Item {
                 }
 
                 Variants {
+                    model: SettingsData.osdAirplaneModeEnabled ? root.legacySystemLevelOsdScreens : []
+
+                    delegate: AirplaneModeOSD {}
+                }
+
+                Variants {
                     model: SettingsData.osdAudioOutputEnabled ? SettingsData.getFilteredScreens("osd") : []
 
                     delegate: AudioOutputOSD {}
@@ -1357,18 +1475,22 @@ Item {
     LazyLoader {
         id: niriOverviewOverlayLoader
         active: CompositorService.isNiri && SettingsData.niriOverviewOverlayEnabled
-        component: NiriOverviewOverlay {
-            id: niriOverviewOverlay
-        }
+        source: "Modules/WorkspaceOverlays/NiriOverviewOverlay.qml"
     }
 
     Loader {
         id: greeterLoader
         active: false
-        readonly property GreeterModal loadedModal: item as GreeterModal
-        sourceComponent: GreeterModal {
-            onGreeterCompleted: greeterLoader.active = false
-            Component.onCompleted: show()
+        readonly property var loadedModal: item
+        source: "Modals/Greeter/GreeterModal.qml"
+        onLoaded: loadedModal.show()
+
+        Connections {
+            target: greeterLoader.item
+
+            function onGreeterCompleted() {
+                greeterLoader.active = false;
+            }
         }
 
         Component.onCompleted: {
@@ -1391,10 +1513,16 @@ Item {
     Loader {
         id: changelogLoader
         active: false
-        readonly property ChangelogModal loadedModal: item as ChangelogModal
-        sourceComponent: ChangelogModal {
-            onChangelogDismissed: changelogLoader.active = false
-            Component.onCompleted: show()
+        readonly property var loadedModal: item
+        source: "Modals/Changelog/ChangelogModal.qml"
+        onLoaded: loadedModal.show()
+
+        Connections {
+            target: changelogLoader.item
+
+            function onChangelogDismissed() {
+                changelogLoader.active = false;
+            }
         }
 
         Component.onCompleted: {

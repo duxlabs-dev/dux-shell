@@ -35,6 +35,19 @@ if ! qmllint_bin="$(resolve_qmllint)"; then
     exit 127
 fi
 
+dms_bin="${DMS:-dms}"
+
+# Writes the config and module mirror without launching the shell. Returns 2 when there is no
+# dms or its dux-qt-base predates the command, so the checks below fall back to existing files.
+write_tooling() {
+    command -v -- "${dms_bin}" >/dev/null 2>&1 || return 2
+    local output
+    output="$("${dms_bin}" qs tooling -p "${quickshell_dir}" 2>&1)" && return 0
+    [[ "${output}" == *"not expected: tooling"* ]] && return 2
+    printf 'lint-qml: %s qs tooling failed:\n%s\n' "${dms_bin}" "${output}" >&2
+    return 1
+}
+
 print_broken_qmlls_link() {
     local target=""
     target="$(readlink -- "${qmlls_config}" 2>/dev/null || true)"
@@ -66,19 +79,14 @@ read_ini_value() {
 }
 
 print_vfs_recovery() {
-    printf 'Quickshell fills the VFS config in itself, but only into a file that already\n' >&2
-    printf 'exists; it never creates one. The nix develop shell touches it for you, so\n' >&2
-    printf 'outside that shell you have to create it yourself. The VFS also lives under\n' >&2
-    printf 'the XDG runtime directory, so a reboot removes it and leaves the file\n' >&2
-    printf 'dangling, which makes a plain touch fail. Recreate both with:\n' >&2
-    printf '  rm -f %q\n' "${qmlls_config}" >&2
-    printf '  touch %q\n' "${qmlls_config}" >&2
-    printf '  qs -p %q\n' "${quickshell_dir}" >&2
-    printf '  # or: dms -c %q run\n' "${quickshell_dir}" >&2
-    printf 'The shell only has to run long enough to write the config, then:\n' >&2
-    printf '  qs kill -p %q\n' "${quickshell_dir}" >&2
-    printf 'Linting itself does not need a running shell.\n' >&2
+    printf 'Update dux-qt-base so "%s qs tooling" can write it, or run the shell from\n' "${dms_bin}" >&2
+    printf 'this folder once:\n' >&2
+    printf '  rm -f %q && touch %q\n' "${qmlls_config}" "${qmlls_config}" >&2
+    printf '  %s qs -p %q\n' "${dms_bin}" "${quickshell_dir}" >&2
+    printf 'then stop it with: %s qs kill -p %q\n' "${dms_bin}" "${quickshell_dir}" >&2
 }
+
+write_tooling || [[ $? -eq 2 ]] || exit 1
 
 if [[ -L "${qmlls_config}" && ! -e "${qmlls_config}" ]]; then
     print_broken_qmlls_link
@@ -120,16 +128,40 @@ qmllint_args=(
     -I "${build_dir}"
 )
 
+# --bare keeps the config's import order, so dux-qt-base's Quickshell types (listed first) win
+# over an installed upstream copy. UPSTREAM=1 drops them to check against upstream quickshell.
+# Their dirs carry a marker file, which catches every spelling of the path.
+fork_types=""
+upstream_types=""
 IFS=':' read -r -a import_paths <<< "${import_paths_raw}"
 for path in "${import_paths[@]}"; do
-    if [[ -n "${path}" ]]; then
-        qmllint_args+=(-I "${path}")
+    [[ -n "${path}" ]] || continue
+    if [[ -f "${path}/.dux-qt-base" ]]; then
+        [[ -n "${UPSTREAM:-}" ]] && continue
+        [[ -z "${fork_types}" && -f "${path}/Quickshell/qmldir" ]] && fork_types="${path}"
+    elif [[ -z "${upstream_types}" && -f "${path}/Quickshell/qmldir" ]]; then
+        upstream_types="${path}"
     fi
+    qmllint_args+=(-I "${path}")
 done
+
+if [[ -n "${UPSTREAM:-}" ]]; then
+    if [[ -z "${upstream_types}" ]]; then
+        printf 'error: UPSTREAM=1 needs upstream quickshell on the QML import path.\n' >&2
+        exit 1
+    fi
+else
+    qmllint_args+=(--bare)
+    if [[ -z "${fork_types}" ]]; then
+        printf 'lint-qml: dux-qt-base type info is not installed, using Quickshell types from %s\n' \
+            "${upstream_types:-nowhere}" >&2
+    fi
+fi
 
 printf 'lint-qml: checking %d entrypoints with %s\n' "${#targets[@]}" "${qmllint_bin}"
 
-if ! output="$("${qmllint_bin}" "${qmllint_args[@]}" "${targets[@]}" 2>&1)"; then
+# The ini already lists the environment's import paths; unset so they can't bypass the filter above.
+if ! output="$(env -u QML_IMPORT_PATH -u QML2_IMPORT_PATH "${qmllint_bin}" "${qmllint_args[@]}" "${targets[@]}" 2>&1)"; then
     printf 'lint-qml: FAIL\n' >&2
     printf '%s\n' "${output}" >&2
     exit 1

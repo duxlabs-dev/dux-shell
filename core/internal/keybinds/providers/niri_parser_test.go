@@ -643,42 +643,6 @@ func TestNiriParseNumericWorkspaceBinds(t *testing.T) {
 	}
 }
 
-func TestNiriParseQuotedStringArgs(t *testing.T) {
-	tmpDir := t.TempDir()
-	configFile := filepath.Join(tmpDir, "config.kdl")
-
-	content := `binds {
-    Super+Minus hotkey-overlay-title="Adjust Column Width -10%" { set-column-width "-10%"; }
-    Super+Equal hotkey-overlay-title="Adjust Column Width +10%" { set-column-width "+10%"; }
-    Super+Shift+Minus hotkey-overlay-title="Adjust Window Height -10%" { set-window-height "-10%"; }
-}
-`
-	if err := os.WriteFile(configFile, []byte(content), 0o644); err != nil {
-		t.Fatalf("Failed to write test config: %v", err)
-	}
-
-	result, err := ParseNiriKeys(tmpDir)
-	if err != nil {
-		t.Fatalf("ParseNiriKeys failed: %v", err)
-	}
-
-	if len(result.Section.Keybinds) != 3 {
-		t.Errorf("Expected 3 keybinds, got %d", len(result.Section.Keybinds))
-	}
-
-	for _, kb := range result.Section.Keybinds {
-		if kb.Action == "set-column-width" {
-			if len(kb.Args) != 1 {
-				t.Errorf("set-column-width should have 1 arg, got %d", len(kb.Args))
-				continue
-			}
-			if kb.Args[0] != "-10%" && kb.Args[0] != "+10%" {
-				t.Errorf("set-column-width arg = %q, want -10%% or +10%%", kb.Args[0])
-			}
-		}
-	}
-}
-
 func TestNiriParseActionWithProperties(t *testing.T) {
 	tmpDir := t.TempDir()
 	configFile := filepath.Join(tmpDir, "config.kdl")

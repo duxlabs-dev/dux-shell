@@ -12,7 +12,7 @@ function create(id, name) {
     return {
         id: id,
         name: name,
-        enabled: false,
+        enabled: true,
         screenPreferences: ["all"],
         showOnLastDisplay: true,
         position: 1,
@@ -28,13 +28,15 @@ function create(id, name) {
         transparency: 1,
         followInterfaceStyle: true,
         autoHide: false,
-        smartAutoHide: false,
+        smartAutoHide: true,
         useOverlayLayer: false,
         editOnRightClick: false,
+        showEditWidgetsInContextMenu: true,
         showOnFullscreen: false,
         openOnOverview: false,
         groupByApp: false,
         separatePinnedAndRunningApps: false,
+        showRunningApps: true,
         restoreSpecialWorkspaceOnClick: false,
         isolateDisplays: false,
         indicatorStyle: "circle",
@@ -118,6 +120,8 @@ function normalize(configs, presets) {
             if (typeof defaults[key] === "boolean")
                 result[key] = result[key] === true;
         }
+        if (config.autoHide === true && config.smartAutoHide === undefined)
+            result.smartAutoHide = false;
         result.screenPreferences = Array.isArray(config.screenPreferences) ? config.screenPreferences.filter(pref => (typeof pref === "string" && pref) || (pref && typeof pref === "object" && (typeof pref.name === "string" || typeof pref.model === "string"))).map(pref => typeof pref === "string" ? pref : clone(pref)) : ["all"];
         const widgetIds = new Set();
         result.widgets = (Array.isArray(config.widgets) ? config.widgets : result.widgets).filter(widget => widget && (typeof widget === "string" || typeof widget.widgetId === "string" || typeof widget.id === "string")).map((widget, index) => {
@@ -185,6 +189,7 @@ var LEGACY_DEFAULTS = {
     spacing: 4,
     margin: 0,
     bottomGap: 0,
+    smartAutoHide: false,
     launcherEnabled: false,
     launcherLogoMode: "apps"
 };
@@ -286,6 +291,19 @@ function unitList(widgets, pins, order) {
     const apps = result.indexOf(widgets.find(widget => widget.widgetId === "appsDock")?.id);
     result.splice(lastPin >= 0 ? lastPin + 1 : apps >= 0 ? apps : result.length, 0, ...remaining);
     return result;
+}
+
+function replacePinSlot(widgets, apps, order, replaced, removed, replacementIds) {
+    const replacedUnit = pinUnit(replaced);
+    const removedUnit = removed ? pinUnit(removed) : "";
+    const next = [];
+    for (const unit of unitList(widgets, pinUnits(apps), order)) {
+        if (unit === replacedUnit)
+            next.push(...replacementIds.map(id => "pin:" + id));
+        else if (unit !== removedUnit)
+            next.push(unit);
+    }
+    return next;
 }
 
 function widgetOrder(widgets, order) {

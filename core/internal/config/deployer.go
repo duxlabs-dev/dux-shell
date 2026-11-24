@@ -341,6 +341,7 @@ func (cd *ConfigDeployer) deployNiriDmsConfigs(dmsDir, terminalCommand string) e
 		{"colors.kdl", NiriColorsConfig},
 		{"layout.kdl", NiriLayoutConfig},
 		{"alttab.kdl", NiriAlttabConfig},
+		{"animations.kdl", NiriAnimationsConfig},
 		{"input.kdl", NiriInputConfig},
 		{"outputs.kdl", ""},
 		{"cursor.kdl", ""},
@@ -767,6 +768,7 @@ func (cd *ConfigDeployer) deployHyprlandDmsConfigs(dmsDir string, terminalComman
 	}{
 		{name: "colors.lua", content: DMSColorsLuaConfig},
 		{name: "layout.lua", content: DMSLayoutLuaConfig},
+		{name: "animations.lua", content: DMSAnimationsLuaConfig},
 		{name: "binds-user.lua", content: DMSBindsUserLuaConfig},
 		{name: "outputs.lua", content: DMSOutputsLuaConfig},
 		{name: "cursor.lua", content: DMSCursorLuaConfig},

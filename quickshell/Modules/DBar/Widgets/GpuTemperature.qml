@@ -59,32 +59,27 @@ MonitorPill {
         }
     }
 
+    readonly property int availableGpuCount: DgopService.availableGpus?.length ?? 0
+    // Deferred: saving the widget's GPU rewrites the bar config this widget is being built from.
+    onAvailableGpuCountChanged: Qt.callLater(root.adoptFirstGpu)
+
+    function adoptFirstGpu() {
+        if (widgetData?.pciId)
+            return;
+        const pciId = DgopService.availableGpus?.[0]?.pciId;
+        if (!pciId)
+            return;
+        updateWidgetPciId(pciId);
+        DgopService.addGpuPciId(pciId);
+    }
+
     Component.onCompleted: {
-        if (widgetData && widgetData.pciId) {
+        if (widgetData?.pciId)
             DgopService.addGpuPciId(widgetData.pciId);
-        } else {
-            autoSaveTimer.running = true;
-        }
     }
     Component.onDestruction: {
         if (widgetData && widgetData.pciId) {
             DgopService.removeGpuPciId(widgetData.pciId);
-        }
-    }
-
-    Timer {
-        id: autoSaveTimer
-
-        interval: 100
-        running: false
-        onTriggered: {
-            if (DgopService.availableGpus && DgopService.availableGpus.length > 0) {
-                const firstGpu = DgopService.availableGpus[0];
-                if (firstGpu && firstGpu.pciId) {
-                    updateWidgetPciId(firstGpu.pciId);
-                    DgopService.addGpuPciId(firstGpu.pciId);
-                }
-            }
         }
     }
 }

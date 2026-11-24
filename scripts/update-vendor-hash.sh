@@ -3,7 +3,10 @@ set -euo pipefail
 
 command -v nix >/dev/null 2>&1 || { printf '%s\n' "nix is required to update the vendorHash" >&2; exit 1; }
 
-if output=$(nix build --no-link .#dms-shell.goModules 2>&1); then
+# a cached vendor derivation with the old hash passes the plain build without checking go.sum,
+# so a passing build is verified with --rebuild (which refuses to run on a never-built derivation)
+if output=$(nix build --no-link .#dms-shell.goModules 2>&1) \
+    && output=$(nix build --no-link --rebuild .#dms-shell.goModules 2>&1); then
     exit 0
 fi
 

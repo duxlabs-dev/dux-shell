@@ -5,6 +5,7 @@ import (
 
 	"github.com/duxlabs-dev/dux-shell/core/internal/geolocation"
 	"github.com/duxlabs-dev/dux-shell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/pubsub"
 )
 
 func NewManager(client geolocation.Client) (*Manager, error) {
@@ -43,24 +44,16 @@ func (m *Manager) Close() {
 
 	m.sigWG.Wait()
 
-	m.subscribers.Range(func(key string, ch chan State) bool {
-		close(ch)
-		m.subscribers.Delete(key)
-		return true
-	})
+	m.subscribers.Close()
 }
 
 func (m *Manager) Subscribe(id string) chan State {
 	m.ensureStarted()
-	ch := make(chan State, 64)
-	m.subscribers.Store(id, ch)
-	return ch
+	return m.subscribers.Subscribe(id)
 }
 
-func (m *Manager) Unsubscribe(id string) {
-	if ch, ok := m.subscribers.LoadAndDelete(id); ok {
-		close(ch)
-	}
+func (m *Manager) Unsubscribe(id string, ch chan State) {
+	m.subscribers.Unsubscribe(id, ch)
 }
 
 func (m *Manager) startSignalPump() {
@@ -117,48 +110,14 @@ func (m *Manager) GetState() State {
 
 func (m *Manager) notifier() {
 	defer m.notifierWg.Done()
-	const minGap = 200 * time.Millisecond
-	timer := time.NewTimer(minGap)
-	timer.Stop()
-	var pending bool
-
-	for {
-		select {
-		case <-m.stopChan:
-			timer.Stop()
-			return
-		case <-m.dirty:
-			if pending {
-				continue
-			}
-			pending = true
-			timer.Reset(minGap)
-		case <-timer.C:
-			if !pending {
-				continue
-			}
-
-			currentState := m.GetState()
-
-			if m.lastNotified != nil && !stateChanged(m.lastNotified, &currentState) {
-				pending = false
-				continue
-			}
-
-			m.subscribers.Range(func(key string, ch chan State) bool {
-				select {
-				case ch <- currentState:
-				default:
-					log.Warn("Location: subscriber channel full, dropping update")
-				}
-				return true
-			})
-
-			stateCopy := currentState
-			m.lastNotified = &stateCopy
-			pending = false
-		}
-	}
+	pubsub.RunDebouncedNotifier(pubsub.DebouncedConfig[State]{
+		MinGap:   200 * time.Millisecond,
+		Stop:     m.stopChan,
+		Dirty:    m.dirty,
+		Snapshot: m.GetState,
+		Changed:  stateChanged,
+		Broker:   &m.subscribers,
+	})
 }
 
 func stateChanged(old, new *State) bool {

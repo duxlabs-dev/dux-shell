@@ -19,6 +19,10 @@ const niriConfigNextProbe = `window-rule {
     on-xdg-activate "set-urgent"
     pinch-sensitivity 1.0
 }
+layer-rule {
+    match namespace="probe"
+    focus-on-type-in-overview true
+}
 input {
     touchpad {
         pinch-sensitivity 1.0

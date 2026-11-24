@@ -1,5 +1,6 @@
 import QtQuick
 import qs.Common
+import qs.Widgets
 import qs.DCommon.Widgets
 
 Rectangle {
@@ -44,8 +45,8 @@ Rectangle {
             }
         }
 
-        Rectangle {
-            width: Theme.dividerWidth
+        DDivider {
+            vertical: true
             height: Theme.iconSizeSmall
             color: Theme.outline
             anchors.verticalCenter: parent.verticalCenter

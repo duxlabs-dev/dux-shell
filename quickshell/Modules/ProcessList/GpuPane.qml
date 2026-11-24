@@ -17,7 +17,8 @@ DevicePane {
     readonly property bool off: stat !== null && !monitored
     readonly property bool suspended: stat?.state === "suspended"
     readonly property bool live: stat !== null && !off && !suspended
-    readonly property var history: DgopService.deviceHistory[Devices.deviceKey("gpu", slot)] ?? ({})
+    readonly property var historyA: DgopService.history(Devices.deviceKey("gpu", slot), "usage")
+    readonly property var historyB: DgopService.history(Devices.deviceKey("gpu", slot), "vram")
 
     // allProcesses can be only the top 100 by the table's sort, so a GPU-heavy process can be missing.
     // Per-process GPU use is not per device, so it is only meaningful with a single GPU.
@@ -59,17 +60,17 @@ DevicePane {
         return max === null || max === undefined ? "" : I18n.tr("Max clock", "highest clock speed of a CPU or GPU") + ": " + num(max, unit);
     }
 
-    loaded: off || suspended || (history.a ?? []).length > 0
+    loaded: off || suspended || historyA.length > 0
     title: stat?.fullName ?? slot
     titleTooltip: title
     subtitle: stat?.driver ? I18n.tr("Graphics driver", "GPU kernel driver and Mesa version") + ": " + stat.driver : ""
     showChart: live
     chartLabel: I18n.tr("Usage", "chart legend: CPU or GPU utilization")
     chartValue: pct(stat?.usage) ?? "—"
-    chartSecondaryLabel: (history.b ?? []).length > 0 ? I18n.tr("VRAM", "GPU video memory") : ""
+    chartSecondaryLabel: historyB.length > 0 ? I18n.tr("VRAM", "GPU video memory") : ""
     chartSecondaryValue: stat?.memoryTotal > 0 && stat?.memoryUsed != null ? Math.round(stat.memoryUsed / stat.memoryTotal * 100) + "%" : ""
-    values: live ? (history.a ?? []) : []
-    secondaryValues: live ? (history.b ?? []) : []
+    values: live ? historyA : []
+    secondaryValues: live ? historyB : []
     maximum: 100
     maximumText: "100%"
 
@@ -154,7 +155,7 @@ DevicePane {
             text: I18n.tr("GPU Monitoring")
             checked: root.monitored || heldByWidget
             enabled: !heldByWidget
-            description: heldByWidget ? I18n.tr("Bar widgets") : ""
+            description: heldByWidget ? I18n.tr("Widgets") : ""
             onToggled: on => DgopService.setGpuMonitoring(root.stat.pciId, on)
         }
     }

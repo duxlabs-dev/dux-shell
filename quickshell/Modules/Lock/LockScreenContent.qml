@@ -202,7 +202,7 @@ FocusScope {
     Timer {
         id: placeholderDelay
 
-        interval: 4000
+        interval: Timing.holdLong
         onTriggered: root.pamState = ""
     }
 
@@ -210,10 +210,16 @@ FocusScope {
         id: editorLoader
         anchors.fill: parent
         active: root.demoMode
-
-        sourceComponent: WidgetEditorOverlay {
+        Component.onCompleted: setSource("../Plugins/WidgetEditorOverlay.qml", {
             editLayer: widgetLayer
-            onFinished: root.unlockRequested()
+        })
+
+        Connections {
+            target: editorLoader.item
+
+            function onFinished() {
+                root.unlockRequested();
+            }
         }
     }
 

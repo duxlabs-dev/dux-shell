@@ -8,6 +8,7 @@ import "../DCommon/Common/Surface.js" as Surface
 import "../DCommon/Common/Contrast.js" as Contrast
 import "../DCommon/Common/Accents.js" as Accents
 import "../DCommon/Common/Tonal.js" as Tonal
+import "CornerClearance.js" as CornerClearance
 import Quickshell
 import Quickshell.Io
 import qs.Common
@@ -371,20 +372,35 @@ Singleton {
     property color surfaceContainerHighest: currentThemeData.surfaceContainerHighest || surfaceContainerHigh
     property color surfaceBright: currentThemeData.surfaceBright || (isLightMode ? surface : surfaceContainerHighest)
     property color surfaceDim: currentThemeData.surfaceDim || (isLightMode ? surfaceContainer : background)
-    readonly property color hostSurface: typeof SettingsData === "undefined" ? surface : surfaceRoleColor(SettingsData.hostSurfaceColor, SettingsData.hostSurfaceCustomColor, surface)
-    readonly property color cardSurface: typeof SettingsData === "undefined" ? surfaceContainer : surfaceRoleColor(SettingsData.cardSurfaceColor, SettingsData.cardSurfaceCustomColor, surfaceContainer)
-    readonly property color chipSurface: typeof SettingsData === "undefined" ? surfaceContainerHigh : surfaceRoleColor(SettingsData.chipSurfaceColor, SettingsData.chipSurfaceCustomColor, surfaceContainerHigh)
-    readonly property color chipSurfaceNested: typeof SettingsData === "undefined" ? surfaceContainerHighest : surfaceRoleColor(SettingsData.chipSurfaceNestedColor, SettingsData.chipSurfaceNestedCustomColor, surfaceContainerHighest)
+    // Keyed on the surface tone, not isLightMode: a dark-only theme keeps its dark ladder in light mode
+    readonly property bool lightSurfaces: Tonal.isLight(surface)
+    readonly property var surfaceLadder: Tonal.surfaceLadder(surface, surfaceContainerLow, surfaceContainer, surfaceContainerHigh, surfaceContainerHighest)
+    readonly property color highContrastSurface: lightSurfaces ? surfaceLadder.card : surfaceContainerHighest
+    readonly property color hostSurface: typeof SettingsData === "undefined" ? surfaceLadder.host : surfaceRoleColor(SettingsData.hostSurfaceColor, SettingsData.hostSurfaceCustomColor, surfaceLadder.host)
+    readonly property color cardSurface: typeof SettingsData === "undefined" ? surfaceLadder.card : surfaceRoleColor(SettingsData.cardSurfaceColor, SettingsData.cardSurfaceCustomColor, surfaceLadder.card)
+    readonly property color chipSurface: typeof SettingsData === "undefined" ? surfaceLadder.chip : surfaceRoleColor(SettingsData.chipSurfaceColor, SettingsData.chipSurfaceCustomColor, surfaceLadder.chip)
+    readonly property color chipSurfaceNested: typeof SettingsData === "undefined" ? surfaceLadder.nested : surfaceRoleColor(SettingsData.chipSurfaceNestedColor, SettingsData.chipSurfaceNestedCustomColor, surfaceLadder.nested)
+    // A hovered light chip lands on the dim host tone, so a chip straight on the host takes the card tone there
+    readonly property color hostChipSurface: lightSurfaces ? cardSurface : chipSurface
+    // A region of the host set back from the rest, like a sidebar. Dark lifts the neighboring pane instead; a light pane cannot rise under white cards.
+    readonly property color hostRecessSurface: lightSurfaces ? Tonal.dropTone(hostSurface, Tonal.LIGHT_RECESS_DROP) : hostSurface
     readonly property color tooltipSurface: typeof SettingsData === "undefined" ? inverseSurface : surfaceRoleColor(SettingsData.tooltipSurfaceColor, SettingsData.tooltipSurfaceCustomColor, inverseSurface)
     readonly property color tooltipText: Contrast.readableOn(tooltipSurface, [inverseOnSurface, surfaceText, (isLightColor(tooltipSurface) ? contrastDark : contrastLight)])
     readonly property real containerSaturation: typeof SettingsData === "undefined" ? 1 : SettingsData.containerSaturation / 100
     readonly property real containerTint: (currentThemeData.containerTint ?? Tonal.defaultTint(surfaceContainer)) * containerSaturation
-    property color primaryContainer: currentThemeData.softPrimaryContainer || Tonal.softContainer(primary, surfaceContainer, containerTint)
-    property color secondaryContainer: currentThemeData.secondaryContainer || blend(surfaceContainerHigh, secondary, 0.35)
-    property color tertiaryContainer: currentThemeData.tertiaryContainer || blend(surfaceContainerHigh, tertiary, 0.35)
+    // softContainer steps below its base on light surfaces, and the dim host is the lowest role there
+    readonly property color softContainerBase: lightSurfaces ? surfaceLadder.host : surfaceContainer
+    property color primaryContainer: currentThemeData.softPrimaryContainer || Tonal.softContainer(primary, softContainerBase, containerTint)
+    readonly property color themeSecondaryContainer: currentThemeData.secondaryContainer || blend(surfaceContainerHigh, secondary, 0.35)
+    readonly property color themeTertiaryContainer: currentThemeData.tertiaryContainer || blend(surfaceContainerHigh, tertiary, 0.35)
+    property color secondaryContainer: Tonal.standApart(themeSecondaryContainer, selectionNeighbors, selectedContainerDistinction)
+    property color tertiaryContainer: Tonal.standApart(themeTertiaryContainer, selectionNeighbors, selectedContainerDistinction)
     readonly property real selectedContainerTint: currentThemeData.selectedContainerTint ?? 0.2
-    readonly property bool themedSelectedContainer: !!currentThemeData.secondaryContainer && Contrast.isTonal(secondaryContainer, onSecondaryContainer) && Contrast.isTonal(secondaryContainer, surfaceText)
-    readonly property color selectedContainer: currentThemeData.selectedContainer || (themedSelectedContainer ? secondaryContainer : Contrast.subtleTint(surfaceContainerHigh, primary, surfaceText, selectedContainerTint))
+    // A selected row has to read against the rows beside it and the surface behind them
+    readonly property var selectionNeighbors: [hostSurface, cardSurface, chipSurface, hostRecessSurface]
+    readonly property real selectedContainerDistinction: 1.15
+    readonly property bool themedSelectedContainer: !!currentThemeData.secondaryContainer && Contrast.isTonal(secondaryContainer, onSecondaryContainer) && Contrast.isTonal(secondaryContainer, surfaceText) && Contrast.worstRatio(secondaryContainer, selectionNeighbors) >= selectedContainerDistinction
+    readonly property color selectedContainer: currentThemeData.selectedContainer || (themedSelectedContainer ? secondaryContainer : Contrast.distinctTint(chipSurface, primary, surfaceText, selectedContainerTint, selectionNeighbors, selectedContainerDistinction))
     readonly property color accentOnSelectedContainer: currentThemeData.accentOnSelectedContainer || (Contrast.ratio(primary, selectedContainer) >= 3 ? primary : onSelectedContainer)
     readonly property color accentOnPrimaryContainer: currentThemeData.accentOnPrimaryContainer || (Contrast.ratio(primary, primaryContainer) >= 3 ? primary : onPrimaryContainer)
     readonly property var accents: Accents.derive(primary, isLightMode, currentThemeData.accents ?? null)
@@ -453,12 +469,12 @@ Singleton {
         Binding {
             target: root
             property: "onSecondaryContainer"
-            value: root.currentThemeData.onSecondaryContainer || Contrast.readableOn(root.secondaryContainer, root.onContainerCandidates)
+            value: root.readableOnContainer(root.secondaryContainer, root.currentThemeData.onSecondaryContainer)
         },
         Binding {
             target: root
             property: "onTertiaryContainer"
-            value: root.currentThemeData.onTertiaryContainer || Contrast.readableOn(root.tertiaryContainer, root.onContainerCandidates)
+            value: root.readableOnContainer(root.tertiaryContainer, root.currentThemeData.onTertiaryContainer)
         },
         Binding {
             target: root
@@ -467,6 +483,13 @@ Singleton {
         }
     ]
     readonly property var onContainerCandidates: [surfaceText, surface, contrastLight, contrastDark]
+
+    // The theme's own on-color wins while it still reads on the container
+    function readableOnContainer(container, explicit) {
+        if (!explicit)
+            return Contrast.readableOn(container, onContainerCandidates);
+        return Contrast.readableOn(container, [Qt.color(explicit)].concat(onContainerCandidates));
+    }
     readonly property real tonalTintAlpha: 0.16
 
     property color error: currentThemeData.error || "#F2B8B5"
@@ -485,11 +508,12 @@ Singleton {
 
     property color secondaryHover: withAlpha(secondary, 0.08)
 
-    property color surfaceHover: withAlpha(surfaceVariant, 0.08)
-    property color surfacePressed: withAlpha(surfaceVariant, 0.12)
-    property color surfaceSelected: withAlpha(surfaceVariant, 0.15)
-    property color surfaceLight: withAlpha(surfaceVariant, transparentBlurLayers ? 0.3 : 0.1)
-    property color surfaceVariantAlpha: withAlpha(surfaceVariant, 0.2)
+    // Alpha of the text color reads on every role in both modes; alpha of a surface tone vanishes on light surfaces
+    property color surfaceHover: withAlpha(surfaceText, stateLayerHover)
+    property color surfacePressed: withAlpha(surfaceText, stateLayerPressed)
+    property color surfaceSelected: withAlpha(surfaceText, 0.12)
+    property color surfaceLight: withAlpha(surfaceText, transparentBlurLayers ? 0.1 : 0.03)
+    property color surfaceVariantAlpha: withAlpha(surfaceText, 0.06)
 
     readonly property bool foregroundLayers: typeof SettingsData === "undefined" || (SettingsData.blurForegroundLayers ?? true)
     readonly property bool blurForegroundLayers: blurLayersActive && foregroundLayers
@@ -971,25 +995,32 @@ Singleton {
         };
     }
 
-    readonly property int currentAnimationBaseDuration: typeof SettingsData !== "undefined" ? SettingsData.animationDuration : 250
-    readonly property int currentAnimationSpeed: currentAnimationBaseDuration > 0 ? SettingsData.AnimationSpeed.Custom : SettingsData.AnimationSpeed.None
+    readonly property var motionDurationScales: [0.5, 0.75, 1, 1.5, 2]
+    readonly property bool motionOff: typeof SettingsData !== "undefined" && SettingsData.motionDuration < 0
+    readonly property bool reduceMotion: motionOff || (typeof SettingsData !== "undefined" && SettingsData.reduceMotion)
+    readonly property real motionScale: {
+        if (typeof SettingsData === "undefined")
+            return 1;
+        if (motionOff)
+            return 0;
+        return motionDurationScales[SettingsData.motionDuration] ?? 1;
+    }
+    readonly property real springScale: motionOff ? 1 : motionScale
 
-    readonly property int shorterDuration: Math.round(currentAnimationBaseDuration * 0.2)
-    readonly property int shortDuration: Math.round(currentAnimationBaseDuration * 0.3)
-    readonly property bool snapListModelChanges: shortDuration <= 0
-    readonly property int mediumDuration: Math.round(currentAnimationBaseDuration * 0.6)
-    readonly property int longDuration: currentAnimationBaseDuration
-    readonly property int extraLongDuration: currentAnimationBaseDuration * 2
+    function motionMs(specMs) {
+        return Math.round(specMs * motionScale);
+    }
+
+    readonly property int shorterDuration: motionMs(100)
+    readonly property int shortDuration: motionMs(150)
+    readonly property int mediumDuration: motionMs(300)
+    readonly property int longDuration: motionMs(500)
+    readonly property int extraLongDuration: motionMs(1000)
+    // !TODO: plugin compat, shell motion uses expressiveCurves with expressiveDurations
     readonly property int standardEasing: Easing.OutCubic
     readonly property int emphasizedEasing: Easing.OutQuart
 
     readonly property var expressiveCurves: {
-        "emphasized": [0.05, 0, 2 / 15, 0.06, 1 / 6, 0.4, 5 / 24, 0.82, 0.25, 1, 1, 1],
-        "emphasizedAccel": [0.3, 0, 0.8, 0.15, 1, 1],
-        "emphasizedDecel": [0.05, 0.7, 0.1, 1, 1, 1],
-        "standard": [0.2, 0, 0, 1, 1, 1],
-        "standardAccel": [0.3, 0, 1, 1, 1, 1],
-        "standardDecel": [0, 0, 0, 1, 1, 1],
         "expressiveFastSpatial": [0.42, 1.67, 0.21, 0.9, 1, 1],
         "expressiveDefaultSpatial": [0.38, 1.21, 0.22, 1, 1, 1],
         "expressiveSlowSpatial": [0.39, 1.29, 0.35, 0.98, 1, 1],
@@ -998,20 +1029,6 @@ Singleton {
         "expressiveSlowEffects": [0.34, 0.88, 0.34, 1, 1, 1]
     }
 
-    // Theme is the canonical access point for animation variant state. The
-    // aliases below forward to AnimVariants.qml so consumers don't need two
-    // imports. ~200 call sites read through Theme.variantEnterCurve /
-    // Theme.isConnectedEffect / etc. — do NOT migrate to AnimVariants directly.
-    readonly property list<real> variantEnterCurve: AnimVariants.variantEnterCurve
-    readonly property list<real> variantExitCurve: AnimVariants.variantExitCurve
-    readonly property list<real> variantModalEnterCurve: AnimVariants.variantModalEnterCurve
-    readonly property list<real> variantModalExitCurve: AnimVariants.variantModalExitCurve
-    readonly property list<real> variantPopoutEnterCurve: AnimVariants.variantPopoutEnterCurve
-    readonly property list<real> variantPopoutExitCurve: AnimVariants.variantPopoutExitCurve
-    readonly property list<real> variantPopoutResizeCurve: AnimVariants.variantPopoutResizeCurve
-    readonly property real variantEnterDurationFactor: AnimVariants.variantEnterDurationFactor
-    readonly property real variantExitDurationFactor: AnimVariants.variantExitDurationFactor
-    readonly property real variantOpacityDurationScale: AnimVariants.variantOpacityDurationScale
     readonly property bool isDirectionalEffect: AnimVariants.isDirectionalEffect
     readonly property bool isFluidEffect: AnimVariants.isFluidEffect
     readonly property bool isDepthEffect: AnimVariants.isDepthEffect
@@ -1019,7 +1036,7 @@ Singleton {
     readonly property real connectedCornerRadius: {
         if (typeof SettingsData === "undefined")
             return 12;
-        return FrameTransitionState.effectiveConnectedFrameModeActive ? SettingsData.frameRounding : windowRadius;
+        return FrameTransitionState.effectiveConnectedFrameModeActive ? frameRadius : windowRadius;
     }
     readonly property color connectedSurfaceColor: {
         if (typeof SettingsData === "undefined")
@@ -1031,9 +1048,6 @@ Singleton {
     readonly property bool connectedSurfaceBlurEnabled: (typeof SettingsData === "undefined") ? true : (!isConnectedEffect || SettingsData.frameBlurEnabled)
     readonly property real effectScaleCollapsed: AnimVariants.effectScaleCollapsed
     readonly property real effectAnimOffset: AnimVariants.effectAnimOffset
-    function variantDuration(baseDuration, entering) {
-        return AnimVariants.variantDuration(baseDuration, entering);
-    }
     function variantExitCleanupPadding() {
         return AnimVariants.variantExitCleanupPadding();
     }
@@ -1041,101 +1055,50 @@ Singleton {
         return AnimVariants.variantCloseInterval(baseDuration);
     }
 
-    readonly property var expressiveDurations: {
-        if (typeof SettingsData === "undefined") {
-            return {
-                "fast": 200,
-                "normal": 400,
-                "large": 600,
-                "extraLarge": 1000,
-                "expressiveFastSpatial": 350,
-                "expressiveDefaultSpatial": 500,
-                "expressiveSlowSpatial": 650,
-                "expressiveFastEffects": 150,
-                "expressiveEffects": 200,
-                "expressiveSlowEffects": 300
-            };
-        }
+    readonly property var expressiveDurations: ({
+            "expressiveFastSpatial": motionMs(350),
+            "expressiveDefaultSpatial": motionMs(500),
+            "expressiveSlowSpatial": motionMs(650),
+            "expressiveFastEffects": motionMs(150),
+            "expressiveEffects": motionMs(200),
+            "expressiveSlowEffects": motionMs(300)
+        })
 
-        const baseDuration = currentAnimationBaseDuration;
-        return {
-            "fast": baseDuration * 0.4,
-            "normal": baseDuration * 0.8,
-            "large": baseDuration * 1.2,
-            "extraLarge": baseDuration * 2.0,
-            "expressiveFastSpatial": baseDuration * 0.7,
-            "expressiveDefaultSpatial": baseDuration,
-            "expressiveSlowSpatial": baseDuration * 1.3,
-            "expressiveFastEffects": baseDuration * 0.3,
-            "expressiveEffects": baseDuration * 0.4,
-            "expressiveSlowEffects": baseDuration * 0.6
-        };
-    }
-
-    // Expressive spatial spring presets ([stiffness, damping], unit mass) tuned to a
-    // 500ms reference transition; runtime values scale via springPreset().
-    readonly property real morphSettleEpsilon: 0.02
     readonly property real morphLayerEpsilon: 0.002
 
-    readonly property var springSpecs: {
-        "expressive": [560, 37],
-        "fast": [220, 23],
-        "default": [300, 24],
-        "fastSpatial": [800, 33.9],
-        "defaultSpatial": [380, 31.2],
-        "slowSpatial": [200, 22.6],
-        "fastEffects": [3800, 123.3],
-        "defaultEffects": [1600, 80],
-        "slowEffects": [800, 56.6]
-    }
+    readonly property var springSpecs: ({
+            "fastSpatial": [800, 2 * 0.6 * Math.sqrt(800)],
+            "defaultSpatial": [380, 2 * 0.8 * Math.sqrt(380)],
+            "slowSpatial": [200, 2 * 0.8 * Math.sqrt(200)],
+            "fastEffects": [3800, 2 * Math.sqrt(3800)],
+            "defaultEffects": [1600, 2 * Math.sqrt(1600)],
+            "slowEffects": [800, 2 * Math.sqrt(800)]
+        })
 
-    // Damping multipliers for the user-facing spring bounce setting:
-    // crisp settles without overshoot, playful adds visible bounce.
     readonly property var springDampingScales: [1.22, 1.0, 0.82]
+    readonly property real spatialSpringDampingScale: {
+        if (typeof SettingsData === "undefined")
+            return 1;
+        return springDampingScales[SettingsData.springBounce] ?? 1;
+    }
 
     // Must stay under the 16px shadow motion padding every fluid surface reserves.
     readonly property var fluidOvershootLimits: [0, 4, 10]
     readonly property real fluidOvershootLimit: {
-        if (typeof SettingsData === "undefined" || springMotionDisabled)
+        if (typeof SettingsData === "undefined")
             return 0;
-        return fluidOvershootLimits[Math.round(SettingsData.springBounce)] ?? 4;
+        return fluidOvershootLimits[SettingsData.springBounce] ?? 4;
     }
 
-    function tunedSpring(spec, baseDuration) {
-        const f = Math.max(0.05, baseDuration / 500);
-        const bounce = typeof SettingsData !== "undefined" && SettingsData.springBounce >= 0 && SettingsData.springBounce < springDampingScales.length ? springDampingScales[Math.round(SettingsData.springBounce)] : 1;
+    function springPreset(name) {
+        const spec = springSpecs[name];
+        const dampingScale = name.endsWith("Spatial") ? spatialSpringDampingScale : 1;
         return {
-            "stiffness": spec[0] / (f * f),
-            "damping": spec[1] / f * bounce,
+            "stiffness": spec[0] / (springScale * springScale),
+            "damping": spec[1] / springScale * dampingScale,
             "mass": 1
         };
     }
-
-    function springPreset(name, baseDuration) {
-        return tunedSpring(springSpecs[name] ?? springSpecs["default"], baseDuration);
-    }
-
-    readonly property bool springMotionDisabled: currentAnimationBaseDuration <= 0
-
-    readonly property int notificationAnimationBaseDuration: typeof SettingsData !== "undefined" ? SettingsData.notificationAnimationDuration : 200
-
-    readonly property int notificationEnterDuration: Math.round(notificationAnimationBaseDuration * 0.875)
-    readonly property int notificationExitDuration: Math.round(notificationAnimationBaseDuration * 0.75)
-    readonly property int notificationStackShiftDuration: notificationAnimationBaseDuration
-    readonly property int notificationStackStaggerDuration: Math.round(notificationAnimationBaseDuration * 0.5)
-
-    readonly property int notificationExpandDuration: {
-        const base = notificationAnimationBaseDuration;
-        return base === 0 ? 0 : Math.round(base * 1.0);
-    }
-
-    readonly property int notificationCollapseDuration: {
-        const base = notificationAnimationBaseDuration;
-        return base === 0 ? 0 : Math.round(base * 0.85);
-    }
-
-    readonly property int notificationInlineExpandDuration: Math.round(notificationAnimationBaseDuration * 0.925)
-    readonly property int notificationInlineCollapseDuration: Math.round(notificationAnimationBaseDuration * 0.75)
 
     readonly property real notificationExpandedIconSizeNormal: avatarSize
     readonly property real notificationExpandedIconSizeCompact: avatarSize
@@ -1150,21 +1113,8 @@ Singleton {
     readonly property real stateLayerPressed: 0.1
     readonly property real stateLayerDrag: 0.16
 
-    readonly property int popoutAnimationDuration: {
-        if (typeof SettingsData === "undefined")
-            return 150;
-        if (SettingsData.syncComponentAnimationSpeeds)
-            return Math.min(currentAnimationBaseDuration, 1000);
-        return SettingsData.popoutAnimationDuration;
-    }
-
-    readonly property int modalAnimationDuration: {
-        if (typeof SettingsData === "undefined")
-            return 150;
-        if (SettingsData.syncComponentAnimationSpeeds)
-            return Math.min(currentAnimationBaseDuration, 1000);
-        return SettingsData.modalAnimationDuration;
-    }
+    readonly property int popoutAnimationDuration: expressiveDurations.expressiveEffects
+    readonly property int modalAnimationDuration: expressiveDurations.expressiveFastEffects
 
     readonly property real radiusStrength: typeof SettingsData !== "undefined" ? SettingsData.radiusStrength : 50
     readonly property real fixedRadius: typeof SettingsData !== "undefined" && SettingsData.radiusMode === "fixed" ? SettingsData.fixedRadius : -1
@@ -1191,6 +1141,28 @@ Singleton {
         return override === undefined ? -1 : override;
     }
     readonly property real windowRadius: compositorRadiusOverride >= 0 ? compositorRadiusOverride : cornerRadiusL
+    // Outer gap DMS writes into the compositor layout; -1 when the user manages gaps.
+    readonly property int compositorOuterGap: {
+        if (typeof SettingsData === "undefined" || !CompositorService.supportsLayoutConfig)
+            return -1;
+        const key = CompositorService.configKey;
+        const gaps = SettingsData[key + "LayoutGapsOverride"] ?? -1;
+        if (gaps === -2)
+            return -1;
+        if (gaps < 0)
+            return Math.max(4, SettingsData.getPrimaryBarConfig()?.spacing ?? 4);
+        const outer = SettingsData[key + "LayoutGapsOutOverride"] ?? -1;
+        return outer >= 0 ? outer : gaps;
+    }
+    readonly property int compositorBorderSize: {
+        if (typeof SettingsData === "undefined" || !CompositorService.supportsLayoutConfig)
+            return 0;
+        const size = SettingsData[CompositorService.configKey + "LayoutBorderSize"] ?? -1;
+        return size >= 0 ? size : 2;
+    }
+    // Focus rings draw outside the window, so the border eats into the gap and widens the corner.
+    readonly property real windowCornerLimit: compositorOuterGap < 0 ? Infinity : CornerClearance.limit(compositorOuterGap - compositorBorderSize, windowRadius + compositorBorderSize)
+    readonly property real frameRadius: typeof SettingsData === "undefined" ? 0 : Math.min(SettingsData.frameRounding, windowCornerLimit)
 
     function scaledRadius(radius, limit) {
         return Shape.scaledRadius(radius, limit, shapeScale, fixedRadius);
@@ -1236,6 +1208,7 @@ Singleton {
 
     property string monoFontFamily: typeof SettingsData !== "undefined" ? resolvedMonoFontFamily(SettingsData.monoFontFamily) : DCommon.Fonts.mono
     property string displayFontFamily: typeof SettingsData !== "undefined" ? resolvedDisplayFontFamily(SettingsData.displayFontFamily) : DCommon.Fonts.display
+    readonly property string passwordMaskCharacter: DCommon.Style.passwordMaskCharacter
 
     readonly property var fontChoices: [
         {
@@ -1352,7 +1325,8 @@ Singleton {
     readonly property color screenOffColor: "#000000"
     readonly property real scrimAlpha: 0.55
     readonly property color scrimColor: currentThemeData.scrim || "#000000"
-    readonly property color backdropColor: surface.hslLightness >= 0.5 ? surfaceDim : scrimColor
+    // A light scrim has to end up below the dim host, so it starts one host step under it
+    readonly property color backdropColor: lightSurfaces ? Tonal.dropTone(surfaceLadder.host, Tonal.LIGHT_HOST_DROP) : scrimColor
     readonly property real buttonHeightXXS: 28
     readonly property real buttonHeightXS: 32
     readonly property real buttonHeightS: 40
@@ -1403,11 +1377,11 @@ Singleton {
     readonly property real scrollbarGap: spacingXS
     readonly property int scrollbarHideDelay: 1200
     readonly property real menuMaxHeight: 400
-    readonly property real clockFaceSize: 250
+    readonly property real clockFaceSize: 256
     readonly property real clockOuterRingRatio: 101 / clockFaceSize
     readonly property real clockInnerRingRatio: 69 / clockFaceSize
     readonly property real clockHandWidth: 2
-    readonly property real clockHandleSize: 40
+    readonly property real clockHandleSize: 48
     readonly property real clockCenterSize: 8
     readonly property int clockSwitchDelay: 100
     readonly property real chipIconSize: 18
@@ -1504,6 +1478,20 @@ Singleton {
         themeCategoryTransitionTimer.category = category;
         themeCategoryTransitionTimer.defaultTheme = defaultTheme;
         themeCategoryTransitionTimer.restart();
+    }
+
+    function releaseRegistryTheme(themeId) {
+        if (currentThemeCategory !== "registry" || currentTheme !== custom)
+            return;
+        if (!SettingsData.customThemeFile.endsWith("/" + themeId + "/theme.json"))
+            return;
+        screenTransition();
+        customThemeFileView.path = "";
+        customThemeRawData = null;
+        customThemeData = null;
+        SettingsData.set("customThemeFile", "");
+        currentThemeCategory = "generic";
+        switchTheme(SettingsData.specDefault("currentThemeName"), true, false);
     }
 
     function loadCustomTheme(themeData) {
@@ -1802,7 +1790,9 @@ Singleton {
             "mode": (typeof SettingsData !== "undefined" && SettingsData.matugenSmartMode && kind === "image" && !stockColors) ? "smart" : (isLight ? "light" : "dark"),
             "iconTheme": iconTheme || "System Default",
             "matugenType": matugenType || "scheme-tonal-spot",
-            "runUserTemplates": (typeof SettingsData !== "undefined") ? SettingsData.runUserMatugenTemplates : true
+            "runUserTemplates": (typeof SettingsData !== "undefined") ? SettingsData.runUserMatugenTemplates : true,
+            "iconFolders": typeof SettingsData !== "undefined" && SettingsData.iconThemeGenerated,
+            "iconStyle": (typeof SettingsData !== "undefined" && SettingsData.iconStyleRunArgs) || []
         };
 
         const args = [Proc.dmsBin, "matugen", "queue", "--state-dir", stateDir, "--shell-dir", shellDir, "--config-dir", configDir, "--kind", desired.kind, "--value", desired.value, "--mode", desired.mode, "--icon-theme", desired.iconTheme, "--matugen-type", desired.matugenType,];
@@ -1901,6 +1891,11 @@ Singleton {
             if (skipTemplates.length > 0) {
                 args.push("--skip-templates", skipTemplates.join(","));
             }
+        }
+        // Sent only when on, so a run without it keeps the run key it had before the flag.
+        if (desired.iconFolders) {
+            args.push("--icon-folders");
+            args.push(...desired.iconStyle);
         }
 
         const runKey = Qt.md5(JSON.stringify(args));
@@ -2260,7 +2255,7 @@ Singleton {
 
     function hoverTint(base) {
         const factor = 1.2;
-        return isLightMode ? Qt.darker(base, factor) : Qt.lighter(base, factor);
+        return lightSurfaces ? Qt.darker(base, factor) : Qt.lighter(base, factor);
     }
 
     function blend(c1, c2, r) {
@@ -2401,6 +2396,7 @@ Singleton {
             const appliedKey = (exitCode === 0 || exitCode === 2) ? _matugenRunKey : "";
             if (CacheData.matugenAppliedKey !== appliedKey)
                 CacheData.set("matugenAppliedKey", appliedKey);
+            SettingsData.themeRunFinished(systemThemeGenerator.command.indexOf("--icon-folders") !== -1);
 
             if (!pendingThemeRequest) {
                 if (SettingsData.matugenTemplateGtk)
@@ -2520,7 +2516,7 @@ Singleton {
 
     Timer {
         id: colorsReloadRetry
-        interval: 150
+        interval: Timing.settle
         repeat: false
         onTriggered: dynamicColorsFileView.reload()
     }
@@ -2546,7 +2542,7 @@ Singleton {
 
     Timer {
         id: typographyPublishDebounce
-        interval: 250
+        interval: Timing.debounceLong
         repeat: false
         onTriggered: {
             if (!root.publishTypography)
@@ -2580,7 +2576,7 @@ Singleton {
 
     Timer {
         id: _themeGenerateDebounce
-        interval: 100
+        interval: Timing.debounceShort
         repeat: false
         onTriggered: root._executeThemeGeneration()
     }
@@ -2588,7 +2584,7 @@ Singleton {
     // These timers are for screen transitions, since sometimes QML still beats the niri call
     Timer {
         id: themeTransitionTimer
-        interval: 50
+        interval: Timing.settleShort
         repeat: false
         property string themeName: ""
         property bool savePrefs: true
@@ -2597,7 +2593,7 @@ Singleton {
 
     Timer {
         id: lightModeTransitionTimer
-        interval: 100
+        interval: Timing.settleShort
         repeat: false
         property bool lightMode: false
         property bool savePrefs: true
@@ -2606,7 +2602,7 @@ Singleton {
 
     Timer {
         id: themeCategoryTransitionTimer
-        interval: 50
+        interval: Timing.settleShort
         repeat: false
         property string category: ""
         property string defaultTheme: ""

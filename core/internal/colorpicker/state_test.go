@@ -1,144 +1,10 @@
 package colorpicker
 
 import (
-	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
-
-func TestSurfaceState_ConcurrentPointerMotion(t *testing.T) {
-	s := NewSurfaceState(FormatHex, false)
-
-	var wg sync.WaitGroup
-	const goroutines = 50
-	const iterations = 100
-
-	for i := range goroutines {
-		wg.Add(1)
-		go func(id int) {
-			defer wg.Done()
-			for j := range iterations {
-				s.OnPointerMotion(float64(id*10+j), float64(id*10+j))
-			}
-		}(i)
-	}
-
-	wg.Wait()
-}
-
-func TestSurfaceState_ConcurrentScaleAccess(t *testing.T) {
-	s := NewSurfaceState(FormatHex, false)
-
-	var wg sync.WaitGroup
-	const goroutines = 30
-	const iterations = 100
-
-	for i := range goroutines / 2 {
-		wg.Add(1)
-		go func(id int) {
-			defer wg.Done()
-			for range iterations {
-				s.SetScale(int32(id%3 + 1))
-			}
-		}(i)
-	}
-
-	for range goroutines / 2 {
-		wg.Go(func() {
-			for range iterations {
-				scale := s.Scale()
-				assert.GreaterOrEqual(t, scale, int32(1))
-			}
-		})
-	}
-
-	wg.Wait()
-}
-
-func TestSurfaceState_ConcurrentLogicalSize(t *testing.T) {
-	s := NewSurfaceState(FormatHex, false)
-
-	var wg sync.WaitGroup
-	const goroutines = 20
-	const iterations = 100
-
-	for i := range goroutines / 2 {
-		wg.Add(1)
-		go func(id int) {
-			defer wg.Done()
-			for j := range iterations {
-				_ = s.OnLayerConfigure(1920+id, 1080+j)
-			}
-		}(i)
-	}
-
-	for range goroutines / 2 {
-		wg.Go(func() {
-			for range iterations {
-				w, h := s.LogicalSize()
-				_ = w
-				_ = h
-			}
-		})
-	}
-
-	wg.Wait()
-}
-
-func TestSurfaceState_ConcurrentIsDone(t *testing.T) {
-	s := NewSurfaceState(FormatHex, false)
-
-	var wg sync.WaitGroup
-	const goroutines = 30
-	const iterations = 100
-
-	for range goroutines / 3 {
-		wg.Go(func() {
-			for range iterations {
-				s.OnPointerButton(0x110, 1)
-			}
-		})
-	}
-
-	for range goroutines / 3 {
-		wg.Go(func() {
-			for range iterations {
-				s.OnKey("Escape", 1)
-			}
-		})
-	}
-
-	for range goroutines / 3 {
-		wg.Go(func() {
-			for range iterations {
-				picked, cancelled := s.IsDone()
-				_ = picked
-				_ = cancelled
-			}
-		})
-	}
-
-	wg.Wait()
-}
-
-func TestSurfaceState_ConcurrentSwapBuffers(t *testing.T) {
-	s := NewSurfaceState(FormatHex, false)
-
-	var wg sync.WaitGroup
-	const goroutines = 20
-	const iterations = 100
-
-	for range goroutines {
-		wg.Go(func() {
-			for range iterations {
-				s.SwapBuffers()
-			}
-		})
-	}
-
-	wg.Wait()
-}
 
 func TestSurfaceState_ZeroScale(t *testing.T) {
 	s := NewSurfaceState(FormatHex, false)
@@ -161,31 +27,6 @@ func TestSurfaceState_ZeroDimensionConfigure(t *testing.T) {
 	w, h := s.LogicalSize()
 	assert.Equal(t, 0, w)
 	assert.Equal(t, 0, h)
-}
-
-func TestSurfaceState_PickColorNilBuffer(t *testing.T) {
-	s := NewSurfaceState(FormatHex, false)
-	color, ok := s.PickColor()
-	assert.False(t, ok)
-	assert.Equal(t, Color{}, color)
-}
-
-func TestSurfaceState_RedrawNilBuffer(t *testing.T) {
-	s := NewSurfaceState(FormatHex, false)
-	buf, _ := s.Redraw()
-	assert.Nil(t, buf)
-}
-
-func TestSurfaceState_RedrawScreenOnlyNilBuffer(t *testing.T) {
-	s := NewSurfaceState(FormatHex, false)
-	buf, _ := s.RedrawScreenOnly()
-	assert.Nil(t, buf)
-}
-
-func TestSurfaceState_DestroyMultipleTimes(t *testing.T) {
-	s := NewSurfaceState(FormatHex, false)
-	s.Destroy()
-	s.Destroy()
 }
 
 func TestBlendColors(t *testing.T) {

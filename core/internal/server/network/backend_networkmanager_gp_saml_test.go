@@ -5,9 +5,11 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestUnshellQuote(t *testing.T) {
@@ -133,4 +135,43 @@ func TestRunOpenConnectAuthenticateSanitizesFailure(t *testing.T) {
 	var authErr *openConnectAuthError
 	assert.True(t, errors.As(err, &authErr))
 	assert.Equal(t, "pin-sha256:TEST-FINGERPRINT", authErr.serverCert)
+}
+
+func TestRunOpenConnectPasswordAuth(t *testing.T) {
+	binDir := t.TempDir()
+	script := `#!/bin/sh
+printf '%s\n' "$@" > "$0.args"
+case "$*" in
+  *--usergroup=again*) echo 'User input required in non-interactive mode' >&2; exit 1 ;;
+esac
+printf '%s\n' "COOKIE='c'" "HOST='192.0.2.1'" "CONNECT_URL='https://vpn.example.test/'" "RESOLVE='vpn.example.test:192.0.2.1'"
+`
+	require.NoError(t, os.WriteFile(filepath.Join(binDir, "openconnect"), []byte(script), 0o755))
+	t.Setenv("PATH", binDir)
+
+	tests := []struct {
+		name, protocol, usergroup   string
+		wantProtocol, wantHost      string
+		wantResolve                 string
+		wantErr, wantDialogFallback bool
+	}{
+		{"anyconnect default", "", "", "--protocol=anyconnect", "https://vpn.example.test/", "vpn.example.test:192.0.2.1", false, false},
+		{"fortinet keeps gateway", "fortinet", "", "--protocol=fortinet", "vpn.example.test", "", false, false},
+		{"asked again", "pulse", "again", "--protocol=pulse", "", "", true, true},
+		{"fortinet asked again", "fortinet", "again", "--protocol=fortinet", "", "", true, false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			data := map[string]string{"gateway": "vpn.example.test", "protocol": tt.protocol, "usergroup": tt.usergroup}
+			result, err := runOpenConnectPasswordAuth(context.Background(), data, "user", "pw", "")
+			assert.Equal(t, tt.wantErr, err != nil)
+			assert.Equal(t, tt.wantDialogFallback, openConnectDialogFallback(err, data))
+			args, _ := os.ReadFile(filepath.Join(binDir, "openconnect.args"))
+			assert.Contains(t, strings.Split(string(args), "\n"), tt.wantProtocol)
+			if err == nil {
+				assert.Equal(t, tt.wantHost, result.Host)
+				assert.Equal(t, tt.wantResolve, result.Resolve)
+			}
+		})
+	}
 }

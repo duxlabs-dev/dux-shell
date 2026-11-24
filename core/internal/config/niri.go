@@ -14,6 +14,9 @@ var NiriLayoutConfig string
 //go:embed embedded/niri-alttab.kdl
 var NiriAlttabConfig string
 
+//go:embed embedded/niri-animations.kdl
+var NiriAnimationsConfig string
+
 //go:embed embedded/niri-binds.kdl
 var NiriBindsConfig string
 

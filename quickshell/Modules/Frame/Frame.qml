@@ -18,8 +18,8 @@ Variants {
         active: (SettingsData.frameEnabled || FrameTransitionState.effectiveFrameEnabled) && SettingsData.isScreenInPreferences(instanceLoader.modelData, SettingsData.frameScreenPreferences)
         asynchronous: false
 
-        sourceComponent: FrameInstance {
+        Component.onCompleted: setSource("FrameInstance.qml", {
             screen: instanceLoader.modelData
-        }
+        })
     }
 }

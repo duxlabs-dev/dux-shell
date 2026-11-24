@@ -7,12 +7,14 @@ Rectangle {
     id: root
 
     property string iconName: ""
+    property string trailingIcon: ""
+    property real indent: 0
     property string text: ""
     property bool isDestructive: false
 
     signal triggered
 
-    implicitWidth: contentRow.implicitWidth + Theme.spacingS * 2
+    implicitWidth: indent + contentRow.implicitWidth + Theme.spacingS * 2 + (trailingIcon ? Theme.iconSizeSmall + Theme.spacingXS : 0)
     height: 28
     radius: Theme.cornerRadius
     opacity: enabled ? 1 : 0.4
@@ -27,9 +29,9 @@ Rectangle {
     Row {
         id: contentRow
         anchors.left: parent.left
-        anchors.leftMargin: Theme.spacingS
-        anchors.right: parent.right
-        anchors.rightMargin: Theme.spacingS
+        anchors.leftMargin: Theme.spacingS + root.indent
+        anchors.right: trailing.visible ? trailing.left : parent.right
+        anchors.rightMargin: trailing.visible ? Theme.spacingXS : Theme.spacingS
         anchors.verticalCenter: parent.verticalCenter
         spacing: Theme.spacingXS
 
@@ -50,6 +52,18 @@ Rectangle {
             elide: Text.ElideRight
             wrapMode: Text.NoWrap
         }
+    }
+
+    DIcon {
+        id: trailing
+        anchors.right: parent.right
+        anchors.rightMargin: Theme.spacingS
+        anchors.verticalCenter: parent.verticalCenter
+        visible: root.trailingIcon !== ""
+        name: root.trailingIcon
+        size: 14
+        color: Theme.surfaceText
+        opacity: 0.7
     }
 
     DRipple {

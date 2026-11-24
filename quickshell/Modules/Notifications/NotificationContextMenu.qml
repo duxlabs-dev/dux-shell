@@ -7,8 +7,6 @@ import qs.Widgets
 DContextMenu {
     id: root
 
-    property alias appName: actions.appName
-    property alias desktopEntry: actions.desktopEntry
     property alias dismissText: actions.dismissText
     property alias notification: actions.notification
 

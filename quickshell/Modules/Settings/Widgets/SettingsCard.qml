@@ -26,6 +26,15 @@ Column {
 
     readonly property bool isHighlighted: settingKey !== "" && SettingsSearchService.highlightSection === settingKey
     readonly property bool collapsed: collapsible && !expanded
+    // Rows of a card that starts collapsed can wait until it opens or a search looks for one of them
+    property bool opened: false
+    readonly property bool searchPending: collapsed && SettingsSearchService.targetSection !== "" && SettingsSearchService.registeredCards[SettingsSearchService.targetSection] === undefined
+    readonly property bool contentWanted: !collapsed || opened || searchPending
+
+    onContentWantedChanged: {
+        if (contentWanted)
+            opened = true;
+    }
     readonly property bool hasHeader: root.title !== ""
     property bool userToggledCollapse: false
 
@@ -59,9 +68,9 @@ Column {
         clip: root.collapsible
 
         Behavior on height {
-            enabled: root.userToggledCollapse && Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
+            enabled: root.userToggledCollapse
             NumberAnimation {
-                duration: SettingsMetrics.transitionDuration
+                duration: SettingsMetrics.expandDuration
                 easing.type: Easing.BezierSpline
                 easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
                 onRunningChanged: {

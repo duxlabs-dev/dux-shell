@@ -13,12 +13,12 @@ Singleton {
     readonly property var structure: [
         {
             "id": "personalization",
-            "text": I18n.tr("Wallpaper & colors"),
+            "text": I18n.tr("Appearance", "settings page and section title for visual options"),
             "icon": "wallpaper",
-            "hint": I18n.tr("Theme, palette, dark mode", "settings sidebar hint for the wallpaper and colors page"),
+            "hint": I18n.tr("Wallpaper, colors, typography", "settings sidebar hint for the appearance page"),
             "tabIndex": 0,
             "hubHeader": "WallpaperColorsTab",
-            "aliases": ["wallpaper", "colors", "wallpaper_colors", "theme_cursor_icons"],
+            "aliases": ["wallpaper", "colors", "wallpaper_colors", "theme_cursor_icons", "appearance", "fonts", "typography"],
             "children": [
                 {
                     "id": "theme",
@@ -45,8 +45,23 @@ Singleton {
                     "hint": I18n.tr("Folder, interval, daily time")
                 },
                 {
+                    "id": "wallpaper_folders",
+                    "hidden": true,
+                    "text": I18n.tr("Wallpapers", "wallpaper folders settings tab"),
+                    "icon": "wallpaper",
+                    "tabIndex": 71,
+                    "hint": I18n.tr("Folders", "wallpaper folders settings tab hint")
+                },
+                {
+                    "id": "wallpaper_folder",
+                    "hidden": true,
+                    "text": I18n.tr("Folder", "wallpaper folder settings tab"),
+                    "icon": "folder",
+                    "tabIndex": 72,
+                    "titleFrom": "selectedWallpaperFolderTitle"
+                },
+                {
                     "id": "theme_apps",
-                    "advanced": true,
                     "text": I18n.tr("App theming"),
                     "icon": "apps",
                     "tabIndex": 50,
@@ -59,6 +74,29 @@ Singleton {
                     "icon": "colorize",
                     "tabIndex": 64,
                     "hint": I18n.tr("External palette commands, namespaces", "settings sidebar hint for the injected palettes page")
+                },
+                {
+                    "id": "profiles",
+                    "hidden": true,
+                    "text": I18n.tr("Profiles", "settings page for saved setups of DMS settings"),
+                    "icon": "style",
+                    "tabIndex": 75
+                },
+                {
+                    "id": "profile_edit",
+                    "hidden": true,
+                    "backPage": "profiles",
+                    "titleFrom": "selectedWidgetTitle",
+                    "text": I18n.tr("Profile"),
+                    "icon": "edit",
+                    "tabIndex": 76
+                },
+                {
+                    "id": "profile_inspect",
+                    "hidden": true,
+                    "text": I18n.tr("Compare", "config profile: page and link row showing what applying the profile would change"),
+                    "icon": "compare_arrows",
+                    "tabIndex": 77
                 }
             ]
         },
@@ -82,12 +120,19 @@ Singleton {
             ]
         },
         {
-            "id": "typography",
-            "aliases": ["fonts", "fonts_motion"],
-            "text": I18n.tr("Fonts & motion"),
-            "icon": "text_fields",
+            "id": "motion",
+            "aliases": ["motions", "fonts_motion"],
+            "text": I18n.tr("Motion", "settings page name for animation options"),
+            "icon": "animation",
             "tabIndex": 14,
-            "hint": I18n.tr("Fonts, scale, animations", "settings sidebar hint for the fonts and motion page")
+            "hint": I18n.tr("Animations and motion", "settings sidebar hint for the motion page")
+        },
+        {
+            "id": "accessibility",
+            "text": I18n.tr("Accessibility", "settings page name for accessibility options"),
+            "icon": "accessibility_new",
+            "tabIndex": 86,
+            "hint": I18n.tr("Motion, density, scrollbars", "settings sidebar hint for the accessibility page")
         },
         {
             "id": "separator_1",
@@ -127,26 +172,33 @@ Singleton {
                     "icon": "blur_on",
                     "tabIndex": 65,
                     "hint": I18n.tr("A floating companion that works alongside any bar layout", "bar settings: what the dot is")
-                }
-            ]
-        },
-        {
-            "id": "dankbar_widgets",
-            "text": I18n.tr("Bar widgets"),
-            "icon": "widgets",
-            "tabIndex": 22,
-            "hubHeader": "WidgetsTab",
-            "aliases": ["bar_widgets", "workspaces", "workspaces_widgets"],
-            "hint": I18n.tr("Add, reorder, configure", "settings sidebar hint for the bar widgets page"),
-            "children": [
+                },
+                {
+                    "id": "dankbar_widgets",
+                    "hidden": true,
+                    "text": I18n.tr("Bar widgets"),
+                    "icon": "widgets",
+                    "tabIndex": 22,
+                    "aliases": ["bar_widgets", "workspaces", "workspaces_widgets"],
+                    "hint": I18n.tr("Add, reorder, configure", "settings sidebar hint for the bar widgets page")
+                },
                 {
                     "id": "bar_widget",
                     "hidden": true,
+                    "backPage": "dankbar_widgets",
                     "titleFrom": "selectedWidgetTitle",
                     "text": I18n.tr("Widget settings"),
                     "icon": "tune",
                     "tabIndex": 54,
                     "hint": I18n.tr("Options of one widget instance")
+                },
+                {
+                    "id": "dank_dash",
+                    "text": I18n.tr("Dashboard", "settings page name for the dank dash popout"),
+                    "icon": "space_dashboard",
+                    "tabIndex": 43,
+                    "aliases": ["dashboard", "dashboards_osd"],
+                    "hint": I18n.tr("Tabs and weather")
                 }
             ]
         },
@@ -198,14 +250,6 @@ Singleton {
             "icon": "grid_view",
             "tabIndex": 9,
             "hint": I18n.tr("Style, search, hidden apps", "settings sidebar hint for the launcher page")
-        },
-        {
-            "id": "dank_dash",
-            "text": I18n.tr("Dashboard", "settings page name for the dank dash popout"),
-            "icon": "space_dashboard",
-            "tabIndex": 43,
-            "aliases": ["dashboard", "dashboards_osd"],
-            "hint": I18n.tr("Tabs and weather")
         },
         {
             "id": "desktop_widgets",
@@ -341,6 +385,14 @@ Singleton {
                     "hint": I18n.tr("Compositor and shell key bindings")
                 },
                 {
+                    "id": "global_shortcuts",
+                    "text": I18n.tr("Global shortcuts", "settings page name, shortcuts apps register through the desktop portal"),
+                    "icon": "app_shortcut",
+                    "tabIndex": 78,
+                    "globalShortcutsOnly": true,
+                    "hint": I18n.tr("Shortcuts apps use from any window", "settings sidebar hint for the global shortcuts page")
+                },
+                {
                     "id": "keyboard",
                     "text": I18n.tr("Keyboard", "settings page name"),
                     "icon": "keyboard",
@@ -420,7 +472,24 @@ Singleton {
                     "text": I18n.tr("Wi-Fi", "wireless network, page and section title"),
                     "icon": "wifi",
                     "tabIndex": 40,
-                    "hint": I18n.tr("Networks, saved networks, hotspot")
+                    "wifiOnly": true,
+                    "hint": I18n.tr("Saved networks")
+                },
+                {
+                    "id": "network_hotspot",
+                    "text": I18n.tr("Hotspot", "settings page title for the Wi-Fi hotspot"),
+                    "icon": "wifi_tethering",
+                    "tabIndex": 82,
+                    "hotspotOnly": true
+                },
+                {
+                    "id": "network_wifi_connect",
+                    "hidden": true,
+                    "searchable": false,
+                    "titleFrom": "wifiConnectTitle",
+                    "text": I18n.tr("Connect to Wi-Fi"),
+                    "icon": "wifi",
+                    "tabIndex": 81
                 },
                 {
                     "id": "network_ethernet",
@@ -437,12 +506,48 @@ Singleton {
                     "hint": I18n.tr("Connections and autoconnect")
                 },
                 {
+                    "id": "network_tailscale",
+                    "text": I18n.tr("Tailscale", "Tailscale mesh VPN widget title"),
+                    "icon": "hub",
+                    "tabIndex": 80,
+                    "tailscaleOnly": true,
+                    "hint": I18n.tr("Tailscale Network")
+                },
+                {
+                    "id": "network_tailscale_add",
+                    "hidden": true,
+                    "searchable": false,
+                    "tailscaleOnly": true,
+                    "text": I18n.tr("Add account", "Tailscale: add another account"),
+                    "icon": "person_add",
+                    "tabIndex": 83
+                },
+                {
                     "id": "network_cellular",
                     "text": I18n.tr("Cellular"),
                     "icon": "network_cell",
                     "tabIndex": 47,
                     "cellularOnly": true,
                     "hint": I18n.tr("Modem and mobile data")
+                },
+                {
+                    "id": "network_connections",
+                    "text": I18n.tr("Connections", "settings page listing saved network connection profiles"),
+                    "icon": "network_manage",
+                    "tabIndex": 84,
+                    "connectionEditorOnly": true,
+                    "hint": I18n.tr("Saved configurations"),
+                    "hubFooter": I18n.tr("Manage all connections", "settings link on the network overview to the list of every saved network connection")
+                },
+                {
+                    "id": "network_connection",
+                    "hidden": true,
+                    "searchable": false,
+                    "connectionEditorOnly": true,
+                    "titleFrom": "selectedConnectionTitle",
+                    "text": I18n.tr("Profile"),
+                    "icon": "tune",
+                    "tabIndex": 85
                 },
                 {
                     "id": "network_status",
@@ -546,7 +651,6 @@ Singleton {
                 },
                 {
                     "id": "running_apps",
-                    "advanced": true,
                     "text": I18n.tr("Running apps"),
                     "icon": "app_registration",
                     "tabIndex": 19,
@@ -615,12 +719,36 @@ Singleton {
                     "hint": I18n.tr("History size, retention, paste behavior")
                 },
                 {
+                    "id": "screenshot",
+                    "text": I18n.tr("Screenshot", "noun, settings page name for screenshot defaults"),
+                    "icon": "screenshot_region",
+                    "tabIndex": 79,
+                    "hint": I18n.tr("Save location, format, capture behavior", "settings sidebar hint for the screenshot page")
+                },
+                {
                     "id": "compositor_layout",
                     "text": CompositorService.displayName,
                     "icon": "layers",
                     "tabIndex": 37,
                     "layoutCapable": true,
                     "hint": I18n.tr("Gaps, window borders, corner radius")
+                },
+                {
+                    "id": "compositor_animations",
+                    "text": I18n.tr("Animations"),
+                    "icon": "animation",
+                    "tabIndex": 73,
+                    "animationsCapable": true,
+                    "hint": I18n.tr("Style, speed, bounce", "settings sidebar hint for the compositor animations page")
+                },
+                {
+                    "id": "compositor_includes",
+                    "advanced": true,
+                    "text": I18n.tr("Managed files", "settings page name, compositor config files dms writes"),
+                    "icon": "description",
+                    "tabIndex": 74,
+                    "hyprlandNiriOnly": true,
+                    "hint": I18n.tr("Config files DMS writes, stop managing", "settings sidebar hint for the managed compositor files page")
                 },
                 {
                     "id": "multiplexers",
@@ -795,9 +923,13 @@ Singleton {
             return false;
         if (entry.shortcutsOnly && !KeybindsService.available)
             return false;
+        if (entry.globalShortcutsOnly && !GlobalShortcutsService.available)
+            return false;
         if (entry.soundsOnly && MultimediaService.unavailable)
             return false;
         if (entry.hyprlandNiriOnly && !CompositorService.isNiri && !CompositorService.isHyprland && !CompositorService.isMango)
+            return false;
+        if (entry.animationsCapable && !CompositorService.supportsAnimationsConfig)
             return false;
         if (entry.windowRulesCapable && !CompositorService.supportsWindowRules)
             return false;
@@ -820,6 +952,14 @@ Singleton {
         if (entry.fcitx5Only && !Fcitx5Service.available)
             return false;
         if (entry.cellularOnly && (NetworkService.cellularDevices?.length ?? 0) === 0)
+            return false;
+        if (entry.wifiOnly && !NetworkService.wifiDevicePresent)
+            return false;
+        if (entry.hotspotOnly && !NetworkService.hotspotAvailable)
+            return false;
+        if (entry.connectionEditorOnly && !NetworkService.connectionEditorSupported)
+            return false;
+        if (entry.tailscaleOnly && !TailscaleService.available)
             return false;
         if (entry.kind === "hub" && !entry.hubHeader && visibleLeaves(entry.id).length === 0)
             return false;
@@ -860,14 +1000,21 @@ Singleton {
         const hub = pageMap[hubId];
         if (!hub?.children)
             return [];
-        return hub.children.filter(child => !child.advanced && !child.hidden && isVisible(child));
+        return hub.children.filter(child => !child.advanced && !child.hidden && !child.hubFooter && isVisible(child));
     }
 
     function hubMoreRows(hubId) {
         const hub = pageMap[hubId];
         if (!hub?.children)
             return [];
-        return hub.children.filter(child => child.advanced && !child.hidden && isVisible(child));
+        return hub.children.filter(child => child.advanced && !child.hidden && !child.hubFooter && isVisible(child));
+    }
+
+    function hubFooterRows(hubId) {
+        const hub = pageMap[hubId];
+        if (!hub?.children)
+            return [];
+        return hub.children.filter(child => child.hubFooter && isVisible(child));
     }
 
     function hubRows(hubId) {

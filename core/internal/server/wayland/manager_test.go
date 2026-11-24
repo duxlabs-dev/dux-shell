@@ -2,7 +2,6 @@ package wayland
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"maps"
 	"os"
@@ -19,92 +18,6 @@ import (
 	mocks_wlclient "github.com/duxlabs-dev/dux-shell/core/internal/mocks/wlclient"
 	"github.com/duxlabs-dev/dux-shell/core/internal/proto/wlr_gamma_control"
 )
-
-func TestManager_ActorSerializesOutputStateAccess(t *testing.T) {
-	m := &Manager{
-		cmdq:     make(chan cmd, 8192),
-		stopChan: make(chan struct{}),
-	}
-
-	m.wg.Add(1)
-	go m.waylandActor()
-
-	state := &outputState{
-		id:           1,
-		registryName: 100,
-		rampSize:     256,
-	}
-	m.outputs.Store(state.id, state)
-
-	var wg sync.WaitGroup
-	const goroutines = 50
-	const iterations = 100
-
-	for i := range goroutines {
-		wg.Add(1)
-		go func(id int) {
-			defer wg.Done()
-			for j := range iterations {
-				m.post(func() {
-					if out, ok := m.outputs.Load(state.id); ok {
-						out.rampSize = uint32(j)
-						out.failed = j%2 == 0
-						out.retryCount = j
-						out.lastFailTime = time.Now()
-					}
-				})
-			}
-		}(i)
-	}
-
-	wg.Wait()
-
-	done := make(chan struct{})
-	m.post(func() { close(done) })
-	<-done
-
-	close(m.stopChan)
-	m.wg.Wait()
-}
-
-func TestManager_ConcurrentGetState(t *testing.T) {
-	m := &Manager{
-		state: &State{
-			CurrentTemp: 5000,
-			IsDay:       true,
-		},
-	}
-
-	var wg sync.WaitGroup
-	const goroutines = 50
-	const iterations = 100
-
-	for range goroutines / 2 {
-		wg.Go(func() {
-			for range iterations {
-				s := m.GetState()
-				assert.GreaterOrEqual(t, s.CurrentTemp, 0)
-			}
-		})
-	}
-
-	for i := range goroutines / 2 {
-		wg.Add(1)
-		go func(i int) {
-			defer wg.Done()
-			for j := range iterations {
-				m.stateMutex.Lock()
-				m.state = &State{
-					CurrentTemp: 4000 + i*100,
-					IsDay:       j%2 == 0,
-				}
-				m.stateMutex.Unlock()
-			}
-		}(i)
-	}
-
-	wg.Wait()
-}
 
 func TestInterpolate_EdgeCases(t *testing.T) {
 	now := time.Now()
@@ -164,18 +77,6 @@ func TestNotifySubscribers_NonBlocking(t *testing.T) {
 	}
 
 	assert.Len(t, m.dirty, 1)
-}
-
-func TestNewManager_GetRegistryError(t *testing.T) {
-	mockDisplay := mocks_wlclient.NewMockWaylandDisplay(t)
-
-	mockDisplay.EXPECT().Context().Return(nil)
-	mockDisplay.EXPECT().GetRegistry().Return(nil, errors.New("failed to get registry"))
-
-	config := DefaultConfig()
-	_, err := NewManager(mockDisplay, config)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "get registry")
 }
 
 func TestNewManager_InvalidConfig(t *testing.T) {
@@ -281,15 +182,6 @@ func TestSetAdjustments_UnchangedValuesDoNotTouchActor(t *testing.T) {
 
 	assert.NoError(t, m.SetAdjustments(1.2, 1.5))
 	assert.Len(t, m.cmdq, 1, "resending the same values must not schedule more work")
-}
-
-func TestOutputState_RampCurrent(t *testing.T) {
-	out := &outputState{lastTemp: 5000, lastGamma: 1.0, lastContrast: 1.0}
-
-	assert.True(t, out.rampCurrent(5000, 1.0, 1.0))
-	assert.False(t, out.rampCurrent(4500, 1.0, 1.0))
-	assert.False(t, out.rampCurrent(5000, 1.2, 1.0))
-	assert.False(t, out.rampCurrent(5000, 1.0, 1.4))
 }
 
 // needsControls decides whether gamma controls are created at all. ICC

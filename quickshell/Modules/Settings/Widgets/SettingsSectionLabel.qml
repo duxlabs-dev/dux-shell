@@ -82,9 +82,8 @@ Item {
         rotation: root.expanded ? 180 : 0
 
         Behavior on rotation {
-            enabled: Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
             NumberAnimation {
-                duration: Theme.expressiveDurations.expressiveFastSpatial
+                duration: Theme.expressiveDurations.expressiveDefaultSpatial
                 easing.type: Easing.BezierSpline
                 easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
             }

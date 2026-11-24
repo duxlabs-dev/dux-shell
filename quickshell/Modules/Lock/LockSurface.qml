@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import Quickshell.Wayland
 import qs.Common
+import qs.Modules.ScreenCorners
 
 FocusScope {
     id: root
@@ -63,7 +64,9 @@ FocusScope {
 
         Behavior on opacity {
             NumberAnimation {
-                duration: 200
+                duration: Theme.expressiveDurations.expressiveEffects
+                easing.type: Easing.BezierSpline
+                easing.bezierCurve: Theme.expressiveCurves.expressiveEffects
             }
         }
     }
@@ -73,6 +76,12 @@ FocusScope {
         anchors.fill: parent
         screenName: root.screenName
         onDismissed: Qt.callLater(() => lockContent.focusPasswordField())
+    }
+
+    Loader {
+        anchors.fill: parent
+        active: SettingsData.screenCornersEnabled
+        sourceComponent: ScreenCornerShape {}
     }
 
     Component.onCompleted: forceActiveFocus()

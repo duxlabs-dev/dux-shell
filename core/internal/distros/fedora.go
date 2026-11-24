@@ -109,7 +109,7 @@ func (f *FedoraDistribution) DetectDependenciesWithTerminal(ctx context.Context,
 		wmDep.Description = "MangoWM (Wayland compositor) — the Terra repo will be enabled automatically to install it"
 	}
 	dependencies = append(dependencies, wmDep)
-	dependencies = append(dependencies, f.detectQuickshell())
+	dependencies = append(dependencies, f.detectDuxQtBase())
 	dependencies = append(dependencies, f.detectGreeterPackage(f.packageInstalled))
 	dependencies = append(dependencies, f.detectXDGPortal())
 	dependencies = append(dependencies, f.detectAccountsService())
@@ -298,7 +298,7 @@ func (f *FedoraDistribution) GetPackageMappingWithVariants(wm deps.WindowManager
 		"accountsservice":        {Name: "accountsservice", Repository: RepoTypeSystem},
 
 		// COPR packages
-		"quickshell":      f.getQuickshellMapping(variants["quickshell"]),
+		"dux-qt-base":     {Name: "dux-qt-base", Repository: RepoTypeCOPR, RepoURL: coprDeps},
 		"dux-greeter":     variantMapping("dux-greeter", variants["dux-greeter"], RepoTypeCOPR, coprDeps),
 		"matugen":         {Name: "matugen", Repository: RepoTypeCOPR, RepoURL: coprDeps},
 		"dms (Dux Shell)": f.getDmsMapping(variants["dms (Dux Shell)"]),
@@ -332,13 +332,6 @@ func (f *FedoraDistribution) GetPackageMappingWithVariants(wm deps.WindowManager
 	}
 
 	return packages
-}
-
-func (f *FedoraDistribution) getQuickshellMapping(variant deps.PackageVariant) PackageMapping {
-	if forceQuickshellGit || variant == deps.VariantGit {
-		return PackageMapping{Name: "quickshell-git", Repository: RepoTypeCOPR, RepoURL: coprDeps}
-	}
-	return PackageMapping{Name: "quickshell", Repository: RepoTypeCOPR, RepoURL: coprDeps}
 }
 
 func (f *FedoraDistribution) getDmsMapping(variant deps.PackageVariant) PackageMapping {

@@ -10,6 +10,9 @@ HyprlandFocusGrab {
     id: root
 
     property bool wanted: false
+    property var keyboardWindow: null
+    property list<var> peerWindows: []
+    readonly property list<var> _keyboardWindows: keyboardWindow ? [keyboardWindow] : []
     property bool _held: false
     property bool _compositorCleared: false
     property var _restoreToplevel: null
@@ -17,16 +20,12 @@ HyprlandFocusGrab {
     readonly property Toplevel liveToplevel: ToplevelManager.activeToplevel
 
     property Timer _releaseTimer: Timer {
-        interval: 50
-        onTriggered: {
-            root._held = false;
-            root.active = false;
-            // Restoring a toplevel from another workspace would drag the user back
-            // to the workspace they just navigated away from (#2963)
-            const workspaceChanged = String(WorkspaceModel.hyprlandKey(Hyprland.focusedWorkspace)) !== root._restoreWorkspace;
-            root._restoreToplevel = (root._compositorCleared || workspaceChanged) ? null : KeyboardFocus.restoreToplevel(root._restoreToplevel);
-        }
+        interval: Timing.settleShort
+        onTriggered: root._release()
     }
+
+    // Hyprland may hand the keyboard to any surface in a grab's first commit, so that commit holds only the keyboard window.
+    windows: active ? _keyboardWindows.concat(peerWindows) : _keyboardWindows
 
     onWantedChanged: _sync()
     // Don't restore a window the user already left while the grab was held
@@ -36,6 +35,23 @@ HyprlandFocusGrab {
         _restoreToplevel = null;
     }
     Component.onCompleted: _sync()
+
+    function _release() {
+        _held = false;
+        active = false;
+        // Restoring a toplevel from another workspace would drag the user back
+        // to the workspace they just navigated away from (#2963)
+        const workspaceChanged = String(WorkspaceModel.hyprlandKey(Hyprland.focusedWorkspace)) !== _restoreWorkspace;
+        _restoreToplevel = (_compositorCleared || workspaceChanged) ? null : KeyboardFocus.restoreToplevel(_restoreToplevel);
+    }
+
+    // Hyprland can leave the keyboard unfocused when a grab outlives its keyboard surface (#4383)
+    function releaseBeforeUnmap() {
+        if (!_held || wanted)
+            return;
+        _releaseTimer.stop();
+        _release();
+    }
 
     function _sync() {
         if (!wanted) {

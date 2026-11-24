@@ -6,9 +6,11 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/duxlabs-dev/dux-go/qtbase"
 	"github.com/duxlabs-dev/dux-shell/core/internal/deps"
 	"github.com/duxlabs-dev/dux-shell/core/internal/headless"
 	"github.com/duxlabs-dev/dux-shell/core/internal/log"
+	"github.com/duxlabs-dev/dux-shell/core/internal/qtbaseembed"
 	"github.com/duxlabs-dev/dux-shell/core/internal/tui"
 	"github.com/spf13/cobra"
 )
@@ -54,7 +56,7 @@ func init() {
 	rootCmd.Flags().StringVarP(&term, "term", "t", "", "Terminal emulator to install: ghostty, kitty, or alacritty (enables headless mode)")
 	rootCmd.Flags().StringVar(&privescTool, "privesc", "", "Privilege escalation tool: sudo, doas, or run0 (default: autodetect)")
 	rootCmd.Flags().BoolVar(&gitAll, "git", false, "Install the git version of every dep that has one")
-	rootCmd.Flags().StringSliceVar(&gitDeps, "git-deps", []string{}, "Deps to install the git version of (e.g. niri,quickshell)")
+	rootCmd.Flags().StringSliceVar(&gitDeps, "git-deps", []string{}, "Deps to install the git version of (e.g. niri,hyprland)")
 	rootCmd.Flags().BoolVar(&allFeatures, "all-features", false, "Enable all optional deps (dux-greeter, dux-search, dux-calendar, dux-files)")
 	rootCmd.Flags().StringSliceVar(&includeDeps, "include-deps", []string{}, "Optional deps to enable (e.g. dux-greeter)")
 	rootCmd.Flags().StringSliceVar(&excludeDeps, "exclude-deps", []string{}, "Deps to skip during installation")
@@ -74,6 +76,7 @@ func init() {
 }
 
 func main() {
+	qtbase.MaybeRunAndExit(qtbaseembed.Extract)
 	if os.Getuid() == 0 {
 		fmt.Fprintln(os.Stderr, "Error: duxinstall must not be run as root")
 		os.Exit(1)

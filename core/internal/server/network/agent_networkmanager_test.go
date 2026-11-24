@@ -349,6 +349,38 @@ func TestSecretAgent_GetSecrets_OpenVPNDynamicChallenge(t *testing.T) {
 	}
 }
 
+func TestSecretAgent_GetSecrets_PluginDialogVPNNoGuess(t *testing.T) {
+	useFakeVPNPlugins(t, t.TempDir(), "vpnc")
+
+	conn := map[string]nmVariantMap{
+		"connection": {"id": dbus.MakeVariant("Work"), "uuid": dbus.MakeVariant("u-1"), "type": dbus.MakeVariant("vpn")},
+		"vpn": {
+			"service-type": dbus.MakeVariant("org.freedesktop.NetworkManager.vpnc"),
+			"data":         dbus.MakeVariant(map[string]string{"IPSec gateway": "vpn.example.com", "Xauth username": "me"}),
+		},
+	}
+	for _, cached := range []map[string]string{nil, {"Xauth password": "pw"}} {
+		broker := &fakePromptBroker{asked: make(chan PromptRequest, 1)}
+		backend := &NetworkManagerBackend{state: &BackendState{IsConnectingVPN: true, ConnectingVPNUUID: "u-1"}}
+		if cached != nil {
+			backend.cachedVPNSecrets = &cachedVPNSecrets{ConnectionUUID: "u-1", Secrets: cached}
+		}
+		agent := &SecretAgent{backend: backend, prompts: broker}
+
+		out, err := agent.GetSecrets(conn, "/test/path", "vpn", nil, nmSecretAgentFlagAllowInteraction)
+		assert.Empty(t, broker.asked)
+		if cached == nil {
+			if assert.NotNil(t, err) {
+				assert.Contains(t, err.Name, "NoSecrets")
+			}
+			continue
+		}
+		assert.Nil(t, err)
+		secrets, _ := out["vpn"]["secrets"].Value().(map[string]string)
+		assert.Equal(t, cached, secrets)
+	}
+}
+
 func TestBuildWiFiSecretsResponse(t *testing.T) {
 	t.Run("wpa-psk returns psk", func(t *testing.T) {
 		out := buildWiFiSecretsResponse("802-11-wireless-security", map[string]string{"psk": "hunter2"})

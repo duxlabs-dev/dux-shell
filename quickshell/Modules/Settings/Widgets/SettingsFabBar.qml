@@ -7,15 +7,27 @@ Item {
 
     default property alias content: row.data
     property bool shown: true
-    readonly property real reservedHeight: shown ? row.implicitHeight + Theme.spacingL : 0
-    readonly property var scaleSpring: Theme.springPreset("fast", Theme.expressiveDurations.expressiveFastSpatial)
+    readonly property real reservedHeight: shown && !inline ? row.implicitHeight + Theme.spacingL : 0
+    readonly property var scaleSpring: Theme.springPreset("fastSpatial")
     readonly property real shadowPadding: Theme.elevationRenderPadding(Theme.elevationLevel3, Theme.elevationLightDirection, Theme.spacingXS, Theme.spacingS, Theme.spacingL)
+
+    property bool inline: false
+
+    width: parent?.width ?? 0
+    height: inline && shown ? row.implicitHeight : 0
 
     // only the surface moves: a hidden Column child reparented into the page never renders
     function attachToPage() {
         let page = parent;
         while (page && page.fabBar === undefined)
             page = page.parent;
+        // A page shown inside another page has no viewport of its own to float over
+        if (page?.embedded) {
+            inline = true;
+            surface.anchors.horizontalCenter = root.horizontalCenter;
+            surface.y = -shadowPadding;
+            return;
+        }
         if (page)
             page.fabBar = root;
         const host = page ?? parent;
@@ -33,7 +45,6 @@ Item {
 
     SpringMotion {
         id: scaleMotion
-        enabled: !Theme.springMotionDisabled
         stiffness: root.scaleSpring.stiffness
         damping: root.scaleSpring.damping
     }
@@ -59,7 +70,6 @@ Item {
         }
 
         Behavior on opacity {
-            enabled: Theme.currentAnimationSpeed !== SettingsData.AnimationSpeed.None
             NumberAnimation {
                 duration: Theme.expressiveDurations.expressiveFastEffects
                 easing.type: Easing.BezierSpline

@@ -11,7 +11,7 @@ Singleton {
 
     Timer {
         id: screensChangedDelayTimer
-        interval: 3000 // 3 seconds
+        interval: Timing.holdMedium
         repeat: false
         onTriggered: {
             const activeNames = {};

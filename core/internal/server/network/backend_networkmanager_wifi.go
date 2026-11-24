@@ -2,13 +2,15 @@ package network
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
+	"maps"
 	"os/user"
 	"sort"
 
 	"github.com/Wifx/gonetworkmanager/v2"
 	"github.com/duxlabs-dev/dux-shell/core/internal/log"
-	"github.com/godbus/dbus/v5"
+	"github.com/duxlabs-dev/dux-shell/core/internal/qrcode"
 )
 
 func (b *NetworkManagerBackend) GetWiFiEnabled() (bool, error) {
@@ -205,16 +207,36 @@ func (b *NetworkManagerBackend) GetWiFiNetworkDetails(ssid string) (*NetworkInfo
 }
 
 func (b *NetworkManagerBackend) GetWiFiQRCodeContent(ssid string) (string, error) {
+	if conn, settings := b.activeHotspotProfile(ssid); conn != nil {
+		return qrContentForConnection(conn, settings, ssid)
+	}
+
 	conn, err := b.findConnection(ssid)
 	if err != nil {
 		return "", fmt.Errorf("no saved connection for `%s`: %w", ssid, err)
 	}
-
-	connSettings, err := conn.GetSettings()
+	settings, err := conn.GetSettings()
 	if err != nil {
 		return "", fmt.Errorf("failed to get settings for `%s`: %w", ssid, err)
 	}
+	return qrContentForConnection(conn, settings, ssid)
+}
 
+// activeHotspotProfile returns the running DMS hotspot's profile when its SSID
+// matches; findConnection skips AP-mode profiles by design.
+func (b *NetworkManagerBackend) activeHotspotProfile(ssid string) (gonetworkmanager.Connection, gonetworkmanager.ConnectionSettings) {
+	active, conn, settings, err := b.findActiveDMSHotspot()
+	if err != nil || active == nil {
+		return nil, nil
+	}
+	_, wifiSettings, _ := wifiConnectionSettings(settings)
+	if ssidBytes, ok := wifiSettings["ssid"].([]byte); !ok || string(ssidBytes) != ssid {
+		return nil, nil
+	}
+	return conn, settings
+}
+
+func qrContentForConnection(conn gonetworkmanager.Connection, connSettings gonetworkmanager.ConnectionSettings, ssid string) (string, error) {
 	secSettings, ok := connSettings["802-11-wireless-security"]
 	if !ok {
 		return "", fmt.Errorf("network `%s` has no security settings", ssid)
@@ -266,10 +288,15 @@ func (b *NetworkManagerBackend) GetWiFiQRCodeContent(ssid string) (string, error
 		return "", fmt.Errorf("failed to retrieve password for `%s`", ssid)
 	}
 
-	return FormatWiFiQRString("WPA", ssid, psk), nil
+	hidden, _ := connSettings["802-11-wireless"]["hidden"].(bool)
+	return qrcode.WiFiString("WPA", ssid, psk, hidden), nil
 }
 
 func (b *NetworkManagerBackend) ConnectWiFi(req ConnectionRequest) error {
+	if req.SaveOnly {
+		return b.saveWiFiProfile(req)
+	}
+
 	devInfo, err := b.getWifiDeviceForConnection(req.Device)
 	if err != nil {
 		return err
@@ -299,8 +326,12 @@ func (b *NetworkManagerBackend) ConnectWiFi(req ConnectionRequest) error {
 
 	existingConn, err := b.findConnection(req.SSID)
 	if err == nil && existingConn != nil {
-		if req.Password != "" || req.Username != "" {
-			if err := updateConnectionCredentials(existingConn, req); err != nil {
+		if req.Password != "" || req.Enterprise != nil {
+			if err := updateConnectionCredentials(b, existingConn, req); err != nil {
+				if req.Enterprise != nil {
+					b.failConnecting(err.Error())
+					return err
+				}
 				log.Warnf("[ConnectWiFi] Failed to update credentials on existing profile: %v", err)
 			}
 		}
@@ -310,15 +341,7 @@ func (b *NetworkManagerBackend) ConnectWiFi(req ConnectionRequest) error {
 		_, err := nm.ActivateConnection(existingConn, devInfo.device, nil)
 		if err != nil {
 			log.Warnf("[ConnectWiFi] Failed to activate existing connection: %v", err)
-			b.stateMutex.Lock()
-			b.state.IsConnecting = false
-			b.state.ConnectingSSID = ""
-			b.state.ConnectingDevice = ""
-			b.state.LastError = fmt.Sprintf("failed to activate connection: %v", err)
-			b.stateMutex.Unlock()
-			if b.onStateChange != nil {
-				b.onStateChange()
-			}
+			b.failConnecting(fmt.Sprintf("failed to activate connection: %v", err))
 			return fmt.Errorf("failed to activate connection: %w", err)
 		}
 
@@ -327,19 +350,23 @@ func (b *NetworkManagerBackend) ConnectWiFi(req ConnectionRequest) error {
 
 	if err := b.createAndConnectWiFiOnDevice(req, devInfo); err != nil {
 		log.Warnf("[ConnectWiFi] Failed to create and connect: %v", err)
-		b.stateMutex.Lock()
-		b.state.IsConnecting = false
-		b.state.ConnectingSSID = ""
-		b.state.ConnectingDevice = ""
-		b.state.LastError = err.Error()
-		b.stateMutex.Unlock()
-		if b.onStateChange != nil {
-			b.onStateChange()
-		}
+		b.failConnecting(err.Error())
 		return err
 	}
 
 	return nil
+}
+
+func (b *NetworkManagerBackend) failConnecting(msg string) {
+	b.stateMutex.Lock()
+	b.state.IsConnecting = false
+	b.state.ConnectingSSID = ""
+	b.state.ConnectingDevice = ""
+	b.state.LastError = msg
+	b.stateMutex.Unlock()
+	if b.onStateChange != nil {
+		b.onStateChange()
+	}
 }
 
 func (b *NetworkManagerBackend) DisconnectWiFi() error {
@@ -628,14 +655,11 @@ func (b *NetworkManagerBackend) updateWiFiNetworks() ([]WiFiNetwork, error) {
 		}
 	}
 
-	visibleNetworks := wiFiNetworksBySSID(networks, true)
-	savedNetworks := savedWiFiNetworksFromProfiles(savedProfiles, visibleNetworks, currentSSID, wifiConnected)
-
 	sortWiFiNetworks(networks)
 
 	b.stateMutex.Lock()
 	b.state.WiFiNetworks = networks
-	b.state.SavedWiFiNetworks = savedNetworks
+	b.setSavedWiFiNetworksLocked(savedProfiles)
 	b.stateMutex.Unlock()
 
 	return networks, nil
@@ -660,20 +684,19 @@ func (b *NetworkManagerBackend) updateSavedWiFiNetworks() error {
 
 	savedProfiles := getSavedWiFiProfiles(connections)
 
-	b.stateMutex.RLock()
-	currentSSID := b.state.WiFiSSID
-	wifiConnected := b.state.WiFiConnected
-	wifiNetworks := append([]WiFiNetwork(nil), b.state.WiFiNetworks...)
-	b.stateMutex.RUnlock()
-
-	wifiNetworks, savedNetworks := refreshSavedWiFiState(wifiNetworks, savedProfiles, currentSSID, wifiConnected)
-
 	b.stateMutex.Lock()
-	b.state.WiFiNetworks = wifiNetworks
-	b.state.SavedWiFiNetworks = savedNetworks
+	b.state.WiFiNetworks = mergeSavedProfilesIntoWiFiNetworks(b.state.WiFiNetworks, savedProfiles, b.state.WiFiSSID, b.state.WiFiConnected)
+	b.setSavedWiFiNetworksLocked(savedProfiles)
 	b.stateMutex.Unlock()
 
 	return nil
+}
+
+// setSavedWiFiNetworksLocked is the only writer of SavedWiFiNetworks, so a
+// network in range on any radio reads the same whichever refresh ran last.
+func (b *NetworkManagerBackend) setSavedWiFiNetworksLocked(profiles map[string]savedWiFiProfile) {
+	visible := visibleWiFiNetworks(b.state.WiFiNetworks, b.state.WiFiDevice, b.state.WiFiDevices)
+	b.state.SavedWiFiNetworks = savedWiFiNetworksFromProfiles(profiles, visible, b.state.WiFiSSID, b.state.WiFiConnected)
 }
 
 func (b *NetworkManagerBackend) findConnection(ssid string) (gonetworkmanager.Connection, error) {
@@ -715,210 +738,47 @@ func (b *NetworkManagerBackend) findConnection(ssid string) (gonetworkmanager.Co
 func (b *NetworkManagerBackend) createAndConnectWiFiOnDevice(req ConnectionRequest, devInfo *wifiDeviceInfo) error {
 	nm := b.nmConn.(gonetworkmanager.NetworkManager)
 	dev := devInfo.device
-	w := devInfo.wireless
 
 	var targetAP gonetworkmanager.AccessPoint
-	var flags, wpaFlags, rsnFlags uint32
+	var ap apSecurity
 
 	if !req.Hidden {
-		apPaths, err := w.GetAccessPoints()
+		apPaths, err := devInfo.wireless.GetAccessPoints()
 		if err != nil {
 			return fmt.Errorf("failed to get access points: %w", err)
 		}
 
-		for _, ap := range apPaths {
-			ssid, err := ap.GetPropertySSID()
+		for _, candidate := range apPaths {
+			ssid, err := candidate.GetPropertySSID()
 			if err != nil || ssid != req.SSID {
 				continue
 			}
-			targetAP = ap
+			targetAP = candidate
 			break
 		}
 
 		if targetAP == nil {
 			return fmt.Errorf("access point not found: %s", req.SSID)
 		}
-
-		flags, _ = targetAP.GetPropertyFlags()
-		wpaFlags, _ = targetAP.GetPropertyWPAFlags()
-		rsnFlags, _ = targetAP.GetPropertyRSNFlags()
+		ap = accessPointSecurity(targetAP)
 	}
 
-	const (
-		keyMgmt8021x = uint32(gonetworkmanager.Nm80211APSecKeyMgmt8021X)
-		keyMgmtPsk   = uint32(gonetworkmanager.Nm80211APSecKeyMgmtPSK)
-		keyMgmtSae   = uint32(gonetworkmanager.Nm80211APSecKeyMgmtSAE)
-		// OWE_TM sits on the open BSS of a mixed network, which still wants key-mgmt=owe.
-		keyMgmtOwe = uint32(gonetworkmanager.Nm80211APSecKeyMgmtOWE) | uint32(gonetworkmanager.Nm80211APSecKeyMgmtOWETM)
-	)
-
-	var isEnterprise, isPsk, isSae, isOwe, secured bool
-
-	switch {
-	case req.Hidden:
-		secured = req.Password != "" || req.Username != ""
-		isEnterprise = req.Username != ""
-		isPsk = req.Password != "" && !isEnterprise
-	default:
-		isEnterprise = (wpaFlags&keyMgmt8021x) != 0 || (rsnFlags&keyMgmt8021x) != 0
-		isPsk = (wpaFlags&keyMgmtPsk) != 0 || (rsnFlags&keyMgmtPsk) != 0
-		isSae = (wpaFlags&keyMgmtSae) != 0 || (rsnFlags&keyMgmtSae) != 0
-		isOwe = (wpaFlags&keyMgmtOwe) != 0 || (rsnFlags&keyMgmtOwe) != 0
-		secured = flags&uint32(gonetworkmanager.Nm80211APFlagsPrivacy) != 0 ||
-			wpaFlags != uint32(gonetworkmanager.Nm80211APSecNone) ||
-			rsnFlags != uint32(gonetworkmanager.Nm80211APSecNone)
-	}
-
-	if isEnterprise {
-		log.Infof("[createAndConnectWiFi] Enterprise network detected (802.1x) - SSID: %s, interactive: %v",
-			req.SSID, req.Interactive)
-	}
-
-	settings := make(map[string]map[string]any)
-
-	settings["connection"] = map[string]any{
-		"id":          req.SSID,
-		"type":        "802-11-wireless",
-		"autoconnect": true,
+	settings, err := buildWiFiSettings(req, ap)
+	if err != nil {
+		return err
 	}
 	if !b.canModifySystemConnections() {
 		restrictConnectionToCurrentUser(settings["connection"])
 	}
 
-	settings["ipv4"] = map[string]any{"method": "auto"}
-	settings["ipv6"] = map[string]any{"method": "auto"}
-
-	if secured {
-		wifiSettings := map[string]any{
-			"ssid":     []byte(req.SSID),
-			"mode":     "infrastructure",
-			"security": "802-11-wireless-security",
-		}
-		if req.Hidden {
-			wifiSettings["hidden"] = true
-		}
-		settings["802-11-wireless"] = wifiSettings
-
-		switch {
-		case isEnterprise || req.Username != "":
-			settings["802-11-wireless-security"] = map[string]any{
-				"key-mgmt": "wpa-eap",
-			}
-
-			eapMethod := "peap"
-			if req.EAPMethod != "" {
-				eapMethod = req.EAPMethod
-			}
-
-			phase2Auth := "mschapv2"
-			if req.Phase2Auth != "" {
-				phase2Auth = req.Phase2Auth
-			}
-
-			useSystemCACerts := false
-			if req.UseSystemCACerts != nil {
-				useSystemCACerts = *req.UseSystemCACerts
-			}
-
-			x := map[string]any{
-				"eap":             []string{eapMethod},
-				"system-ca-certs": useSystemCACerts,
-				"password-flags":  uint32(0),
-			}
-
-			switch eapMethod {
-			case "peap", "ttls":
-				x["phase2-auth"] = phase2Auth
-			case "tls":
-				if req.ClientCertPath != "" {
-					x["client-cert"] = []byte("file://" + req.ClientCertPath)
-				}
-				if req.PrivateKeyPath != "" {
-					x["private-key"] = []byte("file://" + req.PrivateKeyPath)
-				}
-			}
-
-			if req.Username != "" {
-				x["identity"] = req.Username
-			}
-			if req.Password != "" {
-				x["password"] = req.Password
-			}
-			if req.AnonymousIdentity != "" {
-				x["anonymous-identity"] = req.AnonymousIdentity
-			}
-			if req.DomainSuffixMatch != "" {
-				x["domain-suffix-match"] = req.DomainSuffixMatch
-			}
-			if req.CACertPath != "" {
-				x["ca-cert"] = []byte("file://" + req.CACertPath)
-			}
-
-			settings["802-1x"] = x
-
-			log.Infof("[createAndConnectWiFi] WPA-EAP settings: eap=%s, phase2-auth=%s, identity=%s, interactive=%v, system-ca-certs=%v, domain-suffix-match=%q",
-				eapMethod, phase2Auth, req.Username, req.Interactive, useSystemCACerts, req.DomainSuffixMatch)
-
-		case isPsk:
-			sec := map[string]any{
-				"key-mgmt":  "wpa-psk",
-				"psk-flags": uint32(0),
-			}
-			if !req.Interactive {
-				sec["psk"] = req.Password
-			}
-			settings["802-11-wireless-security"] = sec
-
-		case isSae:
-			sec := map[string]any{
-				"key-mgmt":  "sae",
-				"pmf":       int32(3),
-				"psk-flags": uint32(0),
-			}
-			if !req.Interactive {
-				sec["psk"] = req.Password
-			}
-			settings["802-11-wireless-security"] = sec
-
-		case isOwe:
-			// No pmf unlike the sae case: OWE mandates PMF and NM applies it itself.
-			settings["802-11-wireless-security"] = map[string]any{
-				"key-mgmt": "owe",
-			}
-
-		default:
-			return fmt.Errorf("secured network but not OWE/SAE/PSK/802.1X (rsn=0x%x wpa=0x%x)", rsnFlags, wpaFlags)
-		}
-	} else {
-		wifiSettings := map[string]any{
-			"ssid": []byte(req.SSID),
-			"mode": "infrastructure",
-		}
-		if req.Hidden {
-			wifiSettings["hidden"] = true
-		}
-		settings["802-11-wireless"] = wifiSettings
-	}
-
 	if req.Interactive {
-		s := b.settings
-		if s == nil {
-			var settingsErr error
-			s, settingsErr = gonetworkmanager.NewSettings()
-			if settingsErr != nil {
-				return fmt.Errorf("failed to get settings manager: %w", settingsErr)
-			}
-			b.settings = s
+		settingsMgr, err := b.networkManagerSettings()
+		if err != nil {
+			return err
 		}
-
-		settingsMgr := s.(gonetworkmanager.Settings)
 		conn, err := settingsMgr.AddConnection(settings)
 		if err != nil {
 			return fmt.Errorf("failed to add connection: %w", err)
-		}
-
-		if isEnterprise {
-			log.Infof("[createAndConnectWiFi] Enterprise connection added, activating (secret agent will be called)")
 		}
 
 		if req.Hidden {
@@ -929,10 +789,7 @@ func (b *NetworkManagerBackend) createAndConnectWiFiOnDevice(req ConnectionReque
 		if err != nil {
 			return fmt.Errorf("failed to activate connection: %w", err)
 		}
-
-		log.Infof("[createAndConnectWiFi] Connection activation initiated, waiting for NetworkManager state changes...")
 	} else {
-		var err error
 		if req.Hidden {
 			_, err = nm.AddAndActivateConnection(settings, dev)
 		} else {
@@ -941,38 +798,17 @@ func (b *NetworkManagerBackend) createAndConnectWiFiOnDevice(req ConnectionReque
 		if err != nil {
 			return fmt.Errorf("failed to connect: %w", err)
 		}
-		log.Infof("[createAndConnectWiFi] Connection activation initiated, waiting for NetworkManager state changes...")
 	}
 
+	log.Infof("[createAndConnectWiFi] Connection activation initiated, waiting for NetworkManager state changes...")
 	return nil
 }
-
-// updateConnectionCredentials applies user-supplied credentials to a saved
-// profile before activation; without this a retype after a password change is
-// silently ignored in favor of the stored (stale) secret.
-const nmPermissionModifySystem = dbusNMInterface + ".settings.modify.system"
 
 // GetPermissions never prompts. Short of a silent yes, a shared profile prompts on
 // creation and on every secret-agent request (NM re-checks the agent), so own it
 // per user like gnome-control-center does.
 func (b *NetworkManagerBackend) canModifySystemConnections() bool {
-	conn := b.dbusConn
-	if conn == nil {
-		var err error
-		conn, err = dbus.ConnectSystemBus()
-		if err != nil {
-			return false
-		}
-		defer conn.Close()
-	}
-
-	var permissions map[string]string
-	obj := conn.Object(dbusNMInterface, dbus.ObjectPath(dbusNMPath))
-	if err := obj.Call(dbusNMInterface+".GetPermissions", 0).Store(&permissions); err != nil {
-		log.Warnf("[createAndConnectWiFi] GetPermissions failed, creating a user-owned profile: %v", err)
-		return false
-	}
-	return permissions[nmPermissionModifySystem] == "yes"
+	return b.nmPermissions()[nmPermModifySystem] == "yes"
 }
 
 func restrictConnectionToCurrentUser(connMeta map[string]any) {
@@ -983,55 +819,225 @@ func restrictConnectionToCurrentUser(connMeta map[string]any) {
 	connMeta["permissions"] = []string{"user:" + current.Username + ":"}
 }
 
-func updateConnectionCredentials(conn gonetworkmanager.Connection, req ConnectionRequest) error {
-	settings, err := conn.GetSettings()
+// apSecurity is what an access point advertises. The zero value means the AP
+// is open or unknown.
+type apSecurity struct {
+	enterprise, psk, sae, owe, secured bool
+}
+
+func accessPointSecurity(ap gonetworkmanager.AccessPoint) apSecurity {
+	const (
+		keyMgmt8021x = uint32(gonetworkmanager.Nm80211APSecKeyMgmt8021X)
+		keyMgmtPsk   = uint32(gonetworkmanager.Nm80211APSecKeyMgmtPSK)
+		keyMgmtSae   = uint32(gonetworkmanager.Nm80211APSecKeyMgmtSAE)
+		// OWE_TM sits on the open BSS of a mixed network, which still wants key-mgmt=owe.
+		keyMgmtOwe = uint32(gonetworkmanager.Nm80211APSecKeyMgmtOWE) | uint32(gonetworkmanager.Nm80211APSecKeyMgmtOWETM)
+	)
+	flags, _ := ap.GetPropertyFlags()
+	wpaFlags, _ := ap.GetPropertyWPAFlags()
+	rsnFlags, _ := ap.GetPropertyRSNFlags()
+	keyMgmt := wpaFlags | rsnFlags
+	return apSecurity{
+		enterprise: keyMgmt&keyMgmt8021x != 0,
+		psk:        keyMgmt&keyMgmtPsk != 0,
+		sae:        keyMgmt&keyMgmtSae != 0,
+		owe:        keyMgmt&keyMgmtOwe != 0,
+		secured: flags&uint32(gonetworkmanager.Nm80211APFlagsPrivacy) != 0 ||
+			keyMgmt != uint32(gonetworkmanager.Nm80211APSecNone),
+	}
+}
+
+// wifiSecurityType picks the key management for a new profile. An explicit
+// request wins; without an AP to look at it is inferred from the credentials.
+func wifiSecurityType(req ConnectionRequest, ap apSecurity) (string, error) {
+	switch {
+	case req.Security != "":
+		return req.Security, nil
+	case req.Hidden || req.SaveOnly:
+		switch {
+		case req.Enterprise != nil:
+			return "wpa-eap", nil
+		case req.Password != "":
+			return "wpa-psk", nil
+		}
+		return "none", nil
+	case ap.enterprise:
+		return "wpa-eap", nil
+	case ap.psk:
+		return "wpa-psk", nil
+	case ap.sae:
+		return "sae", nil
+	case ap.owe:
+		return "owe", nil
+	case ap.secured:
+		return "", fmt.Errorf("secured network but not OWE/SAE/PSK/802.1X")
+	}
+	return "none", nil
+}
+
+func buildWiFiSettings(req ConnectionRequest, ap apSecurity) (map[string]map[string]any, error) {
+	security, err := wifiSecurityType(req, ap)
 	if err != nil {
-		return fmt.Errorf("failed to get connection settings: %w", err)
+		return nil, err
 	}
 
-	for _, section := range []string{"ipv4", "ipv6"} {
-		ipCfg, ok := settings[section]
-		if !ok {
-			continue
-		}
-		delete(ipCfg, "addresses")
-		delete(ipCfg, "routes")
-		delete(ipCfg, "dns")
+	wifi := map[string]any{
+		"ssid": []byte(req.SSID),
+		"mode": "infrastructure",
+	}
+	if req.Hidden {
+		wifi["hidden"] = true
+	}
+	settings := map[string]map[string]any{
+		"connection":      {"id": req.SSID, "type": "802-11-wireless", "autoconnect": true},
+		"802-11-wireless": wifi,
+		"ipv4":            {"method": "auto"},
+		"ipv6":            {"method": "auto"},
 	}
 
-	mergeStoredSecrets(conn, settings)
-
-	if dot1x, ok := settings["802-1x"]; ok {
-		if req.Username != "" {
-			dot1x["identity"] = req.Username
+	var sec map[string]any
+	switch security {
+	case "none":
+		return settings, nil
+	case "owe":
+		// No pmf unlike sae: OWE mandates PMF and NM applies it itself.
+		sec = map[string]any{"key-mgmt": "owe"}
+	case "wpa-psk", "sae":
+		sec = map[string]any{"key-mgmt": security, "psk-flags": uint32(0)}
+		if security == "sae" {
+			sec["pmf"] = int32(3)
 		}
-		if req.Password != "" {
-			dot1x["password"] = req.Password
-			dot1x["password-flags"] = uint32(0)
+		if !req.Interactive {
+			if req.Password == "" {
+				return nil, fmt.Errorf("password required")
+			}
+			sec["psk"] = req.Password
 		}
-		if req.AnonymousIdentity != "" {
-			dot1x["anonymous-identity"] = req.AnonymousIdentity
+	case "wpa-eap":
+		if req.Enterprise == nil {
+			return nil, fmt.Errorf("802.1X settings required")
 		}
-		if req.DomainSuffixMatch != "" {
-			dot1x["domain-suffix-match"] = req.DomainSuffixMatch
+		patch, err := enterprise8021xPatch(*req.Enterprise, true)
+		if err != nil {
+			return nil, err
 		}
-		return conn.Update(settings)
-	}
-
-	sec, ok := settings["802-11-wireless-security"]
-	if !ok || req.Password == "" {
-		return nil
-	}
-
-	keyMgmt, _ := sec["key-mgmt"].(string)
-	switch keyMgmt {
-	case "wpa-psk", "sae", "wpa-psk-sae":
-		sec["psk"] = req.Password
-		sec["psk-flags"] = uint32(0)
+		maps.DeleteFunc(patch, func(_ string, v any) bool { return v == nil })
+		settings["802-1x"] = patch
+		sec = map[string]any{"key-mgmt": "wpa-eap"}
 	default:
+		return nil, fmt.Errorf("unsupported security %q", security)
+	}
+
+	wifi["security"] = "802-11-wireless-security"
+	settings["802-11-wireless-security"] = sec
+	return settings, nil
+}
+
+// saveWiFiProfile stores req without activating it: an existing profile for
+// the SSID is updated in place, otherwise a new one is written to disk.
+func (b *NetworkManagerBackend) saveWiFiProfile(req ConnectionRequest) error {
+	if conn, err := b.findConnection(req.SSID); err == nil && conn != nil {
+		return updateConnectionCredentials(b, conn, req)
+	}
+	settings, err := buildWiFiSettings(req, apSecurity{})
+	if err != nil {
+		return err
+	}
+	if !b.canModifySystemConnections() {
+		restrictConnectionToCurrentUser(settings["connection"])
+	}
+	settingsMgr, err := b.networkManagerSettings()
+	if err != nil {
+		return err
+	}
+	if _, err := settingsMgr.AddConnection(settings); err != nil {
+		return fmt.Errorf("failed to add connection: %w", err)
+	}
+	return nil
+}
+
+var errNoCredentialChange = errors.New("no credential change")
+
+// updateConnectionCredentials applies user-supplied credentials to a saved
+// profile, so a retyped password beats the stale stored secret. A save-only
+// request also sets autoconnect (and hidden), and errors when its explicit
+// security can't be applied.
+func updateConnectionCredentials(b *NetworkManagerBackend, conn gonetworkmanager.Connection, req ConnectionRequest) error {
+	var patch map[string]any
+	if req.Enterprise != nil {
+		var err error
+		if patch, err = enterprise8021xPatch(*req.Enterprise, false); err != nil {
+			return err
+		}
+	}
+
+	applyCredentials := func(s nmSettings) error {
+		if patch != nil {
+			keepUnmodelledEnterpriseKeys(patch, s["802-1x"])
+			for k, v := range patch {
+				if v == nil {
+					deleteSettingValue(s, "802-1x", k)
+				} else {
+					setSettingValue(s, "802-1x", k, v)
+				}
+			}
+			setSettingValue(s, "802-11-wireless", "security", "802-11-wireless-security")
+			setSettingValue(s, "802-11-wireless-security", "key-mgmt", "wpa-eap")
+			for _, k := range []string{"psk", "psk-flags", "pmf", "auth-alg"} {
+				deleteSettingValue(s, "802-11-wireless-security", k)
+			}
+			return nil
+		}
+
+		if req.Password == "" {
+			return errNoCredentialChange
+		}
+		if _, ok := s["802-1x"]; ok {
+			setSettingValue(s, "802-1x", "password", req.Password)
+			setSettingValue(s, "802-1x", "password-flags", uint32(0))
+			return nil
+		}
+
+		keyMgmt, _ := s["802-11-wireless-security"]["key-mgmt"].Value().(string)
+		switch keyMgmt {
+		case "wpa-psk", "sae", "wpa-psk-sae":
+			setSettingValue(s, "802-11-wireless-security", "psk", req.Password)
+			setSettingValue(s, "802-11-wireless-security", "psk-flags", uint32(0))
+			return nil
+		default:
+			return errNoCredentialChange
+		}
+	}
+
+	err := updateConnectionSettings(b.nmObject(conn.GetPath()), true, func(s nmSettings) error {
+		err := applyCredentials(s)
+		if !req.SaveOnly {
+			return err
+		}
+		if err != nil && req.Security != "" {
+			stored, _ := s["802-11-wireless-security"]["key-mgmt"].Value().(string)
+			if stored == "" {
+				stored = "none"
+			}
+			if stored != req.Security && (!isPSKFamily(stored) || !isPSKFamily(req.Security)) {
+				return fmt.Errorf("saved profile %q uses %s security, not %s", req.SSID, stored, req.Security)
+			}
+		}
+		if req.Hidden {
+			setSettingValue(s, "802-11-wireless", "hidden", true)
+		}
+		setSettingValue(s, "connection", "autoconnect", true)
+		return nil
+	})
+	if errors.Is(err, errNoCredentialChange) {
 		return nil
 	}
-	return conn.Update(settings)
+	return err
+}
+
+// isPSKFamily reports key-mgmt values that share one passphrase.
+func isPSKFamily(keyMgmt string) bool {
+	return keyMgmt == "wpa-psk" || keyMgmt == "sae" || keyMgmt == "wpa-psk-sae"
 }
 
 func (b *NetworkManagerBackend) SetWiFiAutoconnect(ssid string, autoconnect bool) error {
@@ -1040,34 +1046,20 @@ func (b *NetworkManagerBackend) SetWiFiAutoconnect(ssid string, autoconnect bool
 		return fmt.Errorf("connection not found: %w", err)
 	}
 
-	settings, err := conn.GetSettings()
+	obj := b.nmObject(conn.GetPath())
+	if obj == nil {
+		return fmt.Errorf("D-Bus connection unavailable")
+	}
+
+	err = updateConnectionSettings(obj, true, func(s nmSettings) error {
+		if _, ok := s["connection"]; !ok {
+			return fmt.Errorf("connection metadata not found")
+		}
+		setSettingValue(s, "connection", "autoconnect", autoconnect)
+		return nil
+	})
 	if err != nil {
-		return fmt.Errorf("failed to get connection settings: %w", err)
-	}
-
-	if connMeta, ok := settings["connection"]; ok {
-		connMeta["autoconnect"] = autoconnect
-	} else {
-		return fmt.Errorf("connection metadata not found")
-	}
-
-	if ipv4, ok := settings["ipv4"]; ok {
-		delete(ipv4, "addresses")
-		delete(ipv4, "routes")
-		delete(ipv4, "dns")
-	}
-
-	if ipv6, ok := settings["ipv6"]; ok {
-		delete(ipv6, "addresses")
-		delete(ipv6, "routes")
-		delete(ipv6, "dns")
-	}
-
-	mergeStoredSecrets(conn, settings)
-
-	err = conn.Update(settings)
-	if err != nil {
-		return fmt.Errorf("failed to update connection: %w", err)
+		return err
 	}
 
 	if !autoconnect {
@@ -1159,12 +1151,6 @@ func (b *NetworkManagerBackend) updateAllWiFiDevices() {
 	savedProfiles := getSavedWiFiProfiles(connections)
 
 	var devices []WiFiDevice
-	visibleNetworks := make(map[string]WiFiNetwork)
-	b.stateMutex.RLock()
-	currentSSID := b.state.WiFiSSID
-	wifiConnected := b.state.WiFiConnected
-	b.stateMutex.RUnlock()
-
 	var apModeDevicePaths map[string]bool
 	for name, devInfo := range b.wifiDevicesSnapshot() {
 		state, _ := devInfo.device.GetPropertyState()
@@ -1287,9 +1273,6 @@ func (b *NetworkManagerBackend) updateAllWiFiDevices() {
 
 				networks = append(networks, network)
 				seenSSIDs[apSSID] = len(networks) - 1
-				if existing, ok := visibleNetworks[apSSID]; !ok || network.Signal > existing.Signal {
-					visibleNetworks[apSSID] = network
-				}
 			}
 
 			if connected && ssid != "" {
@@ -1309,7 +1292,6 @@ func (b *NetworkManagerBackend) updateAllWiFiDevices() {
 					}
 					networks = append(networks, hiddenNetwork)
 					seenSSIDs[ssid] = len(networks) - 1
-					visibleNetworks[ssid] = hiddenNetwork
 				}
 			}
 
@@ -1338,7 +1320,7 @@ func (b *NetworkManagerBackend) updateAllWiFiDevices() {
 
 	b.stateMutex.Lock()
 	b.state.WiFiDevices = devices
-	b.state.SavedWiFiNetworks = savedWiFiNetworksFromProfiles(savedProfiles, visibleNetworks, currentSSID, wifiConnected)
+	b.setSavedWiFiNetworksLocked(savedProfiles)
 	b.stateMutex.Unlock()
 }
 
