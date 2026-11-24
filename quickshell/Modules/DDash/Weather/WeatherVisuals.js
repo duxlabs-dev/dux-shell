@@ -86,16 +86,27 @@ function conditionShape(code, isDay) {
     }
 }
 
+// The UV index is reported as a whole number, the WHO's categories are for that:
+// 2.6 is 3, moderate.
+function uvIndex(value) {
+    if (!Number.isFinite(value))
+        return null;
+    // + 0 turns the -0 of a slightly negative reading into 0.
+    const index = Math.round(value) + 0;
+    return index >= 0 ? index : null;
+}
+
 function uvCategory(value) {
-    if (!Number.isFinite(value) || value < 0)
+    const index = uvIndex(value);
+    if (index === null)
         return -1;
-    if (value < 3)
+    if (index <= 2)
         return 0;
-    if (value < 6)
+    if (index <= 5)
         return 1;
-    if (value < 8)
+    if (index <= 7)
         return 2;
-    if (value < 11)
+    if (index <= 10)
         return 3;
     return 4;
 }
