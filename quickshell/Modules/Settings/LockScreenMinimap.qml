@@ -36,6 +36,7 @@ Item {
             readonly property string pamState: ""
             readonly property string passwordBuffer: ""
             readonly property bool inputRevealed: false
+            readonly property bool widgetsRevealed: true
             property Item authWidget: null
 
             signal authFailed

@@ -71,6 +71,25 @@ Singleton {
     property bool lockPowerOffRequested: false
     property bool sleepBlocked: false
 
+    property string lockTransitionPhase: "idle"
+    property real chromeOpacity: 1
+    property bool lockUiVisible: false
+    property var chromeFadeCallback: null
+
+    NumberAnimation {
+        id: chromeFadeAnimation
+        target: root
+        property: "chromeOpacity"
+        duration: Theme.expressiveDurations.expressiveEffects
+        easing.type: Easing.BezierSpline
+        easing.bezierCurve: Theme.expressiveCurves.expressiveEffects
+        onFinished: {
+            const cb = chromeFadeCallback
+            chromeFadeCallback = null
+            if (cb) cb()
+        }
+    }
+
     function _updateSleepBlocked(blockInhibited) {
         if (typeof blockInhibited === "string")
             sleepBlocked = blockInhibited.split(":").includes("sleep");
@@ -79,6 +98,43 @@ Singleton {
     function reapplyDpmsIfNeeded() {
         if (monitorsOff)
             CompositorService.powerOffMonitors();
+    }
+
+    function hideChrome(onFinished) {
+        if (Theme.reduceMotion) {
+            chromeOpacity = 0
+            if (onFinished) onFinished()
+            return
+        }
+        chromeFadeCallback = onFinished
+        chromeFadeAnimation.easing.type = Easing.BezierSpline
+        chromeFadeAnimation.to = 0
+        chromeFadeAnimation.start()
+    }
+
+    function showChrome(onFinished) {
+        if (Theme.reduceMotion) {
+            chromeOpacity = 1
+            if (onFinished) onFinished()
+            return
+        }
+        chromeFadeCallback = onFinished
+        chromeFadeAnimation.easing.type = Easing.InOutQuad
+        chromeFadeAnimation.to = 1
+        chromeFadeAnimation.start()
+    }
+
+    function cancelChromeFade(onFinished) {
+        chromeFadeAnimation.stop()
+        chromeOpacity = 1
+        chromeFadeCallback = null
+        if (onFinished) onFinished()
+    }
+
+    function resetChrome() {
+        chromeFadeAnimation.stop()
+        chromeFadeCallback = null
+        chromeOpacity = 1
     }
 
     IdleMonitor {
@@ -128,17 +184,10 @@ Singleton {
         onIsIdleChanged: {
             if (!enabled)
                 return;
-            if (isIdle) {
-                if (SettingsData.fadeToLockEnabled) {
-                    root.fadeToLockRequested();
-                } else {
-                    root.lockRequested();
-                }
-            } else {
-                if (SettingsData.fadeToLockEnabled) {
-                    root.cancelFadeToLock();
-                }
-            }
+            if (isIdle)
+                root.lockRequested()
+            else if (!Theme.reduceMotion && !root.isShellLocked)
+                root.cancelFadeToLock()
         }
     }
 

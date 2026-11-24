@@ -746,6 +746,7 @@ Item {
 
     PanelWindow {
         id: contentWindow
+        contentItem.opacity: IdleService.chromeOpacity
         visible: false
         color: "transparent"
         exclusionMode: ExclusionMode.Ignore

@@ -27,7 +27,8 @@ DIdleSurface {
     readonly property bool stackSettled: !popupWindows.some(p => (p?.stackMoving ?? false) || (p?.inlineHeightAnimating ?? false))
 
     screen: modelData
-    active: popupWindows.length > 0
+    active: popupWindows.length > 0 && IdleService.chromeOpacity > 0
+    contentItem.opacity: IdleService.chromeOpacity
     // A mapped idle band is blacked out by compositor capture rules matching this namespace.
     keepMapped: false
     requestedBounds: {

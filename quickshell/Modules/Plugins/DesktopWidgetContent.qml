@@ -44,6 +44,7 @@ Loader {
     readonly property real contentDefaultWidth: item?.defaultWidth ?? ((item?.implicitWidth ?? 0) > 0 ? item.implicitWidth : 280)
     readonly property real contentDefaultHeight: item?.defaultHeight ?? ((item?.implicitHeight ?? 0) > 0 ? item.implicitHeight : 180)
     readonly property bool acceptsKeyboardFocus: item?.acceptsKeyboardFocus ?? false
+    readonly property bool widgetsRevealed: lockHost?.widgetsRevealed ?? false
 
     property Component lockDateComponent: Component {
         LockDateWidget {}
@@ -76,8 +77,31 @@ Loader {
     }
 
     sourceComponent: activeComponent
-    // The lock surface is presented as one frame, so its widgets must not fade in after the background.
-    opacity: lockScreen ? 1 : 0
+    opacity: 0
+    scale: lockScreen ? Theme.effectScaleCollapsed : 1
+
+    states: State {
+        name: "revealed"
+        when: lockScreen && widgetsRevealed
+
+        PropertyChanges {
+            target: root
+            opacity: 1
+            scale: 1
+        }
+    }
+
+    transitions: Transition {
+        from: ""
+        to: "revealed"
+
+        NumberAnimation {
+            properties: "opacity,scale"
+            duration: Theme.reduceMotion ? 0 : Theme.expressiveDurations.expressiveEffects
+            easing.type: Easing.BezierSpline
+            easing.bezierCurve: Theme.expressiveCurves.expressiveEffects
+        }
+    }
 
     NumberAnimation {
         id: revealFade

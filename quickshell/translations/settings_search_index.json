@@ -11217,40 +11217,6 @@
     "description": "Fades the screen out first. Input during the fade cancels it"
   },
   {
-    "section": "fadeToLockEnabled",
-    "label": "Fade to lock screen",
-    "tabIndex": 21,
-    "category": "Power & sleep",
-    "keywords": [
-      "battery",
-      "cancels",
-      "charge",
-      "charging",
-      "during",
-      "energy",
-      "fade",
-      "fades",
-      "first",
-      "grace period",
-      "hibernate",
-      "idle",
-      "input",
-      "lock",
-      "lockscreen",
-      "login",
-      "power",
-      "reboot",
-      "restart",
-      "screen",
-      "security",
-      "shutdown",
-      "sleep",
-      "suspend"
-    ],
-    "parentLabel": "Power & battery",
-    "description": "Fades the screen out first. Input during the fade cancels it"
-  },
-  {
     "section": "powerMenuFirmwareSetup",
     "label": "Firmware setup",
     "tabIndex": 21,
@@ -11376,31 +11342,6 @@
     ],
     "parentLabel": "Power & battery",
     "icon": "schedule"
-  },
-  {
-    "section": "fadeToLockGracePeriod",
-    "label": "Lock fade grace period",
-    "tabIndex": 21,
-    "category": "Power & sleep",
-    "keywords": [
-      "battery",
-      "charge",
-      "charging",
-      "energy",
-      "fade",
-      "grace",
-      "hibernate",
-      "lock",
-      "period",
-      "power",
-      "reboot",
-      "restart",
-      "shutdown",
-      "sleep",
-      "suspend",
-      "timeout"
-    ],
-    "parentLabel": "Power & battery"
   },
   {
     "section": "_tab_21",

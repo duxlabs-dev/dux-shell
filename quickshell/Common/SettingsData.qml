@@ -832,8 +832,6 @@ Singleton {
     property bool lockBeforeSuspend: Spec.SPEC.lockBeforeSuspend.def
     property bool keepAwakeBlocksSleep: Spec.SPEC.keepAwakeBlocksSleep.def
     property bool loginctlLockIntegration: Spec.SPEC.loginctlLockIntegration.def
-    property bool fadeToLockEnabled: Spec.SPEC.fadeToLockEnabled.def
-    property int fadeToLockGracePeriod: Spec.SPEC.fadeToLockGracePeriod.def
     property bool fadeToDpmsEnabled: Spec.SPEC.fadeToDpmsEnabled.def
     property int fadeToDpmsGracePeriod: Spec.SPEC.fadeToDpmsGracePeriod.def
     property string launchPrefix: Spec.SPEC.launchPrefix.def

@@ -55,7 +55,8 @@ Item {
     PanelWindow {
         id: widgetWindow
         screen: root.screen
-        visible: root.contentShowing || root.surfaceLingering
+        contentItem.opacity: IdleService.chromeOpacity
+        visible: (root.contentShowing || root.surfaceLingering) && IdleService.chromeOpacity > 0
         color: "transparent"
 
         Region {

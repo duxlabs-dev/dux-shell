@@ -1301,12 +1301,6 @@ var LOCAL_SPEC = {
     loginctlLockIntegration: {
         def: true
     },
-    fadeToLockEnabled: {
-        def: true
-    },
-    fadeToLockGracePeriod: {
-        def: 5
-    },
     fadeToDpmsEnabled: {
         def: true
     },

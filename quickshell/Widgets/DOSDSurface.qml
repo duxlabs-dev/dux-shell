@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell.Wayland
 import qs.Common
+import qs.Services
 import "../Common/PopoutBounds.js" as PopoutBounds
 
 DIdleSurface {
@@ -31,7 +32,8 @@ DIdleSurface {
     kind: "osd"
     // Maps per show, so it stacks above overlay surfaces mapped since the last one.
     keepMapped: false
-    active: hostCount > 0
+    active: hostCount > 0 && IdleService.chromeOpacity > 0
+    contentItem.opacity: IdleService.chromeOpacity
     maskItem: activeHost?.maskItem ?? null
 
     WlrLayershell.namespace: "dms:osd"

@@ -22,11 +22,14 @@ FocusScope {
     property bool demoMode: false
     property bool greeterPreview: false
     property var pam: demoPam
+    property real uiOpacity: 1
     property string screenName: ""
     property bool unlocking: false
     property string pamState: ""
     property bool lockerReadySent: false
     property bool lockerReadyArmed: false
+    property bool lockReadyConfirmed: false
+    readonly property bool widgetsRevealed: demoMode || greeterPreview || lockReadyConfirmed
     property var sessionLock: null
     property Item authWidget: null
     readonly property Item backgroundItem: background
@@ -40,6 +43,7 @@ FocusScope {
     function resetLockState() {
         widgetLayer.refreshPlacement();
         lockerReadySent = false;
+        lockReadyConfirmed = false;
         lockerReadyArmed = true;
         unlocking = false;
         pamState = "";
@@ -88,6 +92,7 @@ FocusScope {
             return;
         if (root.unlocking)
             return;
+        lockReadyConfirmed = true;
         lockerReadySent = true;
         if (SessionService.loginctlAvailable && DMSService.apiVersion >= 2) {
             DMSService.sendRequest("loginctl.lockerReady", null, resp => {
@@ -104,12 +109,12 @@ FocusScope {
             return;
         if (root.unlocking)
             return;
-        if (!root.visible || root.opacity <= 0)
+        if (!root.visible || root.uiOpacity <= 0)
             return;
         if (root.sessionLock && !root.sessionLock.secure)
             return;
         Qt.callLater(() => {
-            if (root.visible && root.opacity > 0 && !root.unlocking)
+            if (root.visible && root.uiOpacity > 0 && !root.unlocking)
                 sendLockerReadyOnce();
         });
     }
@@ -135,7 +140,7 @@ FocusScope {
     }
 
     onVisibleChanged: maybeSend()
-    onOpacityChanged: maybeSend()
+    onUiOpacityChanged: maybeSend()
 
     LockScreenBackground {
         id: background
@@ -164,6 +169,7 @@ FocusScope {
         lockHost: root
         editMode: root.demoMode
         bottomInset: editorLoader.item?.fabReserved ?? 0
+        opacity: root.uiOpacity
         onFocusStolen: root.focusPasswordField()
         onOptionsRequested: instanceId => editorLoader.item?.showOptions(instanceId)
     }

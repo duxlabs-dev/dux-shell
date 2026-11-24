@@ -148,28 +148,6 @@ Item {
                 tags: ["fade", "grace", "period", "lock", "dpms", "display"]
 
                 SettingsToggleRow {
-                    settingKey: "fadeToLockEnabled"
-                    tags: ["fade", "lock", "screen", "idle", "grace period"]
-                    text: I18n.tr("Fade to lock screen")
-                    description: SettingsData.isManaged("fadeToLockEnabled") ? root.managedNote : I18n.tr("Fades the screen out first. Input during the fade cancels it", "idle fade toggle description")
-                    enabled: !SettingsData.isManaged("fadeToLockEnabled")
-                    checked: SettingsData.fadeToLockEnabled
-                    onToggled: checked => SettingsData.set("fadeToLockEnabled", checked)
-                }
-
-                SettingsDropdownRow {
-                    settingKey: "fadeToLockGracePeriod"
-                    tags: ["fade", "grace", "period", "timeout", "lock"]
-                    text: I18n.tr("Lock fade grace period")
-                    description: SettingsData.isManaged("fadeToLockGracePeriod") ? root.managedNote : ""
-                    enabled: !SettingsData.isManaged("fadeToLockGracePeriod")
-                    visible: SettingsData.fadeToLockEnabled
-                    options: root.gracePeriodOptions
-                    currentValue: root.gracePeriodText("fadeToLockGracePeriod")
-                    onValueChanged: value => root.setGracePeriodFromText("fadeToLockGracePeriod", value)
-                }
-
-                SettingsToggleRow {
                     settingKey: "fadeToDpmsEnabled"
                     tags: ["fade", "dpms", "monitor", "screen", "idle", "grace period"]
                     text: I18n.tr("Fade to display off")
