@@ -140,17 +140,17 @@ test("managed settings win over every settings file, on the first load and on ea
 test("a save leaves managed keys out of the settings files, and a user's own value in place", () => {
     const main = "/home/u/.config/dms/settings.json";
     const overlay = "/home/u/.config/dms/config.d/lock.json";
-    const fileSettings = { [main]: { lockBeforeSuspend: false, acLockTimeout: 60 }, [overlay]: { customPowerActionLock: "true", fadeToLockEnabled: false } };
+    const fileSettings = { [main]: { lockBeforeSuspend: false, acLockTimeout: 60 }, [overlay]: { customPowerActionLock: "true" } };
     const context = settingsDataContext({
         AdminPolicy: { lockSettings: { lockBeforeSuspend: true, customPowerActionLock: "", batteryLockTimeout: 300 } },
         _settingsFilesPaths: [main, overlay],
         _settingsFiles: new Map(Object.keys(fileSettings).map(path => [path, { getSettings: () => Object.assign({}, fileSettings[path]) }])),
         defaultSettingsFile: { filePath: main }
     }, ["isManaged", "_splitSettingsByFile"]);
-    const split = context._splitSettingsByFile({ configVersion: 42, lockBeforeSuspend: true, customPowerActionLock: "", batteryLockTimeout: 300, acLockTimeout: 120, fadeToLockEnabled: true, lockAtStartup: true });
+    const split = context._splitSettingsByFile({ configVersion: 42, lockBeforeSuspend: true, customPowerActionLock: "", batteryLockTimeout: 300, acLockTimeout: 120, lockAtStartup: true });
     assert.deepEqual(JSON.parse(JSON.stringify(split)), {
         [main]: { lockBeforeSuspend: false, acLockTimeout: 120, configVersion: 42, lockAtStartup: true },
-        [overlay]: { customPowerActionLock: "true", fadeToLockEnabled: true }
+        [overlay]: { customPowerActionLock: "true" }
     });
 });
 

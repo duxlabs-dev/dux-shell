@@ -2134,6 +2134,12 @@ Singleton {
         case "mango":
         case "umbriel":
             return record.occupied === true;
+        case "sway":
+        case "scroll":
+        case "miracle":
+            if (record.name && record.name.startsWith("dms-lock-temp"))
+                return false;
+            return true;
         default:
             return false;
         }
