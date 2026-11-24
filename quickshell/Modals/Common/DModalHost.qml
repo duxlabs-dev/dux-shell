@@ -99,6 +99,7 @@ Item {
     signal opened
     signal dialogClosed
     signal backgroundClicked
+    signal surfaceUnmapping
 
     Timer {
         id: _syncTimer
@@ -327,7 +328,7 @@ Item {
         shouldHaveFocus = false;
         ModalManager.closeModal(modalHandle);
         closeTimer.stop();
-        contentWindow.visible = false;
+        _unmapWindow();
         _fluidMotionActive = false;
         dialogClosed();
         Qt.callLater(() => animationsEnabled = true);
@@ -386,12 +387,17 @@ Item {
         _finishClose();
     }
 
+    function _unmapWindow() {
+        surfaceUnmapping();
+        contentWindow.visible = false;
+    }
+
     function _finishClose() {
         if (shouldBeVisible)
             return;
         closeTimer.stop();
         isClosing = false;
-        contentWindow.visible = false;
+        _unmapWindow();
         morph.snapTo(0);
         _fluidMotionActive = false;
         dialogClosed();
