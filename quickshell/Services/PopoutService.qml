@@ -47,6 +47,8 @@ Singleton {
     property var powerMenuModalLoader: null
     property var powerMenuPopout: null
     property var powerMenuPopoutLoader: null
+    property var profilePickerModal: null
+    property var profilePickerModalLoader: null
     property var switchUserModalLoader: null
     property var durationPopout: null
     property var durationPopoutLoader: null
@@ -166,6 +168,25 @@ Singleton {
             screen: target,
             barId: config.id
         };
+    }
+
+    function dashIslandActivity(tabId) {
+        switch (tabId) {
+        case "overview":
+            return "home";
+        case "media":
+        case "wallpaper":
+        case "weather":
+        case "profiles":
+            return tabId;
+        default:
+            return "";
+        }
+    }
+
+    function dashRoutesToIsland(tabId, screen) {
+        const activity = dashIslandActivity(tabId);
+        return activity !== "" && _sharedTriggerIsland(screen, activity) !== null;
     }
 
     readonly property bool islandControlCenterOpen: dankIslandRouter?.controlCenterOpen ?? false
@@ -1007,6 +1028,17 @@ Singleton {
         if (routeToIsland("powermenu", null, true))
             return;
         _powerMenuModalItem()?.openCentered();
+    }
+
+    function toggleProfilePicker() {
+        const modal = profilePickerModalLoader?.item ?? profilePickerModal;
+        if (modal?.shouldBeVisible) {
+            modal.close();
+            return;
+        }
+        if (profilePickerModalLoader)
+            profilePickerModalLoader.active = true;
+        (profilePickerModalLoader?.item ?? profilePickerModal)?.openOn(CompositorService.getFocusedScreen(), SettingsData.configProfilePickerView);
     }
 
     function openSwitchUser() {

@@ -883,6 +883,9 @@ var LOCAL_SPEC = {
     browserPickerViewMode: {
         def: "grid"
     },
+    configProfilePickerView: {
+        def: "carousel"
+    },
     appPickerViewMode: {
         def: "grid"
     },
@@ -1004,6 +1007,10 @@ var LOCAL_SPEC = {
             },
             {
                 id: "notifications",
+                enabled: false
+            },
+            {
+                id: "profiles",
                 enabled: false
             },
             {

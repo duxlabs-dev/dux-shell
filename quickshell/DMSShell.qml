@@ -1266,6 +1266,8 @@ Item {
     }
 
     DMSShellIPC {
+        id: shellIpc
+
         processListModalLoaderRef: processListModalLoader
         controlCenterLoaderRef: controlCenterLoader
         dankDashPopoutLoaderRef: dankDashPopoutLoader
@@ -1319,9 +1321,34 @@ Item {
         ProfileCaptureBar {}
     }
 
-    // The user closed Settings to set up the screen, so bring back the profile being edited.
+    LazyLoader {
+        id: profilePickerModalLoader
+
+        active: false
+        source: "Modals/ProfilePickerModal.qml"
+
+        Component.onCompleted: {
+            PopoutService.profilePickerModalLoader = profilePickerModalLoader;
+        }
+        onItemChanged: {
+            if (!item)
+                return;
+            PopoutService.profilePickerModal = item;
+        }
+    }
+
     Connections {
         target: ConfigProfileService
+        function onPickerToggleRequested() {
+            if (SettingsData.configProfilePickerView !== "dash")
+                PopoutService.toggleProfilePicker();
+            else if (PopoutService.dankDashPopout?.dashVisible && PopoutService.dankDashPopout.activeTabId !== "profiles")
+                shellIpc.openDash("profiles", "");
+            else if (!shellIpc.toggleDash("profiles", ""))
+                PopoutService.toggleProfilePicker();
+        }
+
+        // The user closed Settings to set up the screen, so bring back the profile being edited.
         function onScreenshotEnded(id) {
             if (PopoutService.settingsModal?.shouldBeVisible ?? false)
                 return;

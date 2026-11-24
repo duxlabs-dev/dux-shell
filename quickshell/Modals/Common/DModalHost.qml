@@ -33,6 +33,7 @@ Item {
     readonly property real screenHeight: effectiveScreen?.height ?? 1080
     readonly property real dpr: effectiveScreen ? CompositorService.getScreenScale(effectiveScreen) : 1
     property bool showBackground: modalHandle.showBackground
+    property bool showSurface: modalHandle.showSurface
     property real backgroundOpacity: modalHandle.backgroundOpacity
     property string positioning: modalHandle.positioning
     property point customPosition: modalHandle.customPosition
@@ -52,7 +53,7 @@ Item {
     readonly property string resolvedConnectedBarSide: frameConnectedMode ? preferredConnectedBarSide : ""
 
     property bool _overStackedModal: false
-    readonly property bool frameOwnsConnectedChrome: frameConnectedMode && resolvedConnectedBarSide !== "" && !allowStacking && !_overStackedModal && effectiveModalLayer === WlrLayer.Top && CompositorService.canShareConnectedFrameChromeForScreen(effectiveScreen)
+    readonly property bool frameOwnsConnectedChrome: frameConnectedMode && showSurface && resolvedConnectedBarSide !== "" && !allowStacking && !_overStackedModal && effectiveModalLayer === WlrLayer.Top && CompositorService.canShareConnectedFrameChromeForScreen(effectiveScreen)
 
     function _dockOccupiesSide(side) {
         return SettingsData.dockOccupiesSide(root.effectiveScreen, side);
@@ -67,9 +68,9 @@ Item {
     property color borderColor: modalHandle.borderColor
     property real borderWidth: modalHandle.borderWidth
     property real cornerRadius: modalHandle.cornerRadius
-    readonly property color effectiveBackgroundColor: frameOwnsConnectedChrome ? Theme.connectedSurfaceColor : backgroundColor
+    readonly property color effectiveBackgroundColor: frameOwnsConnectedChrome ? Theme.connectedSurfaceColor : showSurface ? backgroundColor : "transparent"
     readonly property color effectiveBorderColor: frameOwnsConnectedChrome ? Theme.withAlpha(borderColor, 0) : borderColor
-    readonly property real effectiveBorderWidth: frameOwnsConnectedChrome ? 0 : borderWidth
+    readonly property real effectiveBorderWidth: frameOwnsConnectedChrome || !showSurface ? 0 : borderWidth
     readonly property real effectiveCornerRadius: frameOwnsConnectedChrome ? Theme.connectedSurfaceRadius : cornerRadius
     property bool enableShadow: modalHandle.enableShadow
     property alias modalFocusScope: focusScope
@@ -93,7 +94,7 @@ Item {
     property real frozenMotionOffsetY: 0
     readonly property alias contentWindow: contentWindow
     readonly property bool useHyprlandFocusGrab: CompositorService.useHyprlandFocusGrab
-    readonly property bool useBackground: !connected && showBackground && !FrameTransitionState.effectiveFrameEnabled && SettingsData.modalDarkenBackground
+    readonly property bool useBackground: showBackground && (!showSurface || (!connected && !FrameTransitionState.effectiveFrameEnabled && SettingsData.modalDarkenBackground))
 
     signal opened
     signal dialogClosed
@@ -489,7 +490,7 @@ Item {
 
         WindowBlur {
             targetWindow: contentWindow
-            blurEnabled: !root.frameOwnsConnectedChrome && !root.dragPassthrough
+            blurEnabled: root.showSurface && !root.frameOwnsConnectedChrome && !root.dragPassthrough
             surfaceColor: root.effectiveBackgroundColor
             readonly property real s: Math.min(1, modalContainer.scaleValue)
             readonly property real op: Math.max(0, Math.min(1, (morph.value - 0.06) * 2))
@@ -582,7 +583,8 @@ Item {
                 readonly property bool slide: root.animationType === "slide"
                 readonly property bool directionalEffect: Theme.isDirectionalEffect
                 readonly property bool depthEffect: Theme.isDepthEffect
-                readonly property real directionalTravel: Math.max(root.animationOffset, Math.max(root.alignedWidth, root.alignedHeight) * 0.8)
+                // A surface-less modal spans most of the screen, so travel by its size would start it off-screen.
+                readonly property real directionalTravel: root.showSurface ? Math.max(root.animationOffset, Math.max(root.alignedWidth, root.alignedHeight) * 0.8) : root.animationOffset
                 readonly property real depthTravel: Math.max(root.animationOffset * 0.8, 36)
                 readonly property real customAnchorX: root.alignedX + root.alignedWidth * 0.5
                 readonly property real customAnchorY: root.alignedY + root.alignedHeight * 0.5
@@ -745,7 +747,7 @@ Item {
                             targetColor: root.frameOwnsConnectedChrome ? Theme.withAlpha(root.effectiveBackgroundColor, 0) : root.effectiveBackgroundColor
                             borderColor: root.frameOwnsConnectedChrome ? Theme.withAlpha(root.effectiveBorderColor, 0) : root.effectiveBorderColor
                             borderWidth: root.frameOwnsConnectedChrome ? 0 : root.effectiveBorderWidth
-                            shadowEnabled: !root.frameOwnsConnectedChrome && root.enableShadow && Theme.elevationEnabled && SettingsData.modalElevationEnabled && Quickshell.env("DMS_DISABLE_LAYER") !== "true" && Quickshell.env("DMS_DISABLE_LAYER") !== "1"
+                            shadowEnabled: root.showSurface && !root.frameOwnsConnectedChrome && root.enableShadow && Theme.elevationEnabled && SettingsData.modalElevationEnabled && Quickshell.env("DMS_DISABLE_LAYER") !== "true" && Quickshell.env("DMS_DISABLE_LAYER") !== "1"
                         }
 
                         Rectangle {
@@ -759,7 +761,7 @@ Item {
                             radius: root.effectiveCornerRadius
                             color: "transparent"
                             border.color: root.frameOwnsConnectedChrome ? Theme.withAlpha(BlurService.borderColor, 0) : BlurService.borderColor
-                            border.width: root.frameOwnsConnectedChrome ? 0 : BlurService.borderWidth
+                            border.width: root.frameOwnsConnectedChrome || !root.showSurface ? 0 : BlurService.borderWidth
                             z: 100
                         }
 
