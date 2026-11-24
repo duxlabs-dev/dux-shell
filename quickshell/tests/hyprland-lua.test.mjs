@@ -97,6 +97,11 @@ test("outputs: a monitors.json profile key is written as desc: so Hyprland match
     const names = content.split("\n").map(line => line.match(/output = "([^"]*)"/)?.[1]).filter(name => name);
     assert.deepEqual(names, ["desc:Dell Inc. DELL U2720Q ABC123", "desc:LG Electronics LG ULTRAGEAR", "eDP-1"]);
     assert.ok(monitorLine(content, "desc:Dell Inc. DELL U2720Q ABC123").includes("bitdepth = 10"), content);
+
+    const twin = name => profile(name, "LG Electronics", "LG TV SSCR2", "0x01010101");
+    const twins = scope.buildOutputsLua({ "HDMI-A-1": twin("HDMI-A-1"), "HDMI-A-2": twin("HDMI-A-2") }, { "HDMI-A-2": { disabled: true } }, saved);
+    assert.ok(twins.includes('hl.monitor({ output = "HDMI-A-2", disabled = true })'), twins);
+    assert.ok(!twins.includes("desc:"), twins);
 });
 
 test("outputs: vrr is written only for a chosen mode, so untouched monitors inherit misc:vrr", () => {
