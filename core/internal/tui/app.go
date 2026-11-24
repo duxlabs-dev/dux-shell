@@ -29,6 +29,7 @@ type Model struct {
 	logMessages         []string
 	logChan             chan string
 	logFilePath         string
+	greeterSetupFailed  bool
 	packageProgressChan chan packageInstallProgressMsg
 	packageProgress     packageInstallProgressMsg
 	installationLogs    []string

@@ -83,6 +83,7 @@ Singleton {
     signal liveChanged
     signal profileImported(string id)
     signal screenshotEnded(string id)
+    signal pickerToggleRequested
 
     on_WantedChanged: _start()
     Component.onCompleted: _start()
@@ -946,6 +947,15 @@ Singleton {
     }
 
     IpcHandler {
+        function toggle(): string {
+            if (!root._ipcReady())
+                return "ERROR: Profiles are not loaded yet";
+            if (!root.profiles.length)
+                return "ERROR: No profiles";
+            root.pickerToggleRequested();
+            return "SUCCESS: Toggled the profile picker";
+        }
+
         function list(): string {
             if (!root._ipcReady())
                 return "ERROR: Profiles are not loaded yet";

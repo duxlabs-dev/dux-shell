@@ -321,7 +321,12 @@ func (m Model) runPostInstallTasks() {
 			m.reportProgress(0.94, "Configuring DMS greeter...", line)
 		}
 		if err := utils.RunDmsGreeterInstall(m.sudoPassword, logLine); err != nil {
-			m.reportProgress(0.96, "Greeter setup warning", fmt.Sprintf("⚠ Greeter auto-setup warning (non-fatal): %v", err))
+			m.packageProgressChan <- packageInstallProgressMsg{
+				progress:      0.96,
+				step:          "Greeter setup failed",
+				logOutput:     fmt.Sprintf("✗ Greeter setup failed: %v", err),
+				greeterFailed: true,
+			}
 		}
 	}
 

@@ -5,6 +5,7 @@ import qs.Common
 import qs.DCommon.Common
 import qs.Modules.ControlCenter
 import "../../../DCommon/Widgets/ScrollConstants.js" as Scroll
+import "../../../DCommon/Common/WheelInput.js" as WheelInput
 
 Item {
     id: root
@@ -127,7 +128,7 @@ Item {
             touchpadBy(event);
             return;
         }
-        if (Math.abs(event.angleDelta.x) <= Math.abs(event.angleDelta.y)) {
+        if (!WheelInput.isHorizontal(event)) {
             event.accepted = false;
             return;
         }
@@ -135,7 +136,7 @@ Item {
         wheelQuietUntil = Date.now() + CcMetrics.pageWheelQuietMs;
         if (swipe.active || !quiet)
             return;
-        goTo(currentIndex + (event.angleDelta.x > 0 ? -1 : 1) * (I18n.isRtl ? -1 : 1));
+        goTo(currentIndex + (WheelInput.dominantDelta(event.angleDelta) > 0 ? -1 : 1) * (I18n.isRtl ? -1 : 1));
     }
 
     function touchpadBy(event) {

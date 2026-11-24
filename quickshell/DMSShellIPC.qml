@@ -376,24 +376,11 @@ Item {
         target: "annotate"
     }
 
-    function dashIslandActivity(tabId) {
-        switch (tabId) {
-        case "overview":
-            return "home";
-        case "media":
-        case "wallpaper":
-        case "weather":
-            return tabId;
-        default:
-            return "";
-        }
-    }
-
     function routeDashToIsland(tabId, toggle) {
-        const activity = dashIslandActivity(tabId);
-        if (activity === "")
+        const screen = CompositorService.getFocusedScreen();
+        if (!PopoutService.dashRoutesToIsland(tabId, screen))
             return false;
-        return PopoutService.routeToIsland(activity, null, toggle);
+        return PopoutService.routeToIsland(PopoutService.dashIslandActivity(tabId), screen, toggle);
     }
 
     function resolveDashPosition(position) {
@@ -465,7 +452,7 @@ Item {
         }
 
         function close(): string {
-            const islandClosed = [...SettingsData.islandDashActivities, "wellbeing"].filter(activity => PopoutService.closeIslandActivity(activity)).length > 0;
+            const islandClosed = [...SettingsData.islandDashActivities, "wellbeing", "profiles"].filter(activity => PopoutService.closeIslandActivity(activity)).length > 0;
             if (root.dankDashPopoutLoaderRef.item)
                 root.dankDashPopoutLoaderRef.item.dashVisible = false;
             return islandClosed || root.dankDashPopoutLoaderRef.item ? "DASH_CLOSE_SUCCESS" : "DASH_CLOSE_FAILED";

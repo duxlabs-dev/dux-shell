@@ -25,7 +25,7 @@ Singleton {
     id: root
     readonly property var log: Log.scoped("SettingsData")
 
-    readonly property int settingsConfigVersion: 46
+    readonly property int settingsConfigVersion: 47
 
     enum Position {
         Top,
@@ -494,6 +494,7 @@ Singleton {
     property bool greeterEnableU2f: Spec.SPEC.greeterEnableU2f.def
 
     property string browserPickerViewMode: Spec.SPEC.browserPickerViewMode.def
+    property string configProfilePickerView: Spec.SPEC.configProfilePickerView.def
     property string appPickerViewMode: Spec.SPEC.appPickerViewMode.def
     property bool sortAppsAlphabetically: Spec.SPEC.sortAppsAlphabetically.def
     property int appLauncherGridColumns: Spec.SPEC.appLauncherGridColumns.def
@@ -561,6 +562,10 @@ Singleton {
         },
         {
             "id": "notifications",
+            "enabled": false
+        },
+        {
+            "id": "profiles",
             "enabled": false
         },
         {
@@ -3355,6 +3360,7 @@ Singleton {
         case "launcher":
             return "islandRouteLauncher";
         case "home":
+        case "profiles":
             return "islandRouteDash";
         case "media":
             return "islandRouteMedia";

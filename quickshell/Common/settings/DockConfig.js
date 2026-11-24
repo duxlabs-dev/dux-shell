@@ -293,6 +293,19 @@ function unitList(widgets, pins, order) {
     return result;
 }
 
+function replacePinSlot(widgets, apps, order, replaced, removed, replacementIds) {
+    const replacedUnit = pinUnit(replaced);
+    const removedUnit = removed ? pinUnit(removed) : "";
+    const next = [];
+    for (const unit of unitList(widgets, pinUnits(apps), order)) {
+        if (unit === replacedUnit)
+            next.push(...replacementIds.map(id => "pin:" + id));
+        else if (unit !== removedUnit)
+            next.push(unit);
+    }
+    return next;
+}
+
 function widgetOrder(widgets, order) {
     return unitList(widgets, [], (order || []).filter(id => !id.startsWith("pin:")));
 }

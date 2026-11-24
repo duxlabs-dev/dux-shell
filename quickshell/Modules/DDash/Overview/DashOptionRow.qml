@@ -1,5 +1,4 @@
 import QtQuick
-import qs.Common
 import qs.DCommon.Widgets
 import qs.Widgets
 import qs.Modules.Settings.Widgets
@@ -23,6 +22,7 @@ SettingsRow {
     title: spec.text ?? spec.key
     subtitle: spec.description ?? ""
     clickable: spec.type === "toggle"
+    trailingOnTitleLine: spec.type === "slider"
     onClicked: commit(value !== true)
 
     Loader {
@@ -36,13 +36,14 @@ SettingsRow {
             case "number":
                 return numberControl;
             case "slider":
-                return sliderLabel;
+                return sliderBody.item ? sliderLabel : null;
             }
             return null;
         }
     }
 
     body: Loader {
+        id: sliderBody
         width: parent?.width ?? 0
         active: root.spec.type === "slider"
         sourceComponent: sliderControl
@@ -98,11 +99,9 @@ SettingsRow {
     Component {
         id: sliderLabel
 
-        StyledText {
-            visible: root.value === root.spec.min
-            text: root.spec.minimumLabel ?? ""
-            font.pixelSize: Theme.fontSizeSmall
-            color: Theme.surfaceVariantText
+        SettingsSliderValue {
+            slider: sliderBody.item
+            minimumLabel: root.spec.minimumLabel ?? ""
         }
     }
 
@@ -114,7 +113,6 @@ SettingsRow {
             minimum: root.spec.min
             maximum: root.spec.max
             step: root.spec.step
-            showValue: root.value !== root.spec.min
             accessibleName: root.title
             onSliderValueChanged: newValue => root.commit(newValue)
         }

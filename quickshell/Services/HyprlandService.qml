@@ -174,7 +174,7 @@ Singleton {
 
     function getOutputIdentifier(output, outputName) {
         if (output.explicitIdentifier)
-            return OutputModel.hyprlandProfileOutputIdentifier(output, outputName, !!liveMonitor(outputName));
+            return OutputModel.hyprlandProfileOutputIdentifier(output, outputName);
         return OutputModel.hyprlandIdentifier(output, outputName, SettingsData.displayNameMode);
     }
 

@@ -31,7 +31,7 @@ function niriState(scenario) {
     const s = fixture("niri")[scenario];
     const toplevels = s.toplevels.map(t => ({ ...t }));
     const window = id => s.windows.find(w => w.id === id);
-    const sorted = s.sortedToplevels.map(st => ({ niriWindowId: st.niriWindowId, niriWorkspaceId: st.niriWorkspaceId, appId: window(st.niriWindowId).app_id, title: window(st.niriWindowId).title, sourceToplevel: st.toplevel === undefined ? undefined : toplevels[st.toplevel] }));
+    const sorted = s.sortedToplevels.map(st => ({ niriWindowId: st.niriWindowId, niriWorkspaceId: st.niriWorkspaceId, appId: window(st.niriWindowId).app_id, title: window(st.niriWindowId).title, maximized: toplevels[st.toplevel]?.maximized, sourceToplevel: st.toplevel === undefined ? undefined : toplevels[st.toplevel] }));
     return { ...s, toplevels, sorted, screens: fixture("niri").screens };
 }
 
@@ -112,6 +112,16 @@ function mangoOverlap(s, screenName, position) {
 
 function mangoMaximized(s, screenName) {
     return facade("mango", { MangoService: { windows: s.windows, outputs: s.outputs } }).maximizedWindowOnScreen(screenName);
+}
+
+function niriMaximized(s, activeWindowId) {
+    const allWorkspaces = s.allWorkspaces.map(ws => ({ ...ws, active_window_id: activeWindowId }));
+    const context = facade("niri", {
+        sortedToplevels: s.sorted,
+        NiriService: { windows: s.windows, allWorkspaces },
+        filterCurrentWorkspace: (list, screenName) => list.filter(t => allWorkspaces.some(ws => ws.id === t.niriWorkspaceId && ws.output === screenName && ws.is_active))
+    });
+    return context.maximizedWindowOnScreen("DP-1");
 }
 
 test("niri active window: focused window on the bar's screen wins, foreign active toplevels keep an alive previous window", () => {
@@ -202,4 +212,11 @@ test("mango: pid by window id, overlap and maximized only count visible windows 
     assert.equal(mangoMaximized(m.twoOutputs, "DP-2"), true);
     assert.equal(mangoMaximized(m.maximizedActive, "DP-1"), true);
     assert.deepEqual(positions.map(p => mangoOverlap(m.maximizedActive, "DP-1", p)), [true, true, true, true]);
+});
+
+test("niri maximized: counts while its column is viewed or a floating window is focused over it", () => {
+    const s = niriState("maximized");
+    assert.equal(niriMaximized(s, 10), true);
+    assert.equal(niriMaximized(s, 11), false);
+    assert.equal(niriMaximized(s, 12), true);
 });

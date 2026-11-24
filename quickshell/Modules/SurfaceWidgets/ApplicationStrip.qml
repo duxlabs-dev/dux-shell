@@ -5,6 +5,8 @@ import qs.Services
 import qs.Modules.Dock
 import qs.Widgets
 import "../../Common/settings/DockConfig.js" as DockConfig
+import "../../Common/settings/DockPins.js" as DockPins
+import "../../Common/settings/AppFolders.js" as AppFolders
 import "ApplicationModel.js" as ApplicationModel
 
 Item {
@@ -15,22 +17,171 @@ Item {
     property bool renderItems: true
     property var mixedStrip: null
     property int mixedDropIndex: -1
+    property int folderDropIndex: -1
+    property int folderCandidate: -1
+    property string pendingFolderRename: ""
     onDraggedIndexChanged: {
         if (draggedIndex >= 0)
             return;
         mixedDropIndex = -1;
+        folderDropIndex = -1;
+        folderCandidate = -1;
+        folderDwell.stop();
+        contextMenu?.clearFolderDrop();
         mixedStrip?.cancelDrag();
         modelUpdate.schedule();
     }
     function updateMixedDrag(item, x, y) {
         if (!mixedStrip)
             return;
-        mixedDropIndex = mixedStrip.dropIndex(item, x, y, entry => entry.appData?.isPinned === true && !["launcher", "overflow-toggle"].includes(entry.appData.type));
+        const source = items[draggedIndex]?.folderDropItem;
+        const openFolderId = source?.type === "app" ? contextMenu?.updateFolderDrop(item, x, y) : "";
+        let candidate = -1;
+        if (openFolderId) {
+            folderDwell.stop();
+            folderCandidate = -1;
+            folderDropIndex = items.findIndex(entry => entry.folderDropItem?.id === openFolderId);
+        } else {
+            if (source?.type === "app") {
+                const center = mixedStrip.centerDropIndex(item, x, y, entry => {
+                    const action = AppFolders.dropAction(source, entry.appData?.folderDropItem);
+                    return action === "add" || action === "create";
+                });
+                candidate = mixedStrip.model[center]?.appIndex ?? -1;
+            }
+            // Grouping waits for a short hover so sweeping across pins still reorders.
+            if (candidate !== folderCandidate) {
+                folderCandidate = candidate;
+                folderDropIndex = -1;
+                if (candidate >= 0)
+                    folderDwell.restart();
+                else
+                    folderDwell.stop();
+            }
+        }
+        // Over a pin's center the order holds still, so the pin stays under the pointer.
+        if (folderDropIndex < 0 && candidate < 0)
+            mixedDropIndex = mixedStrip.dropIndex(item, x, y, entry => DockConfig.isPinnedApp(entry.appData ?? {}));
         mixedStrip.draggingIndex = mixedStrip.appSlot(draggedIndex);
         mixedStrip.targetIndex = mixedDropIndex;
     }
+    function finishDrag(from, to) {
+        const sourceId = items[from]?.folderDropItem?.id;
+        const targetId = items[folderDropIndex]?.folderDropItem?.id;
+        if (sourceId && targetId) {
+            // Applying a folder drop can destroy the button delivering the release.
+            folderDrop.sourceId = sourceId;
+            folderDrop.targetId = targetId;
+            folderDrop.schedule();
+            return;
+        }
+        if (from !== to && to >= 0)
+            settleDrag(() => movePinnedApp(from, to));
+    }
+    // Cleared after the folder button reacts, not inside its change handler.
+    readonly property DeferredAction renameHandoff: DeferredAction {
+        onTriggered: root.pendingFolderRename = ""
+    }
+    Timer {
+        id: folderDwell
+        interval: Timing.settle
+        onTriggered: {
+            if (root.draggedIndex >= 0)
+                root.folderDropIndex = root.folderCandidate;
+        }
+    }
+    DeferredAction {
+        id: folderDrop
+        property string sourceId
+        property string targetId
+        onTriggered: root.applyFolderDrop(sourceId, targetId)
+    }
+    function applyFolderDrop(sourceId, targetId) {
+        const pins = pinnedApps;
+        const next = DockPins.drop(pins, sourceId, targetId, I18n.tr("Folder"));
+        if (next === pins)
+            return;
+        const target = pins.find(pin => DockPins.id(pin) === targetId);
+        const folder = DockPins.isFolder(target) ? target : AppFolders.folderForApp(next, targetId);
+        updateFolderPins(next, targetId, [folder], sourceId);
+    }
+    function updateFolderPins(next, replacedId, replacement, removedId = "") {
+        const config = surfaceContext.config;
+        if (config.order?.length) {
+            const slots = items.filter(DockConfig.isPinnedApp);
+            const replaced = slots.find(item => item.folderDropItem?.id === replacedId);
+            const removed = slots.find(item => item.folderDropItem?.id === removedId);
+            if (replaced) {
+                const order = DockConfig.replacePinSlot(config.widgets, slots, config.order, replaced, removed, replacement.map(pin => {
+                    const id = DockPins.id(pin);
+                    return DockPins.isFolder(pin) ? id : Paths.moddedAppId(id);
+                }));
+                SettingsData.updateDockConfig(config.id, { order });
+            }
+        }
+        setPinnedApps(next);
+    }
+    function folderForApp(appId) {
+        return AppFolders.folderForApp(pinnedApps, dockPinForApp(appId));
+    }
+    function createFolderFor(appId) {
+        const pin = dockPinForApp(appId) || appId;
+        const pins = pinnedApps;
+        const next = DockPins.create(pins, pin, I18n.tr("Folder"));
+        if (next === pins)
+            return;
+        const folder = AppFolders.folderForApp(next, pin);
+        pendingFolderRename = folder.id;
+        if (pins.includes(pin))
+            updateFolderPins(next, pin, [folder]);
+        else
+            setPinnedApps(next);
+    }
+    function addAppToFolder(folderId, appId) {
+        const pin = dockPinForApp(appId) || appId;
+        if (pinnedApps.includes(pin)) {
+            applyFolderDrop(pin, "folder:" + folderId);
+            return;
+        }
+        const pins = pinnedApps;
+        const next = AppFolders.addApp(pins, folderId, pin);
+        if (next !== pins)
+            setPinnedApps(next);
+    }
+    function removeAppFromFolder(appId) {
+        const pin = dockPinForApp(appId);
+        const folder = AppFolders.folderForApp(pinnedApps, pin);
+        if (folder)
+            extractFolderApp(folder.id, pin);
+    }
+    function extractFolderApp(folderId, appId) {
+        const pins = pinnedApps;
+        const next = DockPins.extract(pins, folderId, appId);
+        if (next === pins)
+            return;
+        const folder = AppFolders.folderById(next, folderId);
+        updateFolderPins(next, "folder:" + folderId, folder ? [folder, appId] : [appId]);
+    }
+    function dissolveFolder(folderId) {
+        const pins = pinnedApps;
+        const folder = AppFolders.folderById(pins, folderId);
+        if (folder)
+            updateFolderPins(DockPins.dissolve(pins, folderId), DockPins.id(folder), folder.apps);
+    }
+    function renameFolder(folderId, name) {
+        const pins = pinnedApps;
+        const next = AppFolders.renameFolder(pins, folderId, name);
+        if (next !== pins)
+            setPinnedApps(next);
+    }
+    function moveFolderApp(folderId, sourceId, targetId) {
+        const pins = pinnedApps;
+        const next = AppFolders.moveAppById(pins, folderId, sourceId, targetId);
+        if (next !== pins)
+            setPinnedApps(next);
+    }
     function dropTarget(localTarget) {
-        return mixedStrip?.model[mixedDropIndex]?.appIndex ?? localTarget;
+        return mixedStrip ? (mixedStrip.model[mixedDropIndex]?.appIndex ?? -1) : localTarget;
     }
     readonly property var items: repeater.dockItems
     property int desktopRevision: 0
@@ -38,7 +189,7 @@ Item {
         desktopRevision;
         const entries = {};
         for (const item of items) {
-            if (item.isCoreApp || !item.appId || item.appId.startsWith("__") || item.appId in entries)
+            if (item.isCoreApp || item.type === "folder" || !item.appId || item.appId.startsWith("__") || item.appId in entries)
                 continue;
             entries[item.appId] = DesktopEntries.heuristicLookup(item.appId);
         }
@@ -67,14 +218,61 @@ Item {
             SessionData.setDockPins(surfaceContext.configId, apps);
     }
     function isPinnedApp(id) {
-        return pinnedApps.includes(id);
+        return barHosted ? pinnedApps.includes(id) : dockPinForApp(id) !== "";
+    }
+    function dockPinForApp(id) {
+        if (DockPins.contains(pinnedApps, id))
+            return id;
+        for (const pin of pinnedApps) {
+            const apps = DockPins.isFolder(pin) ? pin.apps : [pin];
+            const match = apps.find(app => Paths.moddedAppId(app) === id);
+            if (match)
+                return match;
+        }
+        return "";
     }
     function addPinnedApp(id) {
         if (id && !isPinnedApp(id))
             setPinnedApps(pinnedApps.concat([id]));
     }
     function removePinnedApp(id) {
-        setPinnedApps(pinnedApps.filter(app => app !== id));
+        if (barHosted)
+            setPinnedApps(pinnedApps.filter(app => app !== id));
+        else
+            SessionData.setDockAppPinned(surfaceContext.configId, dockPinForApp(id), false);
+    }
+    function folderMembers(folder, limit = folder.apps.length) {
+        desktopRevision;
+        return folder.apps.slice(0, limit).map(id => {
+            const appId = Paths.moddedAppId(id);
+            const core = searchCoreApps.find(app => app.builtInPluginId === appId);
+            const entry = core ? null : DesktopEntries.heuristicLookup(appId);
+            return {
+                id,
+                appId,
+                name: core?.name ?? Paths.getAppName(appId, entry),
+                icon: core?.icon ?? "",
+                iconSource: core ? "" : Paths.getAppIcon(appId, entry),
+                core,
+                entry
+            };
+        });
+    }
+    function launchApp(appId, core, entry) {
+        if (core) {
+            AppSearchService.executeCoreApp(core);
+            return;
+        }
+        if (!entry)
+            return;
+        AppUsageHistoryData.addAppUsage({
+            id: appId,
+            name: entry.name || appId,
+            icon: entry.icon ? String(entry.icon) : "",
+            exec: entry.exec || "",
+            comment: entry.comment || ""
+        });
+        SessionService.launchDesktopEntry(entry);
     }
     function settleDrag(apply) {
         suppressShiftAnimation = true;
@@ -214,14 +412,23 @@ Item {
                     const appGroups = new Map();
                     const showRunning = root.options.showRunningApps !== false;
                     const separatePinnedAndRunning = root.options.separatePinnedAndRunningApps && showRunning;
+                    const folderOwners = separatePinnedAndRunning ? new Map() : ApplicationModel.folderOwners(pinnedApps, Paths.moddedAppId);
 
                     if (!separatePinnedAndRunning) {
                         pinnedApps.forEach(rawAppId => {
+                            if (DockPins.isFolder(rawAppId)) {
+                                appGroups.set(DockPins.id(rawAppId), {
+                                    folder: rawAppId,
+                                    windows: []
+                                });
+                                return;
+                            }
                             const appId = Paths.moddedAppId(rawAppId);
                             const coreAppData = getCoreAppData(appId);
                             appGroups.set(appId, {
                                 appId: appId,
                                 isPinned: true,
+                                pinId: rawAppId,
                                 windows: [],
                                 isCoreApp: coreAppData !== null,
                                 coreAppData: coreAppData
@@ -233,6 +440,14 @@ Item {
                         const identity = ApplicationModel.windowIdentity(toplevel, Paths.moddedAppId(toplevel.appId || "unknown"), AppSearchService.coreApps || []);
                         const appId = identity.appId;
                         const coreAppData = identity.coreAppData;
+                        const folderKey = folderOwners.get(appId);
+                        if (folderKey) {
+                            appGroups.get(folderKey).windows.push({
+                                toplevel,
+                                appId
+                            });
+                            return;
+                        }
 
                         if (!appGroups.has(appId)) {
                             appGroups.set(appId, {
@@ -253,6 +468,10 @@ Item {
                     const unpinnedGroups = [];
 
                     appGroups.forEach((group, appId) => {
+                        if (group.folder) {
+                            pinnedGroups.push(ApplicationModel.folderItem(appId, group.folder, group.windows));
+                            return;
+                        }
                         const firstWindow = group.windows.length > 0 ? group.windows[0] : null;
                         const item = {
                             uniqueKey: "grouped_" + appId,
@@ -260,6 +479,7 @@ Item {
                             appId: appId,
                             toplevel: firstWindow ? firstWindow.toplevel : null,
                             isPinned: group.isPinned,
+                            folderDropItem: group.pinId ? { id: group.pinId, type: "app" } : null,
                             isRunning: group.windows.length > 0,
                             windowCount: group.windows.length,
                             allWindows: group.windows,
@@ -272,9 +492,13 @@ Item {
 
                     if (separatePinnedAndRunning) {
                         pinnedApps.forEach(rawAppId => {
+                            if (DockPins.isFolder(rawAppId)) {
+                                pinnedGroups.push(ApplicationModel.folderItem(DockPins.id(rawAppId), rawAppId));
+                                return;
+                            }
                             const appId = Paths.moddedAppId(rawAppId);
                             const coreAppData = getCoreAppData(appId);
-                            pinnedGroups.push(ApplicationModel.pinnedItem(appId, coreAppData, false));
+                            pinnedGroups.push(ApplicationModel.pinnedItem(appId, coreAppData, false, rawAppId));
                         });
                     }
 
@@ -325,13 +549,25 @@ Item {
                         runningAppIds.add(finalAppId);
                     });
 
-                    const remainingWindowItems = windowItems.slice();
+                    let remainingWindowItems = windowItems.slice();
 
                     pinnedApps.forEach(rawAppId => {
+                        if (DockPins.isFolder(rawAppId)) {
+                            const folderId = DockPins.id(rawAppId);
+                            if (separatePinnedAndRunning) {
+                                items.push(ApplicationModel.folderItem(folderId, rawAppId));
+                                return;
+                            }
+                            const owners = ApplicationModel.folderOwners([rawAppId], Paths.moddedAppId);
+                            const windows = remainingWindowItems.filter(item => owners.has(item.appId));
+                            remainingWindowItems = remainingWindowItems.filter(item => !owners.has(item.appId));
+                            items.push(ApplicationModel.folderItem(folderId, rawAppId, windows));
+                            return;
+                        }
                         const appId = Paths.moddedAppId(rawAppId);
                         const coreAppData = getCoreAppData(appId);
                         if (separatePinnedAndRunning) {
-                            items.push(ApplicationModel.pinnedItem(appId, coreAppData, false));
+                            items.push(ApplicationModel.pinnedItem(appId, coreAppData, false, rawAppId));
                             return;
                         }
 
@@ -340,6 +576,7 @@ Item {
                         if (matchIndex !== -1) {
                             const windowItem = remainingWindowItems.splice(matchIndex, 1)[0];
                             windowItem.isPinned = true;
+                            windowItem.folderDropItem = { id: rawAppId, type: "app" };
                             windowItem.uniqueKey = "pinned_" + appId;
                             if (!windowItem.isCoreApp && coreAppData) {
                                 windowItem.isCoreApp = true;
@@ -347,7 +584,7 @@ Item {
                             }
                             items.push(windowItem);
                         } else {
-                            items.push(ApplicationModel.pinnedItem(appId, coreAppData, runningAppIds.has(appId)));
+                            items.push(ApplicationModel.pinnedItem(appId, coreAppData, runningAppIds.has(appId), rawAppId));
                         }
                     });
 

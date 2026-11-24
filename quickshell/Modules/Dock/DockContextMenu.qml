@@ -4,6 +4,8 @@ import qs.Common
 import qs.Services
 import qs.Widgets
 import qs.DCommon.Widgets
+import "../../Common/settings/DockPins.js" as DockPins
+import "../../Common/settings/AppFolders.js" as AppFolders
 
 DockContextMenuBase {
     id: root
@@ -12,18 +14,51 @@ DockContextMenuBase {
     property bool hidePin: false
     property var desktopEntry: null
     property var dockApps: null
+    readonly property bool appPinned: appData?.isPinned === true || (!dockApps?.barHosted && dockApps?.isPinnedApp(appData?.appId) === true)
     readonly property bool isDmsWindow: Paths.isDmsAppId(appData?.appId)
     readonly property var settingsJumpGroups: visible && appData?.appId === "dms_settings" ? buildSettingsJumpGroups() : []
+    property bool foldersExpanded: false
+    readonly property var folderActions: visible && !hidePin && dockApps && !dockApps.barHosted && appData?.appId ? buildFolderActions(appData.appId) : []
 
     layerNamespace: "dms:dock-context-menu"
 
     function showForButton(button, data, dockHeight, hidePinOption, entry, dockScreen, parentDockApps) {
         appData = Qt.binding(() => button?.appData ?? null);
         hidePin = hidePinOption || false;
+        foldersExpanded = false;
         desktopEntry = entry || null;
         dockApps = parentDockApps || null;
         options = dockApps?.options ?? ({});
         show(button, dockHeight, dockScreen);
+    }
+
+    function buildFolderActions(appId) {
+        const strip = dockApps;
+        if (strip.folderForApp(appId))
+            return [
+                {
+                    icon: "folder_off",
+                    text: I18n.tr("Remove from folder"),
+                    action: () => strip.removeAppFromFolder(appId)
+                }
+            ];
+        return [
+            {
+                icon: "create_new_folder",
+                text: I18n.tr("Create folder"),
+                action: () => strip.createFolderFor(appId)
+            }
+        ].concat(AppFolders.addToFolderEntries(strip.pinnedApps.filter(DockPins.isFolder), {
+            header: I18n.tr("Add to folder"),
+            label: folder => I18n.tr("Add to %1").arg(folder.name || I18n.tr("Folder")),
+            indent: Theme.spacingS,
+            expanded: root.foldersExpanded,
+            toggle: () => {
+                root.holdPosition();
+                root.foldersExpanded = !root.foldersExpanded;
+            },
+            add: folder => strip.addAppToFolder(folder.id, appId)
+        }));
     }
 
     function buildSettingsJumpGroups() {
@@ -299,7 +334,7 @@ DockContextMenuBase {
             anchors.left: parent.left
             anchors.leftMargin: Theme.spacingS
             anchors.verticalCenter: parent.verticalCenter
-            name: root.appData && root.appData.isPinned ? "keep_off" : "push_pin"
+            name: root.appPinned ? "keep_off" : "push_pin"
             size: 14
             color: Theme.surfaceText
             opacity: 0.7
@@ -312,7 +347,7 @@ DockContextMenuBase {
             anchors.right: parent.right
             anchors.rightMargin: Theme.spacingS
             anchors.verticalCenter: parent.verticalCenter
-            text: root.appData && root.appData.isPinned ? I18n.tr("Unpin from Dock") : I18n.tr("Pin to Dock")
+            text: root.appPinned ? I18n.tr("Unpin from Dock") : I18n.tr("Pin to Dock")
             font.pixelSize: Theme.fontSizeSmall
             color: Theme.surfaceText
             font.weight: Theme.fontWeight
@@ -336,13 +371,48 @@ DockContextMenuBase {
                 if (!root.appData)
                     return;
 
-                if (root.appData.isPinned) {
+                if (root.appPinned) {
                     root.dockApps.removePinnedApp(root.appData.appId);
                 } else {
                     root.dockApps.addPinnedApp(root.appData.appId);
                 }
                 root.close();
             }
+        }
+    }
+
+    Repeater {
+        model: root.folderActions
+
+        DockTrashMenuItem {
+            id: folderActionItem
+            required property var modelData
+
+            width: parent.width
+            visible: !modelData.hidden
+            text: modelData.text
+            iconName: modelData.icon
+            trailingIcon: modelData.trailingIcon ?? ""
+            indent: modelData.indent ?? 0
+            onTriggered: {
+                if (folderActionItem.modelData.keepOpen) {
+                    folderActionItem.modelData.action();
+                    return;
+                }
+                root.folderAction.run = folderActionItem.modelData.action;
+                root.folderAction.schedule();
+                root.close();
+            }
+        }
+    }
+
+    // Deferred: running the action rebuilds the menu that triggered it.
+    property DeferredAction folderAction: DeferredAction {
+        property var run: null
+        onTriggered: {
+            const action = run;
+            run = null;
+            action?.();
         }
     }
 

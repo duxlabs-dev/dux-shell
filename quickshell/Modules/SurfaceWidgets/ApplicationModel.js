@@ -6,12 +6,34 @@ function windowIdentity(toplevel, appId, coreApps) {
     return { appId: core?.builtInPluginId ?? appId, coreAppData: core, isCoreApp: core !== null };
 }
 
-function pinnedItem(appId, coreAppData, isRunning) {
+function pinnedItem(appId, coreAppData, isRunning, pinId) {
     return {
         uniqueKey: "pinned_" + appId, type: "pinned", appId, toplevel: null,
         isPinned: true, isRunning: isRunning ?? false, isCoreApp: coreAppData !== null,
-        coreAppData, isInOverflow: false
+        coreAppData, isInOverflow: false, folderDropItem: { id: pinId, type: "app" }
     };
+}
+
+function folderItem(appId, folder, windows) {
+    const allWindows = windows ?? [];
+    return {
+        uniqueKey: appId, type: "folder", appId, folder,
+        isPinned: true, isRunning: allWindows.length > 0, isInOverflow: false,
+        allWindows, windowCount: allWindows.length,
+        folderDropItem: { id: appId, type: "folder" }
+    };
+}
+
+// Foldered apps count as pinned: their windows belong to the folder button.
+function folderOwners(pins, moddedAppId) {
+    const owners = new Map();
+    for (const pin of pins) {
+        if (!pin || !Array.isArray(pin.apps))
+            continue;
+        for (const app of pin.apps)
+            owners.set(moddedAppId(app), "folder:" + pin.id);
+    }
+    return owners;
 }
 
 function separator(key) {

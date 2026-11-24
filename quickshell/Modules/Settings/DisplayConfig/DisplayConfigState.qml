@@ -962,7 +962,7 @@ Singleton {
     }
 
     function filterDisconnectedOnly(parsedOutputs) {
-        return OutputModel.filterDisconnectedOnly(parsedOutputs, outputs, SettingsData.displayNameMode, CompositorService.compositor);
+        return OutputModel.filterDisconnectedOnly(parsedOutputs, outputs, CompositorService.compositor);
     }
 
     function parseOutputsConfig(content) {

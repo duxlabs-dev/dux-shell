@@ -1518,6 +1518,41 @@
     "conditionKey": "isHyprlandOrNiri"
   },
   {
+    "section": "wallpaperHideMismatched",
+    "label": "Hide wallpapers that don't fit the display",
+    "tabIndex": -1,
+    "category": "Appearance",
+    "keywords": [
+      "appearance",
+      "aspect",
+      "background",
+      "bg",
+      "colors",
+      "colour",
+      "colours",
+      "desktop",
+      "display",
+      "don't",
+      "fit",
+      "hide",
+      "hue",
+      "image",
+      "mismatch",
+      "monitor",
+      "output",
+      "palette",
+      "picture",
+      "ratio",
+      "resolution",
+      "screen",
+      "tint",
+      "wallpaper",
+      "wallpapers"
+    ],
+    "page": "personalization",
+    "conditionKey": "wallpaperFoldersAdded"
+  },
+  {
     "section": "notificationHistory",
     "label": "History",
     "tabIndex": -1,
@@ -12156,6 +12191,14 @@
     "optionFile": "NetworkMonitorOptions.qml"
   },
   {
+    "section": "barWidgetOption:NotificationButtonOptions.qml:1",
+    "label": "Hide when no notifications",
+    "tabIndex": 22,
+    "keywords": [],
+    "runtimeType": "barWidgetOption",
+    "optionFile": "NotificationButtonOptions.qml"
+  },
+  {
     "section": "barWidgetOption:SystemUpdateOptions.qml:1",
     "label": "Hide when no updates",
     "tabIndex": 22,
@@ -13913,6 +13956,7 @@
     "category": "Audio",
     "keywords": [
       "audio",
+      "balance",
       "device",
       "devices",
       "headphones",
@@ -21505,6 +21549,53 @@
     "parentLabel": "System & integrations",
     "icon": "description",
     "conditionKey": "isHyprlandOrNiri"
+  },
+  {
+    "section": "configProfilePicker",
+    "label": "Behavior",
+    "tabIndex": 75,
+    "category": "Profiles",
+    "keywords": [
+      "appearance",
+      "behavior",
+      "carousel",
+      "dash",
+      "dashboard",
+      "grid",
+      "island",
+      "keybind",
+      "picker",
+      "preset",
+      "profiles",
+      "setup",
+      "snapshot",
+      "switcher"
+    ],
+    "parentLabel": "Appearance",
+    "icon": "tune"
+  },
+  {
+    "section": "configProfilePickerView",
+    "label": "Profile picker",
+    "tabIndex": 75,
+    "category": "Profiles",
+    "keywords": [
+      "appearance",
+      "carousel",
+      "dash",
+      "dashboard",
+      "grid",
+      "island",
+      "keybind",
+      "picker",
+      "preset",
+      "profile",
+      "profiles",
+      "setup",
+      "snapshot",
+      "switcher"
+    ],
+    "parentLabel": "Appearance"
   },
   {
     "section": "_tab_75",

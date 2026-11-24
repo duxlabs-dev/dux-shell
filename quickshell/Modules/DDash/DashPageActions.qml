@@ -5,6 +5,7 @@ import qs.Common
 import qs.Modules.ControlCenter.Widgets
 import qs.Modules.DDash.Overview
 import "utils/cards.js" as CardUtils
+import "../../Common/EditHistory.js" as EditHistory
 
 Item {
     id: root
@@ -23,8 +24,8 @@ Item {
     property string editSnapshot: ""
     property string undoBase: ""
     property var undoStack: []
+    property bool batching: false
     readonly property bool canUndo: undoStack.length > 0
-    readonly property int undoLimit: 50
     readonly property var editKeys: ["dashCards", "dashOptions"]
 
     signal optionsRequested
@@ -37,27 +38,27 @@ Item {
     Component.onCompleted: beginEdit()
 
     function beginEdit() {
-        editSnapshot = editMode ? currentState() : "";
+        editSnapshot = editMode ? EditHistory.snapshot(SettingsData, editKeys) : "";
         undoBase = editSnapshot;
         undoStack = [];
     }
 
     function trackEdit() {
-        if (!editMode)
+        if (!editMode || batching)
             return;
-        const state = currentState();
+        const state = EditHistory.snapshot(SettingsData, editKeys);
         if (state === undoBase)
             return;
-        undoStack = undoStack.concat([undoBase]).slice(-undoLimit);
+        undoStack = EditHistory.push(undoStack, undoBase);
         undoBase = state;
     }
 
-    function applyState(state) {
-        const wanted = JSON.parse(state);
-        for (const key of editKeys) {
-            if (JSON.stringify(SettingsData[key]) !== JSON.stringify(wanted[key]))
-                SettingsData.set(key, wanted[key]);
-        }
+    // Keeps the intermediate states of a multi-write change out of the undo stack.
+    function batchEdit(change) {
+        batching = true;
+        change();
+        batching = false;
+        trackEdit();
     }
 
     function undo() {
@@ -65,19 +66,11 @@ Item {
             return;
         undoBase = undoStack[undoStack.length - 1];
         undoStack = undoStack.slice(0, -1);
-        applyState(undoBase);
-    }
-
-    function currentState() {
-        const state = {};
-        for (const key of editKeys)
-            state[key] = SettingsData[key];
-        return JSON.stringify(state);
+        batchEdit(() => EditHistory.restore(SettingsData, undoBase, editKeys));
     }
 
     function discard() {
-        if (editSnapshot !== "")
-            applyState(editSnapshot);
+        batchEdit(() => EditHistory.restore(SettingsData, editSnapshot, editKeys));
         finished();
     }
 
@@ -91,13 +84,14 @@ Item {
     }
 
     function reset() {
-        if (panelResizable)
-            DashRegistry.resetPanelSize(entryId);
-        if (entryId === DashRegistry.overviewId) {
-            CardUtils.resetToDefault();
-            return;
-        }
-        tabItem?.resetWidgets?.();
+        batchEdit(() => {
+            if (panelResizable)
+                DashRegistry.resetPanelSize(entryId);
+            if (entryId === DashRegistry.overviewId)
+                CardUtils.resetToDefault();
+            else
+                tabItem?.resetWidgets?.();
+        });
     }
 
     function clear() {
@@ -108,17 +102,16 @@ Item {
         tabItem?.clearWidgets?.();
     }
 
-    // Deferred, so a reset that writes both keys lands as one undo step.
     Connections {
         target: SettingsData
         enabled: root.editMode
 
         function onDashCardsChanged() {
-            Qt.callLater(root.trackEdit);
+            root.trackEdit();
         }
 
         function onDashOptionsChanged() {
-            Qt.callLater(root.trackEdit);
+            root.trackEdit();
         }
     }
 

@@ -1,3 +1,5 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
 import qs.Common
 import qs.DCommon.Widgets
@@ -36,9 +38,9 @@ Item {
     readonly property real contentInset: touchTargetSize / 2
     readonly property bool showOptionsButton: hasOptions
     readonly property bool keyboardFocused: removeButton.visualFocus || optionsButton.visualFocus
-    // Too narrow to sit beside the remove button: both move onto the top corners instead.
-    readonly property bool cornerButtons: hasOptions && width - contentInset * 2 < touchTargetSize * (1 + (removable ? 1 : 0) + (horizontalResize ? 1 : 0))
-    readonly property int chromeButtons: (removable ? 1 : 0) + (showOptionsButton && !cornerButtons ? 1 : 0)
+    // Remove and options sit on the 45° points of the start and end corners.
+    readonly property real startCornerOffset: cornerOffset(I18n.isRtl ? cornerRadii.y : cornerRadii.x)
+    readonly property real endCornerOffset: cornerOffset(I18n.isRtl ? cornerRadii.x : cornerRadii.y)
     readonly property rect hitBounds: Qt.rect(contentInset - hitOverflow, contentInset - hitOverflow, width - (contentInset - hitOverflow) * 2, height - (contentInset - hitOverflow) * 2)
 
     signal removeRequested
@@ -59,6 +61,25 @@ Item {
         height: Math.max(0, Math.min(target.height, root.hitBounds.y + root.hitBounds.height - target.y) - insetY)
     }
 
+    // Narrower than two touch targets, the buttons overlap; each keeps its half of the midline.
+    component ButtonMask: QtObject {
+        required property DActionButton button
+        required property DActionButton other
+        required property HitMask hit
+
+        function contains(point: point): bool {
+            if (point.x < 0 || point.y < 0 || point.x >= button.width || point.y >= button.height)
+                return false;
+            if (root.hitOverflow >= 0 && (point.x < hit.x || point.y < hit.y || point.x >= hit.x + hit.width || point.y >= hit.y + hit.height))
+                return false;
+            if (!other.visible)
+                return true;
+            const own = button.x + button.width / 2;
+            const middle = (own + other.x + other.width / 2) / 2;
+            return (button.mapToItem(root, point.x, point.y).x - middle) * (own - middle) >= 0;
+        }
+    }
+
     Rectangle {
         anchors.fill: parent
         anchors.margins: root.contentInset
@@ -71,37 +92,47 @@ Item {
         border.width: Theme.outlineWidthFocused
     }
 
-    component ButtonChip: Rectangle {
-        height: root.buttonSize
+    function cornerOffset(radius) {
+        return Math.max(0, Math.min(radius, width / 2 - contentInset, height / 2 - contentInset)) * (1 - Math.SQRT1_2);
+    }
+
+    component ButtonDisc: Rectangle {
+        id: disc
+
+        required property DActionButton button
+
+        // A ring of the panel surface parts the disc from the tile and its outline.
+        x: button.x + (button.width - width) / 2
+        y: button.y + (button.height - height) / 2
+        width: root.buttonSize + Theme.spacingXXS * 2
+        height: width
         radius: Theme.fullRadius(width, height)
-        color: Theme.chipSurface
-        border.color: Theme.primary
-        border.width: Theme.outlineWidth
+        color: Theme.withAlpha(Theme.hostSurface, 1)
+        visible: button.visible
+
+        Rectangle {
+            anchors.fill: parent
+            anchors.margins: Theme.spacingXXS
+            radius: Theme.fullRadius(width, height)
+            color: Theme.withAlpha(Theme.cardSurface, 1)
+        }
     }
 
-    ButtonChip {
-        x: root.cornerButtons ? removeButton.x + (root.touchTargetSize - root.buttonSize) / 2 : I18n.isRtl ? root.width - root.contentInset - width - (root.touchTargetSize - root.buttonSize) / 2 : root.contentInset + (root.touchTargetSize - root.buttonSize) / 2
-        y: root.contentInset - height / 2
-        width: root.buttonSize + root.touchTargetSize * Math.max(0, root.chromeButtons - 1)
-        visible: root.chromeButtons > 0
+    ButtonDisc {
+        button: removeButton
     }
 
-    ButtonChip {
-        x: optionsButton.x + (root.touchTargetSize - root.buttonSize) / 2
-        y: root.contentInset - height / 2
-        width: root.buttonSize
-        visible: root.cornerButtons
+    ButtonDisc {
+        button: optionsButton
     }
 
     DActionButton {
         id: removeButton
 
-        x: {
-            if (root.cornerButtons)
-                return I18n.isRtl ? root.width - width : 0;
-            return I18n.isRtl ? root.width - root.contentInset - width : root.contentInset;
-        }
-        y: 0
+        readonly property real startX: root.contentInset + root.startCornerOffset - width / 2
+
+        x: I18n.isRtl ? root.width - startX - width : startX
+        y: root.contentInset + root.startCornerOffset - height / 2
         width: root.touchTargetSize
         height: root.touchTargetSize
         buttonSize: root.buttonSize
@@ -112,7 +143,11 @@ Item {
         tooltipText: I18n.tr("Remove")
         visible: root.removable
         enabled: !root.dragging && !root.resizing
-        containmentMask: root.hitOverflow < 0 ? null : removeMask
+        containmentMask: ButtonMask {
+            button: removeButton
+            other: optionsButton
+            hit: removeMask
+        }
         onClicked: root.removeRequested()
 
         HitMask {
@@ -133,14 +168,10 @@ Item {
     DActionButton {
         id: optionsButton
 
-        readonly property real slotOffset: root.removable ? root.touchTargetSize : 0
+        readonly property real endX: root.width - root.contentInset - root.endCornerOffset - width / 2
 
-        x: {
-            if (root.cornerButtons)
-                return I18n.isRtl ? 0 : root.width - width;
-            return I18n.isRtl ? root.width - root.contentInset - slotOffset - width : root.contentInset + slotOffset;
-        }
-        y: 0
+        x: I18n.isRtl ? root.width - endX - width : endX
+        y: root.contentInset + root.endCornerOffset - height / 2
         width: root.touchTargetSize
         height: root.touchTargetSize
         buttonSize: root.buttonSize
@@ -151,7 +182,11 @@ Item {
         tooltipText: I18n.tr("Options")
         visible: root.showOptionsButton
         enabled: !root.dragging && !root.resizing
-        containmentMask: root.hitOverflow < 0 ? null : optionsMask
+        containmentMask: ButtonMask {
+            button: optionsButton
+            other: removeButton
+            hit: optionsMask
+        }
         onClicked: root.optionsRequested(optionsButton)
 
         HitMask {

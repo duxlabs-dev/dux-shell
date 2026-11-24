@@ -145,7 +145,7 @@ Item {
     }
 
     function rebuildWallpaperList(preferCurrentWallpaper) {
-        const selected = useLibrary ? WallpaperLibraryService.selected(WallpaperLibraryService.items) : [];
+        const selected = useLibrary ? WallpaperLibraryService.fitting(WallpaperLibraryService.selected(WallpaperLibraryService.items), targetScreenName) : [];
         if (useLibrary)
             selectedCount = selected.length;
         const paths = useLibrary ? libraryPaths(selected) : [];
@@ -312,7 +312,7 @@ Item {
     }
 
     function setCurrentWallpaper(path) {
-        SessionData.applyWallpaperPick(targetScreenName, path);
+        SessionData.applyWallpaperPick(targetScreenName, WallpaperLibraryService.variantPath(path, targetScreenName));
     }
 
     onCurrentPageChanged: updateSelectedFileName()
@@ -592,9 +592,20 @@ Item {
 
     onSessionWallpaperPathChanged: reselectCurrent()
     onSessionMonitorWallpapersChanged: reselectCurrent()
-    onSessionPerMonitorWallpaperChanged: reselectCurrent()
+    onSessionPerMonitorWallpaperChanged: {
+        reselectCurrent();
+        refitList();
+    }
 
-    onTargetScreenNameChanged: reselectCurrent()
+    onTargetScreenNameChanged: {
+        reselectCurrent();
+        refitList();
+    }
+
+    function refitList() {
+        if (WallpaperLibraryService.fitFilter && libraryHeld)
+            rebuildWallpaperList(true);
+    }
 
     Ref {
         service: WallpaperLibraryService

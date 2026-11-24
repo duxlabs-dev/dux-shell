@@ -10,7 +10,8 @@ import qs.Services
 import "settings/SessionSpec.js" as Spec
 import "../DCommon/Common/MaterialWallpaper.js" as MaterialWallpaper
 import "settings/SessionStore.js" as Store
-import "settings/LauncherFolders.js" as LauncherFolders
+import "settings/AppFolders.js" as AppFolders
+import "settings/DockPins.js" as DockPins
 import "../DCommon/Common/settings/SpecUtil.js" as SpecUtil
 
 Singleton {
@@ -226,6 +227,7 @@ Singleton {
     property bool wallpaperCyclingVideoEnd: false
     property var wallpaperFolders: []
     property var wallpaperFolderSelection: []
+    property bool wallpaperHideMismatched: false
     property var monitorCyclingSettings: ({})
 
     property bool nightModeEnabled: false
@@ -291,6 +293,7 @@ Singleton {
     property string pinnedPlayerIdentity: ""
 
     property var deviceMaxVolumes: ({})
+    property var deviceBalances: ({})
     property var hiddenOutputDeviceNames: []
     property var hiddenInputDeviceNames: []
 
@@ -1496,6 +1499,15 @@ Singleton {
         });
         saveSettings();
     }
+    function isDockAppPinned(id, appId) {
+        return DockPins.contains(getDockPins(id), appId);
+    }
+    function setDockAppPinned(id, appId, pinned) {
+        const pins = getDockPins(id);
+        const next = pinned ? DockPins.add(pins, appId) : DockPins.remove(pins, appId);
+        if (next !== pins)
+            setDockPins(id, next);
+    }
     function removeDockPins(id) {
         const next = Object.assign({}, dockPins);
         delete next[id];
@@ -1507,7 +1519,7 @@ Singleton {
             return;
         const next = {};
         for (const id in dockPins)
-            next[id] = dockPins[id].filter(pin => pin !== appId);
+            next[id] = DockPins.remove(dockPins[id], appId);
         dockPins = next;
         saveSettings();
     }
@@ -1675,7 +1687,7 @@ Singleton {
         if (!appId || hiddenApps.indexOf(appId) !== -1)
             return;
         hiddenApps = [...hiddenApps, appId];
-        const folders = LauncherFolders.removeApp(launcherFolders, appId);
+        const folders = AppFolders.removeApp(launcherFolders, appId);
         if (folders !== launcherFolders)
             launcherFolders = folders;
         saveSettings();
@@ -1728,7 +1740,7 @@ Singleton {
     }
 
     function createLauncherFolder(name, appIds, slot = 0) {
-        const result = LauncherFolders.createFolder(launcherFolders, name, appIds, slot);
+        const result = AppFolders.createFolder(launcherFolders, name, appIds, slot);
         if (!result.id)
             return "";
         _setLauncherFolders(result.folders);
@@ -1736,39 +1748,39 @@ Singleton {
     }
 
     function setLauncherFolderSlot(id, slot) {
-        _setLauncherFolders(LauncherFolders.setFolderSlot(launcherFolders, id, slot));
+        _setLauncherFolders(AppFolders.setFolderSlot(launcherFolders, id, slot));
     }
 
     function renameLauncherFolder(id, name) {
-        _setLauncherFolders(LauncherFolders.renameFolder(launcherFolders, id, name));
+        _setLauncherFolders(AppFolders.renameFolder(launcherFolders, id, name));
     }
 
     function setLauncherFolderIcon(id, icon) {
-        _setLauncherFolders(LauncherFolders.setFolderIcon(launcherFolders, id, icon));
+        _setLauncherFolders(AppFolders.setFolderIcon(launcherFolders, id, icon));
     }
 
     function addAppToLauncherFolder(folderId, appId) {
-        _setLauncherFolders(LauncherFolders.addApp(launcherFolders, folderId, appId));
+        _setLauncherFolders(AppFolders.addApp(launcherFolders, folderId, appId));
     }
 
     function removeAppFromLauncherFolder(appId) {
-        _setLauncherFolders(LauncherFolders.removeApp(launcherFolders, appId));
+        _setLauncherFolders(AppFolders.removeApp(launcherFolders, appId));
     }
 
-    function moveAppInLauncherFolder(folderId, fromIndex, toIndex) {
-        _setLauncherFolders(LauncherFolders.moveApp(launcherFolders, folderId, fromIndex, toIndex));
+    function moveAppInLauncherFolder(folderId, sourceId, targetId) {
+        _setLauncherFolders(AppFolders.moveAppById(launcherFolders, folderId, sourceId, targetId));
     }
 
     function dissolveLauncherFolder(id) {
-        _setLauncherFolders(LauncherFolders.dissolveFolder(launcherFolders, id));
+        _setLauncherFolders(AppFolders.dissolveFolder(launcherFolders, id));
     }
 
     function getLauncherFolder(id) {
-        return LauncherFolders.folderById(launcherFolders, id);
+        return AppFolders.folderById(launcherFolders, id);
     }
 
     function launcherFolderForApp(appId) {
-        return LauncherFolders.folderForApp(launcherFolders, appId);
+        return AppFolders.folderForApp(launcherFolders, appId);
     }
 
     function setSearchAppActions(enabled) {
@@ -1813,6 +1825,26 @@ Singleton {
         if (!nodeName)
             return 100;
         return deviceMaxVolumes[nodeName] ?? 100;
+    }
+
+    function setDeviceBalance(nodeName, balancePercent) {
+        if (!nodeName)
+            return;
+        const updated = Object.assign({}, deviceBalances);
+        const clamped = Math.max(-100, Math.min(100, Math.round(balancePercent)));
+        if (clamped === 0) {
+            delete updated[nodeName];
+        } else {
+            updated[nodeName] = clamped;
+        }
+        deviceBalances = updated;
+        saveSettings();
+    }
+
+    function getDeviceBalance(nodeName) {
+        if (!nodeName)
+            return 0;
+        return deviceBalances[nodeName] ?? 0;
     }
 
     function updateLocale() {

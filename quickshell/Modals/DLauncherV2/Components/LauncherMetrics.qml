@@ -45,10 +45,7 @@ Singleton {
     readonly property real spotlightWidth: Theme.launcherWidthWide
     readonly property real spotlightTopFraction: 0.33
     readonly property real spotlightInset: Theme.spacingM
-    // The footerless island sheet adds ResultsList's spacingS below its spacingM margin.
-    readonly property real islandEdgeInset: Theme.spacingS
 
-    readonly property real folderIconGap: Theme.spacingXS
     readonly property real folderAnchorGap: Theme.spacingS
     readonly property int folderMaxColumns: 4
     readonly property int folderMaxVisibleRows: 3

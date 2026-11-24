@@ -305,7 +305,7 @@ Column {
 
             visible: root.hasColorControls
             text: I18n.tr("Color Temperature", "Color Temperature")
-            description: outputTemperature === 0 ? I18n.tr("Default", "Default") : outputTemperature + "K"
+            valueLabel: outputTemperature === 0 && !dragging ? I18n.tr("Default", "Default") : ""
             minimum: 3000
             maximum: 10000
             step: 100
