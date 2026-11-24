@@ -45,7 +45,7 @@ RowLayout {
         Layout.fillWidth: true
         size: "xs"
         insetIcon: ""
-        volume: root.node?.audio?.volume ?? 0
+        volume: AudioService.getNodeVolume(root.node)
         muted: root.node?.audio?.muted ?? false
         maximumVolume: AudioService.getMaxVolumePercent(root.node)
         fillColor: root.contentColor
@@ -60,7 +60,7 @@ RowLayout {
             if (!audio)
                 return;
             SessionData.suppressOSDTemporarily();
-            audio.volume = volume;
+            AudioService.setNodeVolume(root.node, volume);
             if (volume > 0)
                 audio.muted = false;
         }
