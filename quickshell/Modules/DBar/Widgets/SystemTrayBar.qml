@@ -425,9 +425,9 @@ BasePill {
         const localPos = area.mapToItem(null, area.width / 2, 0);
         let tooltipY;
         if (root.axis?.edge === "bottom") {
-            const lines = text.split("\n").length;
-            const tooltipHeight = Theme.fontSizeSmall * 1.5 * lines + Theme.spacingS * 2;
-            tooltipY = currentScreen.height - root.barThickness - root.barSpacing - Theme.spacingXS - tooltipHeight;
+            // The tooltip grows downward from tooltipY; set the text first so it measures the wrapped height
+            trayTooltipLoader.item.text = text;
+            tooltipY = currentScreen.height - root.barThickness - root.barSpacing - Theme.spacingXS - trayTooltipLoader.item.tooltipHeight;
         } else {
             tooltipY = root.barThickness + root.barSpacing + Theme.spacingXS;
         }
