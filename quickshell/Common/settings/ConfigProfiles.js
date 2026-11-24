@@ -58,7 +58,7 @@ var SETTINGS_MAP = {
 };
 
 var SESSION_MAP = {
-    wallpaper: ["materialWallpapers", "materialWallpaperProfiles", "wallpaperPath", "perMonitorWallpaper", "perModeWallpaper", "monitorWallpapers", "monitorWallpaperFillModes", "wallpaperPathLight", "wallpaperPathDark", "monitorWallpapersLight", "monitorWallpapersDark", "wallpaperTransition", "includedTransitions", "wallpaperCyclingEnabled", "wallpaperCyclingRandom", "wallpaperCyclingRecursive", "wallpaperCyclingMode", "wallpaperCyclingInterval", "wallpaperCyclingTime", "wallpaperCyclingFolderPath", "monitorCyclingSettings", "wallpaperCyclingVideoEnd"],
+    wallpaper: ["materialWallpapers", "materialWallpaperProfiles", "wallpaperPath", "perMonitorWallpaper", "perModeWallpaper", "monitorWallpapers", "monitorWallpaperFillModes", "wallpaperPathLight", "wallpaperPathDark", "monitorWallpapersLight", "monitorWallpapersDark", "wallpaperTransition", "includedTransitions", "wallpaperCyclingEnabled", "wallpaperCyclingRandom", "wallpaperCyclingRecursive", "wallpaperCyclingMode", "wallpaperCyclingInterval", "wallpaperCyclingTime", "wallpaperCyclingFolderPath", "monitorCyclingSettings", "wallpaperCyclingVideoEnd", "wallpaperHideMismatched"],
     dark_mode: ["isLightMode", "themeModeAutoEnabled", "themeModeAutoMode", "themeModeStartHour", "themeModeStartMinute", "themeModeEndHour", "themeModeEndMinute", "themeModeShareGammaSettings"],
     bar: ["barPinnedApps", "hiddenTrayIds", "trayItemOrder", "islandFreePositions"],
     dock: ["dockPins"],
