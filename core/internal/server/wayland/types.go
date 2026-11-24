@@ -173,7 +173,7 @@ type outputState struct {
 	lastContrast float64
 	iccPath      string       // path to ICC profile file, empty if not set
 	iccProfile   *icc.Profile // cached parsed ICC profile (nil if not loaded)
-	outputTemp   int          // per-output color temperature (K), 0 = use global temp
+	outputTemp   int          // per-output white point (K), 0 = neutral
 	dimScale     float64      // software brightness ramp scale, 0 = full
 	gammaRefused bool         // the latest control failed before reporting gamma_size
 }
@@ -203,10 +203,10 @@ func DefaultConfig() Config {
 }
 
 func (c *Config) Validate() error {
-	if c.LowTemp < 1000 || c.LowTemp > 10000 {
+	if c.LowTemp < minTemp || c.LowTemp > maxTemp {
 		return errdefs.ErrInvalidTemperature
 	}
-	if c.HighTemp < 1000 || c.HighTemp > 10000 {
+	if c.HighTemp < minTemp || c.HighTemp > maxTemp {
 		return errdefs.ErrInvalidTemperature
 	}
 	if c.LowTemp > c.HighTemp {
