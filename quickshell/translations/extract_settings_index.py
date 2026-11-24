@@ -63,7 +63,8 @@ ABBREVIATIONS = {
 
 CATEGORY_KEYWORDS = {
     "Personalization": ["customize", "custom", "personal", "appearance"],
-    "Time & weather": ["clock", "forecast", "date"],
+    "Time": ["clock", "date"],
+    "Weather": ["forecast"],
     "Keyboard shortcuts": ["keys", "bindings", "hotkey"],
     "Bar": ["panel", "topbar", "statusbar"],
     "Applications": ["apps", "programs", "window", "rules", "matching", "floating"],

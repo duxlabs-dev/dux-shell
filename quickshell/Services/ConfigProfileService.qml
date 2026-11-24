@@ -54,6 +54,7 @@ Singleton {
             "icons": I18n.tr("Icons"),
             "cursor": I18n.tr("Cursor"),
             "time": I18n.tr("Time"),
+            "weather": I18n.tr("Weather"),
             "lock_screen": I18n.tr("Lock screen"),
             "launcher": I18n.tr("Launcher"),
             "notifications": I18n.tr("Notifications"),

@@ -3904,6 +3904,7 @@
     "category": "Time",
     "keywords": [
       "bar",
+      "clock",
       "date",
       "date,",
       "format",
@@ -3925,6 +3926,7 @@
     "keywords": [
       "backend",
       "calendar",
+      "clock",
       "date",
       "date,",
       "day",
@@ -3946,6 +3948,7 @@
     "keywords": [
       "backend",
       "calendar",
+      "clock",
       "daemon",
       "dankcalendar",
       "date",
@@ -3967,6 +3970,7 @@
     "category": "Time",
     "keywords": [
       "calendar",
+      "clock",
       "date",
       "date,",
       "format",
@@ -3984,6 +3988,8 @@
     "keywords": [
       "caldav",
       "calendar",
+      "clock",
+      "date",
       "date,",
       "default",
       "list",
@@ -4001,6 +4007,8 @@
     "tabIndex": 1,
     "category": "Time",
     "keywords": [
+      "clock",
+      "date",
       "date,",
       "day",
       "first",
@@ -4018,6 +4026,8 @@
     "keywords": [
       "12hour",
       "24hour",
+      "clock",
+      "date",
       "date,",
       "format",
       "locale",
@@ -4033,6 +4043,8 @@
     "category": "Time",
     "keywords": [
       "12hour",
+      "clock",
+      "date",
       "date,",
       "format",
       "hours",
@@ -4050,6 +4062,7 @@
     "tabIndex": 1,
     "category": "Time",
     "keywords": [
+      "clock",
       "date",
       "date,",
       "format",
@@ -4072,6 +4085,8 @@
     "keywords": [
       "12hour",
       "am",
+      "clock",
+      "date",
       "date,",
       "format",
       "meridiem",
@@ -4089,6 +4104,7 @@
     "category": "Time",
     "keywords": [
       "clock",
+      "date",
       "date,",
       "region",
       "seconds",
@@ -4103,6 +4119,8 @@
     "tabIndex": 1,
     "category": "Time",
     "keywords": [
+      "clock",
+      "date",
       "date,",
       "number",
       "region",
@@ -4120,6 +4138,7 @@
     "keywords": [
       "24hour",
       "clock",
+      "date",
       "date,",
       "format",
       "region",
