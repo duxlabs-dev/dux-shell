@@ -85,6 +85,7 @@ SettingsCard {
         accessoryKeys: ["islandExpandedOpacity"]
         valueKeys: ["islandExpandedOpacity"]
         text: I18n.tr("Expanded opacity", "island activity settings: custom opacity for the expanded island")
+        sliderText: I18n.tr("Opacity")
         description: I18n.tr("Off matches the bar's opacity", "island activity settings: expanded opacity toggle description")
         checked: root.store.setting("islandExpandedOpacity") >= 0
         minimum: 0

@@ -1319,6 +1319,7 @@ Column {
                 tags: ["icon", "tile", "base", "plate", "badge", "tone", "light", "dark", "brightness", "dux"]
                 settingKey: "iconTileTone"
                 text: I18n.tr("Tile tone", "Dux Icons setting, how light the tile behind each icon is")
+                sliderText: I18n.tr("Tone")
                 enabled: !root.selfBuiltIconsMissing
                 checked: SettingsData.iconTileTone >= 0
                 value: Math.max(0, SettingsData.iconTileTone)
@@ -1349,6 +1350,7 @@ Column {
                 tags: ["icon", "tile", "base", "plate", "badge", "tone", "dux", "labs", "app", "art", "shade"]
                 settingKey: "iconOwnTone"
                 text: I18n.tr("Dux app tone", "Dux Icons setting, the shade of Dux Labs app art on its tile")
+                sliderText: I18n.tr("Tone")
                 enabled: !root.selfBuiltIconsMissing
                 checked: SettingsData.iconOwnTone >= 0
                 value: Math.max(40, SettingsData.iconOwnTone)
@@ -1513,6 +1515,7 @@ Column {
                 tags: ["cursor", "hide", "timeout", "inactive"]
                 settingKey: "cursorHideAfterInactive"
                 text: I18n.tr("Cursor auto-hide timeout")
+                sliderText: I18n.tr("Hide delay")
                 checked: timeout > 0
                 value: timeout
                 // Timeout 0 means off, so the slider starts above it.

@@ -245,6 +245,7 @@ Item {
                 SettingsToggleSliderRow {
                     resetStore: bar
                     text: I18n.tr("Custom radius")
+                    sliderText: I18n.tr("Radius")
                     tags: ["goth", "corners", "radius"]
                     visible: (bar.selectedBarConfig?.gothCornersEnabled ?? false) && !bar.selectedBarFrameSanitized && !bar.islandOwnsSelectedBarTop
                     valueKeys: ["gothCornerRadiusValue"]
@@ -600,6 +601,7 @@ Item {
                     tags: ["island", "satellite", "notch", "goth", "corners", "radius", "sweep", "size"]
                     valueKeys: ["gothCornerRadiusValue"]
                     text: I18n.tr("Custom radius")
+                    sliderText: I18n.tr("Radius")
                     checked: bar.selectedBarConfig?.gothCornerRadiusOverride ?? false
                     unit: "px"
                     minimum: 0
@@ -627,8 +629,9 @@ Item {
                     settingKey: "islandSatelliteTransparency"
                     tags: ["island", "satellite", "background", "opacity", "transparency", "blur", "override", "interface", "style"]
                     valueKeys: ["islandSatelliteTransparency"]
-                    text: I18n.tr("Opacity", "island settings: satellite background opacity slider")
-                    description: I18n.tr("Override", "verb, toggle to override the global setting for this item")
+                    text: I18n.tr("Override", "verb, toggle to override the global setting for this item")
+                    sliderText: I18n.tr("Opacity")
+                    description: I18n.tr("Opacity", "island settings: satellite background opacity slider")
                     checked: !bar.islandSetting("islandSatelliteFollowInterfaceStyle")
                     minimum: 0
                     maximum: 100
@@ -710,8 +713,9 @@ Item {
 
                 SettingsToggleSliderRow {
                     resetStore: bar
-                    text: I18n.tr("Opacity")
-                    description: I18n.tr("Override", "verb, toggle to override the global setting for this item")
+                    text: I18n.tr("Override", "verb, toggle to override the global setting for this item")
+                    sliderText: I18n.tr("Opacity")
+                    description: I18n.tr("Opacity")
                     tags: ["widget", "opacity", "transparency", "override", "foreground", "interface", "style"]
                     enabled: root.widgetBackgroundEnabled
                     valueKeys: ["widgetTransparency"]

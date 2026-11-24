@@ -14,14 +14,15 @@ Item {
 
     property string text: ""
     property string description: ""
+    property string sliderText: ""
     property bool checked: false
     property bool sliderVisible: true
     property real value: 0
-    property alias minimum: control.minimum
-    property alias maximum: control.maximum
-    property alias step: control.step
-    property alias unit: control.unit
-    property alias decimals: control.decimals
+    property alias minimum: sliderRow.minimum
+    property alias maximum: sliderRow.maximum
+    property alias step: sliderRow.step
+    property alias unit: sliderRow.unit
+    property alias decimals: sliderRow.decimals
     property bool userToggled: false
 
     property alias resetStore: header.resetStore
@@ -29,7 +30,7 @@ Item {
     property var valueKeys: []
     property alias modified: header.modified
     property bool valueModified: valueKeys.length > 0 && !resetStore.isDefault(valueKeys)
-    property alias accessory: accessorySlot.data
+    property alias accessory: header.accessory
 
     readonly property bool standalone: !(parent?.isSettingsGroupHost ?? false)
     readonly property bool firstInGroup: standalone || parent.isEdge(root, true)
@@ -78,37 +79,13 @@ Item {
                 root.userToggled = true;
                 root.toggled(value);
             }
-
-            accessory: [
-                Row {
-                    id: accessorySlot
-                    spacing: Theme.spacingS
-                    visible: children.length > 0
-                    anchors.verticalCenter: parent.verticalCenter
-                },
-                SettingsSliderValue {
-                    slider: control
-                    visible: root.sliderVisible
-                    shown: root.checked
-                    anchors.verticalCenter: parent.verticalCenter
-
-                    Behavior on opacity {
-                        enabled: root.userToggled
-                        NumberAnimation {
-                            duration: SettingsMetrics.fadeDuration
-                            easing.type: Easing.BezierSpline
-                            easing.bezierCurve: Theme.expressiveCurves.expressiveEffects
-                        }
-                    }
-                }
-            ]
         }
 
         // The slider sits outside the header so presses around it never reach the header's toggle click area
         Item {
             width: parent.width
             visible: root.sliderVisible && (root.checked || height > 0)
-            height: root.sliderVisible && root.checked ? control.y + control.height + SettingsMetrics.rowPaddingV : 0
+            height: root.sliderVisible && root.checked ? sliderRow.height : 0
             clip: true
 
             Behavior on height {
@@ -124,20 +101,20 @@ Item {
                 }
             }
 
-            SettingsSliderControl {
-                id: control
-                x: SettingsMetrics.rowPaddingH
-                y: Theme.focusRingOffset
-                width: parent.width - SettingsMetrics.rowPaddingH * 2
+            SettingsSliderRow {
+                id: sliderRow
+                width: parent.width
+                paintBackground: false
+                topRadius: SettingsMetrics.groupInnerRadius
+                bottomRadius: root.lastInGroup ? Theme.groupedListOuterRadius : SettingsMetrics.groupInnerRadius
                 enabled: root.checked
+                text: root.sliderText
+                accessibleName: root.text + " " + root.sliderText
                 value: root.value
-                accessibleName: root.text
-                accessibleDescription: root.description
-                showReset: root.valueModified
-                onResetRequested: {
-                    root.resetStore.resetToDefault(root.valueKeys);
-                    root.valueResetRequested();
-                }
+                resetStore: root.resetStore
+                resetKeys: root.valueKeys
+                modified: root.valueModified
+                onResetRequested: root.valueResetRequested()
                 onSliderValueChanged: newValue => root.sliderValueChanged(newValue)
                 onSliderDragFinished: finalValue => root.sliderDragFinished(finalValue)
             }

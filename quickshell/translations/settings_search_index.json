@@ -7404,7 +7404,7 @@
   },
   {
     "section": "barOpacity",
-    "label": "Opacity",
+    "label": "Override",
     "tabIndex": 6,
     "category": "Appearance",
     "keywords": [
@@ -7422,11 +7422,11 @@
       "transparency"
     ],
     "parentLabel": "Bar",
-    "description": "Override"
+    "description": "Opacity"
   },
   {
     "section": "frameSurfaceOpacity",
-    "label": "Opacity",
+    "label": "Override",
     "tabIndex": 6,
     "category": "Appearance",
     "keywords": [
@@ -7444,12 +7444,12 @@
       "transparency"
     ],
     "parentLabel": "Bar",
-    "description": "Override",
+    "description": "Opacity",
     "conditionKey": "frameEnabled"
   },
   {
     "section": "islandSatelliteTransparency",
-    "label": "Opacity",
+    "label": "Override",
     "tabIndex": 6,
     "category": "Appearance",
     "keywords": [
@@ -7470,7 +7470,7 @@
       "transparency"
     ],
     "parentLabel": "Bar",
-    "description": "Override",
+    "description": "Opacity",
     "conditionKey": "islandEnabled"
   },
   {
@@ -7935,7 +7935,6 @@
       "maximize",
       "modules",
       "opacity",
-      "override",
       "padding",
       "panel",
       "pills",
@@ -7949,7 +7948,7 @@
     ],
     "parentLabel": "Bar",
     "icon": "widgets",
-    "description": "Override"
+    "description": "Opacity"
   },
   {
     "section": "islandCompactThickness",

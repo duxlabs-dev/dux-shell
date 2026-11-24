@@ -13,8 +13,9 @@ SettingsToggleSliderRow {
             SettingsData.updateBarConfig(barConfig.id, patch);
     }
 
-    text: I18n.tr("Opacity")
-    description: I18n.tr("Override")
+    text: I18n.tr("Override", "verb, toggle to override the global setting for this item")
+    description: I18n.tr("Opacity")
+    sliderText: I18n.tr("Opacity")
     checked: overridden
     value: Math.round(transparency * 100)
     minimum: 0

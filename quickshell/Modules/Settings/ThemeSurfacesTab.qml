@@ -116,6 +116,7 @@ Column {
                 settingKey: "blurForegroundLayers"
                 valueKeys: ["foregroundLayerTransparency"]
                 text: I18n.tr("Foreground layers")
+                sliderText: I18n.tr("Opacity")
                 checked: SettingsData.blurForegroundLayers ?? true
                 value: Math.round((SettingsData.foregroundLayerTransparency ?? 1.0) * 100)
                 minimum: 0
@@ -129,6 +130,7 @@ Column {
                 tags: ["foreground", "layers", "outline", "border", "opacity", "cards", "pills", "widgets", "notifications", "control center"]
                 settingKey: "blurLayerOutline"
                 text: I18n.tr("Layer outline")
+                sliderText: I18n.tr("Opacity")
                 description: I18n.tr("Faint edge on cards, pills and widgets", "surface layer outline toggle description")
                 checked: root.layerOutlineEnabled
                 value: Math.round((SettingsData.blurLayerOutlineOpacity ?? 0) * 100)
@@ -145,6 +147,7 @@ Column {
                 accessoryKeys: ["blurBorderColor", "blurBorderCustomColor"]
                 valueKeys: ["blurBorderOpacity"]
                 text: I18n.tr("Border")
+                sliderText: I18n.tr("Opacity")
                 description: I18n.tr("Edge around popups and modals", "surface border toggle description")
                 checked: root.borderEnabled
                 value: Math.round((SettingsData.blurBorderOpacity ?? 0.35) * 100)
@@ -219,6 +222,7 @@ Column {
                 settingKey: "blurEnabled"
                 valueKeys: ["blurStrength"]
                 text: I18n.tr("Background blur")
+                sliderText: I18n.tr("Intensity")
                 visible: BlurService.available
                 sliderVisible: BlurService.strengthConfigurable
                 checked: SettingsData.blurEnabled ?? false
@@ -352,6 +356,7 @@ Column {
                 tags: ["window", "corner", "radius", "match", "follow", "link", "strength", "rounded", "popout", "menu", "modal", "compositor", "niri", "hyprland", "mango"]
                 settingKey: "windowRadius"
                 text: I18n.tr("Override window radius", "toggle: stop the window radius following the corner style setting")
+                sliderText: I18n.tr("Radius")
                 visible: root.windowRadiusKey !== ""
                 checked: Theme.compositorRadiusOverride >= 0
                 value: Theme.windowRadius
@@ -533,6 +538,7 @@ Column {
                     settingKey: "floatingWindowForegroundLayers"
                     valueKeys: ["floatingWindowForegroundTransparency"]
                     text: I18n.tr("Foreground layers")
+                    sliderText: I18n.tr("Opacity")
                     checked: Theme.floatingWindowForegroundLayers
                     value: Math.round(Theme.floatingWindowForegroundTransparency * 100)
                     minimum: 0
@@ -588,6 +594,7 @@ Column {
             tags: ["surface", "opacity", "transparency", "dock", "override"]
             settingKey: "surfaceOpacity_" + modelData.replace(":", "_")
             text: target?.name ?? ""
+            sliderText: I18n.tr("Opacity")
             description: I18n.tr("Override")
             checked: target?.override ?? false
             value: Math.round((target?.transparency ?? 1) * 100)
@@ -732,7 +739,6 @@ Column {
                 fallbackValue: "docked"
                 onValueSelected: value => SettingsData.set("controlCenterEditLayout", value)
             }
-
 
             SettingsSliderRow {
                 tab: "theme"
