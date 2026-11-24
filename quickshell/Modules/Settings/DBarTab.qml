@@ -276,6 +276,7 @@ Item {
                     tags: ["autohide", "auto-hide", "reveal", "intellihide", "delay", "hide"]
                     visible: !bar.islandShadowsSelectedBar && (!bar.selectedBarIsIsland || dankBarTab.selectedIslandOverlay)
                     text: I18n.tr("Auto-hide", "toggle to automatically hide the bar or dock")
+                    sliderText: I18n.tr("Hide delay")
                     valueKeys: ["autoHideDelay"]
                     checked: bar.selectedBarConfig?.autoHide ?? false
                     value: bar.selectedBarConfig?.autoHideDelay ?? 250

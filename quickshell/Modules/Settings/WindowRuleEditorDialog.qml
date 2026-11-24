@@ -1219,6 +1219,7 @@ DDialog {
 
         SettingsToggleSliderRow {
             text: I18n.tr("Opacity")
+            sliderText: I18n.tr("Opacity")
             checked: root.opacityOn
             value: root.opacityValue
             minimum: 10
@@ -1230,6 +1231,7 @@ DDialog {
 
         SettingsToggleSliderRow {
             text: I18n.tr("Corner radius")
+            sliderText: I18n.tr("Radius")
             checked: root.cornerRadiusOn
             value: root.cornerRadiusValue
             maximum: 20
@@ -1242,6 +1244,7 @@ DDialog {
         SettingsToggleSliderRow {
             visible: root.isNiri
             text: I18n.tr("Scroll Factor")
+            sliderText: I18n.tr("Amount")
             checked: root.scrollFactorOn
             value: root.scrollFactorValue
             minimum: 10
@@ -1255,6 +1258,7 @@ DDialog {
         SettingsToggleSliderRow {
             visible: root.niriConfigNext
             text: I18n.tr("Pinch sensitivity", "touchpad slider, how strongly pinch gestures zoom in apps")
+            sliderText: I18n.tr("Amount")
             checked: root.pinchOn
             value: root.pinchValue
             minimum: 10
@@ -1327,6 +1331,7 @@ DDialog {
 
         SettingsToggleSliderRow {
             text: I18n.tr("Noise", "window rule background noise effect checkbox")
+            sliderText: I18n.tr("Amount")
             checked: root.noiseOn
             value: root.noiseValue
             unit: "%"
@@ -1337,6 +1342,7 @@ DDialog {
 
         SettingsToggleSliderRow {
             text: I18n.tr("Saturation", "window rule background color saturation checkbox")
+            sliderText: I18n.tr("Amount")
             checked: root.saturationOn
             value: root.saturationValue
             maximum: 200
@@ -1553,6 +1559,7 @@ DDialog {
 
         SettingsToggleSliderRow {
             text: I18n.tr("Column Width")
+            sliderText: I18n.tr("Width")
             description: I18n.tr("Scrolling", "Hyprland tiling layout name")
             checked: root.scrollingWidthOn
             value: root.scrollingWidthValue
