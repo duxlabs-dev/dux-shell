@@ -275,7 +275,8 @@ Item {
 
                         SettingsSliderRow {
                             visible: AudioService.supportsBalance(modelData)
-                            text: I18n.tr("Balance", "Audio settings: channel balance slider") + " · " + root.formatBalance(SessionData.deviceBalances[modelData.name] ?? 0)
+                            text: I18n.tr("Balance", "Audio settings: channel balance slider")
+                            valueLabel: root.formatBalance(SessionData.deviceBalances[modelData.name] ?? 0)
                             unit: "%"
                             minimum: -100
                             maximum: 100
