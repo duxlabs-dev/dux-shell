@@ -153,7 +153,7 @@ DContextMenu {
     }
 
     function setWallpaper(path) {
-        SessionData.applyWallpaperPick(targetScreen?.name ?? "", path);
+        SessionData.applyWallpaperPick(targetScreen?.name ?? "", WallpaperLibraryService.variantPath(path, targetScreen?.name ?? ""));
     }
 
     // Order is fixed per open so a pick moves the check, not the list.
@@ -190,7 +190,7 @@ DContextMenu {
 
     function fillFromLibrary() {
         if (renderActive && listMode && !materialWallpaper && stripItems.length === 0 && WallpaperLibraryService.loaded)
-            loadStrip(WallpaperLibraryService.selected(WallpaperLibraryService.items).map(item => item.path));
+            loadStrip(WallpaperLibraryService.fitting(WallpaperLibraryService.selected(WallpaperLibraryService.items), targetScreen?.name ?? "").map(item => item.path));
     }
 
     Ref {

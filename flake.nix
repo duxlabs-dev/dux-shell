@@ -1,6 +1,11 @@
 {
   description = "Dux Modular Shell";
 
+  nixConfig = {
+    extra-substituters = [ "https://nix-cache.duxlabs.dev" ];
+    extra-trusted-public-keys = [ "dux-1:lrBykuzHKu9F6WsCbK83C9/uOrfqUY1kflRZtrUcMF0=" ];
+  };
+
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     flake-compat = {

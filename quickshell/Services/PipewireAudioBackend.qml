@@ -21,10 +21,44 @@ Item {
         Pipewire.preferredDefaultAudioSource = node;
     }
 
-	function isVideoSource(node) {
-		return !!node
-			&& (node.type & PwNodeType.VideoSource) === PwNodeType.VideoSource;
-	}
+    function isVideoSource(node) {
+        return !!node && (node.type & PwNodeType.VideoSource) === PwNodeType.VideoSource;
+    }
+
+    function channelSide(channel) {
+        switch (channel) {
+        case PwAudioChannel.FrontLeft:
+        case PwAudioChannel.FrontLeftCenter:
+        case PwAudioChannel.FrontLeftWide:
+        case PwAudioChannel.FrontLeftHigh:
+        case PwAudioChannel.LowFrequencyEffectsLeft:
+        case PwAudioChannel.SideLeft:
+        case PwAudioChannel.RearLeft:
+        case PwAudioChannel.RearLeftCenter:
+        case PwAudioChannel.TopFrontLeft:
+        case PwAudioChannel.TopFrontLeftCenter:
+        case PwAudioChannel.TopSideLeft:
+        case PwAudioChannel.TopRearLeft:
+        case PwAudioChannel.BottomLeftCenter:
+            return "left";
+        case PwAudioChannel.FrontRight:
+        case PwAudioChannel.FrontRightCenter:
+        case PwAudioChannel.FrontRightWide:
+        case PwAudioChannel.FrontRightHigh:
+        case PwAudioChannel.LowFrequencyEffectsRight:
+        case PwAudioChannel.SideRight:
+        case PwAudioChannel.RearRight:
+        case PwAudioChannel.RearRightCenter:
+        case PwAudioChannel.TopFrontRight:
+        case PwAudioChannel.TopFrontRightCenter:
+        case PwAudioChannel.TopSideRight:
+        case PwAudioChannel.TopRearRight:
+        case PwAudioChannel.BottomRightCenter:
+            return "right";
+        default:
+            return "center";
+        }
+    }
 
     Connections {
         target: Pipewire.nodes

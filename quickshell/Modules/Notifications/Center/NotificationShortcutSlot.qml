@@ -12,26 +12,15 @@ DIconButton {
 
     required property string settingKey
     required property string shortcut
-    property bool live: false
-    property bool squeezed: false
     property bool historyActive: false
     property bool hintsActive: false
     property color restColor: Theme.cardSurface
 
     readonly property bool empty: shortcut === ""
-    readonly property real targetScale: {
-        if (!Theme.shapeMorph)
-            return 1;
-        if (pressed)
-            return 1 + Theme.buttonGroupExpandRatio;
-        return squeezed ? 1 - Theme.buttonGroupExpandRatio : 1;
-    }
-    readonly property var pressSpring: Theme.springPreset("fastSpatial")
 
     signal editRequested
 
     buttonSize: NotificationMetrics.footerHeight
-    width: NotificationMetrics.shortcutWidth * widthSpring.value
     iconSize: Theme.iconSizeMedium
     variant: empty ? "standard" : "tonal"
     checkable: shortcut === "dnd" || shortcut === "history" || shortcut === "hints"
@@ -66,7 +55,6 @@ DIconButton {
 
     onPressAndHold: editRequested()
     Keys.onMenuPressed: editRequested()
-    onTargetScaleChanged: widthSpring.retarget(targetScale)
 
     TapHandler {
         acceptedButtons: Qt.RightButton
@@ -95,13 +83,5 @@ DIconButton {
                 }
             }
         }
-    }
-
-    SpringMotion {
-        id: widthSpring
-        enabled: root.live && root.visible
-        stiffness: root.pressSpring.stiffness
-        damping: root.pressSpring.damping
-        Component.onCompleted: snapTo(root.targetScale)
     }
 }

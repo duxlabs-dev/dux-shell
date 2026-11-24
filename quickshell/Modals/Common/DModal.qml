@@ -17,6 +17,8 @@ Item {
     property real modalHeight: 300
     property var targetScreen
     property bool showBackground: true
+    // Off: no panel, blur, border or shadow behind the content, and the scrim shows in every mode.
+    property bool showSurface: true
     property real backgroundOpacity: Theme.scrimAlpha
     property string positioning: "center"
     property point customPosition: Qt.point(0, 0)
@@ -67,6 +69,8 @@ Item {
 
     // Hyprland OnDemand grab delivers keyboard focus to the modal content surface.
     DFocusGrab {
+        id: focusGrab
+
         keyboardWindow: root.contentWindow
         peerWindows: root.transientSurfaceTracker?.focusWindows ?? []
         wanted: KeyboardFocus.wantsGrab(root.shouldBeVisible && root.shouldHaveFocus && !root.dragPassthrough, root.customKeyboardFocus)
@@ -154,6 +158,7 @@ Item {
                     root.shouldHaveFocus = host.shouldHaveFocus;
             }
             onOpened: root.opened()
+            onSurfaceUnmapping: focusGrab.releaseBeforeUnmap()
             onDialogClosed: {
                 root.dialogClosed();
                 root._maybeResolveBackend();

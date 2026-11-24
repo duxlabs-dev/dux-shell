@@ -156,6 +156,7 @@ Item {
     signal popoutClosed
     signal closeAnimationFinished
     signal backgroundClicked
+    signal surfaceUnmapping
 
     Timer {
         id: _syncTimer
@@ -1301,6 +1302,7 @@ Item {
     }
 
     function _detach() {
+        surfaceUnmapping();
         surfaceRoot.parent = root;
         _attachedScreenName = "";
         surfaceScreen = null;

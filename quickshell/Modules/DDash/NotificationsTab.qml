@@ -1,5 +1,6 @@
 import QtQuick
 import qs.Common
+import qs.DCommon.Common as DCommon
 import qs.Services
 import qs.DCommon.Widgets
 import qs.Widgets
@@ -252,6 +253,35 @@ FocusScope {
         }
     }
 
+    DCommon.PressBounce {
+        id: footerBounce
+
+        readonly property real side: NotificationMetrics.shortcutWidth
+
+        // Clear All takes the space the side buttons leave; only widths follow the press.
+        slots: [
+            {
+                "x": 0,
+                "y": 0,
+                "w": side,
+                "h": 1
+            },
+            {
+                "x": side + footer.spacing,
+                "y": 0,
+                "w": footer.width - (side + footer.spacing) * 2,
+                "h": 1
+            },
+            {
+                "x": footer.width - side,
+                "y": 0,
+                "w": side,
+                "h": 1
+            }
+        ]
+        animated: root.live
+    }
+
     Row {
         id: footer
         anchors.left: parent.left
@@ -263,12 +293,12 @@ FocusScope {
         NotificationShortcutSlot {
             id: leadingSlot
             settingKey: "notificationLeadingShortcut"
+            width: NotificationMetrics.shortcutWidth + footerBounce.dw(0)
             shortcut: root.slotAction(SettingsData.notificationLeadingShortcut)
-            live: root.live
-            squeezed: clearButton.pressed
             historyActive: root.currentTab === 1
             hintsActive: root.showKeyboardHints
             restColor: Theme.foregroundColor(root.nested ? Theme.chipSurface : Theme.cardSurface, Theme.isFloatingWindow(root))
+            onPressedChanged: footerBounce.press(0, pressed)
             onClicked: root.triggerShortcut(leadingSlot)
             onEditRequested: root.editShortcut(leadingSlot, leadingSlot.visualFocus)
         }
@@ -280,6 +310,7 @@ FocusScope {
             buttonHeight: NotificationMetrics.footerHeight
             variant: "tonal"
             enabled: root.currentTab === 0 ? NotificationService.notifications.length > 0 : NotificationService.historyList.length > 0
+            onPressedChanged: footerBounce.press(1, pressed)
             onClicked: {
                 if (root.currentTab === 0) {
                     NotificationService.clearAllNotifications();
@@ -292,12 +323,12 @@ FocusScope {
         NotificationShortcutSlot {
             id: trailingSlot
             settingKey: "notificationTrailingShortcut"
+            width: NotificationMetrics.shortcutWidth + footerBounce.dw(2)
             shortcut: root.slotAction(SettingsData.notificationTrailingShortcut)
-            live: root.live
-            squeezed: clearButton.pressed
             historyActive: root.currentTab === 1
             hintsActive: root.showKeyboardHints
             restColor: Theme.foregroundColor(root.nested ? Theme.chipSurface : Theme.cardSurface, Theme.isFloatingWindow(root))
+            onPressedChanged: footerBounce.press(2, pressed)
             onClicked: root.triggerShortcut(trailingSlot)
             onEditRequested: root.editShortcut(trailingSlot, trailingSlot.visualFocus)
         }

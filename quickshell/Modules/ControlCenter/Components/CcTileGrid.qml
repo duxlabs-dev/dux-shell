@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import qs.Common
+import qs.DCommon.Common as DCommon
 import qs.Widgets
 import qs.Modules.ControlCenter
 import "../utils/sections.js" as Sections
@@ -34,7 +35,21 @@ DEditableGrid {
     readonly property real bandY: slotLayout.bandY ?? 0
     readonly property real baseHeight: baseLayout.totalHeight
     readonly property real dropHeight: rowLimit > 0 ? GridUtils.bandTop(pinnedLayout ?? baseLayout, Math.round(rowLimit / CcMetrics.gridStep)) - CcMetrics.gridGap : height
-    readonly property bool overflowPreview: interacting && baseLayout.commitSlots !== undefined
+    // Cut tiles move only on release, so a height drag past this page previews them.
+    property bool spillPreview: false
+    readonly property bool overflowPreview: (interacting || spillPreview) && baseLayout.commitSlots !== undefined
+    // Spilled tiles keep their order atop the next page, so they rise by the first spilled row.
+    readonly property real spillTop: {
+        const commit = slotLayout.commitSlots;
+        if (!spillPreview || !commit)
+            return 0;
+        let top = Infinity;
+        for (let i = 0; i < commit.length; i++) {
+            if (commit[i] && !slotLayout.slots[i])
+                top = Math.min(top, commit[i].y);
+        }
+        return Number.isFinite(top) ? top : 0;
+    }
     readonly property real targetHeight: GridUtils.insertBand(baseLayout, expandedIndex, expandedSection !== "" ? bandTargetHeight : 0).totalHeight
 
     signal expandClicked(var widgetData)
@@ -51,6 +66,7 @@ DEditableGrid {
     property var runningToplevels: []
     // A member drag inside a quick-tiles group never reaches the grid's own interaction state.
     property bool memberDragging: false
+    readonly property DCommon.PressBounce bounce: pressBounce
     property var swallowPoint: null
 
     readonly property real gridHeight: layoutHeight
@@ -70,7 +86,18 @@ DEditableGrid {
     readonly property var baseLayout: {
         const items = clamped(layoutItems);
         const layout = GridUtils.packCards(items, placementOrder, columns, width, CcMetrics.gridGap, cellWidth - CcMetrics.gridGap, I18n.isRtl, null, CcMetrics.gridStep, true);
-        return PanelLayout.pageLayout(GridUtils.shrinkRows(layout, items.map(item => WidgetUtils.isSmall(item, item.h)), CcMetrics.smallRowHeight), rowLimit, interactingIndex);
+        const small = items.map(item => WidgetUtils.isSmall(item, item.h));
+        const full = GridUtils.shrinkRows(layout, small, CcMetrics.smallRowHeight);
+        const cut = rowLimit > 0 && layout.rows > rowLimit ? layout.slots.map((slot, i) => !!slot && i !== interactingIndex && slot.row + slot.rows > rowLimit) : [];
+        if (!cut.some(flag => flag))
+            return PanelLayout.pageLayout(full, rowLimit, interactingIndex);
+        // Rows size from the staying tiles so nothing jumps; cut tiles keep their old geometry.
+        const kept = GridUtils.shrinkRows(Object.assign({}, layout, {
+            "slots": layout.slots.map((slot, i) => cut[i] ? null : slot)
+        }), small, CcMetrics.smallRowHeight);
+        return PanelLayout.pageLayout(Object.assign({}, kept, {
+            "slots": kept.slots.map((slot, i) => cut[i] ? full.slots[i] : slot)
+        }), rowLimit, interactingIndex);
     }
     // Whole pixels keep the rows crisp while they ride the band's animation.
     slotLayout: GridUtils.insertBand(baseLayout, expandedIndex, Math.round(bandHeight))
@@ -125,7 +152,7 @@ DEditableGrid {
             if (i === excludeIndex || !slot?.enabled || slot.widgetData.id !== WidgetUtils.GROUP_ID)
                 continue;
             if (slot.contains(slot.mapFromItem(null, scenePoint.x, scenePoint.y)))
-                return slot.tileItem;
+                return slot.tileItem?.hasRoom() ? slot.tileItem : null;
         }
         return null;
     }
@@ -198,6 +225,16 @@ DEditableGrid {
         const widgets = savedWidgets.slice();
         shownIndices.forEach((saved, i) => widgets[saved] = items[i]);
         return widgets;
+    }
+
+    // Capped at one column, since tiles outsize buttons.
+    DCommon.PressBounce {
+        id: pressBounce
+
+        slots: root.slotLayout.slots
+        unit: root.cellWidth - CcMetrics.gridGap
+        minimumWidth: i => (tileRepeater.itemAt(i) as CcTileSlot)?.tileItem?.groupMinimumWidth ?? 0
+        animated: CcMetrics.animationsEnabled && root.live
     }
 
     Repeater {

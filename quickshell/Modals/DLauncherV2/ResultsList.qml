@@ -6,6 +6,7 @@ import qs.Common
 import qs.Services
 import qs.DCommon.Widgets
 import qs.Modals.DLauncherV2.Components
+import "../../Common/settings/AppFolders.js" as AppFolders
 
 Item {
     id: root
@@ -211,13 +212,10 @@ Item {
 
     function _dropTargetFor(hit) {
         const target = hit?.entry?.item;
-        if (!target || target.id === _dragItem?.id)
+        const action = AppFolders.dropAction(_dragItem, target);
+        if (!action || (action === "move" && hit.sectionId !== "apps"))
             return null;
-        if (_dragItem?.type === "folder")
-            return hit.sectionId === "apps" ? target : null;
-        if (target.type === "folder" || target.type === "app")
-            return target;
-        return null;
+        return target;
     }
 
     function _updateDropTarget() {
@@ -229,29 +227,25 @@ Item {
 
     function _dropOn(targetEntry, source) {
         const target = targetEntry.item;
-        if (source.type === "folder") {
+        switch (AppFolders.dropAction(source, target)) {
+        case "move":
             controller?.moveLauncherFolder(source.data.folderId, targetEntry.flatIndex);
-            return;
-        }
-        if (target.type === "folder") {
+            break;
+        case "add":
             SessionData.addAppToLauncherFolder(target.data.folderId, source.id);
-            return;
+            break;
+        case "create":
+            controller?.createFolderWith([target.id, source.id]);
+            break;
         }
-        controller?.createFolderWith([target.id, source.id]);
     }
 
     function _dropOutOfFolder(sourceId) {
         SessionData.removeAppFromLauncherFolder(sourceId);
     }
 
-    // Uninstalled members make popup indices differ from stored app indices.
     function _reorderInFolder(folderId, sourceId, targetId) {
-        const apps = SessionData.getLauncherFolder(folderId)?.apps ?? [];
-        const from = apps.indexOf(sourceId);
-        const to = apps.indexOf(targetId);
-        if (from < 0 || to < 0)
-            return;
-        SessionData.moveAppInLauncherFolder(folderId, from, to);
+        SessionData.moveAppInLauncherFolder(folderId, sourceId, targetId);
     }
 
     Timer {

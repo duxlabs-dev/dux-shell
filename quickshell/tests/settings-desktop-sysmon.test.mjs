@@ -73,7 +73,7 @@ test("opacity counts only when a card or tiles are painted", () => {
         assert.equal(uses({ layout, background: "none" }), false);
 });
 
-const dash = (cards, dashOptions) => store.migrateToVersion({ configVersion: 46, dashCards: cards, dashOptions }, 47);
+const dash = (cards, dashOptions) => store.migrateToVersion({ configVersion: 47, dashCards: cards, dashOptions }, 48);
 const plain = (value) => JSON.parse(JSON.stringify(value));
 const placed = (id, instanceId, config) => ({ id, instanceId, w: 2, h: 1, config });
 const old = ["cpu", "memory", "network", "disk", "sysmon"].map((id) => ({ id, w: 2, h: 1 }));
@@ -107,13 +107,13 @@ test("a configured system monitor card and a second run are unchanged", () => {
     const configured = { id: "sysmon", instanceId: "a", w: 1, h: 1, config: { layout: "list" } };
     const once = plain(dash([configured].concat(old), { sysmon: { temperature: false } }));
     assert.deepEqual(once.dashCards[0], configured);
-    assert.deepEqual(plain(store.migrateToVersion(Object.assign({}, once, { configVersion: 46 }), 47)).dashCards, once.dashCards);
+    assert.deepEqual(plain(store.migrateToVersion(Object.assign({}, once, { configVersion: 47 }), 48)).dashCards, once.dashCards);
 });
 
 const bar = (id, extra) => Object.assign({ id, enabled: true, overflowMode: "hide", background: "none" }, extra);
 const sysmon = (extra) => Object.assign({ id: "sysmon", enabled: true, overflowMode: "hide", background: "none", popout: "processes" }, extra);
 const one = (device, vals, extra) => ({ metrics: [Object.assign({ device, vals }, extra)] });
-const widgets = (list, extra) => plain(store.migrateToVersion(Object.assign({ configVersion: 47, barConfigs: [{ id: "b", rightWidgets: list }] }, extra), 48).barConfigs[0].rightWidgets);
+const widgets = (list, extra) => plain(store.migrateToVersion(Object.assign({ configVersion: 48, barConfigs: [{ id: "b", rightWidgets: list }] }, extra), 49).barConfigs[0].rightWidgets);
 
 test("bar monitor widgets become sysmon widgets with their options and generic keys", () => {
     const defaults = ["cpuUsage", "memUsage", "diskUsage", "cpuTemp", "gpuTemp", "network_speed_monitor"].map((id) => bar(id, { minimumWidth: true }));
@@ -144,13 +144,13 @@ test("junk in old bar entries falls back to the old defaults", () => {
 
 test("island layouts and docks migrate too and a second run changes nothing", () => {
     const input = {
-        configVersion: 47,
+        configVersion: 48,
         barConfigs: [null, { id: "i", islandHomeLayout: [{ id: "cpuUsage", enabled: false }], leftWidgets: [{ id: "island", islandHomeLayout: ["memUsage"] }] }],
         dockConfigs: [{ id: "d", widgets: [{ id: "w1", widgetId: "cpuTemp", enabled: true }, { widgetId: "appsDock" }, "network_speed_monitor"] }]
     };
-    const once = plain(store.migrateToVersion(input, 48));
+    const once = plain(store.migrateToVersion(input, 49));
     assert.deepEqual(once.barConfigs[1].islandHomeLayout, [{ id: "sysmon", enabled: false, popout: "processes", ...one("cpu", ["usage"]) }]);
     assert.deepEqual(once.barConfigs[1].leftWidgets[0].islandHomeLayout, [{ id: "sysmon", enabled: true, popout: "processes", ...one("memory", ["used"]) }]);
     assert.deepEqual(once.dockConfigs[0].widgets, [{ id: "w1", widgetId: "sysmon", enabled: true, popout: "processes", ...one("cpu", ["temp"]) }, { widgetId: "appsDock" }, { widgetId: "sysmon", enabled: true, popout: "processes", ...one("net", ["down", "up"]) }]);
-    assert.deepEqual(plain(store.migrateToVersion(Object.assign({}, once, { configVersion: 47 }), 48)), once);
+    assert.deepEqual(plain(store.migrateToVersion(Object.assign({}, once, { configVersion: 48 }), 49)), once);
 });

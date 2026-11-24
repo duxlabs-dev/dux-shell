@@ -278,8 +278,6 @@ Item {
 
     NotificationActions {
         id: contextActions
-        appName: root.notificationGroup?.appName || ""
-        desktopEntry: root.notificationGroup?.latestNotification?.desktopEntry || ""
         onDismissRequested: NotificationService.dismissGroup(root.notificationGroup?.key || "")
         onAppMuted: NotificationService.dismissGroup(root.notificationGroup?.key || "")
     }

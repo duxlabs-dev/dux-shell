@@ -24,6 +24,11 @@ jobs:
           extra_nix_config: |
             system-features = nixos-test benchmark big-parallel kvm
 
+      - name: Set up binary cache
+        uses: Mic92/niks3-action@v1
+        with:
+          server-url: https://nix-cache.duxlabs.dev
+
       - name: Check the flake
         run: nix flake check -L
 

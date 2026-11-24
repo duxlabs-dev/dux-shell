@@ -25,6 +25,34 @@ Item {
     }
 
     SettingsPage {
+        SettingsCard {
+            tab: "profiles"
+            settingKey: "configProfilePicker"
+            iconName: "tune"
+            title: I18n.tr("Behavior", "settings card title: config profile picker options")
+
+            SettingsDropdownRow {
+                readonly property var views: ["carousel", "grid", "dash"]
+                readonly property bool inIsland: PopoutService.dashRoutesToIsland("profiles", root.screenInfo)
+                readonly property var labels: [I18n.tr("Carousel", "config profile picker view"), I18n.tr("Grid", "config profile picker view"), inIsland ? I18n.tr("Island", "config profile picker view: opens in the island") : I18n.tr("Dashboard", "config profile picker view: opens in the dashboard")]
+
+                tab: "profiles"
+                tags: ["picker", "switcher", "carousel", "grid", "island", "dashboard", "dash", "keybind"]
+                settingKey: "configProfilePickerView"
+                text: I18n.tr("Profile picker", "settings row: how the config profile picker shows profiles")
+                options: labels
+                currentValue: labels[Math.max(0, views.indexOf(SettingsData.configProfilePickerView))]
+                onValueChanged: value => SettingsData.set("configProfilePickerView", views[labels.indexOf(value)])
+            }
+
+            SettingsShortcutRow {
+                parentModal: root.parentModal
+                ipcTarget: "config-profile"
+                action: "spawn dms ipc call config-profile toggle"
+                search: "config-profile"
+            }
+        }
+
         ProfileGrid {
             id: grid
             width: parent?.width ?? 0

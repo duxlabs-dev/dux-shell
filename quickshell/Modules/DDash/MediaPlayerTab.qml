@@ -49,7 +49,7 @@ Item {
     }
     readonly property bool volumeAvailable: !!((activePlayer && activePlayer.volumeSupported && !__isChromeBrowser) || (AudioService.sink && AudioService.sink.audio))
     readonly property bool usePlayerVolume: activePlayer && activePlayer.volumeSupported && !__isChromeBrowser
-    readonly property real reportedVolume: usePlayerVolume ? activePlayer.volume : (AudioService.sink?.audio?.volume ?? 0)
+    readonly property real reportedVolume: usePlayerVolume ? activePlayer.volume : AudioService.getNodeVolume(AudioService.sink)
     readonly property real currentVolume: pendingVolume >= 0 ? pendingVolume : reportedVolume
     readonly property real maxVolumePercent: usePlayerVolume ? 100 : AudioService.sinkMaxVolume
 
@@ -231,7 +231,7 @@ Item {
         const audio = AudioService.sink?.audio;
         if (!audio)
             return;
-        audio.volume = clamped;
+        AudioService.setNodeVolume(AudioService.sink, clamped);
         if (clamped > 0)
             audio.muted = false;
     }

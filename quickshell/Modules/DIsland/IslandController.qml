@@ -305,6 +305,7 @@ QtObject {
         case "weather":
         case "wellbeing":
         case "wallpaper":
+        case "profiles":
             return entryId;
         }
         return "";
@@ -377,7 +378,7 @@ QtObject {
         powerMenuContentWidth = next;
     }
 
-    readonly property var destinations: ["launcher", "controlcenter", "wallpaper", "weather", "wellbeing", "notificationcenter", "clipboard", "powermenu"]
+    readonly property var destinations: ["launcher", "controlcenter", "wallpaper", "weather", "wellbeing", "notificationcenter", "clipboard", "powermenu", "profiles"]
     readonly property var blankClickOwners: ["live", "launcher", "controlcenter", "wallpaper", "notificationcenter", "clipboard", "powermenu"]
     readonly property var destinationDefaults: ({
             "launcher": {
@@ -410,6 +411,10 @@ QtObject {
             },
             "powermenu": {
                 "contentLength": 150,
+                "contentHeight": 0
+            },
+            "profiles": {
+                "contentLength": 130,
                 "contentHeight": 0
             }
         })
@@ -681,7 +686,7 @@ QtObject {
     readonly property var mediaCompactTarget: pillTarget(mediaCompactLength, compactFaceThickness)
     readonly property var homeExpandedTarget: dashboardTargetFor("home")
     readonly property var mediaExpandedTarget: dashboardTargetFor("media")
-    readonly property real launcherMaxHeight: Math.min(dashboardAvailableHeight, LauncherMetrics.sizeHeight(SettingsData.dankLauncherV2Size, LauncherMetrics.islandEdgeInset, false))
+    readonly property real launcherMaxHeight: Math.min(dashboardAvailableHeight, LauncherMetrics.sizeHeight(SettingsData.dankLauncherV2Size, 0, false))
     readonly property real launcherContentHeight: destinationContentHeight("launcher")
     readonly property var launcherExpandedTarget: sheetTarget(Math.min(dashboardAvailableWidth, LauncherMetrics.sizeWidth(SettingsData.dankLauncherV2Size)), launcherContentHeight > 0 ? Math.min(launcherMaxHeight, launcherContentHeight) : launcherMaxHeight)
     function controlCenterTargetFor(bodyWidth, height = controlCenterHeight) {

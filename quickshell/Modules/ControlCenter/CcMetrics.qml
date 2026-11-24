@@ -7,7 +7,7 @@ import qs.Services
 
 Singleton {
     readonly property real sheetWidthDefault: sheetWidthFor(defaultColumns)
-    readonly property int defaultColumns: 8
+    readonly property int defaultColumns: 7
     readonly property int minimumColumns: 4
     readonly property int osdSheetColumns: 6
     readonly property real sheetPadding: PopoutMetrics.contentPadding
@@ -94,7 +94,6 @@ Singleton {
     readonly property real runningAppsIconSize: Theme.iconSize * iconScale
     // The resize corner counts a small tile as this many rows and snaps to the nearer of this and a full row.
     readonly property real smallRowFraction: 0.5
-    readonly property real shapeButtonSize: Theme.iconSize
     readonly property real editChromeButtonSize: Theme.iconSize
     // Mirrors DGridEditChrome.contentInset so the options menu anchor keeps the chrome's bounds while the chrome is unloaded.
     readonly property real editChromeInset: Math.max(Theme.minimumTouchTargetSize, editChromeButtonSize) / 2
@@ -140,8 +139,9 @@ Singleton {
     readonly property real dockedPanelConnectedGap: Math.max(PopoutMetrics.contentGap, Theme.connectedCornerRadius + Theme.spacingXS)
     readonly property real dockedBubbleSize: touchTarget + Theme.spacingS
     readonly property real dockedLibraryRowHeight: dockedBubbleSize + Theme.spacingS + Theme.fontSizeSmall * 3
-    readonly property real dockedLibraryMinHeight: dockedLibraryRowHeight * 2 + Theme.spacingM * 6 + Theme.iconSizeMedium * 2 + Theme.spacingS
-    readonly property real widgetPopoverMinHeight: sheetPadding * 2 + Theme.spacingL * 3 + Theme.listItemTwoLineHeight + Theme.fieldHeightLarge + Theme.buttonHeightXS * 2 + Theme.spacingS + dockedLibraryMinHeight
+    // One whole category card of two rows.
+    readonly property real dockedLibraryMinHeight: dockedLibraryRowHeight * 2 + Theme.spacingM * 3 + Theme.spacingS + Theme.iconSizeMedium
+    readonly property real widgetPopoverMinHeight: sheetPadding * 2 + Theme.spacingM * 3 + Theme.listItemTwoLineHeight + Theme.fieldHeightLarge + Theme.buttonHeightXS * 2 + Theme.spacingS + dockedLibraryMinHeight
     readonly property real dockedPanelMinHeight: widgetPopoverMinHeight + Theme.spacingXXS
     readonly property int dockedPanelColumns: 4
     readonly property real removeOverlayOpacity: 0.7
@@ -170,7 +170,6 @@ Singleton {
     readonly property color iconBoxInactiveColor: Theme.ccIconBoxInactiveBg
     readonly property color tileInactiveContent: Theme.surfaceText
     readonly property color tileInactiveSubtitle: Theme.surfaceVariantText
-    readonly property color tileInactiveIcon: Theme.primary
     readonly property color bareActiveIcon: Theme.primary
     readonly property real quickBarePadding: Theme.spacingL
     readonly property real quickBareWidth: iconBoxIconSize + quickBarePadding

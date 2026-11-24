@@ -29,6 +29,7 @@ T.Control {
     property bool clickable: false
     property bool showChevron: false
     property string trailingBadge: ""
+    property bool trailingOnTitleLine: false
     property color trailingBadgeColor: supportingContentColor
     property bool paintBackground: !(parent?.isSettingsGroupHost ?? false)
     property real paddingH: SettingsMetrics.rowPaddingH
@@ -339,6 +340,7 @@ T.Control {
 
                     readonly property bool resettable: root.resetInHeader && (root.modified || root.resetKeys.length > 0)
                     readonly property real chipTrailing: Theme.spacingXS + Theme.iconSizeSmall + SettingsMetrics.resetChipPaddingH
+                    readonly property real firstLineHeight: lineCount > 0 ? contentHeight / lineCount : height
 
                     width: parent.width - (resettable ? chipTrailing : 0)
                     text: root.title
@@ -422,6 +424,7 @@ T.Control {
                 id: trailingArea
                 anchors.right: parent.right
                 anchors.verticalCenter: parent.verticalCenter
+                anchors.verticalCenterOffset: root.trailingOnTitleLine && titleText.visible ? textColumn.y + titleText.firstLineHeight / 2 - parent.height / 2 : 0
                 spacing: Theme.spacingS
                 visible: trailingSlot.children.length > 0 || root.showChevron || root.trailingBadge !== ""
 

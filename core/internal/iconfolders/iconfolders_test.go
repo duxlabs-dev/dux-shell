@@ -34,6 +34,7 @@ func (e env) opts(theme string) Options {
 	return Options{
 		StateDir: e.state, IconTheme: theme, Mode: "dark", IconsDir: e.icons, BaseDirs: []string{e.icons, e.sys},
 		PluginDirs: []string{filepath.Join(root, "plugins"), filepath.Join(root, "system-plugins")}, PluginSettings: filepath.Join(root, "plugin_settings.json"),
+		TileTone: ToneAuto, OwnTone: ToneAuto,
 	}
 }
 

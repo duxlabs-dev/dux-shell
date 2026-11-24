@@ -14,7 +14,7 @@ var ACTION_IDS = ["settings", "lock", "power"];
 var EDIT_ID = "edit";
 var SPACER_ID = "spacer";
 var BUTTON_IDS = ACTION_IDS.concat([EDIT_ID]);
-var USER_SHAPES = ["circle", "cookie4", "cookie7", "cookie12", "clover4", "clover8", "sunny", "pentagon", "arch", "slanted", "gem", "square"];
+var USER_SHAPES = ["circle", "cookie4", "cookie7", "cookie12", "clover4", "clover8", "sunny", "pentagon", "arch", "slanted", "gem", "squircle", "rounded", "square"];
 
 function isSliderWidget(id) {
     return id === "volumeSlider" || id === "brightnessSlider" || id === "inputVolumeSlider";
@@ -101,7 +101,7 @@ function defaultWidget(id, columns) {
 
 function sizeSpec(widget, columns, rows = Infinity) {
     const spec = {
-        "w": 4,
+        "w": 3.5,
         "h": 1,
         "minW": 1,
         "maxW": columns,

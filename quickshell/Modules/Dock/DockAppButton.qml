@@ -3,6 +3,7 @@ import QtQuick.Effects
 import qs.Common
 import qs.Services
 import qs.DCommon.Widgets
+import qs.Widgets as Widgets
 
 Item {
     id: root
@@ -20,6 +21,15 @@ Item {
     property real dragAxisOffset: 0
     property int targetIndex: -1
     property int originalIndex: -1
+    readonly property bool isFolder: appData?.type === "folder"
+    readonly property bool receivingApp: dockApps?.folderDropIndex === index && index >= 0
+    readonly property bool folderRenamePending: isFolder && (dockApps?.pendingFolderRename ?? "") === appData.folder.id
+    onFolderRenamePendingChanged: {
+        if (!folderRenamePending)
+            return;
+        root.dockApps.renameHandoff.schedule();
+        root.contextMenu?.showFolder(root, root.parentDockScreen, true);
+    }
     property bool isVertical: root.options.position === SettingsData.Position.Left || root.options.position === SettingsData.Position.Right
     property bool showWindowTitle: false
     property string windowTitle: ""
@@ -53,23 +63,9 @@ Item {
     }
 
     function launchAppInstance() {
-        if (!appData?.appId)
+        if (!appData?.appId || isFolder)
             return;
-        if (appData.isCoreApp && appData.coreAppData) {
-            AppSearchService.executeCoreApp(appData.coreAppData);
-            return;
-        }
-        const desktopEntry = cachedDesktopEntry;
-        if (!desktopEntry)
-            return;
-        AppUsageHistoryData.addAppUsage({
-            "id": appData.appId,
-            "name": desktopEntry.name || appData.appId,
-            "icon": desktopEntry.icon ? String(desktopEntry.icon) : "",
-            "exec": desktopEntry.exec || "",
-            "comment": desktopEntry.comment || ""
-        });
-        SessionService.launchDesktopEntry(desktopEntry);
+        dockApps?.launchApp(appData.appId, appData.coreAppData, cachedDesktopEntry);
     }
 
     property bool isWindowFocused: {
@@ -81,7 +77,7 @@ Item {
             const toplevel = getToplevelObject();
             return isToplevelFocused(toplevel);
         }
-        if (appData.type === "grouped")
+        if (appData.type === "grouped" || appData.type === "folder")
             return getGroupedToplevels().some(toplevel => isToplevelFocused(toplevel));
 
         return false;
@@ -107,6 +103,9 @@ Item {
         if (!appData || !appData.appId) {
             return "";
         }
+
+        if (isFolder)
+            return appData.folder.name || I18n.tr("Folder");
 
         let appName;
         if (appData.isCoreApp && appData.coreAppData) {
@@ -196,6 +195,10 @@ Item {
     function showContextMenu() {
         if (!contextMenu)
             return;
+        if (isFolder) {
+            contextMenu.showFolder(root, parentDockScreen);
+            return;
+        }
         const shouldHidePin = Paths.isDmsAppId(appData.appId);
         contextMenu.showForButton(root, appData, root.height, shouldHidePin, cachedDesktopEntry, parentDockScreen, dockApps);
     }
@@ -267,32 +270,37 @@ Item {
         anchors.fill: parent
         hoverEnabled: true
         enabled: true
-        preventStealing: dragging || longPressing
-        cursorShape: longPressing ? Qt.DragMoveCursor : Qt.PointingHandCursor
+        preventStealing: mouseDrag || root.dragging || root.longPressing
+        cursorShape: root.dragging || root.longPressing ? Qt.DragMoveCursor : Qt.PointingHandCursor
         acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
+        property bool mouseDrag: false
         onPressed: mouse => {
             if (mouse.button === Qt.LeftButton && appData && appData.isPinned) {
+                mouseDrag = !!root.dockApps?.mixedStrip && mouse.source === Qt.MouseEventNotSynthesized;
                 dragStartPos = Qt.point(mouse.x, mouse.y);
                 longPressTimer.start();
             }
         }
-        onCanceled: root.cancelDrag()
+        onCanceled: {
+            mouseDrag = false;
+            root.cancelDrag();
+        }
 
         onReleased: mouse => {
+            if (mouse.button !== Qt.LeftButton)
+                return;
+            mouseDrag = false;
             longPressTimer.stop();
 
             const wasDragging = dragging;
-            const didReorder = wasDragging && targetIndex >= 0 && dockApps && (targetIndex !== originalIndex || dockApps.mixedDropIndex >= 0);
-
-            if (didReorder) {
-                const from = originalIndex;
-                const to = dockApps.dropTarget(targetIndex);
-                dockApps.settleDrag(() => dockApps.movePinnedApp(from, to));
+            if (wasDragging && dockApps) {
+                dockApps.updateMixedDrag(mouseArea, mouse.x, mouse.y);
+                dockApps.finishDrag(originalIndex, dockApps.dropTarget(targetIndex));
             }
 
             root.cancelDrag();
 
-            if (wasDragging || mouse.button !== Qt.LeftButton)
+            if (wasDragging || !contains(Qt.point(mouse.x, mouse.y)))
                 return;
 
             handleLeftClick();
@@ -302,7 +310,12 @@ Item {
             if (!appData)
                 return;
 
+            if (!root.isFolder)
+                root.contextMenu?.closeFolder();
             switch (appData.type) {
+            case "folder":
+                root.showContextMenu();
+                break;
             case "pinned":
                 if (!appData.appId)
                     return;
@@ -363,9 +376,10 @@ Item {
             }
         }
         onPositionChanged: mouse => {
-            if (longPressing && !dragging) {
-                const distance = Math.sqrt(Math.pow(mouse.x - dragStartPos.x, 2) + Math.pow(mouse.y - dragStartPos.y, 2));
-                if (distance > 5) {
+            if (!root.dragging && (pressedButtons & Qt.LeftButton) && root.appData?.isPinned) {
+                const distance = Math.hypot(mouse.x - root.dragStartPos.x, mouse.y - root.dragStartPos.y);
+                if ((mouseDrag || root.longPressing) && distance >= drag.threshold) {
+                    longPressTimer.stop();
                     dragging = true;
                     targetIndex = index;
                     originalIndex = index;
@@ -373,6 +387,8 @@ Item {
                         dockApps.draggedIndex = index;
                         dockApps.dropTargetIndex = index;
                     }
+                } else if (root.dockApps?.mixedStrip && distance >= drag.threshold) {
+                    longPressTimer.stop();
                 }
             }
 
@@ -392,7 +408,7 @@ Item {
             }
         }
         onClicked: mouse => {
-            if (!appData)
+            if (!appData || (root.isFolder && mouse.button !== Qt.RightButton))
                 return;
 
             if (mouse.button === Qt.MiddleButton) {
@@ -464,9 +480,9 @@ Item {
             anchors.fill: parent
             radius: Theme.cornerRadius
             color: Theme.primarySelected
-            border.width: 2
+            border.width: Theme.outlineWidth * 2
             border.color: Theme.primary
-            visible: dragging
+            visible: dragging || (root.receivingApp && !root.isFolder)
             z: -1
         }
 
@@ -475,6 +491,18 @@ Item {
 
             anchors.fill: parent
             scale: root.options?.enlargeOnHover && root.isHovered ? (root.options?.enlargePercentage ?? 125) / 100 : 1
+
+            Loader {
+                anchors.centerIn: parent
+                width: root.actualIconSize
+                height: root.actualIconSize
+                active: root.isFolder
+                sourceComponent: Widgets.AppFolderIcon {
+                    members: root.dockApps.folderMembers(root.appData.folder, maxPreviewItems)
+                    materialIcon: root.appData.folder.icon || ""
+                    receiving: root.receivingApp
+                }
+            }
 
             Loader {
                 id: coreIcon
@@ -511,7 +539,7 @@ Item {
                 fillMode: Image.PreserveAspectFit
                 sourceSize: Qt.size(displaySize * root.iconLoadScale, displaySize * root.iconLoadScale)
                 source: {
-                    if (!appData || appData.appId === "__SEPARATOR__") {
+                    if (!appData || root.isFolder || appData.appId === "__SEPARATOR__") {
                         return "";
                     }
                     if (appData.isCoreApp && appData.coreAppData) {
@@ -536,7 +564,7 @@ Item {
             }
 
             Loader {
-                readonly property bool missing: !coreIcon.active && !iconImg.drawn && !!appData?.appId
+                readonly property bool missing: !root.isFolder && !coreIcon.active && !iconImg.drawn && !!appData?.appId
                 anchors.centerIn: parent
                 active: missing && !Paths.isSteamApp(appData.appId)
                 sourceComponent: Rectangle {
@@ -572,7 +600,7 @@ Item {
 
             Loader {
                 anchors.centerIn: parent
-                active: !coreIcon.active && !iconImg.drawn && !!appData?.appId && Paths.isSteamApp(appData.appId)
+                active: !root.isFolder && !coreIcon.active && !iconImg.drawn && !!appData?.appId && Paths.isSteamApp(appData.appId)
                 sourceComponent: DIcon {
                     size: actualIconSize
                     name: "sports_esports"

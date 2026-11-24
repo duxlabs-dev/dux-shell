@@ -24,15 +24,17 @@ var matugenCmd = &cobra.Command{
 }
 
 var matugenGenerateCmd = &cobra.Command{
-	Use:   "generate",
-	Short: "Generate theme synchronously",
-	Run:   runMatugenGenerate,
+	Use:     "generate",
+	Short:   "Generate theme synchronously",
+	PreRunE: checkStyleFlags("icon-file-style", "icon-app-style"),
+	Run:     runMatugenGenerate,
 }
 
 var matugenQueueCmd = &cobra.Command{
-	Use:   "queue",
-	Short: "Queue theme generation (uses socket if available)",
-	Run:   runMatugenQueue,
+	Use:     "queue",
+	Short:   "Queue theme generation (uses socket if available)",
+	PreRunE: checkStyleFlags("icon-file-style", "icon-app-style"),
+	Run:     runMatugenQueue,
 }
 
 var matugenCheckCmd = &cobra.Command{
@@ -54,9 +56,24 @@ var matugenQtengineCmd = &cobra.Command{
 }
 
 var matugenIconFoldersCmd = &cobra.Command{
-	Use:   "icon-folders",
-	Short: "Recolor the icon theme's folders to the current DMS theme",
-	Run:   runMatugenIconFolders,
+	Use:     "icon-folders",
+	Short:   "Recolor the icon theme's folders to the current DMS theme",
+	PreRunE: checkStyleFlags("file-style", "app-style"),
+	Run:     runMatugenIconFolders,
+}
+
+// checkStyleFlags refuses a file style other than standard or color, or an app style other than
+// color, tinted, themed or monochrome, before anything runs.
+func checkStyleFlags(fileStyle, appStyle string) func(*cobra.Command, []string) error {
+	return func(cmd *cobra.Command, _ []string) error {
+		style, _ := cmd.Flags().GetString(fileStyle)
+		if _, err := iconfolders.ParseFileStyle(style); err != nil {
+			return err
+		}
+		style, _ = cmd.Flags().GetString(appStyle)
+		_, err := iconfolders.ParseAppStyle(style)
+		return err
+	}
 }
 
 func init() {
@@ -84,9 +101,15 @@ func init() {
 		cmd.Flags().String("terminal-palette", "", "Terminal palette: default, low, medium or high")
 		cmd.Flags().String("skip-templates", "", "Comma-separated list of templates to skip")
 		cmd.Flags().Bool("icon-folders", false, "Recolor the icon theme's folders to the theme colors")
-		cmd.Flags().Bool("icon-mono-apps", false, "With --icon-folders and Dux Icons, paint app icons in the theme colors")
-		cmd.Flags().String("icon-shape", "", "With --icon-folders and Dux Icons, the badge shape (default: the pack's own)")
-		cmd.Flags().Bool("icon-gradient", false, "With --icon-folders and Dux Icons, shade the badges")
+		cmd.Flags().String("icon-app-style", "color", "With --icon-folders and Dux Icons, app icons: color (each logo in its own colors), tinted (each logo repainted in its tile's tones), themed (a glyph on one theme-colored tile) or monochrome (a glyph on one neutral tile)")
+		cmd.Flags().String("icon-shape", "", "With --icon-folders and Dux Icons, the tile shape (default: the pack's own)")
+		cmd.Flags().Bool("icon-gradient", false, "With --icon-folders and Dux Icons, shade the tiles")
+		cmd.Flags().String("icon-tile-color", "theme", "With --icon-folders and Dux Icons, app icon tiles: theme, app (each from its own logo), edge (the plate the logo is drawn on) or ring (a neutral tile ringed in the app's color)")
+		cmd.Flags().String("icon-color-source", "score", "With --icon-tile-color app, edge or ring, the logo color: score (most colorful prominent) or common (most common)")
+		cmd.Flags().String("icon-tile-style", "tonal", "With --icon-tile-color app, the tile chroma: tonal, content or neutral")
+		cmd.Flags().Int("icon-tile-tone", -1, "With --icon-folders and Dux Icons, the tile tone 0-100 (-1: the theme's own)")
+		cmd.Flags().Int("icon-own-tone", -1, "With --icon-folders and Dux Icons, the tone 0-100 of the pack's own icons (-1: the pack's default)")
+		cmd.Flags().String("icon-file-style", "standard", "With --icon-folders and Dux Icons, files and folders: standard (on the theme tile) or color (colored folders and file types)")
 		cmd.Flags().Float64("contrast", 0, "Contrast value from -1 to 1 (0 = standard)")
 		cmd.Flags().String("source-mode", "", "Source color selection: dominant, colorful, darkness, lightness, saturation, less-saturation, value")
 		cmd.Flags().String("seed-color", "", "Hex color to build the palette from instead of extracting one from the wallpaper")
@@ -104,9 +127,15 @@ func init() {
 	matugenIconFoldersCmd.Flags().String("icon-theme", "", "Icon theme the user picked")
 	matugenIconFoldersCmd.Flags().String("mode", "dark", "Color mode: dark or light")
 	matugenIconFoldersCmd.Flags().String("state-dir", "", "State directory holding dms-colors.json (default: $XDG_CACHE_HOME/dms)")
-	matugenIconFoldersCmd.Flags().Bool("mono-apps", false, "With Dux Icons, paint app icons in the theme colors")
-	matugenIconFoldersCmd.Flags().String("shape", "", "With Dux Icons, the badge shape (default: the pack's own)")
-	matugenIconFoldersCmd.Flags().Bool("gradient", false, "With Dux Icons, shade the badges")
+	matugenIconFoldersCmd.Flags().String("app-style", "color", "With Dux Icons, app icons: color (each logo in its own colors), tinted (each logo repainted in its tile's tones), themed (a glyph on one theme-colored tile) or monochrome (a glyph on one neutral tile)")
+	matugenIconFoldersCmd.Flags().String("shape", "", "With Dux Icons, the tile shape (default: the pack's own)")
+	matugenIconFoldersCmd.Flags().Bool("gradient", false, "With Dux Icons, shade the tiles")
+	matugenIconFoldersCmd.Flags().String("tile-color", "theme", "With Dux Icons, app icon tiles: theme, app (each from its own logo), edge (the plate the logo is drawn on) or ring (a neutral tile ringed in the app's color)")
+	matugenIconFoldersCmd.Flags().String("color-source", "score", "With --tile-color app, edge or ring, the logo color: score (most colorful prominent) or common (most common)")
+	matugenIconFoldersCmd.Flags().String("tile-style", "tonal", "With --tile-color app, the tile chroma: tonal, content or neutral")
+	matugenIconFoldersCmd.Flags().Int("tile-tone", -1, "With Dux Icons, the tile tone 0-100 (-1: the theme's own)")
+	matugenIconFoldersCmd.Flags().Int("own-tone", -1, "With Dux Icons, the tone 0-100 of the pack's own icons (-1: the pack's default)")
+	matugenIconFoldersCmd.Flags().String("file-style", "standard", "With Dux Icons, files and folders: standard (on the theme tile) or color (colored folders and file types)")
 	matugenIconFoldersCmd.Flags().Bool("clear", false, "Remove every generated overlay and the state")
 	matugenIconFoldersCmd.Flags().Bool("probe", false, "Report whether the icon theme can be recolored, without writing")
 }
@@ -128,9 +157,15 @@ func buildMatugenOptions(cmd *cobra.Command) matugen.Options {
 	terminalPalette, _ := cmd.Flags().GetString("terminal-palette")
 	skipTemplates, _ := cmd.Flags().GetString("skip-templates")
 	iconFolders, _ := cmd.Flags().GetBool("icon-folders")
-	iconMonoApps, _ := cmd.Flags().GetBool("icon-mono-apps")
+	iconAppStyle, _ := cmd.Flags().GetString("icon-app-style")
 	iconShape, _ := cmd.Flags().GetString("icon-shape")
 	iconGradient, _ := cmd.Flags().GetBool("icon-gradient")
+	iconTileColor, _ := cmd.Flags().GetString("icon-tile-color")
+	iconColorSource, _ := cmd.Flags().GetString("icon-color-source")
+	iconTileStyle, _ := cmd.Flags().GetString("icon-tile-style")
+	iconTileTone, _ := cmd.Flags().GetInt("icon-tile-tone")
+	iconOwnTone, _ := cmd.Flags().GetInt("icon-own-tone")
+	iconFileStyle, _ := cmd.Flags().GetString("icon-file-style")
 	contrast, _ := cmd.Flags().GetFloat64("contrast")
 	sourceMode, _ := cmd.Flags().GetString("source-mode")
 	seedColor, _ := cmd.Flags().GetString("seed-color")
@@ -154,9 +189,15 @@ func buildMatugenOptions(cmd *cobra.Command) matugen.Options {
 		TerminalPalette:     terminalPalette,
 		SkipTemplates:       skipTemplates,
 		IconFolders:         iconFolders,
-		IconMonoApps:        iconMonoApps,
+		IconAppStyle:        iconAppStyle,
 		IconShape:           iconShape,
 		IconGradient:        iconGradient,
+		IconTileColor:       iconTileColor,
+		IconColorSource:     iconColorSource,
+		IconTileStyle:       iconTileStyle,
+		IconTileTone:        iconTileTone,
+		IconOwnTone:         iconOwnTone,
+		IconFileStyle:       iconFileStyle,
 		SourceMode:          sourceMode,
 		SeedColor:           seedColor,
 		Spec:                spec,
@@ -199,9 +240,15 @@ func runMatugenQueue(cmd *cobra.Command, args []string) {
 			"terminalPalette":     opts.TerminalPalette,
 			"skipTemplates":       opts.SkipTemplates,
 			"iconFolders":         opts.IconFolders,
-			"iconMonoApps":        opts.IconMonoApps,
+			"iconAppStyle":        opts.IconAppStyle,
 			"iconShape":           opts.IconShape,
 			"iconGradient":        opts.IconGradient,
+			"iconTileColor":       opts.IconTileColor,
+			"iconColorSource":     opts.IconColorSource,
+			"iconTileStyle":       opts.IconTileStyle,
+			"iconTileTone":        opts.IconTileTone,
+			"iconOwnTone":         opts.IconOwnTone,
+			"iconFileStyle":       opts.IconFileStyle,
 			"contrast":            opts.Contrast,
 			"sourceMode":          opts.SourceMode,
 			"seedColor":           opts.SeedColor,
@@ -306,14 +353,25 @@ func runMatugenIconFolders(cmd *cobra.Command, args []string) {
 	stateDir, _ := cmd.Flags().GetString("state-dir")
 	clearAll, _ := cmd.Flags().GetBool("clear")
 	probe, _ := cmd.Flags().GetBool("probe")
-	monoApps, _ := cmd.Flags().GetBool("mono-apps")
+	appStyle, _ := cmd.Flags().GetString("app-style")
 	shape, _ := cmd.Flags().GetString("shape")
 	gradient, _ := cmd.Flags().GetBool("gradient")
+	tileColor, _ := cmd.Flags().GetString("tile-color")
+	colorSource, _ := cmd.Flags().GetString("color-source")
+	tileStyle, _ := cmd.Flags().GetString("tile-style")
+	tileTone, _ := cmd.Flags().GetInt("tile-tone")
+	ownTone, _ := cmd.Flags().GetInt("own-tone")
+	fileStyle, _ := cmd.Flags().GetString("file-style")
 
 	if stateDir == "" {
 		stateDir = filepath.Join(utils.XDGCacheHome(), "dms")
 	}
-	out, err := iconFoldersResult(iconfolders.Options{StateDir: stateDir, IconTheme: iconTheme, Mode: mode, MonoApps: monoApps, Shape: shape, Gradient: gradient}, clearAll, probe)
+	opts := iconfolders.Options{
+		StateDir: stateDir, IconTheme: iconTheme, Mode: mode, AppStyle: appStyle, Shape: shape, Gradient: gradient,
+		TileColor: tileColor, ColorSource: colorSource, TileStyle: tileStyle, TileTone: tileTone, OwnTone: ownTone,
+		FileStyle: fileStyle,
+	}
+	out, err := iconFoldersResult(opts, clearAll, probe)
 	if err != nil {
 		log.Fatalf("Failed to update folder icons: %v", err)
 	}

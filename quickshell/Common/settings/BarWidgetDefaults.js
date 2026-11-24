@@ -268,6 +268,9 @@ var DEFAULTS = {
     },
     systemUpdate: {
         hideWhenIdle: false
+    },
+    notificationButton: {
+        hideWhenEmpty: false
     }
 };
 

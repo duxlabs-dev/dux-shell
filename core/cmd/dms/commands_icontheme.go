@@ -92,7 +92,9 @@ func iconThemeOptions(cmd *cobra.Command) iconfolders.Options {
 	if stateDir == "" {
 		stateDir = filepath.Join(utils.XDGCacheHome(), "dms")
 	}
-	return iconfolders.Options{StateDir: stateDir}
+	opts := iconfolders.NewOptions()
+	opts.StateDir = stateDir
+	return opts
 }
 
 // printIconThemes writes the one stdout line the shell reads: the themes, or the refusal and its code.

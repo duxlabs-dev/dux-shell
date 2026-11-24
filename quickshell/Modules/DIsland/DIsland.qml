@@ -124,6 +124,7 @@ Item {
         case "notificationcenter":
         case "clipboard":
         case "powermenu":
+        case "profiles":
             return requested;
         case "power-menu":
             return "powermenu";

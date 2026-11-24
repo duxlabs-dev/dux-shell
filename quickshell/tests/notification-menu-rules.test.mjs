@@ -25,7 +25,7 @@ function settings(rules) {
 
 function policy(rules, notif) {
     const functions = ["_resolveAppNameForRule", "_ruleFieldValue", "_coerceRuleUrgency", "_matchesNotificationRule", "_applyPluginInterceptor", "_evaluateNotificationPolicy"];
-    const context = load(serviceSource, { SettingsData: { notificationRules: rules, isNotificationRuleExpired: ruleExpiry.isRuleExpired }, NotificationInterceptorService: { entries: [], evaluate: () => null }, NotificationUrgency: { Low: 0, Normal: 1, Critical: 2 } }, functions);
+    const context = load(serviceSource, { SettingsData: { notificationRules: rules, isNotificationRuleExpired: ruleExpiry.isRuleExpired }, NotificationInterceptorService: { entries: [], evaluate: () => null }, DesktopEntries: { heuristicLookup: () => null }, NotificationUrgency: { Low: 0, Normal: 1, Critical: 2 } }, functions);
     return plain(context._evaluateNotificationPolicy(notif));
 }
 
@@ -140,4 +140,19 @@ test("an expired timed mute releases the popup but keeps the rule's other settin
     const s = settings([rule({ action: "mute", bypassDnd: true, expiresAt: 1 }), rule({ action: "mute", expiresAt: 1 })]);
     s.pruneExpiredNotificationRules();
     assert.deepEqual(plain(s.notificationRules), [rule({ bypassDnd: true })]);
+});
+
+test("a sender with no app name or desktop entry can be muted without muting named senders", () => {
+    const s = settings([]);
+    s.addMuteRuleForApp("", "");
+    assert.equal(s.isAppMuted("", ""), true);
+    assert.equal(s.isAppMuted("App", ""), false);
+
+    const notif = overrides => ({ appName: "", desktopEntry: "", summary: "5 Apps Updated", body: "", urgency: 1, ...overrides });
+    assert.equal(policy(s.notificationRules, notif()).disablePopup, true);
+    assert.equal(policy(s.notificationRules, notif({ appName: "App" })).disablePopup, false);
+    assert.equal(policy(s.notificationRules, notif({ desktopEntry: "my-tool" })).disablePopup, false);
+
+    s.removeMuteRuleForApp("", "");
+    assert.deepEqual(plain(s.notificationRules), []);
 });

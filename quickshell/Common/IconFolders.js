@@ -9,7 +9,7 @@ const CLEAR = "clear";
 const APPLY = "apply:";
 // "apply:<pack>", or "apply/<style>:<pack>" when the self-built pack is not drawn its default way.
 const REQUEST = /^apply(?:\/([^:]*))?:(.*)$/;
-// Badge outlines on the 64-unit canvas the pack's templates use; the first is drawn when no shape is asked for.
+// Tile outlines on the 64-unit canvas the pack's templates use.
 const OUTLINES = {
     circle: '<circle cx="32" cy="32" r="32"/>',
     squircle: '<path d="M64 32C64 36.22 63.93 41.69 63.8 44.66C63.67 47.62 63.47 48.3 63.21 49.79C62.94 51.27 62.61 52.44 62.21 53.56C61.8 54.69 61.33 55.64 60.78 56.53C60.23 57.42 59.62 58.2 58.91 58.91C58.2 59.62 57.42 60.23 56.53 60.78C55.64 61.33 54.69 61.8 53.56 62.21C52.44 62.61 51.27 62.94 49.79 63.21C48.3 63.47 47.62 63.67 44.66 63.8C41.69 63.93 36.22 64 32 64C27.78 64 22.31 63.93 19.34 63.8C16.38 63.67 15.7 63.47 14.21 63.21C12.73 62.94 11.56 62.61 10.44 62.21C9.31 61.8 8.36 61.33 7.47 60.78C6.58 60.23 5.8 59.62 5.09 58.91C4.38 58.2 3.77 57.42 3.22 56.53C2.67 55.64 2.2 54.69 1.79 53.56C1.39 52.44 1.06 51.27 0.79 49.79C0.53 48.3 0.33 47.62 0.2 44.66C0.07 41.69 0 36.22 0 32C0 27.78 0.07 22.31 0.2 19.34C0.33 16.38 0.53 15.7 0.79 14.21C1.06 12.73 1.39 11.56 1.79 10.44C2.2 9.31 2.67 8.36 3.22 7.47C3.77 6.58 4.38 5.8 5.09 5.09C5.8 4.38 6.58 3.77 7.47 3.22C8.36 2.67 9.31 2.2 10.44 1.79C11.56 1.39 12.73 1.06 14.21 0.79C15.7 0.53 16.38 0.33 19.34 0.2C22.31 0.07 27.78 0 32 0C36.22 0 41.69 0.07 44.66 0.2C47.62 0.33 48.3 0.53 49.79 0.79C51.27 1.06 52.44 1.39 53.56 1.79C54.69 2.2 55.64 2.67 56.53 3.22C57.42 3.77 58.2 4.38 58.91 5.09C59.62 5.8 60.23 6.58 60.78 7.47C61.33 8.36 61.8 9.31 62.21 10.44C62.61 11.56 62.94 12.73 63.21 14.21C63.47 15.7 63.67 16.38 63.8 19.34C63.93 22.31 64 27.78 64 32Z"/>',
@@ -99,15 +99,22 @@ function iconUrl(found, name) {
     return "file://" + found.dir + "/" + rel;
 }
 
-// The Dux Icons app icon at url without its badge, or "" when url is not one the build also wrote bare.
+// Outline the generated Dux Icons pack draws app tiles in; "" while that pack is not in use.
+function tileShape(picked, enabled, state, shape) {
+    if (indexName(picked, enabled, state) === picked)
+        return "";
+    return SHAPES.includes(shape) ? shape : SHAPES[0];
+}
+
+// The Dux Icons app icon at url without its tile, or "" when url is not one the build also wrote bare.
 function bareUrl(picked, enabled, state, url) {
     if (!url || indexName(picked, enabled, state) === picked || state.bare !== true)
         return "";
     const dir = state.dir;
     if (typeof dir !== "string" || !dir.startsWith("/") || dir.split("/").pop() !== state.applied)
         return "";
-    const badged = "file://" + dir + "/scalable/apps/";
-    const file = url.startsWith(badged) ? url.slice(badged.length) : "";
+    const tiled = "file://" + dir + "/scalable/apps/";
+    const file = url.startsWith(tiled) ? url.slice(tiled.length) : "";
     if (!file || file.includes("/"))
         return "";
     return "file://" + dir + "/bare/apps/" + file;
@@ -130,30 +137,144 @@ function shapeUrl(shape, color) {
     return "data:image/svg+xml;utf8," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="${color}">${OUTLINES[shape]}</svg>`);
 }
 
+// An outline as path data on the 64-unit canvas, for a Shape; "" for the circle, which a plain rounded Rectangle draws.
+function outlinePath(shape) {
+    if (shape === "rounded")
+        return "M14 0H50A14 14 0 0 1 64 14V50A14 14 0 0 1 50 64H14A14 14 0 0 1 0 50V14A14 14 0 0 1 14 0Z";
+    if (shape === "square")
+        return "M0 0H64V64H0Z";
+    const found = /\bd="([^"]+)"/.exec(OUTLINES[shape] || "");
+    return found ? found[1] : "";
+}
+
+// Fraction of the tile from its center to each outline's farthest point.
+const REACH = {
+    circle: 0.5,
+    squircle: 0.5946,
+    rounded: 0.6165,
+    square: 0.7071
+};
+
+// Scales an outline to fit inside the circle its tile holds.
+function circleFit(shape) {
+    return Math.min(1, 0.5 / (REACH[shape] || REACH.square));
+}
+
+// Side of the largest centered square inside each outline, as a fraction of the tile, measured from a 1024 px render.
+const INSETS = {
+    circle: 0.707,
+    squircle: 0.84,
+    rounded: 0.871,
+    square: 0.998,
+    hexagon: 0.648,
+    cookie: 0.646,
+    clover: 0.803
+};
+// The grid never grows past this, so a square tile still reads as a folder and not as four icons.
+const GRID_MAX = 0.8;
+// Room left between the grid and the outline, and between cells, as fractions of the grid.
+const GRID_INSET = 0.94;
+const GRID_GAP = 0.1;
+
+// Slot of member index in a folder tile: a 2x2 grid kept well inside the outline.
+function gridSlot(shape, count, index, rtl) {
+    const box = Math.min(INSETS[shape] || INSETS.circle, GRID_MAX) * GRID_INSET;
+    const size = box * (1 - GRID_GAP) / 2;
+    const step = (size + box * GRID_GAP) / 2;
+    if (count < 2)
+        return { x: 0.5, y: 0.5, size };
+    const row = count === 2 ? 0 : Math.floor(index / 2);
+    const col = index % 2;
+    const lone = count === 3 && index === 2;
+    const dx = lone ? 0 : (col === 0) !== !!rtl ? -step : step;
+    const dy = count === 2 ? 0 : row === 0 ? -step : step;
+    return { x: 0.5 + dx, y: 0.5 + dy, size };
+}
+
+// Tile colors other than the theme's, each sent as tile-color=<value>.
+const TILE_COLORS = ["app", "edge", "ring"];
+const COLOR_SOURCES = ["score", "common"];
+const TILE_STYLES = ["tonal", "content", "neutral"];
+// App icon styles; the first, each app in its own colors, is the generator's default and never sent.
+const APP_STYLES = ["color", "tinted", "themed", "monochrome"];
+// File styles; the first, files and folders on the theme tile, is the generator's default and never sent.
+const FILE_STYLES = ["standard", "color"];
+
+// An integer tone in [low, high], or -1 for the pack's own default.
+function tone(value, low, high) {
+    return Number.isInteger(value) && value >= low && value <= high ? value : -1;
+}
+
+// Whether app icons keep their own colors; only then does the Dux app tone apply.
+function colorApps(appStyle) {
+    return !APP_STYLES.includes(appStyle) || appStyle === APP_STYLES[0];
+}
+
+// Whether each app has a tile of its own; only then do the tile color, app color and tile style apply.
+function tiledApps(appStyle) {
+    return colorApps(appStyle) || appStyle === "tinted";
+}
+
+// Only seed-made tiles take a tile style; Edge Match in Tinted repaints the logo, so its own plate would not match.
+function tileStyled(appStyle, tileColor) {
+    if (!tiledApps(appStyle))
+        return false;
+    return tileColor === "app" || (tileColor === "edge" && appStyle === "tinted");
+}
+
 // The self-built pack's drawing style as one string. The shape is always named, so the pack's own default never shows.
-function style(monoApps, shape, gradient) {
+// Tile options are left out only at the generator's defaults, never the settings defaults, so older styles keep their text and a saved choice is always sent.
+// Options the app style ignores are left out too, so changing one does not rebuild the pack.
+function style(appStyle, shape, gradient, tile) {
     const parts = [];
-    if (monoApps)
-        parts.push("mono");
+    const colored = colorApps(appStyle);
+    const tiled = tiledApps(appStyle);
+    if (!colored)
+        parts.push("app-style=" + appStyle);
     if (gradient)
         parts.push("gradient");
     if (SHAPES.includes(shape))
         parts.push("shape=" + shape);
+    const options = tile || {};
+    if (tiled && TILE_COLORS.includes(options.color)) {
+        parts.push("tile-color=" + options.color);
+        if (COLOR_SOURCES.includes(options.source) && options.source !== COLOR_SOURCES[0])
+            parts.push("color-source=" + options.source);
+        if (tileStyled(appStyle, options.color) && TILE_STYLES.includes(options.style) && options.style !== TILE_STYLES[0])
+            parts.push("tile-style=" + options.style);
+    }
+    const tileTone = tone(options.tone, 0, 100);
+    if (tileTone >= 0)
+        parts.push("tile-tone=" + tileTone);
+    const ownTone = tone(options.ownTone, 40, 98);
+    if (colored && ownTone >= 0)
+        parts.push("own-tone=" + ownTone);
+    if (FILE_STYLES.includes(options.files) && options.files !== FILE_STYLES[0])
+        parts.push("file-style=" + options.files);
     return parts.join(",");
 }
+
+// Style parts that take a value, each passed on as `--<prefix><name> <value>`.
+const VALUED = ["app-style", "shape", "tile-color", "color-source", "tile-style", "tile-tone", "own-tone", "file-style"];
 
 // The flags of a style, for `icon-folders` ("") or a theme run ("icon-").
 function styleArgs(style, prefix) {
     const flags = [];
     for (const part of (style || "").split(",")) {
-        if (part === "mono")
-            flags.push(`--${prefix}mono-apps`);
-        else if (part === "gradient")
+        if (part === "gradient") {
             flags.push(`--${prefix}gradient`);
-        else if (part.startsWith("shape="))
-            flags.push(`--${prefix}shape`, part.substring(6));
+        } else {
+            const eq = part.indexOf("=");
+            if (eq > 0 && VALUED.includes(part.substring(0, eq)))
+                flags.push(`--${prefix}${part.substring(0, eq)}`, part.substring(eq + 1));
+        }
     }
     return flags;
+}
+
+// Theme runs get style flags only for the self-built pack: older dms builds fail on unknown flags.
+function runArgs(picked, style) {
+    return isSelf(picked) ? styleArgs(style, "icon-") : [];
 }
 
 function wanted(picked, recolor, present, style) {

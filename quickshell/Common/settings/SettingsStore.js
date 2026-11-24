@@ -806,19 +806,25 @@ function migrateToVersion(obj, targetVersion) {
     }
 
     if (currentVersion < 47 && targetVersion >= 47) {
-        migrateDashSystemMonitorCards(settings);
+        if (Array.isArray(settings.controlCenterWidgets) && settings.controlCenterColumns === undefined)
+            settings.controlCenterColumns = 8;
         settings.configVersion = 47;
     }
 
     if (currentVersion < 48 && targetVersion >= 48) {
-        migrateBarSystemMonitors(settings);
+        migrateDashSystemMonitorCards(settings);
         settings.configVersion = 48;
+    }
+
+    if (currentVersion < 49 && targetVersion >= 49) {
+        migrateBarSystemMonitors(settings);
+        settings.configVersion = 49;
     }
 
     return settings;
 }
 
-// Migration: can be removed after a few releases. v48: the CPU, memory, disk, temperature and network bar widgets become sysmon widgets.
+// Migration: can be removed after a few releases. v49: the CPU, memory, disk, temperature and network bar widgets become sysmon widgets.
 function migrateBarSystemMonitors(settings) {
     const OLD_IDS = WidgetDefaults.SYSMON_LEGACY_IDS;
     const DROPPED = ["minimumWidth", "showSwap", "mountPath", "showMountPath", "pciId", "device", "vals", "mount", "metrics", "showInGb", "diskUsageMode", "compactMode", "hideWhenIdle"];
@@ -884,7 +890,7 @@ function migrateBarSystemMonitors(settings) {
         convertList(isObject(dock) ? dock.widgets : null, "widgetId");
 }
 
-// Migration: can be removed after a few releases. v47: the CPU, Memory, Disk, Network and System Monitor dash cards become System monitor cards.
+// Migration: can be removed after a few releases. v48: the CPU, Memory, Disk, Network and System Monitor dash cards become System monitor cards.
 function migrateDashSystemMonitorCards(settings) {
     const optionsRoot = settings.dashOptions && typeof settings.dashOptions === "object" && !Array.isArray(settings.dashOptions) ? settings.dashOptions : {};
     const optionsFor = id => optionsRoot[id] && typeof optionsRoot[id] === "object" && !Array.isArray(optionsRoot[id]) ? optionsRoot[id] : {};
