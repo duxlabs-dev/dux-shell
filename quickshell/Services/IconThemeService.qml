@@ -26,6 +26,14 @@ Singleton {
             return null;
         return IconFolders.manifest(SettingsData.resolveIconTheme(), SettingsData.iconThemeGenerated, SettingsData.iconFolderState);
     }
+    // Shell tiles that sit beside app icons, such as launcher folders, take this outline to match them.
+    readonly property string tileShape: {
+        if (typeof SettingsData === "undefined")
+            return "";
+        return IconFolders.tileShape(SettingsData.resolveIconTheme(), SettingsData.iconThemeGenerated, SettingsData.iconFolderState, SettingsData.iconShape);
+    }
+    // Those shell tiles turn neutral too when the pack draws every app on one neutral tile.
+    readonly property bool neutralTiles: tileShape !== "" && SettingsData.iconAppStyle === "monochrome"
     // The theme draws DMS's own launcher entries, as the self-built pack does.
     readonly property bool drawsShellEntries: {
         if (!indexed || !managedTheme)
@@ -127,6 +135,22 @@ printf '%s' "$v" | tr -d "'\\""`;
         const svgs = Object.assign({}, _duxAppSvgs);
         svgs[id] = svg;
         _duxAppSvgs = svgs;
+    }
+
+    // Panels too small for the Dux Icons badge show the app icon without it; any other url is kept.
+    function bareIcon(url: string): string {
+        if (typeof SettingsData === "undefined")
+            return url;
+        return IconFolders.bareUrl(SettingsData.resolveIconTheme(), SettingsData.iconThemeGenerated, SettingsData.iconFolderState, url) || url;
+    }
+
+    // bareIcon for an AppIconRenderer value, which resolves plain names itself.
+    function bareIconValue(value: string): string {
+        if (!value || /^[a-z+]+:/.test(value))
+            return value;
+        const url = Paths.resolveIconPath(value);
+        const bare = bareIcon(url);
+        return bare !== url ? "svg:" + bare : value;
     }
 
     function resolve(name) {

@@ -237,6 +237,10 @@ const DMS_ACTIONS = [
         label: "Power Menu: Close"
     },
     {
+        id: "spawn dms ipc call config-profile toggle",
+        label: "Profile Picker: Toggle"
+    },
+    {
         id: "spawn dms ipc call control-center toggle",
         label: "Control Center: Toggle"
     },

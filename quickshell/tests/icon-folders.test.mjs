@@ -9,6 +9,7 @@ import vm from "node:vm";
 import { loadScript } from "./qml-script.mjs";
 
 const IconFolders = loadScript(new URL("../Common/IconFolders.js", import.meta.url));
+const SPEC = loadScript(new URL("../Common/settings/SettingsSpec.js", import.meta.url)).SPEC;
 const state = { base: "Papirus-Dark", applied: "Papirus-Dark-dms-1a2b3c4d", recipe: "papirus", inputs: "x" };
 
 test("the applied name is the overlay only for the picked pack with recoloring on", () => {
@@ -107,7 +108,7 @@ test("the generator is owed an overlay, a clear only after something was generat
     assert.equal(IconFolders.wanted("System Default", true, true), "clear");
     assert.equal(IconFolders.args("apply:Papirus-Dark", "light", "/cache/dms").join(" "), "matugen icon-folders --state-dir /cache/dms --icon-theme Papirus-Dark --mode light");
     assert.equal(IconFolders.args("clear", "light", "/cache/dms").join(" "), "matugen icon-folders --state-dir /cache/dms --clear");
-    assert.equal(IconFolders.wanted("Papirus-Dark", true, false, "mono"), "apply:Papirus-Dark", "the style belongs to Dux Icons only");
+    assert.equal(IconFolders.wanted("Papirus-Dark", true, false, "app-style=themed"), "apply:Papirus-Dark", "the style belongs to Dux Icons only");
 });
 
 test("a finished request runs again once, and only when its overlay is not the one on disk", () => {
@@ -129,15 +130,15 @@ test("Dux Icons is generated whenever it is picked, with the app icon option in 
     assert.equal(IconFolders.generates("Papirus-Dark", false), false);
     assert.equal(IconFolders.generates("System Default", true), false);
 
-    assert.equal(IconFolders.style(false, "circle", false), "shape=circle", "every known shape is named");
-    assert.equal(IconFolders.style(false, "blob", false), "", "an unknown shape is left to the pack");
-    assert.equal(IconFolders.style(true, "squircle", true), "mono,gradient,shape=squircle");
+    assert.equal(IconFolders.style("color", "circle", false), "shape=circle", "every known shape is named");
+    assert.equal(IconFolders.style("color", "blob", false), "", "an unknown shape is left to the pack");
+    assert.equal(IconFolders.style("themed", "squircle", true), "app-style=themed,gradient,shape=squircle");
     assert.equal(IconFolders.wanted("dux-icons", false, false, ""), "apply:dux-icons");
-    assert.equal(IconFolders.wanted("dux-icons", false, false, "mono"), "apply/mono:dux-icons");
-    assert.equal(IconFolders.packOf("apply/mono,shape=hexagon:dux-icons"), "dux-icons");
+    assert.equal(IconFolders.wanted("dux-icons", false, false, "app-style=themed"), "apply/app-style=themed:dux-icons");
+    assert.equal(IconFolders.packOf("apply/app-style=themed,shape=hexagon:dux-icons"), "dux-icons");
     assert.equal(IconFolders.packOf("apply:Pack:With:Colons"), "Pack:With:Colons");
     assert.equal(IconFolders.packOf("clear"), "");
-    assert.equal(IconFolders.args("apply/mono,gradient,shape=squircle:dux-icons", "dark", "/cache/dms").join(" "), "matugen icon-folders --state-dir /cache/dms --icon-theme dux-icons --mode dark --mono-apps --gradient --shape squircle");
+    assert.equal(IconFolders.args("apply/app-style=themed,gradient,shape=squircle:dux-icons", "dark", "/cache/dms").join(" "), "matugen icon-folders --state-dir /cache/dms --icon-theme dux-icons --mode dark --app-style themed --gradient --shape squircle");
     assert.deepEqual(Array.from(IconFolders.styleArgs("gradient,shape=cookie", "icon-")), ["--icon-gradient", "--icon-shape", "cookie"]);
     assert.deepEqual(Array.from(IconFolders.styleArgs("", "icon-")), []);
 
@@ -152,6 +153,128 @@ test("Dux Icons is generated whenever it is picked, with the app icon option in 
     assert.equal(IconFolders.iconUrl(paths, "/opt/other/icon.png"), "");
     assert.equal(IconFolders.manifest("dux-icons", true, built), null);
     assert.equal(IconFolders.indexName("Papirus-Dark", true, state), "Papirus-Dark", "a folder overlay is resolved by path, never indexed");
+});
+
+test("Dux Icons base options reach the style only away from the generator's defaults", () => {
+    // Generator defaults, not settings defaults: only these stay off the command line.
+    const defaults = { color: "theme", source: "score", style: "tonal", tone: -1, ownTone: -1 };
+    assert.equal(IconFolders.style("color", "squircle", false, defaults), "shape=squircle", "the generator defaults keep the old style and command line");
+    assert.equal(IconFolders.style("color", "squircle", false), "shape=squircle");
+    assert.equal(IconFolders.style("color", "squircle", false, { ...defaults, color: "app" }), "shape=squircle,tile-color=app");
+    assert.equal(IconFolders.style("color", "circle", true, { color: "app", source: "common", style: "content", tone: 35, ownTone: 80 }), "gradient,shape=circle,tile-color=app,color-source=common,tile-style=content,tile-tone=35,own-tone=80");
+    assert.equal(IconFolders.style("color", "", false, { ...defaults, source: "common", style: "neutral" }), "", "a source and a style only go with the app's own color");
+    for (const color of ["edge", "ring"]) {
+        assert.equal(IconFolders.style("color", "", false, { ...defaults, color }), `tile-color=${color}`, `${color} at its defaults names only the color`);
+        assert.equal(IconFolders.style("color", "", false, { ...defaults, color, source: "common", style: "content" }), `tile-color=${color},color-source=common`, `${color} takes a source but no style`);
+    }
+    assert.equal(IconFolders.style("color", "", false, { ...defaults, tone: 0, ownTone: 98 }), "tile-tone=0,own-tone=98");
+    for (const bad of [{ color: "blue" }, { color: "app", source: "x", style: "loud" }, { tone: 101 }, { tone: 2.5 }, { tone: "50" }, { ownTone: 39 }, { ownTone: 99 }])
+        assert.equal(IconFolders.style("color", "", false, bad).replace("tile-color=app", ""), "", JSON.stringify(bad));
+
+    const style = "shape=rounded,tile-color=app,color-source=common,tile-style=neutral,tile-tone=40,own-tone=90";
+    assert.deepEqual(Array.from(IconFolders.styleArgs(style, "icon-")), ["--icon-shape", "rounded", "--icon-tile-color", "app", "--icon-color-source", "common", "--icon-tile-style", "neutral", "--icon-tile-tone", "40", "--icon-own-tone", "90"]);
+    assert.deepEqual(Array.from(IconFolders.styleArgs("unknown=1,tile-tone=5", "")), ["--tile-tone", "5"], "an unknown part is dropped");
+    assert.equal(IconFolders.args(`apply/${style}:dux-icons`, "dark", "/cache/dms").join(" "), "matugen icon-folders --state-dir /cache/dms --icon-theme dux-icons --mode dark --shape rounded --tile-color app --color-source common --tile-style neutral --tile-tone 40 --own-tone 90");
+    assert.equal(IconFolders.packOf(`apply/${style}:dux-icons`), "dux-icons");
+    assert.deepEqual(Array.from(IconFolders.styleArgs("tile-color=ring,color-source=common", "")), ["--tile-color", "ring", "--color-source", "common"]);
+});
+
+test("a Themed or Monochrome app style is sent by name and drops the options only Color draws", () => {
+    const tile = { color: "app", source: "common", style: "content", tone: 35, ownTone: 80, files: "color" };
+    for (const appStyle of ["themed", "monochrome"]) {
+        const style = IconFolders.style(appStyle, "circle", true, tile);
+        assert.equal(style, `app-style=${appStyle},gradient,shape=circle,tile-tone=35,file-style=color`);
+        assert.equal(IconFolders.colorApps(appStyle), false, appStyle);
+        assert.deepEqual(Array.from(IconFolders.runArgs("dux-icons", style)), ["--icon-app-style", appStyle, "--icon-gradient", "--icon-shape", "circle", "--icon-tile-tone", "35", "--icon-file-style", "color"]);
+        assert.equal(IconFolders.args(IconFolders.wanted("dux-icons", false, false, style), "light", "/cache/dms").join(" "), `matugen icon-folders --state-dir /cache/dms --icon-theme dux-icons --mode light --app-style ${appStyle} --gradient --shape circle --tile-tone 35 --file-style color`);
+    }
+    for (const appStyle of ["color", "Themed", "mono", "", undefined, true]) {
+        assert.equal(IconFolders.colorApps(appStyle), true, String(appStyle));
+        assert.equal(IconFolders.style(appStyle, "circle", true, tile), "gradient,shape=circle,tile-color=app,color-source=common,tile-style=content,tile-tone=35,own-tone=80,file-style=color", String(appStyle));
+    }
+    assert.notEqual(IconFolders.style("themed", "circle", false), IconFolders.style("monochrome", "circle", false), "each style is its own request");
+});
+
+test("a Tinted app style keeps the per-app tile options and drops only the Dux app tone", () => {
+    const tile = { color: "ring", source: "common", style: "content", tone: 35, ownTone: 80, files: "color" };
+    assert.equal(IconFolders.colorApps("tinted"), false);
+    assert.equal(IconFolders.tiledApps("tinted"), true);
+    assert.equal(IconFolders.tiledApps("themed"), false);
+    assert.equal(IconFolders.tiledApps("color"), true);
+    const style = IconFolders.style("tinted", "circle", false, tile);
+    assert.equal(style, "app-style=tinted,shape=circle,tile-color=ring,color-source=common,tile-tone=35,file-style=color");
+    assert.deepEqual(Array.from(IconFolders.runArgs("dux-icons", style)), ["--icon-app-style", "tinted", "--icon-shape", "circle", "--icon-tile-color", "ring", "--icon-color-source", "common", "--icon-tile-tone", "35", "--icon-file-style", "color"]);
+});
+
+test("the tile style goes with a tile made from the logo's seed: App color, and Edge Match in Tinted", () => {
+    const tile = { source: "common", style: "content" };
+    for (const [appStyle, color, styled] of [
+        ["color", "app", true],
+        ["tinted", "app", true],
+        ["tinted", "edge", true],
+        ["color", "edge", false],
+        ["color", "ring", false],
+        ["tinted", "ring", false],
+        ["tinted", "theme", false],
+        ["themed", "app", false],
+        ["monochrome", "edge", false]
+    ]) {
+        const name = `${appStyle} ${color}`;
+        assert.equal(IconFolders.tileStyled(appStyle, color), styled, name);
+        assert.equal(IconFolders.style(appStyle, "", false, { ...tile, color }).includes("tile-style=content"), styled, name);
+    }
+});
+
+test("the shipped Dux Icons settings defaults draw themed squircles with colored files, sent on the command line", () => {
+    assert.equal(SPEC.iconShape.def, "squircle");
+    assert.equal(SPEC.iconTileColor.def, "edge");
+    assert.equal(SPEC.iconColorSource.def, "common");
+    assert.equal(SPEC.iconFileStyle.def, "color");
+    assert.equal(SPEC.iconAppStyle.def, "themed");
+    assert.equal(SPEC.iconGradient.def, false);
+    assert.equal(SPEC.iconTileTone.def, -1);
+    assert.equal(SPEC.iconOwnTone.def, -1);
+    const style = IconFolders.style(SPEC.iconAppStyle.def, SPEC.iconShape.def, SPEC.iconGradient.def, {
+        color: SPEC.iconTileColor.def,
+        source: SPEC.iconColorSource.def,
+        style: SPEC.iconTileStyle.def,
+        tone: SPEC.iconTileTone.def,
+        ownTone: SPEC.iconOwnTone.def,
+        files: SPEC.iconFileStyle.def
+    });
+    assert.equal(style, "app-style=themed,shape=squircle,file-style=color", "every setting off the generator's own default is sent, and the tile color settings stay out of Themed");
+    assert.equal(IconFolders.args(IconFolders.wanted("dux-icons", false, false, style), "dark", "/cache/dms").join(" "), "matugen icon-folders --state-dir /cache/dms --icon-theme dux-icons --mode dark --app-style themed --shape squircle --file-style color");
+    assert.deepEqual(Array.from(IconFolders.styleArgs(style, "icon-")), ["--icon-app-style", "themed", "--icon-shape", "squircle", "--icon-file-style", "color"]);
+});
+
+test("Dux Icons colored files reach the generator only when picked", () => {
+    assert.equal(IconFolders.style("color", "rounded", false, { files: "standard" }), "shape=rounded", "standard files keep the old style and command line");
+    for (const bad of ["papirus", "Color", "", undefined])
+        assert.equal(IconFolders.style("color", "rounded", false, { files: bad }), "shape=rounded", String(bad));
+    const style = IconFolders.style("color", "rounded", false, { color: "ring", ownTone: 70, files: "color" });
+    assert.equal(style, "shape=rounded,tile-color=ring,own-tone=70,file-style=color");
+    assert.deepEqual(Array.from(IconFolders.styleArgs(style, "icon-")), ["--icon-shape", "rounded", "--icon-tile-color", "ring", "--icon-own-tone", "70", "--icon-file-style", "color"]);
+    assert.equal(IconFolders.args(IconFolders.wanted("dux-icons", false, false, style), "dark", "/cache/dms").join(" "), "matugen icon-folders --state-dir /cache/dms --icon-theme dux-icons --mode dark --shape rounded --tile-color ring --own-tone 70 --file-style color");
+    assert.notEqual(IconFolders.wanted("dux-icons", false, false, style), IconFolders.wanted("dux-icons", false, false, "shape=rounded,tile-color=ring,own-tone=70"), "a new file style is a new request");
+});
+
+test("small panels swap a Dux Icons app icon for its tile-free copy only when the build wrote one", () => {
+    const dir = "/icons/dux-icons-dms-1a2b3c4d";
+    const bare = { base: "dux-icons", applied: "dux-icons-dms-1a2b3c4d", inputs: "x", dir, bare: true };
+    const tiled = `file://${dir}/scalable/apps/discord.svg`;
+    assert.equal(IconFolders.bareUrl("dux-icons", true, bare, tiled), `file://${dir}/bare/apps/discord.svg`);
+    for (const [picked, enabled, built, url] of [
+        ["dux-icons", true, { ...bare, bare: false }, tiled],
+        ["dux-icons", false, bare, tiled],
+        ["Papirus-Dark", true, bare, tiled],
+        ["dux-icons", true, bare, `file://${dir}/scalable/places/folder.svg`],
+        ["dux-icons", true, bare, `file://${dir}/scalable/apps/../places/folder.svg`],
+        ["dux-icons", true, bare, "file:///usr/share/icons/hicolor/scalable/apps/discord.svg"],
+        ["dux-icons", true, { ...bare, dir: "/icons/other" }, "file:///icons/other/scalable/apps/discord.svg"],
+        ["dux-icons", true, null, tiled],
+        ["dux-icons", true, bare, ""]
+    ])
+        assert.equal(IconFolders.bareUrl(picked, enabled, built, url), "", `${picked} ${url}`);
 });
 
 test("the theme list offers Dux Icons once, installed as a theme or only as its command", () => {
@@ -170,9 +293,9 @@ test("the theme list offers Dux Icons once, installed as a theme or only as its 
 });
 
 test("picking Dux Icons generates without the folder toggle and clears after leaving it", () => {
-    const { context, calls } = settings({ iconFolderRecolor: false, iconThemeDark: "dux-icons", iconStyle: "mono" });
+    const { context, calls } = settings({ iconFolderRecolor: false, iconThemeDark: "dux-icons", iconStyle: "app-style=themed" });
     context.applyStoredIconTheme();
-    assert.deepEqual(calls.runs, ["icon-folders --state-dir /cache/dms --icon-theme dux-icons --mode dark --mono-apps"]);
+    assert.deepEqual(calls.runs, ["icon-folders --state-dir /cache/dms --icon-theme dux-icons --mode dark --app-style themed"]);
     assert.deepEqual(calls.applied, [], "the pack is applied under its generated name, once");
 
     context.finish(JSON.stringify({ base: "dux-icons", applied: "dux-icons-dms-1a2b3c4d" }));
@@ -432,7 +555,26 @@ test("a theme run that outlived the feature is cleared again", () => {
     assert.deepEqual(calls.runs, ["icon-folders --state-dir /cache/dms --clear", "icon-folders --state-dir /cache/dms --clear"]);
 });
 
-function themeRun(iconThemeGenerated, appliedKey, iconStyleRunArgs = []) {
+const defaultIconStyle = IconFolders.style(SPEC.iconAppStyle.def, SPEC.iconShape.def, SPEC.iconGradient.def, {
+    color: SPEC.iconTileColor.def,
+    source: SPEC.iconColorSource.def,
+    style: SPEC.iconTileStyle.def,
+    tone: SPEC.iconTileTone.def,
+    ownTone: SPEC.iconOwnTone.def,
+    files: SPEC.iconFileStyle.def
+});
+
+// SettingsData.iconStyleRunArgs as its binding in SettingsData.qml evaluates it.
+function iconStyleRunArgs(iconTheme, iconStyle = defaultIconStyle) {
+    const source = readFileSync(new URL("../Common/SettingsData.qml", import.meta.url), "utf8");
+    const found = source.match(/^    readonly property var iconStyleRunArgs: (.+)$/m);
+    if (!found)
+        throw new Error("iconStyleRunArgs not found in SettingsData.qml");
+    return Array.from(vm.runInContext(found[1], vm.createContext({ IconFolders, iconTheme, iconStyle })));
+}
+
+function themeRun(iconThemeGenerated, appliedKey, runArgs = iconStyleRunArgs("Papirus-Dark")) {
+    const iconStyleRunArgs = runArgs;
     const context = vm.createContext({
         matugenAvailable: true,
         workerRunning: false,
@@ -467,9 +609,23 @@ test("a theme run asks for folder colors only with the toggle on, and the toggle
     assert.deepEqual(Array.from(on.command), [...off.command, "--icon-folders"]);
     assert.notEqual(on.key, off.key);
 
-    const styled = ["--icon-mono-apps", "--icon-shape", "squircle"];
+    const styled = ["--icon-app-style", "themed", "--icon-shape", "squircle"];
     assert.deepEqual(Array.from(themeRun(true, off.key, styled).command), [...off.command, "--icon-folders", ...styled]);
     assert.equal(themeRun(false, off.key, styled).command, null, "a style alone asks for nothing");
+});
+
+test("a theme run sends the Dux Icons style only when Dux Icons is the pick", () => {
+    assert.deepEqual(iconStyleRunArgs("dux-icons"), ["--icon-app-style", "themed", "--icon-shape", "squircle", "--icon-file-style", "color"]);
+    const styled = IconFolders.style("themed", "clover", true, { color: "ring", tone: 40, ownTone: 70, files: "color" });
+    assert.deepEqual(iconStyleRunArgs("dux-icons", styled), ["--icon-app-style", "themed", "--icon-gradient", "--icon-shape", "clover", "--icon-tile-tone", "40", "--icon-file-style", "color"]);
+    // Only the self-built pack takes style flags: older dms builds fail on unknown flags.
+    for (const picked of ["Papirus-Dark", "System Default", ""]) {
+        assert.deepEqual(iconStyleRunArgs(picked), [], picked);
+        assert.deepEqual(iconStyleRunArgs(picked, styled), [], picked);
+    }
+    const papirus = themeRun(true, "", iconStyleRunArgs("Papirus-Dark", styled));
+    assert.equal(papirus.command.filter(arg => arg.startsWith("--icon-")).join(" "), "--icon-theme --icon-folders");
+    assert.equal(papirus.key, themeRun(true, "").key, "a Dux Icons setting does not change a Papirus run");
 });
 
 // Values made inside the script's context have its prototypes, which a strict comparison tells apart.
@@ -482,11 +638,42 @@ test("the theme library keeps only named themes and the icon files they resolved
         assert.deepEqual(plain(IconFolders.parseLibrary(broken)), {});
 });
 
-test("every badge shape has an outline to preview it with", () => {
+test("every tile shape has an outline to preview it with", () => {
     assert.deepEqual(plain(IconFolders.shapes()), ["circle", "squircle", "rounded", "square", "hexagon", "cookie", "clover"]);
     for (const shape of IconFolders.shapes()) {
         const svg = decodeURIComponent(IconFolders.shapeUrl(shape, "#69b2ff").replace("data:image/svg+xml;utf8,", ""));
         assert.match(svg, /^<svg [^>]*viewBox="0 0 64 64" fill="#69b2ff"><(circle|rect|path) [^<>]+\/><\/svg>$/, shape);
+    }
+});
+
+test("shell tiles take the Dux Icons outline only while its generated pack is in use", () => {
+    const built = { base: "dux-icons", applied: "dux-icons-dms-1a2b3c4d" };
+    assert.equal(IconFolders.tileShape("dux-icons", true, built, "cookie"), "cookie");
+    assert.equal(IconFolders.tileShape("dux-icons", true, built, "blob"), "circle", "the pack draws circles for a shape it does not know");
+    for (const [picked, enabled, applied] of [["dux-icons", true, null], ["dux-icons", false, built], ["Papirus-Dark", true, state], ["System Default", false, null]])
+        assert.equal(IconFolders.tileShape(picked, enabled, applied, "cookie"), "", picked);
+    assert.equal(IconFolders.outlinePath("circle"), "", "the circle stays a rounded Rectangle");
+    for (const shape of IconFolders.shapes().slice(1))
+        assert.match(IconFolders.outlinePath(shape), /^M[\d. ]+[A-Z][^"<>]*Z$/, shape);
+});
+
+test("a folder's previews sit on a grid inside every outline, in reading order", () => {
+    const insets = { circle: 0.707, squircle: 0.84, rounded: 0.871, square: 0.998, hexagon: 0.648, cookie: 0.646, clover: 0.803 };
+    for (const shape of IconFolders.shapes()) {
+        for (const count of [1, 2, 3, 4]) {
+            const slots = [...Array(count).keys()].map(i => IconFolders.gridSlot(shape, count, i, false));
+            for (const s of slots)
+                assert.ok(Math.max(Math.abs(s.x - 0.5), Math.abs(s.y - 0.5)) + s.size / 2 <= insets[shape] / 2, `${shape} ${count} stays inside the outline`);
+            for (let i = 0; i < count; i++)
+                for (let j = i + 1; j < count; j++)
+                    assert.ok(Math.max(Math.abs(slots[i].x - slots[j].x), Math.abs(slots[i].y - slots[j].y)) >= slots[i].size, `${shape} ${count}: ${i} and ${j} overlap`);
+            const mirrored = [...Array(count).keys()].map(i => IconFolders.gridSlot(shape, count, i, true));
+            assert.deepEqual(mirrored.map(s => [+(1 - s.x).toFixed(6), +s.y.toFixed(6)]), slots.map(s => [+s.x.toFixed(6), +s.y.toFixed(6)]), `${shape} ${count} mirrors in RTL`);
+        }
+        const four = [0, 1, 2, 3].map(i => IconFolders.gridSlot(shape, 4, i, false));
+        assert.ok(four[0].x < four[1].x && four[0].y === four[1].y && four[2].y > four[0].y && four[2].x === four[0].x, shape);
+        const three = [0, 1, 2].map(i => IconFolders.gridSlot(shape, 3, i, false));
+        assert.equal(three[2].x, 0.5, `${shape}: the third preview is centered under the first two`);
     }
 });
 

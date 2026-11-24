@@ -113,7 +113,7 @@ func sysmonHelperCall(method string, p map[string]any) (any, error) {
 			return nil, err
 		}
 		if params.BoolOpt(p, "merged", false) {
-			for _, member := range mergedChildren(pid, readParents(), readExe, readComm, params.StringSlice(p, "skip")) {
+			for _, member := range mergedChildren(pid, readParents(), readExe) {
 				_ = setNice(member, nice)
 			}
 		}
@@ -257,13 +257,13 @@ func treeOrder(pid int, parents map[int]int, comm func(int) string, skip []strin
 
 // mergedChildren lists the descendants the process list folds into pid's row: a chain of children
 // running the same executable as pid.
-func mergedChildren(pid int, parents map[int]int, exe, comm func(int) string, skip []string) []int {
+func mergedChildren(pid int, parents map[int]int, exe func(int) string) []int {
 	root := exe(pid)
 	if root == "" {
 		return nil
 	}
 	return descendants(pid, parents, func(c int) bool {
-		return exe(c) == root && !slices.Contains(skip, strings.ToLower(comm(c)))
+		return exe(c) == root
 	})
 }
 

@@ -20,13 +20,14 @@ type depsDetectedMsg struct {
 }
 
 type packageInstallProgressMsg struct {
-	progress    float64
-	step        string
-	isComplete  bool
-	needsSudo   bool
-	commandInfo string
-	logOutput   string
-	error       error
+	progress      float64
+	step          string
+	isComplete    bool
+	needsSudo     bool
+	commandInfo   string
+	logOutput     string
+	error         error
+	greeterFailed bool
 }
 
 type packageProgressCompletedMsg struct{}

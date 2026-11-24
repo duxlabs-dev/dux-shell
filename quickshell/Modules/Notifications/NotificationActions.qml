@@ -6,18 +6,20 @@ import "../../Common/htmlElide.js" as HtmlElide
 
 QtObject {
     id: root
-    property string appName: ""
-    property string desktopEntry: ""
     property string dismissText: I18n.tr("Dismiss")
+    // null once the clicked notification closes; rule actions drop out with it
     property var notification: null
+    readonly property string appName: notification?.appName ?? ""
+    readonly property string ruleAppName: notification?.ruleAppName ?? ""
+    readonly property string desktopEntry: notification?.desktopEntry ?? ""
     readonly property string copyText: [notification?.summary, notification?.body].map(text => HtmlElide.stripHtmlTags((text || "").replace(/<br\s*\/?>/gi, "\n")).trim()).filter(text => text).join("\n")
     // nowMs comes from NotificationService's ticking clock so these
     // bindings refresh every minute and flip the moment a timed mute lapses
     // (a raw Date.now() in a binding is not reactive and would freeze).
-    readonly property bool isMuted: SettingsData.isAppMuted(appName, desktopEntry, NotificationService.notificationRuleNowMs)
+    readonly property bool isMuted: !!notification && SettingsData.isAppMuted(ruleAppName, desktopEntry, NotificationService.notificationRuleNowMs)
     // double, not int: epoch milliseconds exceed the 32-bit QML int range
-    readonly property double muteExpiresAt: SettingsData.muteExpiresAt(appName, desktopEntry, NotificationService.notificationRuleNowMs)
-    readonly property bool isDndBypassed: SettingsData.isAppDndBypassed(appName, desktopEntry)
+    readonly property double muteExpiresAt: notification ? SettingsData.muteExpiresAt(ruleAppName, desktopEntry, NotificationService.notificationRuleNowMs) : 0
+    readonly property bool isDndBypassed: !!notification && SettingsData.isAppDndBypassed(ruleAppName, desktopEntry)
     signal dismissRequested
     signal appMuted
 
@@ -29,6 +31,23 @@ QtObject {
     }
 
     readonly property var items: {
+        const list = notification ? _ruleItems() : [];
+        if (root.copyText) {
+            list.push({
+                icon: "content_copy",
+                label: I18n.tr("Copy"),
+                action: "copy"
+            });
+        }
+        list.push({
+            icon: "close",
+            label: root.dismissText,
+            action: "dismiss"
+        });
+        return list;
+    }
+
+    function _ruleItems() {
         const list = [
             {
                 icon: "tune",
@@ -65,18 +84,6 @@ QtObject {
             label: isDndBypassed ? I18n.tr("Block %1 in Do Not Disturb", "notification menu action, %1 is the app name").arg(appName || I18n.tr("this app")) : I18n.tr("Allow %1 in Do Not Disturb", "notification menu action, %1 is the app name").arg(appName || I18n.tr("this app")),
             action: "dnd"
         });
-        if (root.copyText) {
-            list.push({
-                icon: "content_copy",
-                label: I18n.tr("Copy"),
-                action: "copy"
-            });
-        }
-        list.push({
-            icon: "close",
-            label: root.dismissText,
-            action: "dismiss"
-        });
         return list;
     }
 
@@ -88,27 +95,27 @@ QtObject {
     function trigger(action) {
         switch (action) {
         case "rules":
-            SettingsData.requestNotificationRuleForNotification(appName, desktopEntry);
+            SettingsData.requestNotificationRuleForNotification(ruleAppName, desktopEntry);
             PopoutService.openSettingsWithTab("notification_rules");
             return;
         case "mute":
             if (isMuted) {
-                SettingsData.removeMuteRuleForApp(appName, desktopEntry);
+                SettingsData.removeMuteRuleForApp(ruleAppName, desktopEntry);
                 return;
             }
-            SettingsData.addMuteRuleForApp(appName, desktopEntry);
+            SettingsData.addMuteRuleForApp(ruleAppName, desktopEntry);
             appMuted();
             return;
         case "mute_1h":
-            SettingsData.addMuteRuleForApp(appName, desktopEntry, Date.now() + 60 * 60 * 1000);
+            SettingsData.addMuteRuleForApp(ruleAppName, desktopEntry, Date.now() + 60 * 60 * 1000);
             appMuted();
             return;
         case "mute_4h":
-            SettingsData.addMuteRuleForApp(appName, desktopEntry, Date.now() + 4 * 60 * 60 * 1000);
+            SettingsData.addMuteRuleForApp(ruleAppName, desktopEntry, Date.now() + 4 * 60 * 60 * 1000);
             appMuted();
             return;
         case "dnd":
-            SettingsData.setAppDndBypass(appName, desktopEntry, !isDndBypassed);
+            SettingsData.setAppDndBypass(ruleAppName, desktopEntry, !isDndBypassed);
             return;
         case "copy":
             Quickshell.execDetached([Proc.dmsBin, "cl", "copy", copyText]);

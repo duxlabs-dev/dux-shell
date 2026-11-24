@@ -44,18 +44,37 @@ type Options struct {
 	IconsDir string
 	// BaseDirs are searched in order for the picked theme; empty means the XDG icon dirs.
 	BaseDirs []string
-	// MonoApps asks the self-built pack to paint app icons in the theme colors.
-	MonoApps bool
-	// Shape is the self-built pack's badge shape; empty means the pack's own default.
+	// AppStyle draws the self-built pack's app icons: AppThemed or AppMonochrome for one glyph on a shared tile,
+	// AppTinted for logos repainted in their tile's tones, anything else (AppColor) for logos in their own colors.
+	AppStyle string
+	// Shape is the self-built pack's tile shape; empty means the pack's own default.
 	Shape string
-	// Gradient asks the self-built pack to shade its badges.
+	// Gradient asks the self-built pack to shade its tiles.
 	Gradient bool
+	// TileColor gives each of the self-built pack's app icons a tile from its own logo: TileApp, TileEdge
+	// or TileRing. Anything else, TileTheme, keeps the theme's. Only AppColor and AppTinted have per-app tiles.
+	TileColor string
+	// ColorSource picks an app logo's color: SourceCommon, or anything else for SourceScore.
+	ColorSource string
+	// TileStyle caps the app tiles' chroma: StyleContent, StyleNeutral, or anything else for StyleTonal.
+	TileStyle string
+	// TileTone is the HCT tone 0–100 of the self-built pack's tiles; ToneAuto (-1), not 0, keeps the theme's own.
+	TileTone int
+	// OwnTone asks the self-built pack to draw its own icons' glyphs at this HCT tone 0–100; ToneAuto (-1), not 0, leaves them.
+	OwnTone int
+	// FileStyle draws the self-built pack's files and folders: FilesColor for colored folders and file types without
+	// the tile, or anything else, FilesStandard, for the theme tile.
+	FileStyle string
 	// Generator overrides the lookup of the self-built pack's command.
 	Generator string
 	// PluginDirs hold the plugins whose manifests may carry recipes; empty means the DMS plugin dirs.
 	PluginDirs []string
 	// PluginSettings is the file that says which plugins are enabled.
 	PluginSettings string
+
+	// listedFingerprint is what the self-built pack's source listing reported in this apply: "" when it did not
+	// run, "-" when it failed.
+	listedFingerprint string
 }
 
 type State struct {
@@ -65,6 +84,11 @@ type State struct {
 	// Dir is the applied overlay; Icons maps each recolored icon to its file below it.
 	Dir   string            `json:"dir"`
 	Icons map[string]string `json:"icons"`
+	// Bare is set when the self-built pack also wrote its app icons without the tile, under bareDir.
+	Bare bool `json:"bare,omitempty"`
+	// Key is what the self-built pack was built from, as ownKey and the pack's fingerprint; an apply from the
+	// same inputs skips the build. Empty for a pack that does not fingerprint, and for any other theme.
+	Key string `json:"key,omitempty"`
 }
 
 // ErrOccupied is returned when a directory DMS did not generate holds the overlay name.
@@ -87,6 +111,12 @@ type Probe struct {
 	Supported bool   `json:"supported"`
 	Code      string `json:"code"`
 	Reason    string `json:"reason"`
+}
+
+// NewOptions is the zero Options with TileTone and OwnTone on ToneAuto. Build Options from it:
+// a tone left at 0 is HCT tone 0, pitch-black tiles and --own-tone 0, not the automatic tone.
+func NewOptions() Options {
+	return Options{TileTone: ToneAuto, OwnTone: ToneAuto}
 }
 
 func (o *Options) defaults() {

@@ -4,6 +4,7 @@ import QtQuick
 import qs.Common
 import qs.DCommon.Widgets
 import qs.Modals.DLauncherV2.Components
+import "../../Common/settings/AppFolders.js" as AppFolders
 
 Item {
     id: root
@@ -123,15 +124,10 @@ Item {
 
     function memberIndexAt(sceneX, sceneY) {
         const viewport = flick.mapFromItem(null, sceneX, sceneY);
-        if (viewport.x < 0 || viewport.y < 0 || viewport.x >= flick.width || viewport.y >= flick.height)
+        if (!flick.contains(viewport))
             return -1;
-        const cellWidth = flick.width / columns;
-        const column = Math.floor((I18n.isRtl ? flick.width - viewport.x : viewport.x) / cellWidth);
-        const row = Math.floor((viewport.y + flick.contentY) / cellHeight);
-        const index = row * columns + column;
-        if (column < 0 || column >= columns || index >= members.length)
-            return -1;
-        return index;
+        const index = AppFolders.memberGridIndex(viewport.x, viewport.y + flick.contentY, flick.width, cellHeight, columns, I18n.isRtl);
+        return index < members.length ? index : -1;
     }
 
     function selectedCellScenePosition() {

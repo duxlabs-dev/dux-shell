@@ -23,7 +23,7 @@ FocusScope {
     readonly property real dockReserve: root.controller.controlCenterDockReserve
     readonly property real bodyOffset: hostContract.dockSide === "left" ? dockReserve : 0
     readonly property bool panelResizing: content.panelResizing
-    onPanelResizingChanged: root.controller.controlCenterResizing = panelResizing
+    onPanelResizingChanged: root.controller.panelResizing = panelResizing
 
     function pickEditLayout() {
         if (SettingsData.controlCenterEditLayout !== "docked" || hostContract.availableHeight < CcMetrics.dockedPanelMinHeight)
@@ -167,7 +167,7 @@ FocusScope {
     }
 
     Component.onDestruction: {
-        root.controller.controlCenterResizing = false;
+        root.controller.panelResizing = false;
         root.controller.setEditing("controlcenter", false);
         root.controller.controlCenterDockSide = "";
         if (hostContract.shouldBeVisible)

@@ -254,6 +254,8 @@ FocusScope {
     }
 
     function dropIndex(item, x, y, accepts) {
+        if (!contains(item.mapToItem(root, x, y)))
+            return -1;
         const position = contentPosition(item, x, y);
         let last = -1;
         for (let i = 0; i < model.length; i++) {
@@ -264,6 +266,20 @@ FocusScope {
             last = i;
         }
         return last;
+    }
+
+    function centerDropIndex(item, x, y, accepts) {
+        const local = item.mapToItem(root, x, y);
+        if (!root.contains(local))
+            return -1;
+        const position = contentPosition(item, x, y);
+        return model.findIndex((entry, index) => {
+            if (!participating[index])
+                return false;
+            const size = allocatedSizes[index];
+            // Pins shift during a reorder; hit test where they are drawn.
+            return Math.abs(position - ((previewPositions[index] ?? positionAt(index)) + size / 2)) <= size / 4 && accepts(entry);
+        });
     }
 
     signal reorderRequested(string from, string to)

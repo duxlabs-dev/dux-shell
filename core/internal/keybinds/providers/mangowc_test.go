@@ -399,3 +399,58 @@ func TestMangoWCSetBindEditsUserBindsInPlace(t *testing.T) {
 		}
 	}
 }
+
+func TestMangoWCNamedScratchpadBindOwnsItsWindowRule(t *testing.T) {
+	for name, content := range map[string]string{
+		"stock": "",
+		"user":  mangoconf.BindsKeptHeader + "\nbind=SUPER,t,spawn,ghostty\n",
+	} {
+		tmpDir := t.TempDir()
+		bindsPath := filepath.Join(tmpDir, "dms", "binds.conf")
+		if err := os.MkdirAll(filepath.Dir(bindsPath), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(bindsPath, []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		provider := NewMangoWCProvider(tmpDir)
+		rules := func() []string {
+			data, _ := os.ReadFile(bindsPath)
+			var got []string
+			for line := range strings.SplitSeq(string(data), "\n") {
+				if strings.HasPrefix(line, "window_rule=") {
+					got = append(got, line)
+				}
+			}
+			return got
+		}
+
+		steps := []struct {
+			action string
+			want   []string
+		}{
+			{"toggle_named_scratchpad scratch-foot,none,foot --app-id scratch-foot", []string{"window_rule=is_named_scratchpad:1,app_id:scratch-foot"}},
+			{"toggle_named_scratchpad none,kitty-scratch,kitty -T kitty-scratch", []string{"window_rule=is_named_scratchpad:1,title:kitty-scratch"}},
+			{"toggle_named_scratchpad st-yazi,yazi,st -c st-yazi -e yazi", []string{"window_rule=is_named_scratchpad:1,app_id:st-yazi,title:yazi"}},
+			{"killclient", nil},
+		}
+		for _, step := range steps {
+			if err := provider.SetBind("ALT+h", step.action, "", nil); err != nil {
+				t.Fatalf("%s: SetBind(%q) failed: %v", name, step.action, err)
+			}
+			if got := rules(); strings.Join(got, "\n") != strings.Join(step.want, "\n") {
+				t.Fatalf("%s: after %q rules = %q, want %q", name, step.action, got, step.want)
+			}
+		}
+
+		if err := provider.SetBind("ALT+h", steps[0].action, "", nil); err != nil {
+			t.Fatal(err)
+		}
+		if err := provider.RemoveBind("ALT+h"); err != nil {
+			t.Fatal(err)
+		}
+		if got := rules(); len(got) != 0 {
+			t.Fatalf("%s: rule outlived its bind: %q", name, got)
+		}
+	}
+}

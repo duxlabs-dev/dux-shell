@@ -329,6 +329,8 @@ Item {
         SettingsData.recordBarInteraction(root.effectiveScreen, root.controller.barConfig?.id);
         if (button === Qt.RightButton)
             root.controller.toggleMediaFace();
+        else if (root.controller.hoverExpandBlocked)
+            root.controller.blockingPopoutDismissRequested();
         else
             root.controller.requestToggle(true);
     }
@@ -377,7 +379,7 @@ Item {
     VectorSpringMotion {
         id: motion
 
-        reducedMotion: root.reducedMotion || root.controller.controlCenterResizing
+        reducedMotion: root.reducedMotion || root.controller.panelResizing
         stiffness: root.springStiffness
         damping: root.springDamping
         mass: root.springMass
@@ -407,10 +409,10 @@ Item {
         }
 
         // Keep the grab inside the Wayland input region while it travels beyond either resize edge.
-        x: root.controller.controlCenterResizing ? -root.hostOriginX : (motion.running ? Math.min(root.motionStartBounds.x, root.targetVisualX) : root.targetVisualX) - inputPadding
-        y: root.controller.controlCenterResizing ? -root.hostOriginY : (motion.running ? Math.min(root.motionStartBounds.y, root.targetVisualY) : root.targetVisualY) - inputPadding
-        width: root.controller.controlCenterResizing ? (root.effectiveScreen?.width ?? root.width) : (motion.running ? Math.max(root.motionStartBounds.x + root.motionStartBounds.width, root.targetVisualX + motion.targetWidth) : root.targetVisualX + motion.targetWidth) + inputPadding - x
-        height: root.controller.controlCenterResizing ? (root.effectiveScreen?.height ?? root.height) : (motion.running ? Math.max(root.motionStartBounds.y + root.motionStartBounds.height, root.targetVisualY + motion.targetHeight) : root.targetVisualY + motion.targetHeight) + inputPadding - y
+        x: root.controller.panelResizing ? -root.hostOriginX : (motion.running ? Math.min(root.motionStartBounds.x, root.targetVisualX) : root.targetVisualX) - inputPadding
+        y: root.controller.panelResizing ? -root.hostOriginY : (motion.running ? Math.min(root.motionStartBounds.y, root.targetVisualY) : root.targetVisualY) - inputPadding
+        width: root.controller.panelResizing ? (root.effectiveScreen?.width ?? root.width) : (motion.running ? Math.max(root.motionStartBounds.x + root.motionStartBounds.width, root.targetVisualX + motion.targetWidth) : root.targetVisualX + motion.targetWidth) + inputPadding - x
+        height: root.controller.panelResizing ? (root.effectiveScreen?.height ?? root.height) : (motion.running ? Math.max(root.motionStartBounds.y + root.motionStartBounds.height, root.targetVisualY + motion.targetHeight) : root.targetVisualY + motion.targetHeight) + inputPadding - y
     }
 
     Loader {
@@ -521,12 +523,15 @@ Item {
             clipboardExpandedComponent: expandedClipboardComponent
             powerMenuCompactComponent: compactPowerMenuComponent
             powerMenuExpandedComponent: expandedPowerMenuComponent
+            profilesCompactComponent: compactProfilesComponent
+            profilesExpandedComponent: expandedProfilesComponent
         }
 
         HoverHandler {
             id: islandHover
 
             onHoveredChanged: root.updateFittsPointerInside()
+            onPointChanged: root.updatePointer(point.scenePosition)
         }
 
         // Above the content so the face takes focus before the pressed control; a handler on the parent runs after it.
@@ -544,7 +549,12 @@ Item {
     }
 
     function updateFittsPointerInside() {
-        root.controller.updatePointerInside(islandHover.hovered || stripHover.hovered);
+        const p = (islandHover.hovered ? islandHover : stripHover).point.scenePosition;
+        root.controller.updatePointerInside(islandHover.hovered || stripHover.hovered, p.x + root.controller.sectionOriginX, p.y + root.controller.sectionOriginY);
+    }
+
+    function updatePointer(p) {
+        root.controller.pointerMoved(p.x + root.controller.sectionOriginX, p.y + root.controller.sectionOriginY);
     }
 
     // Fitts zone from the island edge to the screen edge — hover/click count as island.
@@ -569,6 +579,7 @@ Item {
             id: stripHover
 
             onHoveredChanged: root.updateFittsPointerInside()
+            onPointChanged: root.updatePointer(point.scenePosition)
         }
 
         MouseArea {
@@ -977,6 +988,28 @@ Item {
 
         PowerMenuExpanded {
             controller: root.controller
+        }
+    }
+
+    Component {
+        id: compactProfilesComponent
+
+        DestinationCompact {
+            controller: root.controller
+            activityId: "profiles"
+            iconName: "style"
+            label: I18n.tr("Profiles", "island compact face: config profile picker label")
+        }
+    }
+
+    Component {
+        id: expandedProfilesComponent
+
+        ProfilePickerExpanded {
+            controller: root.controller
+            onWindowRequested: windowName => root.openAfterCollapse(windowName)
+            resizeGeometry: root.resizeGeometry
+            effectiveScreen: root.effectiveScreen
         }
     }
 

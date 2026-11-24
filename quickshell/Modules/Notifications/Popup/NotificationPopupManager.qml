@@ -65,7 +65,7 @@ DIdleSurface {
             return 0;
         const side = stackLeft ? "left" : "right";
         const inset = Math.max(0, Math.round(Theme.px(SettingsData.frameEdgeInsetForSide(modelData, side), dpr)));
-        const cornerClear = Theme.px(SettingsData.frameRounding, dpr) + Theme.px(Theme.connectedCornerRadius, dpr);
+        const cornerClear = Theme.px(Theme.frameRadius, dpr) + Theme.px(Theme.connectedCornerRadius, dpr);
         const bars = SettingsData.getAdjacentBarInfo(modelData, popupPosition, {
             id: "notification-popup",
             screenPreferences: [modelData.name],

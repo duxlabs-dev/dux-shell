@@ -495,7 +495,7 @@ PanelWindow {
     readonly property int cutoutWidth: Math.max(0, win._windowRegionWidth - win.cutoutLeftInset - win.cutoutRightInset)
     readonly property int cutoutHeight: Math.max(0, win._windowRegionHeight - win.cutoutTopInset - win.cutoutBottomInset)
     readonly property int cutoutRadius: {
-        const requested = win._regionInt(SettingsData.frameRounding);
+        const requested = win._regionInt(Theme.frameRadius);
         const maxRadius = Math.floor(Math.min(win.cutoutWidth, win.cutoutHeight) / 2);
         return Math.max(0, Math.min(requested, maxRadius));
     }

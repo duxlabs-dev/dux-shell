@@ -156,6 +156,7 @@ Item {
     signal popoutClosed
     signal closeAnimationFinished
     signal backgroundClicked
+    signal surfaceUnmapping
 
     Timer {
         id: _syncTimer
@@ -728,7 +729,7 @@ Item {
         if (!root.frameOwnsConnectedChrome || root.joinsBar)
             return 0;
         const ft = SettingsData.frameThickness;
-        const fr = SettingsData.frameRounding;
+        const fr = Theme.frameRadius;
         const ccr = Theme.connectedCornerRadius;
         return Math.max(ft * 4, ft + ccr * 2, fr);
     }
@@ -1301,6 +1302,7 @@ Item {
     }
 
     function _detach() {
+        surfaceUnmapping();
         surfaceRoot.parent = root;
         _attachedScreenName = "";
         surfaceScreen = null;
@@ -1346,6 +1348,7 @@ Item {
             dismissEnabled: root.hoverDismissEnabled
             dismissSuspended: root.hoverDismissSuspended || root.dragPassthrough
             surfaceVisible: root.shouldBeVisible
+            hoverSafeContains: root.popoutHandle.hoverSafeContains
             onDismissRequested: root.closeFromHoverDismiss()
         }
 

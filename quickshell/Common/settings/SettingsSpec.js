@@ -551,6 +551,15 @@ var LOCAL_SPEC = {
         def: "expressive",
         onChange: "applyInterfaceStyle"
     },
+    screenCornersEnabled: {
+        def: false
+    },
+    screenCornerRadius: {
+        def: 23
+    },
+    screenCornersOverFullscreen: {
+        def: false
+    },
     m3ElevationEnabled: {
         def: true
     },
@@ -628,7 +637,7 @@ var LOCAL_SPEC = {
         def: 135
     },
     controlCenterColumns: {
-        def: 8
+        def: 7
     },
     controlCenterRows: {
         def: 0,
@@ -646,7 +655,7 @@ var LOCAL_SPEC = {
             {
                 id: "user",
                 enabled: true,
-                w: 5,
+                w: 4,
                 h: 1
             },
             {
@@ -673,81 +682,88 @@ var LOCAL_SPEC = {
             {
                 id: "brightnessSlider",
                 enabled: true,
-                w: 4,
+                w: 3.5,
                 h: 1,
                 small: true
             },
             {
                 id: "volumeSlider",
                 enabled: true,
-                w: 4,
+                w: 3.5,
                 h: 1,
                 small: true
             },
             {
                 id: "wifi",
                 enabled: true,
-                w: 4,
+                w: 3.5,
                 h: 1
             },
             {
                 id: "bluetooth",
                 enabled: true,
-                w: 4,
+                w: 3.5,
                 h: 1
             },
             {
                 id: "audioOutput",
                 enabled: true,
-                w: 4,
+                w: 3.5,
                 h: 1
             },
             {
                 id: "audioInput",
                 enabled: true,
-                w: 4,
+                w: 3.5,
                 h: 1
             },
             {
-                id: "darkMode",
+                id: "airplaneMode",
                 enabled: true,
-                w: 2,
-                h: 1
-            },
-            {
-                id: "nightMode",
-                enabled: true,
-                w: 2,
-                h: 1
-            },
-            {
-                id: "doNotDisturb",
-                enabled: true,
-                w: 2,
-                h: 1
-            },
-            {
-                id: "idleInhibitor",
-                enabled: true,
-                w: 2,
-                h: 1
-            },
-            {
-                id: "battery",
-                enabled: true,
-                w: 4,
+                w: 3.5,
                 h: 1
             },
             {
                 id: "diskUsage",
                 enabled: true,
-                w: 4,
+                w: 3.5,
+                h: 1
+            },
+            {
+                id: "doNotDisturb",
+                enabled: true,
+                w: 3.5,
+                h: 1
+            },
+            {
+                id: "idleInhibitor",
+                enabled: true,
+                w: 3.5,
+                h: 1
+            },
+            {
+                id: "nightMode",
+                enabled: true,
+                w: 3.5,
+                h: 1
+            },
+            {
+                id: "darkMode",
+                enabled: true,
+                w: 3.5,
                 h: 1
             },
             {
                 id: "runningApps",
                 enabled: true,
-                w: 7,
+                w: 5,
+                h: 1,
+                small: true
+            },
+            {
+                id: "colorPicker",
+                enabled: true,
+                w: 1,
                 h: 1,
                 small: true
             },
@@ -866,6 +882,9 @@ var LOCAL_SPEC = {
     },
     browserPickerViewMode: {
         def: "grid"
+    },
+    configProfilePickerView: {
+        def: "carousel"
     },
     appPickerViewMode: {
         def: "grid"
@@ -991,6 +1010,10 @@ var LOCAL_SPEC = {
                 enabled: false
             },
             {
+                id: "profiles",
+                enabled: false
+            },
+            {
                 id: "settings",
                 enabled: false
             }
@@ -1056,8 +1079,8 @@ var LOCAL_SPEC = {
         def: false,
         onChange: "applyStoredIconTheme"
     },
-    iconMonoApps: {
-        def: false,
+    iconAppStyle: {
+        def: "themed",
         onChange: "applyStoredIconTheme"
     },
     iconShape: {
@@ -1066,6 +1089,30 @@ var LOCAL_SPEC = {
     },
     iconGradient: {
         def: false,
+        onChange: "applyStoredIconTheme"
+    },
+    iconTileColor: {
+        def: "edge",
+        onChange: "applyStoredIconTheme"
+    },
+    iconColorSource: {
+        def: "common",
+        onChange: "applyStoredIconTheme"
+    },
+    iconTileStyle: {
+        def: "tonal",
+        onChange: "applyStoredIconTheme"
+    },
+    iconTileTone: {
+        def: -1,
+        onChange: "applyStoredIconTheme"
+    },
+    iconOwnTone: {
+        def: -1,
+        onChange: "applyStoredIconTheme"
+    },
+    iconFileStyle: {
+        def: "color",
         onChange: "applyStoredIconTheme"
     },
     availableIconThemes: {

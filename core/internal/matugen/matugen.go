@@ -116,9 +116,15 @@ type Options struct {
 	TerminalPalette     string
 	SkipTemplates       string
 	IconFolders         bool
-	IconMonoApps        bool
+	IconAppStyle        string // color, tinted, themed or monochrome
 	IconShape           string
 	IconGradient        bool
+	IconTileColor       string // theme, app, edge or ring
+	IconColorSource     string
+	IconTileStyle       string
+	IconTileTone        int    // HCT tone 0–100; -1 keeps the theme's own
+	IconOwnTone         int    // HCT tone 0–100; -1 keeps the pack's default
+	IconFileStyle       string // standard or color
 	AppChecker          utils.AppChecker
 }
 
@@ -601,7 +607,7 @@ func syncIconFolders(opts *Options) (string, bool) {
 	}
 
 	before := iconfolders.ReadState(opts.StateDir).Applied
-	state, err := iconfolders.Apply(iconfolders.Options{StateDir: opts.StateDir, IconTheme: opts.IconTheme, Mode: string(opts.Mode), MonoApps: opts.IconMonoApps, Shape: opts.IconShape, Gradient: opts.IconGradient})
+	state, err := iconfolders.Apply(opts.iconFolderOptions())
 	if err != nil {
 		log.Warnf("Failed to recolor folder icons: %v", err)
 	}
@@ -612,6 +618,23 @@ func syncIconFolders(opts *Options) (string, bool) {
 		log.Infof("Folder icons recolored: %s", state.Applied)
 	}
 	return state.Applied, state.Applied != before
+}
+
+func (opts *Options) iconFolderOptions() iconfolders.Options {
+	return iconfolders.Options{
+		StateDir:    opts.StateDir,
+		IconTheme:   opts.IconTheme,
+		Mode:        string(opts.Mode),
+		AppStyle:    opts.IconAppStyle,
+		Shape:       opts.IconShape,
+		Gradient:    opts.IconGradient,
+		TileColor:   opts.IconTileColor,
+		ColorSource: opts.IconColorSource,
+		TileStyle:   opts.IconTileStyle,
+		TileTone:    opts.IconTileTone,
+		OwnTone:     opts.IconOwnTone,
+		FileStyle:   opts.IconFileStyle,
+	}
 }
 
 // The shell only needs dms-colors.json, so it is rendered and committed on its own before the template pass.

@@ -5,6 +5,7 @@ import qs.Common
 import qs.Modules.ControlCenter.Widgets
 import qs.Modules.DDash.Overview
 import "utils/cards.js" as CardUtils
+import "../../Common/EditHistory.js" as EditHistory
 
 Item {
     id: root
@@ -20,12 +21,58 @@ Item {
     readonly property bool menuOpen: customMenu.open
     readonly property bool hasCustomActions: customMenu.visibleItems.length > 0
     readonly property var focusTargets: editControls.focusTargets
+    property string editSnapshot: ""
+    property string undoBase: ""
+    property var undoStack: []
+    property bool batching: false
+    readonly property bool canUndo: undoStack.length > 0
+    readonly property var editKeys: ["dashCards", "dashOptions"]
 
     signal optionsRequested
     signal finished
 
     implicitWidth: vertical ? Theme.navigationRailWidth : editControls.implicitWidth
     implicitHeight: editControls.implicitHeight
+
+    onEditModeChanged: beginEdit()
+    Component.onCompleted: beginEdit()
+
+    function beginEdit() {
+        editSnapshot = editMode ? EditHistory.snapshot(SettingsData, editKeys) : "";
+        undoBase = editSnapshot;
+        undoStack = [];
+    }
+
+    function trackEdit() {
+        if (!editMode || batching)
+            return;
+        const state = EditHistory.snapshot(SettingsData, editKeys);
+        if (state === undoBase)
+            return;
+        undoStack = EditHistory.push(undoStack, undoBase);
+        undoBase = state;
+    }
+
+    // Keeps the intermediate states of a multi-write change out of the undo stack.
+    function batchEdit(change) {
+        batching = true;
+        change();
+        batching = false;
+        trackEdit();
+    }
+
+    function undo() {
+        if (undoStack.length === 0)
+            return;
+        undoBase = undoStack[undoStack.length - 1];
+        undoStack = undoStack.slice(0, -1);
+        batchEdit(() => EditHistory.restore(SettingsData, undoBase, editKeys));
+    }
+
+    function discard() {
+        batchEdit(() => EditHistory.restore(SettingsData, editSnapshot, editKeys));
+        finished();
+    }
 
     function closeMenu() {
         editControls.cancelConfirmation();
@@ -37,13 +84,14 @@ Item {
     }
 
     function reset() {
-        if (panelResizable)
-            DashRegistry.resetPanelSize(entryId);
-        if (entryId === DashRegistry.overviewId) {
-            CardUtils.resetToDefault();
-            return;
-        }
-        tabItem?.resetWidgets?.();
+        batchEdit(() => {
+            if (panelResizable)
+                DashRegistry.resetPanelSize(entryId);
+            if (entryId === DashRegistry.overviewId)
+                CardUtils.resetToDefault();
+            else
+                tabItem?.resetWidgets?.();
+        });
     }
 
     function clear() {
@@ -52,6 +100,19 @@ Item {
             return;
         }
         tabItem?.clearWidgets?.();
+    }
+
+    Connections {
+        target: SettingsData
+        enabled: root.editMode
+
+        function onDashCardsChanged() {
+            root.trackEdit();
+        }
+
+        function onDashOptionsChanged() {
+            root.trackEdit();
+        }
     }
 
     CcMenu {
@@ -77,6 +138,7 @@ Item {
         onOptionsRequested: root.optionsRequested()
         onResetRequested: root.reset()
         onClearRequested: root.clear()
+        onDiscardRequested: root.discard()
         onFinished: root.finished()
     }
 }

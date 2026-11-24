@@ -249,20 +249,12 @@ Scope {
         }
 
         function onLoginctlStateChanged() {
-            if (SessionService.active && pendingLock) {
-                pendingLock = false;
-                lockInitiatedLocally = true;
-                lockPowerOffArmed = powerOffOnLock;
-                shouldLock = true;
+            if (!SessionService.active || !pendingLock)
                 return;
-            }
-            if (SessionService.locked && !shouldLock && !pendingLock) {
-                if (handleLoginctlCustomLock())
-                    return;
-                lockInitiatedLocally = false;
-                lockPowerOffArmed = powerOffOnLock;
-                shouldLock = true;
-            }
+            pendingLock = false;
+            lockInitiatedLocally = true;
+            lockPowerOffArmed = powerOffOnLock;
+            shouldLock = true;
         }
     }
 

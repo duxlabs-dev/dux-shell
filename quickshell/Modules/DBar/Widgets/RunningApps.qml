@@ -307,11 +307,11 @@ BasePill {
                         root._desktopEntriesUpdateTrigger;
                         root._appIdSubstitutionsTrigger;
                         if (coreIcon)
-                            return coreIcon;
+                            return IconThemeService.bareIcon(coreIcon);
                         if (!effectiveAppId)
                             return "";
                         const desktopEntry = DesktopEntries.heuristicLookup(effectiveAppId);
-                        return Paths.getAppIcon(effectiveAppId, desktopEntry);
+                        return IconThemeService.bareIcon(Paths.getAppIcon(effectiveAppId, desktopEntry));
                     }
                     smooth: true
                     mipmap: true

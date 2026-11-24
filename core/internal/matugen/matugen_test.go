@@ -1338,3 +1338,16 @@ func TestRunIconFoldersWaitsForTheRunLock(t *testing.T) {
 		t.Fatal("never ran after the lock was released")
 	}
 }
+
+func TestIconFolderOptionsCarryEveryIconSetting(t *testing.T) {
+	opts := &Options{
+		StateDir: "/s", IconTheme: "dux-icons", Mode: ColorModeLight, IconAppStyle: "monochrome", IconShape: "square", IconGradient: true,
+		IconTileColor: "edge", IconColorSource: "common", IconTileStyle: "content", IconTileTone: 70, IconOwnTone: 0,
+		IconFileStyle: "color",
+	}
+	assert.Equal(t, iconfolders.Options{
+		StateDir: "/s", IconTheme: "dux-icons", Mode: "light", AppStyle: "monochrome", Shape: "square", Gradient: true,
+		TileColor: "edge", ColorSource: "common", TileStyle: "content", TileTone: 70, OwnTone: 0,
+		FileStyle: "color",
+	}, opts.iconFolderOptions())
+}

@@ -25,13 +25,23 @@ Singleton {
             "gnome-shell": []
         })
 
+    // Highest stops at the nice compositors usually get; only Maximum can starve the desktop.
     readonly property var priorities: [
         {
-            "nice": -20,
+            "nice": -19,
+            "label": I18n.tr("Maximum", "process priority preset"),
+            "warning": true
+        },
+        {
+            "nice": -12,
             "label": I18n.tr("Highest", "process priority preset")
         },
         {
             "nice": -10,
+            "label": I18n.tr("Very High", "process priority preset")
+        },
+        {
+            "nice": -5,
             "label": I18n.tr("High", "process priority preset")
         },
         {
@@ -53,9 +63,9 @@ Singleton {
     // children first, since a dead root's children can't be found. A stopped process only acts on TERM once continued.
     readonly property string treeScript: 's=$3; send() { kill -s "$1" "$2" || return; [ "$1" != TERM ] || kill -s CONT "$2" 2>/dev/null; return 0; }; [ "$s" != STOP ] || send STOP "$1"; walk() ( for c in $(pgrep -P "$1"); do n=$(tr "[:upper:]" "[:lower:]" < /proc/$c/comm 2>/dev/null) || continue; case " $2 " in *" $n "*) continue ;; esac; [ "$s" != STOP ] || send STOP "$c" 2>/dev/null; walk "$c" "$2"; [ "$s" = STOP ] || send "$s" "$c" 2>/dev/null; done ); walk "$1" "$2"; send "$4" "$1"'
 
-    // $1 nice, $2 pid, $3 names to skip, $4 non-empty for a merged row: descendants linked by the root's executable, as
+    // $1 nice, $2 pid, $3 non-empty for a merged row: descendants linked by the root's executable, as
     // dgop merges them. renice reaches one thread per id. Only the root decides the result; the rest can exit mid-way.
-    readonly property string priorityScript: 'n=$1; s=$3; renice "$n" -p "$2" >/dev/null || exit 1; threads() ( cd "/proc/$1/task" 2>/dev/null && renice "$n" -p * >/dev/null 2>&1 ); walk() ( for c in $(pgrep -P "$1"); do [ "$(readlink "/proc/$c/exe" 2>/dev/null)" = "$x" ] || continue; m=$(tr "[:upper:]" "[:lower:]" < /proc/$c/comm 2>/dev/null) || continue; case " $s " in *" $m "*) continue ;; esac; threads "$c"; walk "$c"; done ); threads "$2"; if [ -n "$4" ]; then x=$(readlink "/proc/$2/exe") && [ -n "$x" ] && walk "$2"; fi; exit 0'
+    readonly property string priorityScript: 'n=$1; renice "$n" -p "$2" >/dev/null || exit 1; threads() ( cd "/proc/$1/task" 2>/dev/null && renice "$n" -p * >/dev/null 2>&1 ); walk() ( for c in $(pgrep -P "$1"); do [ "$(readlink "/proc/$c/exe" 2>/dev/null)" = "$x" ] || continue; threads "$c"; walk "$c"; done ); threads "$2"; if [ -n "$3" ]; then x=$(readlink "/proc/$2/exe") && [ -n "$x" ] && walk "$2"; fi; exit 0'
 
     // $1 pid, $2 its systemd unit, $3 the script that ends a paused tree, $4 names to skip. Only a unit's main process restarts
     // through systemd (apps share the compositor's unit). Terminal programs exit 3. Anything else is relaunched with
@@ -211,9 +221,8 @@ Singleton {
         runChecked(!isOwn(process) || nice < process.nice, "process.nice", {
             "pid": process.pid,
             "nice": nice,
-            "merged": merged,
-            "skip": treeSkipNames
-        }, ["sh", "-c", priorityScript, "sh", String(nice), String(process.pid), treeSkipNames.join(" "), merged ? "1" : ""], I18n.tr("Failed to change priority of %1", "toast title, %1 is a process name").arg(process.command ?? ""));
+            "merged": merged
+        }, ["sh", "-c", priorityScript, "sh", String(nice), String(process.pid), merged ? "1" : ""], I18n.tr("Failed to change priority of %1", "toast title, %1 is a process name").arg(process.command ?? ""));
     }
 
     // Reports failure and asks for an early sample once the action, including any password prompt, is over.

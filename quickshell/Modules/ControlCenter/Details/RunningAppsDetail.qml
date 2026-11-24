@@ -61,7 +61,7 @@ Item {
                         readonly property string appId: modelData?.appId ?? ""
                         readonly property string appName: {
                             root._desktopEntriesRevision;
-                            return Paths.getAppName(appId, DesktopEntries.heuristicLookup(appId));
+                            return Paths.getAppName(appId, appId ? DesktopEntries.heuristicLookup(appId) : null);
                         }
                         readonly property var placement: CompositorService.toplevelPlacement(modelData)
                         readonly property string workspaceLabel: placement.workspace ? I18n.tr("Workspace %1", "control center running app row, %1 is a workspace number or name").arg(placement.workspace) : ""

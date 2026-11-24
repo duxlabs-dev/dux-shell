@@ -63,7 +63,7 @@ Item {
     }
     property bool showExpand: false
     property bool opensPage: false
-    property color restIconColor: CcMetrics.tileInactiveIcon
+    property color restIconColor: CcMetrics.tileInactiveContent
     property Component tallContent: null
     // The tile's own state. The island disables a face while it fades in, and that must not restyle the tile.
     property bool available: true
@@ -85,6 +85,7 @@ Item {
         return tall ? Math.min(CcMetrics.tallTileRadius, width / 2, height / 2) : CcMetrics.pillRadius(width, bodyHeight);
     }
     property bool acceptsInput: interactive && enabled
+    readonly property bool pressed: bodyLayer.pressed || boxLayer.pressed
     // The loader sizes and configures a tile after it is built, which is not a change to animate.
     property bool settled: false
     readonly property bool morphs: settled && CcMetrics.animationsEnabled

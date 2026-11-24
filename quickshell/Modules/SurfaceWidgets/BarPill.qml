@@ -27,6 +27,7 @@ Item {
     property real sectionSpacing: 0
     property bool enableBackgroundHover: true
     property bool enableCursor: true
+    property bool acceptMiddleClick: false
     property bool isAutoHideBar: false
     property bool edgeHovered: false
     readonly property bool isMouseHovered: mouseArea.containsMouse || visualContent.hovered || edgeHovered
@@ -112,6 +113,7 @@ Item {
     signal clicked
     signal pressedAt(real rootX, real rootY)
     signal rightClicked(real rootX, real rootY)
+    signal middleClicked(real rootX, real rootY)
     signal wheel(var wheelEvent)
 
     function cornerRadius(joined, progress = pressProgress) {
@@ -145,6 +147,11 @@ Item {
         if (mouse.button === Qt.RightButton) {
             const rPos = source.mapToItem(root, mouse.x, mouse.y);
             root.rightClicked(rPos.x, rPos.y);
+            return;
+        }
+        if (mouse.button === Qt.MiddleButton) {
+            const mPos = source.mapToItem(root, mouse.x, mouse.y);
+            root.middleClicked(mPos.x, mPos.y);
             return;
         }
         if (enableBackgroundHover)
@@ -305,7 +312,7 @@ Item {
                     bottomLeftRadius: fill.bottomLeftRadius
                     bottomRightRadius: fill.bottomRightRadius
                     enableRipple: false
-                    acceptedButtons: Qt.LeftButton | Qt.RightButton
+                    acceptedButtons: Qt.LeftButton | Qt.RightButton | (root.acceptMiddleClick ? Qt.MiddleButton : Qt.NoButton)
                     disabled: !root.enableBackgroundHover || root.noBackground
                     cursorShape: root.enableCursor ? Qt.PointingHandCursor : Qt.ArrowCursor
                     onContainsMouseChanged: visualContent.hovered = containsMouse
@@ -347,7 +354,7 @@ Item {
         height: root.height + root.topMargin + root.bottomMargin
         hoverEnabled: true
         cursorShape: root.enableCursor ? Qt.PointingHandCursor : Qt.ArrowCursor
-        acceptedButtons: Qt.LeftButton | Qt.RightButton
+        acceptedButtons: Qt.LeftButton | Qt.RightButton | (root.acceptMiddleClick ? Qt.MiddleButton : Qt.NoButton)
         onPressed: mouse => root.handlePress(mouse, mouseArea)
         onWheel: wheelEvent => {
             wheelEvent.accepted = false;

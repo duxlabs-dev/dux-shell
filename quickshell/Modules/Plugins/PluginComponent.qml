@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell.Io
 import qs.Common
+import qs.DCommon.Widgets
 import qs.Services
 
 Item {
@@ -54,11 +55,20 @@ Item {
 
     property Component horizontalBarPill: null
     property Component verticalBarPill: null
+    property string pillIcon: ""
+    property string pillText: ""
+    property bool pillActive: false
+    property color pillIconColor: pillActive ? Theme.primary : Theme.surfaceText
+    property color pillTextColor: pillActive ? Theme.primary : Theme.widgetTextColor
+    property bool pillSpinning: false
     property Component popoutContent: null
     property real popoutWidth: 400
     property real popoutHeight: 0
     property var pillClickAction: null
     property var pillRightClickAction: null
+    property var pillMiddleClickAction: null
+    property var pillWheelAction: null
+    property var pillDropAction: null
 
     property Component controlCenterWidget: null
     property string ccWidgetIcon: ""
@@ -79,9 +89,12 @@ Item {
     property var pluginData: ({})
     property var variants: []
 
-    readonly property bool isVertical: axis?.isVertical ?? false
-    readonly property bool hasHorizontalPill: horizontalBarPill !== null
-    readonly property bool hasVerticalPill: verticalBarPill !== null
+    readonly property bool isVertical: (surfaceContext?.isVertical ?? axis?.isVertical) ?? false
+    readonly property bool hasDefaultPill: pillIcon !== "" || pillText !== ""
+    readonly property Component effectiveHorizontalPill: horizontalBarPill ?? (hasDefaultPill ? defaultBarPill : null)
+    readonly property Component effectiveVerticalPill: verticalBarPill ?? (hasDefaultPill ? defaultBarPill : null)
+    readonly property bool hasHorizontalPill: effectiveHorizontalPill !== null
+    readonly property bool hasVerticalPill: effectiveVerticalPill !== null
     readonly property bool hasPopout: popoutContent !== null
 
     readonly property int iconSize: Theme.barIconSize(barThickness, -4, root.barConfig?.maximizeWidgetIcons, root.barConfig?.iconScale)
@@ -198,6 +211,86 @@ Item {
         pluginService.updatePluginVariant(pluginId, variantId, variantConfig);
     }
 
+    Component {
+        id: defaultBarPill
+
+        Item {
+            id: pillItem
+            readonly property int effectiveIconSize: root.iconSize > 0 ? root.iconSize : Theme.iconSizeSmall
+            readonly property bool isDock: (root.surfaceContext && root.surfaceContext.kind === "dock") ? true : false
+            readonly property bool hasIcon: root.pillIcon !== ""
+            readonly property bool hasText: root.pillText !== ""
+            property bool draggingOver: false
+
+            implicitWidth: root.isVertical
+                ? Math.max(effectiveIconSize, pillGrid.implicitWidth)
+                : (hasText ? pillGrid.implicitWidth : effectiveIconSize)
+            implicitHeight: root.isVertical
+                ? (hasText ? pillGrid.implicitHeight : effectiveIconSize)
+                : (isDock ? effectiveIconSize : Theme.iconSize)
+            anchors.verticalCenter: root.isVertical ? undefined : parent.verticalCenter
+            anchors.horizontalCenter: root.isVertical ? parent.horizontalCenter : undefined
+
+            Grid {
+                id: pillGrid
+                anchors.centerIn: parent
+                columns: root.isVertical ? 1 : ((pillItem.hasIcon && pillItem.hasText) ? 2 : 1)
+                spacing: (pillItem.hasIcon && pillItem.hasText) ? (root.isVertical ? Theme.spacingXXS : Theme.spacingXS) : 0
+                horizontalItemAlignment: Grid.AlignHCenter
+                verticalItemAlignment: Grid.AlignVCenter
+                scale: pillItem.draggingOver ? 1.2 : 1.0
+
+                Behavior on scale {
+                    NumberAnimation {
+                        duration: Theme.shortDuration
+                        easing.type: Easing.OutBack
+                    }
+                }
+
+                DIcon {
+                    id: pillIcon
+                    visible: pillItem.hasIcon
+                    name: root.pillIcon
+                    size: pillItem.effectiveIconSize
+                    color: pillItem.draggingOver ? Theme.primary : root.pillIconColor
+
+                    RotationAnimator on rotation {
+                        from: 0
+                        to: 360
+                        duration: Theme.extraLongDuration
+                        loops: Animation.Infinite
+                        running: root.pillSpinning && root.surfaceLive && !Theme.motionOff
+                        onRunningChanged: {
+                            if (!running)
+                                pillIcon.rotation = 0;
+                        }
+                    }
+                }
+
+                StyledText {
+                    visible: pillItem.hasText
+                    text: root.pillText
+                    color: pillItem.draggingOver ? Theme.primary : root.pillTextColor
+                    font.pixelSize: root.textSize
+                    font.weight: Font.Medium
+                    horizontalAlignment: Text.AlignHCenter
+                }
+            }
+
+            DropArea {
+                anchors.fill: parent
+                enabled: root.pillDropAction !== null
+                onEntered: pillItem.draggingOver = true
+                onExited: pillItem.draggingOver = false
+                onDropped: drop => {
+                    pillItem.draggingOver = false;
+                    if (root.pillDropAction)
+                        root.pillDropAction(drop);
+                }
+            }
+        }
+    }
+
     width: isVertical ? (hasVerticalPill ? verticalPill.width : 0) : (hasHorizontalPill ? horizontalPill.width : 0)
     height: isVertical ? (hasVerticalPill ? verticalPill.height : 0) : (hasHorizontalPill ? horizontalPill.height : 0)
 
@@ -214,7 +307,8 @@ Item {
         barSpacing: root.barSpacing
         barConfig: root.barConfig
         blurBarWindow: root.blurBarWindow
-        content: root.horizontalBarPill
+        content: root.effectiveHorizontalPill
+        acceptMiddleClick: root.pillMiddleClickAction !== null
         isFirst: root.isFirst
         isLast: root.isLast
         segmentRole: root.segmentRole
@@ -246,6 +340,13 @@ Item {
 
         onClicked: root.triggerPopout()
         onRightClicked: root.runPillAction(root.pillRightClickAction)
+        onMiddleClicked: root.runPillAction(root.pillMiddleClickAction)
+        onWheel: wheelEvent => {
+            if (root.pillWheelAction) {
+                wheelEvent.accepted = true;
+                root.pillWheelAction(wheelEvent);
+            }
+        }
     }
 
     BasePill {
@@ -261,7 +362,8 @@ Item {
         barSpacing: root.barSpacing
         barConfig: root.barConfig
         blurBarWindow: root.blurBarWindow
-        content: root.verticalBarPill
+        content: root.effectiveVerticalPill
+        acceptMiddleClick: root.pillMiddleClickAction !== null
         isVerticalOrientation: true
         isFirst: root.isFirst
         isLast: root.isLast
@@ -294,6 +396,13 @@ Item {
 
         onClicked: root.triggerPopout()
         onRightClicked: root.runPillAction(root.pillRightClickAction)
+        onMiddleClicked: root.runPillAction(root.pillMiddleClickAction)
+        onWheel: wheelEvent => {
+            if (root.pillWheelAction) {
+                wheelEvent.accepted = true;
+                root.pillWheelAction(wheelEvent);
+            }
+        }
     }
 
     Component.onDestruction: {
@@ -307,6 +416,22 @@ Item {
         if (pluginPopout) {
             pluginPopout.close();
         }
+    }
+
+    function closePopoutImmediately() {
+        if (attachedActive)
+            surfaceContext.dismissExpansion();
+        if (pluginPopout && typeof pluginPopout.instantClose === "function") {
+            pluginPopout.instantClose();
+        } else if (pluginPopout) {
+            pluginPopout.close();
+        }
+    }
+
+    function runAfterPopoutClosed(action) {
+        closePopoutImmediately();
+        if (action)
+            Qt.callLater(action);
     }
 
     function pillAnchor() {

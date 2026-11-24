@@ -25,7 +25,7 @@ Singleton {
     id: root
     readonly property var log: Log.scoped("SettingsData")
 
-    readonly property int settingsConfigVersion: 46
+    readonly property int settingsConfigVersion: 47
 
     enum Position {
         Top,
@@ -208,6 +208,9 @@ Singleton {
     property int containerSaturation: Spec.SPEC.containerSaturation.def
     property int radiusStrength: Spec.SPEC.radiusStrength.def
     property string radiusMode: Spec.SPEC.radiusMode.def
+    property bool screenCornersEnabled: Spec.SPEC.screenCornersEnabled.def
+    property int screenCornerRadius: Spec.SPEC.screenCornerRadius.def
+    property bool screenCornersOverFullscreen: Spec.SPEC.screenCornersOverFullscreen.def
     property int fixedRadius: Spec.SPEC.fixedRadius.def
     readonly property real cornerRadius: Shape.radius("m", Shape.scaleForStrength(radiusStrength), radiusMode === "fixed" ? fixedRadius : -1)
     property int niriLayoutGapsOverride: Spec.SPEC.niriLayoutGapsOverride.def
@@ -491,6 +494,7 @@ Singleton {
     property bool greeterEnableU2f: Spec.SPEC.greeterEnableU2f.def
 
     property string browserPickerViewMode: Spec.SPEC.browserPickerViewMode.def
+    property string configProfilePickerView: Spec.SPEC.configProfilePickerView.def
     property string appPickerViewMode: Spec.SPEC.appPickerViewMode.def
     property bool sortAppsAlphabetically: Spec.SPEC.sortAppsAlphabetically.def
     property int appLauncherGridColumns: Spec.SPEC.appLauncherGridColumns.def
@@ -558,6 +562,10 @@ Singleton {
         },
         {
             "id": "notifications",
+            "enabled": false
+        },
+        {
+            "id": "profiles",
             "enabled": false
         },
         {
@@ -682,11 +690,24 @@ Singleton {
     property string iconThemeLight: Spec.SPEC.iconThemeLight.def
     property bool iconThemePerMode: Spec.SPEC.iconThemePerMode.def
     property bool iconFolderRecolor: Spec.SPEC.iconFolderRecolor.def
-    property bool iconMonoApps: Spec.SPEC.iconMonoApps.def
+    property string iconAppStyle: Spec.SPEC.iconAppStyle.def
     property string iconShape: Spec.SPEC.iconShape.def
     property bool iconGradient: Spec.SPEC.iconGradient.def
-    readonly property string iconStyle: IconFolders.style(iconMonoApps, iconShape, iconGradient)
-    readonly property var iconStyleRunArgs: IconFolders.styleArgs(iconStyle, "icon-")
+    property string iconTileColor: Spec.SPEC.iconTileColor.def
+    property string iconColorSource: Spec.SPEC.iconColorSource.def
+    property string iconTileStyle: Spec.SPEC.iconTileStyle.def
+    property int iconTileTone: Spec.SPEC.iconTileTone.def
+    property int iconOwnTone: Spec.SPEC.iconOwnTone.def
+    property string iconFileStyle: Spec.SPEC.iconFileStyle.def
+    readonly property string iconStyle: IconFolders.style(iconAppStyle, iconShape, iconGradient, {
+        "color": iconTileColor,
+        "source": iconColorSource,
+        "style": iconTileStyle,
+        "tone": iconTileTone,
+        "ownTone": iconOwnTone,
+        "files": iconFileStyle
+    })
+    readonly property var iconStyleRunArgs: IconFolders.runArgs(iconTheme, iconStyle)
     readonly property string iconTheme: resolveIconTheme()
     property var availableIconThemes: Spec.SPEC.availableIconThemes.def
     property string systemDefaultIconTheme: Spec.SPEC.systemDefaultIconTheme.def
@@ -1701,7 +1722,7 @@ Singleton {
         _syncIconFolders();
     }
 
-    // A newly installed app has no badge until the pack is built again; an unchanged build keeps its name.
+    // A newly installed app has no tile until the pack is built again; an unchanged build keeps its name.
     function appsChanged() {
         if (IconFolders.isSelf(IconFolders.packOf(_wantedIconFolders())))
             iconAppsRebuildDelay.restart();
@@ -3339,6 +3360,7 @@ Singleton {
         case "launcher":
             return "islandRouteLauncher";
         case "home":
+        case "profiles":
             return "islandRouteDash";
         case "media":
             return "islandRouteMedia";
@@ -3826,12 +3848,28 @@ Singleton {
     }
 
     function requestNotificationRuleForNotification(appName, desktopEntry) {
-        const pattern = desktopEntry || appName || "";
-        pendingNotificationRule = _newNotificationRule(pattern ? {
-            field: desktopEntry ? "desktopEntry" : "appName",
-            pattern: pattern,
-            matchType: "exact"
-        } : {});
+        pendingNotificationRule = _newNotificationRule(_appRuleKey(appName, desktopEntry));
+    }
+
+    // A sender with neither (a host app through the notification portal) is keyed on its empty app name.
+    function _appRuleKey(appName, desktopEntry) {
+        if (desktopEntry)
+            return {
+                field: "desktopEntry",
+                pattern: desktopEntry,
+                matchType: "exact"
+            };
+        if (appName)
+            return {
+                field: "appName",
+                pattern: appName,
+                matchType: "exact"
+            };
+        return {
+            field: "appName",
+            pattern: "^$",
+            matchType: "regex"
+        };
     }
 
     function _isMuteRule(rule) {
@@ -3862,27 +3900,23 @@ Singleton {
     function _appRuleIndex(rules, appName, desktopEntry, predicate) {
         const app = (appName || "").toString().toLowerCase();
         const desktop = (desktopEntry || "").toString().toLowerCase();
-        if (!app && !desktop)
-            return -1;
         return rules.findIndex(rule => {
-            if (!predicate(rule) || (rule.matchType || "contains").toString().toLowerCase() !== "exact" || (rule.conditions || []).length > 0)
+            if (!predicate(rule) || (rule.conditions || []).length > 0)
                 return false;
+            const matchType = (rule.matchType || "contains").toString().toLowerCase();
             const pattern = (rule.pattern || "").toString().toLowerCase();
+            if (!app && !desktop)
+                return matchType === "regex" && (!rule.field || rule.field === "appName") && pattern === "^$";
+            if (matchType !== "exact")
+                return false;
             const value = !rule.field || rule.field === "appName" ? app : rule.field === "desktopEntry" ? desktop : "";
             return pattern !== "" && pattern === value;
         });
     }
 
     function _addAppRule(appName, desktopEntry, overrides) {
-        const pattern = desktopEntry || appName || "";
-        if (!pattern)
-            return;
         var rules = JSON.parse(JSON.stringify(notificationRules || []));
-        const rule = _newNotificationRule(Object.assign({
-            field: desktopEntry ? "desktopEntry" : "appName",
-            pattern: pattern,
-            matchType: "exact"
-        }, overrides));
+        const rule = _newNotificationRule(Object.assign(_appRuleKey(appName, desktopEntry), overrides));
         if (!rule.expiresAt)
             delete rule.expiresAt;
         rules.push(rule);

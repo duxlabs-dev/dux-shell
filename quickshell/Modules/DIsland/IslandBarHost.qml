@@ -391,9 +391,11 @@ Item {
 
         onKeyboardDismissRequestedChanged: root.requestKeyboardFocus()
         onPointerInsideChanged: {
-            if (pointerInside)
+            if (pointerInside && !safeZoneHeld)
                 root.barBody?.pointerMovedToIsland();
         }
+        onSafeZoneLeft: root.barBody?.pointerMovedToIsland()
+        inHoverSafeZone: (gx, gy) => root.barBody?.pointInActiveHoverSafeZone(gx, gy) === true
         onKeyboardYieldedChanged: {
             if (keyboardYielded || !keyboardDismissRequested)
                 return;
@@ -450,6 +452,9 @@ Item {
         unreadNotificationCount: root.setting("islandNotificationBadgeClearOnOpen") ? NotificationService.unreadCount : NotificationService.notifications.length
         hoverOpenDelay: Math.max(0, Math.min(root.maxHoverDelay, root.setting("islandHoverOpenDelay")))
         hoverCloseDelay: Math.max(0, Math.min(root.maxHoverDelay, root.setting("islandHoverCloseDelay")))
+        // With hover popouts on, hover doesn't open the island over a popout opened with a click, like bar widgets.
+        hoverExpandBlocked: hoverExpandEnabled && (root.barConfig?.hoverPopouts ?? false) && (root.popoutRevision, PopoutManager.isActivePopoutPinned(root.screen))
+        onBlockingPopoutDismissRequested: PopoutManager.closePopoutForScreen(root.screen)
     }
 
     DLauncher.Controller {

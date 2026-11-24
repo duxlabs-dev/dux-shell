@@ -24,7 +24,7 @@ Singleton {
     readonly property var _historyKeys: ["browserUsageHistory", "filePickerUsageHistory"]
     readonly property var _dataKeys: ["fileBrowserSettings", "processFilterTypes", "pluginViewSort", "pluginViewFilter", "disabledPluginsSnapshot", "disabledDesktopWidgetsSnapshot", "dashFocusCardId", "controlCenterCollapsedCategories", "mediaLyricsOpen", "matugenPreviews", "matugenSeedPreviews", "matugenAppliedKey", "lockScreenPlacementSamples"].concat(_pinKeys, _historyKeys)
 
-    property string pluginViewFilter: "enabled"
+    property string pluginViewFilter: "all"
     property var disabledPluginsSnapshot: []
     property var disabledDesktopWidgetsSnapshot: []
     property string dashFocusCardId: ""
@@ -129,7 +129,7 @@ Singleton {
                 const cache = JSON.parse(content);
                 _loadedCacheVersion = cache.configVersion || 0;
 
-                pluginViewFilter = ["all", "enabled", "disabled", "updates"].includes(cache.pluginViewFilter) ? cache.pluginViewFilter : "enabled";
+                pluginViewFilter = ["all", "enabled", "disabled", "updates"].includes(cache.pluginViewFilter) ? cache.pluginViewFilter : "all";
                 disabledPluginsSnapshot = Array.isArray(cache.disabledPluginsSnapshot) ? cache.disabledPluginsSnapshot.filter(id => typeof id === "string" && id.length > 0) : [];
                 disabledDesktopWidgetsSnapshot = Array.isArray(cache.disabledDesktopWidgetsSnapshot) ? cache.disabledDesktopWidgetsSnapshot.filter(id => typeof id === "string" && id.length > 0) : [];
                 dashFocusCardId = typeof cache.dashFocusCardId === "string" ? cache.dashFocusCardId : "";

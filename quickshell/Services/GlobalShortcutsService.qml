@@ -36,7 +36,7 @@ Singleton {
     function appName(appId) {
         // read so callers re-evaluate once the lazy desktop entry scan lands
         DesktopEntries.applications.values;
-        return Paths.getAppName(appId, DesktopEntries.heuristicLookup(Paths.moddedAppId(appId)));
+        return Paths.getAppName(appId, appId ? DesktopEntries.heuristicLookup(Paths.moddedAppId(appId)) : null);
     }
 
     function retainBinds() {

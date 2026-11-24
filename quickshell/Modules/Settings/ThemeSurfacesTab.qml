@@ -335,6 +335,36 @@ Column {
                 onSliderValueChanged: newValue => SettingsData.set("fixedRadius", newValue)
             }
 
+            SettingsToggleCard {
+                tab: "theme"
+                tags: ["corner", "radius", "rounded", "screen", "monitor", "edge"]
+                settingKey: "screenCorners"
+                title: I18n.tr("Rounded screen corners", "toggle: draw rounded corners at the edges of each screen")
+                checked: SettingsData.screenCornersEnabled
+                onToggled: checked => SettingsData.set("screenCornersEnabled", checked)
+
+                SettingsSliderRow {
+                    tab: "theme"
+                    tags: ["corner", "radius", "rounded", "screen"]
+                    settingKey: "screenCornerRadius"
+                    text: I18n.tr("Corner radius")
+                    value: Math.min(SettingsData.screenCornerRadius, ShellLayout.screenCornerLimit)
+                    minimum: 4
+                    maximum: Math.max(4, Math.min(64, Math.floor(ShellLayout.screenCornerLimit)))
+                    unit: "px"
+                    onSliderValueChanged: newValue => SettingsData.set("screenCornerRadius", newValue)
+                }
+
+                SettingsToggleRow {
+                    tab: "theme"
+                    tags: ["corner", "screen", "fullscreen", "overlay"]
+                    settingKey: "screenCornersOverFullscreen"
+                    text: I18n.tr("Over fullscreen")
+                    checked: SettingsData.screenCornersOverFullscreen
+                    onToggled: checked => SettingsData.set("screenCornersOverFullscreen", checked)
+                }
+            }
+
             SettingsToggleSliderRow {
                 tab: "theme"
                 tags: ["window", "corner", "radius", "match", "follow", "link", "strength", "rounded", "popout", "menu", "modal", "compositor", "niri", "hyprland", "mango"]
@@ -736,6 +766,7 @@ Column {
                 fallbackValue: "docked"
                 onValueSelected: value => SettingsData.set("controlCenterEditLayout", value)
             }
+
 
             SettingsSliderRow {
                 tab: "theme"
