@@ -423,7 +423,7 @@ Rectangle {
                 id: actions
                 anchors.left: parent.left
                 anchors.right: parent.right
-                anchors.leftMargin: -(NotificationMetrics.appIconSize + NotificationMetrics.iconSpacing + NotificationMetrics.actionPadding)
+                anchors.leftMargin: -NotificationMetrics.actionPadding
                 spacing: Theme.spacingXS
 
                 Repeater {
