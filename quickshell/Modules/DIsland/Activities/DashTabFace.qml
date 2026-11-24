@@ -47,7 +47,7 @@ FocusScope {
         widthFor: columns => Math.min(root.controller.dashboardAvailableWidth, DashMetrics.widthFor(SettingsData.showWeekNumber, undefined, columns))
         currentStep: () => root.panelColumns
         currentRows: () => root.panelRows
-        minStep: DashMetrics.minimumGridColumns
+        minStep: Math.max(DashMetrics.minimumGridColumns, root.tab?.usedColumns ?? 0)
         maxStep: root.controller.dashboardColumnCap
         rowUnit: DashMetrics.gridRowUnit + DashMetrics.gridGap
         minRows: root.contentRows
@@ -68,6 +68,9 @@ FocusScope {
         }
         onCanceled: DashMetrics.panelPreview = null
     }
+
+    readonly property bool panelResizing: panelResizer.resizing
+    onPanelResizingChanged: root.controller.panelResizing = panelResizing
 
     clip: true
     LayoutMirroring.enabled: I18n.isRtl
@@ -127,6 +130,8 @@ FocusScope {
         editMode: root.editMode
         optionsShown: tabOptions.shown
         menuOpen: pageActions.menuOpen
+        panelResizing: root.panelResizer.resizing
+        canUndo: pageActions.canUndo
         tabItem: root.tab
         contentScope: tabLoader
         contentTarget: root.tab?.focusTarget ?? null
@@ -134,6 +139,8 @@ FocusScope {
         tabsShown: root.tabsShown
         onTabCycleRequested: direction => root.controller.cycleDashTab(direction, tabBarLoader.item?.activeFocus ?? false)
         onEditModeRequested: on => root.editMode = on
+        onDiscardRequested: pageActions.discard()
+        onUndoRequested: pageActions.undo()
         onLeaveRequested: root.focusFace()
         onOptionsDismissRequested: tabOptions.dismiss()
         onCloseRequested: root.controller.requestCollapse()
@@ -287,7 +294,13 @@ FocusScope {
         onDismissed: root.focusFace()
     }
 
-    Component.onDestruction: root.controller.setEditing(root.activityId, false)
+    Component.onDestruction: {
+        if (panelResizing) {
+            root.controller.panelResizing = false;
+            DashMetrics.panelPreview = null;
+        }
+        root.controller.setEditing(root.activityId, false);
+    }
 
     Component.onCompleted: {
         root.contentStaged = true;

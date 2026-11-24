@@ -25,6 +25,8 @@ Column {
     readonly property string pickedIconTheme: SettingsData.iconTheme
     // Dux Icons is built in the theme colors; it has its own options in place of folder recoloring.
     readonly property bool pickedSelfBuiltIcons: IconFolders.isSelf(pickedIconTheme)
+    readonly property bool colorAppIcons: IconFolders.colorApps(SettingsData.iconAppStyle)
+    readonly property bool tiledAppIcons: IconFolders.tiledApps(SettingsData.iconAppStyle)
     // In the order of IconFolders.shapes().
     readonly property var iconShapeLabels: [I18n.tr("Circle", "icon shape"), I18n.tr("Squircle", "icon shape"), I18n.tr("Rounded square", "icon shape"), I18n.tr("Square", "icon shape"), I18n.tr("Hexagon", "icon shape"), I18n.tr("Cookie", "icon shape, a circle with a scalloped edge"), I18n.tr("Clover", "icon shape, a square with rounded lobes at its corners")]
     readonly property var iconShapeImages: IconFolders.shapes().map(shape => "svg:" + IconFolders.shapeUrl(shape, Theme.primary.toString()))
@@ -891,6 +893,16 @@ Column {
                 hint: SettingsTabs.page("wallpaper_folders")?.hint ?? ""
                 onClicked: keyboard => root.parentModal?.navigateTo("wallpaper_folders", keyboard)
             }
+
+            SettingsToggleRow {
+                tab: "wallpaper"
+                tags: ["fit", "resolution", "aspect", "ratio", "mismatch"]
+                settingKey: "wallpaperHideMismatched"
+                visible: SessionData.wallpaperFolders.length > 0
+                text: I18n.tr("Hide wallpapers that don't fit the display", "wallpaper settings toggle: hide wallpapers whose shape or resolution doesn't suit the display")
+                checked: SessionData.wallpaperHideMismatched
+                onToggled: toggled => SessionData.set("wallpaperHideMismatched", toggled)
+            }
         }
     }
 
@@ -1226,9 +1238,9 @@ Column {
             SettingsDropdownRow {
                 visible: root.pickedSelfBuiltIcons
                 tab: "theme"
-                tags: ["icon", "shape", "badge", "circle", "squircle", "rounded", "square", "hexagon", "cookie", "clover", "dux"]
+                tags: ["icon", "shape", "tile", "base", "plate", "badge", "circle", "squircle", "rounded", "square", "hexagon", "cookie", "clover", "dux"]
                 settingKey: "iconShape"
-                text: I18n.tr("Icon shape", "Dux Icons setting, the outline of the badge behind every icon")
+                text: I18n.tr("Icon shape", "Dux Icons setting, the outline of the tile behind every icon")
                 enabled: !root.selfBuiltIconsMissing
                 options: root.iconShapeLabels
                 optionValues: IconFolders.shapes()
@@ -1237,26 +1249,114 @@ Column {
                 onValueChanged: value => SettingsData.set("iconShape", value)
             }
 
-            SettingsToggleRow {
+            SettingsDropdownRow {
                 visible: root.pickedSelfBuiltIcons
                 tab: "theme"
-                tags: ["icon", "app", "monochrome", "themed", "tint", "color", "dux", "dynamic"]
-                settingKey: "iconMonoApps"
-                text: I18n.tr("Themed app icons", "Dux Icons toggle, paints app icons in tones of the theme colors")
+                tags: ["icon", "app", "style", "color", "colour", "tinted", "duotone", "themed", "monochrome", "mono", "gray", "grey", "tint", "dux", "dynamic"]
+                settingKey: "iconAppStyle"
+                text: I18n.tr("App icon style", "Dux Icons setting, how app icons are colored")
                 enabled: !root.selfBuiltIconsMissing
-                checked: SettingsData.iconMonoApps
-                onToggled: checked => SettingsData.set("iconMonoApps", checked)
+                options: [I18n.tr("Color", "Dux Icons app icon style option, each app keeps its own colors"), I18n.tr("Tinted", "Dux Icons app icon style option, each app's own icon repainted in two tones of its tile color"), I18n.tr("Themed", "Dux Icons app icon style option, every app icon is drawn in tones of the theme color"), I18n.tr("Monochrome", "Dux Icons app icon style option, every app icon is drawn in near-gray tones")]
+                optionValues: ["color", "tinted", "themed", "monochrome"]
+                currentValue: SettingsData.iconAppStyle
+                onValueChanged: value => SettingsData.set("iconAppStyle", value)
             }
 
             SettingsToggleRow {
                 visible: root.pickedSelfBuiltIcons
                 tab: "theme"
-                tags: ["icon", "gradient", "shade", "shading", "badge", "dux"]
+                tags: ["icon", "gradient", "shade", "shading", "tile", "base", "plate", "badge", "dux"]
                 settingKey: "iconGradient"
-                text: I18n.tr("Shaded icons", "Dux Icons toggle, fills each icon badge with a soft top-to-bottom gradient")
+                text: I18n.tr("Shaded icons", "Dux Icons toggle, fills each icon tile with a soft top-to-bottom gradient")
                 enabled: !root.selfBuiltIconsMissing
                 checked: SettingsData.iconGradient
                 onToggled: checked => SettingsData.set("iconGradient", checked)
+            }
+
+            SettingsDropdownRow {
+                visible: root.pickedSelfBuiltIcons && root.tiledAppIcons
+                tab: "theme"
+                tags: ["icon", "tile", "base", "plate", "badge", "color", "colour", "app", "theme", "edge", "match", "ring", "dux"]
+                settingKey: "iconTileColor"
+                text: I18n.tr("Tile color", "Dux Icons setting, where the color of the tile behind each app icon comes from")
+                enabled: !root.selfBuiltIconsMissing
+                options: [I18n.tr("Theme", "Dux Icons tile color option, tiles take the theme colors"), I18n.tr("App color", "Dux Icons tile color option, each tile takes a color from its app's icon"), I18n.tr("Edge Match", "Dux Icons tile color option, each tile takes the color of the app icon's own background, and the icon grows to fill it without touching the edge"), I18n.tr("Ring", "Dux Icons tile color option, a neutral tile with a ring in the app's color")]
+                optionValues: ["theme", "app", "edge", "ring"]
+                currentValue: SettingsData.iconTileColor
+                onValueChanged: value => SettingsData.set("iconTileColor", value)
+            }
+
+            SettingsDropdownRow {
+                visible: root.pickedSelfBuiltIcons && root.tiledAppIcons && ["app", "edge", "ring"].includes(SettingsData.iconTileColor)
+                tab: "theme"
+                tags: ["icon", "tile", "base", "plate", "badge", "color", "colour", "app", "source", "common", "dux"]
+                settingKey: "iconColorSource"
+                text: I18n.tr("App color", "Dux Icons setting, how the tile color is picked from an app's icon")
+                enabled: !root.selfBuiltIconsMissing
+                options: [I18n.tr("Best match", "Dux Icons app color source option, picks the color the way the wallpaper's theme color is picked"), I18n.tr("Most common", "Dux Icons app color source option, picks the color that covers most of the icon")]
+                optionValues: ["score", "common"]
+                currentValue: SettingsData.iconColorSource
+                onValueChanged: value => SettingsData.set("iconColorSource", value)
+            }
+
+            SettingsDropdownRow {
+                visible: root.pickedSelfBuiltIcons && IconFolders.tileStyled(SettingsData.iconAppStyle, SettingsData.iconTileColor)
+                tab: "theme"
+                tags: ["icon", "tile", "base", "plate", "badge", "style", "vivid", "muted", "tonal", "app", "dux"]
+                settingKey: "iconTileStyle"
+                text: I18n.tr("Tile style", "Dux Icons setting, how strong the app's own color is on its tile")
+                enabled: !root.selfBuiltIconsMissing
+                options: [I18n.tr("Tonal", "Dux Icons tile style option, a soft tone of the app's color"), I18n.tr("Vivid", "Dux Icons tile style option, the app's color as strong as in its icon"), I18n.tr("Muted", "Dux Icons tile style option, a near-gray tint of the app's color")]
+                optionValues: ["tonal", "content", "neutral"]
+                currentValue: SettingsData.iconTileStyle
+                onValueChanged: value => SettingsData.set("iconTileStyle", value)
+            }
+
+            // -1 is automatic; each slider commits on release since every change rebuilds the pack.
+            SettingsToggleSliderRow {
+                visible: root.pickedSelfBuiltIcons
+                tab: "theme"
+                tags: ["icon", "tile", "base", "plate", "badge", "tone", "light", "dark", "brightness", "dux"]
+                settingKey: "iconTileTone"
+                text: I18n.tr("Tile tone", "Dux Icons setting, how light the tile behind each icon is")
+                enabled: !root.selfBuiltIconsMissing
+                checked: SettingsData.iconTileTone >= 0
+                value: Math.max(0, SettingsData.iconTileTone)
+                minimum: 0
+                maximum: 100
+                modified: checked
+                onToggled: checked => SettingsData.set("iconTileTone", checked ? 50 : -1)
+                onSliderDragFinished: finalValue => SettingsData.set("iconTileTone", finalValue)
+            }
+
+            SettingsDropdownRow {
+                visible: root.pickedSelfBuiltIcons
+                tab: "theme"
+                tags: ["icon", "file", "files", "folder", "folders", "mime", "type", "color", "colour", "tile", "standard", "base", "papirus", "dux"]
+                settingKey: "iconFileStyle"
+                text: I18n.tr("Files & folders", "Dux Icons setting, how file and folder icons are drawn")
+                enabled: !root.selfBuiltIconsMissing
+                options: [I18n.tr("Standard", "Dux Icons files and folders option, files and folders sit on the theme tile like every other icon"), I18n.tr("Color", "Dux Icons files and folders option, colored folders and a color for each file type, like Papirus")]
+                optionValues: ["standard", "color"]
+                currentValue: SettingsData.iconFileStyle
+                onValueChanged: value => SettingsData.set("iconFileStyle", value)
+            }
+
+            // Themed and Monochrome repaint the Dux apps like any other app, which takes no tone.
+            SettingsToggleSliderRow {
+                visible: root.pickedSelfBuiltIcons && root.colorAppIcons
+                tab: "theme"
+                tags: ["icon", "tile", "base", "plate", "badge", "tone", "dux", "labs", "app", "art", "shade"]
+                settingKey: "iconOwnTone"
+                text: I18n.tr("Dux app tone", "Dux Icons setting, the shade of Dux Labs app art on its tile")
+                enabled: !root.selfBuiltIconsMissing
+                checked: SettingsData.iconOwnTone >= 0
+                value: Math.max(40, SettingsData.iconOwnTone)
+                minimum: 40
+                maximum: 98
+                modified: checked
+                onToggled: checked => SettingsData.set("iconOwnTone", checked ? 70 : -1)
+                onSliderDragFinished: finalValue => SettingsData.set("iconOwnTone", finalValue)
             }
 
             SettingsToggleRow {
@@ -1264,7 +1364,7 @@ Column {
                 tab: "theme"
                 tags: ["icon", "folder", "color", "recolor", "theme", "matugen", "dynamic"]
                 settingKey: "iconFolderRecolor"
-                text: I18n.tr("Folder match theme colors", "icon theme toggle, recolors the picked icon pack's folders with the theme colors")
+                text: I18n.tr("Match folder colors to theme", "icon theme toggle, recolors the picked icon pack's folders with the theme colors")
                 enabled: SettingsData.iconFolderRecolor || root.iconFolderBlocker === ""
                 toggling: root.iconFolderEnabling
                 checked: SettingsData.iconFolderRecolor

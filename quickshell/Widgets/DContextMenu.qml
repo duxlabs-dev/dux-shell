@@ -33,7 +33,8 @@ Item {
     property var transientSurfaceTracker: null
     property var targetScreen: null
     property var targetWindow: null
-    readonly property bool isPopupMode: targetWindow !== null
+    property Item inlineHost: null
+    readonly property bool isPopupMode: targetWindow !== null && !inlineHost
     property real anchorX: 0
     property real anchorY: 0
     property real originX: 0
@@ -43,10 +44,14 @@ Item {
     property bool renderActive: false
     property int selectedMenuIndex: -1
     property bool keyboardNavigation: false
-    readonly property var surface: isPopupMode ? null : IdleSurfaces.surfaceFor("context-menu", targetScreen?.name ?? "")
-    readonly property bool attached: renderActive && (isPopupMode ? !!popupLoader.item : !!surface)
-    readonly property Item hostItem: attached ? (isPopupMode ? popupLoader.item.contentItem : surface.hostItem) : null
-    readonly property var contextWindow: attached ? (isPopupMode ? popupLoader.item : surface) : null
+    readonly property var surface: isPopupMode || inlineHost ? null : IdleSurfaces.surfaceFor("context-menu", targetScreen?.name ?? "")
+    readonly property Item hostItem: {
+        if (!renderActive)
+            return null;
+        return inlineHost ?? (isPopupMode ? popupLoader.item?.contentItem : surface?.hostItem) ?? null;
+    }
+    readonly property bool attached: hostItem !== null
+    readonly property var contextWindow: attached ? (inlineHost ? targetWindow : isPopupMode ? popupLoader.item : surface) : null
     readonly property var blurRegion: menuBlur.effectiveRegion
     readonly property int surfaceKeyboardFocus: {
         if (!keyboardNavigable || !renderActive)
@@ -56,7 +61,7 @@ Item {
         return WlrKeyboardFocus.Exclusive;
     }
     readonly property alias customContentItem: customContentLoader.item
-    readonly property bool blurActive: renderActive && openState && BlurService.enabled
+    readonly property bool blurActive: !inlineHost && renderActive && openState && BlurService.enabled
 
     readonly property real maxMenuWidth: Math.max(0, (targetWindow ? targetWindow.width : (targetScreen?.width ?? Theme.launcherWidthMicro)) - menuMargin * 2)
     readonly property real maxMenuHeight: Math.max(0, (targetWindow ? targetWindow.height : (targetScreen?.height ?? Theme.launcherHeightDefault)) - menuMargin * 2)
@@ -300,6 +305,7 @@ Item {
 
         readonly property var host: root
         anchors.fill: parent
+        z: root.inlineHost ? 1 : 0
 
         WindowBlur {
             id: menuBlur
@@ -320,7 +326,7 @@ Item {
             acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
             onPressed: mouse => mouse.accepted = true
             onClicked: mouse => {
-                if (mouse.button === Qt.RightButton && !root.isPopupMode) {
+                if (mouse.button === Qt.RightButton && !root.isPopupMode && !root.inlineHost) {
                     root.backdropRightClicked(mouse.x, mouse.y);
                     return;
                 }

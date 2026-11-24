@@ -231,6 +231,16 @@ Singleton {
             }
         },
         {
+            "id": "profiles",
+            "text": I18n.tr("Profiles", "dashboard tab name"),
+            "icon": "style",
+            "tab": {
+                "source": Qt.resolvedUrl("../ProfilePicker/ProfilePickerTab.qml"),
+                "async": true,
+                "sizeToContent": true
+            }
+        },
+        {
             "id": "settings",
             "text": I18n.tr("Settings"),
             "icon": "settings",

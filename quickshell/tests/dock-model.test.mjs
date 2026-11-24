@@ -46,3 +46,13 @@ test("compositor window identity survives reorder and rejects null", () => {
     assert.equal(context._windowKeys.some(entry => entry.toplevel === first), false);
     assert.equal(context._windowKeys.some(entry => entry.toplevel === second), true);
 });
+
+test("foldered apps map to their folder so their windows join the folder button", () => {
+    const folder = { id: "f", name: "Stuff", apps: ["Files", "dux-edit"] };
+    const owners = model.folderOwners(["a", folder, null], id => id.toLowerCase());
+    assert.deepEqual(plain([...owners]), [["files", "folder:f"], ["dux-edit", "folder:f"]]);
+    const running = model.folderItem("folder:f", folder, [{ toplevel: {}, appId: "dux-edit" }]);
+    assert.equal(running.isRunning, true);
+    assert.equal(running.windowCount, 1);
+    assert.equal(model.folderItem("folder:f", folder).isRunning, false);
+});

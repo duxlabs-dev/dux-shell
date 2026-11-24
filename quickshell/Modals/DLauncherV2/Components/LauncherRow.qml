@@ -4,6 +4,7 @@ import QtQuick
 import qs.Common
 import qs.DCommon.Widgets
 import qs.Modals.DLauncherV2
+import qs.Widgets as Widgets
 import "../../../Common/htmlElide.js" as HtmlElide
 import "../ControllerUtils.js" as ControllerUtils
 
@@ -105,8 +106,9 @@ DListItem {
         anchors.fill: iconRenderer
         active: root.isFolder
         visible: active
-        sourceComponent: LauncherFolderIcon {
-            item: root.item
+        sourceComponent: Widgets.AppFolderIcon {
+            members: root.item?.data?.members ?? []
+            materialIcon: root.item?.icon ?? ""
         }
     }
 

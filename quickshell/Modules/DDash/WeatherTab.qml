@@ -36,6 +36,7 @@ Item {
         }
     ]
     readonly property bool blocksTabNavigation: widgets.blocksTabNavigation
+    readonly property bool sheetShown: widgets.sheetShown
     readonly property bool cardInteracting: widgets.cardInteracting
     readonly property var forecastOptions: [DashRegistry.choice("forecast", I18n.tr("Forecast", "weather widget option label for forecast display type"), "chart", [
             {

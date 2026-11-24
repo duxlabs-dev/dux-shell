@@ -3,6 +3,7 @@ import Quickshell
 import qs.Common
 import qs.Modules.DBar
 import qs.Modules.Frame
+import qs.Modules.ScreenCorners
 import qs.Services
 
 Item {
@@ -92,6 +93,12 @@ Item {
         active: root.frameSurfacesLoaded
         asynchronous: false
         sourceComponent: Frame {}
+    }
+
+    Loader {
+        active: SettingsData.screenCornersEnabled
+        asynchronous: false
+        sourceComponent: ScreenCorners {}
     }
 
     Loader {

@@ -68,7 +68,11 @@ func handleList(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request) {
 
 	ctx, cancel := context.WithTimeout(ctx, listTimeout)
 	defer cancel()
-	conn.Respond(req.ID, ListWallpapers(ctx, folders, extensions))
+	library := ListWallpapers(ctx, folders, extensions)
+	if params.BoolOpt(req.Params, "dimensions", false) {
+		readSizes(ctx, library.Items)
+	}
+	conn.Respond(req.ID, library)
 }
 
 func handleFolderListed(conn *ipc.ConnWriter, req ipc.Request) {

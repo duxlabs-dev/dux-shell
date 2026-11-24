@@ -1,8 +1,14 @@
+pragma ComponentBehavior: Bound
+
 import QtQuick
+import QtQuick.Effects
+import QtQuick.Shapes
 import qs.Common
 import qs.Services
 import qs.DCommon.Widgets
 import qs.Widgets
+import "../Common/IconFolders.js" as IconFolders
+import "../DCommon/Widgets/MaterialShapes.js" as Shapes
 
 Item {
     id: root
@@ -14,6 +20,8 @@ Item {
     property bool narrow: false
     property bool tall: false
     property bool stacked: false
+    // A Material shape name masks the avatar; empty keeps the ringed circle.
+    property string shape: ""
     property color contentColor: Theme.surfaceText
     property color mutedColor: Theme.surfaceVariantText
     property color badgeColor: Theme.primaryContainer
@@ -24,6 +32,10 @@ Item {
     readonly property real badgeSize: Math.round(Math.max(Theme.iconSizeSmall + Theme.spacingXS, avatarDiameter / 3))
     readonly property real badgeOverhang: 0.15
     readonly property real badgeIconRatio: 0.6
+    // Names outside the Material catalog are dux-icons tile outlines.
+    readonly property string outline: shape === "" || shape in Shapes.catalog ? "" : IconFolders.outlinePath(shape)
+    // Fit inside the plain avatar circle so corners never poke out of pill ends.
+    readonly property real shapeFit: outline !== "" ? IconFolders.circleFit(shape) : Math.min(1, Shapes.rotationScale(shape))
     readonly property bool showHostname: options.hostname !== false && UserInfoService.hostname !== ""
     readonly property bool showCompositor: options.compositor !== false && compositorName !== ""
     readonly property bool compositorInline: showCompositor && !stacked
@@ -42,10 +54,34 @@ Item {
     Accessible.role: Accessible.StaticText
     Accessible.name: [UserInfoService.username, detailsText, showUptime && DgopService.shortUptime !== "" ? uptimeText : ""].filter(text => text !== "").join(", ")
 
+    component AvatarShape: Shape {
+        id: avatarShape
+
+        property color color: Theme.primary
+
+        anchors.centerIn: parent
+        width: Math.round(parent.width * root.shapeFit)
+        height: width
+        preferredRendererType: Shape.CurveRenderer
+
+        ShapePath {
+            // Both path sources share the 64-unit outline canvas.
+            scale: Qt.size(avatarShape.width / 64, avatarShape.height / 64)
+            fillColor: avatarShape.color
+            strokeColor: "transparent"
+            strokeWidth: -1
+
+            PathSvg {
+                // A picked avatar shape stays itself under the square Classic style.
+                path: root.outline !== "" ? root.outline : Shapes.buildPath(root.shape, 64, 64, false)
+            }
+        }
+    }
+
     Ref {
         service: DgopService
         modules: ["system"]
-        active: root.live && root.showUptime
+        active: root.live && root.showUptime && !root.narrow
     }
 
     Item {
@@ -58,10 +94,69 @@ Item {
 
         DCircularImage {
             anchors.fill: parent
-            imageSource: root.avatarSource
+            visible: root.shape === ""
+            imageSource: root.shape === "" ? root.avatarSource : ""
             fallbackIcon: "material:person"
             ringWidth: Theme.avatarRingWidth
             ringColor: root.ringColor
+        }
+
+        // Only the mask follows the shape; the picture never reloads on a shape change.
+        Loader {
+            anchors.fill: parent
+            active: root.shape !== ""
+
+            sourceComponent: Item {
+                id: shaped
+
+                readonly property bool hasImage: picture.status === Image.Ready
+
+                AvatarShape {
+                    color: Theme.primaryContainer
+                    visible: !shaped.hasImage
+                }
+
+                DIcon {
+                    anchors.centerIn: parent
+                    name: "person"
+                    size: Math.round(parent.width * root.shapeFit / 2)
+                    color: Theme.onPrimaryContainer
+                    filled: true
+                    visible: !shaped.hasImage
+                }
+
+                Item {
+                    id: avatarMask
+
+                    anchors.fill: parent
+                    layer.enabled: shaped.hasImage
+                    visible: false
+
+                    AvatarShape {}
+                }
+
+                Image {
+                    id: picture
+
+                    anchors.fill: parent
+                    asynchronous: true
+                    fillMode: Image.PreserveAspectCrop
+                    smooth: true
+                    mipmap: true
+                    retainWhileLoading: true
+                    visible: shaped.hasImage
+                    sourceSize.width: Math.max(1, Math.ceil(width * Screen.devicePixelRatio))
+                    sourceSize.height: Math.max(1, Math.ceil(height * Screen.devicePixelRatio))
+                    source: root.avatarSource
+                    layer.enabled: shaped.hasImage
+                    layer.effect: MultiEffect {
+                        maskEnabled: true
+                        maskSource: avatarMask
+                        maskThresholdMin: 0.5
+                        maskSpreadAtMin: 1
+                    }
+                }
+            }
         }
 
         Rectangle {

@@ -184,7 +184,7 @@ Rectangle {
         AppIconRenderer {
             anchors.fill: parent
             visible: !appImage.visible
-            iconValue: root.dmsIcon ? "svg:" + Theme.shellDir + "/assets/duxlogo.svg" : NotificationService.notificationFallbackIcon(root.notificationData?.image || "", root.appIcon)
+            iconValue: root.dmsIcon ? "svg:" + Theme.shellDir + "/assets/duxlogo.svg" : IconThemeService.bareIconValue(NotificationService.notificationFallbackIcon(root.notificationData?.image || "", root.appIcon))
             iconSize: NotificationMetrics.appIconSize
             iconColor: Theme.onSurfaceVariant
             colorOverride: root.dmsIcon ? Theme.primary : "transparent"

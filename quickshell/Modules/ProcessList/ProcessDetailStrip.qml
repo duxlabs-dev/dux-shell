@@ -490,7 +490,7 @@ Rectangle {
                 Layout.alignment: Qt.AlignTop
                 title: I18n.tr("CPU")
                 iconName: "memory"
-                rows: [root.row(I18n.tr("Usage", "chart legend: CPU or GPU utilization"), root.cell("cpu")), root.row(I18n.tr("User time", "CPU time spent in the program itself"), root.seconds(root.detail?.userTime)), root.row(I18n.tr("System time", "CPU time the kernel spent on behalf of the program"), root.seconds(root.detail?.systemTime)), root.row(I18n.tr("Last core", "CPU core the process last ran on"), root.detail?.lastCpu), root.row(I18n.tr("Allowed cores", "CPU affinity list"), root.detail?.affinity), root.row(I18n.tr("Scheduling", "Linux scheduling policy"), root.detail?.policy), root.row(I18n.tr("Priority", "kernel scheduling priority"), root.detail?.priority), root.row(I18n.tr("Nice", "process column: Linux nice value, scheduling priority"), root.cell("nice")), root.row(I18n.tr("I/O priority", "disk scheduling class and level"), root.detail?.ioClass ? root.detail.ioClass + (root.detail.ioLevel != null ? " " + root.detail.ioLevel : "") : null), root.row(I18n.tr("Context switches", "times the process gave up the CPU voluntarily"), root.count(root.detail?.voluntarySwitches)), root.row(I18n.tr("Preempted", "times the process was forced off the CPU"), root.count(root.detail?.involuntarySwitches))]
+                rows: [root.row(I18n.tr("Usage", "chart legend: CPU or GPU utilization"), root.cell("cpu")), root.row(I18n.tr("User time", "CPU time spent in the program itself"), root.seconds(root.detail?.userTime)), root.row(I18n.tr("System time", "CPU time the kernel spent on behalf of the program"), root.seconds(root.detail?.systemTime)), root.row(I18n.tr("Last core", "CPU core the process last ran on"), root.detail?.lastCpu), root.row(I18n.tr("Allowed cores", "CPU affinity list"), root.detail?.affinity), root.row(I18n.tr("Scheduling", "Linux scheduling policy"), root.detail?.policy), root.row(I18n.tr("Nice", "process column: Linux nice value, scheduling priority"), root.cell("nice")), root.row(I18n.tr("I/O priority", "disk scheduling class and level"), root.detail?.ioClass ? root.detail.ioClass + (root.detail.ioLevel != null ? " " + root.detail.ioLevel : "") : null), root.row(I18n.tr("Context switches", "times the process gave up the CPU voluntarily"), root.count(root.detail?.voluntarySwitches)), root.row(I18n.tr("Preempted", "times the process was forced off the CPU"), root.count(root.detail?.involuntarySwitches))]
             }
 
             Section {
@@ -670,6 +670,7 @@ Rectangle {
                     popupWidth: Theme.fontSizeMedium * 10
                     options: ProcessActions.priorities.map(p => p.label)
                     optionValues: ProcessActions.priorities.map(p => String(p.nice))
+                    optionIcons: ProcessActions.priorities.map(p => p.warning ? "warning" : "")
                     onValueChanged: value => ProcessActions.setPriority(root.live, Number(value))
                 }
             }

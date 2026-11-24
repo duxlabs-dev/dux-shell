@@ -29,7 +29,7 @@ Item {
     property var valueKeys: []
     property alias modified: header.modified
     property bool valueModified: valueKeys.length > 0 && !resetStore.isDefault(valueKeys)
-    property alias accessory: header.accessory
+    property alias accessory: accessorySlot.data
 
     readonly property bool standalone: !(parent?.isSettingsGroupHost ?? false)
     readonly property bool firstInGroup: standalone || parent.isEdge(root, true)
@@ -78,6 +78,30 @@ Item {
                 root.userToggled = true;
                 root.toggled(value);
             }
+
+            accessory: [
+                Row {
+                    id: accessorySlot
+                    spacing: Theme.spacingS
+                    visible: children.length > 0
+                    anchors.verticalCenter: parent.verticalCenter
+                },
+                SettingsSliderValue {
+                    slider: control
+                    visible: root.sliderVisible
+                    shown: root.checked
+                    anchors.verticalCenter: parent.verticalCenter
+
+                    Behavior on opacity {
+                        enabled: root.userToggled
+                        NumberAnimation {
+                            duration: SettingsMetrics.fadeDuration
+                            easing.type: Easing.BezierSpline
+                            easing.bezierCurve: Theme.expressiveCurves.expressiveEffects
+                        }
+                    }
+                }
+            ]
         }
 
         // The slider sits outside the header so presses around it never reach the header's toggle click area

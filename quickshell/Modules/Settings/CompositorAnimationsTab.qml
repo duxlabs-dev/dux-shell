@@ -77,7 +77,7 @@ Item {
 
             width: parent.width
             columns: !groupRow.durationLive || !groupRow.bounceLive || (width - columnSpacing) / 2 < groupRow.cellMinWidth ? 1 : 2
-            columnSpacing: SettingsMetrics.rowContentSpacing
+            columnSpacing: SettingsMetrics.rowContentSpacing + SettingsMetrics.sliderButtonBleed * 2
             rowSpacing: Theme.spacingM
 
             Column {
@@ -85,13 +85,25 @@ Item {
                 spacing: Theme.spacingXS
                 visible: groupRow.durationLive
 
-                StyledText {
-                    text: I18n.tr("Duration")
-                    font.pixelSize: Theme.fontSizeSmall
-                    color: Theme.surfaceVariantText
+                Item {
+                    width: parent.width
+                    height: durationLabel.height
+
+                    StyledText {
+                        id: durationLabel
+                        text: I18n.tr("Duration")
+                        font.pixelSize: Theme.fontSizeSmall
+                        color: Theme.surfaceVariantText
+                    }
+
+                    SettingsSliderValue {
+                        slider: durationSlider
+                        anchors.right: parent.right
+                    }
                 }
 
                 SettingsSliderControl {
+                    id: durationSlider
                     width: parent.width
                     accessibleName: groupRow.title + " " + I18n.tr("Duration")
                     value: groupRow.values?.duration ?? CompositorAnimations.DURATION_MIN
@@ -108,13 +120,25 @@ Item {
                 spacing: Theme.spacingXS
                 visible: groupRow.bounceLive
 
-                StyledText {
-                    text: I18n.tr("Bounce", "animation slider, how far motion overshoots")
-                    font.pixelSize: Theme.fontSizeSmall
-                    color: Theme.surfaceVariantText
+                Item {
+                    width: parent.width
+                    height: bounceLabel.height
+
+                    StyledText {
+                        id: bounceLabel
+                        text: I18n.tr("Bounce", "animation slider, how far motion overshoots")
+                        font.pixelSize: Theme.fontSizeSmall
+                        color: Theme.surfaceVariantText
+                    }
+
+                    SettingsSliderValue {
+                        slider: bounceSlider
+                        anchors.right: parent.right
+                    }
                 }
 
                 SettingsSliderControl {
+                    id: bounceSlider
                     width: parent.width
                     accessibleName: groupRow.title + " " + I18n.tr("Bounce", "animation slider, how far motion overshoots")
                     value: groupRow.values?.bounce ?? 0

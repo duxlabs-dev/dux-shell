@@ -34,6 +34,8 @@ Item {
     readonly property bool isUser: widgetId === "user"
     readonly property bool isGroup: widgetId === WidgetUtils.GROUP_ID
     readonly property bool isBrightness: widgetId === "brightnessSlider"
+    // Same order as WidgetUtils.USER_SHAPES.
+    readonly property var shapeLabels: [I18n.tr("Circle", "icon shape"), I18n.tr("4-sided cookie", "avatar shape"), I18n.tr("7-sided cookie", "avatar shape"), I18n.tr("12-sided cookie", "avatar shape"), I18n.tr("4-leaf clover", "avatar shape"), I18n.tr("8-leaf clover", "avatar shape"), I18n.tr("Sunny", "avatar shape, a circle with soft rays"), I18n.tr("Pentagon", "avatar shape"), I18n.tr("Arch", "avatar shape"), I18n.tr("Slanted", "Album artwork shape"), I18n.tr("Gem", "avatar shape"), I18n.tr("Squircle", "icon shape"), I18n.tr("Rounded square", "icon shape"), I18n.tr("Square", "icon shape")]
     // Grouped tiles have no menu of their own, so the group's menu styles its battery.
     readonly property int batteryIndex: {
         if (widgetId === "battery")
@@ -143,6 +145,18 @@ Item {
                         PopoutService.openSettingsWithTab(SettingsTabs.pluginPrefix + root.widgetId.replace("plugin_", ""));
                         root.close();
                     }
+                }
+
+                CcListRow {
+                    readonly property string shape: root.widgetData?.shape ?? WidgetUtils.USER_SHAPES[0]
+
+                    visible: root.isUser
+                    iconName: "interests"
+                    title: I18n.tr("Change shape", "control center user avatar shape option")
+                    subtitle: root.shapeLabels[WidgetUtils.USER_SHAPES.indexOf(shape)] ?? ""
+                    clickable: true
+                    showChevron: true
+                    onClicked: root.persistOption("shape", WidgetUtils.nextUserShape(shape))
                 }
 
                 CcToggleRow {

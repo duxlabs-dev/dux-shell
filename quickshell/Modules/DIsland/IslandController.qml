@@ -204,6 +204,13 @@ QtObject {
     property bool suspendedExpanded: false
     property bool suspendedKeyboardDismissRequested: false
     property int hoverOpenDelay: 150
+    property bool hoverExpandBlocked: false
+    // A click while hover is blocked only closes the blocking popout; hover can then open the island.
+    signal blockingPopoutDismissRequested
+    onHoverExpandBlockedChanged: {
+        if (!hoverExpandBlocked && pointerInside && hoverExpandEnabled && !expanded && !slotHovered)
+            hoverOpenTimer.restart();
+    }
     property int hoverCloseDelay: 150
     property int mediaReturnDelay: 1800
     readonly property real controlCenterMaxHeight: dashboardAvailableHeight
@@ -213,7 +220,7 @@ QtObject {
     property bool editRoomGranted: false
     readonly property real controlCenterSheetInset: CcMetrics.islandInset * 2
     property string controlCenterDockSide: ""
-    property bool controlCenterResizing: false
+    property bool panelResizing: false
     readonly property real controlCenterDockReserve: controlCenterDockSide === "" ? 0 : CcMetrics.dockedPanelWidth + CcMetrics.dockedPanelGap
     readonly property int controlCenterColumnCap: CcMetrics.columnCapFor(dashboardAvailableWidth - controlCenterSheetInset - PopoutMetrics.editOverflow * 2 - controlCenterDockReserve)
     readonly property int controlCenterColumns: Math.min(CcMetrics.gridColumns, controlCenterColumnCap)
@@ -298,6 +305,7 @@ QtObject {
         case "weather":
         case "wellbeing":
         case "wallpaper":
+        case "profiles":
             return entryId;
         }
         return "";
@@ -370,7 +378,7 @@ QtObject {
         powerMenuContentWidth = next;
     }
 
-    readonly property var destinations: ["launcher", "controlcenter", "wallpaper", "weather", "wellbeing", "notificationcenter", "clipboard", "powermenu"]
+    readonly property var destinations: ["launcher", "controlcenter", "wallpaper", "weather", "wellbeing", "notificationcenter", "clipboard", "powermenu", "profiles"]
     readonly property var blankClickOwners: ["live", "launcher", "controlcenter", "wallpaper", "notificationcenter", "clipboard", "powermenu"]
     readonly property var destinationDefaults: ({
             "launcher": {
@@ -403,6 +411,10 @@ QtObject {
             },
             "powermenu": {
                 "contentLength": 150,
+                "contentHeight": 0
+            },
+            "profiles": {
+                "contentLength": 130,
                 "contentHeight": 0
             }
         })
@@ -674,7 +686,7 @@ QtObject {
     readonly property var mediaCompactTarget: pillTarget(mediaCompactLength, compactFaceThickness)
     readonly property var homeExpandedTarget: dashboardTargetFor("home")
     readonly property var mediaExpandedTarget: dashboardTargetFor("media")
-    readonly property real launcherMaxHeight: Math.min(dashboardAvailableHeight, LauncherMetrics.sizeHeight(SettingsData.dankLauncherV2Size, LauncherMetrics.islandEdgeInset, false))
+    readonly property real launcherMaxHeight: Math.min(dashboardAvailableHeight, LauncherMetrics.sizeHeight(SettingsData.dankLauncherV2Size, 0, false))
     readonly property real launcherContentHeight: destinationContentHeight("launcher")
     readonly property var launcherExpandedTarget: sheetTarget(Math.min(dashboardAvailableWidth, LauncherMetrics.sizeWidth(SettingsData.dankLauncherV2Size)), launcherContentHeight > 0 ? Math.min(launcherMaxHeight, launcherContentHeight) : launcherMaxHeight)
     function controlCenterTargetFor(bodyWidth, height = controlCenterHeight) {
@@ -852,7 +864,7 @@ QtObject {
     }
 
     function requestHoverExpand() {
-        if (inputSuspended || hoverHeld || !hoverExpandEnabled || activeActivity === "powermenu")
+        if (inputSuspended || hoverHeld || !hoverExpandEnabled || hoverExpandBlocked || activeActivity === "powermenu")
             return false;
         if (notificationActive) {
             hoverExpanded = true;
@@ -1250,15 +1262,42 @@ QtObject {
 
     onSlotHoveredChanged: {
         if (slotHovered) {
-            hoverOpenTimer.stop();
+            if (!safeZoneHeld)
+                hoverOpenTimer.stop();
             return;
         }
         if (pointerInside && hoverExpandEnabled && !expanded)
             hoverOpenTimer.restart();
     }
 
-    function updatePointerInside(inside) {
+    // The bar's open hover popout owns the pointer inside its safe zone until it stops on the pill or leaves the zone.
+    property var inHoverSafeZone: (gx, gy) => false
+    property bool safeZoneHeld: false
+    signal safeZoneLeft
+
+    function releaseSafeZone() {
+        safeZoneHeld = false;
+        safeZoneLeft();
+    }
+
+    function pointerMoved(gx, gy) {
+        if (!safeZoneHeld || !pointerInside)
+            return;
+        if (inHoverSafeZone(gx, gy)) {
+            hoverOpenTimer.restart();
+            return;
+        }
+        releaseSafeZone();
+        if (hoverExpandEnabled && !expanded && !slotHovered)
+            hoverOpenTimer.restart();
+    }
+
+    function updatePointerInside(inside, gx, gy) {
+        const wasHeld = safeZoneHeld;
+        safeZoneHeld = inside === true && inHoverSafeZone(gx, gy);
         pointerInside = inside === true;
+        if (wasHeld && !safeZoneHeld)
+            safeZoneLeft();
         syncNotificationTimeout(!pointerInside);
         syncTransientTimeout(!pointerInside);
         if (!pointerInside) {
@@ -1270,14 +1309,21 @@ QtObject {
             return;
         }
         hoverCloseTimer.stop();
-        if (hoverExpandEnabled && !expanded && !slotHovered)
+        if (safeZoneHeld || (hoverExpandEnabled && !expanded && !slotHovered))
             hoverOpenTimer.restart();
     }
 
     property Timer hoverOpenTimer: Timer {
         interval: root.hoverOpenDelay
         onTriggered: {
-            if (!root.pointerInside || !root.hoverExpandEnabled || root.inputSuspended || root.slotHovered)
+            if (!root.pointerInside)
+                return;
+            const held = root.safeZoneHeld;
+            if (held)
+                root.releaseSafeZone();
+            if (held && root.expanded)
+                return;
+            if (!root.hoverExpandEnabled || root.inputSuspended || root.slotHovered)
                 return;
             root.requestHoverExpand();
         }

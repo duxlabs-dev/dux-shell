@@ -13,8 +13,9 @@ type MatugenQueueResult struct {
 	Message string `json:"message,omitempty"`
 }
 
-func handleMatugenQueue(conn *ipc.ConnWriter, req ipc.Request) {
-	opts := matugen.Options{
+// matugenQueueOptions reads a queue request; a key the client leaves out keeps the default.
+func matugenQueueOptions(req ipc.Request) matugen.Options {
+	return matugen.Options{
 		StateDir:            req.GetOr("stateDir", ""),
 		ShellDir:            req.GetOr("shellDir", ""),
 		ConfigDir:           req.GetOr("configDir", ""),
@@ -31,15 +32,24 @@ func handleMatugenQueue(conn *ipc.ConnWriter, req ipc.Request) {
 		TerminalPalette:     req.GetOr("terminalPalette", ""),
 		SkipTemplates:       req.GetOr("skipTemplates", ""),
 		IconFolders:         req.GetOr("iconFolders", false),
-		IconMonoApps:        req.GetOr("iconMonoApps", false),
+		IconAppStyle:        req.GetOr("iconAppStyle", ""),
 		IconShape:           req.GetOr("iconShape", ""),
 		IconGradient:        req.GetOr("iconGradient", false),
+		IconTileColor:       req.GetOr("iconTileColor", ""),
+		IconColorSource:     req.GetOr("iconColorSource", ""),
+		IconTileStyle:       req.GetOr("iconTileStyle", ""),
+		IconTileTone:        int(req.GetOr("iconTileTone", -1.0)),
+		IconOwnTone:         int(req.GetOr("iconOwnTone", -1.0)),
+		IconFileStyle:       req.GetOr("iconFileStyle", ""),
 		Contrast:            req.GetOr("contrast", 0.0),
 		SourceMode:          req.GetOr("sourceMode", ""),
 		SeedColor:           req.GetOr("seedColor", ""),
 		Spec:                req.GetOr("spec", ""),
 	}
+}
 
+func handleMatugenQueue(conn *ipc.ConnWriter, req ipc.Request) {
+	opts := matugenQueueOptions(req)
 	wait := req.GetOr("wait", true)
 
 	queue := matugen.GetQueue()

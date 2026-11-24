@@ -11,6 +11,8 @@ Item {
     property bool editMode: false
     property bool optionsShown: false
     property bool menuOpen: false
+    property bool panelResizing: false
+    property bool canUndo: false
     property var tabItem: null
     property Item contentScope: null
     property Item contentTarget: null
@@ -31,6 +33,8 @@ Item {
 
     signal tabCycleRequested(int direction)
     signal editModeRequested(bool on)
+    signal discardRequested
+    signal undoRequested
     signal optionsDismissRequested
     signal closeRequested
     signal leaveRequested
@@ -166,7 +170,7 @@ Item {
         if (event.key !== Qt.Key_Escape)
             return false;
         if (editMode)
-            editModeRequested(false);
+            discardRequested();
         else if (steppedIn && tabsShown)
             leaveContent();
         else
@@ -214,6 +218,13 @@ Item {
         enabled: root.browsing && root.editable
         context: Qt.WindowShortcut
         onActivated: root.editModeRequested(true)
+    }
+
+    Shortcut {
+        sequence: "Ctrl+Z"
+        enabled: root.idle && root.editMode && root.canUndo && !root.panelResizing && !(root.tabItem?.sheetShown ?? false) && !(root.tabItem?.cardInteracting ?? false)
+        context: Qt.WindowShortcut
+        onActivated: root.undoRequested()
     }
 
     Shortcut {

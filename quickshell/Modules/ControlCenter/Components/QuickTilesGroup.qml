@@ -29,6 +29,8 @@ Item {
     readonly property Item passthrough: memberRow
     readonly property real bodyRadius: CcMetrics.pillRadius(width, Math.min(height, CcMetrics.tileHeight))
     readonly property bool memberDragging: liftedIndex >= 0
+    // Never below the width that fits every member; read only while none drags.
+    readonly property real groupMinimumWidth: Math.max(0, memberRow.implicitWidth - gap)
 
     property int liftedIndex: -1
     property real liftedWidth: 0
@@ -65,6 +67,11 @@ Item {
             start += items[k].ownWidth + gap;
         }
         return items.length;
+    }
+
+    // A tile too narrow for another member would clip it, so a full group takes no drops.
+    function hasRoom() {
+        return others().reduce((sum, item) => sum + item.ownWidth + gap, 0) + gapWidth <= width;
     }
 
     function savedIndexAtSlot(slot) {
@@ -147,165 +154,171 @@ Item {
         visible: root.editMode && root.members.length === 0 && root.gapSlot < 0
     }
 
-    Row {
-        id: memberRow
+    // Older layouts can hold more members than fit; keep them inside the tile.
+    Item {
+        anchors.fill: parent
+        clip: memberRow.width > root.width
 
-        // Leaves the bottom corners to the edit chrome's resize grip.
-        readonly property real cornerSize: Theme.minimumTouchTargetSize / 2
+        Row {
+            id: memberRow
 
-        // Every member carries its trailing gap, which sits on the far side in RTL.
-        x: (root.width - Math.max(0, implicitWidth - root.gap)) / 2 - (I18n.isRtl ? root.gap : 0)
-        anchors.verticalCenter: parent.verticalCenter
-        height: CcMetrics.iconBoxSize
-        containmentMask: QtObject {
-            function contains(point: point): bool {
-                if (point.x < 0 || point.y < 0 || point.x >= memberRow.width || point.y >= memberRow.height)
-                    return false;
-                const local = memberRow.mapToItem(root, point.x, point.y);
-                return local.y < root.height - memberRow.cornerSize || (local.x >= memberRow.cornerSize && local.x < root.width - memberRow.cornerSize);
+            // Leaves the bottom corners to the edit chrome's resize grip.
+            readonly property real cornerSize: Theme.minimumTouchTargetSize / 2
+
+            // Members carry a trailing gap, on the far side in RTL.
+            x: (root.width - Math.max(0, implicitWidth - root.gap)) / 2 - (I18n.isRtl ? root.gap : 0)
+            anchors.verticalCenter: parent.verticalCenter
+            height: CcMetrics.iconBoxSize
+            containmentMask: QtObject {
+                function contains(point: point): bool {
+                    if (point.x < 0 || point.y < 0 || point.x >= memberRow.width || point.y >= memberRow.height)
+                        return false;
+                    const local = memberRow.mapToItem(root, point.x, point.y);
+                    return local.y < root.height - memberRow.cornerSize || (local.x >= memberRow.cornerSize && local.x < root.width - memberRow.cornerSize);
+                }
             }
-        }
 
-        Repeater {
-            id: memberRepeater
+            Repeater {
+                id: memberRepeater
 
-            model: root.members
+                model: root.members
 
-            Item {
-                id: member
+                Item {
+                    id: member
 
-                required property var modelData
-                required property int index
-                readonly property bool lifted: root.liftedIndex === modelData.index
-                readonly property bool outside: lifted && root.dropSlot < 0 && root.host !== null
-                readonly property var outsideSize: WidgetUtils.clampSize(modelData.widget, root.host?.columns ?? CcMetrics.gridColumns, root.host?.maximumRows ?? 1)
-                readonly property real outsideWidth: outsideSize.w * (root.host?.cellWidth ?? 0) - CcMetrics.gridGap
-                readonly property real outsideHeight: WidgetUtils.isSmall(modelData.widget, outsideSize.h) ? CcMetrics.smallRowHeight : outsideSize.h * (root.host?.slotLayout?.rowUnit ?? 0) + (outsideSize.h - 1) * CcMetrics.gridGap
-                readonly property int position: index - (root.liftedIndex >= 0 && index > root.members.findIndex(other => other.index === root.liftedIndex) ? 1 : 0)
-                readonly property bool gapBefore: !lifted && root.gapSlot === position
-                readonly property real ownWidth: loader.item?.quickWidth ?? CcMetrics.iconBoxSize
-                property point grabOffset: Qt.point(0, 0)
+                    required property var modelData
+                    required property int index
+                    readonly property bool lifted: root.liftedIndex === modelData.index
+                    readonly property bool outside: lifted && root.dropSlot < 0 && root.host !== null
+                    readonly property var outsideSize: WidgetUtils.clampSize(modelData.widget, root.host?.columns ?? CcMetrics.gridColumns, root.host?.maximumRows ?? 1)
+                    readonly property real outsideWidth: outsideSize.w * (root.host?.cellWidth ?? 0) - CcMetrics.gridGap
+                    readonly property real outsideHeight: WidgetUtils.isSmall(modelData.widget, outsideSize.h) ? CcMetrics.smallRowHeight : outsideSize.h * (root.host?.slotLayout?.rowUnit ?? 0) + (outsideSize.h - 1) * CcMetrics.gridGap
+                    readonly property int position: index - (root.liftedIndex >= 0 && index > root.members.findIndex(other => other.index === root.liftedIndex) ? 1 : 0)
+                    readonly property bool gapBefore: !lifted && root.gapSlot === position
+                    readonly property real ownWidth: loader.item?.quickWidth ?? CcMetrics.iconBoxSize
+                    property point grabOffset: Qt.point(0, 0)
 
-                width: (gapBefore ? root.gapWidth + root.gap : 0) + (lifted ? 0 : ownWidth + root.gap)
-                height: memberRow.height
+                    width: (gapBefore ? root.gapWidth + root.gap : 0) + (lifted ? 0 : ownWidth + root.gap)
+                    height: memberRow.height
 
-                Behavior on width {
-                    enabled: CcMetrics.animationsEnabled && (root.memberDragging || root.receiving)
-                    NumberAnimation {
-                        duration: Theme.expressiveDurations.expressiveFastSpatial
-                        easing.type: Easing.BezierSpline
-                        easing.bezierCurve: Theme.expressiveCurves.expressiveFastSpatial
+                    Behavior on width {
+                        enabled: CcMetrics.animationsEnabled && (root.memberDragging || root.receiving)
+                        NumberAnimation {
+                            duration: Theme.expressiveDurations.expressiveFastSpatial
+                            easing.type: Easing.BezierSpline
+                            easing.bezierCurve: Theme.expressiveCurves.expressiveFastSpatial
+                        }
+                    }
+
+                    Rectangle {
+                        x: I18n.isRtl ? member.ownWidth + root.gap * 2 : 0
+                        width: root.gapWidth
+                        height: parent.height
+                        radius: Theme.fullRadius(width, height)
+                        color: Theme.withAlpha(Theme.primary, Theme.stateLayerDrag)
+                        visible: member.gapBefore
+                    }
+
+                    Item {
+                        id: body
+
+                        parent: member.lifted ? root : member
+                        z: member.lifted ? 1 : 0
+                        x: {
+                            if (member.outside)
+                                return root.liftPoint.x + member.grabOffset.x - width / 2;
+                            if (member.lifted)
+                                return root.liftPoint.x;
+                            if (I18n.isRtl)
+                                return root.gap;
+                            return member.gapBefore ? root.gapWidth + root.gap : 0;
+                        }
+                        y: member.outside ? root.liftPoint.y + member.grabOffset.y - height / 2 : member.lifted ? root.liftPoint.y : 0
+                        width: member.outside ? Math.max(member.ownWidth, member.outsideWidth) : member.ownWidth
+                        height: member.outside ? Math.max(memberRow.height, member.outsideHeight) : memberRow.height
+
+                        Behavior on width {
+                            enabled: CcMetrics.animationsEnabled && member.lifted
+                            NumberAnimation {
+                                duration: Theme.expressiveDurations.expressiveFastSpatial
+                                easing.type: Easing.BezierSpline
+                                easing.bezierCurve: Theme.expressiveCurves.expressiveFastSpatial
+                            }
+                        }
+
+                        Behavior on height {
+                            enabled: CcMetrics.animationsEnabled && member.lifted
+                            NumberAnimation {
+                                duration: Theme.expressiveDurations.expressiveFastSpatial
+                                easing.type: Easing.BezierSpline
+                                easing.bezierCurve: Theme.expressiveCurves.expressiveFastSpatial
+                            }
+                        }
+
+                        Behavior on x {
+                            enabled: CcMetrics.animationsEnabled && !member.lifted
+                            NumberAnimation {
+                                duration: Theme.expressiveDurations.expressiveFastSpatial
+                                easing.type: Easing.BezierSpline
+                                easing.bezierCurve: Theme.expressiveCurves.expressiveFastSpatial
+                            }
+                        }
+
+                        CcTileLoader {
+                            id: loader
+
+                            anchors.fill: parent
+                            grid: root.host
+                            widgetData: member.modelData.widget
+                            savedIndex: member.modelData.index
+                            columns: member.outside ? member.outsideSize.w : 1
+                            rows: member.outside ? member.outsideSize.h : 1
+                            compact: member.outside ? (member.outsideSize.w <= 2 && member.outsideSize.h === 1) : true
+                            small: member.outside ? WidgetUtils.isSmall(member.modelData.widget, member.outsideSize.h) : true
+                            bare: member.outside ? false : root.membersBare
+                        }
+
+                        DragHandler {
+                            id: drag
+
+                            target: null
+                            enabled: root.editMode
+                            cursorShape: Qt.ClosedHandCursor
+                            onActiveChanged: {
+                                if (active) {
+                                    member.grabOffset = centroid.pressPosition;
+                                    root.lift(member, centroid.scenePosition);
+                                    return;
+                                }
+                                if (member.lifted)
+                                    root.drop(member);
+                            }
+                            onCentroidChanged: {
+                                if (active)
+                                    root.moveLifted(member, centroid.scenePosition);
+                            }
+                        }
+
+                        HoverHandler {
+                            enabled: root.editMode
+                            cursorShape: member.lifted ? Qt.ClosedHandCursor : Qt.OpenHandCursor
+                        }
                     }
                 }
+            }
+
+            Item {
+                width: root.gapSlot >= 0 && root.gapSlot === root.members.length - (root.liftedIndex >= 0 ? 1 : 0) ? root.gapWidth + root.gap : 0
+                height: memberRow.height
 
                 Rectangle {
-                    x: I18n.isRtl ? member.ownWidth + root.gap * 2 : 0
+                    x: I18n.isRtl ? root.gap : 0
                     width: root.gapWidth
                     height: parent.height
                     radius: Theme.fullRadius(width, height)
                     color: Theme.withAlpha(Theme.primary, Theme.stateLayerDrag)
-                    visible: member.gapBefore
+                    visible: parent.width > 0
                 }
-
-                Item {
-                    id: body
-
-                    parent: member.lifted ? root : member
-                    z: member.lifted ? 1 : 0
-                    x: {
-                        if (member.outside)
-                            return root.liftPoint.x + member.grabOffset.x - width / 2;
-                        if (member.lifted)
-                            return root.liftPoint.x;
-                        if (I18n.isRtl)
-                            return root.gap;
-                        return member.gapBefore ? root.gapWidth + root.gap : 0;
-                    }
-                    y: member.outside ? root.liftPoint.y + member.grabOffset.y - height / 2 : member.lifted ? root.liftPoint.y : 0
-                    width: member.outside ? Math.max(member.ownWidth, member.outsideWidth) : member.ownWidth
-                    height: member.outside ? Math.max(memberRow.height, member.outsideHeight) : memberRow.height
-
-                    Behavior on width {
-                        enabled: CcMetrics.animationsEnabled && member.lifted
-                        NumberAnimation {
-                            duration: Theme.expressiveDurations.expressiveFastSpatial
-                            easing.type: Easing.BezierSpline
-                            easing.bezierCurve: Theme.expressiveCurves.expressiveFastSpatial
-                        }
-                    }
-
-                    Behavior on height {
-                        enabled: CcMetrics.animationsEnabled && member.lifted
-                        NumberAnimation {
-                            duration: Theme.expressiveDurations.expressiveFastSpatial
-                            easing.type: Easing.BezierSpline
-                            easing.bezierCurve: Theme.expressiveCurves.expressiveFastSpatial
-                        }
-                    }
-
-                    Behavior on x {
-                        enabled: CcMetrics.animationsEnabled && !member.lifted
-                        NumberAnimation {
-                            duration: Theme.expressiveDurations.expressiveFastSpatial
-                            easing.type: Easing.BezierSpline
-                            easing.bezierCurve: Theme.expressiveCurves.expressiveFastSpatial
-                        }
-                    }
-
-                    CcTileLoader {
-                        id: loader
-
-                        anchors.fill: parent
-                        grid: root.host
-                        widgetData: member.modelData.widget
-                        savedIndex: member.modelData.index
-                        columns: member.outside ? member.outsideSize.w : 1
-                        rows: member.outside ? member.outsideSize.h : 1
-                        compact: member.outside ? (member.outsideSize.w <= 2 && member.outsideSize.h === 1) : true
-                        small: member.outside ? WidgetUtils.isSmall(member.modelData.widget, member.outsideSize.h) : true
-                        bare: member.outside ? false : root.membersBare
-                    }
-
-                    DragHandler {
-                        id: drag
-
-                        target: null
-                        enabled: root.editMode
-                        cursorShape: Qt.ClosedHandCursor
-                        onActiveChanged: {
-                            if (active) {
-                                member.grabOffset = centroid.pressPosition;
-                                root.lift(member, centroid.scenePosition);
-                                return;
-                            }
-                            if (member.lifted)
-                                root.drop(member);
-                        }
-                        onCentroidChanged: {
-                            if (active)
-                                root.moveLifted(member, centroid.scenePosition);
-                        }
-                    }
-
-                    HoverHandler {
-                        enabled: root.editMode
-                        cursorShape: member.lifted ? Qt.ClosedHandCursor : Qt.OpenHandCursor
-                    }
-                }
-            }
-        }
-
-        Item {
-            width: root.gapSlot >= 0 && root.gapSlot === root.members.length - (root.liftedIndex >= 0 ? 1 : 0) ? root.gapWidth + root.gap : 0
-            height: memberRow.height
-
-            Rectangle {
-                x: I18n.isRtl ? root.gap : 0
-                width: root.gapWidth
-                height: parent.height
-                radius: Theme.fullRadius(width, height)
-                color: Theme.withAlpha(Theme.primary, Theme.stateLayerDrag)
-                visible: parent.width > 0
             }
         }
     }

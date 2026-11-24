@@ -20,14 +20,7 @@ PluginComponent {
 
     Component.onCompleted: ConfigProfileService.ensureDefault()
 
-    onCcWidgetToggled: cycleNext()
-
-    function cycleNext() {
-        if (profiles.length === 0 || (profiles.length < 2 && activeProfileId))
-            return;
-        const idx = profiles.findIndex(p => p.id === activeProfileId);
-        ConfigProfileService.activate(profiles[(idx + 1) % profiles.length].id);
-    }
+    onCcWidgetToggled: ConfigProfileService.cycle(1)
 
     ccDetailContent: Component {
         Item {

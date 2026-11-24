@@ -99,6 +99,9 @@ var LOCAL_SPEC = {
         def: [],
         coerce: coerceWallpaperFolderSelection
     },
+    wallpaperHideMismatched: {
+        def: false
+    },
     monitorCyclingSettings: {
         def: {}
     },
@@ -246,6 +249,9 @@ var LOCAL_SPEC = {
         def: ""
     },
     deviceMaxVolumes: {
+        def: {}
+    },
+    deviceBalances: {
         def: {}
     },
     hiddenOutputDeviceNames: {

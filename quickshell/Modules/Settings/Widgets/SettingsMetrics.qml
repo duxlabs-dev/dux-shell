@@ -31,6 +31,7 @@ Singleton {
     readonly property real rowMinHeightTwoLine: Theme.listItemTwoLineHeight + Theme.densityStepM
     readonly property real cardGap: Theme.spacingL + Theme.densityStepS
     readonly property real rowContentSpacing: Theme.spacingL
+    readonly property real sliderButtonBleed: (Theme.iconButtonSize - Theme.iconSizeMedium) / 2
     readonly property real resetChipPaddingH: Theme.spacingM
     readonly property real resetChipPaddingV: Theme.spacingXS
     readonly property real heroPadding: rowPaddingV

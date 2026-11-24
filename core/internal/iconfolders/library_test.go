@@ -95,7 +95,7 @@ func TestListedThemesShowTheirOwnAndInheritedIcons(t *testing.T) {
 
 func TestSelfBuiltPackIsListedByItsOwnName(t *testing.T) {
 	e := newSelfEnv(t)
-	state := e.apply(false)
+	state := e.apply(AppColor)
 	names := []string{}
 	for _, th := range ListThemes(e.opts()) {
 		names = append(names, th.Name)

@@ -436,6 +436,7 @@ Singleton {
             };
         }
 
+        OutputModel.markSharedIdentities(data);
         return data;
     }
 

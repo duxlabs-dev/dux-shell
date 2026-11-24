@@ -70,6 +70,7 @@ FocusScope {
         anchors.margins: Theme.spacingM
         parentModal: hostContract
         resultsInset: 0
+        resultsBottomInset: 0
         controllerOverride: root.launcherController
         transientSurfaceTracker: root.transientSurfaceTracker
         showResultsWithoutQuery: true

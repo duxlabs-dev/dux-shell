@@ -8,6 +8,7 @@ import "../DCommon/Common/Surface.js" as Surface
 import "../DCommon/Common/Contrast.js" as Contrast
 import "../DCommon/Common/Accents.js" as Accents
 import "../DCommon/Common/Tonal.js" as Tonal
+import "CornerClearance.js" as CornerClearance
 import Quickshell
 import Quickshell.Io
 import qs.Common
@@ -1035,7 +1036,7 @@ Singleton {
     readonly property real connectedCornerRadius: {
         if (typeof SettingsData === "undefined")
             return 12;
-        return FrameTransitionState.effectiveConnectedFrameModeActive ? SettingsData.frameRounding : windowRadius;
+        return FrameTransitionState.effectiveConnectedFrameModeActive ? frameRadius : windowRadius;
     }
     readonly property color connectedSurfaceColor: {
         if (typeof SettingsData === "undefined")
@@ -1140,6 +1141,28 @@ Singleton {
         return override === undefined ? -1 : override;
     }
     readonly property real windowRadius: compositorRadiusOverride >= 0 ? compositorRadiusOverride : cornerRadiusL
+    // Outer gap DMS writes into the compositor layout; -1 when the user manages gaps.
+    readonly property int compositorOuterGap: {
+        if (typeof SettingsData === "undefined" || !CompositorService.supportsLayoutConfig)
+            return -1;
+        const key = CompositorService.configKey;
+        const gaps = SettingsData[key + "LayoutGapsOverride"] ?? -1;
+        if (gaps === -2)
+            return -1;
+        if (gaps < 0)
+            return Math.max(4, SettingsData.getPrimaryBarConfig()?.spacing ?? 4);
+        const outer = SettingsData[key + "LayoutGapsOutOverride"] ?? -1;
+        return outer >= 0 ? outer : gaps;
+    }
+    readonly property int compositorBorderSize: {
+        if (typeof SettingsData === "undefined" || !CompositorService.supportsLayoutConfig)
+            return 0;
+        const size = SettingsData[CompositorService.configKey + "LayoutBorderSize"] ?? -1;
+        return size >= 0 ? size : 2;
+    }
+    // Focus rings draw outside the window, so the border eats into the gap and widens the corner.
+    readonly property real windowCornerLimit: compositorOuterGap < 0 ? Infinity : CornerClearance.limit(compositorOuterGap - compositorBorderSize, windowRadius + compositorBorderSize)
+    readonly property real frameRadius: typeof SettingsData === "undefined" ? 0 : Math.min(SettingsData.frameRounding, windowCornerLimit)
 
     function scaledRadius(radius, limit) {
         return Shape.scaledRadius(radius, limit, shapeScale, fixedRadius);

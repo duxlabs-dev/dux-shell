@@ -27,6 +27,7 @@ FocusScope {
     // Off for hosts that animate their own size, where this would only slide the bottom fade.
     property bool resizeAnimated: true
     property real resultsInset: LauncherMetrics.spotlightInset
+    property real resultsBottomInset: Theme.spacingS
 
     property bool editMode: false
     property var editingApp: null
@@ -39,12 +40,13 @@ FocusScope {
     readonly property real actionPanelHeight: actionPanel.height
     readonly property real _statusH: Theme.listItemTwoLineHeight + Theme.spacingXL
     readonly property bool _firstSectionShowsHeader: !!(root.controller.sections?.[0]?.title?.length > 0)
-    readonly property real _resultsTopGap: _firstSectionShowsHeader ? LauncherMetrics.resultsGap : root.resultsInset
+    readonly property real _headerlessTopGap: Math.max(LauncherMetrics.resultsGap, root.resultsInset)
+    readonly property real _resultsTopGap: _firstSectionShowsHeader ? LauncherMetrics.resultsGap : _headerlessTopGap
     readonly property real _rowsHeightBudget: _resultsTopGap + ((root.controller.searchMode === "dmenu" && root.controller.dmenuLines > 0) ? (root.controller.dmenuLines * (LauncherMetrics.rowHeight + LauncherMetrics.rowGap) + (_firstSectionShowsHeader ? LauncherMetrics.sectionBand : 0) + LauncherMetrics.fadeLength) : LauncherMetrics.maxResultsHeight)
-    readonly property real _maxResultsH: root.maxResultsHeight > 0 ? root.maxResultsHeight : Math.max(0, Math.min(_rowsHeightBudget + resultsList.bottomInset, (parentModal?.screenHeight ?? Theme.mediumBreakpoint) - (parentModal?.modalY ?? 0) - LauncherMetrics.pillHeight - actionPanel.height - Theme.spacingL))
-    readonly property real _resultsContentH: resultsList.contentHeight > 0 ? _resultsTopGap + resultsList.contentHeight + resultsList.bottomInset : _statusH
+    readonly property real _maxResultsH: root.maxResultsHeight > 0 ? root.maxResultsHeight : Math.max(0, Math.min(_rowsHeightBudget + resultsBottomInset, (parentModal?.screenHeight ?? Theme.mediumBreakpoint) - (parentModal?.modalY ?? 0) - LauncherMetrics.pillHeight - actionPanel.height - Theme.spacingL))
+    readonly property real _resultsContentH: resultsList.contentHeight > 0 ? _resultsTopGap + resultsList.contentHeight + resultsBottomInset : _statusH
     // The popup needs space beyond the underlying result rows.
-    readonly property real _resultsH: !_hasQuery ? 0 : root.controller.activeFolderId ? _maxResultsH : Math.min(_resultsContentH, _resultsTopGap + resultsList.fittedHeight + resultsList.bottomInset)
+    readonly property real _resultsH: !_hasQuery ? 0 : root.controller.activeFolderId ? _maxResultsH : Math.min(_resultsContentH, _resultsTopGap + resultsList.fittedHeight + resultsBottomInset)
     readonly property real _frameClipRadius: Math.max(0, (parentModal?.frameBottomRadius ?? 0) - resultsInset)
     readonly property real _editAvailableH: maxResultsHeight > 0 ? maxResultsHeight + _searchAreaH : Math.max(LauncherMetrics.maxResultsHeight, (parentModal?.screenHeight ?? Theme.mediumBreakpoint) - (parentModal?.modalY ?? 0) - Theme.spacingL)
     readonly property real _editH: Math.min(editLoader.implicitHeight, _editAvailableH)
@@ -463,8 +465,7 @@ FocusScope {
             id: resultsList
             focusReturnTarget: searchInput
             keyForwardTargets: [searchKeyHandler]
-            readonly property real bottomInset: Theme.spacingS
-            availableHeight: Math.max(0, root._maxResultsH - root._resultsTopGap - bottomInset)
+            availableHeight: Math.max(0, root._maxResultsH - root._resultsTopGap - root.resultsBottomInset)
             resizing: actionPanel.animating
             anchors.fill: parent
             anchors.topMargin: root._resultsTopGap

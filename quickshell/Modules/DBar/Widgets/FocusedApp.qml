@@ -145,7 +145,7 @@ BasePill {
                 source: {
                     if (!activeWindow || !activeWindow.appId)
                         return "";
-                    return root.coreIcon || Paths.getAppIcon(activeWindow.appId, activeDesktopEntry);
+                    return IconThemeService.bareIcon(root.coreIcon || Paths.getAppIcon(activeWindow.appId, activeDesktopEntry));
                 }
                 smooth: true
                 mipmap: true
@@ -205,7 +205,7 @@ BasePill {
                         source: {
                             if (!activeWindow || !activeWindow.appId)
                                 return "";
-                            return root.coreIcon || Paths.getAppIcon(activeWindow.appId, activeDesktopEntry);
+                            return IconThemeService.bareIcon(root.coreIcon || Paths.getAppIcon(activeWindow.appId, activeDesktopEntry));
                         }
                         smooth: true
                         mipmap: true
