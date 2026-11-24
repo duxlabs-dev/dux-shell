@@ -9,12 +9,10 @@ NumericText {
     required property SettingsSliderControl slider
     property string minimumLabel: ""
     property string label: ""
-    property bool shown: true
 
     readonly property bool atMinimum: minimumLabel !== "" && slider.currentValue === slider.minimum
-    readonly property real restOpacity: enabled ? 1 : SettingsMetrics.disabledOpacity
 
-    opacity: shown ? restOpacity : 0
+    opacity: enabled ? 1 : SettingsMetrics.disabledOpacity
     text: {
         if (atMinimum)
             return minimumLabel;

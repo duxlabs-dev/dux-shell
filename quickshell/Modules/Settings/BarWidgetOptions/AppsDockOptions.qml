@@ -302,6 +302,7 @@ Column {
             resetStore: root.page
             valueKeys: ["appsDockEnlargePercentage"]
             text: I18n.tr("Magnification", "dock setting: enlarge icons near the cursor")
+            sliderText: I18n.tr("Scale")
             checked: root.page.value("appsDockEnlargeOnHover")
             value: root.page.value("appsDockEnlargePercentage")
             minimum: 100

@@ -145,6 +145,7 @@ awk '$1 == "xray" { print FILENAME ":" FNR; exit }' $files 2>/dev/null`;
                     tags: ["niri", "border", "override", "focus-ring"]
                     settingKey: "niriLayoutBorderSizeEnabled"
                     text: I18n.tr("Override border size")
+                    sliderText: I18n.tr("Size")
                     checked: SettingsData.niriLayoutBorderSize >= 0
                     value: Math.max(0, SettingsData.niriLayoutBorderSize)
                     minimum: 0
@@ -454,6 +455,7 @@ awk '$1 == "xray" { print FILENAME ":" FNR; exit }' $files 2>/dev/null`;
                     tags: ["hyprland", "border", "override", "border_size"]
                     settingKey: "hyprlandLayoutBorderSizeEnabled"
                     text: I18n.tr("Override border size")
+                    sliderText: I18n.tr("Size")
                     checked: SettingsData.hyprlandLayoutBorderSize >= 0
                     value: Math.max(0, SettingsData.hyprlandLayoutBorderSize)
                     minimum: 0
@@ -468,6 +470,7 @@ awk '$1 == "xray" { print FILENAME ":" FNR; exit }' $files 2>/dev/null`;
                     settingKey: "hyprlandResizeOnBorder"
                     valueKeys: ["hyprlandBorderGrabArea"]
                     text: I18n.tr("Resize on border")
+                    sliderText: I18n.tr("Size")
                     checked: SettingsData.hyprlandResizeOnBorder
                     value: SettingsData.hyprlandBorderGrabArea
                     minimum: 0
@@ -667,6 +670,7 @@ awk '$1 == "xray" { print FILENAME ":" FNR; exit }' $files 2>/dev/null`;
                     valueKeys: ["hyprlandGlowRange"]
                     visible: HyprlandService.hyprSupports("decoration:glow:enabled")
                     text: I18n.tr("Glow", "Hyprland toggle, inner glow along window edges in the theme color")
+                    sliderText: I18n.tr("Size")
                     checked: SettingsData.hyprlandGlowEnabled
                     value: SettingsData.hyprlandGlowRange
                     minimum: 1
@@ -693,6 +697,7 @@ awk '$1 == "xray" { print FILENAME ":" FNR; exit }' $files 2>/dev/null`;
                     valueKeys: ["hyprlandWobbleIntensity"]
                     visible: HyprlandService.hyprSupports("decoration:wobble:enabled")
                     text: I18n.tr("Wobbly windows", "Hyprland toggle, windows flex while moving and resizing")
+                    sliderText: I18n.tr("Intensity")
                     checked: SettingsData.hyprlandWobbleEnabled
                     value: SettingsData.hyprlandWobbleIntensity
                     minimum: 0
@@ -755,6 +760,7 @@ awk '$1 == "xray" { print FILENAME ":" FNR; exit }' $files 2>/dev/null`;
                     valueKeys: ["hyprlandMotionBlurSamples"]
                     visible: HyprlandService.hyprSupports("decoration:motion_blur:enabled")
                     text: I18n.tr("Motion blur", "Hyprland toggle, blur windows while they move or resize")
+                    sliderText: I18n.tr("Amount")
                     description: I18n.tr("More samples look smoother and cost more GPU", "Hyprland motion blur sample count description")
                     checked: SettingsData.hyprlandMotionBlurEnabled
                     value: SettingsData.hyprlandMotionBlurSamples
@@ -941,6 +947,7 @@ awk '$1 == "xray" { print FILENAME ":" FNR; exit }' $files 2>/dev/null`;
                     tags: ["mangowc", "mango", "border", "override", "border_px", "borderpx"]
                     settingKey: "mangoLayoutBorderSizeEnabled"
                     text: I18n.tr("Override border size")
+                    sliderText: I18n.tr("Size")
                     checked: SettingsData.mangoLayoutBorderSize >= 0
                     value: Math.max(0, SettingsData.mangoLayoutBorderSize)
                     minimum: 0
