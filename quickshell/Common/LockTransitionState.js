@@ -2,21 +2,17 @@
 
 // Lock.qml writes phases through IdleService; this library only computes transitions.
 const IDLE = "idle";
-const HIDING_CHROME = "hidingChrome";
-const MOVING_WORKSPACES = "movingWorkspaces";
-const RESTORING_WORKSPACES = "restoringWorkspaces";
 const SECURING_LOCK = "securingLock";
+const RESTORING_WORKSPACES = "restoringWorkspaces";
 const LOCK_VISIBLE = "lockVisible";
 const FADING_LOCK_UI = "fadingLockUi";
 const REVEALING_CHROME = "revealingChrome";
 
 const LOCK_REQUESTED = "lockRequested";
-const CHROME_HIDDEN = "chromeHidden";
 const SECURE = "secure";
 const UNLOCK_REQUESTED = "unlockRequested";
 const LOCK_UI_FADED_OUT = "lockUiFadedOut";
 const CHROME_SHOWN = "chromeShown";
-const FADE_CANCELLED = "fadeCancelled";
 const EXTERNAL_UNLOCK = "externalUnlock";
 const WORKSPACE_MOVED = "workspaceMoved";
 const WORKSPACE_UNAVAILABLE = "workspaceUnavailable";
@@ -28,19 +24,8 @@ function next(phase, event, transitionEnabled) {
     switch (phase) {
         case IDLE:
             if (event === LOCK_REQUESTED)
-                return transitionEnabled ? HIDING_CHROME : SECURING_LOCK;
+                return SECURING_LOCK;
             return IDLE;
-        case HIDING_CHROME:
-            if (event === CHROME_HIDDEN) return transitionEnabled ? MOVING_WORKSPACES : SECURING_LOCK;
-            if (event === WORKSPACE_UNAVAILABLE) return SECURING_LOCK;
-            if (event === FADE_CANCELLED || event === RESET) return IDLE;
-            return HIDING_CHROME;
-        case MOVING_WORKSPACES:
-            if (event === WORKSPACE_MOVED) return SECURING_LOCK;
-            if (event === WORKSPACE_UNAVAILABLE) return SECURING_LOCK;
-            if (event === EXTERNAL_UNLOCK) return RESTORING_WORKSPACES;
-            if (event === RESET) return IDLE;
-            return MOVING_WORKSPACES;
         case SECURING_LOCK:
             if (event === SECURE) return LOCK_VISIBLE;
             if (event === EXTERNAL_UNLOCK) return RESTORING_WORKSPACES;
@@ -79,7 +64,6 @@ function shouldShowLockUi(phase) {
     return phase === LOCK_VISIBLE;
 }
 
-// The grab is only needed while fading chrome can still receive input.
 function shouldHoldInputSurface(phase) {
-    return phase === HIDING_CHROME;
+    return false;
 }

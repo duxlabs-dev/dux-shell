@@ -89,7 +89,6 @@ Scope {
     }
 
     function clearWorkspaceTransitionState() {
-        lockWorkspaceTimer.stop();
         savedLockWorkspaces = ({});
         targetLockWorkspaces = ({});
     }
@@ -171,11 +170,8 @@ Scope {
     }
 
     function finishWorkspaceMove() {
-        lockWorkspaceTimer.stop();
-        setLockPhase("workspaceMoved");
         if (externalUnlockPending) {
             externalUnlockPending = false;
-            lockWorkspaceTimer.stop();
             completeExternalUnlock();
             return;
         }
@@ -191,7 +187,6 @@ Scope {
     }
 
     function completeExternalUnlock() {
-        lockWorkspaceTimer.stop();
         shouldLock = false;
         pendingLock = false;
         lockInitiatedLocally = false;
@@ -226,11 +221,12 @@ Scope {
             spawnCustomLocker();
             return;
         }
-        if (IdleService.lockTransitionPhase === "revealingChrome") {
+        // Queue a lock request that lands during any unlock/transition phase.
+        if (IdleService.lockTransitionPhase !== "idle") {
             lockPendingDuringReveal = true;
             return;
         }
-        if (shouldLock || pendingLock || IdleService.lockTransitionPhase !== "idle")
+        if (shouldLock || pendingLock)
             return;
 
         resetLockRetry();
@@ -240,29 +236,22 @@ Scope {
         if (!SessionService.active && SessionService.loginctlAvailable && SettingsData.loginctlLockIntegration)
             pendingLock = true;
 
+        // Engage the session lock immediately.
+        // The lock UI appears on the lock surface once the session lock is secure.
+        // Chrome hide and workspace capture/switch run in parallel once the lock is secure.
         setLockPhase("lockRequested");
-        IdleService.fadeToLockRequested();
-        closeTransientUi();
-        IdleService.hideChrome(finishChromeHidden);
-        return;
-
-        if (!externallyInitiated)
-            notifyLoginctl(true);
         if (!pendingLock)
             shouldLock = true;
+        if (lockInitiatedLocally && !pendingLock)
+            notifyLoginctl(true);
+        closeTransientUi();
+        return;
     }
 
     function finishChromeHidden() {
-        if (IdleService.lockTransitionPhase !== "hidingChrome")
-            return;
         IdleService.dismissFadeToLock();
         if (captureWorkspaceStates() && switchToLockWorkspaces()) {
-            setLockPhase("chromeHidden");
-            if (Theme.reduceMotion) {
-                finishWorkspaceMove();
-            } else {
-                lockWorkspaceTimer.start();
-            }
+            finishWorkspaceMove();
         } else {
             setLockPhase("workspaceUnavailable");
             if (lockInitiatedLocally)
@@ -464,10 +453,7 @@ Scope {
             if (lockInitiatedLocally)
                 return;
             switch (IdleService.lockTransitionPhase) {
-            case "movingWorkspaces":
             case "securingLock":
-                if (lockWorkspaceTimer.running)
-                    externalUnlockPending = true;
                 completeExternalUnlock();
                 return;
             case "lockVisible":
@@ -500,10 +486,6 @@ Scope {
         function onLoginctlStateChanged() {
             if (!SessionService.active || !pendingLock)
                 return;
-            if (IdleService.lockTransitionPhase === "hidingChrome") {
-                pendingLock = false;
-                return;
-            }
             if (IdleService.lockTransitionPhase === "securingLock") {
                 pendingLock = false;
                 shouldLock = true;
@@ -528,7 +510,6 @@ Scope {
                 "shouldLock", shouldLock, "secure", sessionLock.secure,
                 "saved keys", Object.keys(savedLockWorkspaces));
             if (sessionLock.secure
-                || IdleService.lockTransitionPhase === "movingWorkspaces"
                 || (IdleService.lockTransitionPhase === "securingLock" && Object.keys(savedLockWorkspaces).length > 0)
                 || IdleService.lockTransitionPhase === "fadingLockUi"
                 || IdleService.lockTransitionPhase === "restoringWorkspaces"
@@ -649,6 +630,9 @@ Scope {
             lockPowerOffArmed = false;
             if (IdleService.lockTransitionPhase === "securingLock") {
                 applySecureUi();
+                // the chrome hide and workspace capture/switch run in parallel with
+                // lock UI reveal on the lock surface
+                IdleService.hideChrome(finishChromeHidden);
             } else {
                 securePending = true;
             }
@@ -728,13 +712,6 @@ Scope {
         interval: SettingsData.fadeToDpmsGracePeriod * 1000
         repeat: false
         onTriggered: root.applyMonitorsOff()
-    }
-
-    Timer {
-        id: lockWorkspaceTimer
-        interval: Theme.expressiveDurations.expressiveEffects
-        repeat: false
-        onTriggered: root.finishWorkspaceMove()
     }
 
     IdleMonitor {

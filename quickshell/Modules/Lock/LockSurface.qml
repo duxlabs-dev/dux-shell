@@ -81,7 +81,7 @@ FocusScope {
 
         Behavior on uiOpacity {
             NumberAnimation {
-                duration: Theme.expressiveDurations.expressiveEffects
+                duration: Theme.reduceMotion ? 0 : Theme.expressiveDurations.expressiveEffects
                 easing.type: Easing.BezierSpline
                 easing.bezierCurve: Theme.expressiveCurves.expressiveEffects
                 // Video screensaver can hold opacity at zero, so completion must not depend on animation start.

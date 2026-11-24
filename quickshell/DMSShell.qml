@@ -102,49 +102,6 @@ Item {
         model: ShellLayout.realScreens
 
         delegate: Loader {
-            id: fadeWindowLoader
-            required property var modelData
-            readonly property FadeToLockWindow loadedWindow: item as FadeToLockWindow
-            active: !Theme.reduceMotion
-            asynchronous: false
-
-            sourceComponent: FadeToLockWindow {
-                screen: fadeWindowLoader.modelData
-
-                onFadeCancelled: {
-                    root.log.debug("Fade to lock cancelled by user on screen:", fadeWindowLoader.modelData.name);
-                }
-            }
-
-            Connections {
-                target: IdleService
-                enabled: fadeWindowLoader.loadedWindow !== null
-
-                function onFadeToLockRequested() {
-                    if (fadeWindowLoader.loadedWindow) {
-                        fadeWindowLoader.loadedWindow.startFade();
-                    }
-                }
-
-                function onCancelFadeToLock() {
-                    if (fadeWindowLoader.loadedWindow) {
-                        fadeWindowLoader.loadedWindow.cancelFade();
-                    }
-                }
-
-                function onDismissFadeToLock() {
-                    if (fadeWindowLoader.loadedWindow) {
-                        fadeWindowLoader.loadedWindow.dismiss();
-                    }
-                }
-            }
-        }
-    }
-
-    Variants {
-        model: ShellLayout.realScreens
-
-        delegate: Loader {
             id: fadeDpmsWindowLoader
             required property var modelData
             readonly property FadeToDpmsWindow loadedWindow: item as FadeToDpmsWindow
