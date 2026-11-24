@@ -1,6 +1,6 @@
 .pragma library
 
-// Bar widget ids that settings v48 merged into one sysmon widget.
+// Bar widget ids that settings v49 merged into one sysmon widget.
 var SYSMON_LEGACY_IDS = ["cpuUsage", "memUsage", "diskUsage", "cpuTemp", "gpuTemp", "network_speed_monitor"];
 
 var SYSMON_LEGACY_TYPES = {

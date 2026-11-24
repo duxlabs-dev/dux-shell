@@ -272,7 +272,7 @@ Singleton {
         return [...new Set(Object.values(widgetRegistry).map(entry => entry.widgetId))];
     }
 
-    // Ids of monitor widgets from before the settings v48 migration still reach their sysmon widget.
+    // Ids of monitor widgets from before the settings v49 migration still reach their sysmon widget.
     function currentWidgetId(widgetId) {
         return WidgetDefaults.SYSMON_LEGACY_IDS.includes(widgetId) ? "sysmon" : widgetId;
     }
