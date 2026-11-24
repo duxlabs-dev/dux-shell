@@ -3607,7 +3607,7 @@ Singleton {
         cursorSettings = updated;
         saveSettings();
         updateXResources();
-        updateGtkCursor();
+        gtkCursorWriteDebounce.restart();
         updateCompositorCursor();
     }
 
@@ -3619,7 +3619,7 @@ Singleton {
         cursorSettings = updated;
         saveSettings();
         updateXResources();
-        updateGtkCursor();
+        gtkCursorWriteDebounce.restart();
         updateCompositorCursor();
     }
 
@@ -3695,8 +3695,8 @@ Singleton {
 
         replace_line() {
             file="$1"; pattern="$2"; line="$3"
-            awk -v p="$pattern" -v l="$line" '$0 ~ p { if (!done) print l; done = 1; next } { print }' "$file" > "$file.dms-tmp" && cat "$file.dms-tmp" > "$file"
-            rm -f "$file.dms-tmp"
+            awk -v p="$pattern" -v l="$line" '$0 ~ p { if (!done) print l; done = 1; next } { print }' "$file" > "$file.dms-tmp.$$" && cat "$file.dms-tmp.$$" > "$file"
+            rm -f "$file.dms-tmp.$$"
         }
 
         set_ini() {
@@ -3704,24 +3704,24 @@ Singleton {
             if [ ! -f "$file" ]; then
                 mkdir -p "$(dirname "$file")" && printf '[Settings]\\n' > "$file"
             fi
-            : > "$file.dms-add"
+            : > "$file.dms-add.$$"
             for entry in "$@"; do
                 key="\${entry%%=*}"
                 if grep -q "^[[:space:]]*$key[[:space:]]*=" "$file"; then
                     replace_line "$file" "^[[:space:]]*$key[[:space:]]*=" "$entry"
                 else
-                    printf '%s\\n' "$entry" >> "$file.dms-add"
+                    printf '%s\\n' "$entry" >> "$file.dms-add.$$"
                 fi
             done
-            if [ -s "$file.dms-add" ]; then
+            if [ -s "$file.dms-add.$$" ]; then
                 if grep -q '^\\[Settings\\]' "$file"; then
-                    awk 'FNR == NR { add = add $0 "\\n"; next } { print } /^\\[Settings\\]/ && !done { printf "%s", add; done = 1 }' "$file.dms-add" "$file" > "$file.dms-tmp" && cat "$file.dms-tmp" > "$file"
-                    rm -f "$file.dms-tmp"
+                    awk 'FNR == NR { add = add $0 "\\n"; next } { print } /^\\[Settings\\]/ && !done { printf "%s", add; done = 1 }' "$file.dms-add.$$" "$file" > "$file.dms-tmp.$$" && cat "$file.dms-tmp.$$" > "$file"
+                    rm -f "$file.dms-tmp.$$"
                 else
-                    { printf '\\n[Settings]\\n'; cat "$file.dms-add"; } >> "$file"
+                    { printf '\\n[Settings]\\n'; cat "$file.dms-add.$$"; } >> "$file"
                 fi
             fi
-            rm -f "$file.dms-add"
+            rm -f "$file.dms-add.$$"
         }
 
         for settings_file in "$config_dir/gtk-3.0/settings.ini" "$config_dir/gtk-4.0/settings.ini"; do
@@ -4654,6 +4654,14 @@ Singleton {
 
         interval: 3000
         onTriggered: root._rebuildIcons()
+    }
+
+    // The size slider emits a change per step while dragging, one GTK write per settled value
+    Timer {
+        id: gtkCursorWriteDebounce
+        interval: Timing.debounceSlow
+        repeat: false
+        onTriggered: root.updateGtkCursor()
     }
 
     Timer {
