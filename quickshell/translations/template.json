@@ -5187,6 +5187,13 @@
     "comment": "the cgroup path of a process"
   },
   {
+    "term": "Controlled by All displays",
+    "translation": "",
+    "context": "Controlled by All displays",
+    "reference": "",
+    "comment": "display picker dependent toggle disabled reason"
+  },
+  {
     "term": "Controls",
     "translation": "",
     "context": "Controls",
@@ -19276,6 +19283,13 @@
     "context": "Requires MangoWC compositor",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Requires Use overlay layer",
+    "translation": "",
+    "context": "Requires Use overlay layer",
+    "reference": "",
+    "comment": "dock over fullscreen toggle disabled reason"
   },
   {
     "term": "Requires night mode support",

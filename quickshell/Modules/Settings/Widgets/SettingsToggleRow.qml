@@ -7,15 +7,19 @@ SettingsRow {
 
     property string text: ""
     property string description: ""
+    property string disabledReason: ""
     property color descriptionColor: Theme.surfaceVariantText
     property bool checked: false
     property bool toggling: false
     property alias accessory: accessorySlot.data
 
+    // A disabled row explains what controls it, which matters more than the usual description
+    readonly property string effectiveDescription: !enabled && disabledReason !== "" ? disabledReason : description
+
     signal toggled(bool checked)
 
     title: text
-    subtitle: description
+    subtitle: effectiveDescription
     subtitleColor: descriptionColor
     clickable: true
     Accessible.role: Accessible.CheckBox
@@ -39,7 +43,7 @@ SettingsRow {
         anchors.verticalCenter: parent.verticalCenter
         hideText: true
         text: root.text
-        description: root.description
+        description: root.effectiveDescription
         activeFocusOnTab: false
         Accessible.ignored: true
         checked: root.checked

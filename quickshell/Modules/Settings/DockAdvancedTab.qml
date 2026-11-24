@@ -38,6 +38,7 @@ Item {
                     text: I18n.tr("Over fullscreen")
                     description: I18n.tr("Keeps the dock showing over fullscreen windows", "dock over fullscreen toggle description")
                     enabled: (dock.config?.useOverlayLayer ?? false) || Quickshell.screens.some(screen => CompositorService.framePeerSurfacesUseOverlayForScreen(screen) && SettingsData.dockConfigsForScreen(screen).some(config => config.id === dock.config?.id))
+                    disabledReason: I18n.tr("Requires Use overlay layer", "dock over fullscreen toggle disabled reason")
                     checked: dock.config?.showOnFullscreen ?? false
                     onToggled: checked => dock.setOption("showOnFullscreen", checked)
                 }
