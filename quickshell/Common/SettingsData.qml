@@ -3606,8 +3606,7 @@ Singleton {
         updated.theme = themeName;
         cursorSettings = updated;
         saveSettings();
-        updateXResources();
-        gtkCursorWriteDebounce.restart();
+        cursorFilesWriteDebounce.restart();
         updateCompositorCursor();
     }
 
@@ -3618,8 +3617,7 @@ Singleton {
         updated.size = size;
         cursorSettings = updated;
         saveSettings();
-        updateXResources();
-        gtkCursorWriteDebounce.restart();
+        cursorFilesWriteDebounce.restart();
         updateCompositorCursor();
     }
 
@@ -4656,12 +4654,15 @@ Singleton {
         onTriggered: root._rebuildIcons()
     }
 
-    // The size slider emits a change per step while dragging, one GTK write per settled value
+    // The size slider emits a change per step while dragging, one write of the cursor files per settled value
     Timer {
-        id: gtkCursorWriteDebounce
+        id: cursorFilesWriteDebounce
         interval: Timing.debounceSlow
         repeat: false
-        onTriggered: root.updateGtkCursor()
+        onTriggered: {
+            root.updateXResources();
+            root.updateGtkCursor();
+        }
     }
 
     Timer {
