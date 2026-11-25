@@ -9,8 +9,9 @@ function addCard(id, w, h) {
         "w": w,
         "h": h
     };
-    if (DashRegistry.entry(id)?.card?.allowMultiple && cards.some(c => c.id === id))
-        card.instanceId = Date.now().toString(36) + Math.random().toString(36).substring(2);
+    const spec = DashRegistry.entry(id)?.card;
+    if (spec?.settingsPage || (spec?.allowMultiple && cards.some(c => c.id === id)))
+        card.instanceId = DashRegistry.newInstanceId();
     cards.push(card);
     SettingsData.set("dashCards", cards);
 }

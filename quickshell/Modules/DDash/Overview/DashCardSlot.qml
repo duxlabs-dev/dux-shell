@@ -154,7 +154,7 @@ DEditableGridSlot {
             sizeText: root.previewW + "×" + root.previewH
             dragging: root.dragging
             resizing: root.resizing
-            hasOptions: DashRegistry.hasOptions(root.cardId)
+            hasOptions: DashRegistry.hasOptions(root.cardId) || !!root.entry?.card?.settingsPage
             onOptionsRequested: root.grid.optionsRequested(root.cardId, root.instanceId)
             onRemoveRequested: CardUtils.removeCard(root.index)
             onResizeStarted: (px, py) => root.startResize(px, py)

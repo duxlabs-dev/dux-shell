@@ -162,6 +162,7 @@ TAB_INDEX_MAP = {
     "DisplayWidgetsTab.qml": 26,
     "DesktopWidgetsTab.qml": 27,
     "DesktopWidgetTab.qml": 63,
+    "DashSysmonCardTab.qml": 87,
     "AudioTab.qml": 29,
     "LocaleTab.qml": 30,
     "GreeterTab.qml": 31,

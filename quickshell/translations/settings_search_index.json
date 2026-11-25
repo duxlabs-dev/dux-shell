@@ -16806,6 +16806,24 @@
     "parentLabel": "Bar"
   },
   {
+    "section": "dashSysmonCards",
+    "label": "System Monitor",
+    "tabIndex": 43,
+    "category": "Dashboard",
+    "keywords": [
+      "bar",
+      "dashboard",
+      "monitor",
+      "panel",
+      "statusbar",
+      "system",
+      "taskbar",
+      "topbar"
+    ],
+    "parentLabel": "Bar",
+    "icon": "monitoring"
+  },
+  {
     "section": "dashTabs",
     "label": "Tabs",
     "tabIndex": 43,
