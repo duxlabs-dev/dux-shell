@@ -14,7 +14,7 @@ DIdleSurface {
     property var modelData
     property int topMargin: 0
     property DPopout _activePopout: null
-    readonly property real _shiftPad: Math.max(0, ...popupWindows.map(p => Math.max(p?.shiftPad ?? 0, Math.abs(p?.screenShiftX ?? 0))))
+    readonly property real _shiftPad: Math.max(0, ...popupWindows.map(p => p?.shiftPad ?? 0))
     readonly property rect popoutAvoidRect: {
         const p = _activePopout;
         if (!p?.shouldBeVisible || !SettingsData.notificationPopupAvoidPopouts || notificationConnectedMode || !_stackAnchorsTop())

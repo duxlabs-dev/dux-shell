@@ -324,9 +324,11 @@ Item {
 
     SpringMotion {
         id: shiftMotion
+        // Critically damped: no overshoot, so shiftPad bounds the surface width.
+        readonly property var _spring: Theme.springPreset("defaultEffects", Theme.notificationStackShiftDuration)
         reducedMotion: !NotificationMetrics.animationsEnabled
-        stiffness: NotificationMetrics.stackSpring.stiffness
-        damping: NotificationMetrics.stackSpring.damping
+        stiffness: _spring.stiffness
+        damping: _spring.damping
         positionEpsilon: 0.05
         velocityEpsilon: 0.05
         onRunningChanged: {
