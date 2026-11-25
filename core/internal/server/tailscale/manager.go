@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"maps"
 	"net/netip"
+	"reflect"
 	"slices"
 	"strings"
 	"sync"
@@ -285,9 +286,13 @@ func splitAdvertisedRoutes(all []netip.Prefix) (routes []netip.Prefix, exitNode 
 
 func (m *Manager) updateState(state *TailscaleState) {
 	m.stateMutex.Lock()
+	unchanged := state.AuthURL == "" && reflect.DeepEqual(m.state, state)
 	m.state = state
 	m.stateMutex.Unlock()
 
+	if unchanged {
+		return
+	}
 	m.broadcastState(*state)
 }
 
