@@ -28,14 +28,6 @@ DEditableGridSlot {
     property real biasH: 0
     readonly property real smallSpanLimit: (1 + CcMetrics.smallRowFraction) / 2
 
-    readonly property bool tilePressed: !grid.editMode && (tileItem?.pressed ?? false)
-
-    onTilePressedChanged: grid.bounce.press(index, tilePressed)
-    Component.onDestruction: {
-        if (tilePressed)
-            grid?.bounce?.press(index, false);
-    }
-
     readonly property bool overflowing: (grid.interacting || grid.spillPreview) && grid.slotLayout.slots[index] === null && grid.slotLayout.commitSlots?.[index] != null
     property real overflowProgress: overflowing ? 1 : 0
     readonly property var shownSlot: grid.slotLayout.slots[index] ?? null
@@ -183,9 +175,9 @@ DEditableGridSlot {
     CcTileLoader {
         id: tileLoader
 
-        x: root.inGroupHover ? Math.max(0, Math.min(root.width - width, root._hoverLocal.x - width / 2)) : root.grid.bounce.dx(root.index)
+        x: root.inGroupHover ? Math.max(0, Math.min(root.width - width, root._hoverLocal.x - width / 2)) : 0
         y: root.inGroupHover ? Math.max(0, Math.min(root.height - height, root._hoverLocal.y - height / 2)) : 0
-        width: root.inGroupHover ? (root.tileItem?.quickWidth ?? CcMetrics.iconBoxSize) : root.width + root.grid.bounce.dw(root.index)
+        width: root.inGroupHover ? (root.tileItem?.quickWidth ?? CcMetrics.iconBoxSize) : root.width
         height: root.inGroupHover ? CcMetrics.iconBoxSize : root.height
         grid: root.grid
         widgetData: root.widgetData

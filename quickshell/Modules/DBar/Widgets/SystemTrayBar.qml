@@ -56,10 +56,22 @@ BasePill {
         return TrayMenuManager.iconSourceFor(trayItem);
     }
 
+    function endBarHover() {
+        const screenName = root.parentScreen?.name;
+        if (screenName)
+            PopoutManager.popoutToggledClosed(screenName);
+    }
+
+    function cancelHoverOnPress(mouse) {
+        if (mouse.button === Qt.LeftButton && !trayMenuState.showMenu)
+            root.endBarHover();
+    }
+
     function activateInlineTrayItem(trayItem, anchorItem) {
         if (!trayItem)
             return;
         if (!trayItem.onlyMenu) {
+            root.endBarHover();
             trayItem.activate();
             return;
         }
@@ -485,6 +497,7 @@ BasePill {
 
     content: Component {
         Item {
+            readonly property var layoutItem: layoutLoader.item
             implicitWidth: layoutLoader.item ? layoutLoader.item.implicitWidth : 0
             implicitHeight: layoutLoader.item ? layoutLoader.item.implicitHeight : 0
 
@@ -647,6 +660,7 @@ BasePill {
                 onPressed: mouse => {
                     const pos = mapToItem(inlineVisualContent, mouse.x, mouse.y);
                     inlineItemRipple.trigger(pos.x, pos.y);
+                    root.cancelHoverOnPress(mouse);
                 }
 
                 onClicked: mouse => {
@@ -767,6 +781,7 @@ BasePill {
                 onPressed: mouse => {
                     const pos = mapToItem(visualContent, mouse.x, mouse.y);
                     itemRipple.trigger(pos.x, pos.y);
+                    root.cancelHoverOnPress(mouse);
                     if (mouse.button === Qt.LeftButton) {
                         dragHandler.dragStartPos = Qt.point(mouse.x, mouse.y);
                         longPressTimer.start();
@@ -789,6 +804,7 @@ BasePill {
                     if (!delegateRoot.trayItem)
                         return;
                     if (!delegateRoot.trayItem.onlyMenu) {
+                        root.endBarHover();
                         delegateRoot.trayItem.activate();
                         return;
                     }
@@ -1079,7 +1095,10 @@ BasePill {
             TrayMenuManager.registerMenu(screen.name, root.trayMenuPopout());
 
         trayMenuState.showMenu = true;
-        PopoutManager.requestPopout(root.trayMenuPopout(), undefined, "tray-menu-" + (item?.id ?? ""));
+        if (byHover)
+            PopoutManager.requestHoverPopout(root.trayMenuPopout(), undefined, "tray-menu-" + (item?.id ?? ""));
+        else
+            PopoutManager.requestPopout(root.trayMenuPopout(), undefined, "tray-menu-" + (item?.id ?? ""));
     }
 
     function showForTrayItem(item, anchor, screen, atBottom, vertical, axisObj, byHover) {
@@ -1093,11 +1112,7 @@ BasePill {
     }
 
     function _trayLayoutRoot() {
-        const contentChildren = root.visualContent?.children;
-        if (!contentChildren || contentChildren.length === 0)
-            return null;
-        const contentRoot = contentChildren[0];
-        return contentRoot?.layoutLoader?.item || null;
+        return root.contentItem?.layoutItem || null;
     }
 
     function _trayHitAtGlobalPoint(gx, gy) {
@@ -1126,6 +1141,8 @@ BasePill {
     }
 
     function hoverTriggerAtGlobalPoint(gx, gy) {
+        if (draggedIndex >= 0)
+            return "";
         const hit = _trayHitAtGlobalPoint(gx, gy);
         if (!hit?.trayItem?.hasMenu)
             return "";
@@ -1133,6 +1150,8 @@ BasePill {
     }
 
     function openHoverAtGlobalPoint(gx, gy) {
+        if (draggedIndex >= 0)
+            return false;
         const hit = _trayHitAtGlobalPoint(gx, gy);
         if (!hit?.trayItem?.hasMenu)
             return false;

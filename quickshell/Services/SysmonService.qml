@@ -295,7 +295,7 @@ Singleton {
         case "gpu/temp":
             return I18n.tr("Temperature");
         case "cpu/clock":
-            return I18n.tr("Clock");
+            return I18n.tr("Clock", "CPU clock speed", true);
         case "memory/used":
         case "disk/space":
             return I18n.tr("Used", "memory in use");

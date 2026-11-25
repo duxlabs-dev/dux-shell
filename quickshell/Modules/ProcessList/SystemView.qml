@@ -86,7 +86,7 @@ Item {
     readonly property string themeText: {
         const name = Theme.currentThemeName ?? "";
         const base = name === "dynamic" ? I18n.tr("Dynamic", "theme generated from the wallpaper") + (SettingsData.matugenScheme ? ", " + SettingsData.matugenScheme.replace(/^scheme-/, "") : "") : name;
-        return [base, SessionData.isLightMode ? I18n.tr("Light") : I18n.tr("Dark")].filter(x => x).join(", ");
+        return [base, SessionData.isLightMode ? I18n.tr("Light", "adjective, light color mode, opposite of dark") : I18n.tr("Dark", "adjective, dark color mode, opposite of light")].filter(x => x).join(", ");
     }
 
     readonly property string powerProfileText: {
@@ -104,13 +104,13 @@ Item {
     readonly property string chassisText: {
         switch (SystemInfo.chassisKind(f["dmi.chassis_type"])) {
         case "desktop":
-            return I18n.tr("Desktop", "computer chassis type");
+            return I18n.tr("Desktop", "computer chassis type", true);
         case "laptop":
             return I18n.tr("Laptop", "computer chassis type");
         case "server":
             return I18n.tr("Server", "computer chassis type");
         case "tablet":
-            return I18n.tr("Tablet", "computer chassis type");
+            return I18n.tr("Tablet", "computer chassis type", true);
         case "convertible":
             return I18n.tr("Convertible", "computer chassis type: laptop that turns into a tablet");
         case "mini":
@@ -209,7 +209,7 @@ Item {
             "rows": desktopRows
         },
         {
-            "title": I18n.tr("Displays"),
+            "title": I18n.tr("Displays", "noun, physical monitors"),
             "icon": "desktop_windows",
             "rows": displayRows
         },

@@ -88,7 +88,7 @@ Item {
                     tags: ["dot", "icon", "symbol", "glyph"]
                     resetStore: root.dot
                     resetKeys: ["islandFreeIcon"]
-                    title: I18n.tr("Symbol")
+                    title: I18n.tr("Symbol", "noun, glyph shown on the dot")
                     visible: root.iconMode === "icon"
 
                     DIconPicker {

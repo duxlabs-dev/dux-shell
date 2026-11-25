@@ -352,7 +352,7 @@ Column {
             running: true
         });
         proc.exited.connect(() => {
-            ToastService.showInfo(I18n.tr("HTML copied to clipboard"));
+            ToastService.showInfo(I18n.tr("Copied to clipboard"));
             proc.destroy();
         });
     }
@@ -1045,7 +1045,7 @@ Column {
                                 running: true
                             });
                             proc.exited.connect(() => {
-                                ToastService.showInfo(I18n.tr("Path copied to clipboard"));
+                                ToastService.showInfo(I18n.tr("Copied to clipboard"));
                                 proc.destroy();
                             });
                         }
@@ -1203,7 +1203,7 @@ Column {
             {
                 type: "item",
                 icon: "content_cut",
-                text: I18n.tr("Cut"),
+                text: I18n.tr("Cut", "verb, clipboard cut action"),
                 enabled: hasSelection,
                 action: () => textArea.cut()
             },

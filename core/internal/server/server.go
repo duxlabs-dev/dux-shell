@@ -45,7 +45,7 @@ import (
 	"github.com/spf13/afero"
 )
 
-const APIVersion = 44
+const APIVersion = 45
 
 var CLIVersion = "dev"
 
@@ -1248,6 +1248,9 @@ func (s *Server) Serve(printDocs bool) error {
 		log.Info(" wellbeing.setLimits                    - Set daily and per-app limits in seconds (params: daily?, apps?)")
 		log.Info(" wellbeing.summary                      - Per-day screen time ending today (params: days?)")
 		log.Info(" wellbeing.clear                        - Delete the screen time history")
+		log.Info(" wellbeing.logBreak                     - Count one break reminder outcome for today (params: outcome = completed|skipped|snoozed)")
+		log.Info(" wellbeing.breaks                       - Per-day break reminder outcomes ending today (params: days?)")
+		log.Info(" wellbeing.clearBreaks                  - Delete the break reminder statistics")
 		log.Info("Global shortcuts:")
 		log.Info(" globalshortcuts.getState               - Apps with saved shortcuts and pending prompts")
 		log.Info(" globalshortcuts.submit                 - Answer a prompt (params: token, shortcuts [{id, triggers}])")

@@ -330,7 +330,7 @@ awk '$1 == "xray" { print FILENAME ":" FNR; exit }' $files 2>/dev/null`;
                     settingKey: "hyprlandScrollingDirection"
                     visible: SettingsData.hyprlandTilingLayout === "scrolling"
                     text: I18n.tr("Direction")
-                    model: [I18n.tr("Right"), I18n.tr("Left"), I18n.tr("Down", "Hyprland scrolling layout direction"), I18n.tr("Up", "Hyprland scrolling layout direction")]
+                    model: [I18n.tr("Right"), I18n.tr("Left"), I18n.tr("Down", "Hyprland scrolling layout direction", true), I18n.tr("Up", "Hyprland scrolling layout direction", true)]
                     currentIndex: Math.max(0, ids.indexOf(SettingsData.hyprlandScrollingDirection))
                     onSelectionChanged: (index, selected) => {
                         if (!selected)

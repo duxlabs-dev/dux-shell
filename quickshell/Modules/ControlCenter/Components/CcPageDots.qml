@@ -10,6 +10,9 @@ Item {
 
     property int count: 0
     property int currentIndex: 0
+    property real position: currentIndex
+    // Overscroll past either end must not dim the lit dot.
+    readonly property real settledPosition: Math.max(0, Math.min(count - 1, position))
     // Only the footer, so its taps never reach the tiles above.
     property real targetHeight: CcMetrics.pageFooterHeight
 
@@ -64,8 +67,9 @@ Item {
 
                 required property int index
                 readonly property bool current: index === root.currentIndex
+                readonly property real lit: Math.max(0, 1 - Math.abs(index - root.settledPosition))
 
-                width: pip.width + CcMetrics.pageDotSize + Theme.outlineWidth * 2
+                width: pip.width + Theme.spacingXS
                 height: root.targetHeight
                 Accessible.role: Accessible.PageTab
                 Accessible.name: I18n.tr("Page %1 of %2", "control center page indicator, %1 is the page number, %2 the page count").arg(index + 1).arg(root.count)
@@ -81,7 +85,8 @@ Item {
                     width: dot.current ? CcMetrics.pageDotActiveWidth : CcMetrics.pageDotSize
                     height: CcMetrics.pageDotSize
                     radius: Theme.fullRadius(width, height)
-                    color: dot.current ? Theme.primary : CcMetrics.pageDotColor
+                    // No color Behavior: a tween would lag the finger.
+                    color: Theme.blend(CcMetrics.pageDotColor, Theme.primary, dot.lit)
 
                     Behavior on width {
                         enabled: CcMetrics.animationsEnabled
@@ -89,15 +94,6 @@ Item {
                             duration: Theme.expressiveDurations.expressiveFastSpatial
                             easing.type: Easing.BezierSpline
                             easing.bezierCurve: Theme.expressiveCurves.expressiveFastSpatial
-                        }
-                    }
-
-                    Behavior on color {
-                        enabled: CcMetrics.animationsEnabled
-                        ColorAnimation {
-                            duration: Theme.expressiveDurations.expressiveEffects
-                            easing.type: Easing.BezierSpline
-                            easing.bezierCurve: Theme.expressiveCurves.expressiveEffects
                         }
                     }
 

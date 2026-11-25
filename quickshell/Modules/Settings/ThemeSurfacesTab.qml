@@ -402,7 +402,7 @@ Column {
     SettingsDeferred {
         SettingsCard {
             tab: "theme"
-            tags: ["focus", "ring", "keyboard", "scroll", "shadows"]
+            tags: ["focus", "ring", "keyboard", "press", "expressive", "scroll", "shadows"]
             title: I18n.tr("Controls")
             settingKey: "surfaceControls"
 

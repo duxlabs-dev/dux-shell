@@ -40,6 +40,13 @@ type State struct {
 	Resync bool        `json:"resync,omitempty"`
 }
 
+type BreakCounts struct {
+	Date      string `json:"date"`
+	Completed int64  `json:"completed"`
+	Skipped   int64  `json:"skipped"`
+	Snoozed   int64  `json:"snoozed"`
+}
+
 type segment struct {
 	AppID  string `json:"appId"`
 	Active bool   `json:"active"`
