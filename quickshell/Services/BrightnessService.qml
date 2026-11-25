@@ -35,7 +35,7 @@ Singleton {
     property bool brightnessInitialized: false
     property bool suppressOsd: true
 
-    signal brightnessChanged(bool showOsd)
+    signal brightnessChanged(bool showOsd, var deviceIds)
     signal deviceSwitched
 
     function markDeviceUserControlled(deviceId) {
@@ -136,7 +136,7 @@ Singleton {
         const isPendingOsd = pendingOsdDevices[device.id] === true;
         if (isPendingOsd) {
             clearDevicePendingOsd(device.id);
-            brightnessChanged(true);
+            brightnessChanged(true, [device.id]);
             return;
         }
 
@@ -146,7 +146,7 @@ Singleton {
         if (suppressOsd) {
             return;
         }
-        brightnessChanged(true);
+        brightnessChanged(true, [device.id]);
     }
 
     function updateFromBrightnessState(state) {
@@ -175,7 +175,7 @@ Singleton {
         deviceMaxCache = newMaxCache;
 
         const newBrightness = {};
-        let anyDeviceBrightnessChanged = false;
+        const changedIds = [];
 
         for (const device of state.devices) {
             const isExponential = SessionData.getBrightnessExponential(device.id);
@@ -194,7 +194,7 @@ Singleton {
 
             const newValue = newBrightness[device.id];
             if (oldValue !== undefined && oldValue !== newValue) {
-                anyDeviceBrightnessChanged = true;
+                changedIds.push(device.id);
             }
         }
         deviceBrightness = newBrightness;
@@ -214,14 +214,14 @@ Singleton {
             }
         }
 
-        const shouldShowOsd = brightnessInitialized && anyDeviceBrightnessChanged && !suppressOsd;
+        const shouldShowOsd = brightnessInitialized && changedIds.length > 0 && !suppressOsd;
 
         if (!brightnessInitialized) {
             brightnessInitialized = true;
         }
 
         if (shouldShowOsd) {
-            brightnessChanged(true);
+            brightnessChanged(true, changedIds);
         }
     }
 
@@ -269,7 +269,7 @@ Singleton {
         brightnessVersion++;
 
         if (isLedDevice && !suppressOsd) {
-            brightnessChanged(true);
+            brightnessChanged(true, [actualDevice]);
         }
 
         if (isExponential) {
@@ -432,7 +432,7 @@ Singleton {
         lastIpcGroup = targets;
         if (next === current) {
             if (!suppressOsd)
-                brightnessChanged(true);
+                brightnessChanged(true, targets);
             return true;
         }
         setGroupBrightness(next, targets, false);
@@ -449,8 +449,11 @@ Singleton {
         return pinned.length > 0 ? pinned : lastIpcTargets();
     }
 
-    function screenTargetsLastDevice(screen) {
-        return screenTargets(screen).includes(lastIpcDevice);
+    function screenShowsOsd(screen, deviceIds) {
+        const pinned = screenPinnedDevices(screen);
+        if (pinned.length === 0)
+            return true;
+        return (deviceIds || []).some(id => pinned.includes(id) || getCurrentDeviceInfoByName(id)?.class === "leds");
     }
 
     function screenLeadDevice(screen) {

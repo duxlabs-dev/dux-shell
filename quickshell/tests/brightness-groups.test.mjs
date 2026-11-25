@@ -53,7 +53,7 @@ function service(globals) {
         "screenBrightnessTargets",
         "adjustScreenBrightness",
         "screenTargets",
-        "screenTargetsLastDevice",
+        "screenShowsOsd",
         "screenLeadDevice"
     ])
         vm.runInContext(functionSource(SERVICE, name), context);
@@ -137,14 +137,32 @@ test("only screens that target the changed device react to it", () => {
     const context = service({
         devices: [{ id: "ddc:i2c-11" }, { id: "ddc:i2c-12" }, { id: "ddc:i2c-13" }],
         SettingsData: { getScreenDisplayName: screen => screen.name },
-        CacheData: { brightnessDevicePins: { "DP-1": ["ddc:i2c-11"], "DP-2": ["ddc:i2c-12", "ddc:i2c-13"] } },
-        lastIpcDevice: "ddc:i2c-11"
+        CacheData: { brightnessDevicePins: { "DP-1": ["ddc:i2c-11"], "DP-2": ["ddc:i2c-12", "ddc:i2c-13"] } }
     });
 
-    assert.equal(context.screenTargetsLastDevice({ name: "DP-1" }), true);
-    assert.equal(context.screenTargetsLastDevice({ name: "DP-2" }), false);
-    assert.equal(context.screenTargetsLastDevice({ name: "HDMI-1" }), true);
-    assert.equal(context.screenTargetsLastDevice(null), true);
+    const changed = ["ddc:i2c-11"];
+    assert.equal(context.screenShowsOsd({ name: "DP-1" }, changed), true);
+    assert.equal(context.screenShowsOsd({ name: "DP-2" }, changed), false);
+    assert.equal(context.screenShowsOsd({ name: "HDMI-1" }, changed), true);
+    assert.equal(context.screenShowsOsd(null, changed), true);
+});
+
+test("pins silence a device that changes on its own but never the keyboard backlight", () => {
+    const panel = "backlight:gmux_backlight";
+    const touchBar = "backlight:appletb_backlight";
+    const keyboard = "leds::white:kbd_backlight";
+    const devices = [{ id: panel, class: "backlight" }, { id: touchBar, class: "backlight" }, { id: keyboard, class: "leds" }];
+    const context = service({
+        devices,
+        SettingsData: { getScreenDisplayName: screen => screen.name },
+        CacheData: { brightnessDevicePins: { "eDP-1": [panel] } },
+        lastIpcDevice: panel
+    });
+    const screen = { name: "eDP-1" };
+
+    assert.equal(context.screenShowsOsd(screen, [touchBar]), false);
+    assert.equal(context.screenShowsOsd(screen, [panel]), true);
+    assert.equal(context.screenShowsOsd(screen, [keyboard]), true);
 });
 
 test("screenBrightnessTargets resolves pins, internal panel, per-screen software, and unambiguous single external DDC", () => {
