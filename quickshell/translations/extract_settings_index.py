@@ -63,7 +63,8 @@ ABBREVIATIONS = {
 
 CATEGORY_KEYWORDS = {
     "Personalization": ["customize", "custom", "personal", "appearance"],
-    "Time & weather": ["clock", "forecast", "date"],
+    "Time": ["clock", "date"],
+    "Weather": ["forecast"],
     "Keyboard shortcuts": ["keys", "bindings", "hotkey"],
     "Bar": ["panel", "topbar", "statusbar"],
     "Applications": ["apps", "programs", "window", "rules", "matching", "floating"],
@@ -98,7 +99,7 @@ CATEGORY_KEYWORDS = {
 }
 
 TAB_INDEX_MAP = {
-    "TimeWeatherTab.qml": 1,
+    "TimeTab.qml": 1,
     "WeatherSettingsTab.qml": 56,
     "KeybindsTab.qml": 2,
     "DBarTab.qml": 3,

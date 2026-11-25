@@ -45,7 +45,7 @@ Column {
             resetStore: root.page
             resetKeys: ["clockClickAction"]
             text: I18n.tr("Click action", "clock widget option: what clicking the clock opens")
-            options: [I18n.tr("Dashboard"), I18n.tr("Time & weather"), I18n.tr("Custom command"), I18n.tr("None", "bar click action")]
+            options: [I18n.tr("Dashboard"), I18n.tr("Time"), I18n.tr("Custom command"), I18n.tr("None", "bar click action")]
             currentValue: options[actions.indexOf(root.page.value("clockClickAction"))] ?? options[0]
             onValueChanged: value => root.page.set("clockClickAction", actions[options.indexOf(value)] ?? "dash")
         }
@@ -62,9 +62,9 @@ Column {
 
         SettingsNavRow {
             iconName: "schedule"
-            title: I18n.tr("Time & weather")
-            hint: I18n.tr("Clock format, calendar, weather location")
-            onClicked: keyboard => root.page.parentModal?.navigateTo("time_weather", keyboard)
+            title: I18n.tr("Time")
+            hint: I18n.tr("Clock format, calendar")
+            onClicked: keyboard => root.page.parentModal?.navigateTo("time", keyboard)
         }
     }
 }

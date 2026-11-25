@@ -42,7 +42,7 @@ test("an old profile is migrated once and the input is left alone", () => {
 
 test("scoped drops values whose JSON kind differs from the spec default", () => {
     const profile = {
-        groups: ["bar", "cursor", "fonts_motion", "time_weather", "dark_mode", "dock"],
+        groups: ["bar", "cursor", "fonts_motion", "time", "dark_mode", "dock"],
         settings: { barConfigs: {}, cursorSettings: [], fontFamily: 3, fontScale: "2", showSeconds: "yes", clockFormat: "24h" },
         session: { isLightMode: 1, dockPins: { dock: [] } }
     };

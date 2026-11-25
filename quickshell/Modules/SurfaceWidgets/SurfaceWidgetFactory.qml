@@ -408,7 +408,7 @@ Item {
                 if (action === "none")
                     return;
                 if (action === "settings") {
-                    PopoutService.focusOrToggleSettingsWithTab("time_weather");
+                    PopoutService.focusOrToggleSettingsWithTab("time");
                     return;
                 }
                 if (action === "command") {
