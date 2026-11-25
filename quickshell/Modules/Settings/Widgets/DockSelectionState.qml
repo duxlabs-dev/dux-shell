@@ -91,6 +91,7 @@ Item {
     }
 
     readonly property bool connectedFrameModeActive: SettingsData.connectedFrameModeActive && !(config?.useOverlayLayer ?? false)
+    readonly property bool paintsOwnSurface: !!config && (!connectedFrameModeActive || ShellLayout.assignedScreens(config).some(screen => !CompositorService.usesConnectedFrameChromeForScreen(screen)))
     readonly property bool smartAutoHideActive: (config?.smartAutoHide ?? false) && CompositorService.supportsSmartDock
     readonly property bool connectedPersistentDock: connectedFrameModeActive && (config?.enabled ?? false) && !(config?.autoHide ?? false) && !smartAutoHideActive
     // An auto-hiding dock never reserves screen space, so its exclusive zone has nothing to offset.

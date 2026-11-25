@@ -196,7 +196,6 @@ Item {
                 OpacityOverrideRow {
                     settingKey: "barOpacity"
                     tags: ["opacity", "transparency", "override", "interface", "style", "island"]
-                    visible: !bar.islandShadowsSelectedBar
                     config: bar.selectedBarConfig
                 }
 

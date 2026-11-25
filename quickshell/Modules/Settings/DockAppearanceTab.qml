@@ -206,7 +206,7 @@ Item {
         }
 
         SettingsDeferred {
-            when: dock.hasConfig
+            when: dock.paintsOwnSurface
 
             SettingsCard {
                 width: parent.width
