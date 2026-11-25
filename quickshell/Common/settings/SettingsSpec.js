@@ -1823,6 +1823,8 @@ var LOCAL_SPEC = {
                 scrollEnabled: true,
                 scrollXBehavior: "focusWindow",
                 scrollYBehavior: "workspace",
+                scrollBrightnessStep: 5,
+                scrollExtendToEdge: true,
                 middleClickAction: "none",
                 rightClickAction: "edit-widgets",
                 clickActionFollowMouse: false,

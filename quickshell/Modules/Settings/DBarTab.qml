@@ -497,55 +497,292 @@ Item {
         }
 
         SettingsDeferred {
-            when: (bar.selectedBarConfig?.enabled ?? false) && !bar.selectedBarIsIsland
+            when: (bar.selectedBarConfig?.enabled ?? false) && !dankBarTab.selectedIslandFree
 
             SettingsToggleCard {
                 id: scrollCard
                 iconName: "mouse"
                 settingKey: "barScrollWheel"
-                tags: ["scroll", "wheel", "workspace", "focus", "window", "axis"]
+                tags: ["scroll", "wheel", "workspace", "focus", "window", "axis", "volume", "audio", "brightness", "shift", "edge", "island", "widget"]
                 title: I18n.tr("Scroll wheel")
                 checked: bar.selectedBarConfig?.scrollEnabled ?? true
                 onToggled: checked => SettingsData.updateBarConfig(bar.selectedBarId, {
                         scrollEnabled: checked
                     })
 
-                readonly property var behaviors: CompositorService.canStepWindowFocus ? ["none", "workspace", "focusWindow"] : ["none", "workspace"]
-                readonly property var behaviorLabels: CompositorService.canStepWindowFocus ? [I18n.tr("None"), I18n.tr("Workspace"), I18n.tr("Focus window")] : [I18n.tr("None"), I18n.tr("Workspace")]
+                readonly property string effectiveYBehavior: bar.selectedBarConfig?.scrollYBehavior || "workspace"
+                readonly property string effectiveXBehavior: bar.selectedBarConfig?.scrollXBehavior || "focusWindow"
+                readonly property bool showBrightnessOption: BrightnessService.brightnessAvailable || effectiveYBehavior === "brightness" || effectiveXBehavior === "brightness"
+                readonly property bool usesBrightnessScroll: showBrightnessOption && (effectiveYBehavior === "brightness" || effectiveXBehavior === "brightness")
+                readonly property var behaviors: {
+                    const list = ["none", "workspace"];
+                    if (CompositorService.canStepWindowFocus)
+                        list.push("focusWindow");
+                    list.push("volume");
+                    if (showBrightnessOption)
+                        list.push("brightness");
+                    return list;
+                }
+                readonly property var behaviorLabels: {
+                    const list = [I18n.tr("None"), I18n.tr("Workspace")];
+                    if (CompositorService.canStepWindowFocus)
+                        list.push(I18n.tr("Focus window"));
+                    list.push(I18n.tr("Volume"));
+                    if (showBrightnessOption)
+                        list.push(I18n.tr("Brightness"));
+                    return list;
+                }
+                readonly property var scrollableWidgetSpecs: ({
+                        "workspaceSwitcher": {
+                            "visible": CompositorService.supportsWorkspaces
+                        },
+                        "runningApps": {
+                            "visible": true
+                        },
+                        "music": {
+                            "visible": true
+                        },
+                        "battery": {
+                            "visible": BrightnessService.brightnessAvailable
+                        },
+                        "controlCenterButton": {
+                            "visible": true
+                        }
+                    })
 
-                SettingsButtonGroupRow {
-                    text: I18n.tr("Y axis")
+                function widgetScrollActionText(widgetType, entry) {
+                    switch (widgetType) {
+                    case "workspaceSwitcher":
+                        return SettingsData.widgetOption("workspaceSwitcher", entry, "reverseScrolling") ? I18n.tr("Switches workspaces (reversed)", "bar widget scroll action summary") : I18n.tr("Switches workspaces", "bar widget scroll action summary");
+                    case "runningApps":
+                        return I18n.tr("Cycles open windows", "bar widget scroll action summary");
+                    case "music":
+                        return SettingsData.widgetOption("music", entry, "audioScrollMode") === "song" ? I18n.tr("Changes song", "bar widget scroll action summary") : I18n.tr("Changes player volume", "bar widget scroll action summary");
+                    case "battery":
+                        return I18n.tr("Changes display brightness", "bar widget scroll action summary");
+                    case "controlCenterButton":
+                        {
+                            const hasMic = SettingsData.widgetOption("controlCenterButton", entry, "showMicIcon");
+                            const hasBrightness = BrightnessService.brightnessAvailable && SettingsData.widgetOption("controlCenterButton", entry, "showBrightnessIcon");
+                            if (hasMic && hasBrightness)
+                                return I18n.tr("Changes volume, or microphone and brightness over their icons", "bar widget scroll action summary");
+                            if (hasBrightness)
+                                return I18n.tr("Changes volume, or brightness over its icon", "bar widget scroll action summary");
+                            if (hasMic)
+                                return I18n.tr("Changes volume, or microphone over its icon", "bar widget scroll action summary");
+                            return I18n.tr("Changes volume", "bar widget scroll action summary");
+                        }
+                    default:
+                        return "";
+                    }
+                }
+
+                function openWidgetSettings(item, keyboard) {
+                    const resolvedBarId = bar.selectedBarConfig?.id ?? bar.selectedBarId;
+                    SettingsUiState.selectedDockId = "";
+                    SettingsUiState.selectedBarId = resolvedBarId;
+                    SettingsUiState.selectedWidgetSection = item.sectionId;
+                    SettingsUiState.selectedWidgetIndex = item.index;
+                    SettingsUiState.selectedWidgetTitle = item.label;
+                    SettingsUiState.selectedWidgetDescription = item.catalogDescription;
+                    SettingsUiState.selectedWidgetIcon = item.icon;
+                    dankBarTab.parentModal?.navigateTo("bar_widget", keyboard);
+                }
+
+                function sectionLabelFor(sectionId) {
+                    if (bar.selectedBarIsVertical) {
+                        if (sectionId === "left")
+                            return I18n.tr("Top");
+                        if (sectionId === "center")
+                            return I18n.tr("Center");
+                        return I18n.tr("Bottom");
+                    }
+                    if (sectionId === "left")
+                        return I18n.tr("Left");
+                    if (sectionId === "center")
+                        return I18n.tr("Center");
+                    return I18n.tr("Right");
+                }
+
+                readonly property var scrollableWidgets: {
+                    SettingsData.barConfigs;
+                    const config = bar.selectedBarConfig;
+                    if (!config)
+                        return [];
+                    if (bar.selectedBarIsIsland && !bar.islandSetting("islandSatellitesEnabled"))
+                        return [];
+                    const sections = bar.selectedBarIsIsland ? ["left", "right"] : ["left", "center", "right"];
+                    const catalogById = {};
+                    for (let i = 0; i < BarWidgetCatalog.widgets.length; i++) {
+                        const w = BarWidgetCatalog.widgets[i];
+                        catalogById[w.id] = w;
+                    }
+                    const rawMatches = [];
+                    const countByType = {};
+                    const countByTypeSection = {};
+                    for (let s = 0; s < sections.length; s++) {
+                        const sectionId = sections[s];
+                        const list = config[sectionId + "Widgets"] ?? [];
+                        for (let idx = 0; idx < list.length; idx++) {
+                            const raw = list[idx];
+                            const entry = typeof raw === "string" ? {
+                                "id": raw,
+                                "enabled": true
+                            } : raw;
+                            if (!entry || entry.enabled === false)
+                                continue;
+                            const widgetType = entry.widgetId ?? entry.id ?? "";
+                            const spec = scrollCard.scrollableWidgetSpecs[widgetType];
+                            if (!spec || !spec.visible)
+                                continue;
+                            if (widgetType === "music" && SettingsData.widgetOption("music", entry, "mediaStyle") === "activity")
+                                continue;
+                            countByType[widgetType] = (countByType[widgetType] || 0) + 1;
+                            const secKey = widgetType + ":" + sectionId;
+                            countByTypeSection[secKey] = (countByTypeSection[secKey] || 0) + 1;
+                            rawMatches.push({
+                                "widgetType": widgetType,
+                                "sectionId": sectionId,
+                                "index": idx,
+                                "entry": entry,
+                                "catalog": catalogById[widgetType] ?? null
+                            });
+                        }
+                    }
+                    const seenSectionOrdinal = {};
+                    return rawMatches.map(item => {
+                        const baseLabel = item.catalog?.text ?? item.widgetType;
+                        let label = baseLabel;
+                        if (countByType[item.widgetType] > 1) {
+                            const secKey = item.widgetType + ":" + item.sectionId;
+                            const secLabel = scrollCard.sectionLabelFor(item.sectionId);
+                            if (countByTypeSection[secKey] > 1) {
+                                const n = (seenSectionOrdinal[secKey] || 0) + 1;
+                                seenSectionOrdinal[secKey] = n;
+                                label = I18n.tr("%1 (%2 %3)", "duplicate bar widget label with section and number").arg(baseLabel).arg(secLabel).arg(n);
+                            } else {
+                                label = I18n.tr("%1 (%2)", "duplicate bar widget label with section").arg(baseLabel).arg(secLabel);
+                            }
+                        }
+                        const scrollOn = item.widgetType === "music" ? SettingsData.widgetOption("music", item.entry, "audioScrollMode") !== "nothing" : Boolean(SettingsData.widgetOption(item.widgetType, item.entry, "scrollEnabled"));
+                        return {
+                            "widgetType": item.widgetType,
+                            "sectionId": item.sectionId,
+                            "index": item.index,
+                            "entry": item.entry,
+                            "label": label,
+                            "catalogDescription": item.catalog?.description ?? "",
+                            "icon": item.catalog?.icon ?? "widgets",
+                            "actionSummary": scrollCard.widgetScrollActionText(item.widgetType, item.entry),
+                            "scrollEnabled": scrollOn
+                        };
+                    });
+                }
+
+                function labelForBehavior(behavior, fallback = "none") {
+                    const idx = behaviors.indexOf(behavior ?? fallback);
+                    return behaviorLabels[idx >= 0 ? idx : 0];
+                }
+
+                SettingsDropdownRow {
+                    text: I18n.tr("Vertical", "bar scroll wheel vertical axis label")
                     resetStore: bar
                     resetKeys: ["scrollYBehavior"]
-                    model: scrollCard.behaviorLabels
-                    buttonPadding: Theme.spacingS
-                    minButtonWidth: 44
-                    textSize: Theme.fontSizeSmall
-                    currentIndex: Math.max(0, scrollCard.behaviors.indexOf(bar.selectedBarConfig?.scrollYBehavior || "workspace"))
-                    onSelectionChanged: (index, selected) => {
-                        if (!selected)
-                            return;
+                    options: scrollCard.behaviorLabels
+                    dropdownWidth: Theme.smallBreakpoint / 2
+                    currentValue: scrollCard.labelForBehavior(scrollCard.effectiveYBehavior, "workspace")
+                    onValueChanged: value => {
+                        const idx = scrollCard.behaviorLabels.indexOf(value);
                         SettingsData.updateBarConfig(bar.selectedBarId, {
-                            scrollYBehavior: scrollCard.behaviors[index]
+                            scrollYBehavior: idx >= 0 ? scrollCard.behaviors[idx] : "none"
                         });
                     }
                 }
 
-                SettingsButtonGroupRow {
-                    text: I18n.tr("X axis")
+                SettingsDropdownRow {
+                    text: I18n.tr("Horizontal (Shift + scroll)", "bar scroll wheel horizontal axis label")
                     resetStore: bar
                     resetKeys: ["scrollXBehavior"]
-                    model: scrollCard.behaviorLabels
-                    buttonPadding: Theme.spacingS
-                    minButtonWidth: 44
-                    textSize: Theme.fontSizeSmall
-                    currentIndex: Math.max(0, scrollCard.behaviors.indexOf(bar.selectedBarConfig?.scrollXBehavior || "focusWindow"))
-                    onSelectionChanged: (index, selected) => {
-                        if (!selected)
-                            return;
+                    options: scrollCard.behaviorLabels
+                    dropdownWidth: Theme.smallBreakpoint / 2
+                    currentValue: scrollCard.labelForBehavior(scrollCard.effectiveXBehavior, "focusWindow")
+                    onValueChanged: value => {
+                        const idx = scrollCard.behaviorLabels.indexOf(value);
                         SettingsData.updateBarConfig(bar.selectedBarId, {
-                            scrollXBehavior: scrollCard.behaviors[index]
+                            scrollXBehavior: idx >= 0 ? scrollCard.behaviors[idx] : "none"
                         });
+                    }
+                }
+
+                SettingsSliderRow {
+                    visible: scrollCard.usesBrightnessScroll
+                    settingKey: "barScrollBrightnessStep"
+                    tags: ["bar", "scroll", "wheel", "brightness", "step", "backlight"]
+                    text: I18n.tr("Brightness step", "bar scroll wheel brightness step slider")
+                    resetStore: bar
+                    resetKeys: ["scrollBrightnessStep"]
+                    value: bar.selectedBarConfig?.scrollBrightnessStep ?? 5
+                    minimum: 1
+                    maximum: 25
+                    step: 1
+                    unit: "%"
+                    onSliderDragFinished: newValue => SettingsData.updateBarConfig(bar.selectedBarId, {
+                            scrollBrightnessStep: newValue
+                        })
+                }
+
+                SettingsToggleRow {
+                    visible: !bar.selectedBarIsIsland && !bar.selectedBarFrameStyled
+                    text: I18n.tr("Extend to screen edge", "bar scroll wheel toggle")
+                    description: I18n.tr("Scroll in the gap between the bar and the display edge", "bar extend scroll to screen edge toggle description")
+                    settingKey: "barScrollExtendToEdge"
+                    tags: ["bar", "scroll", "wheel", "edge", "gap", "top", "margin", "fitts"]
+                    checked: bar.selectedBarConfig?.scrollExtendToEdge ?? true
+                    onToggled: checked => SettingsData.updateBarConfig(bar.selectedBarId, {
+                            scrollExtendToEdge: checked
+                        })
+                }
+
+                SettingsToggleRow {
+                    visible: dankBarTab.selectedIslandDocked
+                    enabled: !dankBarTab.selectedIslandOverlay
+                    text: I18n.tr("Scroll on empty strip", "island scroll wheel toggle")
+                    description: dankBarTab.selectedIslandOverlay ? I18n.tr("Overlay placement passes empty strip input through to windows", "island scroll empty strip disabled hint") : I18n.tr("Scroll in the empty space next to the island and satellite widgets", "island scroll empty strip toggle description")
+                    settingKey: "islandScrollEmptyStrip"
+                    tags: ["island", "bar", "scroll", "wheel", "empty", "strip", "gap"]
+                    checked: !dankBarTab.selectedIslandOverlay && bar.islandSetting("islandScrollEmptyStrip")
+                    onToggled: checked => bar.apply("islandScrollEmptyStrip", checked)
+                }
+
+                SettingsRow {
+                    visible: scrollCard.scrollableWidgets.length > 0
+                    settingKey: "barScrollableWidgets"
+                    tags: ["bar", "scroll", "wheel", "widget", "override", "workspace", "media", "volume", "brightness"]
+                    title: I18n.tr("Widget scroll", "bar scroll wheel section header for per-widget scroll toggles")
+                    subtitle: I18n.tr("Turn off a widget to use the bar scroll action over it", "bar widget scroll section subtitle")
+                }
+
+                Repeater {
+                    model: scrollCard.scrollableWidgets
+
+                    delegate: SettingsSplitRow {
+                        required property var modelData
+
+                        iconName: modelData.icon
+                        iconColor: modelData.scrollEnabled ? Theme.primary : Theme.onSurfaceVariant
+                        title: modelData.label
+                        subtitle: modelData.actionSummary
+                        navigable: true
+                        checked: modelData.scrollEnabled
+                        onNavigated: keyboard => scrollCard.openWidgetSettings(modelData, keyboard)
+                        onToggled: checked => {
+                            const patch = modelData.widgetType === "music" ? {
+                                "audioScrollMode": checked ? "volume" : "nothing"
+                            } : {
+                                "scrollEnabled": checked
+                            };
+                            SettingsData.updateBarWidget(bar.selectedBarConfig?.id ?? bar.selectedBarId, modelData.sectionId, modelData.index, patch);
+                        }
                     }
                 }
             }
@@ -555,10 +792,53 @@ Item {
             when: (bar.selectedBarConfig?.enabled ?? false) && !bar.selectedBarIsIsland
 
             SettingsCard {
+                id: clickActionsCard
                 iconName: "mouse"
                 title: I18n.tr("Click actions")
                 settingKey: "barMouseClickAction"
-                tags: ["bar", "click", "middle", "right", "mouse", "control center", "launcher", "settings"]
+                tags: ["bar", "click", "middle", "right", "mouse", "control center", "launcher", "settings", "mute", "volume", "audio"]
+
+                readonly property var clickActions: ["none", "toggle-mute", "control-center", "spotlight", "close-window", "settings", "edit-widgets"]
+                readonly property var clickActionOptions: [I18n.tr("None", "bar click action"), I18n.tr("Toggle Mute", "bar click action"), I18n.tr("Toggle Control Center", "bar click action"), I18n.tr("Toggle Launcher", "bar click action"), I18n.tr("Close Active Window", "bar click action"), I18n.tr("Toggle Settings", "bar click action"), I18n.tr("Edit widgets")]
+
+                function optionForAction(action, fallback = "none") {
+                    const idx = clickActions.indexOf(action ?? fallback);
+                    return clickActionOptions[idx >= 0 ? idx : 0];
+                }
+
+                SettingsDropdownRow {
+                    text: I18n.tr("Middle click")
+                    description: I18n.tr("Choose what middle-clicking empty bar space does")
+                    settingKey: "barMiddleClickAction"
+                    tags: ["bar", "middle", "click", "mouse", "control center", "launcher", "settings", "close", "mute", "volume", "audio"]
+                    resetStore: bar
+                    resetKeys: ["middleClickAction"]
+                    options: clickActionsCard.clickActionOptions
+                    dropdownWidth: Theme.smallBreakpoint / 2
+                    currentValue: clickActionsCard.optionForAction(bar.selectedBarConfig?.middleClickAction, "none")
+                    onValueChanged: value => {
+                        SettingsData.updateBarConfig(bar.selectedBarId, {
+                            middleClickAction: clickActionsCard.clickActions[options.indexOf(value)] ?? "none"
+                        });
+                    }
+                }
+
+                SettingsDropdownRow {
+                    text: I18n.tr("Right click")
+                    description: I18n.tr("Choose what right-clicking empty bar space does")
+                    settingKey: "barRightClickAction"
+                    tags: ["bar", "right", "click", "mouse", "control center", "launcher", "settings", "close", "mute", "volume", "audio"]
+                    resetStore: bar
+                    resetKeys: ["rightClickAction"]
+                    options: clickActionsCard.clickActionOptions
+                    dropdownWidth: Theme.smallBreakpoint / 2
+                    currentValue: clickActionsCard.optionForAction(bar.selectedBarConfig?.rightClickAction, "edit-widgets")
+                    onValueChanged: value => {
+                        SettingsData.updateBarConfig(bar.selectedBarId, {
+                            rightClickAction: clickActionsCard.clickActions[options.indexOf(value)] ?? "none"
+                        });
+                    }
+                }
 
                 SettingsToggleRow {
                     text: I18n.tr("Follow mouse")
@@ -570,72 +850,6 @@ Item {
                     onToggled: checked => SettingsData.updateBarConfig(bar.selectedBarId, {
                             clickActionFollowMouse: checked
                         })
-                }
-
-                SettingsDropdownRow {
-                    text: I18n.tr("Middle click")
-                    description: I18n.tr("Choose what middle-clicking empty bar space does")
-                    settingKey: "barMiddleClickAction"
-                    tags: ["bar", "middle", "click", "mouse", "control center", "launcher", "settings", "close"]
-                    resetStore: bar
-                    resetKeys: ["middleClickAction"]
-                    options: [I18n.tr("None", "bar click action"), I18n.tr("Toggle Control Center", "bar click action"), I18n.tr("Toggle Launcher", "bar click action"), I18n.tr("Close Active Window", "bar click action"), I18n.tr("Toggle Settings", "bar click action"), I18n.tr("Edit widgets")]
-                    dropdownWidth: Theme.smallBreakpoint / 2
-                    currentValue: {
-                        switch (bar.selectedBarConfig?.middleClickAction ?? "none") {
-                        case "control-center":
-                            return options[1];
-                        case "spotlight":
-                            return options[2];
-                        case "close-window":
-                            return options[3];
-                        case "settings":
-                            return options[4];
-                        case "edit-widgets":
-                            return options[5];
-                        default:
-                            return options[0];
-                        }
-                    }
-                    onValueChanged: value => {
-                        const actions = ["none", "control-center", "spotlight", "close-window", "settings", "edit-widgets"];
-                        SettingsData.updateBarConfig(bar.selectedBarId, {
-                            middleClickAction: actions[options.indexOf(value)] ?? "none"
-                        });
-                    }
-                }
-
-                SettingsDropdownRow {
-                    text: I18n.tr("Right click")
-                    description: I18n.tr("Choose what right-clicking empty bar space does")
-                    settingKey: "barRightClickAction"
-                    tags: ["bar", "right", "click", "mouse", "control center", "launcher", "settings", "close"]
-                    resetStore: bar
-                    resetKeys: ["rightClickAction"]
-                    options: [I18n.tr("None", "bar click action"), I18n.tr("Toggle Control Center", "bar click action"), I18n.tr("Toggle Launcher", "bar click action"), I18n.tr("Close Active Window", "bar click action"), I18n.tr("Toggle Settings", "bar click action"), I18n.tr("Edit widgets")]
-                    dropdownWidth: Theme.smallBreakpoint / 2
-                    currentValue: {
-                        switch (bar.selectedBarConfig?.rightClickAction ?? "edit-widgets") {
-                        case "control-center":
-                            return options[1];
-                        case "spotlight":
-                            return options[2];
-                        case "close-window":
-                            return options[3];
-                        case "settings":
-                            return options[4];
-                        case "edit-widgets":
-                            return options[5];
-                        default:
-                            return options[0];
-                        }
-                    }
-                    onValueChanged: value => {
-                        const actions = ["none", "control-center", "spotlight", "close-window", "settings", "edit-widgets"];
-                        SettingsData.updateBarConfig(bar.selectedBarId, {
-                            rightClickAction: actions[options.indexOf(value)] ?? "none"
-                        });
-                    }
                 }
             }
         }

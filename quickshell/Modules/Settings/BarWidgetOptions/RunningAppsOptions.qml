@@ -36,5 +36,11 @@ Column {
             checked: root.page.value("runningAppsCurrentMonitor")
             onToggled: checked => root.page.set("runningAppsCurrentMonitor", checked)
         }
+
+        SettingsToggleRow {
+            text: I18n.tr("Scroll wheel")
+            checked: root.page.value("scrollEnabled")
+            onToggled: checked => root.page.set("scrollEnabled", checked)
+        }
     }
 }

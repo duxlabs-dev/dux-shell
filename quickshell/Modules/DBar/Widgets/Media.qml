@@ -8,6 +8,8 @@ import qs.Services
 import qs.DCommon.Widgets
 import qs.Widgets
 import "../../../Common/LyricLayout.js" as LyricLayout
+import "../../../DCommon/Common/WheelInput.js" as WheelInput
+import "../BarScroll.js" as BarScroll
 
 BasePill {
     id: root
@@ -113,66 +115,52 @@ BasePill {
     onClicked: hideTrackTooltip()
 
     onWheel: function (wheelEvent) {
-        if (SettingsData.widgetOption("music", widgetData, "audioScrollMode") === "nothing")
+        const scrollMode = SettingsData.widgetOption("music", widgetData, "audioScrollMode");
+        if (scrollMode === "nothing" || WheelInput.isHorizontal(wheelEvent))
             return;
+        const deltaY = wheelEvent.angleDelta.y;
+        if (deltaY === 0) {
+            if (wheelEvent.phase === Qt.ScrollEnd)
+                scrollAccumulatorY = 0;
+            return;
+        }
 
-        if (SettingsData.widgetOption("music", widgetData, "audioScrollMode") === "volume") {
+        const isTouchpad = WheelInput.isTouchpad(wheelEvent);
+        if (isTouchpad && wheelEvent.phase === Qt.ScrollBegin)
+            scrollAccumulatorY = 0;
+        const threshold = isTouchpad ? touchpadThreshold : 120;
+
+        if (scrollMode === "volume") {
             if (!usePlayerVolume)
                 return;
 
             wheelEvent.accepted = true;
-
-            const deltaY = wheelEvent.angleDelta.y;
-            const isMouseWheelY = Math.abs(deltaY) >= 120 && (Math.abs(deltaY) % 120) === 0;
+            const res = BarScroll.stepAccumulator(scrollAccumulatorY, deltaY, threshold);
+            scrollAccumulatorY = res.remainder;
+            if (res.units <= 0)
+                return;
 
             const currentVolume = activePlayer.volume * 100;
-
-            let newVolume = currentVolume;
-            if (isMouseWheelY) {
-                if (deltaY > 0) {
-                    newVolume = Math.min(100, currentVolume + SettingsData.audioWheelScrollAmount);
-                } else if (deltaY < 0) {
-                    newVolume = Math.max(0, currentVolume - SettingsData.audioWheelScrollAmount);
-                }
-            } else {
-                scrollAccumulatorY += deltaY;
-                if (Math.abs(scrollAccumulatorY) >= touchpadThreshold) {
-                    if (scrollAccumulatorY > 0) {
-                        newVolume = Math.min(100, currentVolume + 1);
-                    } else {
-                        newVolume = Math.max(0, currentVolume - 1);
-                    }
-                    scrollAccumulatorY = 0;
-                }
-            }
-
+            const step = (isTouchpad ? 1 : SettingsData.audioWheelScrollAmount) * res.units;
+            const newVolume = res.sign > 0 ? Math.min(100, currentVolume + step) : Math.max(0, currentVolume - step);
             activePlayer.volume = newVolume / 100;
-        } else if (SettingsData.widgetOption("music", widgetData, "audioScrollMode") === "song") {
+        } else if (scrollMode === "song") {
             if (!activePlayer)
                 return;
 
             wheelEvent.accepted = true;
-
-            const deltaY = wheelEvent.angleDelta.y;
-            const isMouseWheelY = Math.abs(deltaY) >= 120 && (Math.abs(deltaY) % 120) === 0;
-
-            if (isMouseWheelY) {
-                if (deltaY > 0) {
-                    MprisController.previousOrRewind();
-                } else {
-                    MprisController.next();
-                }
-            } else {
-                scrollAccumulatorY += deltaY;
-                if (Math.abs(scrollAccumulatorY) >= touchpadThreshold) {
-                    if (scrollAccumulatorY > 0) {
-                        MprisController.previousOrRewind();
-                    } else {
-                        MprisController.next();
-                    }
-                    scrollAccumulatorY = 0;
-                }
+            const res = BarScroll.stepAccumulator(scrollAccumulatorY, deltaY, threshold);
+            if (res.units <= 0) {
+                scrollAccumulatorY = res.remainder;
+                return;
             }
+
+            if (res.sign > 0) {
+                MprisController.previousOrRewind();
+            } else {
+                MprisController.next();
+            }
+            scrollAccumulatorY = 0;
         }
     }
 
