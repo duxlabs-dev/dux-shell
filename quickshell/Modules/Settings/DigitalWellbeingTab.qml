@@ -33,14 +33,23 @@ Column {
     width: parent?.width ?? 0
     spacing: Theme.spacingL
 
-    SettingsMainToggle {
-        tab: "wellbeing"
-        tags: ["wellbeing", "screen time", "tracking"]
-        settingKey: "wellbeingEnabled"
-        text: I18n.tr("Track screen time", "digital wellbeing main toggle")
-        description: I18n.tr("Counts time in the focused app while the session is active. Stays on this device.", "track screen time toggle description")
-        checked: SettingsData.wellbeingEnabled
-        onToggled: checked => SettingsData.set("wellbeingEnabled", checked)
+    SettingsDeferred {
+        SettingsCard {
+            iconName: "digital_wellbeing"
+            settingKey: "wellbeingTracking"
+            tab: "wellbeing"
+            tags: ["wellbeing", "screen time", "tracking"]
+
+            SettingsToggleRow {
+                tab: "wellbeing"
+                tags: ["wellbeing", "screen time", "tracking"]
+                settingKey: "wellbeingEnabled"
+                text: I18n.tr("Track screen time", "digital wellbeing main toggle")
+                description: I18n.tr("Counts time in the focused app while the session is active. Stays on this device.", "track screen time toggle description")
+                checked: SettingsData.wellbeingEnabled
+                onToggled: checked => SettingsData.set("wellbeingEnabled", checked)
+            }
+        }
     }
 
     SettingsDeferred {

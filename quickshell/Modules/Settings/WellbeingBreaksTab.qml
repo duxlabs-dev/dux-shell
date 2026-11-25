@@ -29,34 +29,36 @@ Item {
     }
 
     SettingsPage {
-        SettingsMainToggle {
-            tab: "wellbeing_breaks"
-            tags: ["wellbeing", "break", "reminder", "rest", "eyes"]
-            settingKey: "wellbeingBreaksEnabled"
-            text: I18n.tr("Break reminders", "settings page title and main toggle, reminders to rest from the screen")
-            checked: root.breaksEnabled
-            onToggled: checked => SettingsData.set("wellbeingBreaksEnabled", checked)
-        }
-
-        SettingsCard {
-            iconName: "timer"
-            settingKey: "wellbeingBreakPlans"
-            tab: "wellbeing_breaks"
-            tags: ["wellbeing", "break", "plan", "preset"]
-
-            SettingsButtonGroupRow {
+        SettingsDeferred {
+            SettingsCard {
+                iconName: "timer"
+                settingKey: "wellbeingBreakPlans"
                 tab: "wellbeing_breaks"
-                tags: ["wellbeing", "break", "plan", "preset", "light", "balanced", "focused"]
-                settingKey: "wellbeingBreakPlan"
-                enabled: root.breaksEnabled
-                text: I18n.tr("Break plan", "break reminder setting, a preset for the break schedule")
-                description: root.plan === "" ? I18n.tr("Custom") : ""
-                model: root.planLabels
-                currentIndex: Wellbeing.breakPlans.findIndex(plan => plan.id === root.plan)
-                onSelectionChanged: (index, selected) => {
-                    if (!selected)
-                        return;
-                    root.applyPlan(Wellbeing.breakPlans[index]);
+                tags: ["wellbeing", "break", "plan", "preset"]
+
+                SettingsToggleRow {
+                    tab: "wellbeing_breaks"
+                    tags: ["wellbeing", "break", "reminder", "rest", "eyes"]
+                    settingKey: "wellbeingBreaksEnabled"
+                    text: I18n.tr("Break reminders", "settings page title and main toggle, reminders to rest from the screen")
+                    checked: root.breaksEnabled
+                    onToggled: checked => SettingsData.set("wellbeingBreaksEnabled", checked)
+                }
+
+                SettingsButtonGroupRow {
+                    tab: "wellbeing_breaks"
+                    tags: ["wellbeing", "break", "plan", "preset", "light", "balanced", "focused"]
+                    settingKey: "wellbeingBreakPlan"
+                    enabled: root.breaksEnabled
+                    text: I18n.tr("Break plan", "break reminder setting, a preset for the break schedule")
+                    description: root.plan === "" ? I18n.tr("Custom") : ""
+                    model: root.planLabels
+                    currentIndex: Wellbeing.breakPlans.findIndex(plan => plan.id === root.plan)
+                    onSelectionChanged: (index, selected) => {
+                        if (!selected)
+                            return;
+                        root.applyPlan(Wellbeing.breakPlans[index]);
+                    }
                 }
             }
         }

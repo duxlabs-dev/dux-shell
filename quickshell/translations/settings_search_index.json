@@ -982,6 +982,20 @@
     "description": "Clock, weather, locale"
   },
   {
+    "section": "wellbeingTracking",
+    "label": "Digital wellbeing",
+    "tabIndex": -1,
+    "category": "Digital wellbeing",
+    "keywords": [
+      "digital",
+      "screen time",
+      "tracking",
+      "wellbeing"
+    ],
+    "page": "wellbeing",
+    "icon": "digital_wellbeing"
+  },
+  {
     "section": "selectedMonitor",
     "label": "Display",
     "tabIndex": -1,
@@ -18401,6 +18415,22 @@
       "wallpaper"
     ],
     "parentLabel": "Appearance"
+  },
+  {
+    "section": "themeMode",
+    "label": "Dark mode",
+    "tabIndex": 51,
+    "category": "Dark mode",
+    "keywords": [
+      "appearance",
+      "dark",
+      "dark mode",
+      "light",
+      "mode",
+      "night"
+    ],
+    "parentLabel": "Appearance",
+    "icon": "dark_mode"
   },
   {
     "section": "themeScheduleDarkMode",
