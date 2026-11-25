@@ -140,8 +140,8 @@ Item {
         id: timeComponent
 
         Grid {
-            columns: root.vertical ? 1 : 2
-            spacing: root.vertical ? Theme.spacingXXS : Theme.spacingXS
+            columns: root.vertical ? 1 : (root.timezoneText.length > 0 ? 2 : 1)
+            spacing: root.timezoneText.length > 0 ? (root.vertical ? Theme.spacingXXS : Theme.spacingXS) : 0
             verticalItemAlignment: Grid.AlignVCenter
             horizontalItemAlignment: Grid.AlignHCenter
 
