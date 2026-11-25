@@ -223,12 +223,59 @@ function move(items, from, to) {
     return result;
 }
 
-function allocation(sizes, flexible, available, spacing) {
-    const fixed = sizes.reduce((sum, size, i) => sum + (flexible[i] ? 0 : Math.max(0, size)), 0);
-    const gaps = Math.max(0, sizes.length - 1) * spacing;
-    const count = flexible.filter(Boolean).length;
-    const share = count ? Math.max(0, available - fixed - gaps) / count : 0;
-    return sizes.map((size, i) => flexible[i] ? share : Math.max(0, size));
+// Flexible slots grow from their own size into the free space, split equally. A centered slot's group (the run
+// between the flexible slots around it) stays in the middle: each side's flexible slots share that side's space.
+// gaps[i] is extra space before slot i; gaps[sizes.length] trails the last slot.
+function allocation(sizes, flexible, available, spacing, centered) {
+    const result = sizes.map(size => Math.max(0, size));
+    const gaps = result.map(() => 0).concat(0);
+    const shown = result.map((size, i) => size > 0 || flexible[i]);
+    const span = (from, to) => result.slice(from, to).reduce((sum, size, i) => sum + (shown[from + i] ? size + spacing : 0), 0);
+    const pick = test => result.reduce((list, size, i) => test(i) ? list.concat(i) : list, []);
+    const flex = pick(i => flexible[i]);
+    const marked = pick(i => centered[i] && !flexible[i]);
+    const free = available - span(0, result.length) + spacing;
+    if (free <= 0 || !flex.length)
+        return { sizes: result, gaps };
+    // Whole pixels, so items between the spacers don't land on half pixels.
+    const share = (slots, space, gapAt) => {
+        if (!slots.length) {
+            gaps[gapAt] += space;
+            return;
+        }
+        const part = Math.floor(space / slots.length);
+        slots.forEach((i, k) => result[i] += k === slots.length - 1 ? space - part * k : part);
+    };
+    if (!marked.length) {
+        share(flex, free);
+        return { sizes: result, gaps };
+    }
+    const first = flex.filter(i => i < marked[0]).concat(-1).reduce((a, b) => Math.max(a, b)) + 1;
+    const last = flex.filter(i => i > marked[0]).concat(result.length).reduce((a, b) => Math.min(a, b)) - 1;
+    const before = Math.max(0, Math.min(free, Math.round((available - Math.max(0, span(first, last + 1) - spacing)) / 2 - span(0, first))));
+    share(flex.filter(i => i < first), before, first);
+    share(flex.filter(i => i > last), free - before, last + 1);
+    return { sizes: result, gaps };
+}
+
+function isFillSpacer(widget) {
+    return widget?.widgetId === "spacer" && widget.fill === true && widget.enabled !== false;
+}
+
+// Unit ids between the filling spacers around the widget marked Center, in the given unit order.
+function centerGroup(ids, widgets) {
+    const byId = new Map(widgets.map(widget => [widget.id, widget]));
+    const fill = id => isFillSpacer(byId.get(id));
+    const marked = ids.findIndex(id => byId.get(id)?.center === true && !fill(id));
+    if (marked < 0 || !ids.some(fill))
+        return [];
+    let first = marked;
+    let last = marked;
+    while (first > 0 && !fill(ids[first - 1]))
+        first--;
+    while (last < ids.length - 1 && !fill(ids[last + 1]))
+        last++;
+    return ids.slice(first, last + 1);
 }
 
 var APP_SLOT_TYPES = {
