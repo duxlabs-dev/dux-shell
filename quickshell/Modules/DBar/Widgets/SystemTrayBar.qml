@@ -385,8 +385,6 @@ BasePill {
 
     property bool menuOpen: false
 
-    // StatusNotifierItem tooltips: title plus description. The description may
-    // carry the spec's small HTML subset, so tags are stripped to plain text.
     function trayTooltipText(item) {
         if (!item)
             return "";
@@ -397,13 +395,10 @@ BasePill {
         return title || description;
     }
 
-    // The area that currently owns the tooltip. Moving straight from one icon to
-    // the next can deliver the new icon's entered before the old icon's exited,
-    // so an icon only hides the tooltip while it still owns it.
     property Item trayTooltipOwner: null
 
     function showTrayTooltip(item, area) {
-        if (!root.parentScreen || !area)
+        if (!root.parentScreen || !area || root.menuOpen)
             return;
         const text = root.trayTooltipText(item);
         if (!text) {
@@ -425,7 +420,6 @@ BasePill {
         const localPos = area.mapToItem(null, area.width / 2, 0);
         let tooltipY;
         if (root.axis?.edge === "bottom") {
-            // The tooltip grows downward from tooltipY; set the text first so it measures the wrapped height
             trayTooltipLoader.item.text = text;
             tooltipY = currentScreen.height - root.barThickness - root.barSpacing - Theme.spacingXS - trayTooltipLoader.item.tooltipHeight;
         } else {
@@ -434,7 +428,6 @@ BasePill {
         trayTooltipLoader.item.show(text, localPos.x, tooltipY, currentScreen, false, false);
     }
 
-    // Without an area: hide unconditionally (press, icon without a tooltip).
     function hideTrayTooltip(area) {
         if (area && area !== root.trayTooltipOwner)
             return;

@@ -13,8 +13,6 @@ Item {
     property bool alignLeft: false
     property bool alignRight: false
     property bool persistent: false
-    // Same meaning as DTooltipV2.multiline: show every line and wrap long ones
-    // instead of eliding to a single line.
     property bool multiline: false
     property bool shown: false
 
@@ -38,7 +36,6 @@ Item {
         shown = false;
     }
 
-    // A host maps its window from childrenChanged, which Qt emits before the item leaves its old window.
     onHostItemChanged: {
         body.parent = null;
         body.parent = hostItem ?? root;
