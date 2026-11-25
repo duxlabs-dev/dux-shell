@@ -337,7 +337,7 @@ Singleton {
                 ToastService.showError(I18n.tr("Failed to copy entry"));
                 return;
             }
-            ToastService.showInfo(entry.isImage && !asText ? I18n.tr("Image copied to clipboard") : I18n.tr("Copied to clipboard"));
+            ToastService.showInfo(I18n.tr("Copied to clipboard"));
             historyCopied();
             if (closeCallback) {
                 closeCallback();

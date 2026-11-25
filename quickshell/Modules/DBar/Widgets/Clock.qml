@@ -42,6 +42,7 @@ BasePill {
                     segmented: root.surfaceContext?.kind !== "dock" && BarMetrics.widgetStyle(root.barConfig) === "segments" && !root.noBackground
                     displayMode: SettingsData.widgetOption("clock", root.widgetData, "clockCompactMode") ? "time" : "both"
                     dateFirst: root.widgetData?.clockDateOrder === "dateFirst"
+                    showTimezone: SettingsData.widgetOption("clock", root.widgetData, "clockShowTimezone")
                     fontSize: Theme.barTextSize(root.barThickness, root.barConfig?.fontScale, root.barConfig?.maximizeWidgetText)
                     availableWidth: root.widgetThickness
                     textColor: root.contentColor

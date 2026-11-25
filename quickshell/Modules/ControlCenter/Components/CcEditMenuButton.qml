@@ -23,7 +23,7 @@ DActionButton {
     iconSize: CcMetrics.iconBoxIconSize
     iconColor: Theme.onSecondaryContainer
     backgroundColor: Theme.secondaryContainer
-    tooltipText: I18n.tr("More")
+    tooltipText: I18n.tr("More", "tooltip on a button that opens more options")
     onClicked: menu.openAt(root)
 
     CcMenu {

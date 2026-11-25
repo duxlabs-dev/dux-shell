@@ -19,7 +19,6 @@ Row {
     property bool wheelEnabled: false
     property string accessibleName: ""
     property string accessibleDescription: ""
-    property bool showReset: false
 
     readonly property int stepAmount: Math.max(1, step)
     readonly property string valueText: slider.formatValue(slider.value)
@@ -31,7 +30,6 @@ Row {
 
     signal sliderValueChanged(int newValue)
     signal sliderDragFinished(int finalValue)
-    signal resetRequested
 
     function nudge(direction) {
         const next = Math.max(minimum, Math.min(maximum, slider.value + direction * stepAmount));
@@ -73,11 +71,6 @@ Row {
         anchors.verticalCenter: parent.verticalCenter
         enabled: root.enabled
         wheelEnabled: root.wheelEnabled
-        insetIcon: root.showReset ? "restart_alt" : ""
-        insetIconPosition: "end"
-        insetIconClickable: true
-        insetIconTooltip: I18n.tr("Reset to default")
-        onInsetIconClicked: root.resetRequested()
         Component.onCompleted: value = Math.round(root.value)
         onSliderValueChanged: newValue => root.sliderValueChanged(newValue)
         onSliderDragFinished: finalValue => root.sliderDragFinished(finalValue)

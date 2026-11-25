@@ -33,8 +33,8 @@ DModal {
     signal fileSelected(string path)
 
     layerNamespace: "dms:filebrowser"
-    modalWidth: 860
-    modalHeight: 620
+    modalWidth: FileBrowserMetrics.pickerWidth
+    modalHeight: FileBrowserMetrics.pickerHeight
     backgroundColor: Theme.floatingWindowSurface
     closeOnEscapeKey: false
     closeOnBackgroundClick: true

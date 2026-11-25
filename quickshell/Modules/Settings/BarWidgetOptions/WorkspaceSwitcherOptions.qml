@@ -74,6 +74,7 @@ Column {
             resetStore: root.page
             tags: ["workspace", "corner", "radius", "rounded", "square", "circle", "override", "roundness"]
             text: I18n.tr("Override", "verb, toggle to override the global setting for this item")
+            sliderText: I18n.tr("Radius")
             checked: root.page.value("workspaceIndicatorRoundness") >= 0
             value: root.indicatorRoundness
             minimum: 0
@@ -157,6 +158,7 @@ Column {
                 resetStore: root.page
                 valueKeys: ["workspacePaddingCount"]
                 text: I18n.tr("Minimum workspaces", "workspace switcher slider label")
+                sliderText: I18n.tr("Amount")
                 description: CompositorService.supportsPersistentWorkspaces ? I18n.tr("Workspaces up to the count are always shown and can be opened", "workspace switcher minimum workspaces description on compositors with persistent workspaces") : I18n.tr("Empty placeholders fill the switcher up to the count", "workspace switcher minimum workspaces description")
                 checked: root.page.value("showWorkspacePadding")
                 unit: ""
@@ -212,6 +214,14 @@ Column {
             }
 
             SettingsToggleRow {
+                text: I18n.tr("Scroll wheel")
+                visible: CompositorService.supportsWorkspaces
+                checked: root.page.value("scrollEnabled")
+                onToggled: checked => root.page.set("scrollEnabled", checked)
+            }
+
+            SettingsToggleRow {
+                enabled: root.page.value("scrollEnabled")
                 text: I18n.tr("Reverse scroll direction")
                 visible: CompositorService.supportsWorkspaces
                 checked: root.page.value("reverseScrolling")

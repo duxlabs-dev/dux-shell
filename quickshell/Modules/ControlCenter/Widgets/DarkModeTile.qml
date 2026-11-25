@@ -21,7 +21,7 @@ CcTile {
     expandedContent: Component {
         CcTileActions {
             actions: [false, true].map(light => ({
-                        text: light ? I18n.tr("Light") : I18n.tr("Dark"),
+                        text: light ? I18n.tr("Light", "adjective, light color mode, opposite of dark") : I18n.tr("Dark", "adjective, dark color mode, opposite of light"),
                         icon: light ? "light_mode" : "dark_mode",
                         active: light === SessionData.isLightMode,
                         trigger: () => {

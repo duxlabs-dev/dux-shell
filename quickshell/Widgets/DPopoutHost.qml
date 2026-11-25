@@ -866,7 +866,7 @@ Item {
     readonly property bool _settlingToOpen: shouldBeVisible && (morph.running || travelSpring.running)
     readonly property bool _geometryMotion: animationsEnabled && !Theme.reduceMotion && root.attached && shouldBeVisible && !_settlingToOpen && !resizing
     property bool _bodyBatch: false
-    readonly property var _resizeSpringParams: Theme.springPreset("defaultSpatial")
+    readonly property var _resizeSpringParams: Theme.springPreset("standardDefaultSpatial")
 
     RectSpringMotion {
         id: bodySpring

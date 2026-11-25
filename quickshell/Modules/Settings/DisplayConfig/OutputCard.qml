@@ -31,7 +31,7 @@ Column {
     readonly property bool isActive: isConnected && !isDisabled
     readonly property bool vrrSupported: DisplayConfigState.outputs[outputName]?.vrr_supported ?? false
     readonly property bool hasColorControls: isActive && ICCService.outputNames.indexOf(outputName) !== -1
-    readonly property int neutralTemperature: 7000
+    readonly property int neutralTemperature: 6500
 
     width: parent?.width ?? 0
     spacing: Theme.spacingS

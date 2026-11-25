@@ -1060,6 +1060,36 @@ var LOCAL_SPEC = {
     wellbeingAppLimits: {
         def: {}
     },
+    wellbeingBreaksEnabled: {
+        def: false
+    },
+    wellbeingBreakInterval: {
+        def: 20
+    },
+    wellbeingBreakDuration: {
+        def: 20
+    },
+    wellbeingBreaksBeforeLong: {
+        def: 3
+    },
+    wellbeingLongBreakDuration: {
+        def: 5
+    },
+    wellbeingBreakWarning: {
+        def: 5
+    },
+    wellbeingBreakSuppressFullscreen: {
+        def: true
+    },
+    wellbeingBreakSuppressMeetings: {
+        def: true
+    },
+    wellbeingBreakPauseMedia: {
+        def: false
+    },
+    wellbeingBreakSound: {
+        def: true
+    },
     networkPreference: {
         def: "auto"
     },
@@ -1793,6 +1823,8 @@ var LOCAL_SPEC = {
                 scrollEnabled: true,
                 scrollXBehavior: "focusWindow",
                 scrollYBehavior: "workspace",
+                scrollBrightnessStep: 5,
+                scrollExtendToEdge: true,
                 middleClickAction: "none",
                 rightClickAction: "edit-widgets",
                 clickActionFollowMouse: false,

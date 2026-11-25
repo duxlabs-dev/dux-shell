@@ -6,6 +6,7 @@ SettingsRow {
     id: root
 
     property bool open: false
+    property alias accessory: accessorySlot.data
 
     signal toggled
 
@@ -15,6 +16,13 @@ SettingsRow {
     Accessible.checked: open
     Accessible.onToggleAction: toggled()
     onClicked: toggled()
+
+    Row {
+        id: accessorySlot
+        spacing: Theme.spacingS
+        visible: children.length > 0
+        anchors.verticalCenter: parent.verticalCenter
+    }
 
     DIcon {
         name: root.open ? "expand_less" : "expand_more"

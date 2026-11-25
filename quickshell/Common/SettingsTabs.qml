@@ -207,7 +207,7 @@ Singleton {
                     "titleFrom": "selectedWidgetTitle",
                     "text": I18n.tr("Widget settings", "settings tab name for the options of one widget instance"),
                     "icon": "tune",
-                    "tabIndex": 87,
+                    "tabIndex": 91,
                     "hint": I18n.tr("Options of one widget instance", "settings tab description")
                 }
             ]
@@ -290,7 +290,7 @@ Singleton {
             "icon": "notifications",
             "tabIndex": 17,
             "hubHeader": "NotificationsTab",
-            "hint": I18n.tr("Popups, do not disturb, rules"),
+            "hint": I18n.tr("Popups, do not disturb, rules", "settings sidebar hint listing what the notifications page covers"),
             "children": [
                 {
                     "id": "notification_rules",
@@ -315,7 +315,39 @@ Singleton {
             "icon": "digital_wellbeing",
             "tabIndex": 67,
             "aliases": ["screen_time"],
-            "hint": I18n.tr("Screen time and app limits", "settings sidebar hint and dashboard tab description for digital wellbeing")
+            "hubHeader": "DigitalWellbeingTab",
+            "hint": I18n.tr("Screen time and app limits", "settings sidebar hint and dashboard tab description for digital wellbeing"),
+            "children": [
+                {
+                    "id": "wellbeing_limits",
+                    "text": I18n.tr("Screen time & limits", "settings page title, screen time limits and history"),
+                    "icon": "hourglass_empty",
+                    "tabIndex": 87,
+                    "hint": I18n.tr("Daily limit, app limits, history", "settings hint for the screen time limits page")
+                },
+                {
+                    "id": "wellbeing_breaks",
+                    "aliases": ["break_reminders"],
+                    "text": I18n.tr("Break reminders", "settings page title and main toggle, reminders to rest from the screen"),
+                    "icon": "timer",
+                    "tabIndex": 88,
+                    "hint": I18n.tr("Break plans and schedule", "settings hint for the break reminders page")
+                },
+                {
+                    "id": "wellbeing_alerts",
+                    "text": I18n.tr("Alerts & suppression", "settings page title, break reminder sounds and when breaks are held back"),
+                    "icon": "notifications_paused",
+                    "tabIndex": 89,
+                    "hint": I18n.tr("Smart suppression, sound and media", "settings hint for the break alerts page")
+                },
+                {
+                    "id": "wellbeing_stats",
+                    "text": I18n.tr("Statistics & testing", "settings page title, break reminder statistics and previews"),
+                    "icon": "bar_chart",
+                    "tabIndex": 90,
+                    "hint": I18n.tr("Break history and previews", "settings hint for the break statistics page")
+                }
+            ]
         },
         {
             "id": "sound_media",

@@ -283,7 +283,9 @@ FocusScope {
 
     // Only a popout the screen has capped scrolls; otherwise it grows around the band and any scroll would bounce.
     function revealDetail() {
-        if (detailBand.section === "" || !contentOverflows)
+        if (detailBand.section === "" || !contentOverflows || detailBand.transitioning)
+            return;
+        if (contentFlickable.contentHeight <= contentFlickable.height)
             return;
         const top = mainColumn.y + body.y + detailBand.y;
         contentFlickable.revealRange(top, top + detailBand.height);
@@ -1189,6 +1191,10 @@ FocusScope {
                     onCollapseRequested: root.host.collapseAll()
                     onCloseRequested: root.host.close()
                     onHeightChanged: root.revealDetail()
+                    onTransitioningChanged: {
+                        if (!detailBand.transitioning)
+                            root.revealDetail();
+                    }
                     onDismissed: {
                         const target = root.detailReturnFocus;
                         root.detailReturnFocus = null;
@@ -1232,6 +1238,7 @@ FocusScope {
             width: mainColumn.width
             count: pager.count
             currentIndex: pager.currentIndex
+            position: pager.position
             // They share the bottom edge with the height handle, so they step aside while it drags.
             visible: count > 1 && !(root.panelResizing && (root.resizeBase?.vertical ?? false))
             opacity: body.opacity

@@ -11,96 +11,30 @@ import "Wellbeing.js" as Wellbeing
 DCard {
     id: root
 
-    property var days: []
-    property int firstDayOfWeek: 1
-    property date anchor: new Date()
-    property date today: anchor
-    property string period: "week"
-    property string selectedDate: ""
-    property string periodBeforeSelection: ""
-    property bool showTitle: true
-    property bool fillHeight: true
+    property var day: null
 
-    readonly property var periods: [
-        {
-            "value": "day",
-            "text": I18n.tr("Day", "screen time range filter")
-        },
-        {
-            "value": "week",
-            "text": I18n.tr("Week", "screen time range filter")
-        },
-        {
-            "value": "month",
-            "text": I18n.tr("Month", "screen time range filter")
-        }
-    ]
-    readonly property date periodAnchor: selectedDate !== "" ? Wellbeing.parseKey(selectedDate) : anchor
-    readonly property var apps: Wellbeing.topApps(Wellbeing.periodDays(days, periodAnchor, firstDayOfWeek, period, today), WellbeingMetrics.listedApps)
-    readonly property real longest: apps.length > 0 ? apps[0].seconds : 0
-    readonly property real listHeight: Math.max(1, apps.length) * WellbeingMetrics.appRowHeight + Math.max(0, apps.length - 1) * Theme.groupedListGap
+    readonly property var apps: day ? Wellbeing.topApps([day], WellbeingMetrics.listedApps) : []
 
     signal limitRequested(string appId)
-    signal selectionCleared
-
-    onSelectedDateChanged: {
-        if (selectedDate !== "") {
-            if (periodBeforeSelection === "")
-                periodBeforeSelection = period;
-            period = "day";
-        } else if (periodBeforeSelection !== "") {
-            period = periodBeforeSelection;
-            periodBeforeSelection = "";
-        }
-    }
 
     restRadius: DashMetrics.cardRadius
     pad: Theme.spacingL
-    implicitHeight: pad * 2 + header.height + Theme.spacingM + listHeight
 
-    Item {
+    StyledText {
         id: header
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: parent.top
-        height: Theme.buttonHeightXS
-
-        StyledText {
-            anchors.left: parent.left
-            anchors.right: periodGroup.left
-            anchors.rightMargin: Theme.spacingM
-            anchors.verticalCenter: parent.verticalCenter
-            visible: root.showTitle
-            text: I18n.tr("Most used apps", "screen time card title, apps ranked by time")
-            font.pixelSize: Theme.fontSizeLarge
-            font.weight: Theme.fontWeightMedium
-            color: root.contentColor
-            elide: Text.ElideRight
-        }
-
-        DButtonGroup {
-            id: periodGroup
-            anchors.right: parent.right
-            anchors.verticalCenter: parent.verticalCenter
-            size: "small"
-            checkEnabled: false
-            model: root.periods.map(p => p.text)
-            currentIndex: root.periods.findIndex(p => p.value === root.period)
-            onSelectionChanged: (index, selected) => {
-                if (!selected)
-                    return;
-                root.period = root.periods[index].value;
-                if (root.period === "day" || root.selectedDate === "")
-                    return;
-                root.periodBeforeSelection = "";
-                root.selectionCleared();
-            }
-        }
+        text: I18n.tr("Most used apps", "screen time card title, apps ranked by time")
+        font.pixelSize: Theme.fontSizeLarge
+        font.weight: Theme.fontWeightMedium
+        color: root.contentColor
+        elide: Text.ElideRight
     }
 
     StyledText {
-        anchors.centerIn: listHost
-        width: listHost.width - Theme.spacingL * 2
+        anchors.centerIn: list
+        width: list.width - Theme.spacingL * 2
         visible: root.apps.length === 0
         text: I18n.tr("Nothing tracked yet", "empty state of the screen time app list")
         font.pixelSize: Theme.fontSizeMedium
@@ -109,136 +43,68 @@ DCard {
         wrapMode: Text.WordWrap
     }
 
-    Loader {
-        id: listHost
+    DListView {
+        id: list
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.top: header.bottom
         anchors.topMargin: Theme.spacingM
-        height: root.fillHeight ? parent.height - y : root.listHeight
-        sourceComponent: root.fillHeight ? scrolling : stacked
-    }
+        anchors.bottom: parent.bottom
+        clip: true
+        spacing: Theme.groupedListGap
+        showScrollBar: false
+        model: root.apps
 
-    // a nested list view would take the wheel from the settings page
-    Component {
-        id: stacked
+        delegate: DListItem {
+            id: row
 
-        Column {
-            spacing: Theme.groupedListGap
+            required property var modelData
+            required property int index
 
-            Repeater {
-                model: root.apps
+            readonly property string appId: modelData.appId
+            readonly property int limitMinutes: WellbeingService.appLimitMinutes(appId)
+            readonly property bool overLimit: limitMinutes > 0 && modelData.seconds >= limitMinutes * 60
 
-                AppRow {
-                    width: parent.width
-                }
+            width: ListView.view.width
+            height: WellbeingMetrics.appRowHeight
+            surfaceColor: root.chipColor
+            firstInGroup: index === 0
+            lastInGroup: index === root.apps.length - 1
+            Accessible.name: WellbeingService.appName(appId)
+            onClicked: root.limitRequested(appId)
+
+            CcAppIcon {
+                id: icon
+                anchors.left: parent.left
+                anchors.leftMargin: Theme.spacingM
+                anchors.verticalCenter: parent.verticalCenter
+                appId: row.appId
+                iconSize: Theme.iconSizeLarge
             }
-        }
-    }
 
-    Component {
-        id: scrolling
-
-        DListView {
-            clip: true
-            spacing: Theme.groupedListGap
-            showScrollBar: false
-            model: root.apps
-
-            delegate: AppRow {
-                width: ListView.view.width
+            StyledText {
+                anchors.left: icon.right
+                anchors.leftMargin: Theme.spacingM
+                anchors.right: duration.left
+                anchors.rightMargin: Theme.spacingM
+                anchors.verticalCenter: parent.verticalCenter
+                text: WellbeingService.appName(row.appId)
+                font.pixelSize: Theme.fontSizeMedium
+                font.weight: Theme.fontWeightMedium
+                color: row.contentColor
+                elide: Text.ElideRight
             }
-        }
-    }
 
-    component AppRow: DListItem {
-        id: row
-
-        required property var modelData
-        required property int index
-
-        readonly property string appId: modelData.appId
-        readonly property int limitMinutes: WellbeingService.appLimitMinutes(appId)
-        readonly property bool overLimit: limitMinutes > 0 && modelData.seconds >= limitMinutes * 60
-
-        height: WellbeingMetrics.appRowHeight
-        surfaceColor: root.chipColor
-        firstInGroup: index === 0
-        lastInGroup: index === root.apps.length - 1
-        Accessible.name: WellbeingService.appName(appId)
-        onClicked: root.limitRequested(appId)
-
-        CcAppIcon {
-            id: icon
-            anchors.left: parent.left
-            anchors.leftMargin: Theme.spacingM
-            anchors.verticalCenter: parent.verticalCenter
-            appId: row.appId
-            iconSize: Theme.iconSizeLarge
-        }
-
-        StyledText {
-            id: name
-            anchors.left: icon.right
-            anchors.leftMargin: Theme.spacingM
-            anchors.verticalCenter: parent.verticalCenter
-            width: WellbeingMetrics.appNameWidth
-            text: WellbeingService.appName(row.appId)
-            font.pixelSize: Theme.fontSizeMedium
-            font.weight: Theme.fontWeightMedium
-            color: row.contentColor
-            elide: Text.ElideRight
-        }
-
-        Rectangle {
-            anchors.left: name.right
-            anchors.right: duration.left
-            anchors.leftMargin: Theme.spacingM
-            anchors.rightMargin: Theme.spacingM
-            anchors.verticalCenter: parent.verticalCenter
-            height: DashMetrics.meterBarThickness
-            radius: Theme.fullRadius(width, height)
-            color: Theme.withAlpha(row.contentColor, Theme.stateLayerFocus)
-
-            Rectangle {
-                width: root.longest > 0 ? parent.width * row.modelData.seconds / root.longest : 0
-                height: parent.height
-                radius: parent.radius
-                color: row.overLimit ? Theme.error : Theme.primary
-
-                Behavior on width {
-                    enabled: DashMetrics.animationsEnabled
-                    NumberAnimation {
-                        duration: Theme.expressiveDurations.expressiveSlowEffects
-                        easing.type: Easing.BezierSpline
-                        easing.bezierCurve: Theme.expressiveCurves.expressiveSlowEffects
-                    }
-                }
+            NumericText {
+                id: duration
+                anchors.right: parent.right
+                anchors.rightMargin: Theme.spacingL
+                anchors.verticalCenter: parent.verticalCenter
+                horizontalAlignment: Text.AlignRight
+                text: WellbeingService.formatDuration(row.modelData.seconds)
+                font.pixelSize: Theme.fontSizeMedium
+                color: row.overLimit ? Theme.error : row.supportingContentColor
             }
-        }
-
-        NumericText {
-            id: duration
-            anchors.right: limitButton.left
-            anchors.rightMargin: Theme.spacingS
-            anchors.verticalCenter: parent.verticalCenter
-            horizontalAlignment: Text.AlignRight
-            reserveText: WellbeingService.formatDuration(10 * Wellbeing.secondsPerHour)
-            text: WellbeingService.formatDuration(row.modelData.seconds)
-            font.pixelSize: Theme.fontSizeMedium
-            color: row.overLimit ? Theme.error : row.contentColor
-        }
-
-        DActionButton {
-            id: limitButton
-            anchors.right: parent.right
-            anchors.rightMargin: Theme.spacingS
-            anchors.verticalCenter: parent.verticalCenter
-            buttonSize: Theme.buttonHeightXS
-            iconName: row.limitMinutes > 0 ? "timer" : "timer_off"
-            iconColor: row.limitMinutes > 0 ? Theme.primary : row.supportingContentColor
-            tooltipText: row.limitMinutes > 0 ? I18n.tr("%1 min").arg(row.limitMinutes) : I18n.tr("Set limit", "button that opens the per-app screen time limit editor")
-            onClicked: root.limitRequested(row.appId)
         }
     }
 }

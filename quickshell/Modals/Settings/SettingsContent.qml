@@ -578,6 +578,8 @@ FocusScope {
             readonly property bool canGoBack: pathIndex > 0 || (parentId !== "" && (SettingsTabs.isPluginPage(page) || SettingsTabs.visibleLeaves(parentId).length > 1 || !!SettingsTabs.page(parentId)?.hubHeader))
             property Item rememberedFocus: null
             property Item scroller: null
+            // A page is built while parked off screen, where an edge fade cannot find the pane painted behind it
+            readonly property color surfaceColor: SettingsMetrics.paneColor
             readonly property bool firstScreenReady: scroller?.firstScreenBuilt ?? true
             onFirstScreenReadyChanged: {
                 if (firstScreenReady && root._ahead === host)
@@ -678,8 +680,12 @@ FocusScope {
                         }
                     }
 
-                    Flow {
+                    Row {
                         id: pageHeading
+
+                        readonly property real crumbExtent: crumbLabel.implicitWidth + Theme.iconSize + spacing * 2
+                        readonly property bool showCrumb: host.crumbTitle !== "" && crumbExtent + Math.ceil(titleMetrics.advanceWidth) <= width
+
                         anchors.left: backSlot.right
                         anchors.right: parent.right
                         anchors.rightMargin: Math.max(0, root.windowButtonsReserve - (host.width - pageHeader.width) / 2)
@@ -688,12 +694,11 @@ FocusScope {
                         visible: host.pageTitle !== ""
 
                         StyledText {
-                            width: Math.min(implicitWidth, pageHeading.width)
-                            wrapMode: Text.WordWrap
+                            id: crumbLabel
                             text: host.crumbTitle
                             font.pixelSize: Theme.fontSizeXXLarge
                             color: Theme.surfaceVariantText
-                            visible: host.crumbTitle !== ""
+                            visible: pageHeading.showCrumb
 
                             StateLayer {
                                 anchors.margins: -Theme.spacingXS
@@ -704,21 +709,28 @@ FocusScope {
                         }
 
                         DIcon {
-                            height: pageTitleLabel.implicitHeight / Math.max(1, pageTitleLabel.lineCount)
+                            anchors.verticalCenter: parent.verticalCenter
                             name: "chevron_right"
                             size: Theme.iconSize
                             color: Theme.surfaceVariantText
                             rotation: I18n.isRtl ? 180 : 0
-                            visible: host.crumbTitle !== ""
+                            visible: pageHeading.showCrumb
                         }
 
                         StyledText {
                             id: pageTitleLabel
-                            width: Math.min(implicitWidth, pageHeading.width)
-                            wrapMode: Text.WordWrap
-                            text: host.pageTitle
+                            text: titleMetrics.elidedText
                             font.pixelSize: Theme.fontSizeXXLarge
                             color: Theme.surfaceText
+                        }
+
+                        // An eliding Text reports its elided width as implicitWidth, so the full title is measured here
+                        TextMetrics {
+                            id: titleMetrics
+                            font: pageTitleLabel.font
+                            text: host.pageTitle
+                            elide: Text.ElideRight
+                            elideWidth: pageHeading.width
                         }
                     }
                 }
@@ -843,7 +855,10 @@ FocusScope {
             "autostart": "AutoStartTab.qml",
             "battery": "BatteryTab.qml",
             "dank_dash": "DDashTab.qml",
-            "wellbeing": "DigitalWellbeingTab.qml",
+            "wellbeing_limits": "WellbeingLimitsTab.qml",
+            "wellbeing_breaks": "WellbeingBreaksTab.qml",
+            "wellbeing_alerts": "WellbeingAlertsTab.qml",
+            "wellbeing_stats": "WellbeingStatsTab.qml",
             "mouse_touchpad": "MouseTouchpadTab.qml",
             "keyboard": "KeyboardTab.qml",
             "fcitx5": "Fcitx5Tab.qml",

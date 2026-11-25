@@ -7,9 +7,10 @@
 .import "catalog.js" as Catalog
 .import "pages.js" as Pages
 
-var OPTION_IDS = ["diskUsage", "brightnessSlider", "idleInhibitor", "user", "battery", "quickTiles"];
+var OPTION_IDS = ["diskUsage", "brightnessSlider", "volumeSlider", "inputVolumeSlider", "idleInhibitor", "user", "battery", "quickTiles"];
 var GROUP_ID = PanelLayout.GROUP_ID;
 var BATTERY_STYLES = ["icon", "solid", "outline", "ring", "duo"];
+var SLIDER_STYLES = ["default", "expressive"];
 var ACTION_IDS = ["settings", "lock", "power"];
 var EDIT_ID = "edit";
 var SPACER_ID = "spacer";

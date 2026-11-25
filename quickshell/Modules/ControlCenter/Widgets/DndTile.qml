@@ -8,7 +8,7 @@ CcTile {
     title: I18n.tr("Do not disturb")
     subtitle: {
         if (!SessionData.doNotDisturb)
-            return I18n.tr("Off");
+            return "";
         if (SessionData.doNotDisturbUntil <= 0)
             return I18n.tr("On");
         const d = new Date(SessionData.doNotDisturbUntil);

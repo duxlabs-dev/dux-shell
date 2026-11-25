@@ -70,7 +70,7 @@ DevicePane {
     leftStats: [
         {
             tile: true,
-            label: I18n.tr("Clock"),
+            label: I18n.tr("Clock", "CPU clock speed", true),
             value: root.ghz(root.clockMHz),
             tooltip: info?.governor ? I18n.tr("Governor", "CPU frequency scaling governor") + ": " + info.governor : ""
         },
