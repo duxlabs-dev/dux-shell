@@ -1004,7 +1004,7 @@ Singleton {
             wallpaperCyclingFolderPath = "";
             saveSettings();
         }
-        if (perModeWallpaper || typeof WallpaperLibraryService === "undefined")
+        if (perModeWallpaper || themeModeAutoEnabled || typeof WallpaperLibraryService === "undefined")
             return;
         const revision = wallpaperRequestRevision(screenName || "");
         WallpaperLibraryService.folderOf(path, owner => {

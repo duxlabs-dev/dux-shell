@@ -33,6 +33,7 @@ function session(state = {}) {
     const context = vm.createContext(Object.assign({
         isLightMode: false,
         perModeWallpaper: false,
+        themeModeAutoEnabled: false,
         perMonitorWallpaper: false,
         wallpaperPath: "",
         wallpaperPathLight: "",
@@ -148,4 +149,10 @@ test("applyWallpaperPick auto-switches light/dark mode via Theme.setLightMode un
     const s2 = session({ isLightMode: false, perModeWallpaper: true, wallpaperFolders: folders, ownerByPath });
     s2.context.applyWallpaperPick("", "/walls/light/day.jpg");
     assert.deepEqual(s2.modeCalls, []);
+
+    // themeModeAutoEnabled skips mode switching while still updating wallpaperPath
+    const s3 = session({ isLightMode: false, themeModeAutoEnabled: true, wallpaperFolders: folders, ownerByPath });
+    s3.context.applyWallpaperPick("", "/walls/light/day.jpg");
+    assert.equal(s3.context.wallpaperPath, "/walls/light/day.jpg");
+    assert.deepEqual(s3.modeCalls, []);
 });
