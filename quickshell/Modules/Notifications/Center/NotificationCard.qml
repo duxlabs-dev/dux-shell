@@ -138,10 +138,14 @@ Item {
         keyboardSelected: root.keyboardNavigationActive && root.isGroupSelected
         keyboardHints: keyboardSelected
         animateHeight: false
+        showDismiss: false
+        showClose: true
+        transientSurfaceTracker: root.transientSurfaceTracker
+        closeTooltip: I18n.tr("Close (keep in history)")
         onDescriptionExpandedChanged: root.animateResize()
         onExpandRequested: NotificationService.toggleMessageExpansion((notificationData?.notification?.id || "") + "_desc")
         onGroupToggleRequested: root.toggleGroup()
-        onDismissRequested: NotificationService.dismissGroup(root.notificationGroup?.key || "")
+        onCloseRequested: NotificationService.dismissGroup(root.notificationGroup?.key || "")
         onActionRequested: action => root.invokeAction(action)
         onBodyClicked: {
             if (groupCount > 1) {
@@ -200,14 +204,6 @@ Item {
                     spacing: Theme.spacingXS
                     DButton {
                         anchors.verticalCenter: parent.verticalCenter
-                        text: I18n.tr("Dismiss")
-                        buttonHeight: NotificationMetrics.controlSize
-                        horizontalPadding: NotificationMetrics.actionPadding
-                        variant: "text"
-                        onClicked: NotificationService.dismissGroup(root.notificationGroup?.key || "")
-                    }
-                    DButton {
-                        anchors.verticalCenter: parent.verticalCenter
                         text: (root.notificationGroup?.count || 0).toString()
                         iconName: "expand_less"
                         buttonHeight: NotificationMetrics.controlSize
@@ -216,6 +212,20 @@ Item {
                         textColor: Theme.onSurfaceVariant
                         Accessible.name: I18n.tr("Collapse")
                         onClicked: root.toggleGroup()
+                    }
+                    NotificationRuleButtons {
+                        anchors.verticalCenter: parent.verticalCenter
+                        notification: root.notificationGroup?.latestNotification ?? null
+                        transientSurfaceTracker: root.transientSurfaceTracker
+                        onCloseRequested: NotificationService.dismissGroup(root.notificationGroup?.key || "")
+                    }
+                    DActionButton {
+                        anchors.verticalCenter: parent.verticalCenter
+                        iconName: "close"
+                        buttonSize: NotificationMetrics.controlSize
+                        iconSize: Theme.iconSizeSmall
+                        tooltipText: I18n.tr("Close all", "notification group header button, dismisses every notification in the group")
+                        onClicked: NotificationService.dismissGroup(root.notificationGroup?.key || "")
                     }
                 }
             }
@@ -265,9 +275,13 @@ Item {
                         keyboardSelected: root.keyboardNavigationActive && root.selectedNotificationIndex === row.index
                         keyboardHints: keyboardSelected
                         descriptionExpanded: NotificationService.expandedMessages[(notificationData?.notification?.id || "") + "_desc"] || false
+                        showDismiss: false
+                        showClose: true
+                        transientSurfaceTracker: root.transientSurfaceTracker
+                        closeTooltip: I18n.tr("Close (keep in history)")
                         onDescriptionExpandedChanged: root.animateResize()
                         onExpandRequested: NotificationService.toggleMessageExpansion((notificationData?.notification?.id || "") + "_desc")
-                        onDismissRequested: NotificationService.dismissNotification(row.modelData)
+                        onCloseRequested: NotificationService.dismissNotification(row.modelData)
                         onActionRequested: action => root.invokeAction(action)
                         onBodyClicked: root.invokeAction(contextActions.defaultAction(notificationData))
                         onContextMenuRequested: (x, y) => root.openContextMenu(message, row.modelData)
@@ -300,8 +314,6 @@ Item {
 
     NotificationActions {
         id: contextActions
-        onDismissRequested: NotificationService.dismissGroup(root.notificationGroup?.key || "")
-        onAppMuted: NotificationService.dismissGroup(root.notificationGroup?.key || "")
     }
 
     Loader {

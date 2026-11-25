@@ -7,11 +7,7 @@ import qs.Widgets
 DContextMenu {
     id: root
 
-    property alias dismissText: actions.dismissText
     property alias notification: actions.notification
-
-    signal dismissRequested
-    signal appMuted
 
     layerNamespace: "dms:notification-context-menu"
     minMenuWidth: NotificationMetrics.menuWidth
@@ -35,8 +31,6 @@ DContextMenu {
 
     NotificationActions {
         id: actions
-        onDismissRequested: root.dismissRequested()
-        onAppMuted: root.appMuted()
     }
 
     Connections {

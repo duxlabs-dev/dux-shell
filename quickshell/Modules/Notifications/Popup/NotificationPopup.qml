@@ -706,10 +706,13 @@ Item {
                         privacyMode: SettingsData.notificationPopupPrivacyMode
                         bodyInvokesAction: win.bodyClickInvokesAction
                         persistImage: true
+                        reserveActionRow: true
                         showClose: true
+                        transientSurfaceTracker: transientSurfaces
+                        popupSurface: win.surface
+                        dismissTooltip: I18n.tr("Close and clear from history")
                         revealControls: win.hovered || win.contextMenuActive
                         contentOpacity: swipe.contentOpacity
-                        dismissText: I18n.tr("Clear")
                         animateHeight: false
                         outerRadius: win.connectedFrameMode ? Theme.connectedSurfaceRadius : NotificationMetrics.popupRadius
                         color: "transparent"
@@ -948,18 +951,13 @@ Item {
         }
     }
 
-    Connections {
-        target: popupContextMenuLoader.item
-        ignoreUnknownSignals: true
-
-        function onVisibleChanged() {
-            if (!notificationData?.timer || exiting || _isDestroying)
-                return;
-            if (win.contextMenuActive) {
-                notificationData.timer.stop();
-            } else if (!cardHoverHandler.hovered && notificationData.popup) {
-                notificationData.timer.restart();
-            }
+    onContextMenuActiveChanged: {
+        if (!notificationData?.timer || exiting || _isDestroying)
+            return;
+        if (contextMenuActive) {
+            notificationData.timer.stop();
+        } else if (!cardHoverHandler.hovered && notificationData.popup) {
+            notificationData.timer.restart();
         }
     }
 
@@ -977,16 +975,7 @@ Item {
 
         sourceComponent: NotificationContextMenu {
             transientSurfaceTracker: transientSurfaces
-            dismissText: notificationCard.dismissText
             notification: notificationData
-            onAppMuted: {
-                if (notificationData && !win.exiting)
-                    NotificationService.dismissNotification(notificationData);
-            }
-            onDismissRequested: {
-                if (notificationData && !win.exiting)
-                    NotificationService.permanentlyDismissNotification(notificationData);
-            }
         }
     }
 }

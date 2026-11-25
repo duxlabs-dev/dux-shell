@@ -1,4 +1,5 @@
 import QtQuick
+import QtQuick.Shapes
 import Quickshell.Widgets
 import Quickshell.Services.Notifications
 import qs.Common
@@ -16,10 +17,14 @@ Rectangle {
     property bool descriptionExpanded: false
     property bool privacyMode: false
     property bool showActions: true
+    property bool reserveActionRow: false
     property bool showDismiss: true
     property bool showClose: false
+    property var transientSurfaceTracker: null
+    property var popupSurface: null
+    property string dismissTooltip: I18n.tr("Clear from history")
+    property string closeTooltip: I18n.tr("Close")
     property bool revealControls: true
-    property string dismissText: I18n.tr("Dismiss")
     property bool showTime: true
     property bool bodyInvokesAction: false
     property bool persistImage: false
@@ -298,6 +303,61 @@ Rectangle {
                     }
 
                     Loader {
+                        active: root.interactive && root.transientSurfaceTracker !== null
+                        visible: active
+
+                        sourceComponent: NotificationRuleButtons {
+                            notification: root.notificationData
+                            transientSurfaceTracker: root.transientSurfaceTracker
+                            popupSurface: root.popupSurface
+                            onCloseRequested: root.closeRequested()
+                        }
+                    }
+
+                    Loader {
+                        active: root.interactive && root.showDismiss
+                        visible: active
+
+                        sourceComponent: DActionButton {
+                            id: dismissButton
+                            buttonSize: NotificationMetrics.controlSize
+                            iconSize: Theme.iconSizeSmall
+                            tooltipText: root.dismissTooltip
+                            onClicked: root.dismissRequested()
+
+                            Shape {
+                                x: (dismissButton.width - dismissButton.iconSize) / 2
+                                y: (dismissButton.height - dismissButton.iconSize) / 2
+                                width: 24
+                                height: 24
+                                scale: dismissButton.iconSize / 24
+                                transformOrigin: Item.TopLeft
+                                preferredRendererType: Shape.CurveRenderer
+
+                                ShapePath {
+                                    strokeColor: dismissButton.iconColor
+                                    strokeWidth: 2.8
+                                    fillColor: "transparent"
+                                    capStyle: ShapePath.RoundCap
+
+                                    PathSvg {
+                                        path: "M21.5 2.5 L13.4 10.6"
+                                    }
+                                }
+
+                                ShapePath {
+                                    strokeColor: "transparent"
+                                    fillColor: dismissButton.iconColor
+
+                                    PathSvg {
+                                        path: "M12.62 10 C8.94 9.65 5.72 10.92 3.42 12.99 L2.04 13.22 L3.54 14.6 L1.93 15.29 L3.88 16.44 L2.96 17.59 L4.8 17.93 L4.8 19.55 L6.41 19.08 L6.99 20.81 L8.25 19.66 L9.52 21.73 L10.32 20.35 C12.74 17.93 14.23 14.83 14 11.38 Z"
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Loader {
                         active: root.interactive && root.showClose
                         visible: active
 
@@ -305,7 +365,7 @@ Rectangle {
                             iconName: "close"
                             buttonSize: NotificationMetrics.controlSize
                             iconSize: Theme.iconSizeSmall
-                            Accessible.name: I18n.tr("Dismiss")
+                            tooltipText: root.closeTooltip
                             onClicked: root.closeRequested()
                         }
                     }
@@ -416,8 +476,8 @@ Rectangle {
 
         Item {
             width: parent.width
-            height: actions.implicitHeight
-            visible: root.interactive && !root.headerOnly && (root.showActions || root.showDismiss)
+            height: actions.implicitHeight || (root.reserveActionRow ? NotificationMetrics.reservedActionRowHeight : 0)
+            visible: root.interactive && !root.headerOnly && root.showActions && (actionRepeater.count > 0 || root.reserveActionRow)
 
             Flow {
                 id: actions
@@ -427,6 +487,7 @@ Rectangle {
                 spacing: Theme.spacingXS
 
                 Repeater {
+                    id: actionRepeater
                     model: root.showActions ? (root.notificationData?.actions || []) : []
                     DButton {
                         required property var modelData
@@ -440,18 +501,6 @@ Rectangle {
                         variant: "text"
                         onClicked: root.actionRequested(modelData)
                     }
-                }
-
-                DButton {
-                    visible: root.showDismiss
-                    text: root.dismissText
-                    maximumWidth: actions.width
-                    wrapText: true
-                    buttonHeight: NotificationMetrics.actionHeight
-                    horizontalPadding: NotificationMetrics.actionPadding
-                    minimumWidth: 0
-                    variant: "text"
-                    onClicked: root.dismissRequested()
                 }
             }
         }

@@ -32,21 +32,7 @@ function policy(rules, notif) {
 const rule = overrides => ({ enabled: true, field: "appName", pattern: "firefox", matchType: "exact", action: "default", urgency: "default", bypassDnd: false, ...overrides });
 const plain = value => JSON.parse(JSON.stringify(value));
 
-test("unmute keeps a rule that also bypasses DND", () => {
-    const s = settings([rule({ action: "mute", bypassDnd: true })]);
-    s.removeMuteRuleForApp("Firefox", "");
-    assert.deepEqual(plain(s.notificationRules), [rule({ bypassDnd: true })]);
-    assert.equal(s.isAppMuted("Firefox", ""), false);
-    assert.equal(s.isAppDndBypassed("Firefox", ""), true);
-});
-
-test("block in DND keeps a rule with an action", () => {
-    const s = settings([rule({ action: "no_history", bypassDnd: true })]);
-    s.setAppDndBypass("Firefox", "", false);
-    assert.deepEqual(plain(s.notificationRules), [rule({ action: "no_history" })]);
-});
-
-test("rule is removed only when nothing meaningful is left", () => {
+test("unmute and stop allowing in DND remove the app's own rule", () => {
     let s = settings([rule({ action: "mute" })]);
     s.removeMuteRuleForApp("Firefox", "");
     assert.deepEqual(plain(s.notificationRules), []);
@@ -54,10 +40,49 @@ test("rule is removed only when nothing meaningful is left", () => {
     s = settings([rule({ bypassDnd: true })]);
     s.setAppDndBypass("Firefox", "", false);
     assert.deepEqual(plain(s.notificationRules), []);
+});
 
-    s = settings([rule({ action: "mute", urgency: "critical" })]);
+test("header actions never edit a rule built in the editor", () => {
+    const manual = [rule({ action: "mute", bypassDnd: true }), rule({ action: "no_history", bypassDnd: true }), rule({ action: "mute", urgency: "critical" })];
+    const s = settings(plain(manual));
     s.removeMuteRuleForApp("Firefox", "");
-    assert.deepEqual(plain(s.notificationRules), [rule({ urgency: "critical" })]);
+    s.setAppDndBypass("Firefox", "", false);
+    assert.deepEqual(plain(s.notificationRules), manual);
+    assert.equal(s.isAppMuted("Firefox", ""), true);
+    assert.equal(s.hasOwnAppRule("Firefox", "", "mute", false), false);
+    assert.equal(s.isAppDndBypassed("Firefox", ""), true);
+    assert.equal(s.hasOwnAppRule("Firefox", "", "default", true), false);
+    assert.equal(settings([rule({ action: "mute", expiresAt: 1 })]).hasOwnAppRule("Firefox", "", "mute", false), false);
+    assert.deepEqual([rule({ action: "ignore" }), rule({ action: "ignore", bypassDnd: true }), rule({ action: "ignore", matchType: "contains" }), rule({ action: "ignore", conditions: [rule()] }), rule({ action: "ignore", field: "summary" })].map(r => s.isOwnAppRule(r, "ignore", false)), [true, false, false, false, false]);
+
+    const critical = rule({ urgency: "critical" });
+    const later = Date.now() + 60000;
+    const t = settings([critical]);
+    t.addMuteRuleForApp("Firefox", "", later);
+    assert.deepEqual(plain(t.notificationRules), [critical, rule({ pattern: "Firefox", action: "mute", expiresAt: later })]);
+    t.addMuteRuleForApp("Firefox", "");
+    assert.deepEqual(plain(t.notificationRules), [critical, rule({ pattern: "Firefox", action: "mute" })]);
+});
+
+test("block, mute and DND each own a rule, ordered so none shadows a manual rule", () => {
+    const manual = rule({ pattern: "fire", matchType: "contains", urgency: "low" });
+    const notif = { appName: "Firefox", summary: "", body: "" };
+    const s = settings([manual]);
+    s.addMuteRuleForApp("Firefox", "");
+    s.setAppDndBypass("Firefox", "", true);
+    s.addIgnoreRuleForApp("Firefox", "");
+    const mute = rule({ pattern: "Firefox", action: "mute" });
+    const dnd = rule({ pattern: "Firefox", bypassDnd: true });
+    assert.deepEqual(plain(s.notificationRules), [rule({ pattern: "Firefox", action: "ignore" }), manual, mute, dnd]);
+
+    s.removeNotificationRule(0);
+    assert.deepEqual(plain(s.notificationRules), [manual, mute, dnd]);
+    assert.equal(s.hasOwnAppRule("Firefox", "", "mute", false), true);
+    assert.equal(s.hasOwnAppRule("Firefox", "", "default", true), true);
+    const p = policy(plain(s.notificationRules), notif);
+    assert.equal(p.urgency, 0);
+    assert.equal(p.disablePopup, true);
+    assert.equal(p.bypassDnd, true);
 });
 
 test("disabled rules are never edited or deleted", () => {
@@ -69,16 +94,6 @@ test("disabled rules are never edited or deleted", () => {
 
     s.addMuteRuleForApp("Firefox", "");
     assert.deepEqual(plain(s.notificationRules), [disabled, rule({ pattern: "Firefox", action: "mute" })]);
-});
-
-test("mute and DND bypass share one rule instead of shadowing each other", () => {
-    const s = settings([rule({ bypassDnd: true })]);
-    s.addMuteRuleForApp("Firefox", "");
-    assert.deepEqual(plain(s.notificationRules), [rule({ action: "mute", bypassDnd: true })]);
-
-    const t = settings([rule({ action: "no_history" })]);
-    t.setAppDndBypass("Firefox", "", true);
-    assert.deepEqual(plain(t.notificationRules), [rule({ action: "no_history", bypassDnd: true })]);
 });
 
 test("mute next to an exact no_history rule appends a mute rule and unmute removes only it", () => {
@@ -155,4 +170,24 @@ test("a sender with no app name or desktop entry can be muted without muting nam
 
     s.removeMuteRuleForApp("", "");
     assert.deepEqual(plain(s.notificationRules), []);
+
+    s.addIgnoreRuleForApp("", "");
+    s.addIgnoreRuleForApp("", "");
+    assert.equal(s.notificationRules.length, 1);
+    assert.equal(s.isOwnAppRule(s.notificationRules[0], "ignore", false), true);
+});
+
+test("block drops the app even behind an earlier matching rule and is added once", () => {
+    const broad = rule({ pattern: "fire", matchType: "contains", urgency: "low" });
+    const s = settings([broad]);
+    s.addIgnoreRuleForApp("Firefox", "");
+    s.addIgnoreRuleForApp("Firefox", "");
+    assert.deepEqual(plain(s.notificationRules), [rule({ pattern: "Firefox", action: "ignore" }), broad]);
+    assert.equal(policy(plain(s.notificationRules), { appName: "Firefox", summary: "", body: "" }).drop, true);
+
+    const ignore = rule({ action: "ignore" });
+    const t = settings([broad, ignore]);
+    t.addIgnoreRuleForApp("Firefox", "");
+    assert.deepEqual(plain(t.notificationRules), [ignore, broad]);
+    assert.equal(policy(plain(t.notificationRules), { appName: "Firefox", summary: "", body: "" }).drop, true);
 });
