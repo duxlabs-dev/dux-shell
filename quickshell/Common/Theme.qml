@@ -66,6 +66,8 @@ Singleton {
     property bool matugenAvailable: false
     property var workerRunning: false
     property var pendingThemeRequest: null
+    property bool _colorsReloading: false
+    readonly property bool generatingTheme: _themeGenerateDebounce.running || workerRunning || pendingThemeRequest !== null || _themeAwaitsFrame || _colorsReloading
 
     signal matugenCompleted(string mode, string result)
     property var matugenColors: ({})
@@ -2376,6 +2378,8 @@ Singleton {
         }
 
         onExited: exitCode => {
+            if (exitCode === 0)
+                root._colorsReloading = true;
             workerRunning = false;
             const currentMode = (typeof SessionData !== "undefined" && SessionData.isLightMode) ? "light" : "dark";
 
@@ -2481,6 +2485,7 @@ Singleton {
             if (currentTheme === dynamic)
                 colorsFileLoadFailed = false;
             parseAndLoadColors();
+            root._colorsReloading = false;
         }
 
         onFileChanged: {
@@ -2488,6 +2493,7 @@ Singleton {
         }
 
         onLoadFailed: function (error) {
+            root._colorsReloading = false;
             if (currentTheme !== dynamic)
                 return;
 

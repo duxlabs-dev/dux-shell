@@ -1354,6 +1354,12 @@ Item {
         }
     }
 
+    LazyLoader {
+        active: ConfigProfileService.switching
+
+        ProfileSwitchOverlay {}
+    }
+
     Connections {
         target: ConfigProfileService
         function onPickerToggleRequested() {

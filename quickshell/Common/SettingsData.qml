@@ -495,6 +495,8 @@ Singleton {
 
     property string browserPickerViewMode: Spec.SPEC.browserPickerViewMode.def
     property string configProfilePickerView: Spec.SPEC.configProfilePickerView.def
+    property string configProfileSwitchTransition: Spec.SPEC.configProfileSwitchTransition.def
+    property int configProfileSwitchDuration: Spec.SPEC.configProfileSwitchDuration.def
     property string appPickerViewMode: Spec.SPEC.appPickerViewMode.def
     property bool sortAppsAlphabetically: Spec.SPEC.sortAppsAlphabetically.def
     property int appLauncherGridColumns: Spec.SPEC.appLauncherGridColumns.def
