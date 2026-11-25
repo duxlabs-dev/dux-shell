@@ -11985,7 +11985,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:ClockOptions.qml:4",
+    "section": "barWidgetOption:ClockOptions.qml:5",
     "label": "Click action",
     "tabIndex": 22,
     "keywords": [],
@@ -12185,7 +12185,7 @@
     "optionFile": "AppsDockOptions.qml"
   },
   {
-    "section": "barWidgetOption:ClockOptions.qml:5",
+    "section": "barWidgetOption:ClockOptions.qml:6",
     "label": "Custom command",
     "tabIndex": 22,
     "keywords": [],
@@ -12706,7 +12706,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:ClockOptions.qml:3",
+    "section": "barWidgetOption:ClockOptions.qml:4",
     "label": "Notification badge",
     "tabIndex": 22,
     "keywords": [],
@@ -13042,6 +13042,14 @@
     "optionFile": "SystemMonitorOptions.qml"
   },
   {
+    "section": "barWidgetOption:ClockOptions.qml:3",
+    "label": "Show time zone",
+    "tabIndex": 22,
+    "keywords": [],
+    "runtimeType": "barWidgetOption",
+    "optionFile": "ClockOptions.qml"
+  },
+  {
     "section": "barWidgetOption:FocusedWindowOptions.qml:2",
     "label": "Show window title",
     "tabIndex": 22,
@@ -13186,7 +13194,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:ClockOptions.qml:6",
+    "section": "barWidgetOption:ClockOptions.qml:7",
     "label": "Time & weather",
     "tabIndex": 22,
     "keywords": [],

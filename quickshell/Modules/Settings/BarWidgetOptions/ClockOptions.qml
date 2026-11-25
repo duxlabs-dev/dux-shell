@@ -34,6 +34,12 @@ Column {
         }
 
         SettingsToggleRow {
+            text: I18n.tr("Show time zone", "clock widget option: show the local time zone abbreviation next to the time")
+            checked: root.page.value("clockShowTimezone")
+            onToggled: checked => root.page.set("clockShowTimezone", checked)
+        }
+
+        SettingsToggleRow {
             text: I18n.tr("Notification badge", "clock widget option: unread notification count next to the time")
             checked: root.page.value("clockNotificationBadge")
             onToggled: checked => root.page.set("clockNotificationBadge", checked)
