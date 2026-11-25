@@ -613,6 +613,16 @@ Singleton {
     property bool wellbeingEnabled: Spec.SPEC.wellbeingEnabled.def
     property int wellbeingDailyLimit: Spec.SPEC.wellbeingDailyLimit.def
     property var wellbeingAppLimits: Spec.SPEC.wellbeingAppLimits.def
+    property bool wellbeingBreaksEnabled: Spec.SPEC.wellbeingBreaksEnabled.def
+    property int wellbeingBreakInterval: Spec.SPEC.wellbeingBreakInterval.def
+    property int wellbeingBreakDuration: Spec.SPEC.wellbeingBreakDuration.def
+    property int wellbeingBreaksBeforeLong: Spec.SPEC.wellbeingBreaksBeforeLong.def
+    property int wellbeingLongBreakDuration: Spec.SPEC.wellbeingLongBreakDuration.def
+    property int wellbeingBreakWarning: Spec.SPEC.wellbeingBreakWarning.def
+    property bool wellbeingBreakSuppressFullscreen: Spec.SPEC.wellbeingBreakSuppressFullscreen.def
+    property bool wellbeingBreakSuppressMeetings: Spec.SPEC.wellbeingBreakSuppressMeetings.def
+    property bool wellbeingBreakPauseMedia: Spec.SPEC.wellbeingBreakPauseMedia.def
+    property bool wellbeingBreakSound: Spec.SPEC.wellbeingBreakSound.def
 
     function getDashTabs() {
         const stored = Array.isArray(dashTabs) ? dashTabs : [];

@@ -1063,6 +1063,36 @@ var LOCAL_SPEC = {
     wellbeingAppLimits: {
         def: {}
     },
+    wellbeingBreaksEnabled: {
+        def: false
+    },
+    wellbeingBreakInterval: {
+        def: 20
+    },
+    wellbeingBreakDuration: {
+        def: 20
+    },
+    wellbeingBreaksBeforeLong: {
+        def: 3
+    },
+    wellbeingLongBreakDuration: {
+        def: 5
+    },
+    wellbeingBreakWarning: {
+        def: 5
+    },
+    wellbeingBreakSuppressFullscreen: {
+        def: true
+    },
+    wellbeingBreakSuppressMeetings: {
+        def: true
+    },
+    wellbeingBreakPauseMedia: {
+        def: false
+    },
+    wellbeingBreakSound: {
+        def: true
+    },
     networkPreference: {
         def: "auto"
     },

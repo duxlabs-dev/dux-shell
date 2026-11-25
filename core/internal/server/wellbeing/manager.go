@@ -1,6 +1,7 @@
 package wellbeing
 
 import (
+	"fmt"
 	"maps"
 	"slices"
 	"time"
@@ -156,6 +157,64 @@ func (m *Manager) Clear() {
 		log.Warnf("Wellbeing: clear failed: %v", err)
 	}
 	m.publish(State{Today: m.summaryLocked(1)[0]})
+}
+
+func (m *Manager) LogBreak(outcome string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	now := m.now()
+	return m.dbUpdate(func(tx *bolt.Tx) error {
+		bucket := tx.Bucket(bucketBreaks)
+		counts := readBreaks(bucket, now.Format(dateLayout))
+		switch outcome {
+		case "completed":
+			counts.Completed++
+		case "skipped":
+			counts.Skipped++
+		case "snoozed":
+			counts.Snoozed++
+		default:
+			return fmt.Errorf("unknown break outcome: %s", outcome)
+		}
+		if err := writeBreaks(bucket, counts); err != nil {
+			return err
+		}
+		return pruneDays(bucket, now.AddDate(0, 0, -retentionDays).Format(dateLayout))
+	})
+}
+
+func (m *Manager) BreakSummary(days int) []BreakCounts {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	now := m.now()
+	days = max(1, days)
+	result := make([]BreakCounts, days)
+	err := m.dbView(func(tx *bolt.Tx) error {
+		bucket := tx.Bucket(bucketBreaks)
+		for i := range days {
+			result[i] = readBreaks(bucket, now.AddDate(0, 0, i-days+1).Format(dateLayout))
+		}
+		return nil
+	})
+	if err != nil {
+		log.Warnf("Wellbeing: break summary read failed: %v", err)
+	}
+	return result
+}
+
+func (m *Manager) ClearBreaks() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	err := m.dbUpdate(func(tx *bolt.Tx) error {
+		if err := tx.DeleteBucket(bucketBreaks); err != nil {
+			return err
+		}
+		_, err := tx.CreateBucket(bucketBreaks)
+		return err
+	})
+	if err != nil {
+		log.Warnf("Wellbeing: break stats clear failed: %v", err)
+	}
 }
 
 func (m *Manager) Flush() {
