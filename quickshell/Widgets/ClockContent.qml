@@ -153,7 +153,7 @@ Item {
                 visible: root.timezoneText.length > 0
                 text: root.timezoneText
                 color: Theme.surfaceVariantText
-                font.pixelSize: Theme.fontSizeSmall
+                font.pixelSize: Math.round(root.fontSize * 0.75)
             }
         }
     }
