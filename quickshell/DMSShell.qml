@@ -204,13 +204,13 @@ Item {
     Variants {
         model: ShellLayout.realScreens
 
-        delegate: Loader {
+        // LazyLoader stays unloaded when this binding throws; a Loader defaults to active and would map the surface
+        delegate: LazyLoader {
             id: breakOverlayLoader
             required property var modelData
             active: BreakReminderService.breakShown
-            asynchronous: false
 
-            sourceComponent: BreakOverlay {
+            BreakOverlay {
                 screen: breakOverlayLoader.modelData
             }
         }

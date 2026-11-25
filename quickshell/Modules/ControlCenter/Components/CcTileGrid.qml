@@ -2,7 +2,6 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import qs.Common
-import qs.DCommon.Common as DCommon
 import qs.Widgets
 import qs.Modules.ControlCenter
 import "../utils/sections.js" as Sections
@@ -66,7 +65,6 @@ DEditableGrid {
     property var runningToplevels: []
     // A member drag inside a quick-tiles group never reaches the grid's own interaction state.
     property bool memberDragging: false
-    readonly property DCommon.PressBounce bounce: pressBounce
     property var swallowPoint: null
 
     readonly property real gridHeight: layoutHeight
@@ -225,16 +223,6 @@ DEditableGrid {
         const widgets = savedWidgets.slice();
         shownIndices.forEach((saved, i) => widgets[saved] = items[i]);
         return widgets;
-    }
-
-    // Capped at one column, since tiles outsize buttons.
-    DCommon.PressBounce {
-        id: pressBounce
-
-        slots: root.slotLayout.slots
-        unit: root.cellWidth - CcMetrics.gridGap
-        minimumWidth: i => (tileRepeater.itemAt(i) as CcTileSlot)?.tileItem?.groupMinimumWidth ?? 0
-        animated: CcMetrics.animationsEnabled && root.live
     }
 
     Repeater {

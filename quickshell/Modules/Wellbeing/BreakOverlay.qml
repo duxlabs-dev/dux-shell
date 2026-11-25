@@ -13,8 +13,21 @@ PanelWindow {
 
     property int remainingSeconds: 0
 
+    // the surface holds the keyboard on every screen, so each way out hides it before it asks the service for anything
     function updateRemaining() {
         remainingSeconds = Math.max(0, Math.ceil((BreakReminderService.breakEndsAt - Date.now()) / 1000));
+        if (remainingSeconds <= 0)
+            visible = false;
+    }
+
+    function skip() {
+        visible = false;
+        BreakReminderService.skip();
+    }
+
+    function snooze() {
+        visible = false;
+        BreakReminderService.snooze();
     }
 
     color: Theme.surface
@@ -47,7 +60,7 @@ PanelWindow {
         id: keyScope
         anchors.fill: parent
         focus: true
-        Keys.onEscapePressed: BreakReminderService.skip()
+        Keys.onEscapePressed: root.skip()
 
         Column {
             anchors.centerIn: parent
@@ -84,14 +97,14 @@ PanelWindow {
                     variant: "tonal"
                     iconName: "snooze"
                     text: I18n.tr("Snooze", "break reminder action, delay the break by a few minutes")
-                    onClicked: BreakReminderService.snooze()
+                    onClicked: root.snooze()
                 }
 
                 DButton {
                     variant: "tonal"
                     iconName: "skip_next"
                     text: I18n.tr("Skip")
-                    onClicked: BreakReminderService.skip()
+                    onClicked: root.skip()
                 }
             }
         }

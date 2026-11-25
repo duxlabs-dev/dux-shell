@@ -143,9 +143,9 @@ Singleton {
             return;
         }
         endPreview();
+        breakEndsAt = Date.now() + breakSeconds * 1000;
         phase = "break";
         warningDismissed();
-        breakEndsAt = Date.now() + breakSeconds * 1000;
         wait(breakSeconds);
         playSound(true);
         pauseMedia();
@@ -206,8 +206,8 @@ Singleton {
     function previewBreak() {
         if (phase === "break")
             return;
-        previewing = true;
         breakEndsAt = Date.now() + breakSeconds * 1000;
+        previewing = true;
         previewTimer.interval = breakSeconds * 1000;
         previewTimer.restart();
     }

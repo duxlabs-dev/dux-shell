@@ -1070,6 +1070,7 @@ Singleton {
             "fastSpatial": [800, 2 * 0.6 * Math.sqrt(800)],
             "defaultSpatial": [380, 2 * 0.8 * Math.sqrt(380)],
             "slowSpatial": [200, 2 * 0.8 * Math.sqrt(200)],
+            "standardDefaultSpatial": [700, 2 * 0.9 * Math.sqrt(700)],
             "fastEffects": [3800, 2 * Math.sqrt(3800)],
             "defaultEffects": [1600, 2 * Math.sqrt(1600)],
             "slowEffects": [800, 2 * Math.sqrt(800)]
