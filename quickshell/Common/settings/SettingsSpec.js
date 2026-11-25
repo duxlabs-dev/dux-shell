@@ -551,9 +551,6 @@ var LOCAL_SPEC = {
         def: "expressive",
         onChange: "applyInterfaceStyle"
     },
-    buttonPressExpand: {
-        def: true
-    },
     screenCornersEnabled: {
         def: false
     },

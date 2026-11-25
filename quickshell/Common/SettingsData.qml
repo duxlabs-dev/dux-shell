@@ -342,7 +342,6 @@ Singleton {
     onMotionEffectChanged: saveSettings()
     property string density: Spec.SPEC.density.def
     property string interfaceStyle: Spec.SPEC.interfaceStyle.def
-    property bool buttonPressExpand: Spec.SPEC.buttonPressExpand.def
     property bool m3ElevationEnabled: Spec.SPEC.m3ElevationEnabled.def
     onM3ElevationEnabledChanged: saveSettings()
     property int m3ElevationIntensity: Spec.SPEC.m3ElevationIntensity.def

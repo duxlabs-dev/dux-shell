@@ -1179,7 +1179,6 @@ Singleton {
 
     readonly property bool classicStyle: typeof SettingsData !== "undefined" && SettingsData.interfaceStyle === "classic"
     readonly property bool shapeMorph: !classicStyle
-    readonly property bool buttonPressExpand: typeof SettingsData === "undefined" || SettingsData.buttonPressExpand
     readonly property bool pillControls: !classicStyle
 
     function buttonRadius(width, height, sizeHeight, pressed, round) {

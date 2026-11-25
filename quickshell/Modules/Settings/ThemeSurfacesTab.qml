@@ -460,18 +460,6 @@ Column {
 
             SettingsToggleCard {
                 tab: "theme"
-                tags: ["expressive", "press", "expand", "widen", "grow", "bounce", "buttons", "tiles", "control", "center"]
-                settingKey: "buttonPressExpand"
-                visible: SettingsData.interfaceStyle !== "classic"
-                iconName: "touch_app"
-                title: I18n.tr("Expressive button press")
-                description: I18n.tr("Buttons or tiles expand their neighbors")
-                checked: SettingsData.buttonPressExpand
-                onToggled: checked => SettingsData.set("buttonPressExpand", checked)
-            }
-
-            SettingsToggleCard {
-                tab: "theme"
                 tags: ["scroll", "shadow", "shadows", "fade", "edge", "edges", "list", "page", "launcher"]
                 settingKey: "scrollShadowsEnabled"
                 iconName: "tonality"

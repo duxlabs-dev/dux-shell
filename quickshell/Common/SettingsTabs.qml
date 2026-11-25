@@ -207,7 +207,7 @@ Singleton {
                     "titleFrom": "selectedWidgetTitle",
                     "text": I18n.tr("Widget settings"),
                     "icon": "tune",
-                    "tabIndex": 87,
+                    "tabIndex": 91,
                     "hint": I18n.tr("Options of one widget instance")
                 }
             ]
