@@ -1014,6 +1014,8 @@ Singleton {
             if (!folder || (folder.appearance !== "light" && folder.appearance !== "dark"))
                 return;
             const targetLight = folder.appearance === "light";
+            if (typeof SettingsData !== "undefined" && SettingsData.matugenSmartMode && typeof Theme !== "undefined" && Theme.currentTheme === Theme.dynamic)
+                return;
             if (isLightMode !== targetLight && typeof Theme !== "undefined")
                 Theme.setLightMode(targetLight);
         });
