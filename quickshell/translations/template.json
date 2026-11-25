@@ -14,6 +14,20 @@
     "comment": "dash card name followed by its copy number, e.g. Clock 2"
   },
   {
+    "term": "%1 (%2 %3)",
+    "translation": "",
+    "context": "%1 (%2 %3)",
+    "reference": "",
+    "comment": "duplicate bar widget label with section and number"
+  },
+  {
+    "term": "%1 (%2)",
+    "translation": "",
+    "context": "%1 (%2)",
+    "reference": "",
+    "comment": "duplicate bar widget label with section"
+  },
+  {
     "term": "%1 (+%2 more)",
     "translation": "",
     "context": "%1 (+%2 more)",
@@ -679,6 +693,13 @@
     "comment": "plural, %1 is a count, %2 current page, %3 total pages"
   },
   {
+    "term": "%1 weeks ago",
+    "translation": "",
+    "context": "%1 weeks ago",
+    "reference": "",
+    "comment": "screen time chart title, %1 is a number of weeks, 2 or more"
+  },
+  {
     "term": "%1 will be downloaded and installed via %2.",
     "translation": "",
     "context": "%1 will be downloaded and installed via %2.",
@@ -833,6 +854,13 @@
     "comment": ""
   },
   {
+    "term": "12-sided cookie",
+    "translation": "",
+    "context": "12-sided cookie",
+    "reference": "",
+    "comment": "avatar shape"
+  },
+  {
     "term": "2.4 GHz",
     "translation": "",
     "context": "2.4 GHz",
@@ -845,6 +873,20 @@
     "context": "3rd party",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "4-leaf clover",
+    "translation": "",
+    "context": "4-leaf clover",
+    "reference": "",
+    "comment": "avatar shape"
+  },
+  {
+    "term": "4-sided cookie",
+    "translation": "",
+    "context": "4-sided cookie",
+    "reference": "",
+    "comment": "avatar shape"
   },
   {
     "term": "5 GHz",
@@ -866,6 +908,20 @@
     "context": "6 GHz",
     "reference": "",
     "comment": "WiFi band option"
+  },
+  {
+    "term": "7-sided cookie",
+    "translation": "",
+    "context": "7-sided cookie",
+    "reference": "",
+    "comment": "avatar shape"
+  },
+  {
+    "term": "8-leaf clover",
+    "translation": "",
+    "context": "8-leaf clover",
+    "reference": "",
+    "comment": "avatar shape"
   },
   {
     "term": "A custom seed color overrides this",
@@ -1022,6 +1078,13 @@
     "comment": ""
   },
   {
+    "term": "Accessibility",
+    "translation": "",
+    "context": "Accessibility",
+    "reference": "",
+    "comment": "settings page name for accessibility options"
+  },
+  {
     "term": "Accounts",
     "translation": "",
     "context": "Accounts",
@@ -1096,7 +1159,7 @@
     "translation": "",
     "context": "Active",
     "reference": "",
-    "comment": "Active | active state label"
+    "comment": "Active | active state label | config profile picker: badge on the currently applied profile"
   },
   {
     "term": "Active VPN",
@@ -1215,7 +1278,7 @@
     "translation": "",
     "context": "Add",
     "reference": "",
-    "comment": "add a wallpaper folder button | verb, button that adds a new item to a list"
+    "comment": "verb, button that adds a new item to a list"
   },
   {
     "term": "Add \"%1\" to the %2 group?",
@@ -1302,6 +1365,13 @@
     "comment": "settings row that adds an EFI boot entry to the power menu"
   },
   {
+    "term": "Add folder",
+    "translation": "",
+    "context": "Add folder",
+    "reference": "",
+    "comment": "wallpaper folders page, row that adds a folder to the list"
+  },
+  {
     "term": "Add input method",
     "translation": "",
     "context": "Add input method",
@@ -1382,6 +1452,13 @@
     "term": "Add to autostart",
     "translation": "",
     "context": "Add to autostart",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Add to folder",
+    "translation": "",
+    "context": "Add to folder",
     "reference": "",
     "comment": ""
   },
@@ -1568,6 +1645,13 @@
     "comment": "noun, battery settings card title for low battery alerts"
   },
   {
+    "term": "Alerts & suppression",
+    "translation": "",
+    "context": "Alerts & suppression",
+    "reference": "",
+    "comment": "settings page title, break reminder sounds and when breaks are held back"
+  },
+  {
     "term": "Alignment",
     "translation": "",
     "context": "Alignment",
@@ -1706,6 +1790,13 @@
     "context": "Allowed cores",
     "reference": "",
     "comment": "CPU affinity list"
+  },
+  {
+    "term": "Already added",
+    "translation": "",
+    "context": "Already added",
+    "reference": "",
+    "comment": "control center widget list: this widget is already on the panel"
   },
   {
     "term": "Already on that session",
@@ -1974,11 +2065,25 @@
     "comment": ""
   },
   {
+    "term": "App color",
+    "translation": "",
+    "context": "App color",
+    "reference": "",
+    "comment": "Dux Icons setting, how the tile color is picked from an app's icon | Dux Icons tile color option, each tile takes a color from its app's icon"
+  },
+  {
     "term": "App customizations",
     "translation": "",
     "context": "App customizations",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "App icon style",
+    "translation": "",
+    "context": "App icon style",
+    "reference": "",
+    "comment": "Dux Icons setting, how app icons are colored"
   },
   {
     "term": "App launcher",
@@ -2184,6 +2289,13 @@
     "comment": ""
   },
   {
+    "term": "Arch",
+    "translation": "",
+    "context": "Arch",
+    "reference": "",
+    "comment": "avatar shape"
+  },
+  {
     "term": "Archive",
     "translation": "",
     "context": "Archive",
@@ -2301,6 +2413,13 @@
     "context": "Audio",
     "reference": "",
     "comment": "settings page name"
+  },
+  {
+    "term": "Audio & playback",
+    "translation": "",
+    "context": "Audio & playback",
+    "reference": "",
+    "comment": "settings card title, sound and media behavior of break reminders"
   },
   {
     "term": "Audio Codec",
@@ -2891,6 +3010,13 @@
     "comment": ""
   },
   {
+    "term": "Balance",
+    "translation": "",
+    "context": "Balance",
+    "reference": "",
+    "comment": "Audio settings: channel balance slider"
+  },
+  {
     "term": "Balance power and performance",
     "translation": "",
     "context": "Balance power and performance",
@@ -3063,7 +3189,7 @@
     "translation": "",
     "context": "Behavior",
     "reference": "",
-    "comment": "island settings: behavior card title"
+    "comment": "island settings: behavior card title | settings card title: config profile picker options"
   },
   {
     "term": "Bento style only",
@@ -3071,6 +3197,13 @@
     "context": "Bento style only",
     "reference": "",
     "comment": "Hint under a media player option that only affects the Bento player style"
+  },
+  {
+    "term": "Best match",
+    "translation": "",
+    "context": "Best match",
+    "reference": "",
+    "comment": "Dux Icons app color source option, picks the color the way the wallpaper's theme color is picked"
   },
   {
     "term": "Bind keys to region, screen, window and scroll captures",
@@ -3084,7 +3217,7 @@
     "translation": "",
     "context": "Bind the %1 IPC action in your compositor config.",
     "reference": "",
-    "comment": "launcher shortcut hint, %1 is the ipc target name"
+    "comment": "settings shortcut row hint, %1 is the ipc target name"
   },
   {
     "term": "Binds a mouse button, such as mouse:272",
@@ -3273,7 +3406,7 @@
     "translation": "",
     "context": "Bold",
     "reference": "",
-    "comment": "font style"
+    "comment": "font weight"
   },
   {
     "term": "Bold Italic",
@@ -3395,6 +3528,41 @@
     "comment": "system monitor bars style option"
   },
   {
+    "term": "Break history and previews",
+    "translation": "",
+    "context": "Break history and previews",
+    "reference": "",
+    "comment": "settings hint for the break statistics page"
+  },
+  {
+    "term": "Break plan",
+    "translation": "",
+    "context": "Break plan",
+    "reference": "",
+    "comment": "break reminder setting, a preset for the break schedule"
+  },
+  {
+    "term": "Break plans and schedule",
+    "translation": "",
+    "context": "Break plans and schedule",
+    "reference": "",
+    "comment": "settings hint for the break reminders page"
+  },
+  {
+    "term": "Break reminders",
+    "translation": "",
+    "context": "Break reminders",
+    "reference": "",
+    "comment": "settings page title and main toggle, reminders to rest from the screen"
+  },
+  {
+    "term": "Break schedule",
+    "translation": "",
+    "context": "Break schedule",
+    "reference": "",
+    "comment": "settings card title, timing of break reminders"
+  },
+  {
     "term": "Bright",
     "translation": "",
     "context": "Bright",
@@ -3421,6 +3589,13 @@
     "context": "Brightness control not available",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Brightness step",
+    "translation": "",
+    "context": "Brightness step",
+    "reference": "",
+    "comment": "bar scroll wheel brightness step slider"
   },
   {
     "term": "Brightness style",
@@ -3819,7 +3994,7 @@
     "translation": "",
     "context": "Carousel",
     "reference": "",
-    "comment": "wallpaper tab layout option"
+    "comment": "config profile picker view | wallpaper tab layout option"
   },
   {
     "term": "Cast target",
@@ -3913,11 +4088,32 @@
     "comment": "media scroll wheel option"
   },
   {
+    "term": "Change shape",
+    "translation": "",
+    "context": "Change shape",
+    "reference": "",
+    "comment": "control center user avatar shape option"
+  },
+  {
     "term": "Change where an activity sits, what it shows when collapsed and what a click opens",
     "translation": "",
     "context": "Change where an activity sits, what it shows when collapsed and what a click opens",
     "reference": "",
     "comment": "island activity settings: per-source overrides description"
+  },
+  {
+    "term": "Changes display brightness",
+    "translation": "",
+    "context": "Changes display brightness",
+    "reference": "",
+    "comment": "bar widget scroll action summary"
+  },
+  {
+    "term": "Changes player volume",
+    "translation": "",
+    "context": "Changes player volume",
+    "reference": "",
+    "comment": "bar widget scroll action summary"
   },
   {
     "term": "Changes save to %1",
@@ -3927,11 +4123,46 @@
     "comment": "hint under the keybind and window rule editors, %1 is the config file the changes are written to"
   },
   {
+    "term": "Changes song",
+    "translation": "",
+    "context": "Changes song",
+    "reference": "",
+    "comment": "bar widget scroll action summary"
+  },
+  {
+    "term": "Changes volume",
+    "translation": "",
+    "context": "Changes volume",
+    "reference": "",
+    "comment": "bar widget scroll action summary"
+  },
+  {
     "term": "Changes volume and audio devices",
     "translation": "",
     "context": "Changes volume and audio devices",
     "reference": "",
     "comment": "plugin permission"
+  },
+  {
+    "term": "Changes volume, or brightness over its icon",
+    "translation": "",
+    "context": "Changes volume, or brightness over its icon",
+    "reference": "",
+    "comment": "bar widget scroll action summary"
+  },
+  {
+    "term": "Changes volume, or microphone and brightness over their icons",
+    "translation": "",
+    "context": "Changes volume, or microphone and brightness over their icons",
+    "reference": "",
+    "comment": "bar widget scroll action summary"
+  },
+  {
+    "term": "Changes volume, or microphone over its icon",
+    "translation": "",
+    "context": "Changes volume, or microphone over its icon",
+    "reference": "",
+    "comment": "bar widget scroll action summary"
   },
   {
     "term": "Channel",
@@ -4211,7 +4442,7 @@
     "translation": "",
     "context": "Classic",
     "reference": "",
-    "comment": "interface style option with one corner radius on controls and no shape change on press | system monitor tile style option"
+    "comment": "interface style option with one corner radius on controls and no shape change on press"
   },
   {
     "term": "Clear",
@@ -4459,6 +4690,13 @@
     "comment": "island settings: pinned clock row in the home layout"
   },
   {
+    "term": "Clock",
+    "translation": "",
+    "context": "CPU clock speed",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Clock format, calendar, weather location",
     "translation": "",
     "context": "Clock format, calendar, weather location",
@@ -4589,7 +4827,7 @@
     "translation": "",
     "context": "Color",
     "reference": "",
-    "comment": "noun, settings label for choosing a border, shadow or frame color"
+    "comment": "Dux Icons app icon style option, each app keeps its own colors | Dux Icons files and folders option, colored folders and a color for each file type, like Papirus | noun, settings label for choosing a border, shadow or frame color"
   },
   {
     "term": "Color %1 copied",
@@ -4953,7 +5191,7 @@
     "translation": "",
     "context": "Confirm Delete",
     "reference": "",
-    "comment": "remove wallpaper folder tooltip"
+    "comment": ""
   },
   {
     "term": "Confirm Display Changes",
@@ -5562,7 +5800,7 @@
     "translation": "",
     "context": "Current Items",
     "reference": "",
-    "comment": ""
+    "comment": "plugin list setting: header above the entries already added"
   },
   {
     "term": "Current Theme: %1",
@@ -5800,7 +6038,14 @@
     "translation": "",
     "context": "Cut",
     "reference": "",
-    "comment": ""
+    "comment": "verb, clipboard cut action"
+  },
+  {
+    "term": "Cycles open windows",
+    "translation": "",
+    "context": "Cycles open windows",
+    "reference": "",
+    "comment": "bar widget scroll action summary"
   },
   {
     "term": "DDC/CI monitor",
@@ -5936,6 +6181,13 @@
     "comment": "screen time limit per day, total or for one app"
   },
   {
+    "term": "Daily limit, app limits, history",
+    "translation": "",
+    "context": "Daily limit, app limits, history",
+    "reference": "",
+    "comment": "settings hint for the screen time limits page"
+  },
+  {
     "term": "Daily screen time limit reached",
     "translation": "",
     "context": "Daily screen time limit reached",
@@ -5961,7 +6213,7 @@
     "translation": "",
     "context": "Dark",
     "reference": "",
-    "comment": "adjective, wallpaper thumbnail label for dark mode"
+    "comment": "adjective, dark color mode, opposite of light"
   },
   {
     "term": "Dark mode",
@@ -6031,7 +6283,7 @@
     "translation": "",
     "context": "Dashboard",
     "reference": "",
-    "comment": "island activity settings | settings page name for the dank dash popout"
+    "comment": "config profile picker view: opens in the dashboard | island activity settings | settings page name for the dank dash popout"
   },
   {
     "term": "Dashboard opens to",
@@ -6101,7 +6353,7 @@
     "translation": "",
     "context": "Day",
     "reference": "",
-    "comment": "date format legend, calendar day | screen time range filter"
+    "comment": "date format legend, calendar day"
   },
   {
     "term": "Day date",
@@ -6157,7 +6409,7 @@
     "translation": "",
     "context": "Decrease",
     "reference": "",
-    "comment": "verb, minus button next to a settings slider"
+    "comment": "Accessible name for a button that decreases a numeric value | verb, minus button next to a settings slider"
   },
   {
     "term": "Decrease font size",
@@ -6402,7 +6654,14 @@
     "translation": "",
     "context": "Desktop",
     "reference": "",
-    "comment": "computer chassis type | plugin browser type filter chip, desktop widget plugins | system info section: compositor, themes, fonts"
+    "comment": "plugin browser type filter chip, desktop widget plugins | system info section: compositor, themes, fonts"
+  },
+  {
+    "term": "Desktop",
+    "translation": "",
+    "context": "computer chassis type",
+    "reference": "",
+    "comment": ""
   },
   {
     "term": "Desktop Entry",
@@ -6822,7 +7081,7 @@
     "translation": "",
     "context": "Display Control",
     "reference": "",
-    "comment": "greeter feature card title"
+    "comment": "greeter feature card title, noun: controlling the displays"
   },
   {
     "term": "Display Profiles",
@@ -6934,7 +7193,7 @@
     "translation": "",
     "context": "Displays",
     "reference": "",
-    "comment": "greeter settings link"
+    "comment": "greeter settings link | noun, physical monitors"
   },
   {
     "term": "Displays in \"%1\"",
@@ -7116,7 +7375,14 @@
     "translation": "",
     "context": "Down",
     "reference": "",
-    "comment": "Hyprland scrolling layout direction | network direction"
+    "comment": "network direction"
+  },
+  {
+    "term": "Down",
+    "translation": "",
+    "context": "Hyprland scrolling layout direction",
+    "reference": "",
+    "comment": ""
   },
   {
     "term": "Download",
@@ -7329,6 +7595,13 @@
     "comment": "link text"
   },
   {
+    "term": "Dux app tone",
+    "translation": "",
+    "context": "Dux app tone",
+    "reference": "",
+    "comment": "Dux Icons setting, the shade of Dux Labs app art on its tile"
+  },
+  {
     "term": "Dwindle",
     "translation": "",
     "context": "Dwindle",
@@ -7404,6 +7677,13 @@
     "context": "Edge",
     "reference": "",
     "comment": "noun, touchpad scroll method option, scroll along the pad edge"
+  },
+  {
+    "term": "Edge Match",
+    "translation": "",
+    "context": "Edge Match",
+    "reference": "",
+    "comment": "Dux Icons tile color option, each tile takes the color of the app icon's own background, and the icon grows to fill it without touching the edge"
   },
   {
     "term": "Edge around popups and modals",
@@ -8050,6 +8330,13 @@
     "comment": "power profile description"
   },
   {
+    "term": "Extend to screen edge",
+    "translation": "",
+    "context": "Extend to screen edge",
+    "reference": "",
+    "comment": "bar scroll wheel toggle"
+  },
+  {
     "term": "Extensible architecture",
     "translation": "",
     "context": "Extensible architecture",
@@ -8281,32 +8568,11 @@
     "comment": "toast title when disconnecting a network connection fails"
   },
   {
-    "term": "Failed to disconnect VPN",
-    "translation": "",
-    "context": "Failed to disconnect VPN",
-    "reference": "",
-    "comment": ""
-  },
-  {
-    "term": "Failed to disconnect VPNs",
-    "translation": "",
-    "context": "Failed to disconnect VPNs",
-    "reference": "",
-    "comment": ""
-  },
-  {
-    "term": "Failed to disconnect Wi-Fi",
-    "translation": "",
-    "context": "Failed to disconnect Wi-Fi",
-    "reference": "",
-    "comment": ""
-  },
-  {
     "term": "Failed to duplicate %1",
     "translation": "",
     "context": "Failed to duplicate %1",
     "reference": "",
-    "comment": "toast title, %1 is a network connection name"
+    "comment": "toast title, %1 is a dash card name | toast title, %1 is a network connection name"
   },
   {
     "term": "Failed to empty trash",
@@ -8764,13 +9030,6 @@
     "comment": ""
   },
   {
-    "term": "Failed to update %1: %2",
-    "translation": "",
-    "context": "Failed to update %1: %2",
-    "reference": "",
-    "comment": "plugin update error, %1 is the plugin name, %2 is the error message"
-  },
-  {
     "term": "Failed to update VPN",
     "translation": "",
     "context": "Failed to update VPN",
@@ -8930,6 +9189,13 @@
     "context": "Files",
     "reference": "",
     "comment": "launcher file search section title and filter option"
+  },
+  {
+    "term": "Files & folders",
+    "translation": "",
+    "context": "Files & folders",
+    "reference": "",
+    "comment": "Dux Icons setting, how file and folder icons are drawn"
   },
   {
     "term": "Filesystem usage monitoring",
@@ -9139,7 +9405,14 @@
     "translation": "",
     "context": "Flat",
     "reference": "",
-    "comment": "adjective, bar widget style option | adjective, pointer acceleration profile option"
+    "comment": "adjective, bar widget style option"
+  },
+  {
+    "term": "Flat",
+    "translation": "",
+    "context": "adjective, pointer acceleration profile option, constant speed",
+    "reference": "",
+    "comment": ""
   },
   {
     "term": "Flat turns acceleration off. Adaptive speeds the pointer up as you move faster.",
@@ -9181,7 +9454,7 @@
     "translation": "",
     "context": "Float",
     "reference": "",
-    "comment": ""
+    "comment": "verb, window rule action to open the window floating"
   },
   {
     "term": "Float X",
@@ -9209,7 +9482,7 @@
     "translation": "",
     "context": "Floating",
     "reference": "",
-    "comment": "adjective, window rule match condition for floating windows | bar summary: island can be dragged anywhere on the display | island settings: island can be dragged anywhere on the display"
+    "comment": "adjective, window rule match condition for floating windows | bar placement option: gap between the bar and the screen edge | bar summary: island can be dragged anywhere on the display | island settings: island can be dragged anywhere on the display"
   },
   {
     "term": "Floating Position",
@@ -9251,14 +9524,21 @@
     "translation": "",
     "context": "Flush",
     "reference": "",
-    "comment": "bar corner style option"
+    "comment": "bar placement option: bar touches the screen edge"
   },
   {
     "term": "Focus",
     "translation": "",
     "context": "Focus",
     "reference": "",
-    "comment": "noun, window rule editor group of keyboard focus options | verb, window rule action to focus the window when it opens"
+    "comment": "verb, window rule action to focus the window when it opens"
+  },
+  {
+    "term": "Focus",
+    "translation": "",
+    "context": "noun, window rule editor group of keyboard focus options",
+    "reference": "",
+    "comment": ""
   },
   {
     "term": "Focus at startup",
@@ -9324,6 +9604,13 @@
     "comment": "adjective, window rule match condition for the focused window"
   },
   {
+    "term": "Focused",
+    "translation": "",
+    "context": "break plan option, long stretches of work between breaks",
+    "reference": "",
+    "comment": ""
+  },
+  {
     "term": "Focused border",
     "translation": "",
     "context": "Focused border",
@@ -9370,7 +9657,7 @@
     "translation": "",
     "context": "Folder",
     "reference": "",
-    "comment": "button, picks a folder to install a cursor theme from | button, picks a folder to install an icon theme from | noun, launcher result type label for a directory | noun, screenshot settings label for the save directory | wallpaper folder settings card title | wallpaper folder settings tab"
+    "comment": "button, picks a folder to install a cursor theme from | button, picks a folder to install an icon theme from | noun, launcher result type label for a directory | noun, screenshot settings label for the save directory | wallpaper folder settings tab"
   },
   {
     "term": "Folder already added",
@@ -9378,13 +9665,6 @@
     "context": "Folder already added",
     "reference": "",
     "comment": "toast when adding a wallpaper folder that is already listed"
-  },
-  {
-    "term": "Folder match theme colors",
-    "translation": "",
-    "context": "Folder match theme colors",
-    "reference": "",
-    "comment": "icon theme toggle, recolors the picked icon pack's folders with the theme colors"
   },
   {
     "term": "Folder, interval, daily time",
@@ -9643,7 +9923,7 @@
     "translation": "",
     "context": "Frame",
     "reference": "",
-    "comment": ""
+    "comment": "noun, bar mode that draws a border around the screen edges"
   },
   {
     "term": "Frame xray",
@@ -9860,7 +10140,7 @@
     "translation": "",
     "context": "Gamma",
     "reference": "",
-    "comment": ""
+    "comment": "noun, display gamma correction slider"
   },
   {
     "term": "Gamma %1",
@@ -9945,6 +10225,13 @@
     "context": "Gaussian",
     "reference": "",
     "comment": "magnification animation profile"
+  },
+  {
+    "term": "Gem",
+    "translation": "",
+    "context": "Gem",
+    "reference": "",
+    "comment": "avatar shape"
   },
   {
     "term": "General",
@@ -10161,7 +10448,7 @@
     "translation": "",
     "context": "Grid",
     "reference": "",
-    "comment": "noun, grid view mode and layout option"
+    "comment": "config profile picker view | noun, grid view mode and layout option"
   },
   {
     "term": "Grid columns",
@@ -10265,13 +10552,6 @@
     "term": "HDR tone mapping",
     "translation": "",
     "context": "HDR tone mapping",
-    "reference": "",
-    "comment": ""
-  },
-  {
-    "term": "HTML copied to clipboard",
-    "translation": "",
-    "context": "HTML copied to clipboard",
     "reference": "",
     "comment": ""
   },
@@ -10406,7 +10686,7 @@
     "translation": "",
     "context": "Hidden",
     "reference": "",
-    "comment": "adjective, wifi network with hidden name"
+    "comment": "adjective, wifi network with hidden name | wallpaper hidden because it doesn't fit the display"
   },
   {
     "term": "Hidden (%1)",
@@ -10528,11 +10808,25 @@
     "comment": "lock screen widget visibility"
   },
   {
+    "term": "Hide wallpapers that don't fit the display",
+    "translation": "",
+    "context": "Hide wallpapers that don't fit the display",
+    "reference": "",
+    "comment": "wallpaper settings toggle: hide wallpapers whose shape or resolution doesn't suit the display"
+  },
+  {
     "term": "Hide when idle",
     "translation": "",
     "context": "Hide when idle",
     "reference": "",
     "comment": "network speed widget option, hides the widget while traffic is low"
+  },
+  {
+    "term": "Hide when no notifications",
+    "translation": "",
+    "context": "Hide when no notifications",
+    "reference": "",
+    "comment": "notification center bar widget option, hides the widget while there are no notifications"
   },
   {
     "term": "Hide when no updates",
@@ -10717,6 +11011,13 @@
     "comment": "island settings: free island orientation | system monitor bars orientation"
   },
   {
+    "term": "Horizontal (Shift + scroll)",
+    "translation": "",
+    "context": "Horizontal (Shift + scroll)",
+    "reference": "",
+    "comment": "bar scroll wheel horizontal axis label"
+  },
+  {
     "term": "Horizontal offset",
     "translation": "",
     "context": "Horizontal offset",
@@ -10808,6 +11109,13 @@
     "comment": "adjective, hourly weather forecast widget title"
   },
   {
+    "term": "Hours",
+    "translation": "",
+    "context": "Hours",
+    "reference": "",
+    "comment": "duration picker column label"
+  },
+  {
     "term": "Hover popouts",
     "translation": "",
     "context": "Hover popouts",
@@ -10834,6 +11142,13 @@
     "context": "How long a new activity stays open before the island returns to its usual content",
     "reference": "",
     "comment": "island activity settings"
+  },
+  {
+    "term": "How long before a break the heads-up appears",
+    "translation": "",
+    "context": "How long before a break the heads-up appears",
+    "reference": "",
+    "comment": "pre-break warning setting description"
   },
   {
     "term": "How long the title stays after a track change",
@@ -11015,7 +11330,7 @@
     "translation": "",
     "context": "Icon shape",
     "reference": "",
-    "comment": "Dux Icons setting, the outline of the badge behind every icon"
+    "comment": "Dux Icons setting, the outline of the tile behind every icon"
   },
   {
     "term": "Icon size",
@@ -11071,12 +11386,19 @@
     "translation": "",
     "context": "Idle",
     "reference": "",
-    "comment": "device state | noun, settings card title for idle timeout settings | process state"
+    "comment": "device state | process state"
   },
   {
     "term": "Idle",
     "translation": "",
     "context": "adjective, printer state",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Idle",
+    "translation": "",
+    "context": "noun, settings card title for idle timeout settings",
     "reference": "",
     "comment": ""
   },
@@ -11198,13 +11520,6 @@
     "context": "Image",
     "reference": "",
     "comment": "config profile thumbnail | noun, clipboard entry type and filter option"
-  },
-  {
-    "term": "Image copied to clipboard",
-    "translation": "",
-    "context": "Image copied to clipboard",
-    "reference": "",
-    "comment": ""
   },
   {
     "term": "Image viewer",
@@ -11330,7 +11645,7 @@
     "translation": "",
     "context": "Increase",
     "reference": "",
-    "comment": "verb, plus button next to a settings slider"
+    "comment": "Accessible name for a button that increases a numeric value | verb, plus button next to a settings slider"
   },
   {
     "term": "Increase font size",
@@ -11442,7 +11757,7 @@
     "translation": "",
     "context": "Initialized",
     "reference": "",
-    "comment": ""
+    "comment": "adjective, window rule match for windows that finished mapping"
   },
   {
     "term": "Injected palettes",
@@ -11743,7 +12058,7 @@
     "translation": "",
     "context": "Interlock Open",
     "reference": "",
-    "comment": ""
+    "comment": "printer state reason, a safety interlock switch is open"
   },
   {
     "term": "Internet",
@@ -11820,7 +12135,7 @@
     "translation": "",
     "context": "Island",
     "reference": "",
-    "comment": ""
+    "comment": "config profile picker view: opens in the island"
   },
   {
     "term": "Island activities",
@@ -12264,6 +12579,13 @@
     "comment": "shared shortcuts option, shortcuts open on the island last used on this display"
   },
   {
+    "term": "Last week",
+    "translation": "",
+    "context": "Last week",
+    "reference": "",
+    "comment": "screen time chart title, the seven days before this week"
+  },
+  {
     "term": "Latitude",
     "translation": "",
     "context": "Latitude",
@@ -12499,14 +12821,28 @@
     "translation": "",
     "context": "Library",
     "reference": "",
-    "comment": ""
+    "comment": "noun, software library version row"
   },
   {
     "term": "Light",
     "translation": "",
     "context": "Light",
     "reference": "",
-    "comment": "adjective, wallpaper thumbnail label for light mode | font style"
+    "comment": "adjective, light color mode, opposite of dark"
+  },
+  {
+    "term": "Light",
+    "translation": "",
+    "context": "break plan option, short and frequent breaks",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Light",
+    "translation": "",
+    "context": "font weight, thinner than regular",
+    "reference": "",
+    "comment": ""
   },
   {
     "term": "Light Rain",
@@ -12584,13 +12920,6 @@
     "context": "Like your plugins",
     "reference": "",
     "comment": "plugin recommendation reason, similar to installed plugins"
-  },
-  {
-    "term": "Limit",
-    "translation": "",
-    "context": "Limit",
-    "reference": "",
-    "comment": "label on the daily screen time limit line of a chart"
   },
   {
     "term": "Limit set to %1%",
@@ -12969,6 +13298,27 @@
     "context": "Long Text",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Long break",
+    "translation": "",
+    "context": "Long break",
+    "reference": "",
+    "comment": "break reminder overlay title"
+  },
+  {
+    "term": "Long break duration",
+    "translation": "",
+    "context": "Long break duration",
+    "reference": "",
+    "comment": "break reminder setting"
+  },
+  {
+    "term": "Long break in %1",
+    "translation": "",
+    "context": "Long break in %1",
+    "reference": "",
+    "comment": "break reminder heads-up, %1 is a duration like 5 seconds"
   },
   {
     "term": "Long press",
@@ -13384,6 +13734,13 @@
     "comment": ""
   },
   {
+    "term": "Match folder colors to theme",
+    "translation": "",
+    "context": "Match folder colors to theme",
+    "reference": "",
+    "comment": "icon theme toggle, recolors the picked icon pack's folders with the theme colors"
+  },
+  {
     "term": "Match type",
     "translation": "",
     "context": "Match type",
@@ -13580,6 +13937,13 @@
     "comment": "Hyprland window fullscreen state 3"
   },
   {
+    "term": "Maximum",
+    "translation": "",
+    "context": "Maximum",
+    "reference": "",
+    "comment": "process priority preset"
+  },
+  {
     "term": "Maximum entries",
     "translation": "",
     "context": "Maximum entries",
@@ -13640,28 +14004,28 @@
     "translation": "",
     "context": "Media Empty",
     "reference": "",
-    "comment": ""
+    "comment": "printer state reason, media is the paper or other material printed on"
   },
   {
     "term": "Media Jam",
     "translation": "",
     "context": "Media Jam",
     "reference": "",
-    "comment": ""
+    "comment": "printer state reason, media is the paper or other material printed on"
   },
   {
     "term": "Media Low",
     "translation": "",
     "context": "Media Low",
     "reference": "",
-    "comment": ""
+    "comment": "printer state reason, media is the paper or other material printed on"
   },
   {
     "term": "Media Needed",
     "translation": "",
     "context": "Media Needed",
     "reference": "",
-    "comment": ""
+    "comment": "printer state reason, media is the paper or other material printed on"
   },
   {
     "term": "Media errors",
@@ -13696,7 +14060,7 @@
     "translation": "",
     "context": "Medium",
     "reference": "",
-    "comment": "animation duration option | bar widget size option | font style"
+    "comment": "animation duration option | bar widget size option | font weight"
   },
   {
     "term": "Memory",
@@ -13895,6 +14259,13 @@
     "comment": "workspace switcher slider label"
   },
   {
+    "term": "Minutes",
+    "translation": "",
+    "context": "Minutes",
+    "reference": "",
+    "comment": "duration picker column label"
+  },
+  {
     "term": "Mirror display",
     "translation": "",
     "context": "Mirror display",
@@ -14018,7 +14389,7 @@
     "translation": "",
     "context": "Monochrome",
     "reference": "",
-    "comment": "matugen color scheme option"
+    "comment": "Dux Icons app icon style option, every app icon is drawn in near-gray tones | matugen color scheme option"
   },
   {
     "term": "Monocle",
@@ -14046,7 +14417,7 @@
     "translation": "",
     "context": "Month",
     "reference": "",
-    "comment": "date format legend, calendar month | screen time range filter"
+    "comment": "date format legend, calendar month"
   },
   {
     "term": "Month date",
@@ -14081,7 +14452,7 @@
     "translation": "",
     "context": "More",
     "reference": "",
-    "comment": ""
+    "comment": "tooltip on a button that opens more options"
   },
   {
     "term": "More in %1",
@@ -14133,6 +14504,13 @@
     "comment": "matugen source color option"
   },
   {
+    "term": "Most common",
+    "translation": "",
+    "context": "Most common",
+    "reference": "",
+    "comment": "Dux Icons app color source option, picks the color that covers most of the icon"
+  },
+  {
     "term": "Most used apps",
     "translation": "",
     "context": "Most used apps",
@@ -14152,6 +14530,13 @@
     "context": "Motion blur",
     "reference": "",
     "comment": "Hyprland toggle, blur windows while they move or resize"
+  },
+  {
+    "term": "Motion, density, scrollbars",
+    "translation": "",
+    "context": "Motion, density, scrollbars",
+    "reference": "",
+    "comment": "settings sidebar hint for the accessibility page"
   },
   {
     "term": "Mount",
@@ -14320,6 +14705,13 @@
     "context": "Muted",
     "reference": "",
     "comment": "audio status | island system face: muted value label"
+  },
+  {
+    "term": "Muted",
+    "translation": "",
+    "context": "Dux Icons tile style option, a near-gray tint of the app's color",
+    "reference": "",
+    "comment": ""
   },
   {
     "term": "Muted apps",
@@ -15302,6 +15694,13 @@
     "comment": ""
   },
   {
+    "term": "No room left on the dashboard",
+    "translation": "",
+    "context": "No room left on the dashboard",
+    "reference": "",
+    "comment": "dash settings: why a card can't be duplicated"
+  },
+  {
     "term": "No round",
     "translation": "",
     "context": "No round",
@@ -15902,6 +16301,13 @@
     "context": "Off matches the bar's opacity",
     "reference": "",
     "comment": "island activity settings: expanded opacity toggle description"
+  },
+  {
+    "term": "Off switches show an X, on switches keep their check",
+    "translation": "",
+    "context": "Off switches show an X, on switches keep their check",
+    "reference": "",
+    "comment": "on/off indicators setting description"
   },
   {
     "term": "Office",
@@ -16562,6 +16968,13 @@
     "comment": "island settings: island floats over windows along its edge without reserving space | widget background color option"
   },
   {
+    "term": "Overlay placement passes empty strip input through to windows",
+    "translation": "",
+    "context": "Overlay placement passes empty strip input through to windows",
+    "reference": "",
+    "comment": "island scroll empty strip disabled hint"
+  },
+  {
     "term": "Overridden by config",
     "translation": "",
     "context": "Overridden by config",
@@ -16954,13 +17367,6 @@
     "comment": "Path"
   },
   {
-    "term": "Path copied to clipboard",
-    "translation": "",
-    "context": "Path copied to clipboard",
-    "reference": "",
-    "comment": ""
-  },
-  {
     "term": "Pattern",
     "translation": "",
     "context": "Pattern",
@@ -16980,6 +17386,13 @@
     "context": "Pause checks on battery",
     "reference": "",
     "comment": "software updates toggle, skip background checks on battery power"
+  },
+  {
+    "term": "Pause media during breaks",
+    "translation": "",
+    "context": "Pause media during breaks",
+    "reference": "",
+    "comment": "break reminder setting"
   },
   {
     "term": "Pause night mode while a fullscreen window has focus",
@@ -17008,6 +17421,13 @@
     "context": "Paused",
     "reference": "",
     "comment": "printer state reason | process state: stopped by the user"
+  },
+  {
+    "term": "Pauses playing media when a break starts and resumes it after",
+    "translation": "",
+    "context": "Pauses playing media when a break starts and resumes it after",
+    "reference": "",
+    "comment": "break reminder setting description"
   },
   {
     "term": "Peak",
@@ -17050,6 +17470,13 @@
     "context": "Pending Discharge",
     "reference": "",
     "comment": "battery status"
+  },
+  {
+    "term": "Pentagon",
+    "translation": "",
+    "context": "Pentagon",
+    "reference": "",
+    "comment": "avatar shape"
   },
   {
     "term": "Per display",
@@ -17148,13 +17575,6 @@
     "context": "Pick a different file manager in Settings → Dock → Trash.",
     "reference": "",
     "comment": ""
-  },
-  {
-    "term": "Pick an app from the list above or the dashboard tab",
-    "translation": "",
-    "context": "Pick an app from the list above or the dashboard tab",
-    "reference": "",
-    "comment": "app limits empty state description"
   },
   {
     "term": "Pick an icon theme first",
@@ -17280,7 +17700,7 @@
     "translation": "",
     "context": "Placement",
     "reference": "",
-    "comment": "island settings: docked, overlay or floating placement row"
+    "comment": "bar settings: floating off the screen edge or flush against it | island settings: docked, overlay or floating placement row"
   },
   {
     "term": "Play",
@@ -17365,6 +17785,13 @@
     "context": "Playing audio",
     "reference": "",
     "comment": "process has an open audio playback stream"
+  },
+  {
+    "term": "Plays a sound when a break starts or ends",
+    "translation": "",
+    "context": "Plays a sound when a break starts or ends",
+    "reference": "",
+    "comment": "break reminder setting description"
   },
   {
     "term": "Please wait...",
@@ -17581,7 +18008,7 @@
     "translation": "",
     "context": "Popups, do not disturb, rules",
     "reference": "",
-    "comment": ""
+    "comment": "settings sidebar hint listing what the notifications page covers"
   },
   {
     "term": "Port",
@@ -17659,6 +18086,20 @@
     "context": "Possible override conflicts",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Postpones breaks while an app is fullscreen",
+    "translation": "",
+    "context": "Postpones breaks while an app is fullscreen",
+    "reference": "",
+    "comment": "break reminder setting description"
+  },
+  {
+    "term": "Postpones breaks while the microphone is in use",
+    "translation": "",
+    "context": "Postpones breaks while the microphone is in use",
+    "reference": "",
+    "comment": "break reminder setting description"
   },
   {
     "term": "Power",
@@ -17785,6 +18226,13 @@
     "context": "Power-on time",
     "reference": "",
     "comment": "total time a drive has been powered on"
+  },
+  {
+    "term": "Pre-break warning",
+    "translation": "",
+    "context": "Pre-break warning",
+    "reference": "",
+    "comment": "break reminder setting, a heads-up shown shortly before a break"
   },
   {
     "term": "Pre-release",
@@ -17932,6 +18380,20 @@
     "context": "Preview duration",
     "reference": "",
     "comment": "island activity settings"
+  },
+  {
+    "term": "Preview fullscreen break",
+    "translation": "",
+    "context": "Preview fullscreen break",
+    "reference": "",
+    "comment": "break reminder test action"
+  },
+  {
+    "term": "Preview pre-break warning",
+    "translation": "",
+    "context": "Preview pre-break warning",
+    "reference": "",
+    "comment": "break reminder test action"
   },
   {
     "term": "Preview, install and remove cursor themes",
@@ -18085,7 +18547,7 @@
     "translation": "",
     "context": "Priority",
     "reference": "",
-    "comment": "kernel scheduling priority | notification rule dropdown label, urgency assigned to matches | process action: opens the priority presets | process column: scheduling priority level | process priority level"
+    "comment": "notification rule dropdown label, urgency assigned to matches | process action: opens the priority presets | process column: scheduling priority level | process priority level"
   },
   {
     "term": "Prism",
@@ -18256,6 +18718,13 @@
     "comment": ""
   },
   {
+    "term": "Profile picker",
+    "translation": "",
+    "context": "Profile picker",
+    "reference": "",
+    "comment": "settings row: how the config profile picker shows profiles"
+  },
+  {
     "term": "Profile saved: %1",
     "translation": "",
     "context": "Profile saved: %1",
@@ -18274,7 +18743,7 @@
     "translation": "",
     "context": "Profiles",
     "reference": "",
-    "comment": "card title for display configuration profiles | settings page for saved setups of DMS settings"
+    "comment": "card title for display configuration profiles | dashboard tab name | island compact face: config profile picker label | settings page for saved setups of DMS settings"
   },
   {
     "term": "Protection",
@@ -18711,6 +19180,13 @@
     "comment": "seed color hue"
   },
   {
+    "term": "Redact",
+    "translation": "",
+    "context": "Redact",
+    "reference": "",
+    "comment": "screenshot markup tool, draws a solid box to hide sensitive info"
+  },
+  {
     "term": "Redo",
     "translation": "",
     "context": "Redo",
@@ -18743,7 +19219,7 @@
     "translation": "",
     "context": "Refresh",
     "reference": "",
-    "comment": "Refresh Tailscale device status"
+    "comment": "Refresh Tailscale device status | verb, button that reloads a list or status"
   },
   {
     "term": "Refresh Weather",
@@ -18785,7 +19261,7 @@
     "translation": "",
     "context": "Regular",
     "reference": "",
-    "comment": "font style"
+    "comment": "font weight"
   },
   {
     "term": "Reject jobs",
@@ -19530,13 +20006,6 @@
     "comment": ""
   },
   {
-    "term": "Right-click a widget for options",
-    "translation": "",
-    "context": "Right-click a widget for options",
-    "reference": "",
-    "comment": ""
-  },
-  {
     "term": "Right-click an app in the launcher and choose 'Edit App'",
     "translation": "",
     "context": "Right-click an app in the launcher and choose 'Edit App'",
@@ -19576,7 +20045,7 @@
     "translation": "",
     "context": "Ring",
     "reference": "",
-    "comment": "noun, battery widget ring gauge style option | system monitor tile style option"
+    "comment": "Dux Icons tile color option, a neutral tile with a ring in the app's color | noun, battery widget ring gauge style option | system monitor tile style option"
   },
   {
     "term": "Ripple",
@@ -19612,6 +20081,13 @@
     "context": "Rounded",
     "reference": "",
     "comment": "bar corner style option"
+  },
+  {
+    "term": "Rounded screen corners",
+    "translation": "",
+    "context": "Rounded screen corners",
+    "reference": "",
+    "comment": "toggle: draw rounded corners at the edges of each screen"
   },
   {
     "term": "Rounded square",
@@ -19835,7 +20311,7 @@
     "translation": "",
     "context": "Runtime",
     "reference": "",
-    "comment": ""
+    "comment": "noun, software runtime version row"
   },
   {
     "term": "S",
@@ -20160,6 +20636,13 @@
     "comment": "dashboard card and settings card title, time spent in apps"
   },
   {
+    "term": "Screen time & limits",
+    "translation": "",
+    "context": "Screen time & limits",
+    "reference": "",
+    "comment": "settings page title, screen time limits and history"
+  },
+  {
     "term": "Screen time and app limits",
     "translation": "",
     "context": "Screen time and app limits",
@@ -20216,6 +20699,20 @@
     "comment": "screenshot settings slider, time between frames while capturing a scrolling region"
   },
   {
+    "term": "Scroll in the empty space next to the island and satellite widgets",
+    "translation": "",
+    "context": "Scroll in the empty space next to the island and satellite widgets",
+    "reference": "",
+    "comment": "island scroll empty strip toggle description"
+  },
+  {
+    "term": "Scroll in the gap between the bar and the display edge",
+    "translation": "",
+    "context": "Scroll in the gap between the bar and the display edge",
+    "reference": "",
+    "comment": "bar extend scroll to screen edge toggle description"
+  },
+  {
     "term": "Scroll lyrics",
     "translation": "",
     "context": "Scroll lyrics",
@@ -20228,6 +20725,13 @@
     "context": "Scroll method",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Scroll on empty strip",
+    "translation": "",
+    "context": "Scroll on empty strip",
+    "reference": "",
+    "comment": "island scroll wheel toggle"
   },
   {
     "term": "Scroll shadows",
@@ -20276,7 +20780,14 @@
     "translation": "",
     "context": "Search",
     "reference": "",
-    "comment": "launcher settings section title, noun | search field placeholder"
+    "comment": "search field placeholder"
+  },
+  {
+    "term": "Search",
+    "translation": "",
+    "context": "launcher settings section title, noun",
+    "reference": "",
+    "comment": ""
   },
   {
     "term": "Search also matches actions apps provide, like New Window",
@@ -20500,7 +21011,14 @@
     "translation": "",
     "context": "Select",
     "reference": "",
-    "comment": "screenshot draw tool, select and move annotations | verb, dropdown placeholder or option that opens a picker | verb, primary action label for a launcher plugin item"
+    "comment": "verb, dropdown placeholder or option that opens a picker | verb, primary action label for a launcher plugin item"
+  },
+  {
+    "term": "Select",
+    "translation": "",
+    "context": "screenshot draw tool, select and move annotations",
+    "reference": "",
+    "comment": ""
   },
   {
     "term": "Select All",
@@ -20522,13 +21040,6 @@
     "context": "Select Custom Theme",
     "reference": "",
     "comment": "custom theme file browser title"
-  },
-  {
-    "term": "Select Dock Launcher Logo",
-    "translation": "",
-    "context": "Select Dock Launcher Logo",
-    "reference": "",
-    "comment": ""
   },
   {
     "term": "Select Dot Icon",
@@ -20713,13 +21224,6 @@
     "comment": ""
   },
   {
-    "term": "Separate light and dark themes",
-    "translation": "",
-    "context": "Separate light and dark themes",
-    "reference": "",
-    "comment": ""
-  },
-  {
     "term": "Separate per display",
     "translation": "",
     "context": "Separate per display",
@@ -20825,13 +21329,6 @@
     "comment": "Audio settings description"
   },
   {
-    "term": "Set limit",
-    "translation": "",
-    "context": "Set limit",
-    "reference": "",
-    "comment": "button that opens the per-app screen time limit editor"
-  },
-  {
     "term": "Set notification rules",
     "translation": "",
     "context": "Set notification rules",
@@ -20920,7 +21417,7 @@
     "translation": "",
     "context": "Shaded icons",
     "reference": "",
-    "comment": "Dux Icons toggle, fills each icon badge with a soft top-to-bottom gradient"
+    "comment": "Dux Icons toggle, fills each icon tile with a soft top-to-bottom gradient"
   },
   {
     "term": "Shadow",
@@ -20976,7 +21473,14 @@
     "translation": "",
     "context": "Shared",
     "reference": "",
-    "comment": "IP method: share this connection with other computers | RAM shared between processes (shmem) | resident shared memory (shmem)"
+    "comment": "RAM shared between processes (shmem) | resident shared memory (shmem)"
+  },
+  {
+    "term": "Shared",
+    "translation": "",
+    "context": "IP method: share this connection with other computers",
+    "reference": "",
+    "comment": ""
   },
   {
     "term": "Shared memory",
@@ -21035,11 +21539,46 @@
     "comment": "animation duration option | date format option"
   },
   {
+    "term": "Short break",
+    "translation": "",
+    "context": "Short break",
+    "reference": "",
+    "comment": "break reminder overlay title"
+  },
+  {
+    "term": "Short break duration",
+    "translation": "",
+    "context": "Short break duration",
+    "reference": "",
+    "comment": "break reminder setting"
+  },
+  {
+    "term": "Short break in %1",
+    "translation": "",
+    "context": "Short break in %1",
+    "reference": "",
+    "comment": "break reminder heads-up, %1 is a duration like 5 seconds"
+  },
+  {
+    "term": "Short break interval",
+    "translation": "",
+    "context": "Short break interval",
+    "reference": "",
+    "comment": "break reminder setting, time between breaks"
+  },
+  {
+    "term": "Short breaks before long break",
+    "translation": "",
+    "context": "Short breaks before long break",
+    "reference": "",
+    "comment": "break reminder setting, a number of breaks"
+  },
+  {
     "term": "Shortcut",
     "translation": "",
     "context": "Shortcut",
     "reference": "",
-    "comment": "noun, keyboard shortcut row in launcher settings"
+    "comment": "noun, keyboard shortcut row in settings"
   },
   {
     "term": "Shortcut (%1)",
@@ -21124,13 +21663,6 @@
     "context": "Show Edit widgets in app context menu",
     "reference": "",
     "comment": "dock setting to show or hide the Edit widgets action in an app's context menu"
-  },
-  {
-    "term": "Show I/O",
-    "translation": "",
-    "context": "Show I/O",
-    "reference": "",
-    "comment": ""
   },
   {
     "term": "Show Line Numbers",
@@ -21427,6 +21959,13 @@
     "comment": ""
   },
   {
+    "term": "Show on/off indicators",
+    "translation": "",
+    "context": "Show on/off indicators",
+    "reference": "",
+    "comment": "accessibility toggle, marks switches in both states instead of only when on"
+  },
+  {
     "term": "Show package source badges",
     "translation": "",
     "context": "Show package source badges",
@@ -21546,13 +22085,6 @@
     "comment": ""
   },
   {
-    "term": "Show temperature",
-    "translation": "",
-    "context": "Show temperature",
-    "reference": "",
-    "comment": ""
-  },
-  {
     "term": "Show the battery briefly when power is connected or removed",
     "translation": "",
     "context": "Show the battery briefly when power is connected or removed",
@@ -21567,11 +22099,11 @@
     "comment": "Description for an option on the fcitx5 config page."
   },
   {
-    "term": "Show trend",
+    "term": "Show time zone",
     "translation": "",
-    "context": "Show trend",
+    "context": "Show time zone",
     "reference": "",
-    "comment": ""
+    "comment": "clock widget option: show the local time zone abbreviation next to the time"
   },
   {
     "term": "Show upgrade in a window",
@@ -21791,6 +22323,13 @@
     "comment": ""
   },
   {
+    "term": "Skipped",
+    "translation": "",
+    "context": "Skipped",
+    "reference": "",
+    "comment": "break statistics, number of skipped breaks"
+  },
+  {
     "term": "Slanted",
     "translation": "",
     "context": "Slanted",
@@ -21861,6 +22400,20 @@
     "comment": "Hyprland dwindle layout toggle"
   },
   {
+    "term": "Smart suppression",
+    "translation": "",
+    "context": "Smart suppression",
+    "reference": "",
+    "comment": "settings card title, conditions that hold break reminders back"
+  },
+  {
+    "term": "Smart suppression, sound and media",
+    "translation": "",
+    "context": "Smart suppression, sound and media",
+    "reference": "",
+    "comment": "settings hint for the break alerts page"
+  },
+  {
     "term": "Smartcard Authentication",
     "translation": "",
     "context": "Smartcard Authentication",
@@ -21887,6 +22440,20 @@
     "context": "Snap",
     "reference": "",
     "comment": "verb, toggle to snap monitors to edges when arranging"
+  },
+  {
+    "term": "Snooze",
+    "translation": "",
+    "context": "Snooze",
+    "reference": "",
+    "comment": "break reminder action, delay the break by a few minutes"
+  },
+  {
+    "term": "Snoozed",
+    "translation": "",
+    "context": "Snoozed",
+    "reference": "",
+    "comment": "break statistics, number of snoozed breaks"
   },
   {
     "term": "Snow",
@@ -21985,6 +22552,13 @@
     "context": "Sound & media",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Sound alerts",
+    "translation": "",
+    "context": "Sound alerts",
+    "reference": "",
+    "comment": "break reminder setting"
   },
   {
     "term": "Sound theme",
@@ -22243,7 +22817,7 @@
     "translation": "",
     "context": "Standard",
     "reference": "",
-    "comment": "adjective, panel motion option and bar layout mode option"
+    "comment": "Dux Icons files and folders option, files and folders sit on the theme tile like every other icon | adjective, panel motion option and bar layout mode option"
   },
   {
     "term": "Start",
@@ -22256,6 +22830,13 @@
     "term": "Start",
     "translation": "",
     "context": "noun, overflow button position before the first widget",
+    "reference": "",
+    "comment": ""
+  },
+  {
+    "term": "Start",
+    "translation": "",
+    "context": "noun, start time of a schedule or event",
     "reference": "",
     "comment": ""
   },
@@ -22335,6 +22916,20 @@
     "context": "State",
     "reference": "",
     "comment": "noun, detail label for printer or network device status"
+  },
+  {
+    "term": "Statistics",
+    "translation": "",
+    "context": "Statistics",
+    "reference": "",
+    "comment": "settings card title, break reminder statistics"
+  },
+  {
+    "term": "Statistics & testing",
+    "translation": "",
+    "context": "Statistics & testing",
+    "reference": "",
+    "comment": "settings page title, break reminder statistics and previews"
   },
   {
     "term": "Status",
@@ -22547,6 +23142,13 @@
     "comment": "Weather daylight widget title"
   },
   {
+    "term": "Sunny",
+    "translation": "",
+    "context": "Sunny",
+    "reference": "",
+    "comment": "avatar shape, a circle with soft rays"
+  },
+  {
     "term": "Sunrise",
     "translation": "",
     "context": "Sunrise",
@@ -22575,11 +23177,25 @@
     "comment": ""
   },
   {
+    "term": "Suppress during meetings",
+    "translation": "",
+    "context": "Suppress during meetings",
+    "reference": "",
+    "comment": "break reminder setting"
+  },
+  {
     "term": "Suppress events",
     "translation": "",
     "context": "Suppress events",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Suppress in fullscreen",
+    "translation": "",
+    "context": "Suppress in fullscreen",
+    "reference": "",
+    "comment": "break reminder setting"
   },
   {
     "term": "Surface",
@@ -22757,6 +23373,20 @@
     "comment": "battery auto power saver toggle description"
   },
   {
+    "term": "Switches workspaces",
+    "translation": "",
+    "context": "Switches workspaces",
+    "reference": "",
+    "comment": "bar widget scroll action summary"
+  },
+  {
+    "term": "Switches workspaces (reversed)",
+    "translation": "",
+    "context": "Switches workspaces (reversed)",
+    "reference": "",
+    "comment": "bar widget scroll action summary"
+  },
+  {
     "term": "Switching to the current workspace returns to the previous one",
     "translation": "",
     "context": "Switching to the current workspace returns to the previous one",
@@ -22768,7 +23398,7 @@
     "translation": "",
     "context": "Symbol",
     "reference": "",
-    "comment": ""
+    "comment": "noun, glyph shown on the dot"
   },
   {
     "term": "Sync",
@@ -22999,7 +23629,14 @@
     "translation": "",
     "context": "Tablet",
     "reference": "",
-    "comment": "computer chassis type | drawing tablet input settings card title"
+    "comment": "drawing tablet input settings card title"
+  },
+  {
+    "term": "Tablet",
+    "translation": "",
+    "context": "computer chassis type",
+    "reference": "",
+    "comment": ""
   },
   {
     "term": "Tablet input",
@@ -23149,13 +23786,6 @@
     "comment": "terminal fallback status, %1 is a command"
   },
   {
-    "term": "Terminal fallback opened. Complete authentication there; it will close automatically when done.",
-    "translation": "",
-    "context": "Terminal fallback opened. Complete authentication there; it will close automatically when done.",
-    "reference": "",
-    "comment": ""
-  },
-  {
     "term": "Terminal opened. Complete authentication there; it will close automatically when done.",
     "translation": "",
     "context": "Terminal opened. Complete authentication there; it will close automatically when done.",
@@ -23191,6 +23821,13 @@
     "comment": "surface color option | widget background color option | workspace color option"
   },
   {
+    "term": "Test alert sound",
+    "translation": "",
+    "context": "Test alert sound",
+    "reference": "",
+    "comment": "break reminder test action"
+  },
+  {
     "term": "Test connection",
     "translation": "",
     "context": "Test connection",
@@ -23210,6 +23847,13 @@
     "context": "Test page sent to printer",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Testing & preview",
+    "translation": "",
+    "context": "Testing & preview",
+    "reference": "",
+    "comment": "settings card title, try out break reminder surfaces"
   },
   {
     "term": "Testing...",
@@ -23461,7 +24105,7 @@
     "translation": "",
     "context": "Theme",
     "reference": "",
-    "comment": "battery settings: theme accent indicator colors"
+    "comment": "Dux Icons tile color option, tiles take the theme colors | battery settings: theme accent indicator colors"
   },
   {
     "term": "Theme & colors",
@@ -23527,11 +24171,11 @@
     "comment": ""
   },
   {
-    "term": "Themed app icons",
+    "term": "Themed",
     "translation": "",
-    "context": "Themed app icons",
+    "context": "Themed",
     "reference": "",
-    "comment": "Dux Icons toggle, paints app icons in tones of the theme colors"
+    "comment": "Dux Icons app icon style option, every app icon is drawn in tones of the theme color"
   },
   {
     "term": "Themes",
@@ -23674,6 +24318,13 @@
     "comment": "reason EFI boot entries cannot be listed"
   },
   {
+    "term": "This week",
+    "translation": "",
+    "context": "This week",
+    "reference": "",
+    "comment": "screen time chart title, the seven days ending today"
+  },
+  {
     "term": "This widget prevents GPU power off states, which can significantly impact battery life on laptops. It is not recommended to use this on laptops with hybrid graphics.",
     "translation": "",
     "context": "This widget prevents GPU power off states, which can significantly impact battery life on laptops. It is not recommended to use this on laptops with hybrid graphics.",
@@ -23755,7 +24406,21 @@
     "translation": "",
     "context": "Tile color",
     "reference": "",
-    "comment": "control center tile color dropdown label"
+    "comment": "Dux Icons setting, where the color of the tile behind each app icon comes from | control center tile color dropdown label"
+  },
+  {
+    "term": "Tile style",
+    "translation": "",
+    "context": "Tile style",
+    "reference": "",
+    "comment": "Dux Icons setting, how strong the app's own color is on its tile"
+  },
+  {
+    "term": "Tile tone",
+    "translation": "",
+    "context": "Tile tone",
+    "reference": "",
+    "comment": "Dux Icons setting, how light the tile behind each icon is"
   },
   {
     "term": "Tiled",
@@ -23854,6 +24519,13 @@
     "context": "Tint strength",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Tinted",
+    "translation": "",
+    "context": "Tinted",
+    "reference": "",
+    "comment": "Dux Icons app icon style option, each app's own icon repainted in two tones of its tile color"
   },
   {
     "term": "Tinted cards and badges across the shell",
@@ -23989,6 +24661,13 @@
     "comment": "bar click action"
   },
   {
+    "term": "Toggle Mute",
+    "translation": "",
+    "context": "Toggle Mute",
+    "reference": "",
+    "comment": "bar click action"
+  },
+  {
     "term": "Toggle Settings",
     "translation": "",
     "context": "Toggle Settings",
@@ -24022,6 +24701,13 @@
     "context": "Toggling...",
     "reference": "",
     "comment": "wifi status while the radio is switching on or off"
+  },
+  {
+    "term": "Tonal",
+    "translation": "",
+    "context": "Tonal",
+    "reference": "",
+    "comment": "Dux Icons tile style option, a soft tone of the app's color"
   },
   {
     "term": "Tonal Spot",
@@ -24295,6 +24981,13 @@
     "context": "Try a different search",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Turn off a widget to use the bar scroll action over it",
+    "translation": "",
+    "context": "Turn off a widget to use the bar scroll action over it",
+    "reference": "",
+    "comment": "bar widget scroll section subtitle"
   },
   {
     "term": "Turn off displays after",
@@ -24686,7 +25379,14 @@
     "translation": "",
     "context": "Up",
     "reference": "",
-    "comment": "Hyprland scrolling layout direction | network direction"
+    "comment": "network direction"
+  },
+  {
+    "term": "Up",
+    "translation": "",
+    "context": "Hyprland scrolling layout direction",
+    "reference": "",
+    "comment": ""
   },
   {
     "term": "Up %1",
@@ -24771,20 +25471,6 @@
     "context": "Updates, clipboard, %1",
     "reference": "",
     "comment": "settings sidebar hint for the system and integrations page, %1 is the compositor name"
-  },
-  {
-    "term": "Updating %1...",
-    "translation": "",
-    "context": "Updating %1...",
-    "reference": "",
-    "comment": "plugin updates dialog progress, %1 is the plugin name"
-  },
-  {
-    "term": "Updating plugins...",
-    "translation": "",
-    "context": "Updating plugins...",
-    "reference": "",
-    "comment": ""
   },
   {
     "term": "Updating...",
@@ -25274,7 +25960,7 @@
     "translation": "",
     "context": "Vertical",
     "reference": "",
-    "comment": "island settings: free island orientation | system monitor bars orientation"
+    "comment": "bar scroll wheel vertical axis label | island settings: free island orientation | system monitor bars orientation"
   },
   {
     "term": "Vertical Deck",
@@ -25316,7 +26002,7 @@
     "translation": "",
     "context": "Very High",
     "reference": "",
-    "comment": "quality level option"
+    "comment": "process priority preset | quality level option"
   },
   {
     "term": "Vibrant",
@@ -25450,6 +26136,13 @@
     "context": "Visualizer, album art, excluded players",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Vivid",
+    "translation": "",
+    "context": "Vivid",
+    "reference": "",
+    "comment": "Dux Icons tile style option, the app's color as strong as in its icon"
   },
   {
     "term": "Volume",
@@ -25653,13 +26346,6 @@
     "context": "Web browser",
     "reference": "",
     "comment": ""
-  },
-  {
-    "term": "Week",
-    "translation": "",
-    "context": "Week",
-    "reference": "",
-    "comment": "screen time range filter"
   },
   {
     "term": "Weekly screen time",
@@ -25898,6 +26584,13 @@
     "context": "Widget removed",
     "reference": "",
     "comment": ""
+  },
+  {
+    "term": "Widget scroll",
+    "translation": "",
+    "context": "Widget scroll",
+    "reference": "",
+    "comment": "bar scroll wheel section header for per-widget scroll toggles"
   },
   {
     "term": "Widget settings",
@@ -26222,13 +26915,6 @@
     "comment": "total data written"
   },
   {
-    "term": "X axis",
-    "translation": "",
-    "context": "X axis",
-    "reference": "",
-    "comment": ""
-  },
-  {
     "term": "X-Ray",
     "translation": "",
     "context": "X-Ray",
@@ -26267,13 +26953,6 @@
     "term": "Xray options are in Compositor → Layout",
     "translation": "",
     "context": "Xray options are in Compositor → Layout",
-    "reference": "",
-    "comment": ""
-  },
-  {
-    "term": "Y axis",
-    "translation": "",
-    "context": "Y axis",
     "reference": "",
     "comment": ""
   },

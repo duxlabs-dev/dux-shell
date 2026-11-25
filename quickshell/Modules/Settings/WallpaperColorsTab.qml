@@ -494,11 +494,11 @@ Column {
                             checkEnabled: false
                             model: [
                                 {
-                                    "text": I18n.tr("Light", "adjective, wallpaper thumbnail label for light mode"),
+                                    "text": I18n.tr("Light", "adjective, light color mode, opposite of dark"),
                                     "icon": "light_mode"
                                 },
                                 {
-                                    "text": I18n.tr("Dark", "adjective, wallpaper thumbnail label for dark mode"),
+                                    "text": I18n.tr("Dark", "adjective, dark color mode, opposite of light"),
                                     "icon": "dark_mode"
                                 }
                             ]
@@ -1166,7 +1166,7 @@ Column {
                 tab: "theme"
                 tags: ["icon", "theme", "light", "dark", "mode"]
                 settingKey: "iconThemePerMode"
-                text: I18n.tr("Separate light and dark themes")
+                text: I18n.tr("Separate light and dark")
                 checked: SettingsData.iconThemePerMode
                 onToggled: checked => SettingsData.setIconThemePerMode(checked)
             }
@@ -1306,7 +1306,7 @@ Column {
                 settingKey: "iconTileStyle"
                 text: I18n.tr("Tile style", "Dux Icons setting, how strong the app's own color is on its tile")
                 enabled: !root.selfBuiltIconsMissing
-                options: [I18n.tr("Tonal", "Dux Icons tile style option, a soft tone of the app's color"), I18n.tr("Vivid", "Dux Icons tile style option, the app's color as strong as in its icon"), I18n.tr("Muted", "Dux Icons tile style option, a near-gray tint of the app's color")]
+                options: [I18n.tr("Tonal", "Dux Icons tile style option, a soft tone of the app's color"), I18n.tr("Vivid", "Dux Icons tile style option, the app's color as strong as in its icon"), I18n.tr("Muted", "Dux Icons tile style option, a near-gray tint of the app's color", true)]
                 optionValues: ["tonal", "content", "neutral"]
                 currentValue: SettingsData.iconTileStyle
                 onValueChanged: value => SettingsData.set("iconTileStyle", value)

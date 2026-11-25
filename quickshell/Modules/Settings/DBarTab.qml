@@ -379,7 +379,7 @@ Item {
 
             SettingsCard {
                 iconName: "border_outer"
-                title: I18n.tr("Frame")
+                title: I18n.tr("Frame", "noun, bar mode that draws a border around the screen edges")
                 settingKey: "frameEnabled"
                 tags: ["frame", "mode", "bar", "overview", "connected", "separate", "displays"]
 

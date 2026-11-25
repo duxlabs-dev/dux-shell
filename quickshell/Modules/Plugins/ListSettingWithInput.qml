@@ -77,7 +77,7 @@ ListSetting {
             }
         },
         StyledText {
-            text: I18n.tr("Current Items")
+            text: I18n.tr("Current Items", "plugin list setting: header above the entries already added")
             font.pixelSize: Theme.fontSizeMedium
             font.weight: Theme.fontWeightMedium
             color: Theme.surfaceText

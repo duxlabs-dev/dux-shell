@@ -104,7 +104,7 @@ Item {
                     settingKey: "mouseAccelProfile"
                     text: I18n.tr("Acceleration profile")
                     description: I18n.tr("Flat turns acceleration off. Adaptive speeds the pointer up as you move faster.", "pointer acceleration profile hint")
-                    model: [I18n.tr("Default"), I18n.tr("Flat", "adjective, pointer acceleration profile option"), I18n.tr("Adaptive", "adjective, pointer acceleration profile option")]
+                    model: [I18n.tr("Default"), I18n.tr("Flat", "adjective, pointer acceleration profile option, constant speed", true), I18n.tr("Adaptive", "adjective, pointer acceleration profile option")]
                     currentIndex: {
                         if (SettingsData.mouseAccelProfile === "flat")
                             return 1;
@@ -236,7 +236,7 @@ Item {
                     settingKey: "touchpadAccelProfile"
                     text: I18n.tr("Acceleration profile")
                     description: I18n.tr("Flat turns acceleration off. Adaptive speeds the pointer up as you move faster.", "pointer acceleration profile hint")
-                    model: [I18n.tr("Default"), I18n.tr("Flat"), I18n.tr("Adaptive")]
+                    model: [I18n.tr("Default"), I18n.tr("Flat", "adjective, pointer acceleration profile option, constant speed", true), I18n.tr("Adaptive", "adjective, pointer acceleration profile option")]
                     currentIndex: {
                         if (SettingsData.touchpadAccelProfile === "flat")
                             return 1;

@@ -114,7 +114,7 @@ DDialog {
         const options = [];
         if (!isNiri)
             options.push({
-                "label": I18n.tr("Float"),
+                "label": I18n.tr("Float", "verb, window rule action to open the window floating"),
                 "value": "float"
             });
         if (!isMango)
@@ -1496,7 +1496,7 @@ DDialog {
         expanded: false
 
         SettingsRow {
-            title: I18n.tr("Focus", "noun, window rule editor group of keyboard focus options")
+            title: I18n.tr("Focus", "noun, window rule editor group of keyboard focus options", true)
 
             body: DFilterChips {
                 width: parent.width

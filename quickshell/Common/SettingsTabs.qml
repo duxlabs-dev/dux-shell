@@ -290,7 +290,7 @@ Singleton {
             "icon": "notifications",
             "tabIndex": 17,
             "hubHeader": "NotificationsTab",
-            "hint": I18n.tr("Popups, do not disturb, rules"),
+            "hint": I18n.tr("Popups, do not disturb, rules", "settings sidebar hint listing what the notifications page covers"),
             "children": [
                 {
                     "id": "notification_rules",

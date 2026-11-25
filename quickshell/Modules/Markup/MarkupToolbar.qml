@@ -14,7 +14,7 @@ Row {
     readonly property var allTools: ({
             "select": {
                 icon: "arrow_selector_tool",
-                label: I18n.tr("Select", "screenshot draw tool, select and move annotations")
+                label: I18n.tr("Select", "screenshot draw tool, select and move annotations", true)
             },
             "pen": {
                 icon: "stylus",

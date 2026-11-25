@@ -54,7 +54,7 @@ Item {
             "shape": "sunny",
             "hoverShape": "softBurst",
             "accent": "pink",
-            "heading": I18n.tr("Display Control", "greeter feature card title"),
+            "heading": I18n.tr("Display Control", "greeter feature card title, noun: controlling the displays"),
             "description": I18n.tr("Night mode & gamma", "greeter feature card description"),
             "target": "display_gamma"
         },

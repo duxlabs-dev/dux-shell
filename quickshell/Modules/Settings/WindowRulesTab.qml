@@ -59,7 +59,7 @@ Item {
             "xwayland": "XWayland",
             "fullscreen": I18n.tr("Fullscreen"),
             "pinned": I18n.tr("Pinned"),
-            "initialised": I18n.tr("Initialized"),
+            "initialised": I18n.tr("Initialized", "adjective, window rule match for windows that finished mapping"),
             "initialClass": I18n.tr("Initial class"),
             "initialTitle": I18n.tr("Initial title"),
             "tag": I18n.tr("Tag"),
