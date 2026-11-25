@@ -1232,6 +1232,7 @@ FocusScope {
             width: mainColumn.width
             count: pager.count
             currentIndex: pager.currentIndex
+            position: pager.position
             // They share the bottom edge with the height handle, so they step aside while it drags.
             visible: count > 1 && !(root.panelResizing && (root.resizeBase?.vertical ?? false))
             opacity: body.opacity

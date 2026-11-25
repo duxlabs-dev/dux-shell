@@ -34,6 +34,7 @@ Item {
     readonly property bool isUser: widgetId === "user"
     readonly property bool isGroup: widgetId === WidgetUtils.GROUP_ID
     readonly property bool isBrightness: widgetId === "brightnessSlider"
+    readonly property bool isSlider: WidgetUtils.isSliderWidget(widgetId)
     // Same order as WidgetUtils.USER_SHAPES.
     readonly property var shapeLabels: [I18n.tr("Circle", "icon shape"), I18n.tr("4-sided cookie", "avatar shape"), I18n.tr("7-sided cookie", "avatar shape"), I18n.tr("12-sided cookie", "avatar shape"), I18n.tr("4-leaf clover", "avatar shape"), I18n.tr("8-leaf clover", "avatar shape"), I18n.tr("Sunny", "avatar shape, a circle with soft rays"), I18n.tr("Pentagon", "avatar shape"), I18n.tr("Arch", "avatar shape"), I18n.tr("Slanted", "Album artwork shape"), I18n.tr("Gem", "avatar shape"), I18n.tr("Squircle", "icon shape"), I18n.tr("Rounded square", "icon shape"), I18n.tr("Square", "icon shape")]
     // Grouped tiles have no menu of their own, so the group's menu styles its battery.
@@ -52,7 +53,8 @@ Item {
         contextMenu.customContent = null;
         widgetIndex = index;
         contextMenu.customContent = optionsContent;
-        _anchor = anchorItem;
+        // Refocus only an anchor that had focus, or a right-clicked tile keeps its edit chrome.
+        _anchor = anchorItem?.activeFocus ? anchorItem : null;
         // Placement needs the final menu height, which settles after widgetIndex propagates.
         Qt.callLater(() => {
             const window = root.QsWindow.window;
@@ -231,6 +233,27 @@ Item {
                             const index = options.indexOf(value);
                             if (index >= 0)
                                 root.persistOption("deviceName", names[index]);
+                        }
+                    }
+                }
+
+                CcListRow {
+                    visible: root.isSlider
+                    iconName: "tune"
+                    title: I18n.tr("Style")
+                    body: DDropdown {
+                        // Same order as WidgetUtils.SLIDER_STYLES.
+                        readonly property var labels: [I18n.tr("Default", "widget style option"), I18n.tr("Expressive")]
+
+                        compactMode: true
+                        dropdownWidth: parent.width
+                        transientSurfaceTracker: contextMenu.transientSurfaceTracker
+                        currentValue: labels[Math.max(0, WidgetUtils.SLIDER_STYLES.indexOf(root.widgetData?.sliderStyle ?? "default"))]
+                        options: labels
+                        onValueChanged: value => {
+                            const style = WidgetUtils.SLIDER_STYLES[labels.indexOf(value)];
+                            if (style)
+                                root.persistOption("sliderStyle", style);
                         }
                     }
                 }

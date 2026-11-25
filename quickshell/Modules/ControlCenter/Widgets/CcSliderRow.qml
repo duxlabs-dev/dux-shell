@@ -31,11 +31,12 @@ Item {
     property bool sliderEnabled: true
     property alias isDragging: slider.isDragging
     readonly property bool tall: height >= CcMetrics.gridRowUnit * 2
+    readonly property bool expressive: widgetData?.sliderStyle === "expressive"
     readonly property bool vertical: tall && width < height
     readonly property bool showLabel: tall && !vertical && width >= CcMetrics.expandedTileMinWidth
     readonly property bool showNumber: tall && (!vertical || height >= CcMetrics.gridRowUnit * 3)
     readonly property real bodyRadius: tall ? CcMetrics.tallTileRadius : Theme.cornerRadiusM
-    // The far-end handle stays inside the rounded end, like the round action button.
+    // The outermost handle stays inside the rounded end, like the round action button.
     readonly property real endInset: {
         if (tall)
             return 0;
@@ -71,6 +72,7 @@ Item {
         DActionButton {
             id: action
             objectName: "sliderAction"
+            visible: !root.expressive
             x: root.vertical ? (parent.width - width) / 2 : root.LayoutMirroring.enabled ? parent.width - width : 0
             y: root.vertical ? parent.height - height : root.tall ? 0 : (parent.height - height) / 2
             buttonSize: root.actionSize
@@ -88,10 +90,10 @@ Item {
 
         Column {
             id: labels
-            anchors.left: root.vertical ? parent.left : action.right
-            anchors.leftMargin: root.vertical ? 0 : Theme.spacingM
+            anchors.left: root.vertical || root.expressive ? parent.left : action.right
+            anchors.leftMargin: root.vertical || root.expressive ? 0 : Theme.spacingM
             anchors.right: parent.right
-            y: root.vertical ? 0 : (action.height - height) / 2
+            y: root.vertical || root.expressive ? 0 : (action.height - height) / 2
             spacing: Theme.spacingXXS
             visible: root.tall
 
@@ -119,11 +121,11 @@ Item {
             id: trackArea
             objectName: "sliderTrackArea"
             anchors.left: parent.left
-            anchors.leftMargin: root.tall ? 0 : action.width + Theme.spacingS
+            anchors.leftMargin: root.tall ? 0 : root.expressive ? root.endInset : action.width + Theme.spacingS
             anchors.right: parent.right
             anchors.rightMargin: root.endInset
-            y: root.vertical ? (root.showNumber ? labels.height + Theme.spacingS : 0) : root.tall ? action.height + Theme.spacingM : 0
-            height: Math.max(0, (root.vertical ? action.y - Theme.spacingS : parent.height) - y)
+            y: root.vertical ? (root.showNumber ? labels.height + Theme.spacingS : 0) : root.tall ? (root.expressive ? labels.height : action.height) + Theme.spacingM : 0
+            height: Math.max(0, (root.vertical && !root.expressive ? action.y - Theme.spacingS : parent.height) - y)
 
             DSlider {
                 id: slider
@@ -147,6 +149,12 @@ Item {
                 }
                 Accessible.name: root.sliderLabel
                 showValue: !root.vertical
+                insetIcon: root.expressive ? root.iconName : ""
+                insetIconRotation: root.vertical ? 90 : 0
+                insetIconClickable: root.expressive
+                insetIconLabel: root.iconLabel
+                insetIconTooltip: root.iconTooltip || root.iconLabel
+                onInsetIconClicked: root.iconClicked()
                 onSliderValueChanged: newValue => root.sliderValueChanged(newValue)
 
                 Binding on trackHeight {
@@ -158,6 +166,12 @@ Item {
                 Binding on handleHeight {
                     when: !root.tall && !root.small
                     value: CcMetrics.stripHandleHeight
+                    restoreMode: Binding.RestoreBinding
+                }
+
+                Binding on insetIconSize {
+                    when: !root.tall && !root.small
+                    value: Math.min(CcMetrics.iconBoxIconSize, CcMetrics.stripTrackHeight - Theme.spacingXS * 2)
                     restoreMode: Binding.RestoreBinding
                 }
             }

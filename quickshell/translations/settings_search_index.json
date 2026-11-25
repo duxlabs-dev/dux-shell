@@ -708,9 +708,11 @@
     "category": "Interface style",
     "keywords": [
       "controls",
+      "expressive",
       "focus",
       "interface",
       "keyboard",
+      "press",
       "ring",
       "scroll",
       "shadows",
@@ -1242,6 +1244,32 @@
     ],
     "page": "theme_surfaces",
     "description": "Where the widget list sits while editing the Control Center"
+  },
+  {
+    "section": "buttonPressExpand",
+    "label": "Expressive button press",
+    "tabIndex": -1,
+    "category": "Interface style",
+    "keywords": [
+      "bounce",
+      "button",
+      "buttons",
+      "center",
+      "control",
+      "expand",
+      "expressive",
+      "grow",
+      "interface",
+      "neighbors",
+      "press",
+      "style",
+      "their",
+      "tiles",
+      "widen"
+    ],
+    "page": "theme_surfaces",
+    "icon": "touch_app",
+    "description": "Buttons or tiles expand their neighbors"
   },
   {
     "section": "fontFamily",

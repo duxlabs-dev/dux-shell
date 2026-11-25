@@ -390,7 +390,7 @@ Column {
     SettingsDeferred {
         SettingsCard {
             tab: "theme"
-            tags: ["focus", "ring", "keyboard", "scroll", "shadows"]
+            tags: ["focus", "ring", "keyboard", "press", "expressive", "scroll", "shadows"]
             title: I18n.tr("Controls")
             settingKey: "surfaceControls"
 
@@ -456,6 +456,18 @@ Column {
                         SettingsData.set("focusRingColor", "primary");
                     }
                 }
+            }
+
+            SettingsToggleCard {
+                tab: "theme"
+                tags: ["expressive", "press", "expand", "widen", "grow", "bounce", "buttons", "tiles", "control", "center"]
+                settingKey: "buttonPressExpand"
+                visible: SettingsData.interfaceStyle !== "classic"
+                iconName: "touch_app"
+                title: I18n.tr("Expressive button press")
+                description: I18n.tr("Buttons or tiles expand their neighbors")
+                checked: SettingsData.buttonPressExpand
+                onToggled: checked => SettingsData.set("buttonPressExpand", checked)
             }
 
             SettingsToggleCard {
