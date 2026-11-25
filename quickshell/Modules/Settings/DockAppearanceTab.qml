@@ -206,7 +206,7 @@ Item {
         }
 
         SettingsDeferred {
-            when: dock.hasConfig && !dock.connectedFrameModeActive
+            when: dock.hasConfig
 
             SettingsCard {
                 width: parent.width

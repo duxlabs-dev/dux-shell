@@ -148,7 +148,7 @@ Item {
         }
 
         SettingsDeferred {
-            when: (bar.selectedBarConfig?.enabled ?? false) && !bar.selectedBarFrameStyled
+            when: (bar.selectedBarConfig?.enabled ?? false) && (!bar.selectedBarFrameStyled || bar.selectedBarIsIsland)
 
             SettingsCard {
                 iconName: "rounded_corner"
