@@ -157,10 +157,10 @@ Singleton {
         });
     }
 
-    function cyclePool(currentWallpaper, screenName, goToPrevious) {
+    function cyclePool(currentWallpaper, screenName, goToPrevious, fallback = true) {
         listWallpapers(WallpaperLibraryService.requestFolders(), currentWallpaper, screenName || "", goToPrevious, items => {
             const fitted = WallpaperLibraryService.fitting(WallpaperLibraryService.selectedForMode(items), screenName);
-            return fitted.length > 0 ? fitted : WallpaperLibraryService.fitting(WallpaperLibraryService.selected(items), screenName);
+            return fitted.length > 0 || !fallback ? fitted : WallpaperLibraryService.fitting(WallpaperLibraryService.selected(items), screenName);
         });
     }
 
@@ -410,7 +410,7 @@ Singleton {
                 const entry = (WallpaperLibraryService.folders ?? []).find(f => f?.path === owner);
                 if (!entry || WallpaperLibraryService.folderMatchesMode(entry, SessionData.isLightMode))
                     return;
-                root.cyclePool(currentWallpaper, screenName, false);
+                root.cyclePool(currentWallpaper, screenName, false, false);
             });
         });
     }
