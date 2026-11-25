@@ -54,7 +54,7 @@ function getGridColumns(viewMode, gridColumns, iconColumns) {
     case "icons":
         return iconColumns;
     default:
-        return 1;
+        return viewMode === "row" ? 1e9 : 1;
     }
 }
 

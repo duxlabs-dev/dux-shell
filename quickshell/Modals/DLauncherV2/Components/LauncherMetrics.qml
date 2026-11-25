@@ -17,6 +17,7 @@ Singleton {
     // Room for a wrapped second label line below the centred content
     readonly property real tileContentPad: tileLabelBlockHeight - tileLabelBaseline + Theme.spacingXS
     readonly property real tileImageRatio: Theme.launcherImageRatio
+    readonly property real rowCardMinWidth: tileSize * 1.5
     readonly property real tileMinHeight: tileGap + gridIconSize + Theme.spacingS + tileLabelBaseline + tileContentPad * 2
     // Grid cells follow the list pitch so every density fits the same whole rows
     readonly property real gridDensityScale: (rowHeight + rowGap) / (Theme.listItemHeight + Theme.groupedListGap)

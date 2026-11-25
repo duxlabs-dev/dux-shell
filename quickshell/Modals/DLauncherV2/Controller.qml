@@ -10,11 +10,14 @@ import "Scorer.js" as Scorer
 import "ControllerUtils.js" as Utils
 import "NavigationHelpers.js" as Nav
 import "ItemTransformers.js" as Transform
+import "LiveSections.js" as Live
 import "../../Common/settings/LauncherFolders.js" as FolderModel
 import qs.Modals.DLauncherV2.Components
 
 Item {
     id: root
+
+    readonly property var log: Log.scoped("DLauncherV2Controller")
 
     property string searchQuery: ""
     property string searchMode: "all"
@@ -73,7 +76,13 @@ Item {
         return members;
     }
     readonly property int folderColumns: Math.min(LauncherMetrics.folderMaxColumns, Math.max(1, folderMembers.length))
+    property bool liveSections: viewModeContext === "spotlight"
+    property string expandedItemId: ""
+    property var _rowLastSelected: ({})
+    property var _liveCache: ({})
 
+    onSearchQueryChanged: _liveCache = {}
+    onActivePluginIdChanged: _liveCache = {}
     onFolderMembersChanged: {
         if (!activeFolderId)
             return;
@@ -235,6 +244,8 @@ Item {
         keyboardNavigationActive = false;
         // The scorer is a library singleton; drop prepared names (often piped dmenu input) once the launcher closes.
         Scorer.clearPreparedNames();
+        expandedItemId = "";
+        _liveCache = {};
         if (retainResultsOnClose && searchMode !== "dmenu")
             return;
         sections = [];
@@ -319,6 +330,15 @@ Item {
         function onRequestLauncherUpdate(pluginId) {
             if (!active || !PluginService.pluginInstances[pluginId])
                 return;
+            delete root._liveCache["live_" + pluginId];
+            if (root.activePluginId !== pluginId && root.liveSections && root.searchMode === "all" && PluginService.availablePlugins[pluginId]?.launcherSection) {
+                var restoreSelection = root.preserveSelectionAfterUpdate(false);
+                root._setSections(root.sections.filter(s => !s.id.startsWith("live_")));
+                root.selectedFlatIndex = restoreSelection(root.flatModel);
+                root.updateSelectedItem();
+                root._refreshPluginResults(pluginId);
+                return;
+            }
             if (activePluginId === pluginId) {
                 if (activePluginCategories.length <= 1)
                     loadPluginCategories(pluginId);
@@ -477,6 +497,8 @@ Item {
     function getSectionViewMode(sectionId) {
         if (sectionId === "browse_plugins")
             return "list";
+        if (sectionId?.startsWith("live_"))
+            return "row";
         if (dmenuView && _isDmenuSectionId(sectionId))
             return dmenuView;
         var sectionPref = sectionViewPreference(sectionId);
@@ -528,7 +550,7 @@ Item {
     }
 
     function canChangeSectionViewMode(sectionId) {
-        if (sectionId === "browse_plugins" || _isDmenuSectionId(sectionId))
+        if (sectionId === "browse_plugins" || sectionId?.startsWith("live_") || _isDmenuSectionId(sectionId))
             return false;
         if (sectionViewPreference(sectionId)?.enforced)
             return false;
@@ -679,6 +701,7 @@ Item {
         _pluginPhasePending = false;
         _phase1Items = [];
         searchQuery = query;
+        expandedItemId = "";
         requestSearch();
 
         if (autoSwitchedToFiles && !query.startsWith("/")) {
@@ -803,6 +826,8 @@ Item {
             _clearModeCache();
         appCategory = "";
         collapsedSections = {};
+        expandedItemId = "";
+        _rowLastSelected = {};
         explicitQuerySession = explicitQuery;
         historyIndex = -1;
         previousSearchMode = "all";
@@ -1210,8 +1235,7 @@ Item {
                         diskSections[i].collapsed = collapsedSections[diskSections[i].id];
                 }
                 _applyHighlights(diskSections, "");
-                flatModel = Scorer.flattenSections(diskSections);
-                sections = diskSections;
+                _setSections(diskSections);
                 selectedFlatIndex = restoreSelection(flatModel);
                 updateSelectedItem();
                 isSearching = false;
@@ -1229,8 +1253,7 @@ Item {
             var modeCache = _getCachedModeData("all");
             if (modeCache) {
                 _applyHighlights(modeCache.sections, "");
-                sections = modeCache.sections;
-                flatModel = modeCache.flatModel;
+                _setSections(modeCache.sections);
             } else {
                 var newSections = cachedSections.map(function (s) {
                     var copy = Object.assign({}, s, {
@@ -1241,9 +1264,8 @@ Item {
                     return copy;
                 });
                 _applyHighlights(newSections, "");
-                flatModel = Scorer.flattenSections(newSections);
-                sections = newSections;
-                _setCachedModeData("all", sections, flatModel);
+                _setSections(newSections);
+                _setCachedModeData("all", newSections, flatModel);
             }
             selectedFlatIndex = restoreSelection(flatModel);
             updateSelectedItem();
@@ -1292,8 +1314,7 @@ Item {
             }
 
             _applyHighlights(newSections, triggerMatch.query);
-            flatModel = Scorer.flattenSections(newSections);
-            sections = newSections;
+            _setSections(newSections);
             selectedFlatIndex = restoreSelection(flatModel);
             updateSelectedItem();
 
@@ -1610,8 +1631,7 @@ Item {
         }
 
         _applyHighlights(newSections, searchQuery);
-        flatModel = Scorer.flattenSections(newSections);
-        sections = newSections;
+        _setSections(newSections);
 
         selectedFlatIndex = restoreSelection(flatModel);
         updateSelectedItem();
@@ -1751,12 +1771,11 @@ Item {
         }
 
         _applyHighlights(newSections, searchQuery);
-        flatModel = Scorer.flattenSections(newSections);
-        sections = newSections;
+        _setSections(newSections);
 
         if (!AppSearchService.isCacheValid() && !searchQuery && !pluginFilter) {
-            AppSearchService.setCachedDefaultSections(sections, flatModel);
-            _saveDiskCache(sections);
+            AppSearchService.setCachedDefaultSections(newSections, flatModel);
+            _saveDiskCache(newSections);
         }
 
         selectedFlatIndex = restoreSelection(flatModel);
@@ -2506,7 +2525,59 @@ Item {
     }
 
     function getFirstItemIndex() {
-        return Nav.getFirstItemIndex(flatModel);
+        var i = flatModel.findIndex(e => !e.isHeader && (!e.sectionId.startsWith("live_") || (!searchQuery && e.item.data?.preferSelect)));
+        return i >= 0 ? i : Nav.getFirstItemIndex(flatModel);
+    }
+
+    function _liveSections() {
+        var result = [];
+        var launchers = liveSections && searchMode === "all" && !pluginFilter ? PluginService.getLauncherPlugins() : {};
+        for (var pluginId in launchers) {
+            var instance = launchers[pluginId].launcherSection && (!activePluginId || activePluginId === pluginId) ? PluginService.ensureLauncherInstance(pluginId) : null;
+            var sectionId = "live_" + pluginId;
+            var items = _liveCache[sectionId] ?? [];
+            try {
+                if (!(sectionId in _liveCache))
+                    items = Live.cards(pluginId, instance?.getSectionItems(searchQuery) ?? [], raw => transformPluginItem(raw, pluginId));
+            } catch (e) {
+                root.log.warn("Launcher section failed:", pluginId, e);
+            }
+            _liveCache[sectionId] = items;
+            if (instance && items.length > 0)
+                result.push({
+                    id: sectionId,
+                    title: instance.sectionTitle || getPluginMetadata(pluginId).name,
+                    icon: instance.sectionIcon || getPluginMetadata(pluginId).icon,
+                    priority: instance.sectionPriority ?? 1.5,
+                    items: items,
+                    collapsed: collapsedSections[sectionId] === true
+                });
+        }
+        _applyHighlights(result, "");
+        return result;
+    }
+
+    function _setSections(base) {
+        var live = _liveSections();
+        var merged = Live.merge(base, live);
+        flatModel = Scorer.flattenSections(merged);
+        sections = merged;
+        if (!live.some(s => s.items.some(it => it.id === expandedItemId)))
+            expandedItemId = "";
+    }
+
+    function collapseExpanded() {
+        var wasExpanded = expandedItemId !== "";
+        expandedItemId = "";
+        return wasExpanded;
+    }
+
+    function _rowEntryIndex(index) {
+        var sectionId = flatModel[index].sectionId;
+        if (getSectionViewMode(sectionId) !== "row" || sectionId === flatModel[selectedFlatIndex]?.sectionId)
+            return index;
+        var last = flatModel.findIndex(e => !e.isHeader && e.sectionId === sectionId && e.item.id === _rowLastSelected[sectionId]);
+        return last >= 0 ? last : Nav.getSectionBounds(flatModel, sectionId).start;
     }
 
     function _getCachedModeData(mode) {
@@ -2685,9 +2756,13 @@ Item {
         if (selectedFlatIndex >= 0 && selectedFlatIndex < flatModel.length) {
             var entry = flatModel[selectedFlatIndex];
             selectedItem = entry.isHeader ? null : entry.item;
+            if (selectedItem && getSectionViewMode(entry.sectionId) === "row")
+                _rowLastSelected[entry.sectionId] = selectedItem.id;
         } else {
             selectedItem = null;
         }
+        if (expandedItemId && !expandedItemId.startsWith("live:" + selectedItem?.section?.slice(5) + ":"))
+            expandedItemId = "";
     }
 
     function _applyHighlights(sectionsData, query) {
@@ -2754,11 +2829,12 @@ Item {
     function selectNext() {
         keyboardNavigationActive = true;
         _cancelPendingSelectionReset();
-        var newIndex = forceLinearNavigation ? Nav.findNextNonHeaderIndex(flatModel, selectedFlatIndex + 1) : Nav.calculateNextIndex(flatModel, selectedFlatIndex, null, null, gridColumns, getSectionViewMode, iconColumns);
+        // A row is crossed with Left/Right; Up/Down always leave it, even in linear navigation
+        var newIndex = forceLinearNavigation && getCurrentSectionViewMode() !== "row" ? Nav.findNextNonHeaderIndex(flatModel, selectedFlatIndex + 1) : Nav.calculateNextIndex(flatModel, selectedFlatIndex, null, null, gridColumns, getSectionViewMode, iconColumns);
         if (newIndex === -1)
             newIndex = selectedFlatIndex;
         if (newIndex !== selectedFlatIndex) {
-            selectedFlatIndex = newIndex;
+            selectedFlatIndex = _rowEntryIndex(newIndex);
             updateSelectedItem();
         }
     }
@@ -2766,11 +2842,11 @@ Item {
     function selectPrevious() {
         keyboardNavigationActive = true;
         _cancelPendingSelectionReset();
-        var newIndex = forceLinearNavigation ? Nav.findPrevNonHeaderIndex(flatModel, selectedFlatIndex - 1) : Nav.calculatePrevIndex(flatModel, selectedFlatIndex, null, null, gridColumns, getSectionViewMode, iconColumns);
+        var newIndex = forceLinearNavigation && getCurrentSectionViewMode() !== "row" ? Nav.findPrevNonHeaderIndex(flatModel, selectedFlatIndex - 1) : Nav.calculatePrevIndex(flatModel, selectedFlatIndex, null, null, gridColumns, getSectionViewMode, iconColumns);
         if (newIndex === -1)
             newIndex = selectedFlatIndex;
         if (newIndex !== selectedFlatIndex) {
-            selectedFlatIndex = newIndex;
+            selectedFlatIndex = _rowEntryIndex(newIndex);
             updateSelectedItem();
         }
     }
@@ -2910,7 +2986,13 @@ Item {
             return;
         }
 
-        if (searchMode !== "dmenu" || !dmenuDisableHistory)
+        var liveData = item.section?.startsWith("live_") ? item.data : null;
+        if (liveData?.expandable) {
+            expandedItemId = expandedItemId === item.id ? "" : item.id;
+            return;
+        }
+
+        if (!liveData?.keepOpen && (searchMode !== "dmenu" || !dmenuDisableHistory))
             SessionData.addLauncherHistory(searchQuery, explicitQuerySession);
 
         if (item.type === "plugin_browse") {
@@ -2977,7 +3059,8 @@ Item {
             return;
         }
 
-        itemExecuted();
+        if (!liveData?.keepOpen)
+            itemExecuted();
     }
 
     function executeAction(item, action) {

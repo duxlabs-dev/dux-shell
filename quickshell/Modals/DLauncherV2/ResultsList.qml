@@ -31,6 +31,8 @@ Item {
     property int _lastSelectedFlatIndex: -1
     property bool _selectionMotionReady: false
     property var transientSurfaceTracker: null
+    property var _rowHeights: ({})
+    property var _expandedCard: null
     readonly property bool _bottomSectionHeaderActive: leadingSectionHeaderAtBottom && (controller?.sections?.length ?? 0) > 0
 
     readonly property real contentHeight: _visualModel.height
@@ -277,6 +279,14 @@ Item {
         }
     }
 
+    function _stripHeight(sectionId) {
+        return Math.max(LauncherMetrics.rowHeight + LauncherMetrics.rowGap, _rowHeights[sectionId] ?? 0);
+    }
+
+    function handleExpandedKey(event) {
+        return controller?.selectedItem?.id === controller?.expandedItemId && typeof _expandedCard?.handleKey === "function" && _expandedCard.handleKey(event) === true;
+    }
+
     function _rebuildVisualModel() {
         root._resetDrag();
         root._selectionMotionReady = false;
@@ -326,7 +336,18 @@ Item {
             var items = section.items ?? [];
             var flatStartIndex = section.flatStartIndex ?? 0;
 
-            if (mode === "list") {
+            if (mode === "row") {
+                for (var i = 0; i < items.length; i++)
+                    indexMap[flatStartIndex + i] = rows.length;
+                cumHeights.push(cumY);
+                rows.push({
+                    _rowId: "row_" + sectionId,
+                    type: "strip_row",
+                    sectionId: sectionId,
+                    height: root._stripHeight(sectionId)
+                });
+                cumY += root._stripHeight(sectionId);
+            } else if (mode === "list") {
                 for (var i = 0; i < items.length; i++) {
                     var flatIdx = flatStartIndex + i;
                     indexMap[flatIdx] = rows.length;
@@ -671,7 +692,7 @@ Item {
                 // An integer model never arms DListView's orphan sweep, so hide released delegates here.
                 visible: index >= 0
                 width: mainListView.width
-                height: rowData?.height ?? LauncherMetrics.rowHeight
+                height: rowType === "strip_row" ? root._stripHeight(rowData.sectionId) : (rowData?.height ?? LauncherMetrics.rowHeight)
 
                 Loader {
                     active: delegateRoot.rowType === "list_item"
@@ -742,6 +763,109 @@ Item {
 
                         onRightClicked: (mouseX, mouseY) => {
                             root.itemRightClicked(delegateRoot.rowData?.flatIndex ?? -1, delegateRoot.rowData?.item ?? null, mouseX, mouseY);
+                        }
+                    }
+                }
+
+                Loader {
+                    anchors.fill: parent
+                    active: delegateRoot.rowType === "strip_row"
+                    // DListView's wheel and momentum handling assume vertical scrolling
+                    sourceComponent: ListView {
+                        id: strip
+
+                        readonly property string sectionId: delegateRoot.rowData?.sectionId ?? ""
+                        readonly property var liveSection: root.controller?.sections.find(s => s.id === sectionId) ?? null
+                        readonly property var cards: liveSection?.items ?? []
+                        readonly property real cardsHeight: contentItem.children.reduce((h, c) => Math.max(h, c.item?.implicitHeight ?? 0), 0)
+                        property real wheelDelta: 0
+
+                        orientation: ListView.Horizontal
+                        interactive: contentWidth > width
+                        boundsBehavior: Flickable.StopAtBounds
+                        snapMode: ListView.SnapToItem
+                        clip: true
+
+                        MouseArea {
+                            anchors.fill: parent
+                            acceptedButtons: Qt.NoButton
+                            enabled: strip.interactive
+                            onWheel: event => {
+                                // At either end the wheel goes on to the result list
+                                event.accepted = event.angleDelta.y < 0 ? !strip.atXEnd : event.angleDelta.y > 0 && !strip.atXBeginning;
+                                strip.wheelDelta += event.accepted ? event.angleDelta.y : 0;
+                                if (Math.abs(strip.wheelDelta) < 120)
+                                    return;
+                                strip.positionViewAtIndex(Math.max(0, Math.min(strip.count - 1, strip.indexAt(strip.contentX + 1, 0) + (strip.wheelDelta < 0 ? 1 : -1))), ListView.Beginning);
+                                strip.wheelDelta = 0;
+                            }
+                        }
+
+                        readonly property int selectedCard: (root.controller?.selectedFlatIndex ?? -1) - (liveSection?.flatStartIndex ?? 0)
+                        onSelectedCardChanged: if (selectedCard >= 0 && selectedCard < count)
+                            positionViewAtIndex(selectedCard, ListView.Contain)
+
+                        onCardsHeightChanged: {
+                            root._rowHeights = Object.assign({}, root._rowHeights, {
+                                [sectionId]: cardsHeight + LauncherMetrics.tileGap
+                            });
+                            rebuildTimer.restart();
+                        }
+
+                        model: ScriptModel {
+                            values: strip.cards
+                            objectProp: "id"
+                        }
+
+                        delegate: Item {
+                            id: card
+                            required property int index
+                            readonly property var cardItem: strip.cards[index] ?? null
+                            readonly property int flatIndex: (strip.liveSection?.flatStartIndex ?? 0) + index
+                            readonly property bool selected: root.controller?.selectedFlatIndex === flatIndex
+                            readonly property bool expanded: !!cardItem?.id && root.controller?.expandedItemId === cardItem.id
+                            readonly property alias item: cardLoader.item
+                            readonly property QtObject expandedItem: expanded ? cardLoader.item : null
+
+                            width: Math.max(strip.width / Math.max(1, strip.count), LauncherMetrics.rowCardMinWidth)
+                            height: strip.height
+                            onExpandedItemChanged: root._expandedCard = expandedItem ?? (root._expandedCard === cardLoader.item ? null : root._expandedCard)
+
+                            function activate() {
+                                root.controller.selectIndex(flatIndex);
+                                root.controller.executeItem(cardItem);
+                            }
+
+                            MouseArea {
+                                anchors.fill: parent
+                                onClicked: card.activate()
+                            }
+
+                            Loader {
+                                id: cardLoader
+                                anchors.fill: parent
+                                anchors.margins: LauncherMetrics.tileGap / 2
+                                sourceComponent: PluginService.pluginInstances[card.cardItem?.pluginId]?.sectionCard ?? defaultCard
+                                onLoaded: {
+                                    for (const [prop, value] of [["launcherItem", () => card.cardItem], ["selected", () => card.selected], ["expanded", () => card.expanded]]) {
+                                        if (prop in item)
+                                            item[prop] = Qt.binding(value);
+                                    }
+                                }
+
+                                Component {
+                                    id: defaultCard
+
+                                    LauncherRow {
+                                        keyForwardTargets: root.keyForwardTargets
+                                        item: card.cardItem
+                                        isSelected: card.selected
+                                        controller: root.controller
+                                        onClicked: card.activate()
+                                        onRightClicked: (mouseX, mouseY) => root.itemRightClicked(card.flatIndex, card.cardItem, mouseX, mouseY)
+                                    }
+                                }
+                            }
                         }
                     }
                 }
