@@ -150,6 +150,7 @@ var DEFAULTS = {
     clock: {
         clockCompactMode: false,
         clockDateOrder: "timeFirst",
+        clockShowTimezone: false,
         clockNotificationBadge: false,
         clockClickAction: "dash",
         clockClickCommand: ""
