@@ -4,6 +4,8 @@ on:
   workflow_dispatch:
   push:
     branches: [master, stable, "stable-*"]
+  schedule:
+    - cron: "0 */3 * * *"
 
 permissions:
   contents: read
@@ -14,12 +16,14 @@ env:
 
 jobs:
   build:
-    name: ${{ matrix.system }}
+    name: ${{ matrix.system }} ${{ matrix.nixpkgs }}
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 120
     strategy:
       fail-fast: false
       matrix:
+        system: [x86_64-linux, aarch64-linux]
+        nixpkgs: [locked, nixos-unstable, nixos-26.05]
         include:
           - system: x86_64-linux
             runner: ubuntu-latest
@@ -39,14 +43,49 @@ jobs:
         with:
           server-url: ${{ env.CACHE_URL }}
 
+      - name: Select the flake
+        env:
+          NIXPKGS: ${{ matrix.nixpkgs }}
+        run: |
+          set -euo pipefail
+          if [ "$NIXPKGS" = locked ]; then
+            echo "FLAKE=." >> "$GITHUB_ENV"
+            exit 0
+          fi
+          # following the channel reproduces the derivation the modules build for users on it
+          consumer="$RUNNER_TEMP/consumer"
+          mkdir -p "$consumer"
+          cat > "$consumer/flake.nix" <<EOF
+          {
+            inputs.nixpkgs.url = "github:nixos/nixpkgs/$NIXPKGS";
+            inputs.app = {
+              url = "git+file://$GITHUB_WORKSPACE?shallow=1";
+              inputs.nixpkgs.follows = "nixpkgs";
+            };
+            outputs = { app, ... }: { inherit (app) packages; };
+          }
+          EOF
+          echo "FLAKE=$consumer" >> "$GITHUB_ENV"
+
+      - name: Check the cache
+        id: cached
+        run: |
+          set -euo pipefail
+          out=$(nix eval --raw "$FLAKE#default.outPath")
+          if nix path-info --store "$CACHE_URL" "$out" >/dev/null 2>&1; then
+            echo "hit=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Build
-        run: nix build .#default -L
+        if: steps.cached.outputs.hit != 'true'
+        run: nix build "$FLAKE#default" --out-link result -L
 
       - name: Pin the latest build of the branch
+        if: steps.cached.outputs.hit != 'true'
         env:
           NIKS3: ${{ steps.cache.outputs.binary-dir }}/niks3
           TOKEN_SCRIPT: ${{ steps.cache.outputs.auth-token-script }}
-          PIN: ${{ github.event.repository.name }}-${{ github.ref_name }}-${{ matrix.system }}
+          PIN: ${{ github.event.repository.name }}-${{ github.ref_name }}-${{ matrix.system }}${{ matrix.nixpkgs != 'locked' && format('-{0}', matrix.nixpkgs) || '' }}
         run: |
           set -euo pipefail
           case "$GITHUB_REF_NAME" in
@@ -56,6 +95,6 @@ jobs:
           pin() {
             "$NIKS3" push --server-url "$CACHE_URL" --auth-token-script "$TOKEN_SCRIPT" --pin "$1" "$2"
           }
-          qt_base_drv=$(nix-store --query --references "$(nix eval --raw .#default.drvPath)" | grep -- '-dux-qt-base-[0-9][^/]*\.drv$')
+          qt_base_drv=$(nix-store --query --references "$(nix eval --raw "$FLAKE#default.drvPath")" | grep -- '-dux-qt-base-[0-9][^/]*\.drv$')
           pin "$PIN" "$(readlink -f result)"
           pin "$PIN-dux-qt-base" "$(nix build --no-link --print-out-paths "$qt_base_drv^out")"
