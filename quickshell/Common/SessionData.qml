@@ -995,30 +995,6 @@ Singleton {
         }
     }
 
-    function _folderForWallpaper(path) {
-        if (!path || path.startsWith("#") || !Array.isArray(wallpaperFolders) || wallpaperFolders.length === 0)
-            return null;
-        const targetPath = typeof WallpaperLibraryService !== "undefined" ? WallpaperLibraryService.listedPath(path) : path;
-        let best = null;
-        let bestLength = -1;
-        for (let i = 0; i < wallpaperFolders.length; i++) {
-            const folder = wallpaperFolders[i];
-            if (!folder || !folder.path)
-                continue;
-            const folderPath = folder.path.replace(/\/+$/, "");
-            if (!folderPath)
-                continue;
-            const matches = folder.recursive ? targetPath.startsWith(folderPath + "/") : targetPath.substring(0, targetPath.lastIndexOf("/")) === folderPath;
-            if (!matches)
-                continue;
-            if (folderPath.length > bestLength) {
-                best = folder;
-                bestLength = folderPath.length;
-            }
-        }
-        return best;
-    }
-
     function applyWallpaperPick(screenName, path) {
         if (perMonitorWallpaper && screenName) {
             setMonitorWallpaper(screenName, path);
@@ -1028,14 +1004,19 @@ Singleton {
             wallpaperCyclingFolderPath = "";
             saveSettings();
         }
-        if (perModeWallpaper)
+        if (perModeWallpaper || typeof WallpaperLibraryService === "undefined")
             return;
-        const folder = _folderForWallpaper(path);
-        if (folder && (folder.appearance === "light" || folder.appearance === "dark")) {
+        const revision = wallpaperRequestRevision(screenName || "");
+        WallpaperLibraryService.folderOf(path, owner => {
+            if (revision !== wallpaperRequestRevision(screenName || ""))
+                return;
+            const folder = (wallpaperFolders ?? []).find(f => f?.path === owner);
+            if (!folder || (folder.appearance !== "light" && folder.appearance !== "dark"))
+                return;
             const targetLight = folder.appearance === "light";
-            if (isLightMode !== targetLight)
-                setLightMode(targetLight, true);
-        }
+            if (isLightMode !== targetLight && typeof Theme !== "undefined")
+                Theme.setLightMode(targetLight);
+        });
     }
 
     function setWallpaperColor(color) {

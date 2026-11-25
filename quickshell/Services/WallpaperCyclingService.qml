@@ -419,8 +419,15 @@ Singleton {
         function onFolderRemoved(removedPath) {
             const prefix = removedPath.endsWith("/") ? removedPath : removedPath + "/";
             root.forEachPoolTarget((screenName, currentWallpaper) => {
-                if (WallpaperLibraryService.listedPath(currentWallpaper).startsWith(prefix))
-                    root.cyclePool(currentWallpaper, screenName, false);
+                if (!WallpaperLibraryService.listedPath(currentWallpaper).startsWith(prefix))
+                    return;
+                const revision = SessionData.wallpaperRequestRevision(screenName);
+                WallpaperLibraryService.folderOf(currentWallpaper, owner => {
+                    if (revision !== SessionData.wallpaperRequestRevision(screenName))
+                        return;
+                    if (!WallpaperLibraryService.inPool(owner))
+                        root.cyclePool(currentWallpaper, screenName, false);
+                });
             });
         }
     }

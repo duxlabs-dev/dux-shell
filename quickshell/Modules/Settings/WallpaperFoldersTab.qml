@@ -192,8 +192,8 @@ Item {
 
                                 SettingsButtonGroupRow {
                                     iconName: "contrast"
-                                    text: I18n.tr("Appearance")
-                                    model: [I18n.tr("All"), I18n.tr("Light"), I18n.tr("Dark")]
+                                    text: I18n.tr("Appearance", "wallpaper folder option: which light/dark mode the folder is used in")
+                                    model: [I18n.tr("All", "wallpaper folder used in both light and dark mode"), I18n.tr("Light", "wallpaper folder used in light mode"), I18n.tr("Dark", "wallpaper folder used in dark mode")]
                                     values: ["", "light", "dark"]
                                     value: WallpaperLibraryService.normalizeAppearance(folderRow.folder.appearance)
                                     fallbackValue: ""

@@ -52,10 +52,22 @@ function session(state = {}) {
             context.lastMonitorPick = { screenName, path };
         },
         setMonitorCyclingFolderPath() {},
-        saveSettings() {}
+        saveSettings() {},
+        wallpaperRequestRevision() { return 1; },
+        Theme: {
+            setLightMode(light) {
+                modeCalls.push({ light });
+                context.isLightMode = light;
+            }
+        },
+        WallpaperLibraryService: {
+            folderOf(path, cb) {
+                if (state.ownerByPath)
+                    cb(state.ownerByPath[path] ?? "");
+            }
+        }
     }, state));
-    for (const name of ["_folderForWallpaper", "applyWallpaperPick"])
-        vm.runInContext(extractFunction(sessionSource, name), context);
+    vm.runInContext(extractFunction(sessionSource, "applyWallpaperPick"), context);
     return { context, modeCalls };
 }
 
@@ -101,31 +113,38 @@ test("selectedForMode falls back to selected items when all matching folders are
     assert.deepEqual(darkLib.selectedForMode(items).map(i => i.path), ["/walls/light/a.jpg"]);
 });
 
-test("applyWallpaperPick auto-switches light/dark mode unless perModeWallpaper is enabled", () => {
+test("applyWallpaperPick auto-switches light/dark mode via Theme.setLightMode unless perModeWallpaper is enabled", () => {
     const folders = [
         { path: "/walls", recursive: true, appearance: "" },
         { path: "/walls/light", recursive: true, appearance: "light" },
         { path: "/walls/dark", recursive: false, appearance: "dark" }
     ];
+    const ownerByPath = {
+        "/walls/light/sub/day.jpg": "/walls/light",
+        "/walls/dark/night.jpg": "/walls/dark",
+        "/walls/neutral.jpg": "/walls",
+        "/walls/dark/nested/deep.jpg": "/walls",
+        "/walls/light/day.jpg": "/walls/light"
+    };
 
-    const s1 = session({ isLightMode: false, wallpaperFolders: folders });
+    const s1 = session({ isLightMode: false, wallpaperFolders: folders, ownerByPath });
     s1.context.applyWallpaperPick("", "/walls/light/sub/day.jpg");
-    assert.deepEqual(s1.modeCalls, [{ light: true, skip: true }]);
+    assert.deepEqual(s1.modeCalls, [{ light: true }]);
     assert.equal(s1.context.wallpaperPath, "/walls/light/sub/day.jpg");
 
     s1.context.applyWallpaperPick("", "/walls/dark/night.jpg");
-    assert.deepEqual(s1.modeCalls, [{ light: true, skip: true }, { light: false, skip: true }]);
+    assert.deepEqual(s1.modeCalls, [{ light: true }, { light: false }]);
 
     // Unclassified / All folder keeps current mode
     s1.context.applyWallpaperPick("", "/walls/neutral.jpg");
     assert.equal(s1.modeCalls.length, 2);
 
-    // Non-recursive folder does not match nested files; falls back to parent recursive /walls ("")
+    // Non-matching owner falls back without switching
     s1.context.applyWallpaperPick("", "/walls/dark/nested/deep.jpg");
     assert.equal(s1.modeCalls.length, 2);
 
     // perModeWallpaper skips mode switching
-    const s2 = session({ isLightMode: false, perModeWallpaper: true, wallpaperFolders: folders });
+    const s2 = session({ isLightMode: false, perModeWallpaper: true, wallpaperFolders: folders, ownerByPath });
     s2.context.applyWallpaperPick("", "/walls/light/day.jpg");
     assert.deepEqual(s2.modeCalls, []);
 });
