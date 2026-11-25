@@ -166,11 +166,10 @@ Singleton {
     function selectedForMode(entries, lightMode) {
         const base = selected(entries);
         const mode = lightMode === undefined ? SessionData.isLightMode : !!lightMode;
-        const filtered = base.filter(item => {
+        return base.filter(item => {
             const folder = folders.find(entry => entry.path === item.folder);
             return folderMatchesMode(folder, mode);
         });
-        return filtered.length > 0 ? filtered : base;
     }
 
     function folderItems(path) {

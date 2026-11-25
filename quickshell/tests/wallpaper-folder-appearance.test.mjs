@@ -103,14 +103,15 @@ test("selectedForMode filters by isLightMode and keeps All folders", () => {
     assert.deepEqual(darkLib.selectedForMode(items).map(i => i.path), ["/walls/dark/b.jpg", "/walls/shared/c.jpg"]);
 });
 
-test("selectedForMode falls back to selected items when all matching folders are empty", () => {
+test("selectedForMode returns empty when no matching folders exist so caller controls fallback", () => {
     const folders = [
         { path: "/walls/light", hidden: false, appearance: "light" },
         { path: "/walls/dark", hidden: false, appearance: "dark" }
     ];
     const items = [{ path: "/walls/light/a.jpg", folder: "/walls/light" }];
     const darkLib = library(folders, { isLightMode: false });
-    assert.deepEqual(darkLib.selectedForMode(items).map(i => i.path), ["/walls/light/a.jpg"]);
+    assert.deepEqual(darkLib.selectedForMode(items), []);
+    assert.deepEqual(darkLib.selected(items).map(i => i.path), ["/walls/light/a.jpg"]);
 });
 
 test("applyWallpaperPick auto-switches light/dark mode via Theme.setLightMode unless perModeWallpaper is enabled", () => {
