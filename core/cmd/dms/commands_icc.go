@@ -60,13 +60,12 @@ var iccSetTempCmd = &cobra.Command{
 	Use:     "set-temp <output> <kelvin>",
 	Aliases: []string{"setTemp"},
 	Short:   "Set the color temperature for a specific output",
-	Long: "Set the color temperature for a specific output, independently of the\n" +
-		"night light schedule: every display keeps its own value, which also makes\n" +
-		"the range wider than the night light's.\n\n" +
+	Long: "Set the white point of a specific output. The night light schedule\n" +
+		"shifts it like any other display, so displays set to different values\n" +
+		"keep their difference while the schedule moves.\n\n" +
 		"For an output with an ICC profile the temperature is composed on top of\n" +
 		"it, treating the profile as measured at 6500K.\n\n" +
-		"Accepts 1000-10000K; 0 removes the override, so the output follows the\n" +
-		"night light schedule again (6500K while it is disabled).",
+		"Accepts 1000-10000K; 0 resets the output to 6500K.",
 	Args: cobra.ExactArgs(2),
 	Run:  runICCSetTemp,
 }
@@ -325,7 +324,7 @@ func runICCSetTemp(cmd *cobra.Command, args []string) {
 		log.Fatalf("Invalid temperature %q: expected a number in kelvin", args[1])
 	}
 	if temp != 0 && (temp < 1000 || temp > 10000) {
-		log.Fatalf("Temperature %d out of range (1000-10000, or 0 to follow the schedule)", temp)
+		log.Fatalf("Temperature %d out of range (1000-10000, or 0 to reset)", temp)
 	}
 
 	req := ipc.Request{
@@ -344,14 +343,13 @@ func runICCSetTemp(cmd *cobra.Command, args []string) {
 	}
 
 	if temp == 0 {
-		fmt.Printf("Output '%s' follows the night light schedule again\n", outputName)
+		fmt.Printf("Reset output '%s' color temperature\n", outputName)
 		return
 	}
 	fmt.Printf("Set output '%s' color temperature to %dK\n", outputName, temp)
 }
 
-// fetchICCOutputTemps asks the running server for the per-output overrides.
-// Outputs without an override report 0.
+// Outputs without their own temperature report 0.
 func fetchICCOutputTemps() map[string]int {
 	temps := make(map[string]int)
 
@@ -375,11 +373,10 @@ func fetchICCOutputTemps() map[string]int {
 	return temps
 }
 
-// formatOutputTemp renders a per-output override, or the schedule marker.
 func formatOutputTemp(temps map[string]int, output string) string {
 	temp, ok := temps[output]
 	if !ok || temp == 0 {
-		return "schedule"
+		return "default"
 	}
 	return strconv.Itoa(temp) + "K"
 }

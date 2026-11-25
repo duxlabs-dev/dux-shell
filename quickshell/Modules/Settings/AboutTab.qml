@@ -238,7 +238,7 @@ Item {
         SettingsDeferred {
             SettingsCard {
                 iconName: "memory"
-                title: I18n.tr("Runtime")
+                title: I18n.tr("Runtime", "noun, software runtime version row")
 
                 SettingsRow {
                     title: ShellVersionService.runtimeName
@@ -253,7 +253,7 @@ Item {
 
                 SettingsRow {
                     visible: ShellVersionService.runtimeLibrary !== ""
-                    title: I18n.tr("Library")
+                    title: I18n.tr("Library", "noun, software library version row")
                     body: StyledText {
                         width: parent.width
                         text: ShellVersionService.runtimeLibrary

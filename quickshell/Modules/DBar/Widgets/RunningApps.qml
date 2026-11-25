@@ -9,6 +9,7 @@ import qs.Services
 import qs.DCommon.Widgets
 import qs.Widgets
 import "../../../DCommon/Common/WheelInput.js" as WheelInput
+import "../BarScroll.js" as BarScroll
 
 BasePill {
     id: root
@@ -170,26 +171,27 @@ BasePill {
     }
 
     onWheel: function (wheelEvent) {
-        if (WheelInput.isHorizontal(wheelEvent))
+        if (!SettingsData.widgetOption("runningApps", widgetData, "scrollEnabled") || WheelInput.isHorizontal(wheelEvent))
             return;
-        wheelEvent.accepted = true;
         const deltaY = wheelEvent.angleDelta.y;
-        const isMouseWheel = Math.abs(deltaY) >= 120 && (Math.abs(deltaY) % 120) === 0;
-
-        const windows = root.sortedToplevels.filter(w => !w.skipSwitcher);
-        if (windows.length < 2)
-            return;
-
-        if (isMouseWheel) {
-            activateNeighbor(windows, deltaY);
+        if (deltaY === 0) {
+            if (wheelEvent.phase === Qt.ScrollEnd)
+                scrollAccumulator = 0;
             return;
         }
 
-        scrollAccumulator += deltaY;
-        if (Math.abs(scrollAccumulator) < touchpadThreshold)
+        wheelEvent.accepted = true;
+        const windows = root.sortedToplevels.filter(w => !w.skipSwitcher);
+        if (windows.length < 2)
             return;
-        activateNeighbor(windows, scrollAccumulator);
-        scrollAccumulator = 0;
+        const isTouchpad = WheelInput.isTouchpad(wheelEvent);
+        if (isTouchpad && wheelEvent.phase === Qt.ScrollBegin)
+            scrollAccumulator = 0;
+        const res = BarScroll.stepAccumulator(scrollAccumulator, deltaY, isTouchpad ? touchpadThreshold : 120);
+        scrollAccumulator = res.remainder;
+        if (res.units <= 0)
+            return;
+        activateNeighbor(windows, res.sign);
     }
 
     content: Component {

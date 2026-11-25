@@ -5,6 +5,12 @@
   "%1 %2": {
     "%1 %2": ""
   },
+  "%1 (%2 %3)": {
+    "%1 (%2 %3)": ""
+  },
+  "%1 (%2)": {
+    "%1 (%2)": ""
+  },
   "%1 (+%2 more)": {
     "%1 (+%2 more)": "%1 (+ ещё %2)"
   },
@@ -278,6 +284,9 @@
   "%1 wallpapers  •  %2 / %3": {
     "%1 wallpapers  •  %2 / %3": "Обои: %1  •  %2 / %3"
   },
+  "%1 weeks ago": {
+    "%1 weeks ago": ""
+  },
   "%1 will be downloaded and installed via %2.": {
     "%1 will be downloaded and installed via %2.": "Будут скачаны и установлены обновления объёмом %1 с помощью %2."
   },
@@ -344,11 +353,20 @@
   "10-bit color": {
     "10-bit color": "10-битный цвет"
   },
+  "12-sided cookie": {
+    "12-sided cookie": ""
+  },
   "2.4 GHz": {
     "2.4 GHz": "2,4 ГГц"
   },
   "3rd party": {
     "3rd party": "Сторонние"
+  },
+  "4-leaf clover": {
+    "4-leaf clover": ""
+  },
+  "4-sided cookie": {
+    "4-sided cookie": ""
   },
   "5 GHz": {
     "5 GHz": "5 ГГц"
@@ -358,6 +376,12 @@
   },
   "6 GHz": {
     "6 GHz": ""
+  },
+  "7-sided cookie": {
+    "7-sided cookie": ""
+  },
+  "8-leaf clover": {
+    "8-leaf clover": ""
   },
   "A custom seed color overrides this": {
     "A custom seed color overrides this": "Свой исходный цвет имеет приоритет"
@@ -421,6 +445,9 @@
   },
   "Access to system controls and settings": {
     "Access to system controls and settings": "Системные функции и настройки"
+  },
+  "Accessibility": {
+    "Accessibility": ""
   },
   "Accounts": {
     "Accounts": "Учётные записи"
@@ -539,6 +566,9 @@
   "Add entry": {
     "Add entry": "Добавить запись"
   },
+  "Add folder": {
+    "Add folder": ""
+  },
   "Add input method": {
     "Add input method": ""
   },
@@ -574,6 +604,9 @@
   },
   "Add to autostart": {
     "Add to autostart": "Добавить в автозапуск"
+  },
+  "Add to folder": {
+    "Add to folder": ""
   },
   "Add user": {
     "Add user": "Добавить пользователя"
@@ -653,6 +686,9 @@
   "Alerts": {
     "Alerts": "Предупреждения"
   },
+  "Alerts & suppression": {
+    "Alerts & suppression": ""
+  },
   "Alignment": {
     "Alignment": "Выравнивание"
   },
@@ -712,6 +748,9 @@
   },
   "Allowed cores": {
     "Allowed cores": ""
+  },
+  "Already added": {
+    "Already added": ""
   },
   "Already on that session": {
     "Already on that session": "Уже в этой сессии"
@@ -827,8 +866,14 @@
   "App actions": {
     "App actions": "Действия приложений"
   },
+  "App color": {
+    "App color": ""
+  },
   "App customizations": {
     "App customizations": "Свои настройки приложений"
+  },
+  "App icon style": {
+    "App icon style": ""
   },
   "App launcher": {
     "App launcher": "Лаунчер"
@@ -917,6 +962,9 @@
   "Arc extender": {
     "Arc extender": "Продлевать рамку до лаунчера"
   },
+  "Arch": {
+    "Arch": ""
+  },
   "Archive": {
     "Archive": ""
   },
@@ -964,6 +1012,9 @@
   },
   "Audio": {
     "Audio": "Аудио"
+  },
+  "Audio & playback": {
+    "Audio & playback": ""
   },
   "Audio Codec": {
     "Audio Codec": "Аудиокодек"
@@ -1205,6 +1256,9 @@
   "Backlight device": {
     "Backlight device": "Устройство подсветки"
   },
+  "Balance": {
+    "Balance": ""
+  },
   "Balance power and performance": {
     "Balance power and performance": "Баланс энергопотребления и производительности"
   },
@@ -1279,6 +1333,9 @@
   },
   "Bento style only": {
     "Bento style only": ""
+  },
+  "Best match": {
+    "Best match": ""
   },
   "Bind keys to region, screen, window and scroll captures": {
     "Bind keys to region, screen, window and scroll captures": ""
@@ -1418,6 +1475,21 @@
   "Brackets": {
     "Brackets": ""
   },
+  "Break history and previews": {
+    "Break history and previews": ""
+  },
+  "Break plan": {
+    "Break plan": ""
+  },
+  "Break plans and schedule": {
+    "Break plans and schedule": ""
+  },
+  "Break reminders": {
+    "Break reminders": ""
+  },
+  "Break schedule": {
+    "Break schedule": ""
+  },
   "Bright": {
     "Bright": "Яркая"
   },
@@ -1429,6 +1501,9 @@
   },
   "Brightness control not available": {
     "Brightness control not available": "Управление яркостью недоступно"
+  },
+  "Brightness step": {
+    "Brightness step": ""
   },
   "Brightness style": {
     "Brightness style": "Вид индикатора яркости"
@@ -1483,6 +1558,9 @@
   },
   "CPU": {
     "CPU": "ЦП"
+  },
+  "CPU clock speed": {
+    "Clock": ""
   },
   "CPU temperature": {
     "CPU temperature": "Температура ЦП"
@@ -1637,14 +1715,38 @@
   "Change Volume": {
     "Change Volume": "Менять громкость"
   },
+  "Change shape": {
+    "Change shape": ""
+  },
   "Change where an activity sits, what it shows when collapsed and what a click opens": {
     "Change where an activity sits, what it shows when collapsed and what a click opens": ""
+  },
+  "Changes display brightness": {
+    "Changes display brightness": ""
+  },
+  "Changes player volume": {
+    "Changes player volume": ""
   },
   "Changes save to %1": {
     "Changes save to %1": "Изменения сохраняются в %1"
   },
+  "Changes song": {
+    "Changes song": ""
+  },
+  "Changes volume": {
+    "Changes volume": ""
+  },
   "Changes volume and audio devices": {
     "Changes volume and audio devices": "Меняет громкость и звуковые устройства"
+  },
+  "Changes volume, or brightness over its icon": {
+    "Changes volume, or brightness over its icon": ""
+  },
+  "Changes volume, or microphone and brightness over their icons": {
+    "Changes volume, or microphone and brightness over their icons": ""
+  },
+  "Changes volume, or microphone over its icon": {
+    "Changes volume, or microphone over its icon": ""
   },
   "Channel": {
     "Channel": "Канал"
@@ -2429,6 +2531,9 @@
   "Cut": {
     "Cut": ""
   },
+  "Cycles open windows": {
+    "Cycles open windows": ""
+  },
   "DDC/CI monitor": {
     "DDC/CI monitor": "Монитор DDC/CI"
   },
@@ -2482,6 +2587,9 @@
   },
   "Daily limit": {
     "Daily limit": "Дневной лимит"
+  },
+  "Daily limit, app limits, history": {
+    "Daily limit, app limits, history": ""
   },
   "Daily screen time limit reached": {
     "Daily screen time limit reached": "Достигнут дневной лимит экранного времени"
@@ -2795,6 +2903,9 @@
   "Disabled by Frame Mode": {
     "Disabled by Frame Mode": "Недоступно в режиме рамки"
   },
+  "Disabling Wi-Fi...": {
+    "Disabling Wi-Fi...": ""
+  },
   "Disabling auto-login on startup...": {
     "Disabling auto-login on startup...": "Отключение автоматического входа при запуске..."
   },
@@ -2815,6 +2926,9 @@
   },
   "Disconnected": {
     "Disconnected": "Отключено"
+  },
+  "Disconnected from Wi-Fi": {
+    "Disconnected from Wi-Fi": ""
   },
   "Discover community plugins. Review their code before installing, and audit changes before updating.": {
     "Discover community plugins. Review their code before installing, and audit changes before updating.": "Дополнения сообщества. Изучите код перед установкой и изменения перед обновлением."
@@ -3044,6 +3158,9 @@
   "Dusk (Astronomical Twilight)": {
     "Dusk (Astronomical Twilight)": "Вечерние астрономические сумерки"
   },
+  "Dusk (Civil Twilight)": {
+    "Dusk (Civil Twilight)": ""
+  },
   "Dusk (Nautical Twilight)": {
     "Dusk (Nautical Twilight)": "Вечерние навигационные сумерки"
   },
@@ -3058,6 +3175,12 @@
   },
   "Dux Greeter docs": {
     "Dux Greeter docs": "Документация Dux Greeter"
+  },
+  "Dux Icons tile style option, a near-gray tint of the app's color": {
+    "Muted": ""
+  },
+  "Dux app tone": {
+    "Dux app tone": ""
   },
   "Dwindle": {
     "Dwindle": "Dwindle"
@@ -3091,6 +3214,9 @@
   },
   "Edge": {
     "Edge": "По краю"
+  },
+  "Edge Match": {
+    "Edge Match": ""
   },
   "Edge around popups and modals": {
     "Edge around popups and modals": "Рамка вокруг всплывающих панелей и модальных окон"
@@ -3187,6 +3313,9 @@
   },
   "Enabled": {
     "Enabled": "Включено"
+  },
+  "Enabling Wi-Fi...": {
+    "Enabling Wi-Fi...": ""
   },
   "Enabling cellular...": {
     "Enabling cellular...": "Включение мобильной сети…"
@@ -3362,6 +3491,9 @@
   "Extend battery life": {
     "Extend battery life": "Продлить работу от батареи"
   },
+  "Extend to screen edge": {
+    "Extend to screen edge": ""
+  },
   "Extensible architecture": {
     "Extensible architecture": "Расширяемая архитектура"
   },
@@ -3461,12 +3593,6 @@
   "Failed to disconnect": {
     "Failed to disconnect": ""
   },
-  "Failed to disconnect VPN": {
-    "Failed to disconnect VPN": "Не удалось отключить VPN"
-  },
-  "Failed to disconnect VPNs": {
-    "Failed to disconnect VPNs": "Не удалось отключить VPN"
-  },
   "Failed to duplicate %1": {
     "Failed to duplicate %1": ""
   },
@@ -3475,6 +3601,9 @@
   },
   "Failed to enable IP location": {
     "Failed to enable IP location": "Не удалось включить определение местоположения по IP"
+  },
+  "Failed to enable Wi-Fi": {
+    "Failed to enable Wi-Fi": ""
   },
   "Failed to enable job acceptance": {
     "Failed to enable job acceptance": "Не удалось включить принятие заданий"
@@ -3662,9 +3791,6 @@
   "Failed to unpin entry": {
     "Failed to unpin entry": "Не удалось открепить запись"
   },
-  "Failed to update %1: %2": {
-    "Failed to update %1: %2": "Не удалось обновить %1: %2"
-  },
   "Failed to update VPN": {
     "Failed to update VPN": "Не удалось обновить VPN"
   },
@@ -3730,6 +3856,9 @@
   },
   "Files": {
     "Files": "Файлы"
+  },
+  "Files & folders": {
+    "Files & folders": ""
   },
   "Filesystem usage monitoring": {
     "Filesystem usage monitoring": "Мониторинг использования файловой системы"
@@ -3916,9 +4045,6 @@
   },
   "Folder already added": {
     "Folder already added": ""
-  },
-  "Folder match theme colors": {
-    "Folder match theme colors": ""
   },
   "Folder, interval, daily time": {
     "Folder, interval, daily time": "Папка, интервал, время смены"
@@ -4163,6 +4289,9 @@
   "Gaussian": {
     "Gaussian": "Гауссова"
   },
+  "Gem": {
+    "Gem": ""
+  },
   "General": {
     "General": "Общие"
   },
@@ -4301,9 +4430,6 @@
   "HDR tone mapping": {
     "HDR tone mapping": "Тональное преобразование HDR"
   },
-  "HTML copied to clipboard": {
-    "HTML copied to clipboard": "HTML скопирован в буфер обмена"
-  },
   "Half": {
     "Half": ""
   },
@@ -4406,8 +4532,14 @@
   "Hide until typing": {
     "Hide until typing": "Показывать при вводе"
   },
+  "Hide wallpapers that don't fit the display": {
+    "Hide wallpapers that don't fit the display": ""
+  },
   "Hide when idle": {
     "Hide when idle": "Скрывать при низкой скорости"
+  },
+  "Hide when no notifications": {
+    "Hide when no notifications": ""
   },
   "Hide when no updates": {
     "Hide when no updates": "Скрывать, если нет обновлений"
@@ -4478,6 +4610,9 @@
   "Horizontal": {
     "Horizontal": "Горизонтально"
   },
+  "Horizontal (Shift + scroll)": {
+    "Horizontal (Shift + scroll)": ""
+  },
   "Horizontal offset": {
     "Horizontal offset": "Смещение по горизонтали"
   },
@@ -4514,6 +4649,9 @@
   "Hourly": {
     "Hourly": "По часам"
   },
+  "Hours": {
+    "Hours": ""
+  },
   "Hover popouts": {
     "Hover popouts": "Открывать всплывающие панели при наведении"
   },
@@ -4525,6 +4663,9 @@
   },
   "How long a new activity stays open before the island returns to its usual content": {
     "How long a new activity stays open before the island returns to its usual content": ""
+  },
+  "How long before a break the heads-up appears": {
+    "How long before a break the heads-up appears": ""
   },
   "How long the title stays after a track change": {
     "How long the title stays after a track change": ""
@@ -4553,6 +4694,10 @@
   "Hyprland config include missing": {
     "Hyprland config include missing": "Отсутствует include конфигурации Hyprland"
   },
+  "Hyprland scrolling layout direction": {
+    "Down": "",
+    "Up": ""
+  },
   "Hyprland website": {
     "Hyprland website": "Сайт Hyprland"
   },
@@ -4579,6 +4724,9 @@
   },
   "IP address or hostname": {
     "IP address or hostname": "IP-адрес или имя хоста"
+  },
+  "IP method: share this connection with other computers": {
+    "Shared": ""
   },
   "IP sharing setup failed. Check that %1 is installed.": {
     "IP sharing setup failed. Check that %1 is installed.": "Не удалось настроить общий доступ к интернету. Проверьте, установлен ли %1."
@@ -4679,9 +4827,6 @@
   "Image": {
     "Image": "Изображение"
   },
-  "Image copied to clipboard": {
-    "Image copied to clipboard": "Изображение скопировано в буфер обмена"
-  },
   "Image viewer": {
     "Image viewer": "Просмотр изображений"
   },
@@ -4778,6 +4923,9 @@
   "Initial title": {
     "Initial title": "Исходный заголовок"
   },
+  "Initialized": {
+    "Initialized": ""
+  },
   "Injected palettes": {
     "Injected palettes": "Внешние палитры"
   },
@@ -4849,6 +4997,9 @@
   },
   "Install the %1 package for dynamic theming": {
     "Install the %1 package for dynamic theming": "Установите пакет %1 для динамического оформления"
+  },
+  "Install theme": {
+    "Install theme": ""
   },
   "Install theme '%1' from the DMS registry?": {
     "Install theme '%1' from the DMS registry?": "Установить тему «%1» из реестра DMS?"
@@ -5123,6 +5274,9 @@
   "Last used on this screen": {
     "Last used on this screen": "Последний использованный на этом экране"
   },
+  "Last week": {
+    "Last week": ""
+  },
   "Latitude": {
     "Latitude": "Широта"
   },
@@ -5260,9 +5414,6 @@
   },
   "Like your plugins": {
     "Like your plugins": "Похоже на ваши дополнения"
-  },
-  "Limit": {
-    "Limit": "Лимит"
   },
   "Limit set to %1%": {
     "Limit set to %1%": "Лимит установлен на %1%"
@@ -5416,6 +5567,15 @@
   },
   "Long Text": {
     "Long Text": "Длинный текст"
+  },
+  "Long break": {
+    "Long break": ""
+  },
+  "Long break duration": {
+    "Long break duration": ""
+  },
+  "Long break in %1": {
+    "Long break in %1": ""
   },
   "Long press": {
     "Long press": "Долгое нажатие"
@@ -5594,6 +5754,9 @@
   "Match Criteria": {
     "Match Criteria": "Условия применения"
   },
+  "Match folder colors to theme": {
+    "Match folder colors to theme": ""
+  },
   "Match type": {
     "Match type": "Способ сравнения"
   },
@@ -5674,6 +5837,9 @@
   },
   "Maximized and fullscreen": {
     "Maximized and fullscreen": "Развёрнутое и полноэкранное"
+  },
+  "Maximum": {
+    "Maximum": ""
   },
   "Maximum entries": {
     "Maximum entries": "Максимум записей"
@@ -5804,6 +5970,9 @@
   "Minimum workspaces": {
     "Minimum workspaces": "Минимум рабочих пространств"
   },
+  "Minutes": {
+    "Minutes": ""
+  },
   "Mirror display": {
     "Mirror display": "Дублировать экран"
   },
@@ -5903,6 +6072,9 @@
   "Most Vivid": {
     "Most Vivid": "Самый яркий"
   },
+  "Most common": {
+    "Most common": ""
+  },
   "Most used apps": {
     "Most used apps": "Приложения по времени использования"
   },
@@ -5911,6 +6083,9 @@
   },
   "Motion blur": {
     "Motion blur": "Размытие в движении"
+  },
+  "Motion, density, scrollbars": {
+    "Motion, density, scrollbars": ""
   },
   "Mount": {
     "Mount": "Точка монтирования"
@@ -6401,6 +6576,9 @@
   "No results found": {
     "No results found": "Ничего не найдено"
   },
+  "No room left on the dashboard": {
+    "No room left on the dashboard": ""
+  },
   "No round": {
     "No round": "Без скругления"
   },
@@ -6652,6 +6830,9 @@
   },
   "Off matches the bar's opacity": {
     "Off matches the bar's opacity": ""
+  },
+  "Off switches show an X, on switches keep their check": {
+    "Off switches show an X, on switches keep their check": ""
   },
   "Office": {
     "Office": "Офис"
@@ -6929,6 +7110,9 @@
   "Overlay": {
     "Overlay": "Оверлей"
   },
+  "Overlay placement passes empty strip input through to windows": {
+    "Overlay placement passes empty strip input through to windows": ""
+  },
   "Overridden by config": {
     "Overridden by config": "Переопределено конфигурацией"
   },
@@ -7091,9 +7275,6 @@
   "Path": {
     "Path": "Путь"
   },
-  "Path copied to clipboard": {
-    "Path copied to clipboard": "Путь скопирован в буфер обмена"
-  },
   "Pattern": {
     "Pattern": "Шаблон"
   },
@@ -7102,6 +7283,9 @@
   },
   "Pause checks on battery": {
     "Pause checks on battery": "Не проверять обновления при питании от батареи"
+  },
+  "Pause media during breaks": {
+    "Pause media during breaks": ""
   },
   "Pause night mode while a fullscreen window has focus": {
     "Pause night mode while a fullscreen window has focus": "Приостанавливать ночной режим, пока активно полноэкранное окно."
@@ -7114,6 +7298,9 @@
   },
   "Paused": {
     "Paused": "Приостановлено"
+  },
+  "Pauses playing media when a break starts and resumes it after": {
+    "Pauses playing media when a break starts and resumes it after": ""
   },
   "Peak": {
     "Peak": ""
@@ -7132,6 +7319,9 @@
   },
   "Pending Discharge": {
     "Pending Discharge": "Ожидает разрядки"
+  },
+  "Pentagon": {
+    "Pentagon": ""
   },
   "Per display": {
     "Per display": ""
@@ -7174,9 +7364,6 @@
   },
   "Pick a different file manager in Settings → Dock → Trash.": {
     "Pick a different file manager in Settings → Dock → Trash.": "Выберите другой файловый менеджер в Настройки → Док → Корзина."
-  },
-  "Pick an app from the list above or the dashboard tab": {
-    "Pick an app from the list above or the dashboard tab": "Выберите приложение в списке выше или на вкладке сводки."
   },
   "Pick an icon theme first": {
     "Pick an icon theme first": ""
@@ -7267,6 +7454,9 @@
   },
   "Playing audio": {
     "Playing audio": ""
+  },
+  "Plays a sound when a break starts or ends": {
+    "Plays a sound when a break starts or ends": ""
   },
   "Please wait...": {
     "Please wait...": "Пожалуйста, подождите…"
@@ -7394,6 +7584,12 @@
   "Possible override conflicts": {
     "Possible override conflicts": "Возможные конфликты назначений"
   },
+  "Postpones breaks while an app is fullscreen": {
+    "Postpones breaks while an app is fullscreen": ""
+  },
+  "Postpones breaks while the microphone is in use": {
+    "Postpones breaks while the microphone is in use": ""
+  },
   "Power": {
     "Power": "Питание"
   },
@@ -7441,6 +7637,9 @@
   },
   "Power-on time": {
     "Power-on time": ""
+  },
+  "Pre-break warning": {
+    "Pre-break warning": ""
   },
   "Pre-release": {
     "Pre-release": "Предварительный выпуск"
@@ -7501,6 +7700,12 @@
   },
   "Preview duration": {
     "Preview duration": ""
+  },
+  "Preview fullscreen break": {
+    "Preview fullscreen break": ""
+  },
+  "Preview pre-break warning": {
+    "Preview pre-break warning": ""
   },
   "Preview, install and remove cursor themes": {
     "Preview, install and remove cursor themes": ""
@@ -7636,6 +7841,9 @@
   },
   "Profile on battery": {
     "Profile on battery": "Профиль при работе от батареи"
+  },
+  "Profile picker": {
+    "Profile picker": ""
   },
   "Profile saved: %1": {
     "Profile saved: %1": "Профиль сохранён: %1"
@@ -7828,6 +8036,9 @@
   },
   "Red": {
     "Red": "Красный"
+  },
+  "Redact": {
+    "Redact": ""
   },
   "Redo": {
     "Redo": ""
@@ -8165,9 +8376,6 @@
   "Right-click a notification and choose \"Allow in Do Not Disturb\" to add an app": {
     "Right-click a notification and choose \"Allow in Do Not Disturb\" to add an app": "Чтобы добавить приложение, кликните правой кнопкой по его уведомлению и выберите «Разрешить в режиме „Не беспокоить“»."
   },
-  "Right-click a widget for options": {
-    "Right-click a widget for options": ""
-  },
   "Right-click an app in the launcher and choose 'Edit App'": {
     "Right-click an app in the launcher and choose 'Edit App'": "Кликните правой кнопкой по приложению в лаунчере и выберите «Редактировать приложение»."
   },
@@ -8200,6 +8408,9 @@
   },
   "Rounded": {
     "Rounded": "Скруглённые"
+  },
+  "Rounded screen corners": {
+    "Rounded screen corners": ""
   },
   "Rounded square": {
     "Rounded square": ""
@@ -8426,6 +8637,9 @@
   "Screen time": {
     "Screen time": "Экранное время"
   },
+  "Screen time & limits": {
+    "Screen time & limits": ""
+  },
   "Screen time and app limits": {
     "Screen time and app limits": "Экранное время и ограничения приложений"
   },
@@ -8450,11 +8664,20 @@
   "Scroll capture interval": {
     "Scroll capture interval": ""
   },
+  "Scroll in the empty space next to the island and satellite widgets": {
+    "Scroll in the empty space next to the island and satellite widgets": ""
+  },
+  "Scroll in the gap between the bar and the display edge": {
+    "Scroll in the gap between the bar and the display edge": ""
+  },
   "Scroll lyrics": {
     "Scroll lyrics": ""
   },
   "Scroll method": {
     "Scroll method": "Способ прокрутки"
+  },
+  "Scroll on empty strip": {
+    "Scroll on empty strip": ""
   },
   "Scroll shadows": {
     "Scroll shadows": ""
@@ -8579,9 +8802,6 @@
   "Select Custom Theme": {
     "Select Custom Theme": "Выбор пользовательской темы"
   },
-  "Select Dock Launcher Logo": {
-    "Select Dock Launcher Logo": "Выбрать логотип лаунчера дока"
-  },
   "Select Dot Icon": {
     "Select Dot Icon": ""
   },
@@ -8657,9 +8877,6 @@
   "Separate light and dark": {
     "Separate light and dark": "Разные обои для светлой и тёмной тем"
   },
-  "Separate light and dark themes": {
-    "Separate light and dark themes": "Разные наборы значков для светлой и тёмной тем"
-  },
   "Separate per display": {
     "Separate per display": "Свои обои для каждого экрана"
   },
@@ -8704,9 +8921,6 @@
   },
   "Set custom names for your audio output devices": {
     "Set custom names for your audio output devices": "Задайте свои названия устройствам вывода звука"
-  },
-  "Set limit": {
-    "Set limit": "Задать лимит"
   },
   "Set notification rules": {
     "Set notification rules": "Настроить правила уведомлений"
@@ -8795,6 +9009,21 @@
   "Short": {
     "Short": "Краткий"
   },
+  "Short break": {
+    "Short break": ""
+  },
+  "Short break duration": {
+    "Short break duration": ""
+  },
+  "Short break in %1": {
+    "Short break in %1": ""
+  },
+  "Short break interval": {
+    "Short break interval": ""
+  },
+  "Short breaks before long break": {
+    "Short breaks before long break": ""
+  },
   "Shortcut": {
     "Shortcut": "Сочетание клавиш"
   },
@@ -8833,9 +9062,6 @@
   },
   "Show Edit widgets in app context menu": {
     "Show Edit widgets in app context menu": ""
-  },
-  "Show I/O": {
-    "Show I/O": "Показывать чтение и запись"
   },
   "Show Line Numbers": {
     "Show Line Numbers": "Показывать номера строк"
@@ -8963,6 +9189,9 @@
   "Show on overview only": {
     "Show on overview only": "Показывать только в обзоре"
   },
+  "Show on/off indicators": {
+    "Show on/off indicators": ""
+  },
   "Show package source badges": {
     "Show package source badges": "Показывать источник установки"
   },
@@ -9011,17 +9240,14 @@
   "Show switch user": {
     "Show switch user": "Показывать смену пользователя"
   },
-  "Show temperature": {
-    "Show temperature": "Показывать температуру"
-  },
   "Show the battery briefly when power is connected or removed": {
     "Show the battery briefly when power is connected or removed": "Ненадолго показывать батарею при подключении или отключении питания"
   },
   "Show the text being composed inside the app instead of the candidate window": {
     "Show the text being composed inside the app instead of the candidate window": ""
   },
-  "Show trend": {
-    "Show trend": "Показывать график"
+  "Show time zone": {
+    "Show time zone": ""
   },
   "Show upgrade in a window": {
     "Show upgrade in a window": "Показывать обновление в окне"
@@ -9113,6 +9339,9 @@
   "Skip the greeter password after boot until you sign out. Lock screen unlock is unchanged. Takes effect on the next reboot after sync.": {
     "Skip the greeter password after boot until you sign out. Lock screen unlock is unchanged. Takes effect on the next reboot after sync.": "Не запрашивать пароль на экране входа после загрузки, пока вы не выйдете из системы. Пароль на экране блокировки запрашивается как обычно. Начнёт действовать после синхронизации и следующей перезагрузки."
   },
+  "Skipped": {
+    "Skipped": ""
+  },
   "Slanted": {
     "Slanted": "Наклонная"
   },
@@ -9143,6 +9372,12 @@
   "Smart split": {
     "Smart split": "Разделение по указателю"
   },
+  "Smart suppression": {
+    "Smart suppression": ""
+  },
+  "Smart suppression, sound and media": {
+    "Smart suppression, sound and media": ""
+  },
   "Smartcard Authentication": {
     "Smartcard Authentication": "Аутентификация по смарт-карте"
   },
@@ -9154,6 +9389,12 @@
   },
   "Snap": {
     "Snap": "Привязывать к краям"
+  },
+  "Snooze": {
+    "Snooze": ""
+  },
+  "Snoozed": {
+    "Snoozed": ""
   },
   "Snow": {
     "Snow": "Снег"
@@ -9196,6 +9437,9 @@
   },
   "Sound & media": {
     "Sound & media": "Звук и медиа"
+  },
+  "Sound alerts": {
+    "Sound alerts": ""
   },
   "Sound theme": {
     "Sound theme": "Звуковая тема"
@@ -9344,6 +9588,12 @@
   "State": {
     "State": "Состояние"
   },
+  "Statistics": {
+    "Statistics": ""
+  },
+  "Statistics & testing": {
+    "Statistics & testing": ""
+  },
   "Stay awake with the lid closed": {
     "Stay awake with the lid closed": ""
   },
@@ -9431,6 +9681,9 @@
   "Sun": {
     "Sun": "Солнце"
   },
+  "Sunny": {
+    "Sunny": ""
+  },
   "Sunrise": {
     "Sunrise": "Восход"
   },
@@ -9443,8 +9696,14 @@
   "Suppress duplicates": {
     "Suppress duplicates": "Не показывать повторы"
   },
+  "Suppress during meetings": {
+    "Suppress during meetings": ""
+  },
   "Suppress events": {
     "Suppress events": "Подавление событий"
+  },
+  "Suppress in fullscreen": {
+    "Suppress in fullscreen": ""
   },
   "Surface": {
     "Surface": "Поверхность"
@@ -9514,6 +9773,12 @@
   },
   "Switches to power saver at the low battery threshold": {
     "Switches to power saver at the low battery threshold": "Включает экономию энергии при достижении порога низкого заряда"
+  },
+  "Switches workspaces": {
+    "Switches workspaces": ""
+  },
+  "Switches workspaces (reversed)": {
+    "Switches workspaces (reversed)": ""
   },
   "Switching to the current workspace returns to the previous one": {
     "Switching to the current workspace returns to the previous one": ""
@@ -9677,9 +9942,6 @@
   "Terminal fallback failed. Install one of the supported terminal emulators or run '%1' manually.": {
     "Terminal fallback failed. Install one of the supported terminal emulators or run '%1' manually.": "Не удалось открыть резервный терминал. Установите один из поддерживаемых эмуляторов терминала или выполните «%1» вручную."
   },
-  "Terminal fallback opened. Complete authentication there; it will close automatically when done.": {
-    "Terminal fallback opened. Complete authentication there; it will close automatically when done.": "Открыт резервный терминал. Подтвердите права в нём; после завершения он закроется автоматически."
-  },
   "Terminal opened. Complete authentication there; it will close automatically when done.": {
     "Terminal opened. Complete authentication there; it will close automatically when done.": "Открыт терминал. Подтвердите права в нём; после завершения он закроется автоматически."
   },
@@ -9695,6 +9957,9 @@
   "Tertiary Container": {
     "Tertiary Container": "Контейнер третичного цвета"
   },
+  "Test alert sound": {
+    "Test alert sound": ""
+  },
   "Test connection": {
     "Test connection": "Проверить подключение"
   },
@@ -9703,6 +9968,9 @@
   },
   "Test page sent to printer": {
     "Test page sent to printer": "Тестовая страница отправлена на принтер"
+  },
+  "Testing & preview": {
+    "Testing & preview": ""
   },
   "Testing...": {
     "Testing...": "Проверка..."
@@ -9736,6 +10004,9 @@
   },
   "The Island takes its place on this bar": {
     "The Island takes its place on this bar": "На этой панели место секции занимает «Остров»"
+  },
+  "The Wi-Fi adapter could not start access point mode.": {
+    "The Wi-Fi adapter could not start access point mode.": ""
   },
   "The arrow points in the direction the wind is blowing. The label shows where it comes from.": {
     "The arrow points in the direction the wind is blowing. The label shows where it comes from.": "Стрелка указывает, куда дует ветер. Подпись показывает, откуда он дует."
@@ -9836,8 +10107,8 @@
   "Theme, light and dark, matugen": {
     "Theme, light and dark, matugen": "Темы, светлый и тёмный режимы, matugen"
   },
-  "Themed app icons": {
-    "Themed app icons": ""
+  "Themed": {
+    "Themed": ""
   },
   "Themes": {
     "Themes": "Темы"
@@ -9899,6 +10170,9 @@
   "This system was not started in UEFI mode": {
     "This system was not started in UEFI mode": "Система загружена в режиме без UEFI"
   },
+  "This week": {
+    "This week": ""
+  },
   "This widget prevents GPU power off states, which can significantly impact battery life on laptops. It is not recommended to use this on laptops with hybrid graphics.": {
     "This widget prevents GPU power off states, which can significantly impact battery life on laptops. It is not recommended to use this on laptops with hybrid graphics.": "Этот виджет не даёт графическому процессору отключаться, что может заметно сократить время работы ноутбука от батареи. Не рекомендуется использовать его на ноутбуках с гибридной графикой."
   },
@@ -9934,6 +10208,12 @@
   },
   "Tile color": {
     "Tile color": "Цвет плиток"
+  },
+  "Tile style": {
+    "Tile style": ""
+  },
+  "Tile tone": {
+    "Tile tone": ""
   },
   "Tiled": {
     "Tiled": "Признак плиточного окна"
@@ -9976,6 +10256,9 @@
   },
   "Tint strength": {
     "Tint strength": "Интенсивность окраски"
+  },
+  "Tinted": {
+    "Tinted": ""
   },
   "Tinted cards and badges across the shell": {
     "Tinted cards and badges across the shell": "Цветные карточки и метки во всей оболочке"
@@ -10034,6 +10317,9 @@
   "Toggle Launcher": {
     "Toggle Launcher": "Лаунчер"
   },
+  "Toggle Mute": {
+    "Toggle Mute": ""
+  },
   "Toggle Settings": {
     "Toggle Settings": "Настройки"
   },
@@ -10048,6 +10334,9 @@
   },
   "Toggling...": {
     "Toggling...": "Переключение..."
+  },
+  "Tonal": {
+    "Tonal": ""
   },
   "Tonal Spot": {
     "Tonal Spot": "Тональный"
@@ -10165,6 +10454,9 @@
   },
   "Try a different search": {
     "Try a different search": "Измените поисковый запрос"
+  },
+  "Turn off a widget to use the bar scroll action over it": {
+    "Turn off a widget to use the bar scroll action over it": ""
   },
   "Turn off displays after": {
     "Turn off displays after": "Выключать экраны через"
@@ -10363,12 +10655,6 @@
   },
   "Updates, clipboard, %1": {
     "Updates, clipboard, %1": "Обновления, буфер обмена, %1"
-  },
-  "Updating %1...": {
-    "Updating %1...": "Обновление %1..."
-  },
-  "Updating plugins...": {
-    "Updating plugins...": "Обновление дополнений…"
   },
   "Updating...": {
     "Updating...": "Обновление…"
@@ -10652,6 +10938,9 @@
   "Visualizer, album art, excluded players": {
     "Visualizer, album art, excluded players": "Визуализатор, обложки, исключённые плееры"
   },
+  "Vivid": {
+    "Vivid": ""
+  },
   "Volume": {
     "Volume": "Громкость"
   },
@@ -10736,9 +11025,6 @@
   "Web browser": {
     "Web browser": "Веб-браузер"
   },
-  "Week": {
-    "Week": "Неделя"
-  },
   "Weekly screen time": {
     "Weekly screen time": "Экранное время за неделю"
   },
@@ -10796,8 +11082,20 @@
   "Wi-Fi & Bluetooth": {
     "Wi-Fi & Bluetooth": "Wi-Fi и Bluetooth"
   },
+  "Wi-Fi QR code for %1": {
+    "Wi-Fi QR code for %1": ""
+  },
   "Wi-Fi and Ethernet connection": {
     "Wi-Fi and Ethernet connection": "Подключение Wi-Fi и Ethernet"
+  },
+  "Wi-Fi disabled": {
+    "Wi-Fi disabled": ""
+  },
+  "Wi-Fi enabled": {
+    "Wi-Fi enabled": ""
+  },
+  "Wi-Fi is off": {
+    "Wi-Fi is off": ""
   },
   "Wi-Fi network": {
     "Wi-Fi network": ""
@@ -10828,6 +11126,9 @@
   },
   "Widget removed": {
     "Widget removed": "Виджет удалён"
+  },
+  "Widget scroll": {
+    "Widget scroll": ""
   },
   "Widget settings": {
     "Widget settings": "Настройки виджета"
@@ -10964,9 +11265,6 @@
   "Written total": {
     "Written total": ""
   },
-  "X axis": {
-    "X axis": "Ось X"
-  },
   "X-Ray": {
     "X-Ray": "X-Ray"
   },
@@ -10984,9 +11282,6 @@
   },
   "Xray options are in Compositor → Layout": {
     "Xray options are in Compositor → Layout": "Параметры Xray — в разделе «Макет» настроек композитора"
-  },
-  "Y axis": {
-    "Y axis": "Ось Y"
   },
   "Year": {
     "Year": ""
@@ -11036,6 +11331,9 @@
   "Zombie": {
     "Zombie": ""
   },
+  "adjective, pointer acceleration profile option, constant speed": {
+    "Flat": ""
+  },
   "adjective, printer state": {
     "Idle": "Готов"
   },
@@ -11053,6 +11351,12 @@
   },
   "battery stat label, charge or discharge rate in watts": {
     "Power": "Мощность"
+  },
+  "break plan option, long stretches of work between breaks": {
+    "Focused": ""
+  },
+  "break plan option, short and frequent breaks": {
+    "Light": ""
   },
   "broken": {
     "broken": "не работает"
@@ -11074,6 +11378,10 @@
   },
   "checked just now": {
     "checked just now": "проверено только что"
+  },
+  "computer chassis type": {
+    "Desktop": "",
+    "Tablet": ""
   },
   "copy link": {
     "copy link": "скопировать ссылку"
@@ -11135,6 +11443,9 @@
   "featured": {
     "featured": "рекомендуемое"
   },
+  "font weight, thinner than regular": {
+    "Light": ""
+  },
   "greetd is not using the DMS greeter yet.": {
     "greetd is not using the DMS greeter yet.": "greetd пока не использует экран входа DMS."
   },
@@ -11143,6 +11454,9 @@
   },
   "last seen %1": {
     "last seen %1": "последний раз в сети %1"
+  },
+  "launcher settings section title, noun": {
+    "Search": ""
   },
   "leave empty for default": {
     "leave empty for default": "оставьте пустым для значения по умолчанию"
@@ -11201,6 +11515,15 @@
   "noun, overflow button position before the first widget": {
     "Start": "В начале"
   },
+  "noun, settings card title for idle timeout settings": {
+    "Idle": ""
+  },
+  "noun, start time of a schedule or event": {
+    "Start": ""
+  },
+  "noun, window rule editor group of keyboard focus options": {
+    "Focus": ""
+  },
   "now": {
     "now": "сейчас"
   },
@@ -11233,6 +11556,9 @@
   },
   "reviewed": {
     "reviewed": "проверено"
+  },
+  "screenshot draw tool, select and move annotations": {
+    "Select": ""
   },
   "session %1": {
     "session %1": "сессия %1"

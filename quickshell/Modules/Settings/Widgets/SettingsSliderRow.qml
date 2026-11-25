@@ -9,6 +9,7 @@ SettingsRow {
     property string description: ""
     property string minimumLabel: ""
     property string valueLabel: ""
+    property string accessibleName: text
     property real value: 0
     property alias minimum: control.minimum
     property alias maximum: control.maximum
@@ -52,7 +53,7 @@ SettingsRow {
         value: root.value
         enabled: root.enabled
         wheelEnabled: root.wheelEnabled
-        accessibleName: root.text
+        accessibleName: root.accessibleName
         accessibleDescription: root.description
         onSliderValueChanged: newValue => root.sliderValueChanged(newValue)
         onSliderDragFinished: finalValue => root.sliderDragFinished(finalValue)

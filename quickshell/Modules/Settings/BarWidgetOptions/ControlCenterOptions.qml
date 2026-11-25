@@ -126,6 +126,16 @@ Column {
     spacing: Theme.spacingL
 
     SettingsCard {
+        settingKey: "barWidgetControlCenterInteraction"
+
+        SettingsToggleRow {
+            text: I18n.tr("Scroll wheel")
+            checked: root.page.value("scrollEnabled")
+            onToggled: checked => root.page.set("scrollEnabled", checked)
+        }
+    }
+
+    SettingsCard {
         title: I18n.tr("Indicators", "noun, settings label for status indicator icons")
         settingKey: "barWidgetControlCenter"
 

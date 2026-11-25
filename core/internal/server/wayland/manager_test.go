@@ -258,8 +258,6 @@ func TestManager_AttachConfiguredICCForNamedOutput(t *testing.T) {
 	assert.Zero(t, plain.outputTemp, "outputs without configuration are left alone")
 }
 
-// Each display can keep its own temperature: a per-output override wins over the
-// night light schedule, and 0 means "no override" rather than 0K.
 func TestEffectiveTempTarget(t *testing.T) {
 	cases := []struct {
 		name         string
@@ -267,8 +265,11 @@ func TestEffectiveTempTarget(t *testing.T) {
 		scheduleTemp int
 		want         int
 	}{
-		{"override wins over the schedule", 7000, 5000, 7000},
-		{"schedule applies without an override", 0, 5000, 5000},
+		{"schedule shifts the output white point", 6000, 4000, 3805},
+		{"neutral schedule keeps the output white point", 7000, neutralTemp, 7000},
+		{"output white point applies without a schedule", 7000, noTempTarget, 7000},
+		{"schedule applies without an output white point", 0, 5000, 5000},
+		{"composition stays in the supported range", maxTemp, maxTemp, maxTemp},
 	}
 
 	for _, tc := range cases {
@@ -752,11 +753,10 @@ func TestManager_StateCarriesSortedOutputs(t *testing.T) {
 }
 
 func TestRampCurrentUsesEffectiveTarget(t *testing.T) {
-	overridden := &outputState{outputTemp: 7000, lastTemp: 7000, lastGamma: 1.0, lastContrast: 1.0}
-	for _, scheduleTemp := range []int{noTempTarget, 4000, 4025, 6500} {
-		assert.True(t, overridden.rampCurrent(effectiveTempTarget(overridden, scheduleTemp), 1.0, 1.0),
-			"an overridden output must not be resent when the schedule moves to %d", scheduleTemp)
-	}
+	shifted := &outputState{outputTemp: 7000, lastTemp: 7000, lastGamma: 1.0, lastContrast: 1.0}
+	assert.True(t, shifted.rampCurrent(effectiveTempTarget(shifted, noTempTarget), 1.0, 1.0))
+	assert.False(t, shifted.rampCurrent(effectiveTempTarget(shifted, 4000), 1.0, 1.0),
+		"an output with its own white point follows the schedule")
 
 	scheduled := &outputState{lastTemp: 4000, lastGamma: 1.0, lastContrast: 1.0}
 	assert.True(t, scheduled.rampCurrent(effectiveTempTarget(scheduled, 4000), 1.0, 1.0))

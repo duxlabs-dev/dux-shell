@@ -178,7 +178,7 @@ Column {
         SettingsTimeRow {
             visible: !root.fAllDay
             is24Hour: SettingsData.use24HourClock
-            startTitle: I18n.tr("Start")
+            startTitle: I18n.tr("Start", "noun, start time of a schedule or event", true)
             startHour: root.fStartHour
             startMinute: root.fStartMinute
             endTitle: I18n.tr("End")

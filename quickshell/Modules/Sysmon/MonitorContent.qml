@@ -19,6 +19,8 @@ Item {
     property color tileColor: Theme.surfaceContainer
     property color contentColor: Theme.surfaceText
     property color mutedColor: Theme.surfaceVariantText
+    property color trendSecondaryColor: mutedColor
+    property real tileRadius: Theme.cornerRadiusL
     property bool halo: false
     property string headerTitle: config.title || Catalog.shortCpuName(DgopService.cpuModel) || DgopService.hostname
 
@@ -53,6 +55,8 @@ Item {
     readonly property bool solo: count === 1
     readonly property real tileW: solo ? MonitorMetrics.tileSoloMinWidth : MonitorMetrics.tileMinWidth
     readonly property real tileH: solo ? MonitorMetrics.tileSoloMinHeight : MonitorMetrics.tileMinHeight
+    // Rows built by an asynchronous Loader arrive after count changes; each one bumps this so the sizes re-read.
+    property int builtRows: 0
     readonly property real listRowHeight: listMax("naturalHeight", MonitorMetrics.listRowMinHeight)
     readonly property real listColumnWidth: listMax("implicitWidth", 0)
     readonly property int lineCount: {
@@ -140,6 +144,7 @@ Item {
 
     function listMax(prop, floor) {
         const items = listCards ? cardRepeater : listRepeater;
+        void builtRows;
         let v = floor;
         for (let i = 0; i < items.count; i++)
             v = Math.max(v, items.itemAt(i)?.[prop] ?? 0);
@@ -248,13 +253,15 @@ Item {
                         const start = index - index % root.cols;
                         return root.rows.slice(start, start + root.cols).some(r => !r.asleep && (r.values ?? []).length > 1);
                     }
-                    style: root.config.style ?? "classic"
+                    style: root.config.style ?? "icon"
                     solo: root.solo
                     size: !root.solo || width < MonitorMetrics.wideThreshold ? "sm" : height < MonitorMetrics.wideThreshold ? "wide" : "big"
                     accentColor: root.accentColor
                     tileColor: root.tileColor
                     contentColor: root.contentColor
                     mutedColor: root.mutedColor
+                    trendSecondaryColor: root.trendSecondaryColor
+                    radius: root.tileRadius
                     halo: root.halo
                 }
             }
@@ -272,6 +279,7 @@ Item {
                     id: listRepeater
 
                     model: root.layout === "list" && !root.listCards ? root.count : 0
+                    onItemAdded: root.builtRows++
 
                     MonitorListRow {
                         required property int index
@@ -295,6 +303,7 @@ Item {
                     id: cardRepeater
 
                     model: root.listCards ? root.count : 0
+                    onItemAdded: root.builtRows++
 
                     MonitorListCard {
                         required property int index
@@ -309,6 +318,7 @@ Item {
                         valueReserve: root.listValueReserve
                         accentColor: root.accentColor
                         cardColor: root.tileColor
+                        cardRadius: root.tileRadius
                         contentColor: root.contentColor
                         mutedColor: root.mutedColor
                         halo: root.halo
@@ -328,11 +338,13 @@ Item {
                 anchors.fill: parent
                 visible: root.layout === "bars"
                 rows: visible ? root.rows : []
+                availableHeight: body.freeHeight
                 barNames: root.config.barNames === true
                 vertical: root.barsVertical
                 columns: root.barsVertical ? 1 : root.cols
                 tiled: root.tiled
                 tileColor: root.tileColor
+                tileRadius: root.tileRadius
                 accentColor: root.accentColor
                 contentColor: root.contentColor
                 mutedColor: root.mutedColor

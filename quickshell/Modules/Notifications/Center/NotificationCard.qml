@@ -40,7 +40,10 @@ Item {
     }
     readonly property real targetHeight: expanded ? expandedTargetHeight : collapsedCard.targetHeight
     readonly property bool isAnimating: heightAnimation.running
+    readonly property int groupCount: notificationGroup?.count ?? 0
     property bool _laidOut: false
+    property bool ready: false
+    property bool resizing: false
 
     width: parent ? parent.width : NotificationMetrics.popupWidth
     height: targetHeight
@@ -69,7 +72,7 @@ Item {
         contextMenuLoader.item.showDropdownMenu();
     }
 
-    // positioners size on polish, so settle once the width is known or the card grows from its minimum height on the first frame
+    // positioners size on polish, so lay out once the width is known or the card is measured at its minimum height
     function settleLayout() {
         if (_laidOut || width <= 0)
             return;
@@ -77,8 +80,19 @@ Item {
         _laidOut = true;
     }
 
+    // height follows layout while a card is built and presented; only a change the user or the model made animates
+    function animateResize() {
+        if (ready)
+            resizing = true;
+    }
+
+    onExpandedChanged: animateResize()
+    onGroupCountChanged: animateResize()
     onWidthChanged: Qt.callLater(settleLayout)
-    Component.onCompleted: settleLayout()
+    Component.onCompleted: {
+        settleLayout();
+        ready = true;
+    }
     Component.onDestruction: transientSurfaceTracker?.unregister(root)
 
     NotificationSwipeGroup {
@@ -94,12 +108,16 @@ Item {
     }
 
     Behavior on height {
-        enabled: root._laidOut && root.animateExpansion && NotificationMetrics.animationsEnabled
+        enabled: root.resizing && root.animateExpansion && NotificationMetrics.animationsEnabled
         NumberAnimation {
             id: heightAnimation
             duration: NotificationMetrics.expandDuration
             easing.type: Easing.BezierSpline
             easing.bezierCurve: NotificationMetrics.expandCurve
+            onRunningChanged: {
+                if (!running)
+                    root.resizing = false;
+            }
         }
     }
 
@@ -120,6 +138,7 @@ Item {
         keyboardSelected: root.keyboardNavigationActive && root.isGroupSelected
         keyboardHints: keyboardSelected
         animateHeight: false
+        onDescriptionExpandedChanged: root.animateResize()
         onExpandRequested: NotificationService.toggleMessageExpansion((notificationData?.notification?.id || "") + "_desc")
         onGroupToggleRequested: root.toggleGroup()
         onDismissRequested: NotificationService.dismissGroup(root.notificationGroup?.key || "")
@@ -225,12 +244,14 @@ Item {
                     height: message.height
                     clip: collapsing
                     onDismissed: {
+                        root.animateResize();
                         notificationToDismiss = modelData;
                         collapseAnimation.start();
                     }
 
                     Notifications.NotificationCard {
                         id: message
+                        animateHeight: root.resizing
                         surfaceColor: root.cardSurfaceColor
                         chipColor: root.cardChipColor
                         x: row.offset
@@ -244,6 +265,7 @@ Item {
                         keyboardSelected: root.keyboardNavigationActive && root.selectedNotificationIndex === row.index
                         keyboardHints: keyboardSelected
                         descriptionExpanded: NotificationService.expandedMessages[(notificationData?.notification?.id || "") + "_desc"] || false
+                        onDescriptionExpandedChanged: root.animateResize()
                         onExpandRequested: NotificationService.toggleMessageExpansion((notificationData?.notification?.id || "") + "_desc")
                         onDismissRequested: NotificationService.dismissNotification(row.modelData)
                         onActionRequested: action => root.invokeAction(action)

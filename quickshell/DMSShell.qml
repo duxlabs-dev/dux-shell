@@ -11,6 +11,7 @@ import qs.Widgets
 import qs.Modules.Notifications.Popup
 import qs.Modules.OSD
 import qs.Modules.Settings.DisplayConfig
+import qs.Modules.Wellbeing
 import qs.Services
 
 Item {
@@ -200,6 +201,21 @@ Item {
         }
     }
 
+    Variants {
+        model: ShellLayout.realScreens
+
+        // LazyLoader stays unloaded when this binding throws; a Loader defaults to active and would map the surface
+        delegate: LazyLoader {
+            id: breakOverlayLoader
+            required property var modelData
+            active: BreakReminderService.breakShown
+
+            BreakOverlay {
+                screen: breakOverlayLoader.modelData
+            }
+        }
+    }
+
     Connections {
         target: root.core
 
@@ -288,6 +304,7 @@ Item {
         WallpaperCyclingService.cyclingActive;
         ThemeAutoService.active;
         WellbeingService.tracking;
+        BreakReminderService.enabled;
     }
 
     Loader {
@@ -1467,6 +1484,12 @@ Item {
                     model: SettingsData.osdWorkspaceEnabled ? SettingsData.getFilteredScreens("osd") : []
 
                     delegate: WorkspaceOSD {}
+                }
+
+                Variants {
+                    model: SettingsData.wellbeingBreaksEnabled ? SettingsData.getFilteredScreens("osd") : []
+
+                    delegate: BreakWarningOSD {}
                 }
             }
         }

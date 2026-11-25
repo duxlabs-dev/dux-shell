@@ -3,7 +3,7 @@ import qs.Common
 import qs.Services
 
 CcTile {
-    iconName: DMSService.airplaneMode ? "airplanemode_active" : "airplanemode_inactive"
+    iconName: "airplanemode_active"
     title: I18n.tr("Airplane mode")
     active: DMSService.airplaneMode
     available: DMSService.rfkillAvailable

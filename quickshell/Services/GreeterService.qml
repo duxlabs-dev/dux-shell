@@ -19,7 +19,6 @@ Singleton {
     property string slotState: ""
     property bool syncing: false
     property string syncStatus: ""
-    property bool fallbackFromPrecheck: false
     property bool _detected: false
 
     readonly property bool linked: slotState === "live"
@@ -41,7 +40,6 @@ Singleton {
     function sync() {
         if (!binaryExists || syncing)
             return;
-        fallbackFromPrecheck = false;
         syncStatus = I18n.tr("Checking whether sudo authentication is needed...");
         syncing = true;
         sudoProbeProcess.running = true;
@@ -60,8 +58,7 @@ Singleton {
         profileSyncProcess.running = true;
     }
 
-    function launchTerminalFallback(fromPrecheck, statusText) {
-        fallbackFromPrecheck = fromPrecheck;
+    function launchTerminalFallback(statusText) {
         if (statusText)
             syncStatus = statusText;
         terminalFallbackProcess.running = true;
@@ -164,7 +161,7 @@ exit 0`]
             const err = sudoProbeErr.text.trim();
             if (err !== "")
                 authNeeded += "\n\n" + err;
-            root.launchTerminalFallback(true, authNeeded);
+            root.launchTerminalFallback(authNeeded);
         }
     }
 
@@ -186,7 +183,7 @@ exit 0`]
             const err = syncErr.text.trim();
             if (exitCode !== 0) {
                 root.syncStatus = root.withOutput(I18n.tr("Sync failed in background mode. Trying terminal mode so you can authenticate interactively.") + " " + I18n.tr("(exit %1)", "process exit code").arg(exitCode), out, err);
-                root.launchTerminalFallback(false, "");
+                root.launchTerminalFallback("");
                 return;
             }
             root.syncStatus = root.withOutput(I18n.tr("Sync completed successfully."), out, err);
@@ -245,7 +242,7 @@ exit 0`]
 
         onExited: exitCode => {
             if (exitCode === 0) {
-                const launched = root.fallbackFromPrecheck ? I18n.tr("Terminal opened. Complete authentication there; it will close automatically when done.") : I18n.tr("Terminal fallback opened. Complete authentication there; it will close automatically when done.");
+                const launched = I18n.tr("Terminal opened. Complete authentication there; it will close automatically when done.");
                 root.syncStatus = root.syncStatus ? root.syncStatus + "\n\n" + launched : launched;
                 SettingsData.clearGreeterSyncPending();
                 root.finishSync();

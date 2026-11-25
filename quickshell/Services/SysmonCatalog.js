@@ -115,7 +115,7 @@ function normalizeMetrics(input) {
 function defaultDesktopConfig() {
     return {
         layout: "tiles",
-        style: "classic",
+        style: "icon",
         barStyle: "brackets",
         listStyle: "rows",
         metrics: [
@@ -138,9 +138,18 @@ function defaultDesktopConfig() {
     };
 }
 
+function defaultDashConfig() {
+    return Object.assign(defaultDesktopConfig(), {
+        metrics: [{device: "cpu", vals: ["usage"], graph: false, on: true}],
+        legend: "inline",
+        showHeader: false,
+        showTopProcesses: false
+    });
+}
+
 const enums = {
     layout: ["tiles", "list", "bars", "graphs"],
-    style: ["classic", "icon", "meter", "ring", "graph"],
+    style: ["icon", "meter", "ring", "graph"],
     barStyle: ["brackets", "tiles"],
     listStyle: ["rows", "tiles"],
     graphInterval: [60, 300, 600, 900, 1800],
@@ -210,7 +219,7 @@ function modulesFor(metrics, extras) {
         else if (type === "disk") {
             if (has("read") || has("write"))
                 set[isAll ? "disk" : "disk-rate"] = true;
-            if (has("space"))
+            if (has("space") || m.mount)
                 set["diskmounts"] = true;
         } else if (type === "net")
             set[isAll ? "network" : "net-rate"] = true;
@@ -223,5 +232,5 @@ function modulesFor(metrics, extras) {
 }
 
 function needsDrives(metrics) {
-    return (metrics || []).some(m => m && m.on !== false && typeOf(m.device) === "disk" && (m.device !== "disk" || (m.vals || []).indexOf("space") >= 0));
+    return (metrics || []).some(m => m && m.on !== false && typeOf(m.device) === "disk" && (m.device !== "disk" || ((m.vals || []).indexOf("space") >= 0 && !m.mount)));
 }

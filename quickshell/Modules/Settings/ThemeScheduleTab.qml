@@ -45,18 +45,27 @@ Item {
     }
 
     SettingsPage {
-        SettingsMainToggle {
-            tab: "theme"
-            tags: ["light", "dark", "mode"]
-            settingKey: "themeScheduleDarkMode"
-            iconName: "dark_mode"
-            text: I18n.tr("Dark mode")
-            checked: !SessionData.isLightMode
-            onToggled: toggled => {
-                if (toggled === !SessionData.isLightMode)
-                    return;
-                Theme.screenTransition();
-                Theme.setLightMode(!toggled);
+        SettingsDeferred {
+            SettingsCard {
+                tab: "theme"
+                tags: ["light", "dark", "mode"]
+                settingKey: "themeMode"
+                iconName: "dark_mode"
+
+                SettingsToggleRow {
+                    tab: "theme"
+                    tags: ["light", "dark", "mode"]
+                    settingKey: "themeScheduleDarkMode"
+                    iconName: "dark_mode"
+                    text: I18n.tr("Dark mode")
+                    checked: !SessionData.isLightMode
+                    onToggled: toggled => {
+                        if (toggled === !SessionData.isLightMode)
+                            return;
+                        Theme.screenTransition();
+                        Theme.setLightMode(!toggled);
+                    }
+                }
             }
         }
 

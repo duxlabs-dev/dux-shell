@@ -25,7 +25,7 @@ Singleton {
     id: root
     readonly property var log: Log.scoped("SettingsData")
 
-    readonly property int settingsConfigVersion: 47
+    readonly property int settingsConfigVersion: 48
 
     enum Position {
         Top,
@@ -612,6 +612,16 @@ Singleton {
     property bool wellbeingEnabled: Spec.SPEC.wellbeingEnabled.def
     property int wellbeingDailyLimit: Spec.SPEC.wellbeingDailyLimit.def
     property var wellbeingAppLimits: Spec.SPEC.wellbeingAppLimits.def
+    property bool wellbeingBreaksEnabled: Spec.SPEC.wellbeingBreaksEnabled.def
+    property int wellbeingBreakInterval: Spec.SPEC.wellbeingBreakInterval.def
+    property int wellbeingBreakDuration: Spec.SPEC.wellbeingBreakDuration.def
+    property int wellbeingBreaksBeforeLong: Spec.SPEC.wellbeingBreaksBeforeLong.def
+    property int wellbeingLongBreakDuration: Spec.SPEC.wellbeingLongBreakDuration.def
+    property int wellbeingBreakWarning: Spec.SPEC.wellbeingBreakWarning.def
+    property bool wellbeingBreakSuppressFullscreen: Spec.SPEC.wellbeingBreakSuppressFullscreen.def
+    property bool wellbeingBreakSuppressMeetings: Spec.SPEC.wellbeingBreakSuppressMeetings.def
+    property bool wellbeingBreakPauseMedia: Spec.SPEC.wellbeingBreakPauseMedia.def
+    property bool wellbeingBreakSound: Spec.SPEC.wellbeingBreakSound.def
 
     function getDashTabs() {
         const stored = Array.isArray(dashTabs) ? dashTabs : [];
@@ -3606,7 +3616,7 @@ Singleton {
         updated.theme = themeName;
         cursorSettings = updated;
         saveSettings();
-        updateXResources();
+        cursorFilesWriteDebounce.restart();
         updateCompositorCursor();
     }
 
@@ -3617,7 +3627,7 @@ Singleton {
         updated.size = size;
         cursorSettings = updated;
         saveSettings();
-        updateXResources();
+        cursorFilesWriteDebounce.restart();
         updateCompositorCursor();
     }
 
@@ -3671,6 +3681,75 @@ Singleton {
         `;
 
         Quickshell.execDetached(["sh", "-c", script]);
+    }
+
+    // GTK reads the cursor from settings.ini under XWayland, so a theme picked here
+    // only reaches those apps once the GTK files carry it too
+    function updateGtkCursor() {
+        const homeDir = Paths.strip(StandardPaths.writableLocation(StandardPaths.HomeLocation));
+        const themeName = cursorSettings.theme === "System Default" ? systemDefaultCursorTheme : cursorSettings.theme;
+        const size = cursorSettings.size || 24;
+
+        if (!themeName)
+            return;
+
+        Quickshell.execDetached(["sh", "-c", _gtkCursorScript(), "sh", themeName, String(size), _configDir, homeDir]);
+    }
+
+    // Arguments: theme, size, config dir, home dir. settings.ini gets the entries
+    // added, ~/.gtkrc-2.0 and xsettingsd are only updated where they already set a cursor.
+    function _gtkCursorScript() {
+        return `theme="$1"; size="$2"; config_dir="$3"; home_dir="$4"
+
+        replace_line() {
+            file="$1"; pattern="$2"; line="$3"
+            awk -v p="$pattern" -v l="$line" '$0 ~ p { if (!done) print l; done = 1; next } { print }' "$file" > "$file.dms-tmp.$$" && cat "$file.dms-tmp.$$" > "$file"
+            rm -f "$file.dms-tmp.$$"
+        }
+
+        set_ini() {
+            file="$1"; shift
+            if [ ! -f "$file" ]; then
+                mkdir -p "$(dirname "$file")" && printf '[Settings]\\n' > "$file"
+            fi
+            : > "$file.dms-add.$$"
+            for entry in "$@"; do
+                key="\${entry%%=*}"
+                if grep -q "^[[:space:]]*$key[[:space:]]*=" "$file"; then
+                    replace_line "$file" "^[[:space:]]*$key[[:space:]]*=" "$entry"
+                else
+                    printf '%s\\n' "$entry" >> "$file.dms-add.$$"
+                fi
+            done
+            if [ -s "$file.dms-add.$$" ]; then
+                if grep -q '^\\[Settings\\]' "$file"; then
+                    awk 'FNR == NR { add = add $0 "\\n"; next } { print } /^\\[Settings\\]/ && !done { printf "%s", add; done = 1 }' "$file.dms-add.$$" "$file" > "$file.dms-tmp.$$" && cat "$file.dms-tmp.$$" > "$file"
+                    rm -f "$file.dms-tmp.$$"
+                else
+                    { printf '\\n[Settings]\\n'; cat "$file.dms-add.$$"; } >> "$file"
+                fi
+            fi
+            rm -f "$file.dms-add.$$"
+        }
+
+        for settings_file in "$config_dir/gtk-3.0/settings.ini" "$config_dir/gtk-4.0/settings.ini"; do
+            [ -f "$settings_file" ] && [ ! -w "$settings_file" ] && continue
+            set_ini "$settings_file" "gtk-cursor-theme-name=$theme" "gtk-cursor-theme-size=$size"
+        done
+
+        gtkrc="$home_dir/.gtkrc-2.0"
+        if [ -f "$gtkrc" ] && [ -w "$gtkrc" ]; then
+            grep -q '^[[:space:]]*gtk-cursor-theme-name' "$gtkrc" && replace_line "$gtkrc" '^[[:space:]]*gtk-cursor-theme-name' "gtk-cursor-theme-name=\\"$theme\\""
+            grep -q '^[[:space:]]*gtk-cursor-theme-size' "$gtkrc" && replace_line "$gtkrc" '^[[:space:]]*gtk-cursor-theme-size' "gtk-cursor-theme-size=$size"
+        fi
+
+        xsettings="$config_dir/xsettingsd/xsettingsd.conf"
+        if [ -f "$xsettings" ] && [ -w "$xsettings" ] && grep -q '^[[:space:]]*Gtk/CursorTheme' "$xsettings"; then
+            grep -q '^[[:space:]]*Gtk/CursorThemeName' "$xsettings" && replace_line "$xsettings" '^[[:space:]]*Gtk/CursorThemeName' "Gtk/CursorThemeName \\"$theme\\""
+            grep -q '^[[:space:]]*Gtk/CursorThemeSize' "$xsettings" && replace_line "$xsettings" '^[[:space:]]*Gtk/CursorThemeSize' "Gtk/CursorThemeSize $size"
+            pkill -HUP -x xsettingsd 2>/dev/null
+        fi
+        exit 0`;
     }
 
     function getCursorEnvironment() {
@@ -4583,6 +4662,17 @@ Singleton {
 
         interval: 3000
         onTriggered: root._rebuildIcons()
+    }
+
+    // The size slider emits a change per step while dragging, one write of the cursor files per settled value
+    Timer {
+        id: cursorFilesWriteDebounce
+        interval: Timing.debounceSlow
+        repeat: false
+        onTriggered: {
+            root.updateXResources();
+            root.updateGtkCursor();
+        }
     }
 
     Timer {

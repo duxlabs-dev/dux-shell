@@ -56,7 +56,7 @@ SettingsCard {
         case "link-local":
             return I18n.tr("Link-local", "network IP method option");
         case "shared":
-            return I18n.tr("Shared", "IP method: share this connection with other computers");
+            return I18n.tr("Shared", "IP method: share this connection with other computers", true);
         case "ignore":
             return I18n.tr("Ignore", "leave as the driver or system configured it");
         case "disabled":

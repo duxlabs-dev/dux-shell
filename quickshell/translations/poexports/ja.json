@@ -5,6 +5,12 @@
   "%1 %2": {
     "%1 %2": ""
   },
+  "%1 (%2 %3)": {
+    "%1 (%2 %3)": ""
+  },
+  "%1 (%2)": {
+    "%1 (%2)": ""
+  },
   "%1 (+%2 more)": {
     "%1 (+%2 more)": "%1（ほか %2 件）"
   },
@@ -278,6 +284,9 @@
   "%1 wallpapers  •  %2 / %3": {
     "%1 wallpapers  •  %2 / %3": "壁紙 %1 枚  •  %2 / %3"
   },
+  "%1 weeks ago": {
+    "%1 weeks ago": ""
+  },
   "%1 will be downloaded and installed via %2.": {
     "%1 will be downloaded and installed via %2.": ""
   },
@@ -344,11 +353,20 @@
   "10-bit color": {
     "10-bit color": ""
   },
+  "12-sided cookie": {
+    "12-sided cookie": ""
+  },
   "2.4 GHz": {
     "2.4 GHz": ""
   },
   "3rd party": {
     "3rd party": "サードパーティ"
+  },
+  "4-leaf clover": {
+    "4-leaf clover": ""
+  },
+  "4-sided cookie": {
+    "4-sided cookie": ""
   },
   "5 GHz": {
     "5 GHz": ""
@@ -358,6 +376,12 @@
   },
   "6 GHz": {
     "6 GHz": ""
+  },
+  "7-sided cookie": {
+    "7-sided cookie": ""
+  },
+  "8-leaf clover": {
+    "8-leaf clover": ""
   },
   "A custom seed color overrides this": {
     "A custom seed color overrides this": ""
@@ -421,6 +445,9 @@
   },
   "Access to system controls and settings": {
     "Access to system controls and settings": "システム制御へのアクセスおよび設定"
+  },
+  "Accessibility": {
+    "Accessibility": ""
   },
   "Accounts": {
     "Accounts": ""
@@ -539,6 +566,9 @@
   "Add entry": {
     "Add entry": ""
   },
+  "Add folder": {
+    "Add folder": ""
+  },
   "Add input method": {
     "Add input method": ""
   },
@@ -574,6 +604,9 @@
   },
   "Add to autostart": {
     "Add to autostart": ""
+  },
+  "Add to folder": {
+    "Add to folder": ""
   },
   "Add user": {
     "Add user": ""
@@ -653,6 +686,9 @@
   "Alerts": {
     "Alerts": ""
   },
+  "Alerts & suppression": {
+    "Alerts & suppression": ""
+  },
   "Alignment": {
     "Alignment": ""
   },
@@ -712,6 +748,9 @@
   },
   "Allowed cores": {
     "Allowed cores": ""
+  },
+  "Already added": {
+    "Already added": ""
   },
   "Already on that session": {
     "Already on that session": "すでにそのセッションです"
@@ -827,8 +866,14 @@
   "App actions": {
     "App actions": ""
   },
+  "App color": {
+    "App color": ""
+  },
   "App customizations": {
     "App customizations": ""
+  },
+  "App icon style": {
+    "App icon style": ""
   },
   "App launcher": {
     "App launcher": ""
@@ -917,6 +962,9 @@
   "Arc extender": {
     "Arc extender": ""
   },
+  "Arch": {
+    "Arch": ""
+  },
   "Archive": {
     "Archive": ""
   },
@@ -964,6 +1012,9 @@
   },
   "Audio": {
     "Audio": "オーディオ"
+  },
+  "Audio & playback": {
+    "Audio & playback": ""
   },
   "Audio Codec": {
     "Audio Codec": "オーディオコーデック"
@@ -1205,6 +1256,9 @@
   "Backlight device": {
     "Backlight device": "バックライトデバイス"
   },
+  "Balance": {
+    "Balance": ""
+  },
   "Balance power and performance": {
     "Balance power and performance": "電力とパフォーマンスのバランス"
   },
@@ -1279,6 +1333,9 @@
   },
   "Bento style only": {
     "Bento style only": ""
+  },
+  "Best match": {
+    "Best match": ""
   },
   "Bind keys to region, screen, window and scroll captures": {
     "Bind keys to region, screen, window and scroll captures": ""
@@ -1418,6 +1475,21 @@
   "Brackets": {
     "Brackets": ""
   },
+  "Break history and previews": {
+    "Break history and previews": ""
+  },
+  "Break plan": {
+    "Break plan": ""
+  },
+  "Break plans and schedule": {
+    "Break plans and schedule": ""
+  },
+  "Break reminders": {
+    "Break reminders": ""
+  },
+  "Break schedule": {
+    "Break schedule": ""
+  },
   "Bright": {
     "Bright": ""
   },
@@ -1429,6 +1501,9 @@
   },
   "Brightness control not available": {
     "Brightness control not available": "明るさの制御は利用できません"
+  },
+  "Brightness step": {
+    "Brightness step": ""
   },
   "Brightness style": {
     "Brightness style": ""
@@ -1483,6 +1558,9 @@
   },
   "CPU": {
     "CPU": "CPU"
+  },
+  "CPU clock speed": {
+    "Clock": ""
   },
   "CPU temperature": {
     "CPU temperature": ""
@@ -1637,14 +1715,38 @@
   "Change Volume": {
     "Change Volume": "音量を変更"
   },
+  "Change shape": {
+    "Change shape": ""
+  },
   "Change where an activity sits, what it shows when collapsed and what a click opens": {
     "Change where an activity sits, what it shows when collapsed and what a click opens": ""
+  },
+  "Changes display brightness": {
+    "Changes display brightness": ""
+  },
+  "Changes player volume": {
+    "Changes player volume": ""
   },
   "Changes save to %1": {
     "Changes save to %1": ""
   },
+  "Changes song": {
+    "Changes song": ""
+  },
+  "Changes volume": {
+    "Changes volume": ""
+  },
   "Changes volume and audio devices": {
     "Changes volume and audio devices": ""
+  },
+  "Changes volume, or brightness over its icon": {
+    "Changes volume, or brightness over its icon": ""
+  },
+  "Changes volume, or microphone and brightness over their icons": {
+    "Changes volume, or microphone and brightness over their icons": ""
+  },
+  "Changes volume, or microphone over its icon": {
+    "Changes volume, or microphone over its icon": ""
   },
   "Channel": {
     "Channel": "チャンネル"
@@ -2429,6 +2531,9 @@
   "Cut": {
     "Cut": ""
   },
+  "Cycles open windows": {
+    "Cycles open windows": ""
+  },
   "DDC/CI monitor": {
     "DDC/CI monitor": "DDC/CI モニター"
   },
@@ -2482,6 +2587,9 @@
   },
   "Daily limit": {
     "Daily limit": ""
+  },
+  "Daily limit, app limits, history": {
+    "Daily limit, app limits, history": ""
   },
   "Daily screen time limit reached": {
     "Daily screen time limit reached": ""
@@ -2795,6 +2903,9 @@
   "Disabled by Frame Mode": {
     "Disabled by Frame Mode": "フレームモードにより無効化"
   },
+  "Disabling Wi-Fi...": {
+    "Disabling Wi-Fi...": ""
+  },
   "Disabling auto-login on startup...": {
     "Disabling auto-login on startup...": "起動時の自動ログインを無効化中..."
   },
@@ -2815,6 +2926,9 @@
   },
   "Disconnected": {
     "Disconnected": "未接続"
+  },
+  "Disconnected from Wi-Fi": {
+    "Disconnected from Wi-Fi": ""
   },
   "Discover community plugins. Review their code before installing, and audit changes before updating.": {
     "Discover community plugins. Review their code before installing, and audit changes before updating.": ""
@@ -3044,6 +3158,9 @@
   "Dusk (Astronomical Twilight)": {
     "Dusk (Astronomical Twilight)": "夕暮れ（天文薄明）"
   },
+  "Dusk (Civil Twilight)": {
+    "Dusk (Civil Twilight)": ""
+  },
   "Dusk (Nautical Twilight)": {
     "Dusk (Nautical Twilight)": "夕暮れ（航海薄明）"
   },
@@ -3058,6 +3175,12 @@
   },
   "Dux Greeter docs": {
     "Dux Greeter docs": ""
+  },
+  "Dux Icons tile style option, a near-gray tint of the app's color": {
+    "Muted": ""
+  },
+  "Dux app tone": {
+    "Dux app tone": ""
   },
   "Dwindle": {
     "Dwindle": ""
@@ -3091,6 +3214,9 @@
   },
   "Edge": {
     "Edge": ""
+  },
+  "Edge Match": {
+    "Edge Match": ""
   },
   "Edge around popups and modals": {
     "Edge around popups and modals": ""
@@ -3187,6 +3313,9 @@
   },
   "Enabled": {
     "Enabled": "有効化されました"
+  },
+  "Enabling Wi-Fi...": {
+    "Enabling Wi-Fi...": ""
   },
   "Enabling cellular...": {
     "Enabling cellular...": ""
@@ -3362,6 +3491,9 @@
   "Extend battery life": {
     "Extend battery life": "バッテリー寿命を延ばす"
   },
+  "Extend to screen edge": {
+    "Extend to screen edge": ""
+  },
   "Extensible architecture": {
     "Extensible architecture": "拡張可能なアーキテクチャ"
   },
@@ -3461,12 +3593,6 @@
   "Failed to disconnect": {
     "Failed to disconnect": ""
   },
-  "Failed to disconnect VPN": {
-    "Failed to disconnect VPN": "VPNへの切断が失敗しました"
-  },
-  "Failed to disconnect VPNs": {
-    "Failed to disconnect VPNs": "VPNへの切断が失敗しました"
-  },
   "Failed to duplicate %1": {
     "Failed to duplicate %1": ""
   },
@@ -3475,6 +3601,9 @@
   },
   "Failed to enable IP location": {
     "Failed to enable IP location": "IP 位置情報の有効化に失敗しました"
+  },
+  "Failed to enable Wi-Fi": {
+    "Failed to enable Wi-Fi": ""
   },
   "Failed to enable job acceptance": {
     "Failed to enable job acceptance": "ジョブ受け付けの有効化に失敗しました"
@@ -3662,9 +3791,6 @@
   "Failed to unpin entry": {
     "Failed to unpin entry": "項目の固定解除に失敗しました"
   },
-  "Failed to update %1: %2": {
-    "Failed to update %1: %2": ""
-  },
   "Failed to update VPN": {
     "Failed to update VPN": "VPN の更新に失敗しました"
   },
@@ -3730,6 +3856,9 @@
   },
   "Files": {
     "Files": "ファイル"
+  },
+  "Files & folders": {
+    "Files & folders": ""
   },
   "Filesystem usage monitoring": {
     "Filesystem usage monitoring": "ファイルシステム使用量の監視"
@@ -3916,9 +4045,6 @@
   },
   "Folder already added": {
     "Folder already added": ""
-  },
-  "Folder match theme colors": {
-    "Folder match theme colors": ""
   },
   "Folder, interval, daily time": {
     "Folder, interval, daily time": ""
@@ -4163,6 +4289,9 @@
   "Gaussian": {
     "Gaussian": ""
   },
+  "Gem": {
+    "Gem": ""
+  },
   "General": {
     "General": ""
   },
@@ -4301,9 +4430,6 @@
   "HDR tone mapping": {
     "HDR tone mapping": ""
   },
-  "HTML copied to clipboard": {
-    "HTML copied to clipboard": "HTML をクリップボードにコピーしました"
-  },
   "Half": {
     "Half": ""
   },
@@ -4406,8 +4532,14 @@
   "Hide until typing": {
     "Hide until typing": ""
   },
+  "Hide wallpapers that don't fit the display": {
+    "Hide wallpapers that don't fit the display": ""
+  },
   "Hide when idle": {
     "Hide when idle": ""
+  },
+  "Hide when no notifications": {
+    "Hide when no notifications": ""
   },
   "Hide when no updates": {
     "Hide when no updates": ""
@@ -4478,6 +4610,9 @@
   "Horizontal": {
     "Horizontal": ""
   },
+  "Horizontal (Shift + scroll)": {
+    "Horizontal (Shift + scroll)": ""
+  },
   "Horizontal offset": {
     "Horizontal offset": ""
   },
@@ -4514,6 +4649,9 @@
   "Hourly": {
     "Hourly": "1時間ごと"
   },
+  "Hours": {
+    "Hours": ""
+  },
   "Hover popouts": {
     "Hover popouts": ""
   },
@@ -4525,6 +4663,9 @@
   },
   "How long a new activity stays open before the island returns to its usual content": {
     "How long a new activity stays open before the island returns to its usual content": ""
+  },
+  "How long before a break the heads-up appears": {
+    "How long before a break the heads-up appears": ""
   },
   "How long the title stays after a track change": {
     "How long the title stays after a track change": ""
@@ -4553,6 +4694,10 @@
   "Hyprland config include missing": {
     "Hyprland config include missing": "Hyprland 設定の include がありません"
   },
+  "Hyprland scrolling layout direction": {
+    "Down": "",
+    "Up": ""
+  },
   "Hyprland website": {
     "Hyprland website": ""
   },
@@ -4579,6 +4724,9 @@
   },
   "IP address or hostname": {
     "IP address or hostname": "IP アドレスまたはホスト名"
+  },
+  "IP method: share this connection with other computers": {
+    "Shared": ""
   },
   "IP sharing setup failed. Check that %1 is installed.": {
     "IP sharing setup failed. Check that %1 is installed.": ""
@@ -4679,9 +4827,6 @@
   "Image": {
     "Image": "画像"
   },
-  "Image copied to clipboard": {
-    "Image copied to clipboard": "画像をクリップボードにコピーしました"
-  },
   "Image viewer": {
     "Image viewer": ""
   },
@@ -4778,6 +4923,9 @@
   "Initial title": {
     "Initial title": ""
   },
+  "Initialized": {
+    "Initialized": ""
+  },
   "Injected palettes": {
     "Injected palettes": ""
   },
@@ -4849,6 +4997,9 @@
   },
   "Install the %1 package for dynamic theming": {
     "Install the %1 package for dynamic theming": ""
+  },
+  "Install theme": {
+    "Install theme": ""
   },
   "Install theme '%1' from the DMS registry?": {
     "Install theme '%1' from the DMS registry?": "DMS レジストリからテーマ '%1' をインストールしますか?"
@@ -5123,6 +5274,9 @@
   "Last used on this screen": {
     "Last used on this screen": ""
   },
+  "Last week": {
+    "Last week": ""
+  },
   "Latitude": {
     "Latitude": "緯度"
   },
@@ -5260,9 +5414,6 @@
   },
   "Like your plugins": {
     "Like your plugins": ""
-  },
-  "Limit": {
-    "Limit": ""
   },
   "Limit set to %1%": {
     "Limit set to %1%": "上限を %1% に設定しました"
@@ -5416,6 +5567,15 @@
   },
   "Long Text": {
     "Long Text": "長文"
+  },
+  "Long break": {
+    "Long break": ""
+  },
+  "Long break duration": {
+    "Long break duration": ""
+  },
+  "Long break in %1": {
+    "Long break in %1": ""
   },
   "Long press": {
     "Long press": "長押し"
@@ -5594,6 +5754,9 @@
   "Match Criteria": {
     "Match Criteria": "一致条件"
   },
+  "Match folder colors to theme": {
+    "Match folder colors to theme": ""
+  },
   "Match type": {
     "Match type": ""
   },
@@ -5674,6 +5837,9 @@
   },
   "Maximized and fullscreen": {
     "Maximized and fullscreen": ""
+  },
+  "Maximum": {
+    "Maximum": ""
   },
   "Maximum entries": {
     "Maximum entries": ""
@@ -5804,6 +5970,9 @@
   "Minimum workspaces": {
     "Minimum workspaces": ""
   },
+  "Minutes": {
+    "Minutes": ""
+  },
   "Mirror display": {
     "Mirror display": ""
   },
@@ -5903,6 +6072,9 @@
   "Most Vivid": {
     "Most Vivid": ""
   },
+  "Most common": {
+    "Most common": ""
+  },
   "Most used apps": {
     "Most used apps": ""
   },
@@ -5911,6 +6083,9 @@
   },
   "Motion blur": {
     "Motion blur": ""
+  },
+  "Motion, density, scrollbars": {
+    "Motion, density, scrollbars": ""
   },
   "Mount": {
     "Mount": ""
@@ -6401,6 +6576,9 @@
   "No results found": {
     "No results found": "結果が見つかりませんでした"
   },
+  "No room left on the dashboard": {
+    "No room left on the dashboard": ""
+  },
   "No round": {
     "No round": ""
   },
@@ -6652,6 +6830,9 @@
   },
   "Off matches the bar's opacity": {
     "Off matches the bar's opacity": ""
+  },
+  "Off switches show an X, on switches keep their check": {
+    "Off switches show an X, on switches keep their check": ""
   },
   "Office": {
     "Office": "オフィス"
@@ -6929,6 +7110,9 @@
   "Overlay": {
     "Overlay": ""
   },
+  "Overlay placement passes empty strip input through to windows": {
+    "Overlay placement passes empty strip input through to windows": ""
+  },
   "Overridden by config": {
     "Overridden by config": "設定で上書きされています"
   },
@@ -7091,9 +7275,6 @@
   "Path": {
     "Path": ""
   },
-  "Path copied to clipboard": {
-    "Path copied to clipboard": "パスをクリップボードにコピーしました"
-  },
   "Pattern": {
     "Pattern": "パターン"
   },
@@ -7102,6 +7283,9 @@
   },
   "Pause checks on battery": {
     "Pause checks on battery": ""
+  },
+  "Pause media during breaks": {
+    "Pause media during breaks": ""
   },
   "Pause night mode while a fullscreen window has focus": {
     "Pause night mode while a fullscreen window has focus": ""
@@ -7114,6 +7298,9 @@
   },
   "Paused": {
     "Paused": "一時停止"
+  },
+  "Pauses playing media when a break starts and resumes it after": {
+    "Pauses playing media when a break starts and resumes it after": ""
   },
   "Peak": {
     "Peak": ""
@@ -7132,6 +7319,9 @@
   },
   "Pending Discharge": {
     "Pending Discharge": "放電待機中"
+  },
+  "Pentagon": {
+    "Pentagon": ""
   },
   "Per display": {
     "Per display": ""
@@ -7174,9 +7364,6 @@
   },
   "Pick a different file manager in Settings → Dock → Trash.": {
     "Pick a different file manager in Settings → Dock → Trash.": "設定 → ドック → ゴミ箱で別のファイルマネージャーを選択してください。"
-  },
-  "Pick an app from the list above or the dashboard tab": {
-    "Pick an app from the list above or the dashboard tab": ""
   },
   "Pick an icon theme first": {
     "Pick an icon theme first": ""
@@ -7267,6 +7454,9 @@
   },
   "Playing audio": {
     "Playing audio": ""
+  },
+  "Plays a sound when a break starts or ends": {
+    "Plays a sound when a break starts or ends": ""
   },
   "Please wait...": {
     "Please wait...": "お待ちください..."
@@ -7394,6 +7584,12 @@
   "Possible override conflicts": {
     "Possible override conflicts": ""
   },
+  "Postpones breaks while an app is fullscreen": {
+    "Postpones breaks while an app is fullscreen": ""
+  },
+  "Postpones breaks while the microphone is in use": {
+    "Postpones breaks while the microphone is in use": ""
+  },
   "Power": {
     "Power": "電源"
   },
@@ -7441,6 +7637,9 @@
   },
   "Power-on time": {
     "Power-on time": ""
+  },
+  "Pre-break warning": {
+    "Pre-break warning": ""
   },
   "Pre-release": {
     "Pre-release": ""
@@ -7501,6 +7700,12 @@
   },
   "Preview duration": {
     "Preview duration": ""
+  },
+  "Preview fullscreen break": {
+    "Preview fullscreen break": ""
+  },
+  "Preview pre-break warning": {
+    "Preview pre-break warning": ""
   },
   "Preview, install and remove cursor themes": {
     "Preview, install and remove cursor themes": ""
@@ -7636,6 +7841,9 @@
   },
   "Profile on battery": {
     "Profile on battery": ""
+  },
+  "Profile picker": {
+    "Profile picker": ""
   },
   "Profile saved: %1": {
     "Profile saved: %1": "プロファイルを保存しました: %1"
@@ -7828,6 +8036,9 @@
   },
   "Red": {
     "Red": ""
+  },
+  "Redact": {
+    "Redact": ""
   },
   "Redo": {
     "Redo": ""
@@ -8165,9 +8376,6 @@
   "Right-click a notification and choose \"Allow in Do Not Disturb\" to add an app": {
     "Right-click a notification and choose \"Allow in Do Not Disturb\" to add an app": ""
   },
-  "Right-click a widget for options": {
-    "Right-click a widget for options": ""
-  },
   "Right-click an app in the launcher and choose 'Edit App'": {
     "Right-click an app in the launcher and choose 'Edit App'": ""
   },
@@ -8200,6 +8408,9 @@
   },
   "Rounded": {
     "Rounded": ""
+  },
+  "Rounded screen corners": {
+    "Rounded screen corners": ""
   },
   "Rounded square": {
     "Rounded square": ""
@@ -8426,6 +8637,9 @@
   "Screen time": {
     "Screen time": ""
   },
+  "Screen time & limits": {
+    "Screen time & limits": ""
+  },
   "Screen time and app limits": {
     "Screen time and app limits": ""
   },
@@ -8450,11 +8664,20 @@
   "Scroll capture interval": {
     "Scroll capture interval": ""
   },
+  "Scroll in the empty space next to the island and satellite widgets": {
+    "Scroll in the empty space next to the island and satellite widgets": ""
+  },
+  "Scroll in the gap between the bar and the display edge": {
+    "Scroll in the gap between the bar and the display edge": ""
+  },
   "Scroll lyrics": {
     "Scroll lyrics": ""
   },
   "Scroll method": {
     "Scroll method": ""
+  },
+  "Scroll on empty strip": {
+    "Scroll on empty strip": ""
   },
   "Scroll shadows": {
     "Scroll shadows": ""
@@ -8579,9 +8802,6 @@
   "Select Custom Theme": {
     "Select Custom Theme": "カスタムテーマを選んでください"
   },
-  "Select Dock Launcher Logo": {
-    "Select Dock Launcher Logo": "Dock ランチャーロゴを選択"
-  },
   "Select Dot Icon": {
     "Select Dot Icon": ""
   },
@@ -8657,9 +8877,6 @@
   "Separate light and dark": {
     "Separate light and dark": ""
   },
-  "Separate light and dark themes": {
-    "Separate light and dark themes": ""
-  },
   "Separate per display": {
     "Separate per display": ""
   },
@@ -8704,9 +8921,6 @@
   },
   "Set custom names for your audio output devices": {
     "Set custom names for your audio output devices": "音声出力デバイスにカスタム名を設定"
-  },
-  "Set limit": {
-    "Set limit": ""
   },
   "Set notification rules": {
     "Set notification rules": "通知ルールを設定"
@@ -8795,6 +9009,21 @@
   "Short": {
     "Short": ""
   },
+  "Short break": {
+    "Short break": ""
+  },
+  "Short break duration": {
+    "Short break duration": ""
+  },
+  "Short break in %1": {
+    "Short break in %1": ""
+  },
+  "Short break interval": {
+    "Short break interval": ""
+  },
+  "Short breaks before long break": {
+    "Short breaks before long break": ""
+  },
   "Shortcut": {
     "Shortcut": ""
   },
@@ -8833,9 +9062,6 @@
   },
   "Show Edit widgets in app context menu": {
     "Show Edit widgets in app context menu": ""
-  },
-  "Show I/O": {
-    "Show I/O": ""
   },
   "Show Line Numbers": {
     "Show Line Numbers": "行番号を表示"
@@ -8963,6 +9189,9 @@
   "Show on overview only": {
     "Show on overview only": ""
   },
+  "Show on/off indicators": {
+    "Show on/off indicators": ""
+  },
   "Show package source badges": {
     "Show package source badges": ""
   },
@@ -9011,17 +9240,14 @@
   "Show switch user": {
     "Show switch user": ""
   },
-  "Show temperature": {
-    "Show temperature": ""
-  },
   "Show the battery briefly when power is connected or removed": {
     "Show the battery briefly when power is connected or removed": ""
   },
   "Show the text being composed inside the app instead of the candidate window": {
     "Show the text being composed inside the app instead of the candidate window": ""
   },
-  "Show trend": {
-    "Show trend": ""
+  "Show time zone": {
+    "Show time zone": ""
   },
   "Show upgrade in a window": {
     "Show upgrade in a window": ""
@@ -9113,6 +9339,9 @@
   "Skip the greeter password after boot until you sign out. Lock screen unlock is unchanged. Takes effect on the next reboot after sync.": {
     "Skip the greeter password after boot until you sign out. Lock screen unlock is unchanged. Takes effect on the next reboot after sync.": "起動後、サインアウトするまで greeter のパスワードを省略します。ロック画面の解除は変わりません。同期後、次回再起動から有効です。"
   },
+  "Skipped": {
+    "Skipped": ""
+  },
   "Slanted": {
     "Slanted": ""
   },
@@ -9143,6 +9372,12 @@
   "Smart split": {
     "Smart split": ""
   },
+  "Smart suppression": {
+    "Smart suppression": ""
+  },
+  "Smart suppression, sound and media": {
+    "Smart suppression, sound and media": ""
+  },
   "Smartcard Authentication": {
     "Smartcard Authentication": "スマートカード認証"
   },
@@ -9154,6 +9389,12 @@
   },
   "Snap": {
     "Snap": "スナップ"
+  },
+  "Snooze": {
+    "Snooze": ""
+  },
+  "Snoozed": {
+    "Snoozed": ""
   },
   "Snow": {
     "Snow": "雪"
@@ -9196,6 +9437,9 @@
   },
   "Sound & media": {
     "Sound & media": ""
+  },
+  "Sound alerts": {
+    "Sound alerts": ""
   },
   "Sound theme": {
     "Sound theme": ""
@@ -9344,6 +9588,12 @@
   "State": {
     "State": "状態"
   },
+  "Statistics": {
+    "Statistics": ""
+  },
+  "Statistics & testing": {
+    "Statistics & testing": ""
+  },
   "Stay awake with the lid closed": {
     "Stay awake with the lid closed": ""
   },
@@ -9431,6 +9681,9 @@
   "Sun": {
     "Sun": ""
   },
+  "Sunny": {
+    "Sunny": ""
+  },
   "Sunrise": {
     "Sunrise": "日の出"
   },
@@ -9443,8 +9696,14 @@
   "Suppress duplicates": {
     "Suppress duplicates": ""
   },
+  "Suppress during meetings": {
+    "Suppress during meetings": ""
+  },
   "Suppress events": {
     "Suppress events": ""
+  },
+  "Suppress in fullscreen": {
+    "Suppress in fullscreen": ""
   },
   "Surface": {
     "Surface": "表面"
@@ -9514,6 +9773,12 @@
   },
   "Switches to power saver at the low battery threshold": {
     "Switches to power saver at the low battery threshold": ""
+  },
+  "Switches workspaces": {
+    "Switches workspaces": ""
+  },
+  "Switches workspaces (reversed)": {
+    "Switches workspaces (reversed)": ""
   },
   "Switching to the current workspace returns to the previous one": {
     "Switching to the current workspace returns to the previous one": ""
@@ -9677,9 +9942,6 @@
   "Terminal fallback failed. Install one of the supported terminal emulators or run '%1' manually.": {
     "Terminal fallback failed. Install one of the supported terminal emulators or run '%1' manually.": ""
   },
-  "Terminal fallback opened. Complete authentication there; it will close automatically when done.": {
-    "Terminal fallback opened. Complete authentication there; it will close automatically when done.": ""
-  },
   "Terminal opened. Complete authentication there; it will close automatically when done.": {
     "Terminal opened. Complete authentication there; it will close automatically when done.": ""
   },
@@ -9695,6 +9957,9 @@
   "Tertiary Container": {
     "Tertiary Container": "ターシャリコンテナ"
   },
+  "Test alert sound": {
+    "Test alert sound": ""
+  },
   "Test connection": {
     "Test connection": ""
   },
@@ -9703,6 +9968,9 @@
   },
   "Test page sent to printer": {
     "Test page sent to printer": "テストページをプリンターに送信しました"
+  },
+  "Testing & preview": {
+    "Testing & preview": ""
   },
   "Testing...": {
     "Testing...": "テスト中..."
@@ -9736,6 +10004,9 @@
   },
   "The Island takes its place on this bar": {
     "The Island takes its place on this bar": ""
+  },
+  "The Wi-Fi adapter could not start access point mode.": {
+    "The Wi-Fi adapter could not start access point mode.": ""
   },
   "The arrow points in the direction the wind is blowing. The label shows where it comes from.": {
     "The arrow points in the direction the wind is blowing. The label shows where it comes from.": ""
@@ -9836,8 +10107,8 @@
   "Theme, light and dark, matugen": {
     "Theme, light and dark, matugen": ""
   },
-  "Themed app icons": {
-    "Themed app icons": ""
+  "Themed": {
+    "Themed": ""
   },
   "Themes": {
     "Themes": "テーマ"
@@ -9899,6 +10170,9 @@
   "This system was not started in UEFI mode": {
     "This system was not started in UEFI mode": ""
   },
+  "This week": {
+    "This week": ""
+  },
   "This widget prevents GPU power off states, which can significantly impact battery life on laptops. It is not recommended to use this on laptops with hybrid graphics.": {
     "This widget prevents GPU power off states, which can significantly impact battery life on laptops. It is not recommended to use this on laptops with hybrid graphics.": "このウィジェットはGPUの省電力状態を防ぎ、ノートパソコンのバッテリー寿命に大きな影響を与える可能性があります。ハイブリッドグラフィックス搭載のノートパソコンでの使用は推奨されません。"
   },
@@ -9934,6 +10208,12 @@
   },
   "Tile color": {
     "Tile color": ""
+  },
+  "Tile style": {
+    "Tile style": ""
+  },
+  "Tile tone": {
+    "Tile tone": ""
   },
   "Tiled": {
     "Tiled": "タイル化"
@@ -9976,6 +10256,9 @@
   },
   "Tint strength": {
     "Tint strength": ""
+  },
+  "Tinted": {
+    "Tinted": ""
   },
   "Tinted cards and badges across the shell": {
     "Tinted cards and badges across the shell": ""
@@ -10034,6 +10317,9 @@
   "Toggle Launcher": {
     "Toggle Launcher": ""
   },
+  "Toggle Mute": {
+    "Toggle Mute": ""
+  },
   "Toggle Settings": {
     "Toggle Settings": ""
   },
@@ -10048,6 +10334,9 @@
   },
   "Toggling...": {
     "Toggling...": "切り替え中..."
+  },
+  "Tonal": {
+    "Tonal": ""
   },
   "Tonal Spot": {
     "Tonal Spot": "Tonal Spot"
@@ -10165,6 +10454,9 @@
   },
   "Try a different search": {
     "Try a different search": "別の検索を試してください"
+  },
+  "Turn off a widget to use the bar scroll action over it": {
+    "Turn off a widget to use the bar scroll action over it": ""
   },
   "Turn off displays after": {
     "Turn off displays after": ""
@@ -10363,12 +10655,6 @@
   },
   "Updates, clipboard, %1": {
     "Updates, clipboard, %1": ""
-  },
-  "Updating %1...": {
-    "Updating %1...": ""
-  },
-  "Updating plugins...": {
-    "Updating plugins...": ""
   },
   "Updating...": {
     "Updating...": ""
@@ -10652,6 +10938,9 @@
   "Visualizer, album art, excluded players": {
     "Visualizer, album art, excluded players": ""
   },
+  "Vivid": {
+    "Vivid": ""
+  },
   "Volume": {
     "Volume": "音量"
   },
@@ -10736,9 +11025,6 @@
   "Web browser": {
     "Web browser": ""
   },
-  "Week": {
-    "Week": ""
-  },
   "Weekly screen time": {
     "Weekly screen time": ""
   },
@@ -10796,8 +11082,20 @@
   "Wi-Fi & Bluetooth": {
     "Wi-Fi & Bluetooth": ""
   },
+  "Wi-Fi QR code for %1": {
+    "Wi-Fi QR code for %1": ""
+  },
   "Wi-Fi and Ethernet connection": {
     "Wi-Fi and Ethernet connection": "Wi-Fi と Ethernet 接続"
+  },
+  "Wi-Fi disabled": {
+    "Wi-Fi disabled": ""
+  },
+  "Wi-Fi enabled": {
+    "Wi-Fi enabled": ""
+  },
+  "Wi-Fi is off": {
+    "Wi-Fi is off": ""
   },
   "Wi-Fi network": {
     "Wi-Fi network": ""
@@ -10828,6 +11126,9 @@
   },
   "Widget removed": {
     "Widget removed": "ウィジェットを削除しました"
+  },
+  "Widget scroll": {
+    "Widget scroll": ""
   },
   "Widget settings": {
     "Widget settings": ""
@@ -10964,9 +11265,6 @@
   "Written total": {
     "Written total": ""
   },
-  "X axis": {
-    "X axis": ""
-  },
   "X-Ray": {
     "X-Ray": "X-Ray"
   },
@@ -10984,9 +11282,6 @@
   },
   "Xray options are in Compositor → Layout": {
     "Xray options are in Compositor → Layout": ""
-  },
-  "Y axis": {
-    "Y axis": ""
   },
   "Year": {
     "Year": ""
@@ -11036,6 +11331,9 @@
   "Zombie": {
     "Zombie": ""
   },
+  "adjective, pointer acceleration profile option, constant speed": {
+    "Flat": ""
+  },
   "adjective, printer state": {
     "Idle": ""
   },
@@ -11053,6 +11351,12 @@
   },
   "battery stat label, charge or discharge rate in watts": {
     "Power": ""
+  },
+  "break plan option, long stretches of work between breaks": {
+    "Focused": ""
+  },
+  "break plan option, short and frequent breaks": {
+    "Light": ""
   },
   "broken": {
     "broken": "壊れています"
@@ -11074,6 +11378,10 @@
   },
   "checked just now": {
     "checked just now": ""
+  },
+  "computer chassis type": {
+    "Desktop": "",
+    "Tablet": ""
   },
   "copy link": {
     "copy link": ""
@@ -11135,6 +11443,9 @@
   "featured": {
     "featured": "おすすめ"
   },
+  "font weight, thinner than regular": {
+    "Light": ""
+  },
   "greetd is not using the DMS greeter yet.": {
     "greetd is not using the DMS greeter yet.": ""
   },
@@ -11143,6 +11454,9 @@
   },
   "last seen %1": {
     "last seen %1": "最終確認 %1"
+  },
+  "launcher settings section title, noun": {
+    "Search": ""
   },
   "leave empty for default": {
     "leave empty for default": "既定値を使うには空のままにしてください"
@@ -11201,6 +11515,15 @@
   "noun, overflow button position before the first widget": {
     "Start": ""
   },
+  "noun, settings card title for idle timeout settings": {
+    "Idle": ""
+  },
+  "noun, start time of a schedule or event": {
+    "Start": ""
+  },
+  "noun, window rule editor group of keyboard focus options": {
+    "Focus": ""
+  },
   "now": {
     "now": "今"
   },
@@ -11233,6 +11556,9 @@
   },
   "reviewed": {
     "reviewed": ""
+  },
+  "screenshot draw tool, select and move annotations": {
+    "Select": ""
   },
   "session %1": {
     "session %1": "セッション %1"

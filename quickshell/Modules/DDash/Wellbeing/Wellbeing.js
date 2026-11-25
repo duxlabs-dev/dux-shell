@@ -2,7 +2,6 @@
 
 const secondsPerHour = 3600;
 const weekLength = 7;
-const monthLength = 30;
 const retentionDays = 92;
 const msPerDay = 86400000;
 
@@ -37,58 +36,34 @@ function addDays(date, count) {
     return new Date(date.getFullYear(), date.getMonth(), date.getDate() + count);
 }
 
-function weekStart(anchor, firstDayOfWeek) {
-    return addDays(anchor, -((anchor.getDay() - firstDayOfWeek + weekLength) % weekLength));
-}
-
-function oldestWeekOffset(today, firstDayOfWeek) {
-    const current = weekStart(today, firstDayOfWeek);
-    const oldest = weekStart(addDays(today, 1 - retentionDays), firstDayOfWeek);
-    return -Math.round((current - oldest) / (weekLength * msPerDay));
-}
-
-function weeksBack(days, today, firstDayOfWeek) {
-    const count = 1 - oldestWeekOffset(today, firstDayOfWeek);
-    const weeks = [];
-    for (let i = 0; i < count; i++)
-        weeks.push(weekDays(days, addDays(today, (i - count + 1) * weekLength), firstDayOfWeek, today));
-    return weeks;
-}
-
-function weekDays(days, anchor, firstDayOfWeek, today) {
+function weekEnding(days, end, today) {
     const map = byDate(days);
-    const todayKey = dateKey(today ?? anchor);
-    const start = weekStart(anchor, firstDayOfWeek);
+    const todayKey = dateKey(today);
     const result = [];
-    for (let i = 0; i < weekLength; i++) {
-        const date = addDays(start, i);
+    for (let i = 1 - weekLength; i <= 0; i++) {
+        const date = addDays(end, i);
         const key = dateKey(date);
         result.push({
             date: key,
             weekday: date.getDay(),
             active: map[key]?.active ?? 0,
             apps: map[key]?.apps ?? {},
-            today: key === todayKey,
-            future: key > todayKey
+            today: key === todayKey
         });
     }
     return result;
 }
 
-function periodDays(days, anchor, firstDayOfWeek, period, today) {
-    const anchorKey = dateKey(anchor);
-    switch (period) {
-    case "day":
-        return weekDays(days, anchor, firstDayOfWeek, today).filter(day => day.date === anchorKey);
-    case "week":
-        return weekDays(days, anchor, firstDayOfWeek, today).filter(day => !day.future);
-    default:
-        return (Array.isArray(days) ? days : []).filter(day => day?.date <= anchorKey).slice(-monthLength);
-    }
+function weeksBack(days, today) {
+    const count = Math.ceil(retentionDays / weekLength);
+    const weeks = [];
+    for (let i = 1 - count; i <= 0; i++)
+        weeks.push(weekEnding(days, addDays(today, i * weekLength), today));
+    return weeks;
 }
 
-function totalSeconds(days) {
-    return days.reduce((sum, day) => sum + (day?.active ?? 0), 0);
+function daysAgo(key, today) {
+    return Math.round((addDays(today, 0) - parseKey(key)) / msPerDay);
 }
 
 function topApps(days, limit) {
@@ -129,14 +104,75 @@ function axis(peakSeconds) {
     };
 }
 
-function monthDayFormat(shortDateFormat) {
-    return String(shortDateFormat).replace(/[^A-Za-z]*y+[^A-Za-z]*/, "");
-}
-
 function splitDuration(seconds) {
     const total = Math.max(0, Math.round(seconds));
     return {
         hours: Math.floor(total / secondsPerHour),
         minutes: Math.floor((total % secondsPerHour) / 60)
+    };
+}
+
+const breakPlans = [
+    {
+        id: "light",
+        interval: 20,
+        duration: 20,
+        beforeLong: 3,
+        longDuration: 5,
+        warning: 5
+    },
+    {
+        id: "balanced",
+        interval: 30,
+        duration: 30,
+        beforeLong: 2,
+        longDuration: 10,
+        warning: 10
+    },
+    {
+        id: "focused",
+        interval: 60,
+        duration: 60,
+        beforeLong: 1,
+        longDuration: 15,
+        warning: 15
+    }
+];
+const breakPlanKeys = ["interval", "duration", "beforeLong", "longDuration", "warning"];
+
+function matchingBreakPlan(config) {
+    return breakPlans.find(plan => breakPlanKeys.every(key => plan[key] === config[key]))?.id ?? "";
+}
+
+function breakTotals(days) {
+    const totals = {
+        completed: 0,
+        skipped: 0,
+        snoozed: 0
+    };
+    for (const day of days) {
+        totals.completed += day?.completed ?? 0;
+        totals.skipped += day?.skipped ?? 0;
+        totals.snoozed += day?.snoozed ?? 0;
+    }
+    totals.total = totals.completed + totals.skipped + totals.snoozed;
+    totals.rate = totals.total > 0 ? Math.round(totals.completed / totals.total * 100) : -1;
+    return totals;
+}
+
+function breakStats(days) {
+    const list = Array.isArray(days) ? days : [];
+    return {
+        today: breakTotals(list.slice(-1)),
+        week: breakTotals(list.slice(-weekLength)),
+        all: breakTotals(list)
+    };
+}
+
+function nextBreak(kind, shortsDone, beforeLong) {
+    const done = kind === "long" ? 0 : shortsDone + 1;
+    return {
+        shortsDone: done,
+        kind: done >= beforeLong ? "long" : "short"
     };
 }

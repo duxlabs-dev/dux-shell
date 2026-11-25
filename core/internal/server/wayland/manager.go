@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"maps"
+	"math"
 	"os"
 	"path/filepath"
 	"slices"
@@ -29,7 +30,11 @@ import (
 
 const animKelvinStep = 25
 
-const neutralTemp = 6500
+const (
+	neutralTemp = 6500
+	minTemp     = 1000
+	maxTemp     = 10000
+)
 
 // noTempTarget marks "the night light has no temperature target". Plain outputs
 // then get the neutral ramp, while outputs with an ICC profile stay at the
@@ -954,19 +959,23 @@ func (m *Manager) applyScheduledTemp() {
 	m.updateStateFromSchedule()
 }
 
-// effectiveTempTarget returns the temperature to render an output at: a
-// per-output override wins over the night light schedule, so each display can
-// keep its own temperature (0 = no override). Without either, the output keeps
-// whatever its profile describes.
+// A per-output temperature is that display's white point, the schedule shifts
+// it by the mired distance it shifts a neutral display.
 func effectiveTempTarget(out *outputState, scheduleTemp int) int {
-	if out.outputTemp != 0 {
+	switch {
+	case out.outputTemp <= 0 && scheduleTemp <= 0:
+		return noTempTarget
+	case out.outputTemp <= 0:
+		return scheduleTemp
+	case scheduleTemp <= 0:
 		return out.outputTemp
 	}
-	if scheduleTemp > 0 {
-		return scheduleTemp
-	}
-	return noTempTarget
+	composed := mired(scheduleTemp) + mired(out.outputTemp) - mired(neutralTemp)
+	composed = min(max(composed, mired(maxTemp)), mired(minTemp))
+	return int(math.Round(1e6 / composed))
 }
+
+func mired(temp int) float64 { return 1e6 / float64(temp) }
 
 func (m *Manager) applyGamma(temp int) {
 	m.configMutex.RLock()
@@ -1070,8 +1079,6 @@ func (m *Manager) applyGamma(temp int) {
 	}
 }
 
-// rampCurrent compares against the output's effective target, not the schedule
-// temperature, so an overridden output is not resent on every schedule step.
 // lastTemp 0 never matches a target and marks a forced resend.
 func (out *outputState) rampCurrent(targetTemp int, gamma, contrast float64) bool {
 	return out.lastTemp == targetTemp && out.lastGamma == gamma && out.lastContrast == contrast
@@ -1828,8 +1835,8 @@ func (m *Manager) SetOutputTemp(outputName string, temp int) error {
 	if err := validateOutputName(outputName); err != nil {
 		return err
 	}
-	if temp != 0 && (temp < 1000 || temp > 10000) {
-		return fmt.Errorf("temperature %d out of range (1000-10000)", temp)
+	if temp != 0 && (temp < minTemp || temp > maxTemp) {
+		return fmt.Errorf("temperature %d out of range (%d-%d)", temp, minTemp, maxTemp)
 	}
 
 	// Persist first: on a default install (night light off, no profile) no

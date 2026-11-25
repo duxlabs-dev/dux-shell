@@ -494,11 +494,11 @@ Column {
                             checkEnabled: false
                             model: [
                                 {
-                                    "text": I18n.tr("Light", "adjective, wallpaper thumbnail label for light mode"),
+                                    "text": I18n.tr("Light", "adjective, light color mode, opposite of dark"),
                                     "icon": "light_mode"
                                 },
                                 {
-                                    "text": I18n.tr("Dark", "adjective, wallpaper thumbnail label for dark mode"),
+                                    "text": I18n.tr("Dark", "adjective, dark color mode, opposite of light"),
                                     "icon": "dark_mode"
                                 }
                             ]
@@ -1166,7 +1166,7 @@ Column {
                 tab: "theme"
                 tags: ["icon", "theme", "light", "dark", "mode"]
                 settingKey: "iconThemePerMode"
-                text: I18n.tr("Separate light and dark themes")
+                text: I18n.tr("Separate light and dark")
                 checked: SettingsData.iconThemePerMode
                 onToggled: checked => SettingsData.setIconThemePerMode(checked)
             }
@@ -1306,7 +1306,7 @@ Column {
                 settingKey: "iconTileStyle"
                 text: I18n.tr("Tile style", "Dux Icons setting, how strong the app's own color is on its tile")
                 enabled: !root.selfBuiltIconsMissing
-                options: [I18n.tr("Tonal", "Dux Icons tile style option, a soft tone of the app's color"), I18n.tr("Vivid", "Dux Icons tile style option, the app's color as strong as in its icon"), I18n.tr("Muted", "Dux Icons tile style option, a near-gray tint of the app's color")]
+                options: [I18n.tr("Tonal", "Dux Icons tile style option, a soft tone of the app's color"), I18n.tr("Vivid", "Dux Icons tile style option, the app's color as strong as in its icon"), I18n.tr("Muted", "Dux Icons tile style option, a near-gray tint of the app's color", true)]
                 optionValues: ["tonal", "content", "neutral"]
                 currentValue: SettingsData.iconTileStyle
                 onValueChanged: value => SettingsData.set("iconTileStyle", value)
@@ -1319,6 +1319,7 @@ Column {
                 tags: ["icon", "tile", "base", "plate", "badge", "tone", "light", "dark", "brightness", "dux"]
                 settingKey: "iconTileTone"
                 text: I18n.tr("Tile tone", "Dux Icons setting, how light the tile behind each icon is")
+                sliderText: I18n.tr("Tone")
                 enabled: !root.selfBuiltIconsMissing
                 checked: SettingsData.iconTileTone >= 0
                 value: Math.max(0, SettingsData.iconTileTone)
@@ -1349,6 +1350,7 @@ Column {
                 tags: ["icon", "tile", "base", "plate", "badge", "tone", "dux", "labs", "app", "art", "shade"]
                 settingKey: "iconOwnTone"
                 text: I18n.tr("Dux app tone", "Dux Icons setting, the shade of Dux Labs app art on its tile")
+                sliderText: I18n.tr("Tone")
                 enabled: !root.selfBuiltIconsMissing
                 checked: SettingsData.iconOwnTone >= 0
                 value: Math.max(40, SettingsData.iconOwnTone)
@@ -1513,6 +1515,7 @@ Column {
                 tags: ["cursor", "hide", "timeout", "inactive"]
                 settingKey: "cursorHideAfterInactive"
                 text: I18n.tr("Cursor auto-hide timeout")
+                sliderText: I18n.tr("Hide delay")
                 checked: timeout > 0
                 value: timeout
                 // Timeout 0 means off, so the slider starts above it.

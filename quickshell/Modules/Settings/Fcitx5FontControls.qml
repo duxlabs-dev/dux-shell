@@ -17,10 +17,10 @@ Row {
     readonly property string regularKey: "Regular"
     readonly property string styleKey: parts.style === "" ? regularKey : parts.style
     readonly property var styleLabels: ({
-            "Regular": I18n.tr("Regular", "font style"),
-            "Light": I18n.tr("Light", "font style"),
-            "Medium": I18n.tr("Medium", "font style"),
-            "Bold": I18n.tr("Bold", "font style"),
+            "Regular": I18n.tr("Regular", "font weight"),
+            "Light": I18n.tr("Light", "font weight, thinner than regular", true),
+            "Medium": I18n.tr("Medium", "font weight"),
+            "Bold": I18n.tr("Bold", "font weight"),
             "Italic": I18n.tr("Italic", "font style"),
             "Bold Italic": I18n.tr("Bold Italic", "font style")
         })

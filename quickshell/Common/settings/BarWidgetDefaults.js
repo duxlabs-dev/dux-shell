@@ -75,6 +75,7 @@ var ISLAND_DEFAULTS = {
     islandSatelliteGothCorners: true,
     islandSatelliteFollowInterfaceStyle: true,
     islandSatelliteTransparency: 1,
+    islandScrollEmptyStrip: true,
     islandSpringStiffness: 600,
     islandSpringDamping: 49,
     islandSpringMass: 1
@@ -117,6 +118,7 @@ var DEFAULTS = {
         workspaceMoveToOutput: false,
         showOccupiedWorkspacesOnly: false,
         showSpecialWorkspaces: false,
+        scrollEnabled: true,
         reverseScrolling: false,
         dwlShowAllTags: false,
         workspaceActiveAppHighlightEnabled: false,
@@ -150,6 +152,7 @@ var DEFAULTS = {
     clock: {
         clockCompactMode: false,
         clockDateOrder: "timeFirst",
+        clockShowTimezone: false,
         clockNotificationBadge: false,
         clockClickAction: "dash",
         clockClickCommand: ""
@@ -179,7 +182,8 @@ var DEFAULTS = {
         runningAppsCompactMode: true,
         runningAppsGroupByApp: false,
         runningAppsCurrentWorkspace: true,
-        runningAppsCurrentMonitor: false
+        runningAppsCurrentMonitor: false,
+        scrollEnabled: true
     },
     appsDock: {
         barMaxVisibleApps: 0,
@@ -216,7 +220,8 @@ var DEFAULTS = {
         showBatteryTimeOnlyOnBattery: false,
         showBatteryPowerCharging: false,
         showBatteryPowerDischarging: false,
-        batteryStyle: "icon"
+        batteryStyle: "icon",
+        scrollEnabled: true
     },
     controlCenterButton: {
         showNetworkIcon: true,
@@ -233,6 +238,7 @@ var DEFAULTS = {
         showScreenSharingIcon: true,
         showIdleInhibitorIcon: false,
         showDoNotDisturbIcon: false,
+        scrollEnabled: true,
         controlCenterGroupOrder: CONTROL_CENTER_GROUP_ORDER
     },
     privacyIndicator: {

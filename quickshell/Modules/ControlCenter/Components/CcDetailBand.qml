@@ -54,7 +54,8 @@ FocusScope {
         if (section !== "" && _measuredHeight > 0)
             _heldHeight = _measuredHeight;
     }
-    readonly property bool transitioning: heightAnimation.running
+    readonly property bool transitioning: heightMotion.running
+    onTargetHeightChanged: heightMotion.retarget(targetHeight)
     // Only IPC can ask for a plugin section whose tile is not placed, so there is nothing to show.
     readonly property bool pageEmpty: pageItem?.empty === true
     readonly property string title: {
@@ -65,21 +66,23 @@ FocusScope {
         return model?.getWidgetForId(parsed.base)?.text ?? "";
     }
 
-    height: targetHeight
+    height: heightMotion.value
     visible: shownSection !== ""
     clip: true
     Accessible.role: Accessible.Grouping
     Accessible.name: title
 
-    // Same timing as the popout's own resize, so the surface and the content move as one.
-    Behavior on height {
+    // Same spring as the popout's own resize, so the surface and the content move as one.
+    SpringMotion {
+        id: heightMotion
+
+        readonly property var spring: Theme.springPreset("standardDefaultSpatial")
+
         enabled: CcMetrics.animationsEnabled
-        NumberAnimation {
-            id: heightAnimation
-            duration: Theme.expressiveDurations.expressiveDefaultSpatial
-            easing.type: Easing.BezierSpline
-            easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
-        }
+        stiffness: spring.stiffness
+        damping: spring.damping
+        positionEpsilon: 0.25
+        velocityEpsilon: positionEpsilon * damping / (2 * mass)
     }
 
     function _collapseIfEmpty() {

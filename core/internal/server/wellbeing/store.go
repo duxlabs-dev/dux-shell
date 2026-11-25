@@ -16,9 +16,10 @@ import (
 )
 
 var (
-	bucketDays = []byte("days")
-	bucketMeta = []byte("meta")
-	keyAlerted = []byte("alerted")
+	bucketDays   = []byte("days")
+	bucketBreaks = []byte("breaks")
+	bucketMeta   = []byte("meta")
+	keyAlerted   = []byte("alerted")
 )
 
 func DBPath() string {
@@ -79,11 +80,12 @@ func tryOpenDB(path string) (db *bolt.DB, err error) {
 		return nil, err
 	}
 	err = db.Update(func(tx *bolt.Tx) error {
-		if _, err := tx.CreateBucketIfNotExists(bucketDays); err != nil {
-			return err
+		for _, name := range [][]byte{bucketDays, bucketBreaks, bucketMeta} {
+			if _, err := tx.CreateBucketIfNotExists(name); err != nil {
+				return err
+			}
 		}
-		_, err := tx.CreateBucketIfNotExists(bucketMeta)
-		return err
+		return nil
 	})
 	if err == nil {
 		err = db.View(func(tx *bolt.Tx) error {
@@ -128,6 +130,23 @@ func writeDay(b *bolt.Bucket, day DayUsage) error {
 		return err
 	}
 	return b.Put([]byte(day.Date), raw)
+}
+
+func readBreaks(b *bolt.Bucket, date string) BreakCounts {
+	counts := BreakCounts{}
+	if raw := b.Get([]byte(date)); raw != nil {
+		_ = json.Unmarshal(raw, &counts)
+	}
+	counts.Date = date
+	return counts
+}
+
+func writeBreaks(b *bolt.Bucket, counts BreakCounts) error {
+	raw, err := json.Marshal(counts)
+	if err != nil {
+		return err
+	}
+	return b.Put([]byte(counts.Date), raw)
 }
 
 func readMeta(b *bolt.Bucket, key []byte, out any) bool {

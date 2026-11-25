@@ -23,25 +23,20 @@ SettingsReorderRow {
 
     iconName: widgetDef?.icon ?? "widgets"
     title: widgetName
-    subtitle: deleteButton.confirming ? I18n.tr("Confirm Delete") : ""
+    subtitle: actions.confirming ? I18n.tr("Confirm Delete") : ""
     subtitleColor: Theme.error
     clickable: true
     onClicked: configureRequested()
 
-    trailing: [
-        DIcon {
-            anchors.verticalCenter: parent.verticalCenter
-            name: "chevron_right"
-            size: Theme.iconSize
-            color: Theme.onSurfaceVariant
-            rotation: I18n.isRtl ? 180 : 0
-        },
-        SettingsDivider {
-            vertical: true
-        },
+    trailing: SettingsInstanceActions {
+        id: actions
+        anchors.verticalCenter: parent.verticalCenter
+        fixed: root.fixed
+        onDuplicateRequested: root.duplicateRequested()
+        onDeleteRequested: root.deleteRequested()
+
         DToggle {
             anchors.verticalCenter: parent.verticalCenter
-            visible: !root.fixed
             hideText: true
             text: root.title
             checked: root.instanceData?.enabled ?? true
@@ -50,19 +45,6 @@ SettingsReorderRow {
                     enabled: isChecked
                 });
             }
-        },
-        DActionButton {
-            anchors.verticalCenter: parent.verticalCenter
-            visible: !root.fixed
-            iconName: "content_copy"
-            tooltipText: I18n.tr("Duplicate", "verb, desktop widget menu action")
-            onClicked: root.duplicateRequested()
-        },
-        SettingsDeleteButton {
-            id: deleteButton
-            anchors.verticalCenter: parent.verticalCenter
-            visible: !root.fixed
-            onDeleteRequested: root.deleteRequested()
         }
-    ]
+    }
 }

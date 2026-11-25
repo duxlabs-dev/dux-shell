@@ -8,6 +8,8 @@ import qs.DCommon.Widgets
 import qs.Modules.Settings.Widgets
 import qs.Modules.DDash
 import qs.Modules.DDash.Overview
+import "../DDash/utils/cards.js" as CardUtils
+import "../../Services/SysmonCatalog.js" as SysmonCatalog
 
 FocusScope {
     id: root
@@ -36,6 +38,17 @@ FocusScope {
             };
         }));
     }, [])
+
+    readonly property var sysmonCards: DashRegistry.placed.filter(c => c?.id === "sysmon" && typeof c.instanceId === "string" && c.instanceId !== "").map(c => ({
+                "instanceId": c.instanceId,
+                "w": c.w,
+                "h": c.h,
+                "config": c.config
+            }))
+
+    function sysmonTitle(config) {
+        return SysmonService.configTitle(config) || DashRegistry.entry("sysmon")?.text || "";
+    }
 
     function showDashPluginBrowser() {
         dashPluginBrowserLoader.active = true;
@@ -207,6 +220,53 @@ FocusScope {
                                 enabled: tabRow.available
                                 onToggled: checked => SettingsData.setDashTabEnabled(tabRow.modelData.id, checked)
                             }
+                        }
+                    }
+                }
+            }
+        }
+
+        SettingsDeferred {
+            when: root.sysmonCards.length > 0
+
+            SettingsCard {
+                title: I18n.tr("System Monitor")
+                iconName: "monitoring"
+                settingKey: "dashSysmonCards"
+                tab: "dank_dash"
+
+                Repeater {
+                    model: ScriptModel {
+                        values: root.sysmonCards
+                        objectProp: "instanceId"
+                    }
+
+                    SettingsRow {
+                        id: cardRow
+
+                        required property var modelData
+
+                        readonly property var config: SysmonCatalog.normalizeConfig(modelData.config, SysmonCatalog.defaultDashConfig())
+
+                        iconName: SysmonService.layoutIcon(config.layout)
+                        title: root.sysmonTitle(config)
+                        subtitle: actions.confirming ? I18n.tr("Confirm Delete") : SysmonService.layoutName(config.layout) + " · " + modelData.w + "×" + modelData.h
+                        subtitleColor: actions.confirming ? Theme.error : supportingContentColor
+                        clickable: true
+                        onClicked: {
+                            SettingsUiState.selectedDashCardId = modelData.instanceId;
+                            SettingsUiState.selectedWidgetTitle = title;
+                            root.parentModal?.navigateTo("dash_sysmon_card");
+                        }
+
+                        SettingsInstanceActions {
+                            id: actions
+                            anchors.verticalCenter: parent.verticalCenter
+                            onDuplicateRequested: {
+                                if (!DashRegistry.duplicateCard("sysmon", cardRow.modelData.instanceId))
+                                    ToastService.showWarning(I18n.tr("Failed to duplicate %1", "toast title, %1 is a dash card name").arg(cardRow.title), I18n.tr("No room left on the dashboard", "dash settings: why a card can't be duplicated"));
+                            }
+                            onDeleteRequested: CardUtils.removeCard(DashRegistry.instanceIndex("sysmon", cardRow.modelData.instanceId))
                         }
                     }
                 }

@@ -812,7 +812,7 @@ Singleton {
         } : null;
         DMSService.sendRequest("network.wifi.disconnect", params, response => {
             if (response.error) {
-                ToastService.showError(I18n.tr("Failed to disconnect Wi-Fi"), response.error);
+                ToastService.showError(I18n.tr("Failed to disconnect", "toast title when disconnecting a network connection fails"), response.error);
             } else {
                 ToastService.showInfo(I18n.tr("Disconnected from Wi-Fi"));
                 currentWifiSSID = "";
@@ -1221,7 +1221,7 @@ Singleton {
             if (response.error) {
                 vpnIsBusy = false;
                 vpnBusyStartTime = 0;
-                ToastService.showError(I18n.tr("Failed to disconnect VPN"), response.error);
+                ToastService.showError(I18n.tr("Failed to disconnect", "toast title when disconnecting a network connection fails"), response.error);
             }
         });
     }
@@ -1239,7 +1239,7 @@ Singleton {
         DMSService.sendRequest("network.vpn.disconnectAll", null, response => {
             if (response.error) {
                 vpnIsBusy = false;
-                ToastService.showError(I18n.tr("Failed to disconnect VPNs"), response.error);
+                ToastService.showError(I18n.tr("Failed to disconnect", "toast title when disconnecting a network connection fails"), response.error);
             }
         });
     }
