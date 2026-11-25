@@ -395,6 +395,8 @@ Singleton {
     }
 
     function syncAppearanceOnModeChange() {
+        if (SettingsData.matugenSmartMode && Theme.currentTheme === Theme.dynamic)
+            return;
         const hasClassified = (WallpaperLibraryService.folders ?? []).some(f => f && !f.hidden && (f.appearance === "light" || f.appearance === "dark"));
         if (!hasClassified)
             return;
