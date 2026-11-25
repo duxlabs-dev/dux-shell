@@ -4,13 +4,18 @@ import qs.Common
 SettingsToggleSliderRow {
     id: root
 
-    required property var barConfig
-    readonly property bool overridden: barConfig?.followInterfaceStyle === false
-    readonly property real transparency: barConfig?.transparency ?? 1
+    required property var config
+    property bool isDock: false
+    readonly property bool overridden: config?.followInterfaceStyle === false
+    readonly property real transparency: config?.transparency ?? 1
 
     function update(patch) {
-        if (barConfig)
-            SettingsData.updateBarConfig(barConfig.id, patch);
+        if (!config)
+            return;
+        if (isDock)
+            SettingsData.updateDockConfig(config.id, patch);
+        else
+            SettingsData.updateBarConfig(config.id, patch);
     }
 
     text: I18n.tr("Override", "verb, toggle to override the global setting for this item")

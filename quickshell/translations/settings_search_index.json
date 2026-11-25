@@ -1162,26 +1162,6 @@
     "icon": "dock_to_bottom"
   },
   {
-    "section": "dockOpacityOverrides",
-    "label": "Docks",
-    "tabIndex": -1,
-    "category": "Interface style",
-    "keywords": [
-      "dock",
-      "docks",
-      "interface",
-      "opacity",
-      "override",
-      "panel",
-      "style",
-      "surface",
-      "taskbar",
-      "transparency"
-    ],
-    "page": "theme_surfaces",
-    "icon": "visibility_off"
-  },
-  {
     "section": "dotEnabled",
     "label": "Dot",
     "tabIndex": -1,
@@ -19059,6 +19039,26 @@
     "parentLabel": "Dock"
   },
   {
+    "section": "dockOpacity",
+    "label": "Override",
+    "tabIndex": 58,
+    "category": "Appearance",
+    "keywords": [
+      "appearance",
+      "dock",
+      "interface",
+      "launcher bar",
+      "opacity",
+      "override",
+      "panel",
+      "style",
+      "taskbar",
+      "transparency"
+    ],
+    "parentLabel": "Dock",
+    "description": "Opacity"
+  },
+  {
     "section": "dockSpacing",
     "label": "Padding",
     "tabIndex": 58,
@@ -19155,6 +19155,26 @@
       "widget"
     ],
     "parentLabel": "Dock"
+  },
+  {
+    "section": "dockSurface",
+    "label": "Surface",
+    "tabIndex": 58,
+    "category": "Appearance",
+    "keywords": [
+      "appearance",
+      "background",
+      "dock",
+      "launcher bar",
+      "opacity",
+      "override",
+      "panel",
+      "surface",
+      "taskbar",
+      "transparency"
+    ],
+    "parentLabel": "Dock",
+    "icon": "opacity"
   },
   {
     "section": "dockVisualEffects",

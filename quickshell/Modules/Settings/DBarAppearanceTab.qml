@@ -138,11 +138,11 @@ Item {
                         })
                 }
 
-                BarOpacityRow {
+                OpacityOverrideRow {
                     settingKey: "frameSurfaceOpacity"
                     tags: ["frame", "opacity", "transparency", "override", "interface", "style"]
                     visible: !!root.frameBar
-                    barConfig: root.frameBar
+                    config: root.frameBar
                 }
             }
         }
@@ -193,11 +193,11 @@ Item {
                     onCustomColorSelected: selectedColor => bar.apply("surfaceCustomColor", selectedColor.toString())
                 }
 
-                BarOpacityRow {
+                OpacityOverrideRow {
                     settingKey: "barOpacity"
                     tags: ["opacity", "transparency", "override", "interface", "style", "island"]
                     visible: !bar.islandShadowsSelectedBar
-                    barConfig: bar.selectedBarConfig
+                    config: bar.selectedBarConfig
                 }
 
                 SettingsButtonGroupRow {
