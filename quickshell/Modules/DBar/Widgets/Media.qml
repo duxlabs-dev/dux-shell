@@ -260,7 +260,7 @@ BasePill {
             readonly property real measuredNaturalTextWidth: {
                 if (!root.playerAvailable || root.maxTextWidth <= 0)
                     return 0;
-                if (!root.adaptiveWidthEnabled || (root.layoutShrunk && root.lyricActive && lyricLine.pages.length > 1))
+                if (!root.adaptiveWidthEnabled || (root.layoutShrunk && root.lyricActive))
                     return root.maxTextWidth;
                 const rawWidth = root.lyricActive ? lyricLine.pageWidth : (textContainer.displayText.length > 0 ? mediaText.implicitTextWidth : 0);
                 if (!isFinite(rawWidth) || rawWidth <= 0)
