@@ -22,7 +22,9 @@ Item {
 
     // Expired timed mutes drop out of the list the minute they lapse
     // (notificationRuleNowMs ticks), without waiting for the sweep.
-    readonly property var mutedRules: indexedRules(rule => (rule.action || "").toString().toLowerCase() === "mute" && !SettingsData.isNotificationRuleExpired(rule, NotificationService.notificationRuleNowMs))
+    // Only the header's own rules: Unmute/Unblock delete the whole rule, so manual rules stay in the main list.
+    readonly property var mutedRules: indexedRules(rule => SettingsData.isOwnAppRule(rule, "mute", false) && !SettingsData.isNotificationRuleExpired(rule, NotificationService.notificationRuleNowMs))
+    readonly property var blockedRules: indexedRules(rule => SettingsData.isOwnAppRule(rule, "ignore", false))
 
     readonly property var notificationRuleFieldOptions: [
         {
@@ -69,7 +71,7 @@ Item {
         },
         {
             value: "ignore",
-            label: I18n.tr("Ignore Completely", "notification rule action option")
+            label: I18n.tr("Block", "notification rule action option")
         },
         {
             value: "popup_only",
@@ -203,7 +205,7 @@ Item {
                 }
 
                 SettingsRow {
-                    subtitle: I18n.tr("Mute, ignore and priority rules per app")
+                    subtitle: I18n.tr("Mute, block and priority rules per app")
                 }
 
                 Repeater {
@@ -267,13 +269,13 @@ Item {
 
         SettingsDeferred {
             SettingsCard {
-                iconName: "volume_off"
+                iconName: "notifications_off"
                 title: I18n.tr("Muted apps")
                 settingKey: "mutedApps"
                 tags: ["notification", "mute", "unmute", "popup"]
 
                 SettingsRow {
-                    subtitle: root.mutedRules.length > 0 ? I18n.tr("Apps with notification popups muted. Unmute or delete to remove.") : I18n.tr("No apps muted. Right-click a notification and choose \"Mute popups\" to add one here.")
+                    subtitle: root.mutedRules.length > 0 ? I18n.tr("Apps with notification popups muted. Unmute or delete to remove.") : I18n.tr("No apps muted. Use the mute button on a notification to add one here.")
                 }
 
                 Repeater {
@@ -288,6 +290,36 @@ Item {
 
                         DButton {
                             text: I18n.tr("Unmute")
+                            variant: "text"
+                            onClicked: SettingsData.removeNotificationRule(modelData.index)
+                        }
+                    }
+                }
+            }
+        }
+
+        SettingsDeferred {
+            SettingsCard {
+                iconName: "block"
+                title: I18n.tr("Blocked apps")
+                settingKey: "blockedApps"
+                tags: ["notification", "block", "unblock", "ignore"]
+
+                SettingsRow {
+                    subtitle: root.blockedRules.length > 0 ? I18n.tr("Apps whose notifications are dropped entirely. Unblock to remove.") : I18n.tr("No apps blocked. Use the block button on a notification to add one here.")
+                }
+
+                Repeater {
+                    model: root.blockedRules
+
+                    delegate: SettingsRow {
+                        required property var modelData
+
+                        title: modelData.rule?.pattern || I18n.tr("Unknown")
+                        singleLineTitle: true
+
+                        DButton {
+                            text: I18n.tr("Unblock")
                             variant: "text"
                             onClicked: SettingsData.removeNotificationRule(modelData.index)
                         }

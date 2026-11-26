@@ -4029,14 +4029,28 @@ Singleton {
         return true;
     }
 
+    // Header actions keep one single-purpose rule each and never edit a rule built in the editor.
+    function isOwnAppRule(rule, action, bypassDnd) {
+        const matchType = (rule.matchType || "contains").toString().toLowerCase();
+        const senderless = matchType === "regex" && rule.pattern === "^$" && (!rule.field || rule.field === "appName");
+        if (!senderless && (matchType !== "exact" || !rule.pattern) || (rule.conditions || []).length > 0)
+            return false;
+        if (rule.field && rule.field !== "appName" && rule.field !== "desktopEntry")
+            return false;
+        return (rule.action || "default").toString().toLowerCase() === action && (rule.urgency || "default").toString().toLowerCase() === "default" && _isDndBypassRule(rule) === bypassDnd;
+    }
+
+    function hasOwnAppRule(appName, desktopEntry, action, bypassDnd, nowMs) {
+        return _appRuleIndex(notificationRules || [], appName, desktopEntry, rule => rule.enabled !== false && isOwnAppRule(rule, action, bypassDnd) && !isNotificationRuleExpired(rule, nowMs)) !== -1;
+    }
+
+    // Appended: the policy takes action and urgency from the first matching rule, mute is read from any rule.
     function addMuteRuleForApp(appName, desktopEntry, expiresAt) {
-        // Re-muting edits the app's existing no-action or mute rule (including an
-        // expired one not yet swept) so duplicates never accumulate.
         const changes = {
             action: "mute",
             expiresAt: expiresAt || 0
         };
-        if (!_updateAppRule(appName, desktopEntry, rule => _hasNoAction(rule) || _isMuteRule(rule), changes))
+        if (!_updateAppRule(appName, desktopEntry, rule => isOwnAppRule(rule, "mute", false), changes))
             _addAppRule(appName, desktopEntry, changes);
     }
 
@@ -4078,10 +4092,23 @@ Singleton {
     }
 
     function removeMuteRuleForApp(appName, desktopEntry) {
-        _updateAppRule(appName, desktopEntry, _isMuteRule, {
+        _updateAppRule(appName, desktopEntry, rule => isOwnAppRule(rule, "mute", false), {
             action: "default",
             expiresAt: 0
         });
+    }
+
+    // Kept first: the policy acts on the first matching rule only, so an ignore further down can be shadowed.
+    function addIgnoreRuleForApp(appName, desktopEntry) {
+        var rules = JSON.parse(JSON.stringify(notificationRules || []));
+        const index = _appRuleIndex(rules, appName, desktopEntry, rule => rule.enabled !== false && isOwnAppRule(rule, "ignore", false));
+        if (index === 0)
+            return;
+        rules.unshift(index === -1 ? _newNotificationRule(Object.assign(_appRuleKey(appName, desktopEntry), {
+            action: "ignore"
+        })) : rules.splice(index, 1)[0]);
+        notificationRules = rules;
+        saveSettings();
     }
 
     function isAppDndBypassed(appName, desktopEntry) {
@@ -4090,16 +4117,12 @@ Singleton {
 
     function setAppDndBypass(appName, desktopEntry, enabled) {
         if (!enabled) {
-            _updateAppRule(appName, desktopEntry, _isDndBypassRule, {
+            _updateAppRule(appName, desktopEntry, rule => isOwnAppRule(rule, "default", true), {
                 bypassDnd: false
             });
             return;
         }
-        if (isAppDndBypassed(appName, desktopEntry))
-            return;
-        if (!_updateAppRule(appName, desktopEntry, () => true, {
-            bypassDnd: true
-        }))
+        if (!isAppDndBypassed(appName, desktopEntry))
             _addAppRule(appName, desktopEntry, {
                 bypassDnd: true
             });

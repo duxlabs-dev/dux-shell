@@ -214,7 +214,6 @@ Item {
 
     function closeTransientUi() {
         transientSurfaces.closeAll();
-        popupContextMenuLoader.active = false;
     }
 
     NotificationActions {
@@ -708,10 +707,12 @@ Item {
                         privacyMode: SettingsData.notificationPopupPrivacyMode
                         bodyInvokesAction: win.bodyClickInvokesAction
                         persistImage: true
+                        reserveActionRow: true
                         showClose: true
+                        transientSurfaceTracker: transientSurfaces
+                        popupSurface: win.surface
                         revealControls: win.hovered || win.contextMenuActive
                         contentOpacity: swipe.contentOpacity
-                        dismissText: I18n.tr("Clear")
                         animateHeight: false
                         outerRadius: win.connectedFrameMode ? Theme.connectedSurfaceRadius : NotificationMetrics.popupRadius
                         color: "transparent"
@@ -744,14 +745,6 @@ Item {
                                 return;
                             }
                             win.dismissPopupReliably();
-                        }
-                        onContextMenuRequested: (x, y) => {
-                            popupContextMenuLoader.active = true;
-                            const menu = popupContextMenuLoader.item;
-                            if (!menu)
-                                return;
-                            const point = mapToItem(null, x, y);
-                            menu.showAt(point.x + (win.surface?.bandX ?? 0), point.y + (win.surface?.bandY ?? 0), win.screen);
                         }
                     }
                 }
@@ -950,18 +943,13 @@ Item {
         }
     }
 
-    Connections {
-        target: popupContextMenuLoader.item
-        ignoreUnknownSignals: true
-
-        function onVisibleChanged() {
-            if (!notificationData?.timer || exiting || _isDestroying)
-                return;
-            if (win.contextMenuActive) {
-                notificationData.timer.stop();
-            } else if (!cardHoverHandler.hovered && notificationData.popup) {
-                notificationData.timer.restart();
-            }
+    onContextMenuActiveChanged: {
+        if (!notificationData?.timer || exiting || _isDestroying)
+            return;
+        if (contextMenuActive) {
+            notificationData.timer.stop();
+        } else if (!cardHoverHandler.hovered && notificationData.popup) {
+            notificationData.timer.restart();
         }
     }
 
@@ -971,24 +959,5 @@ Item {
         interval: Math.max(600, NotificationMetrics.exitDuration + NotificationMetrics.heightDuration + Theme.shortDuration)
         repeat: false
         onTriggered: finalizeExit("watchdog")
-    }
-
-    Loader {
-        id: popupContextMenuLoader
-        active: false
-
-        sourceComponent: NotificationContextMenu {
-            transientSurfaceTracker: transientSurfaces
-            dismissText: notificationCard.dismissText
-            notification: notificationData
-            onAppMuted: {
-                if (notificationData && !win.exiting)
-                    NotificationService.dismissNotification(notificationData);
-            }
-            onDismissRequested: {
-                if (notificationData && !win.exiting)
-                    NotificationService.permanentlyDismissNotification(notificationData);
-            }
-        }
     }
 }

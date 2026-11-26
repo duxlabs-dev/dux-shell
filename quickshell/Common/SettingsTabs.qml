@@ -298,7 +298,7 @@ Singleton {
                     "text": I18n.tr("Rules"),
                     "icon": "rule_settings",
                     "tabIndex": 55,
-                    "hint": I18n.tr("Mute, ignore and priority rules per app")
+                    "hint": I18n.tr("Mute, block and priority rules per app")
                 }
             ]
         },

@@ -18,6 +18,7 @@ Singleton {
     readonly property real imageMaxHeight: Theme.listItemHeight * 4
     readonly property real imageDecodeSize: popupWidth * 2
     readonly property real actionHeight: compact ? Theme.buttonHeightXS : Theme.buttonHeightS
+    readonly property real reservedActionRowHeight: (actionHeight - contentSpacing) / 2
     readonly property real actionPadding: Theme.spacingS
     readonly property real controlSize: compact ? Theme.buttonHeightXXS : Theme.buttonHeightXS
     readonly property real railHeight: Theme.spacingXS

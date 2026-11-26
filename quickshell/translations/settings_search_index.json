@@ -18936,6 +18936,30 @@
     "icon": "SettingsUiState.selectedWidgetIcon"
   },
   {
+    "section": "blockedApps",
+    "label": "Blocked apps",
+    "tabIndex": 55,
+    "category": "Rules",
+    "keywords": [
+      "alert",
+      "alerts",
+      "apps",
+      "block",
+      "blocked",
+      "ignore",
+      "messages",
+      "notif",
+      "notification",
+      "notifications",
+      "notifs",
+      "rules",
+      "toast",
+      "unblock"
+    ],
+    "parentLabel": "Notifications",
+    "icon": "block"
+  },
+  {
     "section": "mutedApps",
     "label": "Muted apps",
     "tabIndex": 55,
@@ -18957,7 +18981,7 @@
       "unmute"
     ],
     "parentLabel": "Notifications",
-    "icon": "volume_off"
+    "icon": "notifications_off"
   },
   {
     "section": "notificationRules",
@@ -18991,7 +19015,7 @@
     "keywords": [
       "alert",
       "alerts",
-      "ignore",
+      "block",
       "messages",
       "mute",
       "notif",
@@ -19003,7 +19027,7 @@
     ],
     "icon": "rule_settings",
     "parentLabel": "Notifications",
-    "description": "Mute, ignore and priority rules per app"
+    "description": "Mute, block and priority rules per app"
   },
   {
     "section": "useAutoLocation",

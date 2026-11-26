@@ -65,13 +65,6 @@ Item {
         PopoutService.closeNotificationCenter();
     }
 
-    function openContextMenu(item, notification) {
-        contextActions.notification = notification;
-        contextMenuLoader.active = true;
-        contextMenuLoader.item.popupAnchorItem = item;
-        contextMenuLoader.item.showDropdownMenu();
-    }
-
     // positioners size on polish, so lay out once the width is known or the card is measured at its minimum height
     function settleLayout() {
         if (_laidOut || width <= 0)
@@ -93,18 +86,9 @@ Item {
         settleLayout();
         ready = true;
     }
-    Component.onDestruction: transientSurfaceTracker?.unregister(root)
 
     NotificationSwipeGroup {
         id: rowSwipe
-    }
-
-    Connections {
-        target: root.transientSurfaceTracker
-        ignoreUnknownSignals: true
-        function onCloseRequested() {
-            contextMenuLoader.item?.closeDropdownMenu();
-        }
     }
 
     Behavior on height {
@@ -138,10 +122,14 @@ Item {
         keyboardSelected: root.keyboardNavigationActive && root.isGroupSelected
         keyboardHints: keyboardSelected
         animateHeight: false
+        showDismiss: false
+        showClose: true
+        transientSurfaceTracker: root.transientSurfaceTracker
+        closeTooltip: I18n.tr("Close (keep in history)")
         onDescriptionExpandedChanged: root.animateResize()
         onExpandRequested: NotificationService.toggleMessageExpansion((notificationData?.notification?.id || "") + "_desc")
         onGroupToggleRequested: root.toggleGroup()
-        onDismissRequested: NotificationService.dismissGroup(root.notificationGroup?.key || "")
+        onCloseRequested: NotificationService.dismissGroup(root.notificationGroup?.key || "")
         onActionRequested: action => root.invokeAction(action)
         onBodyClicked: {
             if (groupCount > 1) {
@@ -150,7 +138,6 @@ Item {
             }
             root.invokeAction(contextActions.defaultAction(notificationData));
         }
-        onContextMenuRequested: (x, y) => root.openContextMenu(collapsedCard, collapsedCard.notificationData)
     }
 
     Loader {
@@ -200,14 +187,6 @@ Item {
                     spacing: Theme.spacingXS
                     DButton {
                         anchors.verticalCenter: parent.verticalCenter
-                        text: I18n.tr("Dismiss")
-                        buttonHeight: NotificationMetrics.controlSize
-                        horizontalPadding: NotificationMetrics.actionPadding
-                        variant: "text"
-                        onClicked: NotificationService.dismissGroup(root.notificationGroup?.key || "")
-                    }
-                    DButton {
-                        anchors.verticalCenter: parent.verticalCenter
                         text: (root.notificationGroup?.count || 0).toString()
                         iconName: "expand_less"
                         buttonHeight: NotificationMetrics.controlSize
@@ -216,6 +195,24 @@ Item {
                         textColor: Theme.onSurfaceVariant
                         Accessible.name: I18n.tr("Collapse")
                         onClicked: root.toggleGroup()
+                    }
+                    DActionButton {
+                        id: groupMenuButton
+                        anchors.verticalCenter: parent.verticalCenter
+                        iconName: "more_horiz"
+                        buttonSize: NotificationMetrics.controlSize
+                        iconSize: Theme.iconSizeSmall
+                        tooltipText: I18n.tr("More")
+                        // The hidden collapsed card carries the group's latest notification and closes the whole group.
+                        onClicked: collapsedCard.openMenu(groupMenuButton)
+                    }
+                    DActionButton {
+                        anchors.verticalCenter: parent.verticalCenter
+                        iconName: "close"
+                        buttonSize: NotificationMetrics.controlSize
+                        iconSize: Theme.iconSizeSmall
+                        tooltipText: I18n.tr("Close all", "notification group header button, dismisses every notification in the group")
+                        onClicked: NotificationService.dismissGroup(root.notificationGroup?.key || "")
                     }
                 }
             }
@@ -265,12 +262,15 @@ Item {
                         keyboardSelected: root.keyboardNavigationActive && root.selectedNotificationIndex === row.index
                         keyboardHints: keyboardSelected
                         descriptionExpanded: NotificationService.expandedMessages[(notificationData?.notification?.id || "") + "_desc"] || false
+                        showDismiss: false
+                        showClose: true
+                        transientSurfaceTracker: root.transientSurfaceTracker
+                        closeTooltip: I18n.tr("Close (keep in history)")
                         onDescriptionExpandedChanged: root.animateResize()
                         onExpandRequested: NotificationService.toggleMessageExpansion((notificationData?.notification?.id || "") + "_desc")
-                        onDismissRequested: NotificationService.dismissNotification(row.modelData)
+                        onCloseRequested: NotificationService.dismissNotification(row.modelData)
                         onActionRequested: action => root.invokeAction(action)
                         onBodyClicked: root.invokeAction(contextActions.defaultAction(notificationData))
-                        onContextMenuRequested: (x, y) => root.openContextMenu(message, row.modelData)
                     }
 
                     SequentialAnimation {
@@ -300,24 +300,5 @@ Item {
 
     NotificationActions {
         id: contextActions
-        onDismissRequested: NotificationService.dismissGroup(root.notificationGroup?.key || "")
-        onAppMuted: NotificationService.dismissGroup(root.notificationGroup?.key || "")
-    }
-
-    Loader {
-        id: contextMenuLoader
-        active: false
-
-        sourceComponent: DDropdown {
-            showTrigger: false
-            popupWidth: NotificationMetrics.menuWidth
-            transientSurfaceTracker: root.transientSurfaceTracker
-            options: contextActions.items.map(item => item.label)
-            onValueChanged: value => {
-                const item = contextActions.items.find(item => item.label === value);
-                if (item)
-                    contextActions.trigger(item.action);
-            }
-        }
     }
 }
