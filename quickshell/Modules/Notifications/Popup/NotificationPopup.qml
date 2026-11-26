@@ -205,6 +205,7 @@ Item {
             "timeStr": data.timeStr,
             "urgency": data.urgency,
             "actions": Array.from(data.actions || [], action => ({
+                        "identifier": action.identifier,
                         "text": action.text
                     }))
         };
