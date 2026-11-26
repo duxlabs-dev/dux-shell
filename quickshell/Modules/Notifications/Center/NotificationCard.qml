@@ -65,13 +65,6 @@ Item {
         PopoutService.closeNotificationCenter();
     }
 
-    function openContextMenu(item, notification) {
-        contextActions.notification = notification;
-        contextMenuLoader.active = true;
-        contextMenuLoader.item.popupAnchorItem = item;
-        contextMenuLoader.item.showDropdownMenu();
-    }
-
     // positioners size on polish, so lay out once the width is known or the card is measured at its minimum height
     function settleLayout() {
         if (_laidOut || width <= 0)
@@ -93,18 +86,9 @@ Item {
         settleLayout();
         ready = true;
     }
-    Component.onDestruction: transientSurfaceTracker?.unregister(root)
 
     NotificationSwipeGroup {
         id: rowSwipe
-    }
-
-    Connections {
-        target: root.transientSurfaceTracker
-        ignoreUnknownSignals: true
-        function onCloseRequested() {
-            contextMenuLoader.item?.closeDropdownMenu();
-        }
     }
 
     Behavior on height {
@@ -154,7 +138,6 @@ Item {
             }
             root.invokeAction(contextActions.defaultAction(notificationData));
         }
-        onContextMenuRequested: (x, y) => root.openContextMenu(collapsedCard, collapsedCard.notificationData)
     }
 
     Loader {
@@ -213,11 +196,15 @@ Item {
                         Accessible.name: I18n.tr("Collapse")
                         onClicked: root.toggleGroup()
                     }
-                    NotificationRuleButtons {
+                    DActionButton {
+                        id: groupMenuButton
                         anchors.verticalCenter: parent.verticalCenter
-                        notification: root.notificationGroup?.latestNotification ?? null
-                        transientSurfaceTracker: root.transientSurfaceTracker
-                        onCloseRequested: NotificationService.dismissGroup(root.notificationGroup?.key || "")
+                        iconName: "more_horiz"
+                        buttonSize: NotificationMetrics.controlSize
+                        iconSize: Theme.iconSizeSmall
+                        tooltipText: I18n.tr("More")
+                        // The hidden collapsed card carries the group's latest notification and closes the whole group.
+                        onClicked: collapsedCard.openMenu(groupMenuButton)
                     }
                     DActionButton {
                         anchors.verticalCenter: parent.verticalCenter
@@ -284,7 +271,6 @@ Item {
                         onCloseRequested: NotificationService.dismissNotification(row.modelData)
                         onActionRequested: action => root.invokeAction(action)
                         onBodyClicked: root.invokeAction(contextActions.defaultAction(notificationData))
-                        onContextMenuRequested: (x, y) => root.openContextMenu(message, row.modelData)
                     }
 
                     SequentialAnimation {
@@ -314,22 +300,5 @@ Item {
 
     NotificationActions {
         id: contextActions
-    }
-
-    Loader {
-        id: contextMenuLoader
-        active: false
-
-        sourceComponent: DDropdown {
-            showTrigger: false
-            popupWidth: NotificationMetrics.menuWidth
-            transientSurfaceTracker: root.transientSurfaceTracker
-            options: contextActions.items.map(item => item.label)
-            onValueChanged: value => {
-                const item = contextActions.items.find(item => item.label === value);
-                if (item)
-                    contextActions.trigger(item.action);
-            }
-        }
     }
 }

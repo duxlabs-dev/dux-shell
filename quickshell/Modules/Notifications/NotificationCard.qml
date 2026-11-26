@@ -22,7 +22,6 @@ Rectangle {
     property bool showClose: false
     property var transientSurfaceTracker: null
     property var popupSurface: null
-    property string dismissTooltip: I18n.tr("Clear from history")
     property string closeTooltip: I18n.tr("Close")
     property bool revealControls: true
     property bool showTime: true
@@ -61,7 +60,11 @@ Rectangle {
     signal expandRequested
     signal groupToggleRequested
     signal bodyClicked
-    signal contextMenuRequested(real x, real y)
+
+    function openMenu(anchor, x, y) {
+        menuLoader.active = true;
+        menuLoader.item.openAt(anchor, root.popupSurface, x, y);
+    }
 
     function forceLayout() {
         messageText.forceLayout();
@@ -159,7 +162,8 @@ Rectangle {
         cursorShape: Qt.PointingHandCursor
         onClicked: mouse => {
             if (mouse.button === Qt.RightButton) {
-                root.contextMenuRequested(mouse.x, mouse.y);
+                if (root.transientSurfaceTracker !== null)
+                    root.openMenu(root, mouse.x, mouse.y);
                 return;
             }
             root.bodyClicked();
@@ -306,23 +310,25 @@ Rectangle {
                         active: root.interactive && root.transientSurfaceTracker !== null
                         visible: active
 
-                        sourceComponent: NotificationRuleButtons {
-                            notification: root.notificationData
-                            transientSurfaceTracker: root.transientSurfaceTracker
-                            popupSurface: root.popupSurface
-                            onCloseRequested: root.closeRequested()
+                        sourceComponent: DActionButton {
+                            id: menuButton
+                            iconName: "more_horiz"
+                            buttonSize: NotificationMetrics.controlSize
+                            iconSize: Theme.iconSizeSmall
+                            tooltipText: I18n.tr("More")
+                            onClicked: root.openMenu(menuButton)
                         }
                     }
 
                     Loader {
-                        active: root.interactive && root.showDismiss
+                        active: root.interactive && root.showDismiss && root.transientSurfaceTracker === null
                         visible: active
 
                         sourceComponent: DActionButton {
                             id: dismissButton
                             buttonSize: NotificationMetrics.controlSize
                             iconSize: Theme.iconSizeSmall
-                            tooltipText: root.dismissTooltip
+                            tooltipText: I18n.tr("Clear from history")
                             onClicked: root.dismissRequested()
 
                             Shape {
@@ -503,6 +509,20 @@ Rectangle {
                     }
                 }
             }
+        }
+    }
+
+    Loader {
+        id: menuLoader
+        active: false
+        visible: false
+
+        sourceComponent: NotificationMuteMenu {
+            transientSurfaceTracker: root.transientSurfaceTracker
+            notification: root.notificationData
+            canClear: root.showDismiss
+            onMuted: root.closeRequested()
+            onClearRequested: root.dismissRequested()
         }
     }
 }

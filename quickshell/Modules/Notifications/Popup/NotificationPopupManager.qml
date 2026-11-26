@@ -20,7 +20,13 @@ DIdleSurface {
             return Qt.rect(0, 0, 0, 0);
         return Qt.rect(p.alignedX, p.alignedY, p.alignedWidth, p.alignedHeight);
     }
-    readonly property bool overlayWanted: popupWindows.some(p => p?.wantsOverlay ?? false)
+    // Frozen while a card menu is open: a layer change remaps the surface above the menu.
+    property bool overlayWanted: false
+    Binding on overlayWanted {
+        when: !manager.popupWindows.some(p => p?.contextMenuActive)
+        value: manager.popupWindows.some(p => p?.wantsOverlay ?? false)
+        restoreMode: Binding.RestoreNone
+    }
     readonly property list<var> blurRegions: popupWindows.map(p => p?.blurRegion ?? null).filter(r => r !== null)
     // A stack growing from the bottom would move the surface origin under visible cards, so it keeps the band.
     readonly property bool fitsStack: boundsSupported && _stackAnchorsTop()

@@ -212,7 +212,6 @@ Item {
 
     function closeTransientUi() {
         transientSurfaces.closeAll();
-        popupContextMenuLoader.active = false;
     }
 
     NotificationActions {
@@ -710,7 +709,6 @@ Item {
                         showClose: true
                         transientSurfaceTracker: transientSurfaces
                         popupSurface: win.surface
-                        dismissTooltip: I18n.tr("Close and clear from history")
                         revealControls: win.hovered || win.contextMenuActive
                         contentOpacity: swipe.contentOpacity
                         animateHeight: false
@@ -745,14 +743,6 @@ Item {
                                 return;
                             }
                             win.dismissPopupReliably();
-                        }
-                        onContextMenuRequested: (x, y) => {
-                            popupContextMenuLoader.active = true;
-                            const menu = popupContextMenuLoader.item;
-                            if (!menu)
-                                return;
-                            const point = mapToItem(null, x, y);
-                            menu.showAt(point.x + (win.surface?.bandX ?? 0), point.y + (win.surface?.bandY ?? 0), win.screen);
                         }
                     }
                 }
@@ -967,15 +957,5 @@ Item {
         interval: Math.max(600, NotificationMetrics.exitDuration + NotificationMetrics.heightDuration + Theme.shortDuration)
         repeat: false
         onTriggered: finalizeExit("watchdog")
-    }
-
-    Loader {
-        id: popupContextMenuLoader
-        active: false
-
-        sourceComponent: NotificationContextMenu {
-            transientSurfaceTracker: transientSurfaces
-            notification: notificationData
-        }
     }
 }
