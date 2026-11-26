@@ -265,6 +265,8 @@ Item {
     }
 
     onRenderActiveChanged: transientSurfaceTracker?.setActive(root, renderActive, contextWindow)
+    // contextWindow can update after renderActive's handler has run.
+    onContextWindowChanged: transientSurfaceTracker?.setActive(root, renderActive, contextWindow)
     // A host maps its window from childrenChanged, which Qt emits before the item leaves its old window.
     onHostItemChanged: {
         menuWindow.parent = null;
