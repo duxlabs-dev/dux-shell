@@ -878,6 +878,7 @@ FocusScope {
                     availableSize: dock.isVertical ? height : width
                     expansionLimit: Math.max(0, dock.availablePrimary - widgetStrip.restLength - dock.config.spacing * 2)
                     fillAvailable: dock.config.mode === "taskbar"
+                    centerUnits: fillAvailable ? DockConfig.centerGroup(DockConfig.unitList(dock.config.widgets, DockConfig.pinUnits(applicationStrip?.items ?? []), dock.config.order), dock.config.widgets) : []
                     align: dock.config.mode === "taskbar" ? dock.config.taskbarAlign : "start"
                     onReorderRequested: (from, to) => dock.reorderUnits(from, to)
                     onRemoveRequested: instanceId => dock.removeWidget(instanceId)
