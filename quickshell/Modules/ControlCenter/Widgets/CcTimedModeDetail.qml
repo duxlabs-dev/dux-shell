@@ -16,7 +16,7 @@ Item {
     property string toggleText: ""
     property string offDescription: ""
     property var presets: []
-    default property alias extraContent: extraContainer.data
+    default property alias extraContent: column.data
 
     signal toggled(bool checked)
     signal presetSelected(var preset)
@@ -89,13 +89,6 @@ Item {
                         }
                     }
                 }
-            }
-
-            Column {
-                id: extraContainer
-                width: parent.width
-                spacing: CcMetrics.detailContentGap
-                visible: visibleChildren.length > 0
             }
         }
     }
