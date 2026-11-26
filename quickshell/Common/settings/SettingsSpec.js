@@ -886,6 +886,12 @@ var LOCAL_SPEC = {
     configProfilePickerView: {
         def: "carousel"
     },
+    configProfileSwitchTransition: {
+        def: "wallpaper"
+    },
+    configProfileSwitchDuration: {
+        def: 1000
+    },
     appPickerViewMode: {
         def: "grid"
     },

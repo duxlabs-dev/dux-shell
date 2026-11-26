@@ -3711,6 +3711,33 @@
     "page": "personalization"
   },
   {
+    "section": "wallpaperTransitionDuration",
+    "label": "Transition duration",
+    "tabIndex": -1,
+    "category": "Appearance",
+    "keywords": [
+      "animation",
+      "appearance",
+      "background",
+      "bg",
+      "change",
+      "colors",
+      "colour",
+      "colours",
+      "desktop",
+      "duration",
+      "hue",
+      "image",
+      "palette",
+      "picture",
+      "speed",
+      "tint",
+      "transition",
+      "wallpaper"
+    ],
+    "page": "personalization"
+  },
+  {
     "section": "typography",
     "label": "Typography",
     "tabIndex": -1,
@@ -21767,6 +21794,44 @@
       "snapshot"
     ],
     "icon": "style",
+    "parentLabel": "Appearance"
+  },
+  {
+    "section": "configProfileSwitchTransition",
+    "label": "Transition",
+    "tabIndex": 75,
+    "category": "Profiles",
+    "keywords": [
+      "animation",
+      "appearance",
+      "effect",
+      "fade",
+      "preset",
+      "profiles",
+      "setup",
+      "snapshot",
+      "switch",
+      "transition"
+    ],
+    "parentLabel": "Appearance"
+  },
+  {
+    "section": "configProfileSwitchDuration",
+    "label": "Transition duration",
+    "tabIndex": 75,
+    "category": "Profiles",
+    "keywords": [
+      "animation",
+      "appearance",
+      "duration",
+      "preset",
+      "profiles",
+      "setup",
+      "snapshot",
+      "speed",
+      "switch",
+      "transition"
+    ],
     "parentLabel": "Appearance"
   },
   {

@@ -781,41 +781,32 @@ Column {
                 resetKeys: ["wallpaperTransition"]
                 text: I18n.tr("Transition", "noun, wallpaper change animation setting label")
 
-                function getTransitionLabel(t) {
-                    switch (t) {
-                    case "random":
-                        return I18n.tr("Random", "wallpaper transition option");
-                    case "none":
-                        return I18n.tr("None", "wallpaper transition option");
-                    case "fade":
-                        return I18n.tr("Fade", "wallpaper transition option");
-                    case "wipe":
-                        return I18n.tr("Wipe", "wallpaper transition option");
-                    case "disc":
-                        return I18n.tr("Disc", "wallpaper transition option");
-                    case "stripes":
-                        return I18n.tr("Stripes", "wallpaper transition option");
-                    case "iris bloom":
-                        return I18n.tr("Iris Bloom", "wallpaper transition option");
-                    case "pixelate":
-                        return I18n.tr("Pixelate", "wallpaper transition option");
-                    case "portal":
-                        return I18n.tr("Portal", "wallpaper transition option");
-                    default:
-                        return t.charAt(0).toUpperCase() + t.slice(1);
-                    }
-                }
-
-                currentValue: getTransitionLabel(SessionData.wallpaperTransition)
-                options: [I18n.tr("Random", "wallpaper transition option")].concat(SessionData.availableWallpaperTransitions.map(t => getTransitionLabel(t)))
+                currentValue: SessionData.transitionLabel(SessionData.wallpaperTransition)
+                options: [I18n.tr("Random", "wallpaper transition option")].concat(SessionData.availableWallpaperTransitions.map(t => SessionData.transitionLabel(t)))
                 onValueChanged: value => {
                     const transitionMap = {};
                     transitionMap[I18n.tr("Random", "wallpaper transition option")] = "random";
                     SessionData.availableWallpaperTransitions.forEach(t => {
-                        transitionMap[getTransitionLabel(t)] = t;
+                        transitionMap[SessionData.transitionLabel(t)] = t;
                     });
                     SessionData.setWallpaperTransition(transitionMap[value] || value.toLowerCase());
                 }
+            }
+
+            SettingsSliderRow {
+                tab: "wallpaper"
+                tags: ["transition", "duration", "animation", "change", "speed"]
+                settingKey: "wallpaperTransitionDuration"
+                resetStore: SessionData
+                resetKeys: ["wallpaperTransitionDuration"]
+                visible: SessionData.wallpaperTransition !== "none"
+                text: I18n.tr("Transition duration", "wallpaper transition length setting")
+                minimum: 250
+                maximum: 3000
+                step: 50
+                unit: "ms"
+                value: SessionData.wallpaperTransitionDuration
+                onSliderDragFinished: v => SessionData.setWallpaperTransitionDuration(v)
             }
 
             SettingsRow {
