@@ -65,15 +65,9 @@ Item {
                             const nodes = AudioService.allNodes.filter(node => node.audio && node.isSink && !node.isStream && !hidden.includes(node.name));
                             const pinnedList = root.pinnedOutputs;
                             return nodes.sort((a, b) => {
-                                const aPinned = pinnedList.indexOf(a.name);
-                                const bPinned = pinnedList.indexOf(b.name);
-                                if (aPinned !== -1 || bPinned !== -1) {
-                                    if (aPinned === -1)
-                                        return 1;
-                                    if (bPinned === -1)
-                                        return -1;
-                                    return aPinned - bPinned;
-                                }
+                                const pinOrder = QmlUtils.comparePinOrder(pinnedList, a.name, b.name);
+                                if (pinOrder !== 0)
+                                    return pinOrder;
                                 if (a === AudioService.sink && b !== AudioService.sink)
                                     return -1;
                                 if (b === AudioService.sink && a !== AudioService.sink)
