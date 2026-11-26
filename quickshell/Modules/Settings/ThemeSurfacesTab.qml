@@ -659,44 +659,31 @@ Column {
             title: I18n.tr("Colors")
             settingKey: "surfaceColors"
 
-            SettingsDropdownRow {
+            ColorDropdownRow {
                 tab: "theme"
                 tags: ["button", "color", "primary", "accent", "action"]
                 settingKey: "buttonColorMode"
                 text: I18n.tr("Button color")
-                options: [I18n.tr("Primary", "button color option"), I18n.tr("Primary Container", "button color option"), I18n.tr("Secondary", "button color option"), I18n.tr("Surface Variant", "button color option")]
-                optionColorMap: ({
-                        [I18n.tr("Primary", "button color option")]: Theme.roleColor("primary"),
-                        [I18n.tr("Primary Container", "button color option")]: Theme.roleColor("primaryContainer"),
-                        [I18n.tr("Secondary", "button color option")]: Theme.roleColor("secondary"),
-                        [I18n.tr("Surface Variant", "button color option")]: Theme.roleColor("surfaceVariant")
-                    })
-                currentValue: {
-                    switch (SettingsData.buttonColorMode) {
-                    case "primaryContainer":
-                        return I18n.tr("Primary Container", "button color option");
-                    case "secondary":
-                        return I18n.tr("Secondary", "button color option");
-                    case "surfaceVariant":
-                        return I18n.tr("Surface Variant", "button color option");
-                    default:
-                        return I18n.tr("Primary", "button color option");
+                currentMode: SettingsData.buttonColorMode
+                options: [
+                    {
+                        "value": "primary",
+                        "label": I18n.tr("Primary", "button color option")
+                    },
+                    {
+                        "value": "primaryContainer",
+                        "label": I18n.tr("Primary Container", "button color option")
+                    },
+                    {
+                        "value": "secondary",
+                        "label": I18n.tr("Secondary", "button color option")
+                    },
+                    {
+                        "value": "surfaceVariant",
+                        "label": I18n.tr("Surface Variant", "button color option")
                     }
-                }
-                onValueChanged: value => {
-                    switch (value) {
-                    case I18n.tr("Primary Container", "button color option"):
-                        SettingsData.set("buttonColorMode", "primaryContainer");
-                        return;
-                    case I18n.tr("Secondary", "button color option"):
-                        SettingsData.set("buttonColorMode", "secondary");
-                        return;
-                    case I18n.tr("Surface Variant", "button color option"):
-                        SettingsData.set("buttonColorMode", "surfaceVariant");
-                        return;
-                    }
-                    SettingsData.set("buttonColorMode", "primary");
-                }
+                ]
+                onModeSelected: mode => SettingsData.set("buttonColorMode", mode)
             }
 
             SettingsSliderRow {
@@ -721,44 +708,31 @@ Column {
             title: I18n.tr("Control Center", "Control Center")
             settingKey: "controlCenterIcons"
 
-            SettingsDropdownRow {
+            ColorDropdownRow {
                 tab: "theme"
                 tags: ["control", "center", "tile", "button", "color", "active"]
                 settingKey: "controlCenterTileColorMode"
                 text: I18n.tr("Tile color", "control center tile color dropdown label")
-                options: [I18n.tr("Primary", "tile color option"), I18n.tr("Primary Container", "tile color option"), I18n.tr("Secondary", "tile color option"), I18n.tr("Surface Variant", "tile color option")]
-                optionColorMap: ({
-                        [I18n.tr("Primary", "tile color option")]: Theme.roleColor("primary"),
-                        [I18n.tr("Primary Container", "tile color option")]: Theme.roleColor("primaryContainer"),
-                        [I18n.tr("Secondary", "tile color option")]: Theme.roleColor("secondary"),
-                        [I18n.tr("Surface Variant", "tile color option")]: Theme.roleColor("surfaceVariant")
-                    })
-                currentValue: {
-                    switch (SettingsData.controlCenterTileColorMode) {
-                    case "primaryContainer":
-                        return I18n.tr("Primary Container", "tile color option");
-                    case "secondary":
-                        return I18n.tr("Secondary", "tile color option");
-                    case "surfaceVariant":
-                        return I18n.tr("Surface Variant", "tile color option");
-                    default:
-                        return I18n.tr("Primary", "tile color option");
+                currentMode: SettingsData.controlCenterTileColorMode
+                options: [
+                    {
+                        "value": "primary",
+                        "label": I18n.tr("Primary", "tile color option")
+                    },
+                    {
+                        "value": "primaryContainer",
+                        "label": I18n.tr("Primary Container", "tile color option")
+                    },
+                    {
+                        "value": "secondary",
+                        "label": I18n.tr("Secondary", "tile color option")
+                    },
+                    {
+                        "value": "surfaceVariant",
+                        "label": I18n.tr("Surface Variant", "tile color option")
                     }
-                }
-                onValueChanged: value => {
-                    switch (value) {
-                    case I18n.tr("Primary Container", "tile color option"):
-                        SettingsData.set("controlCenterTileColorMode", "primaryContainer");
-                        return;
-                    case I18n.tr("Secondary", "tile color option"):
-                        SettingsData.set("controlCenterTileColorMode", "secondary");
-                        return;
-                    case I18n.tr("Surface Variant", "tile color option"):
-                        SettingsData.set("controlCenterTileColorMode", "surfaceVariant");
-                        return;
-                    }
-                    SettingsData.set("controlCenterTileColorMode", "primary");
-                }
+                ]
+                onModeSelected: mode => SettingsData.set("controlCenterTileColorMode", mode)
             }
 
             SettingsButtonGroupRow {
