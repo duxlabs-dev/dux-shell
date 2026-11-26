@@ -3,6 +3,7 @@ pragma ComponentBehavior: Bound
 
 import Quickshell
 import qs.Services
+import "../../Common/QmlUtils.js" as QmlUtils
 
 Singleton {
     id: root
@@ -13,15 +14,9 @@ Singleton {
     function sortNetworks(networks, currentSsid, pinnedList, rank) {
         const sorted = [...(networks || [])];
         sorted.sort((a, b) => {
-            const aPinnedIndex = pinnedList.indexOf(a.ssid);
-            const bPinnedIndex = pinnedList.indexOf(b.ssid);
-            if (aPinnedIndex !== -1 || bPinnedIndex !== -1) {
-                if (aPinnedIndex === -1)
-                    return 1;
-                if (bPinnedIndex === -1)
-                    return -1;
-                return aPinnedIndex - bPinnedIndex;
-            }
+            const pinOrder = QmlUtils.comparePinOrder(pinnedList, a.ssid, b.ssid);
+            if (pinOrder !== 0)
+                return pinOrder;
             if (a.ssid === currentSsid)
                 return -1;
             if (b.ssid === currentSsid)
