@@ -93,10 +93,8 @@ DIdleSurface {
                 return Theme.error;
             case ToastService.levelWarn:
                 return Theme.warning;
-            case ToastService.levelInfo:
-                return Theme.readableSurface;
             default:
-                return Theme.readableSurface;
+                return Theme.readableStandaloneSurface;
             }
         }
         color: "transparent"

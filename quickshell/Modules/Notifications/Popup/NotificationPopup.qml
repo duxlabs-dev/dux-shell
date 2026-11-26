@@ -24,13 +24,14 @@ Item {
     readonly property var blurRegion: blur.effectiveRegion
     readonly property bool wantsOverlay: CompositorService.framePeerSurfacesUseOverlayForScreen(win.screen) || (!!notificationData && (SettingsData.notificationOverlayEnabled || notificationData.urgency === NotificationUrgency.Critical))
     readonly property bool connectedFrameMode: CompositorService.usesConnectedFrameChromeForScreen(win.screen)
+    readonly property color popupSurfaceColor: connectedFrameMode ? Theme.notificationConnectedSurface : Theme.notificationFloatingSurface
     readonly property bool inlineHeightAnimating: heightMotion.running
 
     WindowBlur {
         id: blur
         targetWindow: win.surface
         applyToWindow: false
-        surfaceColor: Theme.notificationFloatingSurface
+        surfaceColor: win.popupSurfaceColor
         readonly property real s: Math.min(1, content.scale) * Math.max(0, content.opacity)
         readonly property real innerW: Math.max(0, content.width - content.cardInset * 2)
         readonly property real innerH: Math.max(0, content.height - content.cardInset * 2)
@@ -647,7 +648,7 @@ Item {
             sourceWidth: Math.max(0, content.width - (content.cardInset * 2))
             sourceHeight: Math.max(0, content.height - (content.cardInset * 2))
             targetRadius: win.connectedFrameMode ? Theme.connectedSurfaceRadius : NotificationMetrics.popupRadius
-            targetColor: Theme.notificationFloatingSurface
+            targetColor: win.popupSurfaceColor
             borderColor: win.notificationData && win.notificationData.urgency === NotificationUrgency.Critical ? Theme.withAlpha(Theme.primary, Theme.stateLayerPressed) : Theme.outlineVariant
             borderWidth: win.notificationData && win.notificationData.urgency === NotificationUrgency.Critical ? Theme.outlineWidthFocused : 0
         }
@@ -698,7 +699,7 @@ Item {
 
                     NotificationCard {
                         id: notificationCard
-                        surfaceColor: Theme.notificationFloatingSurface
+                        surfaceColor: win.popupSurfaceColor
                         chipColor: Theme.notificationChipSurface
                         width: parent.width
                         height: win.inlineHeightAnimating ? Math.min(targetHeight, cardSurface.height - win.timeoutRailClearance) : targetHeight

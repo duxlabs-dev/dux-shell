@@ -384,6 +384,8 @@ Singleton {
     readonly property color chipSurfaceNested: typeof SettingsData === "undefined" ? surfaceLadder.nested : surfaceRoleColor(SettingsData.chipSurfaceNestedColor, SettingsData.chipSurfaceNestedCustomColor, surfaceLadder.nested)
     // A hovered light chip lands on the dim host tone, so a chip straight on the host takes the card tone there
     readonly property color hostChipSurface: lightSurfaces ? cardSurface : chipSurface
+    // A floating surface with no cards inside is the card itself on light surfaces
+    readonly property color standaloneSurface: lightSurfaces ? cardSurface : hostSurface
     // A region of the host set back from the rest, like a sidebar. Dark lifts the neighboring pane instead; a light pane cannot rise under white cards.
     readonly property color hostRecessSurface: lightSurfaces ? Tonal.dropTone(hostSurface, Tonal.LIGHT_RECESS_DROP) : hostSurface
     readonly property color tooltipSurface: typeof SettingsData === "undefined" ? inverseSurface : surfaceRoleColor(SettingsData.tooltipSurfaceColor, SettingsData.tooltipSurfaceCustomColor, inverseSurface)
@@ -524,6 +526,7 @@ Singleton {
     readonly property bool notificationForegroundLayers: typeof SettingsData === "undefined" || (SettingsData.notificationForegroundLayers ?? true)
     readonly property color readableSurface: withAlpha(hostSurface, popupTransparency)
     readonly property color readableSurfaceHigh: withAlpha(cardSurface, popupTransparency)
+    readonly property color readableStandaloneSurface: withAlpha(standaloneSurface, popupTransparency)
     readonly property color floatingSurface: readableSurface
     readonly property color floatingSurfaceHigh: foregroundColor(cardSurface)
     readonly property bool floatingWindowSynced: typeof SettingsData === "undefined" || (SettingsData.floatingWindowSyncGlobal ?? true)
@@ -558,7 +561,8 @@ Singleton {
     readonly property color floatingWindowNestedSurface: floatingWindowSurfaceHigh
     readonly property color notepadWindowSurface: withAlpha(hostSurface, notepadTransparency)
     readonly property color nestedSurface: floatingSurfaceHigh
-    readonly property color notificationFloatingSurface: notificationForegroundLayers ? readableSurface : withAlpha(readableSurface, 0)
+    readonly property color notificationFloatingSurface: notificationForegroundLayers ? readableStandaloneSurface : withAlpha(readableStandaloneSurface, 0)
+    readonly property color notificationConnectedSurface: notificationForegroundLayers ? readableSurface : withAlpha(readableSurface, 0)
     readonly property color notificationFloatingSurfaceHigh: notificationForegroundLayers ? readableSurfaceHigh : withAlpha(readableSurfaceHigh, 0)
     readonly property color notificationNestedSurface: notificationFloatingSurfaceHigh
     readonly property color notificationChipSurface: notificationForegroundLayers ? chipSurface : withAlpha(onSurface, stateLayerFocus)
