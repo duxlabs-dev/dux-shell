@@ -2,6 +2,7 @@ import QtQuick
 import Quickshell
 import qs.Common
 import qs.Services
+import qs.DCommon.Widgets
 import qs.Widgets
 import "../../Common/QmlUtils.js" as QmlUtils
 
@@ -119,8 +120,7 @@ DContextMenu {
         const fitsRight = x + effectiveMenuWidth + durations.effectiveMenuWidth <= contextWindow.width - menuMargin;
         const fitsLeft = x - durations.effectiveMenuWidth >= menuMargin;
         const toRight = I18n.isRtl ? fitsRight && !fitsLeft : fitsRight || !fitsLeft;
-        durations.menuEdge = toRight ? "top" : "right";
-        durations.open(targetScreen, toRight ? x + effectiveMenuWidth : x, toRight ? y : y + durations.effectiveMenuHeight / 2, keyboardNavigation);
+        durations.open(targetScreen, toRight ? x + effectiveMenuWidth : x - durations.effectiveMenuWidth, y, keyboardNavigation);
     }
 
     function mute(minutes) {
@@ -131,11 +131,33 @@ DContextMenu {
 
     DContextMenu {
         id: durations
+
+        property bool customOpen: false
+        readonly property var customUnits: [
+            {
+                label: I18n.tr("D", "custom mute duration field, days", true),
+                minutes: 24 * 60
+            },
+            {
+                label: I18n.tr("H", "custom mute duration field, hours", true),
+                minutes: 60
+            },
+            {
+                label: I18n.tr("M", "custom mute duration field, minutes", true),
+                minutes: 1
+            }
+        ]
+
         transientSurfaceTracker: root.transientSurfaceTracker
+        minMenuWidth: NotificationMetrics.menuWidth
+        // Keyboard focus only while the custom fields are open, so the plain menu never steals it.
+        keyboardNavigable: customOpen
         // Its fullscreen backdrop covers the main menu, so any dismissal closes both.
         onOpenStateChanged: {
-            if (!openState)
+            if (!openState) {
+                customOpen = false;
                 root.hide();
+            }
         }
         menuItems: [
             {
@@ -155,8 +177,96 @@ DContextMenu {
                 icon: "notifications_off",
                 text: I18n.tr("Forever"),
                 action: () => root.mute(0)
+            },
+            {
+                type: "separator"
+            },
+            {
+                type: "item",
+                icon: "tune",
+                text: I18n.tr("Custom") + "…",
+                keepOpen: true,
+                action: () => durations.customOpen = true
+            },
+            {
+                type: "component",
+                hidden: !durations.customOpen,
+                height: Theme.fieldHeight,
+                component: customFields
             }
         ]
+
+        Component {
+            id: customFields
+
+            // Takes clicks on labels and gaps, and keys the fields leave unhandled, before the menu backdrop and key
+            // handler see them: Enter would activate the hovered row, Left would close, Up/Down move the highlight.
+            MouseArea {
+                id: fields
+                // customOpen rebuilds menuItems, so the row is created already shown; focus once the menu's own
+                // focus binding has settled on its key handler.
+                Component.onCompleted: {
+                    if (durations.customOpen)
+                        Qt.callLater(() => units.itemAt(0)?.field.forceActiveFocus());
+                }
+                Keys.onPressed: event => {
+                    if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter)
+                        apply();
+                    event.accepted = [Qt.Key_Return, Qt.Key_Enter, Qt.Key_Left, Qt.Key_Up, Qt.Key_Down].includes(event.key);
+                }
+
+                function apply() {
+                    let minutes = 0;
+                    for (let i = 0; i < units.count; i++)
+                        minutes += units.itemAt(i).minutes;
+                    if (minutes > 0)
+                        root.mute(minutes);
+                }
+
+                Row {
+                    spacing: Theme.spacingXS
+                    leftPadding: Theme.spacingS
+
+                    Repeater {
+                        id: units
+                        model: durations.customUnits
+
+                        Row {
+                            id: unit
+                            required property var modelData
+                            readonly property alias field: input
+                            readonly property int minutes: (parseInt(input.text) || 0) * modelData.minutes
+                            spacing: Theme.spacingXXS
+
+                            DTextField {
+                                id: input
+                                width: Theme.buttonHeightS
+                                validator: IntValidator {
+                                    bottom: 0
+                                    top: 999
+                                }
+                            }
+
+                            StyledText {
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: unit.modelData.label
+                                font.pixelSize: Theme.fontSizeSmall
+                                color: Theme.onSurfaceVariant
+                            }
+                        }
+                    }
+
+                    DButton {
+                        anchors.verticalCenter: parent.verticalCenter
+                        text: I18n.tr("OK")
+                        variant: "text"
+                        minimumWidth: 0
+                        horizontalPadding: NotificationMetrics.actionPadding
+                        onClicked: fields.apply()
+                    }
+                }
+            }
+        }
     }
 
     NotificationActions {
