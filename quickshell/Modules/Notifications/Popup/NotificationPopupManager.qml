@@ -14,6 +14,7 @@ DIdleSurface {
     property var modelData
     property int topMargin: 0
     property DPopout _activePopout: null
+    readonly property real _shiftPad: Math.max(0, ...popupWindows.map(p => p?.shiftPad ?? 0))
     readonly property rect popoutAvoidRect: {
         const p = _activePopout;
         if (!p?.shouldBeVisible || !SettingsData.notificationPopupAvoidPopouts || notificationConnectedMode || !_stackAnchorsTop())
@@ -47,7 +48,8 @@ DIdleSurface {
         return Qt.rect(bandOriginX, y, bandExtent, Math.ceil(bottom + Theme.spacingL) - y);
     }
     band: stackCentered ? "column" : stackLeft ? "left" : "right"
-    bandSize: stackCentered ? cardWidth + 2 * (shadowPad + NotificationMetrics.swipeAttachDistance) : cardWidth + 2 * shadowPad + stackEdgeMargin + NotificationMetrics.swipeAttachDistance
+    // Widened by the popout-avoid shift so a card moved beside the popout stays on the surface.
+    bandSize: stackCentered ? cardWidth + 2 * (shadowPad + NotificationMetrics.swipeAttachDistance + _shiftPad) : cardWidth + 2 * shadowPad + stackEdgeMargin + NotificationMetrics.swipeAttachDistance + _shiftPad
     WlrLayershell.namespace: "dms:notification-popup"
     WlrLayershell.layer: LayerShell.fromEnv("DMS_NOTIFICATION_LAYER", overlayWanted ? WlrLayer.Overlay : WlrLayer.Top)
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
@@ -284,7 +286,9 @@ DIdleSurface {
                 insertIndex = i + 1;
         }
         popupWindows.splice(insertIndex, 0, win);
-        win.setStackPosition(_stackPositionFor(win));
+        const shift = _popoutAvoidShift();
+        win.stackShiftX = shift.x;
+        win.setStackPosition(_stackPositionFor(win, topMargin + shift.y));
         popupWindows = popupWindows.slice();
         _enterQueue.push(win);
         if (!sweeper.running)
@@ -340,8 +344,8 @@ DIdleSurface {
         _exitQueue = _exitQueue.filter(w => windows.indexOf(w) === -1);
     }
 
-    function _stackPositionFor(target) {
-        let currentY = _stackTop();
+    function _stackPositionFor(target, top) {
+        let currentY = top;
         for (const p of popupWindows) {
             if (p === target)
                 return currentY;
@@ -353,23 +357,23 @@ DIdleSurface {
         return currentY;
     }
 
-    function _stackTop() {
-        return topMargin + _popoutAvoidOffset();
-    }
-
-    function _popoutAvoidOffset() {
+    function _popoutAvoidShift() {
+        const none = Qt.point(0, 0);
         const r = popoutAvoidRect;
         if (r.height <= 0)
-            return 0;
+            return none;
         const p = popupWindows.find(_isValidWindow);
         if (!p)
-            return 0;
-        const x = p.getContentX();
+            return none;
+        const x = p.getContentX() - p.screenShiftX;
         const base = p.getTopMargin() - p.screenY;
         if (r.x >= x + p.alignedWidth || r.x + r.width <= x || r.y >= base + p.layoutHeight)
-            return 0;
+            return none;
         const offset = Math.max(0, Math.round(r.y + r.height + Theme.popupDistance - base));
-        return base + offset + p.layoutHeight > modelData.height ? 0 : offset;
+        if (base + offset + p.layoutHeight <= modelData.height)
+            return Qt.point(0, offset);
+        const dx = stackLeft ? r.x + r.width + Theme.popupDistance - x : r.x - Theme.popupDistance - (x + p.alignedWidth);
+        return x + dx < p.edgeMargin("left") || x + dx + p.alignedWidth > modelData.width - p.edgeMargin("right") ? none : Qt.point(dx, 0);
     }
 
     function _syncActivePopout() {
@@ -377,8 +381,10 @@ DIdleSurface {
     }
 
     function _repositionAll() {
-        let currentY = _stackTop();
+        const shift = _popoutAvoidShift();
+        let currentY = topMargin + shift.y;
         for (const win of _layoutWindows()) {
+            win.stackShiftX = shift.x;
             const gap = win.layoutPinned ? Math.max(0, win.stackTarget - currentY) : 0;
             const position = currentY + gap;
             win.setStackPosition(position);
