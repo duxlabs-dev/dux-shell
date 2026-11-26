@@ -61,12 +61,18 @@ PanelWindow {
     readonly property int dBarLayer: LayerShell.fromEnv(isIsland ? "DMS_DANKISLAND_LAYER" : "DMS_DANKBAR_LAYER", barWindow.usesOverlayLayer || (!isIsland && islandChrome.sheetOut) ? WlrLayer.Overlay : WlrLayer.Top)
 
     screen: modelData
+    // Hyprland stacks a top layer that maps over a covering fullscreen window above it.
+    property bool fullscreenMapReleased: false
+    readonly property bool mapHeldByFullscreen: !fullscreenMapReleased && dBarLayer === WlrLayer.Top && CompositorService.fullscreenCoversTopLayer(screen)
+    onMapHeldByFullscreenChanged: if (!mapHeldByFullscreen)
+        fullscreenMapReleased = true
+    visible: !mapHeldByFullscreen
     readonly property var layoutInstance: body.layoutInstance
     readonly property bool manualPlacement: layoutInstance?.manualPlacement ?? false
-    margins.top: manualPlacement ? layoutInstance?.margins.top ?? 0 : 0
-    margins.bottom: manualPlacement ? layoutInstance?.margins.bottom ?? 0 : 0
-    margins.left: manualPlacement ? layoutInstance?.margins.left ?? 0 : 0
-    margins.right: manualPlacement ? layoutInstance?.margins.right ?? 0 : 0
+    margins.top: (manualPlacement ? layoutInstance?.margins.top ?? 0 : 0) + SurfaceRecovery.marginNudge(anchors.top)
+    margins.bottom: (manualPlacement ? layoutInstance?.margins.bottom ?? 0 : 0) + SurfaceRecovery.marginNudge(anchors.bottom)
+    margins.left: (manualPlacement ? layoutInstance?.margins.left ?? 0 : 0) + SurfaceRecovery.marginNudge(anchors.left)
+    margins.right: (manualPlacement ? layoutInstance?.margins.right ?? 0 : 0) + SurfaceRecovery.marginNudge(anchors.right)
 
     EdgeExclusion {
         screen: barWindow.screen
@@ -99,6 +105,7 @@ PanelWindow {
     BackgroundEffect.blurRegion: BlurService.enabled ? body.blurRegion : null
 
     Component.onCompleted: {
+        fullscreenMapReleased = !mapHeldByFullscreen;
         KeyboardFocus.registerBarWindow(barWindow);
         SurfaceRecovery.track(barWindow);
     }
