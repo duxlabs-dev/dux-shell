@@ -29,6 +29,7 @@ FocusScope {
     signal closeRequested
     signal codecSelectorRequested(var device)
     signal portSelectorRequested(var node)
+    signal screenshotRequested(string mode, bool keepOpen)
 
     property string shownSection: ""
     property real _heldHeight: 0
@@ -135,6 +136,8 @@ FocusScope {
             return brightnessComponent;
         case "runningApps":
             return runningAppsComponent;
+        case "screenshot":
+            return screenshotComponent;
         }
         if (sectionId.startsWith("builtin_") || sectionId.startsWith("plugin_"))
             return pluginComponent;
@@ -281,6 +284,10 @@ FocusScope {
         function onCloseRequested() {
             root.closeRequested();
         }
+
+        function onScreenshotRequested(mode, keepOpen) {
+            root.screenshotRequested(mode, keepOpen);
+        }
     }
 
     Component {
@@ -347,6 +354,11 @@ FocusScope {
         RunningAppsDetail {
             toplevels: root.runningToplevels
         }
+    }
+
+    Component {
+        id: screenshotComponent
+        ScreenshotDetail {}
     }
 
     Component {

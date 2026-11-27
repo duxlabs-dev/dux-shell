@@ -55,6 +55,7 @@ DEditableGrid {
     signal removeWidget(int index)
     signal configRequested(int index, var widgetData, var anchor, var boundsItem)
     signal colorPickerRequested
+    signal screenshotRequested(string mode)
     signal lockRequested
     signal powerRequested
     signal settingsRequested
