@@ -143,8 +143,9 @@ Column {
                 bottomRightRadius: bottomLeftRadius
                 isHovered: hovered && !row.expanded
                 Accessible.name: (row.entry.name ?? "") + ", " + deviceRow.valueText
-                Accessible.expandable: true
-                Accessible.expanded: row.expanded
+                // These need Qt 6.12, older Qt fails to load the whole popout. Restore once 6.12 is the minimum.
+                // Accessible.expandable: true
+                // Accessible.expanded: row.expanded
                 Keys.onUpPressed: root.focusRow(row.index - 1)
                 Keys.onDownPressed: root.focusRow(row.index + 1)
                 onClicked: root.chosenKey = row.entry.key ?? ""
