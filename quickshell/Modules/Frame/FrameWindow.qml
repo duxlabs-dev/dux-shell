@@ -371,7 +371,9 @@ PanelWindow {
         const bodyR = s.radii.surfaceRadius;
         const nearS = omitS || s.detached ? bodyR : 0, nearE = omitE || s.detached ? bodyR : 0;
         const farS = omitS ? 0 : bodyR, farE = omitE ? 0 : bodyR;
-        const kS = omitS ? fc : sc, kE = omitE ? fc : ec;
+        // A detached corner away from the popout edge stays round; a fillet would bridge a gap the blur leaves out.
+        const kS = s.detached && !s.startFused ? 0 : omitS ? fc : sc;
+        const kE = s.detached && !s.endFused ? 0 : omitE ? fc : ec;
         let ks, cr;
         if (s.side === "top") {
             ks = [kS, kE, fc, fc];
@@ -960,6 +962,8 @@ PanelWindow {
             arr.push({
                 "side": win._notifDescriptor.barSide,
                 "detached": win._notifDescriptor.detached,
+                "startFused": win._notifStartFused,
+                "endFused": win._notifEndFused,
                 "body": {
                     "x": n.x,
                     "y": n.y,
