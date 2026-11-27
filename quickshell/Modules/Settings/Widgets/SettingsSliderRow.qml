@@ -21,6 +21,7 @@ SettingsRow {
     property alias trackGradient: control.trackGradient
 
     readonly property alias atMinimum: valueLabel.atMinimum
+    readonly property alias currentValue: control.currentValue
     readonly property alias dragging: control.dragging
     readonly property int stepAmount: control.stepAmount
 

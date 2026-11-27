@@ -9548,6 +9548,46 @@
     "parentLabel": "Security"
   },
   {
+    "section": "lockScreenBlurStrength",
+    "label": "Background blur",
+    "tabIndex": 11,
+    "category": "Lock screen",
+    "keywords": [
+      "background",
+      "blur",
+      "lock",
+      "lockscreen",
+      "login",
+      "password",
+      "screen",
+      "security",
+      "strength",
+      "wallpaper"
+    ],
+    "parentLabel": "Security"
+  },
+  {
+    "section": "lockScreenScrimOpacity",
+    "label": "Background dim",
+    "tabIndex": 11,
+    "category": "Lock screen",
+    "keywords": [
+      "background",
+      "darken",
+      "dim",
+      "lock",
+      "lockscreen",
+      "login",
+      "opacity",
+      "password",
+      "screen",
+      "scrim",
+      "security",
+      "wallpaper"
+    ],
+    "parentLabel": "Security"
+  },
+  {
     "section": "lockBehavior",
     "label": "Behavior",
     "tabIndex": 11,

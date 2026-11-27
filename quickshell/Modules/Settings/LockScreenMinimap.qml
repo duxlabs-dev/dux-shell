@@ -12,6 +12,7 @@ Item {
 
     required property var screen
     property bool active: true
+    property real scrimAlpha: Theme.lockScreenScrimAlpha
 
     readonly property real screenWidth: screen?.width ?? 1
     readonly property real screenHeight: screen?.height ?? 1
@@ -19,7 +20,7 @@ Item {
     Rectangle {
         anchors.fill: parent
         color: Theme.screenOffColor
-        opacity: Theme.lockScreenScrimAlpha
+        opacity: root.scrimAlpha
     }
 
     Loader {

@@ -1326,8 +1326,8 @@ Singleton {
         }
     }
     readonly property color lockScreenContentColor: "#ffffff"
-    readonly property real lockScreenScrimAlpha: 0.4
-    readonly property real lockScreenBlur: 0.8
+    readonly property real lockScreenScrimAlpha: SettingsData.lockScreenScrimOpacity / 100
+    readonly property real lockScreenBlur: SettingsData.lockScreenBlurStrength / 100
     readonly property int lockScreenBlurMax: 32
     readonly property color screenOffColor: "#000000"
     readonly property real scrimAlpha: 0.55

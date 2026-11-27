@@ -92,18 +92,19 @@ Item {
         id: liveContainer
         anchors.fill: parent
         visible: root.liveActive
-        layer.enabled: root.liveActive && root.blur > 0
-        layer.effect: MultiEffect {
-            autoPaddingEnabled: false
-            blurEnabled: true
-            blur: root.blur
-            blurMax: root.blurMax
-        }
 
         Loader {
             id: wallpaper
             anchors.fill: parent
             active: root.liveActive
+            // The layer sits below liveContainer: the frozen source grabs its source item without that item's own layer effect.
+            layer.enabled: root.liveActive && root.blur > 0
+            layer.effect: MultiEffect {
+                autoPaddingEnabled: false
+                blurEnabled: true
+                blur: root.blur
+                blurMax: root.blurMax
+            }
             sourceComponent: MaterialWallpaper {
                 composition: root.composition
                 palette: root.palette

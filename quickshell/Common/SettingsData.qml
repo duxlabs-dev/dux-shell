@@ -951,6 +951,8 @@ Singleton {
     property bool greeterPamExternallyManaged: Spec.SPEC.greeterPamExternallyManaged.def
     property string lockScreenInactiveColor: Spec.SPEC.lockScreenInactiveColor.def
     property bool lockScreenBlurInactiveBackground: Spec.SPEC.lockScreenBlurInactiveBackground.def
+    property int lockScreenBlurStrength: Spec.SPEC.lockScreenBlurStrength.def
+    property int lockScreenScrimOpacity: Spec.SPEC.lockScreenScrimOpacity.def
     property bool lockScreenVideoEnabled: Spec.SPEC.lockScreenVideoEnabled.def
     property string lockScreenVideoPath: Spec.SPEC.lockScreenVideoPath.def
     property bool lockScreenVideoCycling: Spec.SPEC.lockScreenVideoCycling.def

@@ -1571,6 +1571,12 @@ var LOCAL_SPEC = {
     lockScreenBlurInactiveBackground: {
         def: false
     },
+    lockScreenBlurStrength: {
+        def: 80
+    },
+    lockScreenScrimOpacity: {
+        def: 40
+    },
     lockScreenVideoEnabled: {
         def: false
     },

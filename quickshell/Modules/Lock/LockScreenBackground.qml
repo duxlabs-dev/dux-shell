@@ -69,7 +69,7 @@ Item {
 
         sourceComponent: fillModeName === "Scrolling" ? scrollWallpaperComp : plainWallpaperComp
 
-        layer.enabled: true
+        layer.enabled: Theme.lockScreenBlur > 0
         layer.effect: MultiEffect {
             autoPaddingEnabled: false
             blurEnabled: true

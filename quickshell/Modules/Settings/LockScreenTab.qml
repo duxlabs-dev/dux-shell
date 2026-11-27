@@ -385,7 +385,7 @@ Item {
                         path: SettingsData.lockScreenWallpaperPath || SessionData.getMonitorWallpaperImage(previewScreen?.name ?? "") || ""
                         clearable: SettingsData.lockScreenWallpaperPath !== ""
                         fillModeName: SettingsData.lockScreenWallpaperFillMode || (SettingsData.lockScreenWallpaperPath !== "" ? "Fill" : SessionData.getMonitorWallpaperFillMode(previewScreen?.name ?? ""))
-                        blur: Theme.lockScreenBlur
+                        blur: blurRow.currentValue / 100
                         blurMax: previewScreen ? Theme.lockScreenBlurMax * width / previewScreen.width : 0
                         activateIcon: "edit"
                         activateText: I18n.tr("Edit widgets")
@@ -400,9 +400,38 @@ Item {
                         LockScreenMinimap {
                             anchors.fill: parent
                             screen: lockThumb.previewScreen
+                            scrimAlpha: scrimRow.currentValue / 100
                             active: lockThumb.visible && root.pageSettled && (root.parentModal?.shouldBeVisible ?? true)
                         }
                     }
+                }
+
+                SettingsSliderRow {
+                    id: blurRow
+
+                    settingKey: "lockScreenBlurStrength"
+                    tags: ["lock", "screen", "wallpaper", "background", "blur", "strength"]
+                    text: I18n.tr("Background blur")
+                    minimumLabel: I18n.tr("Off")
+                    value: SettingsData.lockScreenBlurStrength
+                    minimum: 0
+                    maximum: 100
+                    unit: "%"
+                    onSliderDragFinished: finalValue => SettingsData.set("lockScreenBlurStrength", finalValue)
+                }
+
+                SettingsSliderRow {
+                    id: scrimRow
+
+                    settingKey: "lockScreenScrimOpacity"
+                    tags: ["lock", "screen", "wallpaper", "background", "dim", "darken", "scrim", "opacity"]
+                    text: I18n.tr("Background dim", "lock screen setting, how much the wallpaper is darkened")
+                    minimumLabel: I18n.tr("Off")
+                    value: SettingsData.lockScreenScrimOpacity
+                    minimum: 0
+                    maximum: 100
+                    unit: "%"
+                    onSliderDragFinished: finalValue => SettingsData.set("lockScreenScrimOpacity", finalValue)
                 }
 
                 SettingsDropdownRow {
