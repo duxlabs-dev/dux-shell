@@ -46,9 +46,9 @@ function markdownToHtml(text) {
     html = html.replace(/\*\*\*(.*?)\*\*\*/g, '<b><i>$1</i></b>');
     html = html.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
     html = html.replace(/\*(.*?)\*/g, '<i>$1</i>');
-    html = html.replace(/(^|[^\p{L}\p{N}_])___([^\n]+?)___(?![\p{L}\p{N}_])/gu, '$1<b><i>$2</i></b>');
-    html = html.replace(/(^|[^\p{L}\p{N}_])__([^\n]+?)__(?![\p{L}\p{N}_])/gu, '$1<b>$2</b>');
-    html = html.replace(/(^|[^\p{L}\p{N}_])_([^\n]+?)_(?![\p{L}\p{N}_])/gu, '$1<i>$2</i>');
+    html = html.replace(/(^|[^A-Za-z0-9_])___([^\n]+?)___(?![A-Za-z0-9_])/g, '$1<b><i>$2</i></b>');
+    html = html.replace(/(^|[^A-Za-z0-9_])__([^\n]+?)__(?![A-Za-z0-9_])/g, '$1<b>$2</b>');
+    html = html.replace(/(^|[^A-Za-z0-9_])_([^\n]+?)_(?![A-Za-z0-9_])/g, '$1<i>$2</i>');
 
     html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
 
