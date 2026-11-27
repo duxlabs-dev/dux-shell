@@ -12,6 +12,8 @@ DevicePane {
     readonly property var historyA: DgopService.history(SysmonDevices.deviceKey("net", deviceName), "down")
     readonly property var historyB: DgopService.history(SysmonDevices.deviceKey("net", deviceName), "up")
     readonly property var rates: (DgopService.netRates ?? []).find(n => n.iface === deviceName) ?? null
+    // The list is sampled but this interface isn't in it: down or removed, with its tab kept open.
+    readonly property bool absent: (DgopService.netRates ?? []).length > 0 && rates === null
     readonly property real axisMax: SysmonDevices.rateAxisMax(historyA, historyB, 102400)
 
     // NetworkManager's view, when it manages this interface; dgop's sysfs values fill the gaps.
@@ -26,7 +28,9 @@ DevicePane {
     readonly property string ip: netDevice?.ip || SysmonDevices.stripPrefixLength(ipv4[0] ?? "")
     readonly property string linkSpeed: SysmonDevices.formatLinkSpeed(ethernet?.speed || rates?.speed || wifiNetwork?.rate || 0)
 
-    loaded: historyA.length > 0
+    loaded: absent || historyA.length > 0
+    idleText: absent ? I18n.tr("Disconnected", "system monitor: drive or interface no longer present") : ""
+    idleIcon: "link_off"
     title: deviceName
     subtitle: title !== deviceName ? deviceName : ""
     subtitle2: linkSpeed

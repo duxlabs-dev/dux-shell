@@ -1,5 +1,6 @@
 .pragma library
 .import "../Common/Format.js" as Format
+.import "SysmonDevices.js" as Devices
 
 const V = (id, kind, warn, danger) => ({
     id,
@@ -79,6 +80,18 @@ function formatValue(kind, value, opts) {
         return o.short ? Format.formatRateCompact(value, true, true) : Format.formatRate(value);
     }
     return "";
+}
+
+// The device key of the card a migrated GPU widget meant: the list index when its PCI id still matches, else the first card with that id.
+// A PCI id no card has keeps its own key, which the widget shows as missing. Empty while the list is.
+function legacyGpuKey(entry, gpus) {
+    const list = Array.isArray(gpus) ? gpus : [];
+    const index = entry && Number.isInteger(entry.selectedGpuIndex) && entry.selectedGpuIndex >= 0 ? entry.selectedGpuIndex : 0;
+    const want = entry && typeof entry.pciId === "string" ? entry.pciId.toLowerCase() : "";
+    const same = g => String(g.pciId || "").toLowerCase() === want;
+    const card = want ? (list[index] && same(list[index]) ? list[index] : list.find(same)) : (list[index] || list[0]);
+    const key = card ? "gpu:" + Devices.gpuSlot(card) : list.length > 0 && want ? "gpu:" + entry.pciId : "";
+    return typeOf(key) === "gpu" ? key : "";
 }
 
 // Arrays that went through a QML var property or signal come back as sequences, which Array.isArray rejects.

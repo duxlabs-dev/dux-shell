@@ -61,7 +61,15 @@ Singleton {
             "temp": "100°",
             "clock": "0.0",
             "power": "000 W",
-            "rate": "999K"
+            "rate": "999M"
+        })
+
+    // Widest sizes and compact rate the bar widget formats, for the width it reserves.
+    readonly property var sizeSamples: ({
+            "bytes": "1000.0 MiB",
+            "mount": "1000.0G",
+            "drive": "1000 GB",
+            "compactRate": "888 MB/s"
         })
 
     // Tile extras only pick how many fit, so they plan on two digits; a rare third one runs into the tile's padding.

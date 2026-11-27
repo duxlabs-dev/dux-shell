@@ -18,8 +18,10 @@ Column {
         const updates = {
             "metrics": edited
         };
-        if (page.entry?.selectedGpuIndex !== undefined)
+        if (page.entry?.selectedGpuIndex !== undefined) {
             updates.selectedGpuIndex = undefined;
+            updates.pciId = undefined;
+        }
         page.setMany(updates);
     }
 

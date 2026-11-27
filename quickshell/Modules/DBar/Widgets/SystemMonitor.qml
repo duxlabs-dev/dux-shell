@@ -5,6 +5,7 @@ import qs.DCommon.Widgets
 import qs.Modules.DBar
 import qs.Modules.Plugins
 import qs.Modules.SurfaceWidgets
+import qs.Modules.Sysmon
 import qs.Services
 import "../../../Common/Format.js" as Format
 import "../../../Services/Drives.js" as Drives
@@ -45,18 +46,23 @@ BasePill {
 
     readonly property real iconSize: Theme.barIconSize(barThickness, undefined, barConfig?.maximizeWidgetIcons, barConfig?.iconScale)
     readonly property real textSize: Theme.barTextSize(barThickness, barConfig?.fontScale, barConfig?.maximizeWidgetText)
-    // One size for every number in a vertical pill, shrunk until the widest fits across it.
+    // One size for every number in a vertical pill, shrunk until the widest possible one fits across it.
     readonly property real numberSize: {
         if (!isVerticalOrientation)
             return textSize;
         const font = sizeProbe.font;
         const digit = DCommon.Fonts.widestDigit(font);
         let widest = 0;
-        for (const g of groups) {
-            for (const item of g.items)
-                widest = Math.max(widest, DCommon.Fonts.textWidth(font, String(item.vtext ?? "").replace(/\d/g, digit)));
+        for (const m of shownMetrics) {
+            for (const id of m.vals ?? [])
+                widest = Math.max(widest, DCommon.Fonts.textWidth(font, reserveText(m, id, true).replace(/\d/g, digit)));
         }
         return widest > widgetThickness ? Math.max(Theme.fontSizeSmall / 2, Math.floor(textSize * widgetThickness / widest)) : textSize;
+    }
+    // The asleep word is wider than any number in some languages, so only that item shrinks to fit.
+    readonly property real idleSize: {
+        const width = DCommon.Fonts.textWidth(sizeProbe.font, idleText);
+        return width > widgetThickness ? Math.max(Theme.fontSizeSmall / 2, Math.floor(textSize * widgetThickness / width)) : textSize;
     }
     readonly property color accent: colorMode === "custom" ? Theme.safeColor(option("customColor"), Theme.widgetIconColor) : colorMode === "default" ? Theme.widgetIconColor : Theme.roleColor(colorMode)
 
@@ -180,17 +186,19 @@ BasePill {
         return [name].concat((r?.values ?? []).map(v => v.label + " " + wideText(m, v))).join(" · ");
     }
 
+    function showsSize(m, id) {
+        const type = typeOf(m);
+        return m.percent === false && ((type === "memory" && id === "used") || (type === "gpu" && id === "vram"));
+    }
+
     function sizeText(m, v) {
-        if (m.percent !== false)
+        if (!showsSize(m, v.id))
             return "";
         const type = typeOf(m);
-        if (type === "memory" && v.id === "used")
+        if (type === "memory")
             return Format.formatBytes(DgopService.usedMemoryKB * 1024, true);
-        if (type === "gpu" && v.id === "vram") {
-            const kb = SysmonService.activeGpu(SysmonService.parseKey(m.device).id)?.memoryUsed;
-            return kb != null ? Format.formatBytes(kb * 1024, true) : "";
-        }
-        return "";
+        const kb = SysmonService.activeGpu(SysmonService.parseKey(m.device).id)?.memoryUsed;
+        return kb != null ? Format.formatBytes(kb * 1024, true) : "";
     }
 
     function narrowSize(t) {
@@ -256,6 +264,24 @@ BasePill {
         return v.shortText;
     }
 
+    // The widest text a value formats to, so the pill keeps its width as numbers change. The narrow form is the vertical text.
+    function reserveText(m, id, narrow) {
+        const kind = SysmonCatalog.valueDef(typeOf(m), id)?.kind ?? "";
+        const samples = MonitorMetrics.sizeSamples;
+        if (showsSize(m, id))
+            return narrow ? narrowSize(samples.bytes) : samples.bytes;
+        if (kind === "rate")
+            return narrow || m.compact !== true ? MonitorMetrics.reserveFor("rate", narrow) : samples.compactRate;
+        if (typeOf(m) === "disk" && id === "space" && m.diskMode > 0) {
+            const one = m.mount ? samples.mount : samples.drive;
+            return narrow ? narrowSize(one) : m.diskMode === 3 ? one + " / " + one : one;
+        }
+        const sample = MonitorMetrics.reserveFor(kind, narrow);
+        if (!narrow)
+            return sample;
+        return kind === "pct" ? sample.replace("%", "") : kind === "power" ? sample.replace(/\s+/g, "") : sample;
+    }
+
     function buildItems(m, r) {
         const idle = idleText;
         if (r?.asleep)
@@ -265,7 +291,9 @@ BasePill {
                     muted: true,
                     icon: "bedtime",
                     text: idle,
-                    vtext: idle
+                    vtext: idle,
+                    vsize: Math.min(numberSize, idleSize),
+                    reserve: reserveText(m, m.vals?.[0], false)
                 }];
         if (!r || r.missing)
             return [{
@@ -273,7 +301,8 @@ BasePill {
                     plain: true,
                     icon: r?.icon ?? SysmonService.valueIcon(typeOf(m), ""),
                     text: "—",
-                    vtext: "—"
+                    vtext: "—",
+                    reserve: reserveText(m, m.vals?.[0], false)
                 }];
         const showIcon = labelMode === "icon" || labelMode === "both";
         const out = [];
@@ -289,8 +318,7 @@ BasePill {
                 dir: rate ? (v.id === "down" || v.id === "read" ? "down" : "up") : "",
                 text: wideText(m, v),
                 vtext: narrowText(m, v),
-                // Rates keep one width so the pill doesn't resize with every sample.
-                reserve: rate ? (m.compact === true ? "888 MB/s" : "88.8 MB/s") : "",
+                reserve: reserveText(m, v.id, false),
                 fraction: v.fraction,
                 level: v.level,
                 history: v.history,
@@ -332,7 +360,7 @@ BasePill {
     Component.onCompleted: {
         rebuildGroups();
         Qt.callLater(() => root.settled = true);
-        // An entry migrated from a GPU widget saved without a PCI id resolves by index, which needs the GPU list.
+        // A migrated GPU entry resolves its card from the GPU list.
         if (!SysmonCatalog.listOf(widgetData?.metrics) && Number.isInteger(widgetData?.selectedGpuIndex))
             DgopService.ensureMeta();
     }

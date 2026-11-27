@@ -38,7 +38,7 @@ Grid {
     readonly property real meterFillMix: 0.5
     readonly property color meterTrack: Theme.withAlpha(tone, Theme.stateLayerFocus)
     readonly property color meterFill: Theme.blend(tone, Theme.surface, meterFillMix)
-    readonly property string meterReserve: root.value.reserve || ((root.value.text ?? "").endsWith("%") ? "100%" : "")
+    readonly property string meterReserve: root.value.reserve ?? ""
     readonly property color numberColor: {
         if (value.muted)
             return Theme.surfaceVariantText;
@@ -212,8 +212,8 @@ Grid {
         text: (root.vertical ? root.value.vtext : root.value.text) ?? ""
         reserveText: root.vertical ? "" : root.value.reserve ?? ""
         // A rate sits against its arrow; the reserved slack goes after it.
-        horizontalAlignment: !root.vertical && root.value.reserve ? Text.AlignLeft : Text.AlignHCenter
-        font.pixelSize: root.numberSize
+        horizontalAlignment: !root.vertical && root.value.dir ? Text.AlignLeft : Text.AlignHCenter
+        font.pixelSize: root.vertical ? root.value.vsize ?? root.numberSize : root.numberSize
         color: root.numberColor
     }
 }

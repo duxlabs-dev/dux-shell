@@ -2732,6 +2732,24 @@ Singleton {
         saveSettings();
     }
 
+    function resolveSysmonGpus(gpus) {
+        if (!Store.hasPendingSysmonGpus(root))
+            return;
+        const bars = JSON.stringify(barConfigs);
+        const docks = JSON.stringify(dockConfigs);
+        const snapshot = {
+            barConfigs: JSON.parse(bars),
+            dockConfigs: JSON.parse(docks)
+        };
+        if (!Store.resolveSysmonGpus(snapshot, gpus))
+            return;
+        if (JSON.stringify(snapshot.barConfigs) !== bars)
+            barConfigs = snapshot.barConfigs;
+        if (JSON.stringify(snapshot.dockConfigs) !== docks)
+            dockConfigs = snapshot.dockConfigs;
+        saveSettings();
+    }
+
     // Each screen edge can hold one dock, so resolution and reservation are always edge-scoped.
     function dockConfigsForScreen(screen) {
         if (typeof screen === "string")

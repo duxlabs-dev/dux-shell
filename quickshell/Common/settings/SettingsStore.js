@@ -824,11 +824,12 @@ function migrateToVersion(obj, targetVersion) {
     return settings;
 }
 
+const isObject = value => !!value && typeof value === "object" && !Array.isArray(value);
+
 // Migration: can be removed after a few releases. v49: the CPU, memory, disk, temperature and network bar widgets become sysmon widgets.
 function migrateBarSystemMonitors(settings) {
     const OLD_IDS = WidgetDefaults.SYSMON_LEGACY_IDS;
     const DROPPED = ["minimumWidth", "showSwap", "mountPath", "showMountPath", "pciId", "device", "vals", "mount", "metrics", "showInGb", "diskUsageMode", "compactMode", "hideWhenIdle"];
-    const isObject = value => !!value && typeof value === "object" && !Array.isArray(value);
     const convert = (raw, idKey) => {
         const id = typeof raw === "string" ? raw : isObject(raw) ? (typeof raw[idKey] === "string" ? raw[idKey] : raw.id) : "";
         if (OLD_IDS.indexOf(id) === -1)
@@ -855,12 +856,9 @@ function migrateBarSystemMonitors(settings) {
             entry.metrics = one("cpu", ["temp"]);
             break;
         case "gpuTemp":
-            if (typeof old.pciId === "string" && old.pciId && SysmonCatalog.typeOf("gpu:" + old.pciId) === "gpu") {
-                entry.metrics = one("gpu:" + old.pciId, ["temp"]);
-                delete entry.selectedGpuIndex;
-            } else {
-                entry.selectedGpuIndex = Number.isInteger(old.selectedGpuIndex) && old.selectedGpuIndex >= 0 ? old.selectedGpuIndex : 0;
-            }
+            entry.selectedGpuIndex = Number.isInteger(old.selectedGpuIndex) && old.selectedGpuIndex >= 0 ? old.selectedGpuIndex : 0;
+            if (typeof old.pciId === "string" && SysmonCatalog.typeOf("gpu:" + old.pciId) === "gpu")
+                entry.pciId = old.pciId;
             break;
         case "network_speed_monitor":
             entry.metrics = one("net", ["down", "up"], Object.assign(old.compactMode === true ? { compact: true } : {}, old.hideWhenIdle === true ? { hideIdle: true } : {}));
@@ -868,26 +866,63 @@ function migrateBarSystemMonitors(settings) {
         }
         return entry;
     };
-    const convertList = (list, idKey) => {
-        if (!Array.isArray(list))
-            return;
+    eachSysmonList(settings, (list, idKey) => {
         for (let i = 0; i < list.length; i++)
-            list[i] = convert(list[i], idKey || "id");
+            list[i] = convert(list[i], idKey);
+    });
+}
+
+// Calls visit(list, idKey) for every widget list that can hold a bar widget: bars, island layouts and docks.
+function eachSysmonList(settings, visit) {
+    const visitList = (list, idKey) => {
+        if (Array.isArray(list))
+            visit(list, idKey || "id");
     };
     for (const bar of Array.isArray(settings.barConfigs) ? settings.barConfigs : []) {
         if (!isObject(bar))
             continue;
-        convertList(bar.islandHomeLayout);
+        visitList(bar.islandHomeLayout);
         for (const listKey of BAR_WIDGET_LIST_KEYS) {
-            convertList(bar[listKey]);
+            visitList(bar[listKey]);
             for (const widget of Array.isArray(bar[listKey]) ? bar[listKey] : []) {
                 if (isObject(widget) && widget.id === "island")
-                    convertList(widget.islandHomeLayout);
+                    visitList(widget.islandHomeLayout);
             }
         }
     }
     for (const dock of Array.isArray(settings.dockConfigs) ? settings.dockConfigs : [])
-        convertList(isObject(dock) ? dock.widgets : null, "widgetId");
+        visitList(isObject(dock) ? dock.widgets : null, "widgetId");
+}
+
+function isPendingGpu(entry, idKey) {
+    return isObject(entry) && entry[idKey] === "sysmon" && !SysmonCatalog.listOf(entry.metrics) && Number.isInteger(entry.selectedGpuIndex);
+}
+
+function hasPendingSysmonGpus(settings) {
+    let pending = false;
+    eachSysmonList(settings, (list, idKey) => {
+        pending = pending || list.some(entry => isPendingGpu(entry, idKey));
+    });
+    return pending;
+}
+
+// Saves the device key of each migrated GPU widget still waiting on the GPU list. Returns whether anything changed.
+function resolveSysmonGpus(settings, gpus) {
+    let changed = false;
+    eachSysmonList(settings, (list, idKey) => {
+        for (const entry of list) {
+            if (!isPendingGpu(entry, idKey))
+                continue;
+            const key = SysmonCatalog.legacyGpuKey(entry, gpus);
+            if (!key)
+                continue;
+            entry.metrics = [{ device: key, vals: ["temp"] }];
+            delete entry.selectedGpuIndex;
+            delete entry.pciId;
+            changed = true;
+        }
+    });
+    return changed;
 }
 
 // Migration: can be removed after a few releases. v48: the CPU, Memory, Disk, Network and System Monitor dash cards become System monitor cards.

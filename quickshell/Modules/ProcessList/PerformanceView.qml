@@ -31,6 +31,11 @@ Item {
     readonly property string activeKey: activeEntry.key
     onActiveKeyChanged: scrollToTop()
 
+    onCurrentKeyChanged: {
+        if (allDevices.find(e => e.key === currentKey)?.hidden)
+            showHidden = true;
+    }
+
     Ref {
         service: DgopService
         modules: ["cpu", "memory", "system", "disk-rate", "net-rate", "diskmounts", "gpu", "memory-modules"]
@@ -50,7 +55,10 @@ Item {
             hiddenCount: root.hiddenCount
             showHidden: root.showHidden
             onSelected: key => root.currentKey = key
-            onShowHiddenToggled: root.showHidden = !root.showHidden
+            onShowHiddenToggled: {
+                root.showHidden = !root.showHidden;
+                root.currentKey = root.activeKey;
+            }
         }
 
         Rectangle {

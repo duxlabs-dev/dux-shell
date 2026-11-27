@@ -129,7 +129,7 @@ test("bar monitor widgets become sysmon widgets with their options and generic k
     ]), [
         sysmon(one("memory", ["used", "swap"], { percent: false })),
         sysmon(Object.assign(one("disk", ["space"], { mount: "/home", diskMode: 3 }), { label: "icon" })),
-        sysmon(one("gpu:0000:01:00.0", ["temp"])), sysmon({ selectedGpuIndex: 1 }),
+        sysmon({ selectedGpuIndex: 1, pciId: "0000:01:00.0" }), sysmon({ selectedGpuIndex: 1 }),
         sysmon(one("net", ["down", "up"], { compact: true, hideIdle: true })),
         { id: "sysmon", enabled: true, popout: "processes", metrics: [{ device: "cpu", vals: ["usage"] }] }
     ]);
@@ -153,4 +153,18 @@ test("island layouts and docks migrate too and a second run changes nothing", ()
     assert.deepEqual(once.barConfigs[1].leftWidgets[0].islandHomeLayout, [{ id: "sysmon", enabled: true, popout: "processes", ...one("memory", ["used"]) }]);
     assert.deepEqual(once.dockConfigs[0].widgets, [{ id: "w1", widgetId: "sysmon", enabled: true, popout: "processes", ...one("cpu", ["temp"]) }, { widgetId: "appsDock" }, { widgetId: "sysmon", enabled: true, popout: "processes", ...one("net", ["down", "up"]) }]);
     assert.deepEqual(plain(store.migrateToVersion(Object.assign({}, once, { configVersion: 48 }), 49)), once);
+});
+
+test("pending GPU widgets resolve to their own card once, twin cards included", () => {
+    const twin = (busId) => ({ pciId: "10de:2684", busId });
+    const gpus = [twin("0000:01:00.0"), twin("0000:02:00.0")];
+    const entries = [bar("gpuTemp", { pciId: "10de:2684", selectedGpuIndex: 1 }), bar("gpuTemp", { pciId: "10de:2684", selectedGpuIndex: 0 }), bar("gpuTemp", { pciId: "1002:aaaa", selectedGpuIndex: 0 }), bar("gpuTemp", { selectedGpuIndex: 9 })];
+    const settings = store.migrateToVersion({ configVersion: 48, barConfigs: [{ id: "b", rightWidgets: entries }], dockConfigs: [{ id: "d", widgets: [{ widgetId: "gpuTemp", selectedGpuIndex: 1 }] }] }, 49);
+    assert.equal(store.resolveSysmonGpus(settings, []), false);
+    assert.equal(store.resolveSysmonGpus(settings, gpus), true);
+    const right = plain(settings.barConfigs[0].rightWidgets);
+    assert.deepEqual(right.map((w) => w.metrics?.[0].device), ["gpu:0000:02:00.0", "gpu:0000:01:00.0", "gpu:1002:aaaa", "gpu:0000:01:00.0"]);
+    assert.deepEqual([right[2].selectedGpuIndex, right[2].pciId], [undefined, undefined]);
+    assert.equal(settings.dockConfigs[0].widgets[0].metrics[0].device, "gpu:0000:02:00.0");
+    assert.equal(store.resolveSysmonGpus(settings, gpus), false);
 });

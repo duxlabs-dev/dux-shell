@@ -266,8 +266,31 @@ Singleton {
 
     // Counts as properties so readers re-run only when a count changes, not on every sample.
     readonly property int gpuTotal: hostGpuCount()
+    onGpuTotalChanged: resolveGpus()
     readonly property int diskTotal: diskCount()
     readonly property int netShownTotal: (DgopService.netRates ?? []).filter(n => !Devices.isHiddenByDefault(Devices.interfaceKind(n.iface, n.linkType))).length
+
+    // Also runs when the configs change (profile apply, reload), since those can bring pending entries after the list.
+    function resolveGpus() {
+        if (gpuTotal > 0)
+            Qt.callLater(adoptGpus);
+    }
+
+    function adoptGpus() {
+        SettingsData.resolveSysmonGpus(DgopService.availableGpus);
+    }
+
+    Connections {
+        target: SettingsData
+        function onBarConfigsChanged() {
+            SysmonService.resolveGpus();
+        }
+        function onDockConfigsChanged() {
+            SysmonService.resolveGpus();
+        }
+    }
+
+    Component.onCompleted: resolveGpus()
 
     // The type name while the type has a single device, otherwise the device's own name.
     function displayName(key) {
@@ -464,17 +487,16 @@ Singleton {
         return p.type === "gpu" && gpuFor(p.id)?.state === "suspended";
     }
 
-    // The entries a bar widget shows. GPU entries saved without a device id resolve through their list index
-    // (a migration fallback that can go after a few releases) and give no entries until dgop lists the GPU.
+    // The entries a bar widget shows. A migrated GPU entry still waiting for its device id shows its card
+    // and gives no entries until dgop lists the GPU.
     function widgetMetrics(entry) {
         if (SysmonCatalog.listOf(entry?.metrics))
             return SysmonCatalog.normalizeMetrics(entry.metrics);
-        const index = entry?.selectedGpuIndex;
-        if (Number.isInteger(index) && index >= 0) {
-            const g = (DgopService.availableGpus ?? [])[index];
-            return g ? SysmonCatalog.normalizeMetrics([
+        if (Number.isInteger(entry?.selectedGpuIndex)) {
+            const key = SysmonCatalog.legacyGpuKey(entry, DgopService.availableGpus);
+            return key ? SysmonCatalog.normalizeMetrics([
                 {
-                    device: gpuEntry(g).key,
+                    device: key,
                     vals: ["temp"]
                 }
             ]) : [];

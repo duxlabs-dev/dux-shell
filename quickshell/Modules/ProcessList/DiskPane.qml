@@ -13,6 +13,8 @@ DevicePane {
     readonly property var historyA: DgopService.history(SysmonDevices.deviceKey("disk", deviceName), "read")
     readonly property var historyB: DgopService.history(SysmonDevices.deviceKey("disk", deviceName), "write")
     readonly property var rates: (DgopService.diskRates ?? []).find(d => d.device === deviceName) ?? null
+    // The list is sampled but this drive isn't in it: unplugged, with its tab kept open.
+    readonly property bool absent: (DgopService.diskRates ?? []).length > 0 && rates === null
     readonly property real axisMax: SysmonDevices.rateAxisMax(historyA, historyB, 1048576)
 
     readonly property var drive: Drives.driveFor(deviceName, DriveService.drives)
@@ -23,7 +25,9 @@ DevicePane {
         level: Drives.healthLevel(root.drive)
     }
 
-    loaded: historyA.length > 0
+    loaded: absent || historyA.length > 0
+    idleText: absent ? I18n.tr("Disconnected", "system monitor: drive or interface no longer present") : ""
+    idleIcon: "usb_off"
     title: drive?.model || deviceName
     titleTooltip: drive?.model ? deviceName : ""
     subtitle: Drives.driveSubtitle(drive)

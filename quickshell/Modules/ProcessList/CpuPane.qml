@@ -141,17 +141,30 @@ DevicePane {
         Grid {
             id: threadGrid
 
-            readonly property int rows: Math.max(1, Math.ceil(DgopService.perCoreCpuUsage.length / columns))
+            readonly property int count: DgopService.perCoreCpuUsage.length
+            // Past what fits at the normal gap, the gap shrinks so more cells fit.
+            readonly property bool dense: root.compactGrid && count > ProcessListMetrics.threadMaxColumns * rowsFit(Theme.spacingS)
+            readonly property int rows: Math.max(1, Math.ceil(count / columns))
             readonly property real cellWidth: (width - spacing * (columns - 1)) / columns
             // Fills the overall chart's height so the stats below stay put; many rows get a floor instead.
             readonly property real inset: root.compactGrid ? 0 : Theme.spacingL
             readonly property real cellHeight: Math.max(root.compactGrid ? 0 : Theme.listItemHeight, (root.chartCardHeight - inset * 2 - spacing * (rows - 1)) / rows)
 
+            function rowsFit(gap) {
+                return Math.max(1, Math.floor((root.chartCardHeight + gap) / (ProcessListMetrics.threadCellMinHeight + gap)));
+            }
+
             x: inset
             y: inset
             width: parent.width - inset * 2
-            columns: Math.max(1, Math.min(8, DgopService.perCoreCpuUsage.length))
-            spacing: Theme.spacingS
+            columns: {
+                const most = ProcessListMetrics.threadMaxColumns;
+                if (!root.compactGrid)
+                    return Math.max(1, Math.min(most, count));
+                const widthFit = Math.max(1, Math.floor((width + spacing) / (ProcessListMetrics.threadCellMinWidth + spacing)));
+                return Math.max(1, Math.min(count, widthFit, Math.max(most, Math.ceil(count / rowsFit(spacing)))));
+            }
+            spacing: dense ? Theme.spacingXXS : Theme.spacingS
 
             Repeater {
                 model: root.perThread ? DgopService.perCoreCpuUsage.length : 0
@@ -162,6 +175,7 @@ DevicePane {
                     required property int index
                     readonly property real usage: DgopService.perCoreCpuUsage[index] ?? 0
                     readonly property real mhz: root.freqs[index] ?? 0
+                    readonly property string usageText: Math.round(usage) + "%"
 
                     width: threadGrid.cellWidth
                     height: threadGrid.cellHeight
@@ -171,7 +185,7 @@ DevicePane {
 
                     MetricChart {
                         anchors.fill: parent
-                        anchors.topMargin: threadLabel.height
+                        anchors.topMargin: threadLabel.visible ? threadLabel.height : 0
                         compact: true
                         values: DgopService.history("cpu", "thread" + thread.index)
                         maximum: 100
@@ -189,10 +203,13 @@ DevicePane {
                     }
 
                     NumericText {
+                        id: threadNumber
+                        reserveText: "100%"
+                        visible: thread.height >= ProcessListMetrics.threadNumberMinHeight && thread.width >= reservedWidth + Theme.spacingS * 2
                         anchors.right: parent.right
                         anchors.rightMargin: Theme.spacingS
                         topPadding: Theme.spacingXS
-                        text: Math.round(thread.usage) + "%"
+                        text: thread.usageText
                         font.pixelSize: Theme.fontSizeSmall
                         color: Theme.surfaceText
                     }
@@ -205,7 +222,7 @@ DevicePane {
                     }
 
                     DTooltipHost {
-                        text: [root.compactGrid ? String(thread.index) : "", thread.mhz > 0 ? root.ghz(thread.mhz) : ""].filter(s => s).join(" · ")
+                        text: [root.compactGrid ? String(thread.index) : "", threadNumber.visible ? "" : thread.usageText, thread.mhz > 0 ? root.ghz(thread.mhz) : ""].filter(s => s).join(" · ")
                         target: thread
                         hoverArea: threadHover
                     }

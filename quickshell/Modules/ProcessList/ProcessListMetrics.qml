@@ -25,6 +25,10 @@ Singleton {
     readonly property real sparkWidth: Theme.iconButtonSize * 1.6
     readonly property real sparkHeight: Theme.iconButtonSize * 0.7
     readonly property real deviceChartHeight: Theme.listItemHeight * 2.5
+    readonly property real threadCellMinHeight: Theme.fontSizeSmall * 2.5
+    readonly property real threadCellMinWidth: Theme.spacingL
+    readonly property int threadMaxColumns: 8
+    readonly property real threadNumberMinHeight: Theme.fontSizeSmall + Theme.spacingXS * 2
     readonly property int deviceStatRows: 3
     readonly property int tileLimit: 3
     readonly property int pairLimit: 3
