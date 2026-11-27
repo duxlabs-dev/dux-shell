@@ -32,8 +32,14 @@ BasePill {
     property var widgetData: null
     readonly property bool adaptiveWidthEnabled: SettingsData.widgetOption("music", widgetData, "mediaAdaptiveWidthEnabled")
     property real allottedPrimarySize: 0
+    property bool layoutShrunk: false
     readonly property real naturalPrimarySize: isVerticalOrientation ? height : !playerAvailable ? 0 : Theme.pxCeil((contentItem?.naturalContentWidth ?? 0) + horizontalPadding * 2, dpr)
     readonly property real minimumPrimarySize: isVerticalOrientation ? height : !playerAvailable ? 0 : Theme.snap((contentItem?.fixedContentWidth ?? 0) + horizontalPadding * 2, dpr)
+    onAllottedPrimarySizeChanged: layoutShrunk = allottedPrimarySize > 0 && allottedPrimarySize < naturalPrimarySize
+    onNaturalPrimarySizeChanged: {
+        if (allottedPrimarySize <= 0 || naturalPrimarySize <= allottedPrimarySize)
+            layoutShrunk = false;
+    }
     readonly property bool lyricsEnabled: SettingsData.widgetOption("music", widgetData, "mediaShowLyrics") && LyricsService.allowed
     readonly property bool coverArtEnabled: SettingsData.widgetOption("music", widgetData, "mediaShowCoverArt")
     readonly property string coverArtUrl: coverArtEnabled && activePlayer && TrackArtService.artReadyFor(activePlayer) ? TrackArtService.resolvedArtUrl : ""
@@ -242,11 +248,9 @@ BasePill {
             readonly property real measuredNaturalTextWidth: {
                 if (!root.playerAvailable || root.maxTextWidth <= 0)
                     return 0;
-                if (!root.adaptiveWidthEnabled || root.lyricActive)
+                if (!root.adaptiveWidthEnabled || (root.layoutShrunk && root.lyricActive))
                     return root.maxTextWidth;
-                if (textContainer.displayText.length === 0)
-                    return 0;
-                const rawWidth = mediaText.implicitTextWidth;
+                const rawWidth = root.lyricActive ? lyricLine.pageWidth : (textContainer.displayText.length > 0 ? mediaText.implicitTextWidth : 0);
                 if (!isFinite(rawWidth) || rawWidth <= 0)
                     return 0;
                 return Math.min(root.maxTextWidth, Math.ceil(rawWidth));
@@ -263,7 +267,7 @@ BasePill {
                 return measuredNaturalTextWidth > 0 ? measuredNaturalTextWidth : Math.min(root.maxTextWidth, heldTextWidth);
             }
             readonly property real fixedContentWidth: root.badgeExtent + 64 * root.contentScale + Theme.spacingXS * 2
-            readonly property real textBudget: root.allottedPrimarySize > 0 ? Math.max(0, root.allottedPrimarySize - root.horizontalPadding * 2 - fixedContentWidth - Theme.spacingXS) : Infinity
+            readonly property real textBudget: root.layoutShrunk ? Math.max(0, root.allottedPrimarySize - root.horizontalPadding * 2 - fixedContentWidth - Theme.spacingXS) : Infinity
             readonly property real measuredTextWidth: Math.min(naturalTextWidth, textBudget)
             readonly property real naturalContentWidth: fixedContentWidth + (naturalTextWidth > 0 ? naturalTextWidth + Theme.spacingXS : 0)
             readonly property int horizontalContentWidth: fixedContentWidth + (measuredTextWidth > 0 ? measuredTextWidth + Theme.spacingXS : 0)
@@ -405,7 +409,9 @@ BasePill {
                         }
 
                         MediaLyricLine {
+                            id: lyricLine
                             width: contentRoot.measuredTextWidth
+                            maxWidth: Math.min(root.maxTextWidth, contentRoot.textBudget)
                             height: parent.height
                             visible: root.lyricActive
                             controller: LyricsService.controller
