@@ -24,6 +24,12 @@ SettingsDropdownRow {
     enableFuzzySearch: true
     popupWidthOffset: SettingsMetrics.fontMenuExtraWidth
     options: _families
+    optionFontMap: {
+        const fonts = {};
+        for (const family of _families)
+            fonts[family] = family === "Default" ? root.defaultFamily : family;
+        return fonts;
+    }
     currentValue: (root.currentFont === "" || root.currentFont === root.defaultFamily) ? "Default" : root.currentFont
     onValueChanged: value => root.fontSelected(value === "Default" ? "" : value)
 

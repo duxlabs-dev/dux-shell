@@ -15,6 +15,7 @@ SettingsRow {
     property alias optionImages: dropdown.optionImages
     property alias optionIconMap: dropdown.optionIconMap
     property alias optionColorMap: dropdown.optionColorMap
+    property alias optionFontMap: dropdown.optionFontMap
     property alias enableFuzzySearch: dropdown.enableFuzzySearch
     property alias popupWidthOffset: dropdown.popupWidthOffset
     property alias maxPopupHeight: dropdown.maxPopupHeight
