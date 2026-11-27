@@ -86,6 +86,9 @@ PanelWindow {
                 text: Format.formatDuration(root.remainingSeconds)
                 font.pixelSize: Theme.fontSizeDisplayLarge
                 font.weight: Theme.fontWeightBold
+                font.features: {
+                    "tnum": 1
+                }
                 color: Theme.primary
             }
 
