@@ -31,10 +31,13 @@ Item {
     readonly property string activeKey: activeEntry.key
     onActiveKeyChanged: scrollToTop()
 
-    onCurrentKeyChanged: {
+    function revealCurrent() {
         if (allDevices.find(e => e.key === currentKey)?.hidden)
             showHidden = true;
     }
+
+    onCurrentKeyChanged: revealCurrent()
+    Component.onCompleted: revealCurrent()
 
     Ref {
         service: DgopService

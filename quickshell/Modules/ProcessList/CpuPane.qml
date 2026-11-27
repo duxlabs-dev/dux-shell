@@ -134,7 +134,7 @@ DevicePane {
     Rectangle {
         visible: root.perThread
         width: parent.width
-        height: root.compactGrid ? root.chartCardHeight : Math.max(root.chartCardHeight, threadGrid.implicitHeight + Theme.spacingL * 2)
+        height: Math.max(root.chartCardHeight, threadGrid.implicitHeight + threadGrid.inset * 2)
         radius: Theme.cornerRadiusL
         color: root.compactGrid ? "transparent" : ProcessListMetrics.cardColor
 
@@ -146,9 +146,10 @@ DevicePane {
             readonly property bool dense: root.compactGrid && count > ProcessListMetrics.threadMaxColumns * rowsFit(Theme.spacingS)
             readonly property int rows: Math.max(1, Math.ceil(count / columns))
             readonly property real cellWidth: (width - spacing * (columns - 1)) / columns
-            // Fills the overall chart's height so the stats below stay put; many rows get a floor instead.
+            // Fills the overall chart's height so the stats below stay put; past that the card grows instead of the cells shrinking.
             readonly property real inset: root.compactGrid ? 0 : Theme.spacingL
-            readonly property real cellHeight: Math.max(root.compactGrid ? 0 : Theme.listItemHeight, (root.chartCardHeight - inset * 2 - spacing * (rows - 1)) / rows)
+            readonly property real cellHeight: Math.max(root.compactGrid ? ProcessListMetrics.threadCellMinHeight : Theme.listItemHeight, (root.chartCardHeight - inset * 2 - spacing * (rows - 1)) / rows)
+            readonly property real cellMinWidth: numberReserve.reservedWidth + Theme.spacingS * 2
 
             function rowsFit(gap) {
                 return Math.max(1, Math.floor((root.chartCardHeight + gap) / (ProcessListMetrics.threadCellMinHeight + gap)));
@@ -161,10 +162,17 @@ DevicePane {
                 const most = ProcessListMetrics.threadMaxColumns;
                 if (!root.compactGrid)
                     return Math.max(1, Math.min(most, count));
-                const widthFit = Math.max(1, Math.floor((width + spacing) / (ProcessListMetrics.threadCellMinWidth + spacing)));
+                const widthFit = Math.max(1, Math.floor((width + spacing) / (cellMinWidth + spacing)));
                 return Math.max(1, Math.min(count, widthFit, Math.max(most, Math.ceil(count / rowsFit(spacing)))));
             }
             spacing: dense ? Theme.spacingXXS : Theme.spacingS
+
+            NumericText {
+                id: numberReserve
+                visible: false
+                reserveText: "100%"
+                font.pixelSize: Theme.fontSizeSmall
+            }
 
             Repeater {
                 model: root.perThread ? DgopService.perCoreCpuUsage.length : 0
