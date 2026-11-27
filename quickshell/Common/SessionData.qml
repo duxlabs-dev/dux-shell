@@ -1030,11 +1030,26 @@ Singleton {
         if (perMonitorWallpaper && screenName) {
             setMonitorWallpaper(screenName, path);
             setMonitorCyclingFolderPath(screenName, "");
-            return;
+        } else {
+            setWallpaper(path);
+            wallpaperCyclingFolderPath = "";
+            saveSettings();
         }
-        setWallpaper(path);
-        wallpaperCyclingFolderPath = "";
-        saveSettings();
+        if (perModeWallpaper || themeModeAutoEnabled || typeof WallpaperLibraryService === "undefined")
+            return;
+        const revision = wallpaperRequestRevision(screenName || "");
+        WallpaperLibraryService.folderOf(path, owner => {
+            if (revision !== wallpaperRequestRevision(screenName || ""))
+                return;
+            const folder = (wallpaperFolders ?? []).find(f => f?.path === owner);
+            if (!folder || (folder.appearance !== "light" && folder.appearance !== "dark"))
+                return;
+            const targetLight = folder.appearance === "light";
+            if (typeof SettingsData !== "undefined" && SettingsData.matugenSmartMode && typeof Theme !== "undefined" && Theme.currentTheme === Theme.dynamic)
+                return;
+            if (isLightMode !== targetLight && typeof Theme !== "undefined")
+                Theme.setLightMode(targetLight);
+        });
     }
 
     function setWallpaperColor(color) {

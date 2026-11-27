@@ -8,7 +8,8 @@ function coerceWallpaperFolders(value) {
         return [];
     return value.filter(e => e !== null && typeof e === "object" && typeof e.path === "string" && e.path.startsWith("/")).map(e => Object.assign({}, e, {
         recursive: e.recursive === true,
-        hidden: e.hidden === true
+        hidden: e.hidden === true,
+        appearance: e.appearance === "light" || e.appearance === "dark" ? e.appearance : ""
     }));
 }
 

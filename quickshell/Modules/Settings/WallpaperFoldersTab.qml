@@ -20,7 +20,31 @@ Item {
     property string openFolder: ""
     readonly property bool connected: WallpaperLibraryService.connected
     readonly property bool outdated: DMSService.isConnected && DMSService.apiVersion > 0 && DMSService.apiVersion < WallpaperLibraryService.requiredApiVersion
-    readonly property int folderCount: WallpaperLibraryService.folders.length
+    property var _frozenOrder: null
+    readonly property var sortedFolders: {
+        const list = WallpaperLibraryService.folders ?? [];
+        if (root.openFolder !== "" && _frozenOrder) {
+            const byPath = new Map(list.map(f => [f.path, f]));
+            const ordered = [];
+            for (const p of _frozenOrder) {
+                const item = byPath.get(p);
+                if (item) {
+                    ordered.push(item);
+                    byPath.delete(p);
+                }
+            }
+            for (const item of byPath.values())
+                ordered.push(item);
+            return ordered;
+        }
+        const order = {
+            "light": 1,
+            "dark": 2
+        };
+        return list.slice().sort((a, b) => (order[a?.appearance] ?? 0) - (order[b?.appearance] ?? 0));
+    }
+    onOpenFolderChanged: _frozenOrder = openFolder !== "" ? sortedFolders.map(f => f.path) : null
+    readonly property int folderCount: sortedFolders.length
     readonly property string selectedScreen: SettingsUiState.selectedWallpaperScreen || (Quickshell.screens.length > 0 ? Quickshell.screens[0].name : "")
     readonly property string listedCurrent: WallpaperLibraryService.listedPath(SessionData.getMonitorWallpaper(selectedScreen))
     readonly property real thumbCellWidth: SettingsMetrics.contentMaxWidth / SettingsMetrics.wallpaperGridColumns
@@ -130,7 +154,7 @@ Item {
                         id: folderRow
 
                         required property int index
-                        readonly property var folder: WallpaperLibraryService.folders[index] ?? ({
+                        readonly property var folder: root.sortedFolders[index] ?? ({
                                 "path": ""
                             })
                         readonly property bool unavailable: WallpaperLibraryService.missing.includes(folder.path)
@@ -140,7 +164,7 @@ Item {
                         title: name
                         subtitle: unavailable ? I18n.tr("%1 not available", "%1 is a folder name").arg(name) : folder.path
                         subtitleColor: unavailable ? Theme.warning : supportingContentColor
-                        iconName: unavailable ? "folder_off" : folder.hidden ? "visibility_off" : "folder"
+                        iconName: unavailable ? "folder_off" : folder.hidden ? "visibility_off" : folder.appearance === "light" ? "light_mode" : folder.appearance === "dark" ? "dark_mode" : "folder"
                         open: root.openFolder === folder.path
                         onToggled: root.openFolder = open ? "" : folder.path
 
@@ -164,6 +188,16 @@ Item {
                                     text: I18n.tr("Include subfolders", "wallpaper folder option")
                                     checked: folderRow.folder.recursive ?? false
                                     onToggled: checked => WallpaperLibraryService.setFolderRecursive(folderRow.folder.path, checked)
+                                }
+
+                                SettingsButtonGroupRow {
+                                    iconName: "contrast"
+                                    text: I18n.tr("Appearance", "wallpaper folder option: which light/dark mode the folder is used in")
+                                    model: [I18n.tr("All", "wallpaper folder used in both light and dark mode"), I18n.tr("Light", "wallpaper folder used in light mode"), I18n.tr("Dark", "wallpaper folder used in dark mode")]
+                                    values: ["", "light", "dark"]
+                                    value: WallpaperLibraryService.normalizeAppearance(folderRow.folder.appearance)
+                                    fallbackValue: ""
+                                    onValueSelected: selected => WallpaperLibraryService.setFolderAppearance(folderRow.folder.path, selected)
                                 }
 
                                 SettingsRow {

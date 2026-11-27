@@ -32,6 +32,8 @@ Singleton {
     property var items: []
     property var missing: []
     property bool loaded: false
+
+    signal folderRemoved(string path)
     property int revision: 0
 
     property var variantOwners: new Map()
@@ -146,6 +148,28 @@ Singleton {
 
     function selected(entries) {
         return itemsIn(entries, filtering ? selection : visibleFolders.map(folder => folder.path));
+    }
+
+    function normalizeAppearance(appearance) {
+        return appearance === "light" || appearance === "dark" ? appearance : "";
+    }
+
+    function folderMatchesMode(folder, lightMode) {
+        if (!folder)
+            return false;
+        const mode = normalizeAppearance(folder.appearance);
+        if (!mode)
+            return true;
+        return mode === (lightMode ? "light" : "dark");
+    }
+
+    function selectedForMode(entries, lightMode) {
+        const base = selected(entries);
+        const mode = lightMode === undefined ? SessionData.isLightMode : !!lightMode;
+        return base.filter(item => {
+            const folder = folders.find(entry => entry.path === item.folder);
+            return folderMatchesMode(folder, mode);
+        });
     }
 
     function folderItems(path) {
@@ -275,7 +299,8 @@ Singleton {
                 {
                     "path": normalized,
                     "recursive": true,
-                    "hidden": false
+                    "hidden": false,
+                    "appearance": ""
                 }
             ]));
         });
@@ -287,6 +312,7 @@ Singleton {
             return false;
         SessionData.set("wallpaperFolders", remaining);
         SessionData.set("wallpaperFolderSelection", SessionData.wallpaperFolderSelection.filter(ticked => ticked !== path));
+        folderRemoved(path);
         return true;
     }
 
@@ -306,6 +332,12 @@ Singleton {
     function setFolderRecursive(path, recursive) {
         return updateFolder(path, {
             "recursive": !!recursive
+        });
+    }
+
+    function setFolderAppearance(path, appearance) {
+        return updateFolder(path, {
+            "appearance": normalizeAppearance(appearance)
         });
     }
 
