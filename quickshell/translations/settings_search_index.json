@@ -160,8 +160,7 @@
       "tint",
       "wallpaper"
     ],
-    "page": "personalization",
-    "icon": "schedule"
+    "page": "personalization"
   },
   {
     "section": "_hub_applications",
@@ -718,8 +717,7 @@
       "shadows",
       "style"
     ],
-    "page": "theme_surfaces",
-    "icon": "center_focus_strong"
+    "page": "theme_surfaces"
   },
   {
     "section": "fixedRadius",
@@ -868,8 +866,7 @@
       "typing",
       "wallpaper"
     ],
-    "page": "personalization",
-    "icon": "delete"
+    "page": "personalization"
   },
   {
     "section": "cursorHideAfterInactive",
@@ -1750,8 +1747,7 @@
       "tint",
       "wallpaper"
     ],
-    "page": "personalization",
-    "icon": "delete"
+    "page": "personalization"
   },
   {
     "section": "notificationIgnoreAppTimeout",
@@ -1959,8 +1955,7 @@
       "tint",
       "wallpaper"
     ],
-    "page": "personalization",
-    "icon": "delete"
+    "page": "personalization"
   },
   {
     "section": "iconThemeLibrary",
@@ -1993,8 +1988,7 @@
       "tint",
       "wallpaper"
     ],
-    "page": "personalization",
-    "icon": "delete"
+    "page": "personalization"
   },
   {
     "section": "iconFolderRecolor",
@@ -2057,8 +2051,7 @@
       "tint",
       "wallpaper"
     ],
-    "page": "personalization",
-    "icon": "restore"
+    "page": "personalization"
   },
   {
     "section": "matugenTargetMonitor",
@@ -2273,8 +2266,7 @@
       "notifs",
       "toast"
     ],
-    "page": "notifications",
-    "icon": "rule_settings"
+    "page": "notifications"
   },
   {
     "section": "floatingWindowTransparency",
@@ -2515,8 +2507,7 @@
       "plugins",
       "widgets"
     ],
-    "page": "plugins",
-    "icon": "warning"
+    "page": "plugins"
   },
   {
     "section": "pluginsIncompatible",
@@ -2531,8 +2522,7 @@
       "plugins",
       "widgets"
     ],
-    "page": "plugins",
-    "icon": "error"
+    "page": "plugins"
   },
   {
     "section": "notificationPopups",
@@ -2947,8 +2937,7 @@
       "tint",
       "wallpaper"
     ],
-    "page": "personalization",
-    "icon": "colorize"
+    "page": "personalization"
   },
   {
     "section": "iconThemePerMode",
@@ -3414,8 +3403,7 @@
       "tint",
       "wallpaper"
     ],
-    "page": "personalization",
-    "icon": "colorize"
+    "page": "personalization"
   },
   {
     "section": "focusRingWidth",
@@ -3830,8 +3818,7 @@
       "transition",
       "wallpaper"
     ],
-    "page": "personalization",
-    "icon": "restore"
+    "page": "personalization"
   },
   {
     "section": "wallpaperAdvanced",
@@ -4349,8 +4336,7 @@
       "units",
       "weather"
     ],
-    "parentLabel": "Date, time & region",
-    "icon": "partly_cloudy_day"
+    "parentLabel": "Date, time & region"
   },
   {
     "section": "_tab_2",
@@ -5076,7 +5062,6 @@
       "topbar"
     ],
     "parentLabel": "Bar",
-    "icon": "restart_alt",
     "description": "Comma-separated plugin or IPC source IDs that never show here",
     "conditionKey": "islandEnabled"
   },
@@ -8190,7 +8175,6 @@
       "wireless"
     ],
     "parentLabel": "Network",
-    "icon": "login",
     "conditionKey": "networkAvailable"
   },
   {
@@ -8649,7 +8633,6 @@
       "start menu",
       "uwsm"
     ],
-    "icon": "restart_alt",
     "description": "Added in front of every app launch command"
   },
   {
@@ -10442,8 +10425,7 @@
       "unison",
       "youtube music"
     ],
-    "parentLabel": "Sound & media",
-    "icon": "restart_alt"
+    "parentLabel": "Sound & media"
   },
   {
     "section": "_tab_16",
@@ -10819,8 +10801,7 @@
       "screen",
       "show",
       "wifi"
-    ],
-    "icon": "volume_up"
+    ]
   },
   {
     "section": "osdTouchpadEnabled",
@@ -14341,7 +14322,6 @@
       "wallpaper"
     ],
     "parentLabel": "Security",
-    "icon": "wallpaper",
     "conditionKey": "greeterAvailable"
   },
   {
@@ -16913,8 +16893,7 @@
       "topbar",
       "wellbeing"
     ],
-    "parentLabel": "Bar",
-    "icon": "digital_wellbeing"
+    "parentLabel": "Bar"
   },
   {
     "section": "dashTabsEvenlySpaced",
@@ -16955,8 +16934,7 @@
       "taskbar",
       "topbar"
     ],
-    "parentLabel": "Bar",
-    "icon": "music_note"
+    "parentLabel": "Bar"
   },
   {
     "section": "dashTabPosition",
@@ -17010,8 +16988,7 @@
       "taskbar",
       "topbar"
     ],
-    "parentLabel": "Bar",
-    "icon": "refresh"
+    "parentLabel": "Bar"
   },
   {
     "section": "dashWeatherSettings",
@@ -17030,8 +17007,7 @@
       "topbar",
       "weather"
     ],
-    "parentLabel": "Bar",
-    "icon": "partly_cloudy_day"
+    "parentLabel": "Bar"
   },
   {
     "section": "mouseAccelProfile",
@@ -18493,8 +18469,7 @@
       "sunset",
       "wallpaper"
     ],
-    "parentLabel": "Appearance",
-    "icon": "schedule"
+    "parentLabel": "Appearance"
   },
   {
     "section": "themeModeShareGammaSettings",
@@ -18566,8 +18541,7 @@
       "slideshow",
       "time"
     ],
-    "parentLabel": "Appearance",
-    "icon": "skip_previous"
+    "parentLabel": "Appearance"
   },
   {
     "section": "wallpaperCyclingFolder",
@@ -18932,8 +18906,7 @@
       "transparent",
       "widget"
     ],
-    "parentLabel": "Bar",
-    "icon": "SettingsUiState.selectedWidgetIcon"
+    "parentLabel": "Bar"
   },
   {
     "section": "mutedApps",
@@ -19044,8 +19017,7 @@
       "time",
       "weather"
     ],
-    "parentLabel": "Date, time & region",
-    "icon": "space_dashboard"
+    "parentLabel": "Date, time & region"
   },
   {
     "section": "useFahrenheit",
@@ -19147,8 +19119,7 @@
       "time",
       "weather"
     ],
-    "parentLabel": "Date, time & region",
-    "icon": "restart_alt"
+    "parentLabel": "Date, time & region"
   },
   {
     "section": "windSpeedUnit",
@@ -19657,8 +19628,7 @@
       "user",
       "users"
     ],
-    "page": "user_accounts",
-    "icon": "edit"
+    "page": "user_accounts"
   },
   {
     "section": "_hub_user_accounts",
@@ -20190,7 +20160,6 @@
       "topbar"
     ],
     "parentLabel": "Bar",
-    "icon": "folder_open",
     "conditionKey": "dotEnabled"
   },
   {
@@ -20462,7 +20431,6 @@
       "topbar"
     ],
     "parentLabel": "Bar",
-    "icon": "restart_alt",
     "description": "Comma-separated plugin or IPC source IDs that never show here",
     "conditionKey": "dotEnabled"
   },
@@ -21342,8 +21310,7 @@
       "release",
       "system"
     ],
-    "parentLabel": "System & integrations",
-    "icon": "cloud_off"
+    "parentLabel": "System & integrations"
   },
   {
     "section": "_hub_wellbeing",
@@ -22012,8 +21979,7 @@
       "snip",
       "system"
     ],
-    "parentLabel": "System & integrations",
-    "icon": "folder_open"
+    "parentLabel": "System & integrations"
   },
   {
     "section": "screenshotFormat",
