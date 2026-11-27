@@ -22,7 +22,7 @@ Item {
     }
 
     readonly property Item headerActions: Row {
-        spacing: Theme.spacingXS
+        spacing: Theme.spacingS
 
         DActionButton {
             buttonSize: CcMetrics.headerActionSize
