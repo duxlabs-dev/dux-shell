@@ -10,6 +10,7 @@ import qs.Services
 import "settings/SessionSpec.js" as Spec
 import "../DCommon/Common/MaterialWallpaper.js" as MaterialWallpaper
 import "settings/SessionStore.js" as Store
+import "WallpaperTransitions.js" as Transitions
 import "settings/AppFolders.js" as AppFolders
 import "settings/DockPins.js" as DockPins
 import "../DCommon/Common/settings/SpecUtil.js" as SpecUtil
@@ -214,7 +215,37 @@ Singleton {
     }
 
     property string wallpaperTransition: "fade"
-    readonly property var availableWallpaperTransitions: ["none", "fade", "wipe", "disc", "stripes", "iris bloom", "pixelate", "portal"]
+    property int wallpaperTransitionDuration: 1000
+    readonly property var availableWallpaperTransitions: Transitions.NAMES
+    function transitionLabel(t) {
+        switch (t) {
+        case "random":
+            return I18n.tr("Random", "wallpaper transition option");
+        case "none":
+            return I18n.tr("None", "wallpaper transition option");
+        case "fade":
+            return I18n.tr("Fade", "wallpaper transition option");
+        case "wipe":
+            return I18n.tr("Wipe", "wallpaper transition option");
+        case "disc":
+            return I18n.tr("Disc", "wallpaper transition option");
+        case "stripes":
+            return I18n.tr("Stripes", "wallpaper transition option");
+        case "iris bloom":
+            return I18n.tr("Iris Bloom", "wallpaper transition option");
+        case "pixelate":
+            return I18n.tr("Pixelate", "wallpaper transition option");
+        case "portal":
+            return I18n.tr("Portal", "wallpaper transition option");
+        case "tiles":
+            return I18n.tr("Tiles", "wallpaper transition option");
+        case "ripple":
+            return I18n.tr("Ripple", "wallpaper transition option");
+        default:
+            return t.charAt(0).toUpperCase() + t.slice(1);
+        }
+    }
+
     property var includedTransitions: availableWallpaperTransitions.filter(t => t !== "none")
 
     property bool wallpaperCyclingEnabled: false
@@ -1000,11 +1031,26 @@ Singleton {
         if (perMonitorWallpaper && screenName) {
             setMonitorWallpaper(screenName, path);
             setMonitorCyclingFolderPath(screenName, "");
-            return;
+        } else {
+            setWallpaper(path);
+            wallpaperCyclingFolderPath = "";
+            saveSettings();
         }
-        setWallpaper(path);
-        wallpaperCyclingFolderPath = "";
-        saveSettings();
+        if (perModeWallpaper || themeModeAutoEnabled || typeof WallpaperLibraryService === "undefined")
+            return;
+        const revision = wallpaperRequestRevision(screenName || "");
+        WallpaperLibraryService.folderOf(path, owner => {
+            if (revision !== wallpaperRequestRevision(screenName || ""))
+                return;
+            const folder = (wallpaperFolders ?? []).find(f => f?.path === owner);
+            if (!folder || (folder.appearance !== "light" && folder.appearance !== "dark"))
+                return;
+            const targetLight = folder.appearance === "light";
+            if (typeof SettingsData !== "undefined" && SettingsData.matugenSmartMode && typeof Theme !== "undefined" && Theme.currentTheme === Theme.dynamic)
+                return;
+            if (isLightMode !== targetLight && typeof Theme !== "undefined")
+                Theme.setLightMode(targetLight);
+        });
     }
 
     function setWallpaperColor(color) {
@@ -1284,6 +1330,11 @@ Singleton {
 
     function setWallpaperTransition(transition) {
         wallpaperTransition = transition;
+        saveSettings();
+    }
+
+    function setWallpaperTransitionDuration(ms) {
+        wallpaperTransitionDuration = ms;
         saveSettings();
     }
 

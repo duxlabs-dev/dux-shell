@@ -105,7 +105,7 @@ QtObject {
         critical = isCritical;
         important = !isCritical && wrapper.urgency === NotificationUrgency.Normal && fallbackIcon.startsWith("material:battery");
         const actions = wrapper.actions || [];
-        actionLabel = actions.length > 0 ? (actions[0].text || I18n.tr("Open", "island notification face: default action button")) : "";
+        actionLabel = actions.length > 0 ? ((actions[0].text || "").trim() || I18n.tr("Open", "island notification face: default action button")) : "";
         controller.notificationTimeout = wrapperTimeout(wrapper);
         const accepted = controller.requestNotification(isCritical);
         applyWrapperTimeoutHold();

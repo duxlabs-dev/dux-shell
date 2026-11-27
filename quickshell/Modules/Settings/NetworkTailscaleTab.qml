@@ -445,7 +445,9 @@ Item {
                 }
 
                 Repeater {
-                    model: TailscaleService.allPeersList
+                    model: ScriptModel {
+                        values: TailscaleService.allPeersList
+                    }
 
                     PeerRow {
                         required property var modelData

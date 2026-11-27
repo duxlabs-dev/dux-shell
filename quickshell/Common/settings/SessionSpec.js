@@ -1,13 +1,15 @@
 .pragma library
 .import "../../DCommon/Common/settings/SharedSessionSpec.js" as Shared
 .import "../../DCommon/Common/settings/SpecUtil.js" as Util
+.import "../WallpaperTransitions.js" as Transitions
 
 function coerceWallpaperFolders(value) {
     if (!Array.isArray(value))
         return [];
     return value.filter(e => e !== null && typeof e === "object" && typeof e.path === "string" && e.path.startsWith("/")).map(e => Object.assign({}, e, {
         recursive: e.recursive === true,
-        hidden: e.hidden === true
+        hidden: e.hidden === true,
+        appearance: e.appearance === "light" || e.appearance === "dark" ? e.appearance : ""
     }));
 }
 
@@ -64,8 +66,11 @@ var LOCAL_SPEC = {
     wallpaperTransition: {
         def: "fade"
     },
+    wallpaperTransitionDuration: {
+        def: 1000
+    },
     includedTransitions: {
-        def: ["fade", "wipe", "disc", "stripes", "iris bloom", "pixelate", "portal"]
+        def: Transitions.NAMES.filter(t => t !== "none")
     },
     wallpaperCyclingEnabled: {
         def: false

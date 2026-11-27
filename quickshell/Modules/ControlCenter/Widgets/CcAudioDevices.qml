@@ -12,10 +12,9 @@ CcTileActions {
     readonly property var devices: {
         const hidden = (isInput ? SessionData.hiddenInputDeviceNames : SessionData.hiddenOutputDeviceNames) || [];
         return AudioService.allNodes.filter(node => node.audio && node.isSink !== isInput && !node.isStream && !hidden.includes(node.name)).sort((a, b) => {
-            const aPin = pins.indexOf(a.name);
-            const bPin = pins.indexOf(b.name);
-            if (aPin !== bPin)
-                return (aPin < 0 ? Infinity : aPin) - (bPin < 0 ? Infinity : bPin);
+            const pinOrder = QmlUtils.comparePinOrder(pins, a.name, b.name);
+            if (pinOrder !== 0)
+                return pinOrder;
             return Number(b === selectedNode) - Number(a === selectedNode);
         });
     }

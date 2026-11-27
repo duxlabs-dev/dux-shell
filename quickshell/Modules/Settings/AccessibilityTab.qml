@@ -15,9 +15,10 @@ Item {
                     tab: "accessibility"
                     tags: ["animation", "spring", "physics", "accessibility", "reduce", "motion"]
                     settingKey: "reduceMotion"
-                    visible: !Theme.motionOff
+                    enabled: !Theme.motionOff
                     text: I18n.tr("Reduce motion")
-                    checked: SettingsData.reduceMotion
+                    description: Theme.motionOff ? I18n.tr("Enabled automatically while Motion duration is Off", "reduce motion setting description when motion duration is off") : ""
+                    checked: Theme.reduceMotion
                     onToggled: checked => SettingsData.set("reduceMotion", checked)
                 }
 

@@ -61,12 +61,18 @@ PanelWindow {
     readonly property int dBarLayer: LayerShell.fromEnv(isIsland ? "DMS_DANKISLAND_LAYER" : "DMS_DANKBAR_LAYER", barWindow.usesOverlayLayer || (!isIsland && islandChrome.sheetOut) ? WlrLayer.Overlay : WlrLayer.Top)
 
     screen: modelData
+    // Hyprland stacks a top layer that maps over a covering fullscreen window above it.
+    property bool fullscreenMapReleased: false
+    readonly property bool mapHeldByFullscreen: !fullscreenMapReleased && dBarLayer === WlrLayer.Top && CompositorService.fullscreenCoversTopLayer(screen)
+    onMapHeldByFullscreenChanged: if (!mapHeldByFullscreen)
+        fullscreenMapReleased = true
+    visible: !mapHeldByFullscreen
     readonly property var layoutInstance: body.layoutInstance
     readonly property bool manualPlacement: layoutInstance?.manualPlacement ?? false
-    margins.top: manualPlacement ? layoutInstance?.margins.top ?? 0 : 0
-    margins.bottom: manualPlacement ? layoutInstance?.margins.bottom ?? 0 : 0
-    margins.left: manualPlacement ? layoutInstance?.margins.left ?? 0 : 0
-    margins.right: manualPlacement ? layoutInstance?.margins.right ?? 0 : 0
+    margins.top: (manualPlacement ? layoutInstance?.margins.top ?? 0 : 0) + SurfaceRecovery.marginNudge(anchors.top)
+    margins.bottom: (manualPlacement ? layoutInstance?.margins.bottom ?? 0 : 0) + SurfaceRecovery.marginNudge(anchors.bottom)
+    margins.left: (manualPlacement ? layoutInstance?.margins.left ?? 0 : 0) + SurfaceRecovery.marginNudge(anchors.left)
+    margins.right: (manualPlacement ? layoutInstance?.margins.right ?? 0 : 0) + SurfaceRecovery.marginNudge(anchors.right)
 
     EdgeExclusion {
         screen: barWindow.screen
@@ -99,6 +105,7 @@ PanelWindow {
     BackgroundEffect.blurRegion: BlurService.enabled ? body.blurRegion : null
 
     Component.onCompleted: {
+        fullscreenMapReleased = !mapHeldByFullscreen;
         KeyboardFocus.registerBarWindow(barWindow);
         SurfaceRecovery.track(barWindow);
     }
@@ -125,16 +132,12 @@ PanelWindow {
         }
 
         Region {
-            readonly property var r: barWindow.sectionMasked ? body.centerSectionRect : {
-                "x": 0,
-                "y": 0,
-                "w": 0,
-                "h": 0
-            }
-            x: r.x
-            y: r.y
-            width: r.w
-            height: r.h
+            // The body nulls the rect on its own gate, which can change a step before or after sectionMasked.
+            readonly property var r: barWindow.sectionMasked ? body.centerSectionRect : null
+            x: r?.x ?? 0
+            y: r?.y ?? 0
+            width: r?.w ?? 0
+            height: r?.h ?? 0
         }
 
         Region {

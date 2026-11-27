@@ -173,15 +173,9 @@ Item {
             const pinnedList = root.pinnedDevices;
             const devices = [...root.adapter.devices.values.filter(dev => dev && (dev.paired || dev.trusted))];
             devices.sort((a, b) => {
-                const aPinnedIndex = pinnedList.indexOf(a.address);
-                const bPinnedIndex = pinnedList.indexOf(b.address);
-                if (aPinnedIndex !== -1 || bPinnedIndex !== -1) {
-                    if (aPinnedIndex === -1)
-                        return 1;
-                    if (bPinnedIndex === -1)
-                        return -1;
-                    return aPinnedIndex - bPinnedIndex;
-                }
+                const pinOrder = QmlUtils.comparePinOrder(pinnedList, a.address, b.address);
+                if (pinOrder !== 0)
+                    return pinOrder;
                 if (a.connected !== b.connected)
                     return a.connected ? -1 : 1;
                 return (b.signalStrength || 0) - (a.signalStrength || 0);

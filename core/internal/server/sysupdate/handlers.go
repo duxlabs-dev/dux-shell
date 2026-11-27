@@ -16,6 +16,10 @@ func HandleRequest(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request, m
 	case "sysupdate.refresh":
 		force := params.BoolOpt(req.Params, "force", false)
 		background := params.BoolOpt(req.Params, "background", false)
+		// Requests run concurrently, so a refresh carries the exclusions it must honor.
+		if _, ok := params.Any(req.Params, "excluded"); ok {
+			m.SetExcluded(stringSliceOpt(req.Params, "excluded"))
+		}
 		m.Refresh(RefreshOptions{Force: force, Background: background})
 		conn.Respond(req.ID, m.GetState())
 	case "sysupdate.upgrade":
@@ -34,6 +38,9 @@ func HandleRequest(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request, m
 		conn.Respond(req.ID, m.Releases(force))
 	case "sysupdate.repoStatus":
 		conn.Respond(req.ID, hostRepoStatus())
+	case "sysupdate.setExcluded":
+		m.SetExcluded(stringSliceOpt(req.Params, "excluded"))
+		conn.Respond(req.ID, m.GetState())
 	case "sysupdate.setInterval":
 		seconds, err := params.Int(req.Params, "seconds")
 		if err != nil {
@@ -49,14 +56,15 @@ func HandleRequest(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request, m
 
 func handleUpgrade(conn *ipc.ConnWriter, req ipc.Request, m *Manager) {
 	opts := UpgradeOptions{
-		IncludeFlatpak: params.BoolOpt(req.Params, "includeFlatpak", true),
-		IncludeAUR:     params.BoolOpt(req.Params, "includeAUR", true),
-		DryRun:         params.BoolOpt(req.Params, "dry", false),
-		Interactive:    params.BoolOpt(req.Params, "interactive", false),
-		CustomCommand:  params.StringOpt(req.Params, "customCommand", ""),
-		Terminal:       params.StringOpt(req.Params, "terminal", ""),
-		TerminalArgs:   stringSliceOpt(req.Params, "terminalArgs"),
-		Ignored:        stringSliceOpt(req.Params, "ignored"),
+		IncludeFlatpak:  params.BoolOpt(req.Params, "includeFlatpak", true),
+		IncludeHomebrew: params.BoolOpt(req.Params, "includeHomebrew", true),
+		IncludeAUR:      params.BoolOpt(req.Params, "includeAUR", true),
+		DryRun:          params.BoolOpt(req.Params, "dry", false),
+		Interactive:     params.BoolOpt(req.Params, "interactive", false),
+		CustomCommand:   params.StringOpt(req.Params, "customCommand", ""),
+		Terminal:        params.StringOpt(req.Params, "terminal", ""),
+		TerminalArgs:    stringSliceOpt(req.Params, "terminalArgs"),
+		Ignored:         stringSliceOpt(req.Params, "ignored"),
 	}
 	if err := m.Upgrade(opts); err != nil {
 		conn.RespondError(req.ID, err.Error())

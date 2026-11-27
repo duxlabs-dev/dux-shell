@@ -808,10 +808,19 @@ Singleton {
         sendRequest("sysupdate.getState", null, callback);
     }
 
-    function sysupdateRefresh(force, callback, background) {
-        sendRequest("sysupdate.refresh", {
+    function sysupdateRefresh(force, callback, background, excluded) {
+        const params = {
             "force": force === true,
             "background": background === true
+        };
+        if (Array.isArray(excluded))
+            params.excluded = excluded;
+        sendRequest("sysupdate.refresh", params, callback);
+    }
+
+    function sysupdateSetExcluded(excluded, callback) {
+        sendRequest("sysupdate.setExcluded", {
+            "excluded": excluded
         }, callback);
     }
 

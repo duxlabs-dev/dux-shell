@@ -9,6 +9,7 @@ import qs.Services
 import qs.Modules.Lock
 import "../Common/WorkspaceModel.js" as WorkspaceModel
 import "../Common/WallpaperFormats.js" as WallpaperFormats
+import "../Common/WallpaperTransitions.js" as WallpaperTransitions
 
 Variants {
     id: variants
@@ -189,24 +190,18 @@ Variants {
                 }
             }
 
-            onTransitionTypeChanged: {
-                if (transitionType !== "random") {
-                    actualTransitionType = transitionType;
-                    return;
-                }
-                actualTransitionType = SessionData.includedTransitions.length === 0 ? "none" : SessionData.includedTransitions[Math.floor(Math.random() * SessionData.includedTransitions.length)];
-            }
+            onTransitionTypeChanged: actualTransitionType = WallpaperTransitions.pick(transitionType, SessionData.includedTransitions)
 
             property real transitionProgress: 0
             property real shaderFillMode: Theme.getFillMode(SessionData.getMonitorWallpaperFillMode(modelData.name))
             property vector4d fillColor: Qt.vector4d(0, 0, 0, 1)
             property real edgeSmoothness: 0.1
 
-            property real wipeDirection: 0
-            property real discCenterX: 0.5
-            property real discCenterY: 0.5
-            property real stripesCount: 16
-            property real stripesAngle: 0
+            property var transitionParams: ({})
+
+            // A profile switch holds its reveal until the new image is decoded.
+            readonly property bool holdsProfileSwitch: ConfigProfileService.switching && (changePending || framePending)
+            onHoldsProfileSwitchChanged: ConfigProfileService.holdSwitch(modelData.name, holdsProfileSwitch)
 
             readonly property bool transitioning: transitionAnimation.running
             property bool effectActive: false
@@ -631,6 +626,7 @@ Variants {
 
             Component.onDestruction: {
                 SessionData.clearMonitorScrollPosition(modelData.name);
+                ConfigProfileService.holdSwitch(modelData.name, false);
             }
 
             onScrollingEnabledChanged: {
@@ -734,6 +730,10 @@ Variants {
                     return;
                 }
                 root.screenScale = CompositorService.getScreenScale(modelData);
+                if (ConfigProfileService.switching) {
+                    setWallpaperImmediate(newPath);
+                    return;
+                }
                 if (root.transitioning || root.effectActive) {
                     root.pendingWallpaper = newPath;
                     return;
@@ -756,30 +756,15 @@ Variants {
                     return;
                 }
 
-                if (root.transitionType === "random") {
-                    root.actualTransitionType = SessionData.includedTransitions.length === 0 ? "none" : SessionData.includedTransitions[Math.floor(Math.random() * SessionData.includedTransitions.length)];
-                }
+                if (root.transitionType === "random")
+                    root.actualTransitionType = WallpaperTransitions.pick(root.transitionType, SessionData.includedTransitions);
 
                 if (root.actualTransitionType === "none") {
                     setWallpaperImmediate(newPath);
                     return;
                 }
 
-                switch (root.actualTransitionType) {
-                case "wipe":
-                    root.wipeDirection = Math.random() * 4;
-                    break;
-                case "disc":
-                case "pixelate":
-                case "portal":
-                    root.discCenterX = Math.random();
-                    root.discCenterY = Math.random();
-                    break;
-                case "stripes":
-                    root.stripesCount = Math.round(Math.random() * 20 + 4);
-                    root.stripesAngle = Math.random() * 360;
-                    break;
-                }
+                root.transitionParams = WallpaperTransitions.params(root.actualTransitionType);
 
                 nextWallpaper.source = newPath;
 
@@ -1042,186 +1027,20 @@ Variants {
             Loader {
                 id: effectLoader
                 anchors.fill: parent
-                active: root.effectActive
+                active: root.effectActive && root.actualTransitionType !== "none"
 
-                function getTransitionComponent(type) {
-                    switch (type) {
-                    case "fade":
-                        return fadeComp;
-                    case "wipe":
-                        return wipeComp;
-                    case "disc":
-                        return discComp;
-                    case "stripes":
-                        return stripesComp;
-                    case "iris bloom":
-                        return irisComp;
-                    case "pixelate":
-                        return pixelateComp;
-                    case "portal":
-                        return portalComp;
-                    default:
-                        return null;
-                    }
-                }
-
-                sourceComponent: getTransitionComponent(root.actualTransitionType)
-            }
-
-            Component {
-                id: fadeComp
-                ShaderEffect {
+                sourceComponent: WallpaperTransitionEffect {
                     anchors.fill: parent
-                    property variant source1: srcCurrent
-                    property variant source2: root.useNextForEffect ? srcNext : srcDummy
-                    property real progress: root.transitionProgress
-                    property real fillMode: root.shaderFillMode
-                    property vector4d fillColor: root.fillColor
-                    property real imageWidth1: modelData.width
-                    property real imageHeight1: modelData.height
-                    property real imageWidth2: modelData.width
-                    property real imageHeight2: modelData.height
-                    property real screenWidth: modelData.width
-                    property real screenHeight: modelData.height
-                    property real scrollX: 50
-                    property real scrollY: 50
-                    fragmentShader: Qt.resolvedUrl("../Shaders/qsb/wp_fade.frag.qsb")
-                }
-            }
-
-            Component {
-                id: wipeComp
-                ShaderEffect {
-                    anchors.fill: parent
-                    property variant source1: srcCurrent
-                    property variant source2: root.useNextForEffect ? srcNext : srcDummy
-                    property real progress: root.transitionProgress
-                    property real smoothness: root.edgeSmoothness
-                    property real direction: root.wipeDirection
-                    property real fillMode: root.shaderFillMode
-                    property vector4d fillColor: root.fillColor
-                    property real imageWidth1: modelData.width
-                    property real imageHeight1: modelData.height
-                    property real imageWidth2: modelData.width
-                    property real imageHeight2: modelData.height
-                    property real screenWidth: modelData.width
-                    property real screenHeight: modelData.height
-                    fragmentShader: Qt.resolvedUrl("../Shaders/qsb/wp_wipe.frag.qsb")
-                }
-            }
-
-            Component {
-                id: discComp
-                ShaderEffect {
-                    anchors.fill: parent
-                    property variant source1: srcCurrent
-                    property variant source2: root.useNextForEffect ? srcNext : srcDummy
-                    property real progress: root.transitionProgress
-                    property real smoothness: root.edgeSmoothness
-                    property real aspectRatio: root.width / root.height
-                    property real centerX: root.discCenterX
-                    property real centerY: root.discCenterY
-                    property real fillMode: root.shaderFillMode
-                    property vector4d fillColor: root.fillColor
-                    property real imageWidth1: modelData.width
-                    property real imageHeight1: modelData.height
-                    property real imageWidth2: modelData.width
-                    property real imageHeight2: modelData.height
-                    property real screenWidth: modelData.width
-                    property real screenHeight: modelData.height
-                    fragmentShader: Qt.resolvedUrl("../Shaders/qsb/wp_disc.frag.qsb")
-                }
-            }
-
-            Component {
-                id: stripesComp
-                ShaderEffect {
-                    anchors.fill: parent
-                    property variant source1: srcCurrent
-                    property variant source2: root.useNextForEffect ? srcNext : srcDummy
-                    property real progress: root.transitionProgress
-                    property real smoothness: root.edgeSmoothness
-                    property real aspectRatio: root.width / root.height
-                    property real stripeCount: root.stripesCount
-                    property real angle: root.stripesAngle
-                    property real fillMode: root.shaderFillMode
-                    property vector4d fillColor: root.fillColor
-                    property real imageWidth1: modelData.width
-                    property real imageHeight1: modelData.height
-                    property real imageWidth2: modelData.width
-                    property real imageHeight2: modelData.height
-                    property real screenWidth: modelData.width
-                    property real screenHeight: modelData.height
-                    fragmentShader: Qt.resolvedUrl("../Shaders/qsb/wp_stripes.frag.qsb")
-                }
-            }
-
-            Component {
-                id: irisComp
-                ShaderEffect {
-                    anchors.fill: parent
-                    property variant source1: srcCurrent
-                    property variant source2: root.useNextForEffect ? srcNext : srcDummy
-                    property real progress: root.transitionProgress
-                    property real smoothness: root.edgeSmoothness
-                    property real centerX: 0.5
-                    property real centerY: 0.5
-                    property real aspectRatio: root.width / root.height
-                    property real fillMode: root.shaderFillMode
-                    property vector4d fillColor: root.fillColor
-                    property real imageWidth1: modelData.width
-                    property real imageHeight1: modelData.height
-                    property real imageWidth2: modelData.width
-                    property real imageHeight2: modelData.height
-                    property real screenWidth: modelData.width
-                    property real screenHeight: modelData.height
-                    fragmentShader: Qt.resolvedUrl("../Shaders/qsb/wp_iris_bloom.frag.qsb")
-                }
-            }
-
-            Component {
-                id: pixelateComp
-                ShaderEffect {
-                    anchors.fill: parent
-                    property variant source1: srcCurrent
-                    property variant source2: root.useNextForEffect ? srcNext : srcDummy
-                    property real progress: root.transitionProgress
-                    property real smoothness: root.edgeSmoothness
-                    property real fillMode: root.shaderFillMode
-                    property vector4d fillColor: root.fillColor
-                    property real imageWidth1: modelData.width
-                    property real imageHeight1: modelData.height
-                    property real imageWidth2: modelData.width
-                    property real imageHeight2: modelData.height
-                    property real screenWidth: modelData.width
-                    property real screenHeight: modelData.height
-                    property real centerX: root.discCenterX
-                    property real centerY: root.discCenterY
-                    property real aspectRatio: root.width / root.height
-                    fragmentShader: Qt.resolvedUrl("../Shaders/qsb/wp_pixelate.frag.qsb")
-                }
-            }
-
-            Component {
-                id: portalComp
-                ShaderEffect {
-                    anchors.fill: parent
-                    property variant source1: srcCurrent
-                    property variant source2: root.useNextForEffect ? srcNext : srcDummy
-                    property real progress: root.transitionProgress
-                    property real smoothness: root.edgeSmoothness
-                    property real aspectRatio: root.width / root.height
-                    property real centerX: root.discCenterX
-                    property real centerY: root.discCenterY
-                    property real fillMode: root.shaderFillMode
-                    property vector4d fillColor: root.fillColor
-                    property real imageWidth1: modelData.width
-                    property real imageHeight1: modelData.height
-                    property real imageWidth2: modelData.width
-                    property real imageHeight2: modelData.height
-                    property real screenWidth: modelData.width
-                    property real screenHeight: modelData.height
-                    fragmentShader: Qt.resolvedUrl("../Shaders/qsb/wp_portal.frag.qsb")
+                    type: root.actualTransitionType
+                    params: root.transitionParams
+                    source1: srcCurrent
+                    source2: root.useNextForEffect ? srcNext : srcDummy
+                    progress: root.transitionProgress
+                    smoothness: root.edgeSmoothness
+                    fillMode: root.shaderFillMode
+                    fillColor: root.fillColor
+                    screenWidth: modelData.width
+                    screenHeight: modelData.height
                 }
             }
 
@@ -1231,7 +1050,7 @@ Variants {
                 property: "transitionProgress"
                 from: 0.0
                 to: 1.0
-                duration: root.actualTransitionType === "none" ? 0 : 1000
+                duration: root.actualTransitionType === "none" ? 0 : SessionData.wallpaperTransitionDuration
                 easing.type: Easing.InOutCubic
                 onFinished: {
                     if (!nextWallpaper.source || nextWallpaper.status !== Image.Ready) {

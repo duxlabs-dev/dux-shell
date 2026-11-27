@@ -12,10 +12,11 @@ const (
 type RepoKind string
 
 const (
-	RepoSystem  RepoKind = "system"
-	RepoAUR     RepoKind = "aur"
-	RepoFlatpak RepoKind = "flatpak"
-	RepoOSTree  RepoKind = "ostree"
+	RepoSystem   RepoKind = "system"
+	RepoAUR      RepoKind = "aur"
+	RepoFlatpak  RepoKind = "flatpak"
+	RepoOSTree   RepoKind = "ostree"
+	RepoHomebrew RepoKind = "homebrew"
 )
 
 type ErrorCode string
@@ -140,17 +141,18 @@ type ReleasesFeed struct {
 }
 
 type UpgradeOptions struct {
-	IncludeFlatpak bool
-	IncludeAUR     bool
-	DryRun         bool
-	UseSudo        bool
-	AttachStdio    bool
-	Interactive    bool
-	CustomCommand  string
-	Terminal       string
-	TerminalArgs   []string
-	Targets        []Package
-	Ignored        []string
+	IncludeFlatpak  bool
+	IncludeHomebrew bool
+	IncludeAUR      bool
+	DryRun          bool
+	UseSudo         bool
+	AttachStdio     bool
+	Interactive     bool
+	CustomCommand   string
+	Terminal        string
+	TerminalArgs    []string
+	Targets         []Package
+	Ignored         []string
 }
 
 type RefreshOptions struct {

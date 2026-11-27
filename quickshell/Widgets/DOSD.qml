@@ -19,7 +19,7 @@ Item {
     property bool enableMouseInteraction: false
     property real osdWidth: Theme.osdHeight
     property real osdHeight: Theme.osdHeight
-    property color surfaceColor: Theme.hostSurface
+    property color surfaceColor: Theme.standaloneSurface
     property real surfaceRadius: Theme.fullRadius(alignedWidth, alignedHeight)
     property int animationDuration: Theme.expressiveDurations.expressiveEffects
     property Component sheet: null

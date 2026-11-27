@@ -886,6 +886,12 @@ var LOCAL_SPEC = {
     configProfilePickerView: {
         def: "carousel"
     },
+    configProfileSwitchTransition: {
+        def: "wallpaper"
+    },
+    configProfileSwitchDuration: {
+        def: 1000
+    },
     appPickerViewMode: {
         def: "grid"
     },
@@ -1542,6 +1548,9 @@ var LOCAL_SPEC = {
     lockScreenInactiveColor: {
         def: "#000000"
     },
+    lockScreenBlurInactiveBackground: {
+        def: false
+    },
     lockScreenVideoEnabled: {
         def: false
     },
@@ -1724,6 +1733,9 @@ var LOCAL_SPEC = {
         def: 86400
     },
     updaterIncludeFlatpak: {
+        def: true
+    },
+    updaterIncludeHomebrew: {
         def: true
     },
     updaterAllowAUR: {

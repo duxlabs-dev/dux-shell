@@ -107,6 +107,7 @@ Item {
     readonly property bool isClosing: impl.item ? (impl.item.isClosing ?? false) : false
     readonly property real dpr: impl.item ? impl.item.dpr : 1
     readonly property bool usesConnectedSurfaceChrome: impl.item?.usesConnectedSurfaceChrome ?? false
+    readonly property bool frameOwnsConnectedChrome: impl.item?.frameOwnsConnectedChrome ?? false
     // Whether the surface sits on blur while open, steady through open and close.
     readonly property bool surfaceBlurred: Theme.blurLayersActive && surfaceColor.a < 1 && (!usesConnectedSurfaceChrome || Theme.connectedSurfaceBlurEnabled)
     readonly property color surfaceColor: usesConnectedSurfaceChrome ? Theme.connectedSurfaceColor : Theme.readableSurface

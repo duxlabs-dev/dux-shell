@@ -1025,6 +1025,7 @@ printf 'uwsm=%s\nelogind=%s\nloginctl=%s\nsystemctl=%s\nusermgr=%s\nhibernate=%s
             return;
         }
         lastResumeSignalTimestamp = now;
+        log.info("Session resumed");
         sessionResumed();
     }
 

@@ -29,6 +29,13 @@ Singleton {
     property var _creating: ({})
     property var _deleting: ({})
     property bool _applying: false
+    // True from a request until the overlay has revealed the result (or a limit timer ended it).
+    property bool switching: false
+    readonly property bool switchHeld: Object.keys(_held).length > 0
+    property var _held: ({})
+    property var _pending: null
+    property var _queued: null
+    property string _activated: ""
     // Starts true so the first sync also compares settings changed while the shell was down.
     property bool _settingsDirty: true
     property bool _wantsDefault: false
@@ -185,6 +192,18 @@ Singleton {
         id: syncTimer
         interval: Timing.settleSlow
         onTriggered: root._sync()
+    }
+
+    Timer {
+        id: applyLimit
+        interval: Timing.settleSlow
+        onTriggered: root.applySwitch()
+    }
+
+    Timer {
+        id: endLimit
+        interval: Timing.holdLong
+        onTriggered: root.endSwitch()
     }
 
     Timer {
@@ -669,22 +688,78 @@ Singleton {
         captureTimer.restart();
     }
 
+    function _newest() {
+        return _queued ?? _pending;
+    }
+
     function activate(id) {
         const target = find(id);
-        if (!ready || _applying || !target || id === activeProfileId)
+        const newest = _newest();
+        if (!ready || _applying || !target)
             return false;
-        _applying = true;
-        try {
-            syncTimer.stop();
-            _syncProfile(activeProfile);
-            if (!_apply(target))
+        if (newest ? newest.id === id && !newest.groups : id === activeProfileId)
+            return !!newest;
+        return _request(target, null);
+    }
+
+    // Runs the apply now when no overlay can freeze the screen, else hands it to the switch.
+    function _request(target, groups) {
+        const req = {
+            "id": target.id,
+            "groups": groups
+        };
+        if (switching) {
+            if (groups && _queued && !_queued.groups) {
+                ToastService.showError(I18n.tr("Failed to apply profile"));
                 return false;
-            SessionData.set("activeConfigProfile", id);
+            }
+            _queued = req;
+            return true;
+        }
+        if (_switchTransitionOf(target, groups) === "none" || IdleService.isShellLocked || Quickshell.screens.length === 0)
+            return _run(target, groups);
+        _pending = req;
+        switching = true;
+        applyLimit.start();
+        return true;
+    }
+
+    // The transition setting as it will be once the target is applied.
+    function _switchTransitionOf(target, groups) {
+        const scoped = Profiles.scoped(target, groups);
+        if (!scoped.settingsKeys.includes("configProfileSwitchTransition"))
+            return SettingsData.configProfileSwitchTransition === "wallpaper" ? SessionData.wallpaperTransition : SettingsData.configProfileSwitchTransition;
+        const setting = scoped.settings.configProfileSwitchTransition ?? "wallpaper";
+        return setting === "wallpaper" ? scoped.session.wallpaperTransition ?? "fade" : setting;
+    }
+
+    function _run(target, groups) {
+        _applying = true;
+        let ok = false;
+        try {
+            if (groups) {
+                ok = _apply(target, groups);
+            } else {
+                syncTimer.stop();
+                _syncProfile(activeProfile);
+                ok = _apply(target);
+                if (ok)
+                    SessionData.set("activeConfigProfile", target.id);
+            }
         } finally {
             _applying = false;
-            syncTimer.stop();
+            if (!groups)
+                syncTimer.stop();
         }
-        ToastService.showInfo(I18n.tr("Profile activated: %1").arg(target.name));
+        if (!ok)
+            return false;
+        if (groups) {
+            _scheduleSync();
+        } else {
+            _activated = target.name;
+            if (!switching)
+                _showActivated();
+        }
         return true;
     }
 
@@ -774,10 +849,66 @@ Singleton {
         return true;
     }
 
+    function _showActivated() {
+        if (_activated)
+            ToastService.showInfo(I18n.tr("Profile activated: %1").arg(_activated));
+        _activated = "";
+    }
+
+    function applySwitch() {
+        const req = _pending;
+        if (!req)
+            return;
+        _pending = null;
+        applyLimit.stop();
+        const target = find(req.id);
+        endLimit.interval = Timing.holdLong;
+        endLimit.start();
+        if (ready && !_applying && target)
+            _run(target, req.groups);
+    }
+
+    function endSwitch() {
+        try {
+            if (_pending)
+                applySwitch();
+        } finally {
+            applyLimit.stop();
+            endLimit.stop();
+            switching = false;
+            _held = {};
+        }
+        _showActivated();
+        const next = _queued;
+        _queued = null;
+        if (next)
+            Qt.callLater(() => next.groups ? applyGroups(next.id, next.groups) : activate(next.id));
+    }
+
+    // The reveal can start late and run long, so the end limit restarts from it.
+    function revealSwitch(duration) {
+        if (!switching)
+            return;
+        endLimit.interval = duration + Timing.settleSlow;
+        endLimit.restart();
+    }
+
+    function holdSwitch(key, held) {
+        if (!switching)
+            return;
+        const next = Object.assign({}, _held);
+        if (held)
+            next[key] = true;
+        else
+            delete next[key];
+        _held = next;
+    }
+
     function cycle(step) {
         if (profiles.length === 0 || (profiles.length < 2 && activeProfileId))
             return false;
-        const idx = profiles.findIndex(p => p.id === activeProfileId);
+        const cur = [_queued, _pending].find(r => r && !r.groups)?.id ?? activeProfileId;
+        const idx = profiles.findIndex(p => p.id === cur);
         const from = idx < 0 && step < 0 ? 0 : idx;
         return activate(profiles[(from + step + profiles.length) % profiles.length].id);
     }
@@ -824,7 +955,7 @@ Singleton {
 
     function _ipcCycle(step) {
         if (cycle(step))
-            return "SUCCESS: Switched to " + activeProfile.name;
+            return switching ? "SUCCESS: Switching to " + find(_newest()?.id)?.name : "SUCCESS: Switched to " + activeProfile.name;
         return profiles.length < 2 ? "ERROR: No other profile to switch to" : "ERROR: Failed to switch profile";
     }
 
@@ -842,16 +973,7 @@ Singleton {
         const target = find(id);
         if (!ready || _applying || !target || !Profiles.normalize(groups).some(g => target.groups.includes(g)))
             return false;
-        _applying = true;
-        let ok = false;
-        try {
-            ok = _apply(target, groups);
-        } finally {
-            _applying = false;
-        }
-        if (ok)
-            _scheduleSync();
-        return ok;
+        return _request(target, groups);
     }
 
     // Callers hold _applying.
@@ -975,9 +1097,9 @@ Singleton {
             const p = root._ipcResolve(ref);
             if (typeof p === "string")
                 return p;
-            if (p.id === root.activeProfileId)
+            if (p.id === root.activeProfileId && !root._newest())
                 return "SUCCESS: " + p.name + " is already active";
-            return root.activate(p.id) ? "SUCCESS: Switched to " + p.name : "ERROR: Failed to apply " + p.name;
+            return root.activate(p.id) ? "SUCCESS: " + (root.switching ? "Switching to " : "Switched to ") + p.name : "ERROR: Failed to apply " + p.name;
         }
 
         function next(): string {

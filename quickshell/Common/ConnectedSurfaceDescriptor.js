@@ -105,6 +105,8 @@ function normalize(input, defaults) {
         "opacity": opacity,
         "omitStartConnector": _bool(source.omitStartConnector, _bool(base.omitStartConnector, false)),
         "omitEndConnector": _bool(source.omitEndConnector, _bool(base.omitEndConnector, false)),
+        // Hangs below another surface instead of its bar edge.
+        "detached": _bool(source.detached, _bool(base.detached, false)),
         "dockRetractSide": String(source.dockRetractSide !== undefined ? source.dockRetractSide : (base.dockRetractSide || "")),
         // Chrome hung off the body; only the blur covers it.
         "overflowTop": Math.max(0, _number(source.overflowTop, _number(base.overflowTop, 0))),
@@ -160,6 +162,7 @@ function same(a, b, threshold) {
         && Math.abs(a.opacity - b.opacity) < 0.0001
         && a.omitStartConnector === b.omitStartConnector
         && a.omitEndConnector === b.omitEndConnector
+        && a.detached === b.detached
         && Math.abs(a.overflowTop - b.overflowTop) < epsilon
         && Math.abs(a.overflowBottom - b.overflowBottom) < epsilon
         && Math.abs(a.sideRect.x - b.sideRect.x) < epsilon

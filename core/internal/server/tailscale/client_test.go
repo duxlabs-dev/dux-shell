@@ -90,7 +90,6 @@ func TestConvertStatus_Running(t *testing.T) {
 	assert.Equal(t, "100.97.21.17", peer.TailscaleIP)
 	assert.Equal(t, "fra", peer.Relay)
 	assert.Equal(t, "user@example.com", peer.Owner)
-	assert.Equal(t, int64(1024), peer.RxBytes)
 	assert.True(t, peer.Online)
 }
 

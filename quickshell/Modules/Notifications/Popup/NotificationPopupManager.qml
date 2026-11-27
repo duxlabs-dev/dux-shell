@@ -16,10 +16,12 @@ DIdleSurface {
     property DPopout _activePopout: null
     readonly property rect popoutAvoidRect: {
         const p = _activePopout;
-        if (!p?.shouldBeVisible || !SettingsData.notificationPopupAvoidPopouts || notificationConnectedMode || !_stackAnchorsTop())
+        if (!p?.shouldBeVisible || !SettingsData.notificationPopupAvoidPopouts || !_stackAnchorsTop())
             return Qt.rect(0, 0, 0, 0);
-        return Qt.rect(p.alignedX, p.alignedY, p.alignedWidth, p.alignedHeight);
+        return Qt.rect(p.alignedX, p.alignedY, p.alignedWidth, p.alignedHeight + p.bottomOverflow);
     }
+    readonly property bool popoutFrameOwned: _activePopout?.frameOwnsConnectedChrome ?? false
+    readonly property real popoutAvoidOffset: _popoutAvoidance().offset
     readonly property bool overlayWanted: popupWindows.some(p => p?.wantsOverlay ?? false)
     readonly property list<var> blurRegions: popupWindows.map(p => p?.blurRegion ?? null).filter(r => r !== null)
     // A stack growing from the bottom would move the surface origin under visible cards, so it keeps the band.
@@ -100,6 +102,7 @@ DIdleSurface {
     property var pendingDestroys: []
     property int destroyDelayMs: 100
     property bool _chromeSyncPending: false
+    property bool _avoidLowered: false
     property bool _syncingVisibleNotifications: false
     property var _enterQueue: []
     property var _exitQueue: []
@@ -354,22 +357,56 @@ DIdleSurface {
     }
 
     function _stackTop() {
-        return topMargin + _popoutAvoidOffset();
+        return topMargin + popoutAvoidOffset;
     }
 
-    function _popoutAvoidOffset() {
+    function _popoutAvoidance() {
+        const none = {
+            offset: 0,
+            seam: false,
+            edge: 0
+        };
         const r = popoutAvoidRect;
         if (r.height <= 0)
-            return 0;
-        const p = popupWindows.find(_isValidWindow);
+            return none;
+        // A lone exiting card keeps its slot, so the stack does not jump while it leaves.
+        const layout = _layoutWindows();
+        const stack = layout.length > 0 ? layout : popupWindows.filter(_isValidWindow);
+        const p = stack[0];
         if (!p)
-            return 0;
+            return none;
         const x = p.getContentX();
-        const base = p.getTopMargin() - p.screenY;
-        if (r.x >= x + p.alignedWidth || r.x + r.width <= x || r.y >= base + p.layoutHeight)
-            return 0;
-        const offset = Math.max(0, Math.round(r.y + r.height + Theme.popupDistance - base));
-        return base + offset + p.layoutHeight > modelData.height ? 0 : offset;
+        const base = p._topEdgeBase();
+        const height = stack.reduce((sum, w) => sum + _popupHeight(w), 0) - popupSpacing;
+        if (r.x >= x + p.alignedWidth || r.x + r.width <= x || r.y >= base + height)
+            return none;
+        const seam = _seamsToPopout(r, x, p.alignedWidth);
+        // Connected chrome merges shapes closer than a fillet.
+        const gap = seam ? 0 : Theme.popupDistance + (notificationConnectedMode ? Theme.px(Theme.connectedCornerRadius, dpr) : 0);
+        const offset = Math.max(0, Math.round(r.y + r.height + gap - base));
+        if (base + offset + height > modelData.height - _frameEdgeInset("bottom"))
+            return none;
+        return {
+            offset: offset,
+            seam: seam,
+            edge: r.y + r.height
+        };
+    }
+
+    // Whether a connected stack joins the popout's bottom instead of keeping a gap.
+    function _seamsToPopout(r, x, width) {
+        if (!notificationConnectedMode || !popoutFrameOwned)
+            return false;
+        const margin = Theme.px(Theme.connectedCornerRadius, dpr) + Theme.connectedSurfaceRadius;
+        const clearsLeft = r.x + margin <= x;
+        const clearsRight = x + width + margin <= r.x + r.width;
+        if (notifBarSide === "top")
+            return clearsLeft && clearsRight;
+        if (!SettingsData.frameCloseGaps)
+            return false;
+        if (stackLeft)
+            return r.x <= x + 1 && clearsRight;
+        return clearsLeft && x + width <= r.x + r.width + 1;
     }
 
     function _syncActivePopout() {
@@ -470,16 +507,19 @@ DIdleSurface {
     function _frameEdgeInset(side) {
         if (!manager.modelData)
             return 0;
-        const raw = SettingsData.frameEdgeReservation(manager.modelData, side);
+        const raw = SettingsData.frameEdgeInsetForSide(manager.modelData, side);
         const dpr = CompositorService.getScreenScale(manager.modelData);
         return Math.max(0, Math.round(Theme.px(raw, dpr)));
     }
 
-    function _closeGapChromeAnchorEdge(anchorsTop) {
+    function _closeGapChromeAnchorEdge(anchorsTop, lowered, avoid) {
         if (!closeGapNotifications || !manager.modelData)
             return null;
-        if (anchorsTop)
+        if (anchorsTop) {
+            if (lowered)
+                return avoid.seam ? avoid.edge : null;
             return _frameEdgeInset("top") + topMargin;
+        }
         return manager.modelData.height - _frameEdgeInset("bottom") - topMargin;
     }
 
@@ -544,10 +584,18 @@ DIdleSurface {
                 maxYEnd = stackEdge.edge;
         }
         const anchorsTop = stackEdge !== null ? stackEdge.anchorsTop : _stackAnchorsTop();
-        const closeGapAnchorEdge = _closeGapChromeAnchorEdge(anchorsTop);
+        const avoid = _popoutAvoidance();
+        // Follows the live cards, not the target, so the chrome stays off the bar until the stack is back.
+        const liveLowered = anchorsTop && stackEdge !== null && stackEdge.edge > active[0]._topEdgeBase() + topMargin + 1;
+        if (popoutAvoidOffset > 0)
+            _avoidLowered = true;
+        else if (!liveLowered)
+            _avoidLowered = false;
+        const lowered = liveLowered && _avoidLowered;
+        const closeGapAnchorEdge = _closeGapChromeAnchorEdge(anchorsTop, lowered, avoid);
         if (closeGapAnchorEdge !== null) {
             if (anchorsTop)
-                minY = closeGapAnchorEdge;
+                minY = lowered ? Math.min(minY, closeGapAnchorEdge) : closeGapAnchorEdge;
             else
                 maxYEnd = closeGapAnchorEdge;
         }
@@ -579,13 +627,14 @@ DIdleSurface {
             bodyY: minY,
             bodyW: bodyRect.width,
             bodyH: bodyRect.height,
-            omitStartConnector: _notificationOmitStartConnector(),
-            omitEndConnector: _notificationOmitEndConnector()
+            omitStartConnector: _notificationOmitStartConnector(lowered, avoid),
+            omitEndConnector: _notificationOmitEndConnector(),
+            detached: notifBarSide === "top" && lowered
         }, ownerId);
     }
 
-    function _notificationOmitStartConnector() {
-        return closeGapNotifications && (SettingsData.notificationPopupPosition === SettingsData.Position.Top || SettingsData.notificationPopupPosition === SettingsData.Position.Left);
+    function _notificationOmitStartConnector(lowered, avoid) {
+        return closeGapNotifications && (SettingsData.notificationPopupPosition === SettingsData.Position.Top || SettingsData.notificationPopupPosition === SettingsData.Position.Left) && (!lowered || avoid.seam);
     }
 
     function _notificationOmitEndConnector() {
@@ -684,7 +733,8 @@ DIdleSurface {
     onNotifBarSideChanged: _scheduleNotificationChromeSync()
     onModelDataChanged: _scheduleNotificationChromeSync()
     onTopMarginChanged: _repositionAll()
-    onPopoutAvoidRectChanged: _repositionAll()
+    onPopoutAvoidOffsetChanged: _repositionAll()
+    onPopoutAvoidRectChanged: _scheduleNotificationChromeSync()
 
     onPopupWindowsChanged: {
         if (popupWindows.length > 0 && !sweeper.running) {

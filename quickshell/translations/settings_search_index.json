@@ -160,8 +160,7 @@
       "tint",
       "wallpaper"
     ],
-    "page": "personalization",
-    "icon": "schedule"
+    "page": "personalization"
   },
   {
     "section": "_hub_applications",
@@ -718,8 +717,7 @@
       "shadows",
       "style"
     ],
-    "page": "theme_surfaces",
-    "icon": "center_focus_strong"
+    "page": "theme_surfaces"
   },
   {
     "section": "fixedRadius",
@@ -868,8 +866,7 @@
       "typing",
       "wallpaper"
     ],
-    "page": "personalization",
-    "icon": "delete"
+    "page": "personalization"
   },
   {
     "section": "cursorHideAfterInactive",
@@ -1750,8 +1747,7 @@
       "tint",
       "wallpaper"
     ],
-    "page": "personalization",
-    "icon": "delete"
+    "page": "personalization"
   },
   {
     "section": "notificationIgnoreAppTimeout",
@@ -1959,8 +1955,7 @@
       "tint",
       "wallpaper"
     ],
-    "page": "personalization",
-    "icon": "delete"
+    "page": "personalization"
   },
   {
     "section": "iconThemeLibrary",
@@ -1993,8 +1988,7 @@
       "tint",
       "wallpaper"
     ],
-    "page": "personalization",
-    "icon": "delete"
+    "page": "personalization"
   },
   {
     "section": "iconFolderRecolor",
@@ -2057,8 +2051,7 @@
       "tint",
       "wallpaper"
     ],
-    "page": "personalization",
-    "icon": "restore"
+    "page": "personalization"
   },
   {
     "section": "matugenTargetMonitor",
@@ -2273,8 +2266,7 @@
       "notifs",
       "toast"
     ],
-    "page": "notifications",
-    "icon": "rule_settings"
+    "page": "notifications"
   },
   {
     "section": "floatingWindowTransparency",
@@ -2515,8 +2507,7 @@
       "plugins",
       "widgets"
     ],
-    "page": "plugins",
-    "icon": "warning"
+    "page": "plugins"
   },
   {
     "section": "pluginsIncompatible",
@@ -2531,8 +2522,7 @@
       "plugins",
       "widgets"
     ],
-    "page": "plugins",
-    "icon": "error"
+    "page": "plugins"
   },
   {
     "section": "notificationPopups",
@@ -2947,8 +2937,7 @@
       "tint",
       "wallpaper"
     ],
-    "page": "personalization",
-    "icon": "colorize"
+    "page": "personalization"
   },
   {
     "section": "iconThemePerMode",
@@ -3414,8 +3403,7 @@
       "tint",
       "wallpaper"
     ],
-    "page": "personalization",
-    "icon": "colorize"
+    "page": "personalization"
   },
   {
     "section": "focusRingWidth",
@@ -3711,6 +3699,33 @@
     "page": "personalization"
   },
   {
+    "section": "wallpaperTransitionDuration",
+    "label": "Transition duration",
+    "tabIndex": -1,
+    "category": "Appearance",
+    "keywords": [
+      "animation",
+      "appearance",
+      "background",
+      "bg",
+      "change",
+      "colors",
+      "colour",
+      "colours",
+      "desktop",
+      "duration",
+      "hue",
+      "image",
+      "palette",
+      "picture",
+      "speed",
+      "tint",
+      "transition",
+      "wallpaper"
+    ],
+    "page": "personalization"
+  },
+  {
     "section": "typography",
     "label": "Typography",
     "tabIndex": -1,
@@ -3803,8 +3818,7 @@
       "transition",
       "wallpaper"
     ],
-    "page": "personalization",
-    "icon": "restore"
+    "page": "personalization"
   },
   {
     "section": "wallpaperAdvanced",
@@ -4322,8 +4336,7 @@
       "units",
       "weather"
     ],
-    "parentLabel": "Date, time & region",
-    "icon": "partly_cloudy_day"
+    "parentLabel": "Date, time & region"
   },
   {
     "section": "_tab_2",
@@ -5049,7 +5062,6 @@
       "topbar"
     ],
     "parentLabel": "Bar",
-    "icon": "restart_alt",
     "description": "Comma-separated plugin or IPC source IDs that never show here",
     "conditionKey": "islandEnabled"
   },
@@ -8163,7 +8175,6 @@
       "wireless"
     ],
     "parentLabel": "Network",
-    "icon": "login",
     "conditionKey": "networkAvailable"
   },
   {
@@ -8622,7 +8633,6 @@
       "start menu",
       "uwsm"
     ],
-    "icon": "restart_alt",
     "description": "Added in front of every app launch command"
   },
   {
@@ -9527,12 +9537,45 @@
     "icon": "lock"
   },
   {
+    "section": "lockScreenBlurInactiveBackground",
+    "label": "Blur wallpaper on inactive monitors",
+    "tabIndex": 11,
+    "category": "Lock screen",
+    "keywords": [
+      "background",
+      "bg",
+      "blur",
+      "blurred",
+      "burn",
+      "desktop",
+      "disable",
+      "display",
+      "image",
+      "inactive",
+      "lock",
+      "lockscreen",
+      "login",
+      "monitors",
+      "oled",
+      "password",
+      "picture",
+      "protection",
+      "screen",
+      "security",
+      "show",
+      "solid",
+      "wallpaper"
+    ],
+    "parentLabel": "Security",
+    "description": "Show blurred wallpaper instead of a solid background. Disable for OLED burn-in protection."
+  },
+  {
     "section": "lockDisplay",
     "label": "Displays",
     "tabIndex": 11,
     "category": "Lock screen",
     "keywords": [
-      "color",
+      "blur",
       "display",
       "displays",
       "inactive",
@@ -9541,13 +9584,13 @@
       "login",
       "monitor",
       "monitors",
-      "oled",
       "output",
       "outputs",
       "password",
       "screen",
       "screens",
-      "security"
+      "security",
+      "wallpaper"
     ],
     "parentLabel": "Security",
     "icon": "monitor"
@@ -10415,8 +10458,7 @@
       "unison",
       "youtube music"
     ],
-    "parentLabel": "Sound & media",
-    "icon": "restart_alt"
+    "parentLabel": "Sound & media"
   },
   {
     "section": "_tab_16",
@@ -10792,8 +10834,7 @@
       "screen",
       "show",
       "wifi"
-    ],
-    "icon": "volume_up"
+    ]
   },
   {
     "section": "osdTouchpadEnabled",
@@ -11036,6 +11077,22 @@
     "parentLabel": "System & integrations"
   },
   {
+    "section": "systemUpdaterHomebrew",
+    "label": "Include Homebrew updates",
+    "tabIndex": 20,
+    "category": "Software updates",
+    "keywords": [
+      "brew",
+      "homebrew",
+      "include",
+      "integrations",
+      "software",
+      "system",
+      "updates"
+    ],
+    "parentLabel": "System & integrations"
+  },
+  {
     "section": "systemUpdaterNotifyMin",
     "label": "Notify at most",
     "tabIndex": 20,
@@ -11181,6 +11238,7 @@
     "keywords": [
       "aur",
       "flatpak",
+      "homebrew",
       "integrations",
       "packages",
       "software",
@@ -14314,7 +14372,6 @@
       "wallpaper"
     ],
     "parentLabel": "Security",
-    "icon": "wallpaper",
     "conditionKey": "greeterAvailable"
   },
   {
@@ -16886,8 +16943,7 @@
       "topbar",
       "wellbeing"
     ],
-    "parentLabel": "Bar",
-    "icon": "digital_wellbeing"
+    "parentLabel": "Bar"
   },
   {
     "section": "dashTabsEvenlySpaced",
@@ -16928,8 +16984,7 @@
       "taskbar",
       "topbar"
     ],
-    "parentLabel": "Bar",
-    "icon": "music_note"
+    "parentLabel": "Bar"
   },
   {
     "section": "dashTabPosition",
@@ -16983,8 +17038,7 @@
       "taskbar",
       "topbar"
     ],
-    "parentLabel": "Bar",
-    "icon": "refresh"
+    "parentLabel": "Bar"
   },
   {
     "section": "dashWeatherSettings",
@@ -17003,8 +17057,7 @@
       "topbar",
       "weather"
     ],
-    "parentLabel": "Bar",
-    "icon": "partly_cloudy_day"
+    "parentLabel": "Bar"
   },
   {
     "section": "mouseAccelProfile",
@@ -18466,8 +18519,7 @@
       "sunset",
       "wallpaper"
     ],
-    "parentLabel": "Appearance",
-    "icon": "schedule"
+    "parentLabel": "Appearance"
   },
   {
     "section": "themeModeShareGammaSettings",
@@ -18539,8 +18591,7 @@
       "slideshow",
       "time"
     ],
-    "parentLabel": "Appearance",
-    "icon": "skip_previous"
+    "parentLabel": "Appearance"
   },
   {
     "section": "wallpaperCyclingFolder",
@@ -18905,8 +18956,7 @@
       "transparent",
       "widget"
     ],
-    "parentLabel": "Bar",
-    "icon": "SettingsUiState.selectedWidgetIcon"
+    "parentLabel": "Bar"
   },
   {
     "section": "mutedApps",
@@ -19017,8 +19067,7 @@
       "time",
       "weather"
     ],
-    "parentLabel": "Date, time & region",
-    "icon": "space_dashboard"
+    "parentLabel": "Date, time & region"
   },
   {
     "section": "useFahrenheit",
@@ -19120,8 +19169,7 @@
       "time",
       "weather"
     ],
-    "parentLabel": "Date, time & region",
-    "icon": "restart_alt"
+    "parentLabel": "Date, time & region"
   },
   {
     "section": "windSpeedUnit",
@@ -19630,8 +19678,7 @@
       "user",
       "users"
     ],
-    "page": "user_accounts",
-    "icon": "edit"
+    "page": "user_accounts"
   },
   {
     "section": "_hub_user_accounts",
@@ -20163,7 +20210,6 @@
       "topbar"
     ],
     "parentLabel": "Bar",
-    "icon": "folder_open",
     "conditionKey": "dotEnabled"
   },
   {
@@ -20435,7 +20481,6 @@
       "topbar"
     ],
     "parentLabel": "Bar",
-    "icon": "restart_alt",
     "description": "Comma-separated plugin or IPC source IDs that never show here",
     "conditionKey": "dotEnabled"
   },
@@ -21315,8 +21360,7 @@
       "release",
       "system"
     ],
-    "parentLabel": "System & integrations",
-    "icon": "cloud_off"
+    "parentLabel": "System & integrations"
   },
   {
     "section": "_hub_wellbeing",
@@ -21770,6 +21814,44 @@
     "parentLabel": "Appearance"
   },
   {
+    "section": "configProfileSwitchTransition",
+    "label": "Transition",
+    "tabIndex": 75,
+    "category": "Profiles",
+    "keywords": [
+      "animation",
+      "appearance",
+      "effect",
+      "fade",
+      "preset",
+      "profiles",
+      "setup",
+      "snapshot",
+      "switch",
+      "transition"
+    ],
+    "parentLabel": "Appearance"
+  },
+  {
+    "section": "configProfileSwitchDuration",
+    "label": "Transition duration",
+    "tabIndex": 75,
+    "category": "Profiles",
+    "keywords": [
+      "animation",
+      "appearance",
+      "duration",
+      "preset",
+      "profiles",
+      "setup",
+      "snapshot",
+      "speed",
+      "switch",
+      "transition"
+    ],
+    "parentLabel": "Appearance"
+  },
+  {
     "section": "_tab_78",
     "label": "Global shortcuts",
     "tabIndex": 78,
@@ -21947,8 +22029,7 @@
       "snip",
       "system"
     ],
-    "parentLabel": "System & integrations",
-    "icon": "folder_open"
+    "parentLabel": "System & integrations"
   },
   {
     "section": "screenshotFormat",

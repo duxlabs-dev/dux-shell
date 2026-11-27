@@ -66,7 +66,7 @@ FocusScope {
         return model?.getWidgetForId(parsed.base)?.text ?? "";
     }
 
-    height: heightMotion.value
+    height: Math.round(heightMotion.value)
     visible: shownSection !== ""
     clip: true
     Accessible.role: Accessible.Grouping

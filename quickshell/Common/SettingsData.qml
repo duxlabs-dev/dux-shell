@@ -495,6 +495,8 @@ Singleton {
 
     property string browserPickerViewMode: Spec.SPEC.browserPickerViewMode.def
     property string configProfilePickerView: Spec.SPEC.configProfilePickerView.def
+    property string configProfileSwitchTransition: Spec.SPEC.configProfileSwitchTransition.def
+    property int configProfileSwitchDuration: Spec.SPEC.configProfileSwitchDuration.def
     property string appPickerViewMode: Spec.SPEC.appPickerViewMode.def
     property bool sortAppsAlphabetically: Spec.SPEC.sortAppsAlphabetically.def
     property int appLauncherGridColumns: Spec.SPEC.appLauncherGridColumns.def
@@ -943,6 +945,7 @@ Singleton {
     property bool lockScreenSecurityKeyShortcutEnabled: Spec.SPEC.lockScreenSecurityKeyShortcutEnabled.def
     property bool greeterPamExternallyManaged: Spec.SPEC.greeterPamExternallyManaged.def
     property string lockScreenInactiveColor: Spec.SPEC.lockScreenInactiveColor.def
+    property bool lockScreenBlurInactiveBackground: Spec.SPEC.lockScreenBlurInactiveBackground.def
     property bool lockScreenVideoEnabled: Spec.SPEC.lockScreenVideoEnabled.def
     property string lockScreenVideoPath: Spec.SPEC.lockScreenVideoPath.def
     property bool lockScreenVideoCycling: Spec.SPEC.lockScreenVideoCycling.def
@@ -1305,6 +1308,7 @@ Singleton {
     property bool updaterPauseOnBattery: Spec.SPEC.updaterPauseOnBattery.def
     property int updaterNotifyMinSeconds: Spec.SPEC.updaterNotifyMinSeconds.def
     property bool updaterIncludeFlatpak: Spec.SPEC.updaterIncludeFlatpak.def
+    property bool updaterIncludeHomebrew: Spec.SPEC.updaterIncludeHomebrew.def
     property bool updaterAllowAUR: Spec.SPEC.updaterAllowAUR.def
     property bool updaterReopenAfterUpgrade: Spec.SPEC.updaterReopenAfterUpgrade.def
     property bool updaterUpgradeInWindow: Spec.SPEC.updaterUpgradeInWindow.def
