@@ -121,12 +121,12 @@ hl.bind("SUPER + SHIFT + CTRL + L", hl.dsp.window.move({ monitor = "r" }))
 -- === Workspace Navigation ===
 hl.bind("SUPER + Page_Down", hl.dsp.focus({ workspace = "e+1" }))
 hl.bind("SUPER + Page_Up", hl.dsp.focus({ workspace = "e-1" }))
-hl.bind("SUPER + U", hl.dsp.focus({ workspace = "e+1" }))
-hl.bind("SUPER + I", hl.dsp.focus({ workspace = "e-1" }))
+hl.bind("SUPER + U", hl.dsp.focus({ workspace = "r+1" }))
+hl.bind("SUPER + I", hl.dsp.focus({ workspace = "r-1" }))
 hl.bind("SUPER + CTRL + down", hl.dsp.window.move({ workspace = "e+1" }))
 hl.bind("SUPER + CTRL + up", hl.dsp.window.move({ workspace = "e-1" }))
-hl.bind("SUPER + CTRL + U", hl.dsp.window.move({ workspace = "e+1" }))
-hl.bind("SUPER + CTRL + I", hl.dsp.window.move({ workspace = "e-1" }))
+hl.bind("SUPER + CTRL + U", hl.dsp.window.move({ workspace = "r+1" }))
+hl.bind("SUPER + CTRL + I", hl.dsp.window.move({ workspace = "r-1" }))
 
 -- === Workspace Management ===
 hl.bind("SUPER + ALT + R", hl.dsp.exec_cmd("dms ipc call workspace-rename open"))
@@ -139,8 +139,8 @@ hl.bind("SUPER + CTRL + S", hl.dsp.window.move({ workspace = "+0" }))
 -- === Move Workspaces ===
 hl.bind("SUPER + SHIFT + Page_Down", hl.dsp.window.move({ workspace = "e+1" }))
 hl.bind("SUPER + SHIFT + Page_Up", hl.dsp.window.move({ workspace = "e-1" }))
-hl.bind("SUPER + SHIFT + U", hl.dsp.window.move({ workspace = "e+1" }))
-hl.bind("SUPER + SHIFT + I", hl.dsp.window.move({ workspace = "e-1" }))
+hl.bind("SUPER + SHIFT + U", hl.dsp.window.move({ workspace = "r+1" }))
+hl.bind("SUPER + SHIFT + I", hl.dsp.window.move({ workspace = "r-1" }))
 
 -- === Mouse Wheel Navigation ===
 hl.bind("SUPER + mouse_down", hl.dsp.focus({ workspace = "e+1" }))
