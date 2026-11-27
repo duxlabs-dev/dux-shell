@@ -1,7 +1,6 @@
 pragma Singleton
 pragma ComponentBehavior: Bound
 
-import QtCore
 import QtQuick
 import Quickshell
 import Quickshell.Io
@@ -465,7 +464,7 @@ Singleton {
                 return "ERROR: No path provided";
             }
 
-            var absolutePath = path.startsWith("/") ? path : StandardPaths.writableLocation(StandardPaths.HomeLocation) + "/" + path;
+            var absolutePath = path.startsWith("/") ? path : Paths.strip(Paths.home) + "/" + path;
 
             try {
                 SessionData.setWallpaper(absolutePath);
@@ -536,7 +535,7 @@ Singleton {
                 return "ERROR: No path provided";
             }
 
-            var absolutePath = path.startsWith("/") ? path : StandardPaths.writableLocation(StandardPaths.HomeLocation) + "/" + path;
+            var absolutePath = path.startsWith("/") ? path : Paths.strip(Paths.home) + "/" + path;
 
             try {
                 if (!SessionData.perMonitorWallpaper) {
