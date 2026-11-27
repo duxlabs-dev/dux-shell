@@ -327,6 +327,36 @@ function hyprlandSpecialDisplayName(name) {
     return name.startsWith("special:") ? name.slice(8) : name;
 }
 
+function hyprlandNormalizeSpecialName(name) {
+    const raw = String(name ?? "").trim();
+    if (!raw)
+        return "";
+    if (raw === "special")
+        return "special:special";
+    return raw.startsWith("special:") ? raw : "special:" + raw;
+}
+
+// Upstream quickshell has no specialWorkspace, and its monitor query lags the activespecial events
+function hyprlandVisibleSpecials(monitors, events) {
+    const visible = {};
+    for (const monitor of monitors) {
+        const monitorName = monitor?.name;
+        if (!monitorName)
+            continue;
+        let name;
+        if (monitor.specialWorkspace !== undefined)
+            name = monitor.specialWorkspace?.name;
+        else if (Object.prototype.hasOwnProperty.call(events, monitorName))
+            name = events[monitorName];
+        else
+            name = monitor.lastIpcObject?.specialWorkspace?.name;
+        const special = hyprlandNormalizeSpecialName(name);
+        if (special)
+            visible[monitorName] = special;
+    }
+    return visible;
+}
+
 // Hyprland >= 0.56 reports every special workspace with a null id, so specials only match by name
 function hyprlandWorkspaceMatches(ws, record) {
     if (record.special !== true)

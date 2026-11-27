@@ -86,7 +86,8 @@ Singleton {
     signal randrDataReady
 
     property var sortedToplevels: []
-    property var hyprlandVisibleSpecialWorkspaces: ({})
+    property var _hyprlandSpecialEvents: ({})
+    readonly property var hyprlandVisibleSpecialWorkspaces: isHyprland ? WorkspaceModel.hyprlandVisibleSpecials(Hyprland.monitors?.values ?? [], _hyprlandSpecialEvents) : ({})
     // windows a toggle brought out of a pad; lost on restart
     property var _niriShownScratchpad: ({})
     // workspace id -> pad name sent to niri but not yet reported back
@@ -477,6 +478,8 @@ Singleton {
 
         function onRawEvent(event) {
             if (event.name === "monitoraddedv2" || event.name === "monitorremoved" || event.name === "configreloaded") {
+                if (event.name === "monitorremoved")
+                    root._forgetHyprlandSpecialEvent(String(event.data ?? ""));
                 if (event.name === "configreloaded")
                     HyprlandService.refreshFollowMouse();
                 root.refreshHyprlandMonitorLayout();
@@ -504,7 +507,7 @@ Singleton {
                         Hyprland.refreshMonitors();
                 } catch (e) {}
                 if (event.name === "activespecial")
-                    root.updateHyprlandVisibleSpecialWorkspaces(event);
+                    root._recordHyprlandSpecialEvent(event);
                 root.scheduleSort();
                 if (event.name === "activewindow" || event.name === "activewindowv2")
                     root.workspaceStateChanged();
@@ -522,7 +525,6 @@ Singleton {
     Component.onCompleted: {
         fetchRandrData();
         detectCompositor();
-        updateHyprlandVisibleSpecialWorkspaces(null);
         scheduleSort();
     }
 
@@ -568,15 +570,6 @@ Singleton {
         }
     }
 
-    function _normalizeSpecialWorkspaceName(name) {
-        const raw = String(name ?? "").trim();
-        if (raw.length === 0)
-            return "";
-        if (raw === "special")
-            return "special:special";
-        return raw.startsWith("special:") ? raw : `special:${raw}`;
-    }
-
     function _hyprlandRawEventParts(event, argumentCount) {
         if (!event)
             return [];
@@ -589,52 +582,23 @@ Singleton {
         return data.length > 0 ? data.split(",") : [];
     }
 
-    function _specialWorkspaceNameFromMonitor(monitor) {
-        if (!monitor)
-            return "";
-        const candidates = [monitor.activeSpecialWorkspace?.name, monitor.specialWorkspace?.name, monitor.lastIpcObject?.specialWorkspace?.name, monitor.lastIpcObject?.specialWorkspace, monitor.lastIpcObject?.activeSpecialWorkspace?.name];
-        for (let i = 0; i < candidates.length; i++) {
-            const normalized = _normalizeSpecialWorkspaceName(candidates[i]);
-            if (normalized)
-                return normalized;
-        }
-        return "";
+    // A re-added monitor gets no activespecial, so its old event would linger
+    function _forgetHyprlandSpecialEvent(monitorName) {
+        if (!Object.prototype.hasOwnProperty.call(_hyprlandSpecialEvents, monitorName))
+            return;
+        const events = Object.assign({}, _hyprlandSpecialEvents);
+        delete events[monitorName];
+        _hyprlandSpecialEvents = events;
     }
 
-    function updateHyprlandVisibleSpecialWorkspaces(event) {
-        if (!isHyprland) {
-            hyprlandVisibleSpecialWorkspaces = ({});
+    function _recordHyprlandSpecialEvent(event) {
+        const parts = _hyprlandRawEventParts(event, 2);
+        const monitorName = String(parts[1] ?? Hyprland.focusedMonitor?.name ?? "");
+        if (!monitorName)
             return;
-        }
-
-        const next = {};
-        try {
-            const monitors = Hyprland.monitors?.values || [];
-            for (const monitor of monitors) {
-                const monitorName = monitor?.name ?? monitor?.lastIpcObject?.name ?? "";
-                if (!monitorName)
-                    continue;
-                const specialName = _specialWorkspaceNameFromMonitor(monitor);
-                if (specialName)
-                    next[monitorName] = specialName;
-            }
-        } catch (e) {
-            log.warn("updateHyprlandVisibleSpecialWorkspaces monitor snapshot failed:", e);
-        }
-
-        if (event?.name === "activespecial") {
-            const parts = _hyprlandRawEventParts(event, 2);
-            const specialName = _normalizeSpecialWorkspaceName(parts[0]);
-            const monitorName = String(parts[1] ?? Hyprland.focusedMonitor?.name ?? Hyprland.focusedWorkspace?.monitor?.name ?? "");
-            if (monitorName) {
-                if (specialName)
-                    next[monitorName] = specialName;
-                else
-                    delete next[monitorName];
-            }
-        }
-
-        hyprlandVisibleSpecialWorkspaces = next;
+        _hyprlandSpecialEvents = Object.assign({}, _hyprlandSpecialEvents, {
+            [monitorName]: WorkspaceModel.hyprlandNormalizeSpecialName(parts[0])
+        });
     }
 
     function sortHyprlandToplevelsSafe() {
@@ -1214,16 +1178,7 @@ Singleton {
         const screenName = _screenName(screenOrName);
         if (!isHyprland || !screenName)
             return "";
-        hyprlandVisibleSpecialWorkspaces;
-        const trackedName = hyprlandVisibleSpecialWorkspaces[screenName] ?? "";
-        if (trackedName)
-            return trackedName;
-        try {
-            const monitor = Hyprland.monitors?.values?.find(m => m.name === screenName);
-            return _specialWorkspaceNameFromMonitor(monitor);
-        } catch (e) {
-            return "";
-        }
+        return hyprlandVisibleSpecialWorkspaces[screenName] ?? "";
     }
 
     // Workspace moves can land before Hyprland announces the monitor and before the Wayland
@@ -1281,8 +1236,8 @@ Singleton {
 
         const screenName = _screenName(screenOrName);
         const monitor = Hyprland.monitors.values.find(m => m.name === screenName);
-        const specialWorkspace = monitor?.lastIpcObject?.specialWorkspace?.name;
-        const workspace = specialWorkspace ? Hyprland.workspaces.values.find(w => w.name === specialWorkspace) : monitor?.activeWorkspace;
+        const specialName = hyprlandVisibleSpecialWorkspaces[screenName];
+        const workspace = specialName ? Hyprland.workspaces.values.find(w => WorkspaceModel.hyprlandSpecial(w) && WorkspaceModel.hyprlandNormalizeSpecialName(w.name) === specialName) : monitor?.activeWorkspace;
         if (!workspace)
             return false;
         return workspace.toplevels.values.some(t => t.lastIpcObject?.fullscreen === 2);
@@ -1365,7 +1320,7 @@ Singleton {
             return false;
 
         for (const hyprToplevel of Hyprland.toplevels.values) {
-            const wsName = _normalizeSpecialWorkspaceName(hyprToplevel.workspace?.name ?? hyprToplevel.lastIpcObject?.workspace?.name ?? "");
+            const wsName = WorkspaceModel.hyprlandNormalizeSpecialName(hyprToplevel.workspace?.name ?? hyprToplevel.lastIpcObject?.workspace?.name ?? "");
             if (wsName !== visibleSpecialWorkspace)
                 continue;
             if (!_hyprlandToplevelMapped(hyprToplevel))
