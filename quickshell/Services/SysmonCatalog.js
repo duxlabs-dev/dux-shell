@@ -1,5 +1,6 @@
 .pragma library
 .import "../Common/Format.js" as Format
+.import "SysmonDevices.js" as Devices
 
 const V = (id, kind, warn, danger) => ({
     id,
@@ -14,6 +15,14 @@ const TYPES = {
     gpu: [V("usage", "pct", 70, 90), V("temp", "temp", 65, 80), V("vram", "pct", 80, 92), V("power", "power", null, null)],
     disk: [V("space", "pct", 75, 90), V("read", "rate", null, null), V("write", "rate", null, null)],
     net: [V("down", "rate", null, null), V("up", "rate", null, null)]
+};
+
+// The values behind the bar widget's option rows, in the order the rows list them.
+const barChoices = {
+    style: ["icon", "meter", "ring", "graph"],
+    label: ["icon", "name", "both", "none"],
+    separator: ["gap", "line", "dot", "separate"],
+    popout: ["compact", "processes", "device", "overview"]
 };
 
 const maxMetrics = 16;
@@ -73,6 +82,18 @@ function formatValue(kind, value, opts) {
     return "";
 }
 
+// The device key of the card a migrated GPU widget meant: the list index when its PCI id still matches, else the first card with that id.
+// A PCI id no card has keeps its own key, which the widget shows as missing. Empty while the list is.
+function legacyGpuKey(entry, gpus) {
+    const list = Array.isArray(gpus) ? gpus : [];
+    const index = entry && Number.isInteger(entry.selectedGpuIndex) && entry.selectedGpuIndex >= 0 ? entry.selectedGpuIndex : 0;
+    const want = entry && typeof entry.pciId === "string" ? entry.pciId.toLowerCase() : "";
+    const same = g => String(g.pciId || "").toLowerCase() === want;
+    const card = want ? (list[index] && same(list[index]) ? list[index] : list.find(same)) : (list[index] || list[0]);
+    const key = card ? "gpu:" + Devices.gpuSlot(card) : list.length > 0 && want ? "gpu:" + entry.pciId : "";
+    return typeOf(key) === "gpu" ? key : "";
+}
+
 // Arrays that went through a QML var property or signal come back as sequences, which Array.isArray rejects.
 function listOf(v) {
     return v && typeof v === "object" && typeof v.length === "number" ? Array.from(v) : null;
@@ -107,6 +128,16 @@ function normalizeMetrics(input) {
         };
         if (type === "disk" && typeof m.mount === "string" && m.mount.charAt(0) === "/" && !hasControl(m.mount))
             metric.mount = m.mount;
+        if ((type === "memory" || type === "gpu") && m.percent === false)
+            metric.percent = false;
+        if (type === "disk" && Number.isInteger(m.diskMode) && m.diskMode >= 1 && m.diskMode <= 3)
+            metric.diskMode = m.diskMode;
+        if (type === "net") {
+            if (m.compact === true)
+                metric.compact = true;
+            if (m.hideIdle === true)
+                metric.hideIdle = true;
+        }
         out.push(metric);
     }
     return out;
@@ -229,6 +260,25 @@ function modulesFor(metrics, extras) {
     if (extras && extras.system)
         set["system"] = true;
     return Object.keys(set).sort();
+}
+
+// The dgop modules a device pane reads; the aggregate keys ("disk", "net") also need the all-devices modules.
+function paneModules(key) {
+    const type = typeOf(key);
+    const all = key === type;
+    switch (type) {
+    case "cpu":
+        return ["cpu", "system"];
+    case "memory":
+        return ["memory", "memory-modules"];
+    case "gpu":
+        return ["gpu"];
+    case "disk":
+        return all ? ["disk", "disk-rate", "diskmounts"] : ["disk-rate", "diskmounts"];
+    case "net":
+        return all ? ["network", "net-rate"] : ["net-rate"];
+    }
+    return [];
 }
 
 function needsDrives(metrics) {

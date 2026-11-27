@@ -108,7 +108,7 @@ Column {
         SettingsGroup {
             id: group
             required property var modelData
-            slotColor: Theme.chipSurface
+            slotColor: ProcessListMetrics.cardInsetColor
             width: parent.width
             customPaddingV: 0
             customPaddingH: 0

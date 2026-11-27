@@ -46,17 +46,17 @@ Column {
         });
     }
 
-    signal itemEnabledChanged(string sectionId, string itemId, bool enabled)
+    signal itemEnabledChanged(string sectionId, int index, bool enabled)
     signal itemOrderChanged(string sectionId, var indices)
     signal addWidget(string sectionId)
     signal removeWidget(string sectionId, int widgetIndex)
     signal spacerSizeChanged(string sectionId, int widgetIndex, int newSize)
     signal configureWidget(string sectionId, int widgetIndex)
 
-    signal dragStarted(string sectionId, string itemId)
+    signal dragStarted()
 
     property var reorderGroup: null
-    property string highlightedId: ""
+    property int highlightedIndex: -1
     property string highlightedSection: ""
 
     width: parent.width
@@ -113,7 +113,8 @@ Column {
             readonly property var positionLabels: {
                 const labels = [I18n.tr("Start", "noun, overflow button position before the first widget", true)];
                 const seen = {};
-                for (const item of root.items) {
+                for (const entry of root.items) {
+                    const item = BarWidgetCatalog.displayInfo(entry);
                     seen[item.text] = (seen[item.text] ?? 0) + 1;
                     labels.push(I18n.tr("After %1", "overflow button position option, %1 is a widget name").arg(seen[item.text] > 1 ? item.text + " " + seen[item.text] : item.text));
                 }
@@ -137,7 +138,7 @@ Column {
         groupKey: root.sectionId
         dropArea: root
         onReordered: indices => root.itemOrderChanged(root.sectionId, indices)
-        onDragStarted: (index, position) => root.dragStarted(root.sectionId, root.items[index].id)
+        onDragStarted: (index, position) => root.dragStarted()
 
         delegate: SettingsReorderRow {
             id: widgetRow
@@ -147,20 +148,15 @@ Column {
             readonly property bool configurable: BarWidgetCatalog.configurable(modelData)
 
             reorderList: reorderArea
-            highlighted: !dragging && root.highlightedId === modelData.id && root.highlightedSection === root.sectionId
+            highlighted: !dragging && root.highlightedIndex === index && root.highlightedSection === root.sectionId
             opacity: dragging && reorderArea.crossSectionActive ? 0 : 1
-            title: modelData.text
+            readonly property var info: BarWidgetCatalog.displayInfo(modelData)
+
+            title: info.text
             iconName: modelData.icon
             iconColor: modelData.enabled ? Theme.primary : Theme.onSurfaceVariant
             titleColor: modelData.enabled ? Theme.onSurface : Theme.onSurfaceVariant
-            subtitle: {
-                if (modelData.id !== "gpuTemp")
-                    return modelData.description ?? "";
-                const gpu = DgopService.widgetGpu(modelData.selectedGpuIndex ?? 0, modelData.pciId);
-                if (!gpu)
-                    return I18n.tr("No GPU detected", "empty state when no graphics card is found");
-                return gpu.driver?.toUpperCase() ?? "";
-            }
+            subtitle: info.description ?? ""
             clickable: configurable
             onClicked: root.configureWidget(root.sectionId, index)
 
@@ -227,7 +223,7 @@ Column {
                 visible: widgetRow.modelData.id !== "spacer" && widgetRow.modelData.locked !== true
                 checked: widgetRow.modelData.enabled
                 anchors.verticalCenter: parent.verticalCenter
-                onToggled: value => root.itemEnabledChanged(root.sectionId, widgetRow.modelData.id, value)
+                onToggled: value => root.itemEnabledChanged(root.sectionId, widgetRow.index, value)
             }
 
             DActionButton {

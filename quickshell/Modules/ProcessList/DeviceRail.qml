@@ -84,76 +84,17 @@ FocusScope {
                 Accessible.name: entry.modelData.name + ", " + (entry.modelData.value ?? "")
                 onClicked: root.selected(entry.modelData.key)
 
-                Item {
+                DeviceRow {
                     anchors.fill: parent
                     anchors.leftMargin: Theme.spacingL
                     anchors.rightMargin: Theme.spacingM
-
-                    DeviceIcon {
-                        id: deviceIcon
-                        anchors.left: parent.left
-                        anchors.verticalCenter: parent.verticalCenter
-                        name: entry.modelData.icon ?? ""
-                        color: item.isSelected ? item.contentColor : item.supportingContentColor
-                    }
-
-                    Column {
-                        anchors.left: deviceIcon.right
-                        anchors.leftMargin: Theme.spacingM
-                        anchors.right: spark.left
-                        anchors.rightMargin: Theme.spacingM
-                        anchors.verticalCenter: parent.verticalCenter
-
-                        StyledText {
-                            width: parent.width
-                            text: entry.modelData.name ?? ""
-                            color: item.contentColor
-                            font.pixelSize: Theme.fontSizeMedium
-                            font.weight: Theme.fontWeightMedium
-                            elide: Text.ElideRight
-                            maximumLineCount: 1
-                        }
-
-                        StyledText {
-                            id: valueLabel
-                            width: parent.width
-                            text: entry.modelData.value ?? ""
-                            color: item.supportingContentColor
-                            font.pixelSize: Theme.fontSizeSmall
-                            elide: Text.ElideRight
-                            maximumLineCount: 1
-
-                            MouseArea {
-                                id: valueHover
-                                anchors.fill: parent
-                                enabled: (entry.modelData.valueTooltip ?? "") !== ""
-                                hoverEnabled: true
-                                acceptedButtons: Qt.NoButton
-                                cursorShape: Qt.PointingHandCursor
-                            }
-
-                            DTooltipHost {
-                                text: entry.modelData.valueTooltip ?? ""
-                                target: valueLabel
-                                hoverArea: valueHover
-                            }
-                        }
-                    }
-
-                    MetricChart {
-                        id: spark
-                        anchors.right: parent.right
-                        anchors.verticalCenter: parent.verticalCenter
-                        width: Theme.iconButtonSize * 1.6
-                        height: Theme.iconButtonSize * 0.7
-                        compact: true
-                        values: entry.modelData.values ?? []
-                        secondaryValues: entry.modelData.secondaryValues ?? []
-                        color: item.isSelected ? item.contentColor : Theme.primary
-                        secondaryColor: item.isSelected ? item.supportingContentColor : Theme.tertiary
-                        maximum: entry.modelData.maximum ?? 0
-                        historyLength: root.historyLength
-                    }
+                    device: entry.modelData
+                    historyLength: root.historyLength
+                    textColor: item.contentColor
+                    supportingColor: item.supportingContentColor
+                    iconColor: item.isSelected ? item.contentColor : item.supportingContentColor
+                    sparkColor: item.isSelected ? item.contentColor : Theme.primary
+                    sparkSecondaryColor: item.isSelected ? item.supportingContentColor : Theme.tertiary
                 }
             }
         }

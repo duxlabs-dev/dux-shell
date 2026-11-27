@@ -1084,6 +1084,8 @@ Item {
                     "background": false
                 }, barWidget.entry)
                 spacerSize: barWidget.entry.size ?? 20
+                // Layout entries keep the bare widget id; the slot keeps repeated widgets apart, as on a bar.
+                instanceId: barWidget.entry.id + "_" + barWidget.slotIndex
                 occurrenceOrder: barWidget.slotIndex
                 components: barWidget.support?.factory.componentMap ?? null
                 axis: barWidget.support?.axis ?? null

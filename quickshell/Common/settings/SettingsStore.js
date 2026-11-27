@@ -6,6 +6,7 @@
 .import "./DockConfig.js" as DockConfig
 .import "./DensityPresets.js" as DensityPresets
 .import "../GridLayout.js" as GridLayout
+.import "../../Services/SysmonCatalog.js" as SysmonCatalog
 
 var PIN_KEYS = ["brightnessDevicePins", "wifiNetworkPins", "bluetoothDevicePins", "audioInputDevicePins", "audioOutputDevicePins"];
 
@@ -815,7 +816,113 @@ function migrateToVersion(obj, targetVersion) {
         settings.configVersion = 48;
     }
 
+    if (currentVersion < 49 && targetVersion >= 49) {
+        migrateBarSystemMonitors(settings);
+        settings.configVersion = 49;
+    }
+
     return settings;
+}
+
+const isObject = value => !!value && typeof value === "object" && !Array.isArray(value);
+
+// Migration: can be removed after a few releases. v49: the CPU, memory, disk, temperature and network bar widgets become sysmon widgets.
+function migrateBarSystemMonitors(settings) {
+    const OLD_IDS = WidgetDefaults.SYSMON_LEGACY_IDS;
+    const DROPPED = ["minimumWidth", "showSwap", "mountPath", "showMountPath", "pciId", "device", "vals", "mount", "metrics", "showInGb", "diskUsageMode", "compactMode", "hideWhenIdle"];
+    const convert = (raw, idKey) => {
+        const id = typeof raw === "string" ? raw : isObject(raw) ? (typeof raw[idKey] === "string" ? raw[idKey] : raw.id) : "";
+        if (OLD_IDS.indexOf(id) === -1)
+            return raw;
+        const old = typeof raw === "string" ? { enabled: true } : raw;
+        const entry = Object.assign({}, old);
+        entry[typeof raw === "string" || typeof old[idKey] === "string" ? idKey : "id"] = "sysmon";
+        for (const key of DROPPED)
+            delete entry[key];
+        entry.popout = "processes";
+        const one = (device, vals, extra) => [Object.assign({ device: device, vals: vals }, extra)];
+        switch (id) {
+        case "cpuUsage":
+            entry.metrics = one("cpu", ["usage"]);
+            break;
+        case "memUsage":
+            entry.metrics = one("memory", old.showSwap === true ? ["used", "swap"] : ["used"], old.showInGb === true ? { percent: false } : {});
+            break;
+        case "diskUsage":
+            entry.metrics = one("disk", ["space"], Object.assign({ mount: typeof old.mountPath === "string" && old.mountPath[0] === "/" && !/[\u0000-\u001f\u007f]/.test(old.mountPath) ? old.mountPath : "/" }, Number.isInteger(old.diskUsageMode) && old.diskUsageMode > 0 ? { diskMode: old.diskUsageMode } : {}));
+            entry.label = old.showMountPath !== false ? "both" : "icon";
+            break;
+        case "cpuTemp":
+            entry.metrics = one("cpu", ["temp"]);
+            break;
+        case "gpuTemp":
+            entry.selectedGpuIndex = Number.isInteger(old.selectedGpuIndex) && old.selectedGpuIndex >= 0 ? old.selectedGpuIndex : 0;
+            if (typeof old.pciId === "string" && SysmonCatalog.typeOf("gpu:" + old.pciId) === "gpu")
+                entry.pciId = old.pciId;
+            break;
+        case "network_speed_monitor":
+            entry.metrics = one("net", ["down", "up"], Object.assign(old.compactMode === true ? { compact: true } : {}, old.hideWhenIdle === true ? { hideIdle: true } : {}));
+            break;
+        }
+        return entry;
+    };
+    eachSysmonList(settings, (list, idKey) => {
+        for (let i = 0; i < list.length; i++)
+            list[i] = convert(list[i], idKey);
+    });
+}
+
+// Calls visit(list, idKey) for every widget list that can hold a bar widget: bars, island layouts and docks.
+function eachSysmonList(settings, visit) {
+    const visitList = (list, idKey) => {
+        if (Array.isArray(list))
+            visit(list, idKey || "id");
+    };
+    for (const bar of Array.isArray(settings.barConfigs) ? settings.barConfigs : []) {
+        if (!isObject(bar))
+            continue;
+        visitList(bar.islandHomeLayout);
+        for (const listKey of BAR_WIDGET_LIST_KEYS) {
+            visitList(bar[listKey]);
+            for (const widget of Array.isArray(bar[listKey]) ? bar[listKey] : []) {
+                if (isObject(widget) && widget.id === "island")
+                    visitList(widget.islandHomeLayout);
+            }
+        }
+    }
+    for (const dock of Array.isArray(settings.dockConfigs) ? settings.dockConfigs : [])
+        visitList(isObject(dock) ? dock.widgets : null, "widgetId");
+}
+
+function isPendingGpu(entry, idKey) {
+    return isObject(entry) && entry[idKey] === "sysmon" && !SysmonCatalog.listOf(entry.metrics) && Number.isInteger(entry.selectedGpuIndex);
+}
+
+function hasPendingSysmonGpus(settings) {
+    let pending = false;
+    eachSysmonList(settings, (list, idKey) => {
+        pending = pending || list.some(entry => isPendingGpu(entry, idKey));
+    });
+    return pending;
+}
+
+// Saves the device key of each migrated GPU widget still waiting on the GPU list. Returns whether anything changed.
+function resolveSysmonGpus(settings, gpus) {
+    let changed = false;
+    eachSysmonList(settings, (list, idKey) => {
+        for (const entry of list) {
+            if (!isPendingGpu(entry, idKey))
+                continue;
+            const key = SysmonCatalog.legacyGpuKey(entry, gpus);
+            if (!key)
+                continue;
+            entry.metrics = [{ device: key, vals: ["temp"] }];
+            delete entry.selectedGpuIndex;
+            delete entry.pciId;
+            changed = true;
+        }
+    });
+    return changed;
 }
 
 // Migration: can be removed after a few releases. v48: the CPU, Memory, Disk, Network and System Monitor dash cards become System monitor cards.

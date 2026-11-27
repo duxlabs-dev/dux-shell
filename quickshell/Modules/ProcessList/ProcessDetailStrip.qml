@@ -1,7 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
-import Quickshell.Widgets
 import qs.Common
 import qs.Services
 import qs.Widgets
@@ -303,34 +302,16 @@ Rectangle {
             Layout.fillWidth: true
             spacing: Theme.spacingM
 
-            Item {
+            ProcessAppIcon {
                 Layout.preferredWidth: Theme.iconButtonSize
                 Layout.preferredHeight: Theme.iconButtonSize
-
-                IconImage {
-                    id: appIcon
-                    anchors.fill: parent
-                    source: ProcessListMetrics.appIcon(root.live, root.desktopEntry)
-                    smooth: true
-                    mipmap: true
-                    asynchronous: true
-                    visible: status === Image.Ready
-                }
-
-                Rectangle {
-                    anchors.fill: parent
-                    visible: !appIcon.visible
-                    radius: Theme.cornerRadiusM
-                    color: Theme.secondaryContainer
-
-                    StyledText {
-                        anchors.centerIn: parent
-                        text: root.command.charAt(0).toUpperCase()
-                        font.pixelSize: Theme.fontSizeLarge
-                        font.weight: Theme.fontWeightMedium
-                        color: Theme.onSecondaryContainer
-                    }
-                }
+                process: root.live
+                appEntry: root.desktopEntry
+                mipmap: true
+                radius: Theme.cornerRadiusM
+                fontSize: Theme.fontSizeLarge
+                fallbackColor: Theme.secondaryContainer
+                textColor: Theme.onSecondaryContainer
             }
 
             ColumnLayout {

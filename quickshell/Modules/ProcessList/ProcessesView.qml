@@ -44,20 +44,11 @@ Rectangle {
     // The window lists every process; the popout shows dgop's top rows.
     property bool fullList: false
     readonly property bool needsFullProcessList: active && (fullList || searchText.length > 0 || onlineOnly || processFilterTypes.length === 1 || DgopService.dgopSort() === "")
-    property bool holdsFullProcessList: false
-    onNeedsFullProcessListChanged: {
-        if (needsFullProcessList === holdsFullProcessList)
-            return;
-        holdsFullProcessList = needsFullProcessList;
-        if (needsFullProcessList)
-            DgopService.requestFullProcessList();
-        else
-            DgopService.releaseFullProcessList();
+
+    FullProcessListRef {
+        active: root.needsFullProcessList
     }
-    Component.onDestruction: {
-        if (holdsFullProcessList)
-            DgopService.releaseFullProcessList();
-    }
+
     onColumnsChanged: reconcileSort()
 
     function reconcileSort() {
@@ -231,7 +222,8 @@ Rectangle {
 
     function withMembers(procs) {
         const rows = [];
-        for (const p of procs) {
+        // Called from handlers that can run while the view is built, before filteredProcesses has a value.
+        for (const p of procs ?? []) {
             rows.push(p);
             if (openGroups[p.key])
                 rows.push(...memberRows(p));
@@ -552,7 +544,7 @@ Rectangle {
                 Layout.bottomMargin: Theme.spacingM
                 implicitHeight: header.implicitHeight
                 radius: Theme.cornerRadiusS
-                color: Theme.chipSurface
+                color: ProcessListMetrics.cardColor
 
                 RowLayout {
                     id: header

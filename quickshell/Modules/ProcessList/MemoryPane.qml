@@ -42,8 +42,20 @@ DevicePane {
     subtitle2: moduleSummary
     chartLabel: I18n.tr("Used", "memory in use")
     chartValue: info ? bytes(DgopService.usedMemoryKB) : "—"
+    values: DgopService.history("memory", "used")
     maximum: 100
     maximumText: DgopService.totalMemoryKB > 0 ? bytes(DgopService.totalMemoryKB) : ""
+
+    typeKey: "memory"
+    mainValue: info ? Math.round(DgopService.memoryUsage) + "%" : "—"
+    mainFraction: info ? DgopService.memoryUsage / 100 : -1
+    mainDetail: of(DgopService.usedMemoryKB, DgopService.totalMemoryKB) ?? ""
+    briefSubtitle: [subtitle, speedMT > 0 ? speedMT + " MT/s" : ""].filter(s => s).join(" · ")
+    extraLabel: I18n.tr("Swap", "swap memory label in system monitor")
+    extraValue: DgopService.totalSwapKB > 0 ? bytes(DgopService.usedSwapKB) : ""
+    compactSecondaryLabel: extraLabel
+    compactSecondaryValue: extraValue
+    compactSecondaryValues: DgopService.history("memory", "swap")
 
     leftStats: [
         {
@@ -52,10 +64,12 @@ DevicePane {
             tooltip: info?.shared !== undefined ? I18n.tr("Shared", "RAM shared between processes (shmem)") + ": " + bytes(info.shared) : ""
         },
         {
+            tile: true,
             label: I18n.tr("Available"),
             value: bytes(info?.available)
         },
         {
+            tile: true,
             label: I18n.tr("Cached", "memory used as file cache"),
             value: info?.cached !== undefined ? bytes(info.cached + (info.buffers ?? 0)) : null
         },
@@ -73,6 +87,7 @@ DevicePane {
             tooltip: root.swapTooltip()
         },
         {
+            tile: true,
             label: I18n.tr("Speed"),
             value: speedMT > 0 ? speedMT + " MT/s" : null
         },

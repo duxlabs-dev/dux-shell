@@ -10,6 +10,14 @@ function formatRate(bytesPerSec, gbDecimals) {
     return (bytesPerSec / (1024 * 1024 * 1024)).toFixed(gbDecimals ?? 2) + " GB/s";
 }
 
+function formatRateOr(bytesPerSec, fallback) {
+    return bytesPerSec === null || bytesPerSec === undefined ? fallback : formatRate(bytesPerSec, 1);
+}
+
+function formatRateSumOr(a, b, fallback) {
+    return a === null || a === undefined || b === null || b === undefined ? fallback : formatRate(a + b, 1);
+}
+
 function formatRateCompact(bytesPerSec, abbreviated, oneDecimal) {
     const units = ["K", "M", "G", "T"];
     let value = bytesPerSec / 1024;
@@ -42,6 +50,10 @@ function formatBytes(bytes, iec) {
     if (bytes < 1024 * 1024 * 1024)
         return (bytes / (1024 * 1024)).toFixed(1) + "M";
     return (bytes / (1024 * 1024 * 1024)).toFixed(1) + "G";
+}
+
+function formatBytesOr(bytes, fallback) {
+    return bytes === null || bytes === undefined ? fallback : formatBytes(bytes, true);
 }
 
 function formatIsoTime(isoString) {

@@ -7,9 +7,11 @@ import qs.Common
 import qs.Services
 import "SysmonDevices.js" as Devices
 import "Drives.js" as Drives
+import "SysmonCatalog.js" as SysmonCatalog
+import "../Common/Format.js" as Format
 
-// Device identity and current values for the system monitor and its widgets. Functions only, so nothing here
-// is evaluated unless a visible consumer calls it from a binding.
+// Device identity and current values for the system monitor and its widgets. Besides the device counts,
+// everything here is evaluated only when a visible consumer calls it.
 Singleton {
     id: root
 
@@ -178,6 +180,30 @@ Singleton {
         return items;
     }
 
+    // A popout's device list: CPU, memory, every GPU, the entry's drive or Disks, and the entry's interface or Network.
+    // A drive or interface that isn't listed keeps its row under its own name.
+    function popoutDevices(deviceKey) {
+        const own = parseKey(deviceKey);
+        const ownEntry = own.id && (own.type === "disk" || own.type === "net") ? device(deviceKey) ?? {
+            key: Devices.deviceKey(own.type, own.id),
+            type: own.type,
+            icon: own.type === "net" ? "lan" : "hard_drive",
+            name: own.id
+        } : null;
+        const list = devices().filter(e => e.type === "cpu" || e.type === "memory" || e.type === "gpu");
+        list.push(ownEntry?.type === "disk" ? ownEntry : aggregateEntry("disk"));
+        list.push(ownEntry?.type === "net" ? ownEntry : aggregateEntry("net"));
+        return list;
+    }
+
+    // The key when it is listed, else the first device of its type.
+    function popoutSelection(list, key, entryType) {
+        if (list.some(e => e.key === key))
+            return key;
+        const type = parseKey(key).type || entryType;
+        return (list.find(e => e.type === type) ?? list[0])?.key ?? "";
+    }
+
     function device(key) {
         const p = parseKey(key);
         const processor = I18n.tr("Processor", "system monitor device group: CPU and memory");
@@ -238,11 +264,41 @@ Singleton {
         return names.length;
     }
 
+    // Counts as properties so readers re-run only when a count changes, not on every sample.
+    readonly property int gpuTotal: hostGpuCount()
+    onGpuTotalChanged: resolveGpus()
+    readonly property int diskTotal: diskCount()
+    readonly property int netShownTotal: (DgopService.netRates ?? []).filter(n => !Devices.isHiddenByDefault(Devices.interfaceKind(n.iface, n.linkType))).length
+
+    // Also runs when the configs change (profile apply, reload), since those can bring pending entries after the list.
+    function resolveGpus() {
+        if (gpuTotal > 0)
+            Qt.callLater(adoptGpus);
+    }
+
+    function adoptGpus() {
+        SettingsData.resolveSysmonGpus(DgopService.availableGpus);
+    }
+
+    Connections {
+        target: SettingsData
+        function onBarConfigsChanged() {
+            SysmonService.resolveGpus();
+        }
+        function onDockConfigsChanged() {
+            SysmonService.resolveGpus();
+        }
+    }
+
+    Component.onCompleted: resolveGpus()
+
     // The type name while the type has a single device, otherwise the device's own name.
     function displayName(key) {
         const p = parseKey(key);
-        const single = p.type === "gpu" ? hostGpuCount() <= 1 : p.type === "disk" ? diskCount() <= 1 : p.type === "net" ? sortedNets().filter(n => !Devices.isHiddenByDefault(n.kind)).length <= 1 : true;
-        if (!p.id || single)
+        if (!p.id)
+            return typeName(p.type);
+        const single = p.type === "gpu" ? gpuTotal <= 1 : p.type === "disk" ? diskTotal <= 1 : p.type === "net" ? netShownTotal <= 1 : true;
+        if (single)
             return typeName(p.type);
         switch (p.type) {
         case "gpu":
@@ -429,5 +485,78 @@ Singleton {
     function asleep(key) {
         const p = parseKey(key);
         return p.type === "gpu" && gpuFor(p.id)?.state === "suspended";
+    }
+
+    // The entries a bar widget shows. A migrated GPU entry still waiting for its device id shows its card
+    // and gives no entries until dgop lists the GPU.
+    function widgetMetrics(entry) {
+        if (SysmonCatalog.listOf(entry?.metrics))
+            return SysmonCatalog.normalizeMetrics(entry.metrics);
+        if (Number.isInteger(entry?.selectedGpuIndex)) {
+            const key = SysmonCatalog.legacyGpuKey(entry, DgopService.availableGpus);
+            return key ? SysmonCatalog.normalizeMetrics([
+                {
+                    device: key,
+                    vals: ["temp"]
+                }
+            ]) : [];
+        }
+        return SysmonCatalog.normalizeMetrics([
+            {
+                device: "cpu",
+                vals: ["usage"]
+            }
+        ]);
+    }
+
+    // Rail text and history for a devices() entry; the rates of the aggregates are the sums DgopService keeps.
+    function summary(e) {
+        switch (e.type) {
+        case "cpu":
+            return {
+                value: DgopService.cpuSampleCount === 0 ? "—" : DgopService.cpuUsage.toFixed(0) + "%",
+                values: DgopService.history("cpu", "usage"),
+                maximum: 100
+            };
+        case "memory":
+            return {
+                value: DgopService.memoryInfo === null ? "—" : Format.formatBytes(DgopService.usedMemoryKB * 1024, true) + " / " + Format.formatBytes(DgopService.totalMemoryKB * 1024, true),
+                values: DgopService.history("memory", "used"),
+                maximum: 100
+            };
+        case "gpu":
+            {
+                const g = e.gpu;
+                const suspended = g.state === "suspended";
+                const off = !Devices.gpuMonitored(DgopService.gpuPciIds, g.pciId, g.busId);
+                return {
+                    value: off ? I18n.tr("Monitoring off", "GPU monitoring is turned off in settings") : suspended ? I18n.tr("Idle", "device state") : (g.usage != null ? Math.round(g.usage) + "%" : "—"),
+                    values: suspended || off ? [] : DgopService.history(e.key, "usage"),
+                    maximum: 100
+                };
+            }
+        case "disk":
+            {
+                const r = e.key === "disk" ? DgopService.diskReadRate : e.disk?.readRate;
+                const w = e.key === "disk" ? DgopService.diskWriteRate : e.disk?.writeRate;
+                return {
+                    value: Format.formatRateSumOr(r, w, "—"),
+                    valueTooltip: valueLabel("disk", "read") + ": " + Format.formatRateOr(r, "—") + "\n" + valueLabel("disk", "write") + ": " + Format.formatRateOr(w, "—"),
+                    values: DgopService.history(e.key, "read"),
+                    secondaryValues: DgopService.history(e.key, "write")
+                };
+            }
+        default:
+            {
+                const rx = e.key === "net" ? DgopService.networkRxRate : e.net?.rxRate;
+                const tx = e.key === "net" ? DgopService.networkTxRate : e.net?.txRate;
+                return {
+                    value: Format.formatRateSumOr(rx, tx, "—"),
+                    valueTooltip: valueLabel("net", "down") + ": " + Format.formatRateOr(rx, "—") + "\n" + valueLabel("net", "up") + ": " + Format.formatRateOr(tx, "—"),
+                    values: DgopService.history(e.key, "down"),
+                    secondaryValues: DgopService.history(e.key, "up")
+                };
+            }
+        }
     }
 }

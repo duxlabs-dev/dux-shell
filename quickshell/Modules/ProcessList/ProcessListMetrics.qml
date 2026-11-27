@@ -10,9 +10,8 @@ import "ProcessIcons.js" as ProcessIcons
 
 Singleton {
     readonly property real rowHeight: Theme.buttonHeightXS + Theme.spacingXS
-    // Dark sets these a step under the lifted performance pane. Light surfaces have no pane fill, so they are plain cards.
-    readonly property color cardColor: Theme.lightSurfaces ? Theme.cardSurface : Theme.surfaceContainerLow
-    readonly property color cardInsetColor: Theme.lightSurfaces ? Theme.chipSurface : Theme.surfaceContainer
+    readonly property color cardColor: SettingsMetrics.rowColor
+    readonly property color cardInsetColor: Theme.foregroundColor(Theme.chipSurfaceNested, true)
     readonly property real headerHeight: Theme.buttonHeightXS + Theme.spacingXS
     readonly property real appIconSize: Theme.iconSizeMedium
     readonly property real expanderWidth: Theme.spacingM
@@ -22,6 +21,24 @@ Singleton {
     readonly property real menuWidth: 240
     readonly property real dialogWidth: 360
     readonly property int refreshInterval: DgopService.updateInterval
+    readonly property real sparkWidth: Theme.iconButtonSize * 1.6
+    readonly property real sparkHeight: Theme.iconButtonSize * 0.7
+    readonly property real deviceChartHeight: Theme.listItemHeight * 2.5
+    readonly property real threadCellMinHeight: Theme.fontSizeSmall * 2.5
+    readonly property int threadMaxColumns: 8
+    readonly property real threadNumberMinHeight: Theme.fontSizeSmall + Theme.spacingXS * 2
+    readonly property int deviceStatRows: 3
+    readonly property int tileLimit: 3
+    readonly property int pairLimit: 3
+    readonly property int pairMinimum: 2
+    // Material shape behind the icon of the device in focus, per device type.
+    readonly property var typeShapes: ({
+            "cpu": "cookie9",
+            "memory": "slanted",
+            "gpu": "clover4",
+            "disk": "arch",
+            "net": "softBurst"
+        })
 
     // Shared by the window and the bar popout, like the user/system filter; not persisted.
     property bool onlineOnly: false

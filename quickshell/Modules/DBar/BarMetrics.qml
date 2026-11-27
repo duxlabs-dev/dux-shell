@@ -17,6 +17,9 @@ Singleton {
     readonly property real indicatorDot: Theme.spacingS - Theme.spacingXXS
     readonly property real badgeSize: Theme.spacingS
     readonly property real badgeInset: Theme.spacingXS
+    readonly property real pillEntryGap: Theme.spacingS + Theme.spacingXXS
+    readonly property real pillRuleLength: Theme.spacingM + Theme.spacingXXS
+    readonly property real pillDotSize: Theme.spacingXS - Theme.dividerWidth
     readonly property real mediaControlSize: Theme.iconSizeMedium
     readonly property real menuRowHeight: DCommon.Style.menuRowHeight
     readonly property real menuPadding: DCommon.Style.menuPadding

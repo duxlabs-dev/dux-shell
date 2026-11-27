@@ -89,7 +89,7 @@ Column {
         }
 
         SettingsToggleRow {
-            text: I18n.tr("Show header")
+            text: I18n.tr("Show header", "system monitor widget option")
             checked: root.config.showHeader
             onToggled: checked => root.configEdited("showHeader", checked)
         }
@@ -131,7 +131,7 @@ Column {
         ConfigButtons {
             dense: root.dense
             visible: root.config.layout !== "bars"
-            text: I18n.tr("Graph time range")
+            text: I18n.tr("Graph time range", "system monitor widget option")
             model: ["1m", "5m", "10m", "30m"]
             values: [60, 300, 600, 1800]
             value: root.config.graphInterval
@@ -140,12 +140,12 @@ Column {
     }
 
     SettingsCard {
-        title: I18n.tr("Top processes")
+        title: I18n.tr("Top processes", "system monitor widget option")
         visible: root.processes
         slotColor: root.slotColor
 
         SettingsToggleRow {
-            text: I18n.tr("Top processes")
+            text: I18n.tr("Top processes", "system monitor widget option")
             checked: root.config.showTopProcesses
             onToggled: checked => root.configEdited("showTopProcesses", checked)
         }
@@ -153,7 +153,7 @@ Column {
         ConfigButtons {
             dense: root.dense
             visible: root.config.showTopProcesses
-            text: I18n.tr("Process count")
+            text: I18n.tr("Process count", "system monitor widget option")
             model: ["3", "5", "10"]
             values: [3, 5, 10]
             value: root.config.topProcessCount
@@ -163,7 +163,7 @@ Column {
         ConfigButtons {
             dense: root.dense
             visible: root.config.showTopProcesses
-            text: I18n.tr("Sort by")
+            text: I18n.tr("Sort by", "system monitor widget option")
             model: [I18n.tr("CPU", "processor label in system monitor"), I18n.tr("Memory", "system RAM label in system monitor")]
             values: ["cpu", "memory"]
             value: root.config.topProcessSortBy

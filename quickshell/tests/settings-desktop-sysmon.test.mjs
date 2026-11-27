@@ -109,3 +109,62 @@ test("a configured system monitor card and a second run are unchanged", () => {
     assert.deepEqual(once.dashCards[0], configured);
     assert.deepEqual(plain(store.migrateToVersion(Object.assign({}, once, { configVersion: 47 }), 48)).dashCards, once.dashCards);
 });
+
+const bar = (id, extra) => Object.assign({ id, enabled: true, overflowMode: "hide", background: "none" }, extra);
+const sysmon = (extra) => Object.assign({ id: "sysmon", enabled: true, overflowMode: "hide", background: "none", popout: "processes" }, extra);
+const one = (device, vals, extra) => ({ metrics: [Object.assign({ device, vals }, extra)] });
+const widgets = (list, extra) => plain(store.migrateToVersion(Object.assign({ configVersion: 48, barConfigs: [{ id: "b", rightWidgets: list }] }, extra), 49).barConfigs[0].rightWidgets);
+
+test("bar monitor widgets become sysmon widgets with their options and generic keys", () => {
+    const defaults = ["cpuUsage", "memUsage", "diskUsage", "cpuTemp", "gpuTemp", "network_speed_monitor"].map((id) => bar(id, { minimumWidth: true }));
+    assert.deepEqual(widgets(defaults), [
+        sysmon(one("cpu", ["usage"])), sysmon(one("memory", ["used"])),
+        sysmon(Object.assign(one("disk", ["space"], { mount: "/" }), { label: "both" })), sysmon(one("cpu", ["temp"])),
+        sysmon({ selectedGpuIndex: 0 }), sysmon(one("net", ["down", "up"]))
+    ]);
+    assert.deepEqual(widgets([
+        bar("memUsage", { showSwap: true, showInGb: true }), bar("diskUsage", { mountPath: "/home", showMountPath: false, diskUsageMode: 3 }),
+        bar("gpuTemp", { pciId: "0000:01:00.0", selectedGpuIndex: 1 }), bar("gpuTemp", { pciId: "", selectedGpuIndex: 1 }),
+        bar("network_speed_monitor", { compactMode: true, hideWhenIdle: true }), "cpuUsage"
+    ]), [
+        sysmon(one("memory", ["used", "swap"], { percent: false })),
+        sysmon(Object.assign(one("disk", ["space"], { mount: "/home", diskMode: 3 }), { label: "icon" })),
+        sysmon({ selectedGpuIndex: 1, pciId: "0000:01:00.0" }), sysmon({ selectedGpuIndex: 1 }),
+        sysmon(one("net", ["down", "up"], { compact: true, hideIdle: true })),
+        { id: "sysmon", enabled: true, popout: "processes", metrics: [{ device: "cpu", vals: ["usage"] }] }
+    ]);
+});
+
+test("junk in old bar entries falls back to the old defaults", () => {
+    assert.deepEqual(widgets([bar("gpuTemp", { pciId: 5, selectedGpuIndex: -2, device: "net", vals: ["x"], metrics: [] }), bar("gpuTemp", { pciId: "a\nb", selectedGpuIndex: 2 }), bar("diskUsage", { mountPath: "/a\nb" }), bar("diskUsage", { mountPath: "home" }), bar("memUsage", { showSwap: "yes" }), 7, null, { id: "clock" }]), [
+        sysmon({ selectedGpuIndex: 0 }), sysmon({ selectedGpuIndex: 2 }), sysmon(Object.assign(one("disk", ["space"], { mount: "/" }), { label: "both" })), sysmon(Object.assign(one("disk", ["space"], { mount: "/" }), { label: "both" })),
+        sysmon(one("memory", ["used"])), 7, null, { id: "clock" }
+    ]);
+});
+
+test("island layouts and docks migrate too and a second run changes nothing", () => {
+    const input = {
+        configVersion: 48,
+        barConfigs: [null, { id: "i", islandHomeLayout: [{ id: "cpuUsage", enabled: false }], leftWidgets: [{ id: "island", islandHomeLayout: ["memUsage"] }] }],
+        dockConfigs: [{ id: "d", widgets: [{ id: "w1", widgetId: "cpuTemp", enabled: true }, { widgetId: "appsDock" }, "network_speed_monitor"] }]
+    };
+    const once = plain(store.migrateToVersion(input, 49));
+    assert.deepEqual(once.barConfigs[1].islandHomeLayout, [{ id: "sysmon", enabled: false, popout: "processes", ...one("cpu", ["usage"]) }]);
+    assert.deepEqual(once.barConfigs[1].leftWidgets[0].islandHomeLayout, [{ id: "sysmon", enabled: true, popout: "processes", ...one("memory", ["used"]) }]);
+    assert.deepEqual(once.dockConfigs[0].widgets, [{ id: "w1", widgetId: "sysmon", enabled: true, popout: "processes", ...one("cpu", ["temp"]) }, { widgetId: "appsDock" }, { widgetId: "sysmon", enabled: true, popout: "processes", ...one("net", ["down", "up"]) }]);
+    assert.deepEqual(plain(store.migrateToVersion(Object.assign({}, once, { configVersion: 48 }), 49)), once);
+});
+
+test("pending GPU widgets resolve to their own card once, twin cards included", () => {
+    const twin = (busId) => ({ pciId: "10de:2684", busId });
+    const gpus = [twin("0000:01:00.0"), twin("0000:02:00.0")];
+    const entries = [bar("gpuTemp", { pciId: "10de:2684", selectedGpuIndex: 1 }), bar("gpuTemp", { pciId: "10de:2684", selectedGpuIndex: 0 }), bar("gpuTemp", { pciId: "1002:aaaa", selectedGpuIndex: 0 }), bar("gpuTemp", { selectedGpuIndex: 9 })];
+    const settings = store.migrateToVersion({ configVersion: 48, barConfigs: [{ id: "b", rightWidgets: entries }], dockConfigs: [{ id: "d", widgets: [{ widgetId: "gpuTemp", selectedGpuIndex: 1 }] }] }, 49);
+    assert.equal(store.resolveSysmonGpus(settings, []), false);
+    assert.equal(store.resolveSysmonGpus(settings, gpus), true);
+    const right = plain(settings.barConfigs[0].rightWidgets);
+    assert.deepEqual(right.map((w) => w.metrics?.[0].device), ["gpu:0000:02:00.0", "gpu:0000:01:00.0", "gpu:1002:aaaa", "gpu:0000:01:00.0"]);
+    assert.deepEqual([right[2].selectedGpuIndex, right[2].pciId], [undefined, undefined]);
+    assert.equal(settings.dockConfigs[0].widgets[0].metrics[0].device, "gpu:0000:02:00.0");
+    assert.equal(store.resolveSysmonGpus(settings, gpus), false);
+});

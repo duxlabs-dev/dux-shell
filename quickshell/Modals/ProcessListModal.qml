@@ -15,6 +15,7 @@ DFloatingWindow {
     property int currentTab: 0
     property string searchText: ""
     property string expandedPid: ""
+    property string performanceKey: "cpu"
     property var processColumns: ProcessColumns.DEFAULT_COLUMNS
     property bool shouldHaveFocus: visible
     readonly property alias modalFocusScope: contentFocusScope
@@ -28,6 +29,23 @@ DFloatingWindow {
             return;
         }
         visible = true;
+    }
+
+    // target: "processes", "disk" (Disks tab) or a device key, which opens the Performance tab on it.
+    function showPage(target) {
+        const t = typeof target === "string" ? target : "";
+        const key = t === "net" ? (SysmonService.devices().find(e => e.type === "net")?.key ?? "cpu") : t;
+        if (t === "disk") {
+            currentTab = 2;
+        } else if (!SysmonService.device(key)) {
+            currentTab = 0;
+        } else {
+            performanceKey = key;
+            if (performanceTabLoader.item)
+                performanceTabLoader.item.currentKey = key;
+            currentTab = 1;
+        }
+        show();
     }
 
     function hide() {
@@ -110,6 +128,7 @@ DFloatingWindow {
             closingModal();
             searchText = "";
             expandedPid = "";
+            performanceKey = "cpu";
             if (processesTabLoader.item)
                 processesTabLoader.item.reset();
         } else {
@@ -347,7 +366,9 @@ DFloatingWindow {
                             anchors.fill: parent
                             active: processListModal.visible
                             visible: currentTab === 1
-                            sourceComponent: PerformanceView {}
+                            sourceComponent: PerformanceView {
+                                currentKey: processListModal.performanceKey
+                            }
                         }
 
                         Loader {

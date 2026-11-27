@@ -2,7 +2,6 @@ import QtQuick
 import qs.Common
 import qs.Services
 import qs.DCommon.Widgets
-import Quickshell.Widgets
 import "ProcessColumns.js" as ProcessColumns
 import "../../Services/ProcessSort.js" as ProcessSort
 
@@ -113,32 +112,12 @@ DListItem {
             width: root.leadWidth
             height: root.rowHeight
 
-            IconImage {
-                id: appIcon
+            ProcessAppIcon {
                 anchors.right: parent.right
                 anchors.rightMargin: Theme.spacingS
                 anchors.verticalCenter: parent.verticalCenter
-                width: ProcessListMetrics.appIconSize
-                height: width
-                source: ProcessListMetrics.appIcon(root.process, root.appEntry)
-                smooth: true
-                asynchronous: true
-                visible: status === Image.Ready
-            }
-
-            Rectangle {
-                anchors.fill: appIcon
-                visible: !appIcon.visible
-                radius: Theme.cornerRadiusXS
-                color: Theme.chipSurfaceNested
-
-                StyledText {
-                    anchors.centerIn: parent
-                    text: root.command.charAt(0).toUpperCase()
-                    font.pixelSize: Theme.fontSizeSmall
-                    font.weight: Theme.fontWeightMedium
-                    color: Theme.surfaceVariantText
-                }
+                process: root.process
+                appEntry: root.appEntry
             }
         }
 

@@ -12,15 +12,14 @@ Column {
 
     property var metrics: []
     property bool allowGraph: true
+    property bool allowDeviceOptions: false
 
     signal metricsEdited(var metrics)
 
     readonly property var items: SysmonCatalog.normalizeMetrics(metrics)
     property int expandedIndex: -1
     property string expandedDevice: ""
-    property bool adding: false
     readonly property bool firstInGroup: parent?.isSettingsGroupHost ? parent.isEdge(root, true) : true
-    readonly property var addKeys: ["cpu", "memory"].concat((DgopService.availableGpus ?? []).map(g => SysmonService.gpuEntry(g).key), ["disk", "net"])
 
     // Metrics have no ids, so a list changed from outside closes the open row unless it still holds the same device
     onItemsChanged: {
@@ -55,8 +54,10 @@ Column {
         publish(indices.map(i => items[i]), indices.indexOf(expandedIndex));
     }
 
-    function addMetric(key) {
-        adding = false;
+    function addMetric() {
+        // Never a GPU: reading one keeps it awake, so it's only added when picked in the entry.
+        const used = items.map(m => m.device);
+        const key = ["cpu", "memory", "disk", "net"].find(k => used.indexOf(k) < 0) ?? "cpu";
         publish(items.concat([
             {
                 device: key,
@@ -135,6 +136,7 @@ Column {
                     SettingsMetricFields {
                         metric: row.metric
                         allowGraph: root.allowGraph
+                        allowDeviceOptions: root.allowDeviceOptions
                         onMetricEdited: metric => root.replace(row.index, metric)
                     }
 
@@ -168,46 +170,15 @@ Column {
         }
     }
 
-    SettingsFoldRow {
-        id: addRow
-
+    SettingsRow {
         title: I18n.tr("Add", "verb, button that adds a new item to a list")
         iconName: "add"
-        open: root.adding
-        enabled: root.items.length < SysmonCatalog.maxMetrics
-        onToggled: root.adding = !root.adding
-
-        body: Loader {
-            width: parent.width
-            visible: active
-            active: addRow.open && addRow.enabled
-
-            sourceComponent: SettingsGroup {
-                slotColor: SettingsMetrics.controlColor
-
-                Repeater {
-                    model: root.addKeys
-
-                    SettingsRow {
-                        id: choice
-
-                        required property string modelData
-                        readonly property var entry: SysmonService.device(modelData)
-
-                        title: entry?.name ?? ""
-                        subtitle: entry?.type === "gpu" && SysmonService.hostGpuCount() > 1 ? SysmonService.gpuSleepNote() : ""
-                        clickable: true
-                        onClicked: root.addMetric(modelData)
-
-                        leading: DeviceIcon {
-                            anchors.verticalCenter: parent?.verticalCenter
-                            name: choice.entry?.icon ?? ""
-                            size: Theme.iconSize
-                            color: choice.iconColor
-                        }
-                    }
-                }
-            }
+        clickable: true
+        onClicked: {
+            if (root.items.length < SysmonCatalog.maxMetrics)
+                root.addMetric();
+            else
+                ToastService.showWarning(I18n.tr("Maximum entries reached", "system monitor settings: the entry list is full"));
         }
     }
 }

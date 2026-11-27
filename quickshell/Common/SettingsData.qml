@@ -25,7 +25,7 @@ Singleton {
     id: root
     readonly property var log: Log.scoped("SettingsData")
 
-    readonly property int settingsConfigVersion: 48
+    readonly property int settingsConfigVersion: 49
 
     enum Position {
         Top,
@@ -2738,6 +2738,24 @@ Singleton {
         saveSettings();
     }
 
+    function resolveSysmonGpus(gpus) {
+        if (!Store.hasPendingSysmonGpus(root))
+            return;
+        const bars = JSON.stringify(barConfigs);
+        const docks = JSON.stringify(dockConfigs);
+        const snapshot = {
+            barConfigs: JSON.parse(bars),
+            dockConfigs: JSON.parse(docks)
+        };
+        if (!Store.resolveSysmonGpus(snapshot, gpus))
+            return;
+        if (JSON.stringify(snapshot.barConfigs) !== bars)
+            barConfigs = snapshot.barConfigs;
+        if (JSON.stringify(snapshot.dockConfigs) !== docks)
+            dockConfigs = snapshot.dockConfigs;
+        saveSettings();
+    }
+
     // Each screen edge can hold one dock, so resolution and reservation are always edge-scoped.
     function dockConfigsForScreen(screen) {
         if (typeof screen === "string")
@@ -2948,13 +2966,6 @@ Singleton {
         switch (widgetId) {
         case "spacer":
             entry.size = 20;
-            break;
-        case "gpuTemp":
-            entry.selectedGpuIndex = 0;
-            entry.pciId = "";
-            break;
-        case "diskUsage":
-            entry.mountPath = "/";
             break;
         }
         const listKey = sectionId + "Widgets";

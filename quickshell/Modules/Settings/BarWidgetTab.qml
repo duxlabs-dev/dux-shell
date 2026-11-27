@@ -103,8 +103,12 @@ Item {
     }
 
     function set(key, newValue) {
-        const updates = {};
-        updates[key] = newValue;
+        setMany({
+            [key]: newValue
+        });
+    }
+
+    function setMany(updates) {
         if (dockHosted)
             SettingsData.updateDockWidget(dockId, SettingsUiState.selectedDockWidgetId, updates);
         else
@@ -134,6 +138,14 @@ Item {
         });
     }
 
+    // A pill titled by its devices follows edits to them.
+    onEntryChanged: {
+        const info = BarWidgetCatalog.entryInfo(entry) ?? (widgetType === "sysmon" ? BarWidgetCatalog.get("sysmon") : null);
+        if (!info)
+            return;
+        SettingsUiState.selectedWidgetTitle = info.text;
+        SettingsUiState.selectedWidgetDescription = info.description;
+    }
     onWidgetTypeChanged: load()
     Component.onCompleted: load()
 

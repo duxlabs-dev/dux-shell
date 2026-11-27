@@ -284,9 +284,18 @@ Singleton {
         }
     }
 
+    // An open popout keeps its style, so a toggle closes what is shown.
+    function _prepareProcessList(x, y, width, section, screen) {
+        if (!processListPopout.shouldBeVisible)
+            processListPopout.configure({
+                style: "processes"
+            });
+        setPosition(processListPopout, x, y, width, section, screen);
+    }
+
     function openProcessList(x, y, width, section, screen) {
         if (processListPopout) {
-            setPosition(processListPopout, x, y, width, section, screen);
+            _prepareProcessList(x, y, width, section, screen);
             processListPopout.open();
         }
     }
@@ -301,7 +310,7 @@ Singleton {
 
     function toggleProcessList(x, y, width, section, screen) {
         if (processListPopout) {
-            setPosition(processListPopout, x, y, width, section, screen);
+            _prepareProcessList(x, y, width, section, screen);
             processListPopout.toggle();
         }
     }
@@ -1085,13 +1094,14 @@ Singleton {
         }
     }
 
-    function showProcessListModal() {
-        if (processListModal) {
-            processListModal.show();
-        } else if (processListModalLoader) {
+    function showProcessListModal(target) {
+        const open = () => target ? processListModal?.showPage(target) : processListModal?.show();
+        if (!processListModal && processListModalLoader)
             processListModalLoader.active = true;
-            Qt.callLater(() => processListModal?.show());
-        }
+        if (processListModal)
+            open();
+        else
+            Qt.callLater(open);
     }
 
     function hideProcessListModal() {

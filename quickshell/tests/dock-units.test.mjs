@@ -7,7 +7,7 @@ const config = vm.createContext({});
 vm.runInContext(readFileSync(new URL("../Common/settings/DockConfig.js", import.meta.url), "utf8").replace(/^\.pragma.*$/m, ""), config);
 const plain = value => JSON.parse(JSON.stringify(value));
 
-const widgets = [{ id: "clock", widgetId: "clock" }, { id: "apps", widgetId: "appsDock" }, { id: "hidden", widgetId: "cpuUsage", enabled: false }, { id: "launcher", widgetId: "dockLauncher" }, { id: "trash", widgetId: "dockTrash" }];
+const widgets = [{ id: "clock", widgetId: "clock" }, { id: "apps", widgetId: "appsDock" }, { id: "hidden", widgetId: "sysmon", enabled: false }, { id: "launcher", widgetId: "dockLauncher" }, { id: "trash", widgetId: "dockTrash" }];
 const apps = [
     { uniqueKey: "launcher_button", type: "launcher", appId: "__LAUNCHER__", isPinned: true },
     { uniqueKey: "pinned_a", type: "pinned", appId: "a", isPinned: true },

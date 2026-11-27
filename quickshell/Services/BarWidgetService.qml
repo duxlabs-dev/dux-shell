@@ -5,6 +5,7 @@ import QtQuick
 import Quickshell
 import qs.Common
 import "../Common/InstanceRegistry.js" as Registry
+import "../Common/settings/BarWidgetDefaults.js" as WidgetDefaults
 
 Singleton {
     id: root
@@ -175,6 +176,8 @@ Singleton {
 
     // Matches getPreferredBar in DMSShellIPC: focused screen, then visible before hidden, then the last used bar.
     function resolveIpcWidget(widgetId) {
+        const legacyType = WidgetDefaults.SYSMON_LEGACY_TYPES?.[widgetId] ?? "";
+        widgetId = currentWidgetId(widgetId);
         const configs = SettingsData.barConfigs.concat(SettingsData.dockConfigs ?? []).map(config => config.id);
         const screens = Quickshell.screens.map(screen => screen.name);
         const screenName = getFocusedScreenName();
@@ -192,11 +195,15 @@ Singleton {
         for (const targets of [focusedTargets, [
                 {}
             ]]) {
-            for (const eligible of tiers) {
-                for (const target of targets) {
-                    const hit = Registry.select(widgetRegistry, widgetId, target, configs, screens, eligible);
-                    if (hit)
-                        return hit;
+            // An old monitor id prefers the sysmon widget that shows its kind of device.
+            for (const typed of legacyType ? [true, false] : [false]) {
+                for (const tier of tiers) {
+                    const eligible = typed ? entry => tier(entry) && SysmonService.widgetMetrics(entry.item?.widgetData).some(m => m.on !== false && SysmonService.parseKey(m.device).type === legacyType) : tier;
+                    for (const target of targets) {
+                        const hit = Registry.select(widgetRegistry, widgetId, target, configs, screens, eligible);
+                        if (hit)
+                            return hit;
+                    }
                 }
             }
         }
@@ -265,25 +272,32 @@ Singleton {
         return [...new Set(Object.values(widgetRegistry).map(entry => entry.widgetId))];
     }
 
+    // Ids of monitor widgets from before the settings v49 migration still reach their sysmon widget.
+    function currentWidgetId(widgetId) {
+        return WidgetDefaults.SYSMON_LEGACY_IDS.includes(widgetId) ? "sysmon" : widgetId;
+    }
+
     function hasWidget(widgetId) {
         return resolveIpcWidget(widgetId) !== null;
     }
 
     function ensureWidget(widgetId) {
+        widgetId = currentWidgetId(widgetId);
         if (!hasWidget(widgetId) && !onDemandWidgetIds.includes(widgetId))
             onDemandWidgetIds = [...onDemandWidgetIds, widgetId];
         return hasWidget(widgetId);
     }
 
     function triggerWidgetPopout(widgetId, target) {
-        const widget = target ? resolveWidget(widgetId, target, true)?.item : getWidgetOnFocusedScreen(widgetId);
+        const legacyType = WidgetDefaults.SYSMON_LEGACY_TYPES?.[widgetId] ?? "";
+        const widget = target ? resolveWidget(currentWidgetId(widgetId), target, true)?.item : getWidgetOnFocusedScreen(widgetId);
         if (!widget)
             return false;
 
         const registration = registrationForItem(widget);
         registration?.context?.surface?.ensureVisible(widget);
         if (typeof widget.triggerPopout === "function") {
-            widget.triggerPopout();
+            widget.triggerPopout(legacyType);
             return true;
         }
 
@@ -291,11 +305,7 @@ Singleton {
             "battery": "toggleBatteryPopup",
             "vpn": "toggleVpnPopup",
             "layout": "toggleLayoutPopup",
-            "clock": "clockClicked",
-            "cpuUsage": "cpuClicked",
-            "memUsage": "ramClicked",
-            "cpuTemp": "cpuTempClicked",
-            "gpuTemp": "gpuTempClicked"
+            "clock": "clockClicked"
         };
 
         const signalName = signalMap[widgetId];

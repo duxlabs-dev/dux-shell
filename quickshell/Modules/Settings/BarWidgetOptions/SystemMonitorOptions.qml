@@ -2,21 +2,27 @@ import QtQuick
 import qs.Common
 import qs.Services
 import qs.Modules.Settings.Widgets
+import "../../../Services/SysmonCatalog.js" as SysmonCatalog
 
 Column {
     id: root
 
     property var page: null
 
-    Component.onCompleted: DgopService.ensureMeta()
+    readonly property var choices: SysmonCatalog.barChoices
+    readonly property var metrics: SysmonService.widgetMetrics(page?.entry)
 
-    readonly property string type: page.widgetType
-    readonly property var gpuLabels: (DgopService.availableGpus ?? []).map(gpu => (gpu.driver ? gpu.driver.toUpperCase() + " " : "") + (gpu.displayName ?? ""))
-    readonly property var mountLabels: {
-        const mounts = DgopService.diskMounts ?? [];
-        if (mounts.length === 0)
-            return ["/"];
-        return mounts.map(mount => mount.mount);
+    function apply(edited) {
+        if (JSON.stringify(edited) === JSON.stringify(metrics))
+            return;
+        const updates = {
+            "metrics": edited
+        };
+        if (page.entry?.selectedGpuIndex !== undefined) {
+            updates.selectedGpuIndex = undefined;
+            updates.pciId = undefined;
+        }
+        page.setMany(updates);
     }
 
     width: parent?.width ?? 0
@@ -24,74 +30,70 @@ Column {
 
     SettingsCard {
         settingKey: "barWidgetSystemMonitor"
+        title: I18n.tr("Entries", "system monitor bar widget: ordered list of shown devices")
 
-        SettingsToggleRow {
-            text: I18n.tr("Force padding")
-            description: I18n.tr("Dynamic width")
-            checked: root.page.value("minimumWidth") !== false
-            onToggled: checked => root.page.set("minimumWidth", checked)
+        SettingsMetricList {
+            metrics: root.metrics
+            allowGraph: false
+            allowDeviceOptions: true
+            onMetricsEdited: metrics => root.apply(metrics)
         }
 
-        SettingsToggleRow {
-            text: I18n.tr("Show swap")
-            visible: root.type === "memUsage"
-            checked: root.page.value("showSwap") === true
-            onToggled: checked => root.page.set("showSwap", checked)
-        }
-
-        SettingsToggleRow {
-            text: I18n.tr("Show in GB")
-            visible: root.type === "memUsage"
-            checked: root.page.value("showInGb") === true
-            onToggled: checked => root.page.set("showInGb", checked)
-        }
-
-        SettingsDropdownRow {
-            text: I18n.tr("GPU")
-            visible: root.type === "gpuTemp"
-            options: root.gpuLabels
-            emptyText: I18n.tr("No GPU detected", "empty state when no graphics card is found")
-            currentValue: root.gpuLabels[DgopService.availableGpus.indexOf(DgopService.widgetGpu(root.page.value("selectedGpuIndex"), root.page.value("pciId")))] ?? ""
-            onValueChanged: value => {
-                const index = root.gpuLabels.indexOf(value);
-                if (index < 0)
-                    return;
-                root.page.set("selectedGpuIndex", index);
-                root.page.set("pciId", DgopService.availableGpus[index]?.pciId ?? "");
-            }
-        }
-
-        SettingsDropdownRow {
+        SettingsButtonGroupRow {
             resetStore: root.page
-            resetKeys: ["mountPath"]
-            text: I18n.tr("Mount", "noun, dropdown label for the disk mount point")
-            visible: root.type === "diskUsage"
-            options: root.mountLabels
-            currentValue: root.page.value("mountPath") ?? "/"
-            onValueChanged: value => root.page.set("mountPath", value)
+            resetKeys: ["separator"]
+            text: I18n.tr("Separator", "bar system monitor widget option: what is drawn between entries")
+            visible: root.metrics.length >= 2
+            model: [I18n.tr("Gap", "bar system monitor widget separator option"), I18n.tr("Line", "bar system monitor widget separator option"), I18n.tr("Dot", "bar system monitor widget separator option"), I18n.tr("Separate", "bar system monitor widget separator option: one pill per entry")]
+            values: root.choices.separator
+            value: root.page.value("separator")
+            onValueSelected: v => root.page.set("separator", v)
         }
+    }
 
-        SettingsToggleRow {
-            text: I18n.tr("Show mount path")
-            visible: root.type === "diskUsage"
-            checked: root.page.value("showMountPath") === true
-            onToggled: checked => root.page.set("showMountPath", checked)
-        }
+    SettingsCard {
+        settingKey: "barWidgetSystemMonitorAppearance"
+        title: I18n.tr("Appearance", "settings section title for visual options")
 
-        SettingsDropdownRow {
+        SettingsButtonGroupRow {
             resetStore: root.page
-            resetKeys: ["diskUsageMode"]
-            readonly property var labels: [I18n.tr("Percentage"), I18n.tr("Total", "disk usage format option, total disk size"), I18n.tr("Remaining", "disk usage format option, free disk space"), I18n.tr("Remaining / Total")]
+            resetKeys: ["style"]
+            text: I18n.tr("Style", "noun, visual style option label for a widget or the dock")
+            model: [I18n.tr("Icon", "system monitor tile style option"), I18n.tr("Meter", "system monitor tile style option"), I18n.tr("Ring", "system monitor tile style option"), I18n.tr("Graph", "system monitor tile style option")]
+            values: root.choices.style
+            value: root.page.value("style")
+            onValueSelected: v => root.page.set("style", v)
+        }
 
-            text: I18n.tr("Disk usage format")
-            visible: root.type === "diskUsage"
-            options: labels
-            currentValue: labels[root.page.value("diskUsageMode")] ?? labels[0]
-            onValueChanged: value => {
-                const index = labels.indexOf(value);
-                if (index >= 0)
-                    root.page.set("diskUsageMode", index);
-            }
+        SettingsButtonGroupRow {
+            resetStore: root.page
+            resetKeys: ["label"]
+            text: I18n.tr("Label", "bar system monitor widget option: icon, name, both or none")
+            model: [I18n.tr("Icon", "system monitor tile style option"), I18n.tr("Name", "bar system monitor widget label: the device name"), I18n.tr("Both", "bar system monitor widget label: icon and device name"), I18n.tr("None", "bar system monitor widget label: nothing")]
+            values: root.choices.label
+            value: root.page.value("label")
+            onValueSelected: v => root.page.set("label", v)
+        }
+
+        SettingsColorPicker {
+            resetStore: root.page
+            resetKeys: ["colorMode", "customColor"]
+            showDefault: true
+            defaultColor: Theme.widgetIconColor
+            colorMode: root.page.value("colorMode")
+            customColor: root.page.value("customColor")
+            onColorModeSelected: mode => root.page.set("colorMode", mode)
+            onCustomColorSelected: color => root.page.set("customColor", color.toString())
+        }
+
+        SettingsButtonGroupRow {
+            resetStore: root.page
+            resetKeys: ["popout"]
+            text: I18n.tr("Popout", "bar system monitor widget option: what opens when it is clicked")
+            model: [I18n.tr("Compact", "bar system monitor widget popout option"), I18n.tr("Processes", "bar system monitor widget popout option"), I18n.tr("Device", "bar system monitor widget popout option"), I18n.tr("Overview", "bar system monitor widget popout option")]
+            values: root.choices.popout
+            value: root.page.value("popout")
+            onValueSelected: v => root.page.set("popout", v)
         }
     }
 }

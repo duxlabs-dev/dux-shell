@@ -165,7 +165,7 @@ Rectangle {
 
         SettingsGroup {
             Layout.fillWidth: true
-            slotColor: Theme.chipSurface
+            slotColor: ProcessListMetrics.cardInsetColor
             customPaddingV: 0
             customPaddingH: Theme.spacingL
 
@@ -340,7 +340,7 @@ Rectangle {
 
             SettingsGroup {
                 id: stats
-                slotColor: Theme.chipSurface
+                slotColor: ProcessListMetrics.cardInsetColor
                 Layout.fillWidth: true
                 Layout.horizontalStretchFactor: 2
                 Layout.maximumWidth: Theme.fontSizeMedium * 25
@@ -365,7 +365,7 @@ Rectangle {
 
         SettingsGroup {
             visible: root.expanded && root.filesystems.length > 0
-            slotColor: Theme.chipSurface
+            slotColor: ProcessListMetrics.cardInsetColor
             Layout.fillWidth: true
             customPaddingV: 0
             customPaddingH: Theme.spacingL

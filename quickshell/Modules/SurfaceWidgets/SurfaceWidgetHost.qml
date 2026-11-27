@@ -202,11 +202,7 @@ Loader {
 
     function getWidgetVisible(widgetId, dgopAvailable) {
         const widgetVisibility = {
-            "cpuUsage": dgopAvailable,
-            "memUsage": dgopAvailable,
-            "cpuTemp": dgopAvailable,
-            "gpuTemp": dgopAvailable,
-            "network_speed_monitor": dgopAvailable,
+            "sysmon": dgopAvailable,
             "layout": CompositorService.isMango && MangoService.available
         };
 

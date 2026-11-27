@@ -37,10 +37,9 @@ BasePill {
         }
     }
 
-    Loader {
-        id: tooltipLoader
-        active: false
-        sourceComponent: DTooltip {}
+    PillTooltip {
+        id: tooltip
+        pill: root
     }
 
     MouseArea {
@@ -68,9 +67,6 @@ BasePill {
         onEntered: {
             if (!root.parentScreen || (popoutTarget?.shouldBeVisible))
                 return;
-            tooltipLoader.active = true;
-            if (!tooltipLoader.item)
-                return;
             let tooltipText = "";
             if (!DMSNetworkService.connected) {
                 tooltipText = "VPN Disconnected";
@@ -89,34 +85,8 @@ BasePill {
                 }
             }
 
-            if (root.isVerticalOrientation) {
-                const localPos = mapToItem(null, width / 2, height / 2);
-                const currentScreen = root.parentScreen || Screen;
-                const adjustedY = localPos.y + root.minTooltipY;
-                const tooltipX = root.axis?.edge === "left" ? (root.barThickness + root.barSpacing + Theme.spacingXS) : (currentScreen.width - root.barThickness - root.barSpacing - Theme.spacingXS);
-                const isLeft = root.axis?.edge === "left";
-                tooltipLoader.item.show(tooltipText, tooltipX, adjustedY, currentScreen, isLeft, !isLeft);
-            } else {
-                const isBottom = root.axis?.edge === "bottom";
-                const localPos = mapToItem(null, width / 2, 0);
-                const currentScreen = root.parentScreen || Screen;
-
-                let tooltipY;
-                if (isBottom) {
-                    const tooltipHeight = Theme.fontSizeSmall * 1.5 + Theme.spacingS * 2;
-                    tooltipY = currentScreen.height - root.barThickness - root.barSpacing - Theme.spacingXS - tooltipHeight;
-                } else {
-                    tooltipY = root.barThickness + root.barSpacing + Theme.spacingXS;
-                }
-
-                tooltipLoader.item.show(tooltipText, localPos.x, tooltipY, currentScreen, false, false);
-            }
+            tooltip.show(tooltipText, clickArea);
         }
-        onExited: {
-            if (tooltipLoader.item) {
-                tooltipLoader.item.hide();
-            }
-            tooltipLoader.active = false;
-        }
+        onExited: tooltip.hide()
     }
 }

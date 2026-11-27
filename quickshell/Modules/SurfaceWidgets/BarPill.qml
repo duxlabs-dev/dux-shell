@@ -38,6 +38,11 @@ Item {
     property real crossEdgeExtension: 0
     property string segmentRole: "solo"
     property real splitOffset: 0
+    property var splitOffsets: []
+    readonly property var splitBounds: splitOffsets.length > 0 ? splitOffsets : (splitOffset > 0 ? [splitOffset] : [])
+    property bool splitJoined: true
+    property real splitGap: BarMetrics.segmentGap
+    property bool splitBlurPerSegment: false
     property int pressedSegment: 0
     readonly property color defaultContentColor: Theme.widgetTextColor
     property color contentColor: defaultContentColor
@@ -116,6 +121,25 @@ Item {
     signal middleClicked(real rootX, real rootY)
     signal wheel(var wheelEvent)
 
+    // Centers of the gaps between neighboring items along the bar, measured from the laid out items so RTL works.
+    function gapCenters(items, layout) {
+        const vertical = isVerticalOrientation;
+        const origin = horizontalPadding + (vertical ? layout.y : layout.x);
+        const out = [];
+        for (let i = 0; i + 1 < items.length; i++) {
+            const a = items[i];
+            const b = items[i + 1];
+            if (!a || !b)
+                return [];
+            const aStart = vertical ? a.y : a.x;
+            const aEnd = aStart + (vertical ? a.height : a.width);
+            const bStart = vertical ? b.y : b.x;
+            const bEnd = bStart + (vertical ? b.height : b.width);
+            out.push(origin + (aStart < bStart ? (aEnd + bStart) / 2 : (bEnd + aStart) / 2));
+        }
+        return out.sort((x, y) => x - y);
+    }
+
     function cornerRadius(joined, progress = pressProgress) {
         if (noBackground)
             return 0;
@@ -126,7 +150,13 @@ Item {
         if (!visualContent.split)
             return 0;
         const pos = sourceItem.mapToItem(visualContent, x, y);
-        return (isVerticalOrientation ? pos.y : pos.x) >= splitOffset ? 1 : 0;
+        const along = isVerticalOrientation ? pos.y : pos.x;
+        let index = 0;
+        for (const bound of splitBounds) {
+            if (along >= bound)
+                index++;
+        }
+        return index;
     }
 
     function triggerRipple(sourceItem, mouseX, mouseY) {
@@ -235,31 +265,35 @@ Item {
         anchors.centerIn: parent
 
         readonly property real blurRadius: root.blurRadius
-        readonly property bool split: root.splitOffset > 0
-        readonly property real splitGap: BarMetrics.segmentGap
+        readonly property bool split: root.splitBounds.length > 0
         property bool hovered: false
 
         Repeater {
             id: segmentRepeater
-            model: visualContent.split ? 2 : 1
+            model: root.splitBounds.length + 1
+
+            onItemAdded: Qt.callLater(root._updateBlurRegistration)
+            onItemRemoved: (index, item) => {
+                root._blurRegisteredWindow?.unregisterBlurWidget?.(item);
+                root._blurRegisteredItems = root._blurRegisteredItems.filter(registered => registered !== item);
+                Qt.callLater(root._updateBlurRegistration);
+            }
 
             Item {
                 id: segment
                 required property int index
                 readonly property alias ripple: ripple
-                readonly property bool leading: index === 0
-                readonly property bool joinedStart: visualContent.split && !leading
-                readonly property bool joinedEnd: visualContent.split && leading
-                readonly property real along: visualContent.split ? (leading ? 0 : root.splitOffset + visualContent.splitGap / 2) : 0
-                readonly property real length: {
-                    const full = root.isVerticalOrientation ? visualContent.height : visualContent.width;
-                    if (!visualContent.split)
-                        return full;
-                    return leading ? root.splitOffset - visualContent.splitGap / 2 : full - root.splitOffset - visualContent.splitGap / 2;
-                }
+                readonly property bool first: index === 0
+                readonly property bool last: index >= root.splitBounds.length
+                readonly property real along: first ? 0 : root.splitBounds[index - 1] + root.splitGap / 2
+                readonly property real length: (last ? (root.isVerticalOrientation ? visualContent.height : visualContent.width) : root.splitBounds[index] - root.splitGap / 2) - along
                 readonly property real pressProgress: !visualContent.split || index === root.pressedSegment ? root.pressProgress : 0
-                readonly property real startRadius: root.cornerRadius(joinedStart || root.startJoined, pressProgress)
-                readonly property real endRadius: root.cornerRadius(joinedEnd || root.endJoined, pressProgress)
+                readonly property real startRadius: root.cornerRadius(first ? root.startJoined : root.splitJoined, pressProgress)
+                readonly property real endRadius: root.cornerRadius(last ? root.endJoined : root.splitJoined, pressProgress)
+                readonly property real blurTopLeftRadius: fill.topLeftRadius
+                readonly property real blurTopRightRadius: fill.topRightRadius
+                readonly property real blurBottomLeftRadius: fill.bottomLeftRadius
+                readonly property real blurBottomRightRadius: fill.bottomRightRadius
 
                 x: root.isVerticalOrientation ? 0 : along
                 y: root.isVerticalOrientation ? along : 0
@@ -363,18 +397,39 @@ Item {
     }
 
     property var _blurRegisteredWindow: null
+    property var _blurRegisteredItems: []
     readonly property var _blurTargetWindow: BlurService.enabled && !!blurBarWindow && !!blurBarWindow.registerBlurWidget && !root.noBackground && root.visible && root.width > 0 && root.height > 0 ? blurBarWindow : null
 
     on_BlurTargetWindowChanged: _updateBlurRegistration()
+    onSplitBlurPerSegmentChanged: Qt.callLater(_updateBlurRegistration)
 
     function _updateBlurRegistration() {
-        if (_blurRegisteredWindow === _blurTargetWindow)
+        const window = _blurTargetWindow;
+        const items = [];
+        if (window) {
+            if (splitBlurPerSegment && visualContent.split) {
+                for (let i = 0; i < segmentRepeater.count; i++) {
+                    const segment = segmentRepeater.itemAt(i);
+                    if (segment)
+                        items.push(segment);
+                }
+            } else {
+                items.push(visualContent);
+            }
+        }
+        if (window === _blurRegisteredWindow && items.length === _blurRegisteredItems.length && items.every((item, i) => item === _blurRegisteredItems[i]))
             return;
-        _blurRegisteredWindow?.unregisterBlurWidget?.(visualContent);
-        _blurRegisteredWindow = _blurTargetWindow;
-        _blurRegisteredWindow?.registerBlurWidget(visualContent);
+        for (const item of _blurRegisteredItems)
+            _blurRegisteredWindow?.unregisterBlurWidget?.(item);
+        _blurRegisteredWindow = window;
+        _blurRegisteredItems = items;
+        for (const item of items)
+            window.registerBlurWidget(item);
     }
 
     Component.onCompleted: _updateBlurRegistration()
-    Component.onDestruction: _blurRegisteredWindow?.unregisterBlurWidget?.(visualContent)
+    Component.onDestruction: {
+        for (const item of _blurRegisteredItems)
+            _blurRegisteredWindow?.unregisterBlurWidget?.(item);
+    }
 }

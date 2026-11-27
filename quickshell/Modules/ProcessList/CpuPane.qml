@@ -42,8 +42,18 @@ DevicePane {
     showChart: !perThread
     chartLabel: I18n.tr("Usage", "chart legend: CPU or GPU utilization")
     chartValue: DgopService.cpuSampleCount === 0 ? "—" : DgopService.cpuUsage.toFixed(0) + "%"
+    values: DgopService.history("cpu", "usage")
     maximum: 100
     maximumText: "100%"
+
+    typeKey: "cpu"
+    mainFraction: DgopService.cpuSampleCount === 0 ? -1 : DgopService.cpuUsage / 100
+    briefSubtitle: [subtitle, subtitle2].filter(s => s).join(" · ")
+    extraLabel: I18n.tr("Temperature", "CPU temperature")
+    extraValue: DgopService.cpuTemperature > 0 ? Devices.formatTemp(DgopService.cpuTemperature) : ""
+    compactSecondaryLabel: extraLabel
+    compactSecondaryValue: extraValue
+    compactSecondaryValues: DgopService.history("cpu", "temp")
 
     headerActions: DButtonGroup {
         visible: DgopService.perCoreCpuUsage.length > 0
@@ -59,6 +69,7 @@ DevicePane {
 
     leftStats: [
         {
+            tile: true,
             label: I18n.tr("Clock", "CPU clock speed", true),
             value: root.ghz(root.clockMHz),
             tooltip: info?.governor ? I18n.tr("Governor", "CPU frequency scaling governor") + ": " + info.governor : ""
@@ -91,6 +102,7 @@ DevicePane {
 
     rightStats: [
         {
+            tile: true,
             label: I18n.tr("Processes"),
             value: root.count(DgopService.processCount)
         },
@@ -122,23 +134,45 @@ DevicePane {
     Rectangle {
         visible: root.perThread
         width: parent.width
-        height: Math.max(root.chartCardHeight, threadGrid.implicitHeight + Theme.spacingL * 2)
+        height: Math.max(root.chartCardHeight, threadGrid.implicitHeight + threadGrid.inset * 2)
         radius: Theme.cornerRadiusL
-        color: ProcessListMetrics.cardColor
+        color: root.compactGrid ? "transparent" : ProcessListMetrics.cardColor
 
         Grid {
             id: threadGrid
 
-            readonly property int rows: Math.max(1, Math.ceil(DgopService.perCoreCpuUsage.length / columns))
+            readonly property int count: DgopService.perCoreCpuUsage.length
+            // Past what fits at the normal gap, the gap shrinks so more cells fit.
+            readonly property bool dense: root.compactGrid && count > ProcessListMetrics.threadMaxColumns * rowsFit(Theme.spacingS)
+            readonly property int rows: Math.max(1, Math.ceil(count / columns))
             readonly property real cellWidth: (width - spacing * (columns - 1)) / columns
-            // Fills the overall chart's height so the stats below stay put; many rows get a floor instead.
-            readonly property real cellHeight: Math.max(Theme.listItemHeight, (root.chartCardHeight - Theme.spacingL * 2 - spacing * (rows - 1)) / rows)
+            // Fills the overall chart's height so the stats below stay put; past that the card grows instead of the cells shrinking.
+            readonly property real inset: root.compactGrid ? 0 : Theme.spacingL
+            readonly property real cellHeight: Math.max(root.compactGrid ? ProcessListMetrics.threadCellMinHeight : Theme.listItemHeight, (root.chartCardHeight - inset * 2 - spacing * (rows - 1)) / rows)
+            readonly property real cellMinWidth: numberReserve.reservedWidth + Theme.spacingS * 2
 
-            x: Theme.spacingL
-            y: Theme.spacingL
-            width: parent.width - Theme.spacingL * 2
-            columns: Math.max(1, Math.min(8, DgopService.perCoreCpuUsage.length))
-            spacing: Theme.spacingS
+            function rowsFit(gap) {
+                return Math.max(1, Math.floor((root.chartCardHeight + gap) / (ProcessListMetrics.threadCellMinHeight + gap)));
+            }
+
+            x: inset
+            y: inset
+            width: parent.width - inset * 2
+            columns: {
+                const most = ProcessListMetrics.threadMaxColumns;
+                if (!root.compactGrid)
+                    return Math.max(1, Math.min(most, count));
+                const widthFit = Math.max(1, Math.floor((width + spacing) / (cellMinWidth + spacing)));
+                return Math.max(1, Math.min(count, widthFit, Math.max(most, Math.ceil(count / rowsFit(spacing)))));
+            }
+            spacing: dense ? Theme.spacingXXS : Theme.spacingS
+
+            NumericText {
+                id: numberReserve
+                visible: false
+                reserveText: "100%"
+                font.pixelSize: Theme.fontSizeSmall
+            }
 
             Repeater {
                 model: root.perThread ? DgopService.perCoreCpuUsage.length : 0
@@ -149,6 +183,7 @@ DevicePane {
                     required property int index
                     readonly property real usage: DgopService.perCoreCpuUsage[index] ?? 0
                     readonly property real mhz: root.freqs[index] ?? 0
+                    readonly property string usageText: Math.round(usage) + "%"
 
                     width: threadGrid.cellWidth
                     height: threadGrid.cellHeight
@@ -158,7 +193,7 @@ DevicePane {
 
                     MetricChart {
                         anchors.fill: parent
-                        anchors.topMargin: threadLabel.height
+                        anchors.topMargin: threadLabel.visible ? threadLabel.height : 0
                         compact: true
                         values: DgopService.history("cpu", "thread" + thread.index)
                         maximum: 100
@@ -167,6 +202,7 @@ DevicePane {
 
                     StyledText {
                         id: threadLabel
+                        visible: !root.compactGrid
                         x: Theme.spacingS
                         topPadding: Theme.spacingXS
                         text: String(thread.index)
@@ -175,10 +211,13 @@ DevicePane {
                     }
 
                     NumericText {
+                        id: threadNumber
+                        reserveText: "100%"
+                        visible: thread.height >= ProcessListMetrics.threadNumberMinHeight && thread.width >= reservedWidth + Theme.spacingS * 2
                         anchors.right: parent.right
                         anchors.rightMargin: Theme.spacingS
                         topPadding: Theme.spacingXS
-                        text: Math.round(thread.usage) + "%"
+                        text: thread.usageText
                         font.pixelSize: Theme.fontSizeSmall
                         color: Theme.surfaceText
                     }
@@ -191,7 +230,7 @@ DevicePane {
                     }
 
                     DTooltipHost {
-                        text: thread.mhz > 0 ? root.ghz(thread.mhz) : ""
+                        text: [root.compactGrid ? String(thread.index) : "", threadNumber.visible ? "" : thread.usageText, thread.mhz > 0 ? root.ghz(thread.mhz) : ""].filter(s => s).join(" · ")
                         target: thread
                         hoverArea: threadHover
                     }

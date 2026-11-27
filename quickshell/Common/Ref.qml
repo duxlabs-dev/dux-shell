@@ -7,6 +7,7 @@ QtObject {
     property bool active: true
 
     property bool _held: false
+    property bool _alive: true
     // What was actually added, so release matches it even after `modules` changes.
     property var _heldModules: null
 
@@ -46,8 +47,17 @@ QtObject {
         _add(_heldModules);
         _remove(old);
     }
-    onModulesChanged: _swap()
-    onActiveChanged: sync(active)
+    function _syncActive() {
+        if (_alive)
+            sync(active);
+    }
+
+    // Deferred: adding or releasing changes service data, which the bindings driving `modules` and `active` may read.
+    onModulesChanged: Qt.callLater(_swap)
+    onActiveChanged: Qt.callLater(_syncActive)
     Component.onCompleted: sync(active)
-    Component.onDestruction: sync(false)
+    Component.onDestruction: {
+        _alive = false;
+        sync(false);
+    }
 }

@@ -1809,7 +1809,7 @@ var LOCAL_SPEC = {
                 showOnLastDisplay: true,
                 leftWidgets: ["launcherButton", "workspaceSwitcher", "focusedWindow"],
                 centerWidgets: ["music", "clock", "weather"],
-                rightWidgets: ["systemTray", "clipboard", "cpuUsage", "memUsage", "notificationButton", "battery", "controlCenterButton"],
+                rightWidgets: ["systemTray", "clipboard", { id: "sysmon", enabled: true, metrics: [{ device: "cpu", vals: ["usage"] }, { device: "memory", vals: ["used"] }], separator: "separate" }, "notificationButton", "battery", "controlCenterButton"],
                 spacing: 4,
                 innerPadding: 2,
                 barInsetPadding: -1,

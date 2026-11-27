@@ -21,6 +21,7 @@ Singleton {
     property int refCount: 0
     readonly property bool powerSaver: pollingActive && PowerProfileWatcher.currentProfile === PowerProfile.PowerSaver
     property int updateInterval: powerSaver ? 6000 : 3000
+    property int primeGeneration: -1
     property bool isUpdating: false
     property bool pendingUpdate: false
     property int subscriptionGeneration: 0
@@ -168,8 +169,10 @@ Singleton {
             }
         }
 
-        if (modulesChanged)
+        if (modulesChanged) {
             subscriptionGeneration++;
+            primeGeneration = subscriptionGeneration;
+        }
 
         if (hasModule("system"))
             updateUptime();
@@ -320,12 +323,6 @@ Singleton {
             updateAllStats();
     }
 
-    // The saved index shifts when a card leaves availableGpus, so the id wins; identical cards share one.
-    function widgetGpu(index, pciId) {
-        const gpu = availableGpus[index];
-        return !pciId || gpu?.pciId === pciId ? gpu : availableGpus.find(g => g.pciId === pciId);
-    }
-
     function gpuHeldByWidget(pciId) {
         const id = String(pciId).toLowerCase();
         const held = Object.keys(gpuPciIdRefCounts).some(k => k.toLowerCase() === id && gpuPciIdRefCounts[k] > 0);
@@ -402,6 +399,11 @@ Singleton {
                 log.warn("dgop.meta failed:", response.error || "empty result");
             } else if (pollingActive && generation === subscriptionGeneration) {
                 parseData(response.result);
+                // Per-process rates of a module just added need a second sample; take it soon, like the first CPU sample.
+                if (generation === primeGeneration) {
+                    primeGeneration = -1;
+                    primeTimer.restart();
+                }
             }
             if (asRoot && unlockLoading && ++_rootSamples >= 2)
                 unlockLoading = false;
