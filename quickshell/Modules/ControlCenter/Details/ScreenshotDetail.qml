@@ -58,7 +58,7 @@ Item {
             CcGroup {
                 CcListRow {
                     iconName: "fullscreen"
-                    title: I18n.tr("Full screen", "screenshot capture mode")
+                    title: I18n.tr("Fullscreen", "screenshot capture mode")
                     clickable: true
                     onClicked: root.requestCapture("full")
                 }

@@ -17,7 +17,7 @@ CcTile {
             actions: {
                 const items = [
                     {
-                        text: I18n.tr("Full screen", "screenshot capture mode"),
+                        text: I18n.tr("Fullscreen", "screenshot capture mode"),
                         icon: "fullscreen",
                         trigger: () => root.host?.screenshotRequested("full")
                     }
