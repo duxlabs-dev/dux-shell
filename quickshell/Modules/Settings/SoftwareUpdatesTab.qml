@@ -771,7 +771,7 @@ Item {
                         if (SettingsData.updaterUseCustomCommand)
                             return I18n.tr("Ignored packages only apply to the built-in updater. Your custom command controls its own exclusions.");
                         if (SystemUpdateService.pkgManager === "shelly")
-                            return I18n.tr("With Shelly, only Flatpak packages in the current update list can be ignored.");
+                            return I18n.tr("With Shelly, only Flatpak and Homebrew packages in the current update list can be ignored.", "ignored packages hint, Shelly holds only overlay packages");
                         return (SettingsData.updaterIgnoredPackages || []).length > 0 ? I18n.tr("Ignored packages are hidden from the updater and skipped by 'Update All'.") : I18n.tr("No packages ignored. Add one here or hover an update in the popout and click the hide button.");
                     }
                     placeholderText: I18n.tr("Package name (e.g., docker)")
@@ -790,7 +790,7 @@ Item {
                 SettingsRow {
                     id: ignoredPackageError
                     visible: false
-                    title: ignoredPackagesCard.errorIsInvalidName ? I18n.tr("Invalid package name — letters, digits and @._+:/- only.", "ignored packages validation error") : I18n.tr("With Shelly, only Flatpak packages in the current update list can be ignored.")
+                    title: ignoredPackagesCard.errorIsInvalidName ? I18n.tr("Invalid package name — letters, digits and @._+:/- only.", "ignored packages validation error") : I18n.tr("With Shelly, only Flatpak and Homebrew packages in the current update list can be ignored.", "ignored packages hint, Shelly holds only overlay packages")
                     titleColor: Theme.error
                 }
 
