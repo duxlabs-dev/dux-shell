@@ -152,7 +152,6 @@ Item {
                 }
 
                 SettingsNavRow {
-                    visible: !Theme.motionOff
                     iconName: "accessibility_new"
                     title: I18n.tr("Reduce motion")
                     hint: SettingsTabs.page("accessibility")?.text ?? ""

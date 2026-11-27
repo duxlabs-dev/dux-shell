@@ -121,7 +121,7 @@ QtObject {
         });
     }
 
-    function detail(type, id, dev, vals) {
+    function detail(type, id, dev, vals, mount) {
         switch (type) {
         case "cpu":
             return Catalog.shortCpuName(DgopService.cpuModel);
@@ -131,6 +131,10 @@ QtObject {
             return dev.gpu?.driver || "";
         case "disk":
             {
+                if (mount) {
+                    const mt = (DgopService.diskMounts ?? []).find(e => e.mount === mount);
+                    return !mt ? "" : mt.used && mt.size ? mt.used + " / " + mt.size : mt.mount;
+                }
                 const s = vals.indexOf("space") >= 0 ? Drives.usedSpace(DriveService.drives, DgopService.diskMounts, id, "") : null;
                 if (s?.used != null && s.total > 0)
                     return Drives.formatCapacity(s.used) + " / " + Drives.formatCapacity(s.total);
@@ -171,11 +175,13 @@ QtObject {
         };
         const maximum = (kind, values) => scale(kind) || Devices.rateAxisMax(values, [], 1);
 
+        const mount = m.mount ?? "";
         const values = m.vals.map(id => {
             const kind = Catalog.valueDef(type, id).kind;
-            const value = live ? SysmonService.read(key, id) : null;
+            const value = live ? SysmonService.read(key, id, mount) : null;
             const max = scale(kind);
-            const history = charts === "all" ? hist(id) : [];
+            // Space history is recorded per device, not per mount, so a mount gets no trend.
+            const history = charts === "all" && !(mount && id === "space") ? hist(id) : [];
             return {
                 id: id,
                 label: SysmonService.valueLabel(type, id),
@@ -204,7 +210,7 @@ QtObject {
                 trend.values = hist(pair[0]);
                 trend.secondaryValues = hist(pair[1]);
                 trend.maximum = ratePeak();
-            } else {
+            } else if (!(mount && main.id === "space")) {
                 trend.values = hist(main.id);
                 trend.maximum = maximum(main.kind, trend.values);
             }
@@ -215,7 +221,7 @@ QtObject {
             type: type,
             name: named ? SysmonService.displayName(m.device) : SysmonService.typeName(type),
             icon: icon,
-            detail: dev ? detail(type, SysmonService.parseKey(key).id, dev, m.vals) : "",
+            detail: dev ? detail(type, SysmonService.parseKey(key).id, dev, m.vals, mount) : "",
             asleep: asleep,
             missing: !dev,
             graph: m.graph,

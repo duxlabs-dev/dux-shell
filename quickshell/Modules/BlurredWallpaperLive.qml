@@ -26,7 +26,7 @@ Item {
     property bool useNextForEffect: false
 
     Component.onCompleted: {
-        if (initialSource && initialSource !== wallpaperSource && !(CompositorService.isNiri && SessionData.isSwitchingMode)) {
+        if (initialSource && initialSource !== wallpaperSource && !(CompositorService.isNiri && SessionData.isSwitchingMode) && !ConfigProfileService.switching) {
             currentWallpaper.source = initialSource;
             isInitialized = true;
             changeWallpaper(wallpaperSource);
@@ -47,7 +47,7 @@ Item {
             setWallpaperImmediate(wallpaperSource);
             return;
         }
-        if (CompositorService.isNiri && SessionData.isSwitchingMode) {
+        if ((CompositorService.isNiri && SessionData.isSwitchingMode) || ConfigProfileService.switching) {
             setWallpaperImmediate(wallpaperSource);
             return;
         }
@@ -221,7 +221,7 @@ Item {
         property: "transitionProgress"
         from: 0.0
         to: 1.0
-        duration: 1000
+        duration: SessionData.wallpaperTransitionDuration
         easing.type: Easing.InOutCubic
         onFinished: {
             if (nextWallpaper.source && nextWallpaper.status === Image.Ready)

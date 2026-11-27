@@ -40,8 +40,12 @@ Rectangle {
     readonly property bool allPercent: lines.length > 0 && lines.every(l => l.maximum === 100)
     readonly property string rangeLabel: I18n.tr("%1 min", "chart time span, %1 is a number of minutes").arg(rangeSeconds / 60)
 
+    // Bumped as chips arrive from an asynchronous loader.
+    property int builtChips: 0
+
     // Height of the inline legend wrapped at width w, the way its Flow lays it out.
     function inlineLegendHeight(w) {
+        void builtChips;
         let x = 0;
         let lineH = 0;
         let total = 0;
@@ -163,6 +167,7 @@ Rectangle {
                     id: inlineRepeater
 
                     model: root.legend === "inline" ? root.lines.length : 0
+                    onItemAdded: root.builtChips++
 
                     Row {
                         id: item

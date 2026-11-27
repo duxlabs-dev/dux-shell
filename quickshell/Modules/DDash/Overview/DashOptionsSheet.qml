@@ -19,6 +19,7 @@ CcSheetDialog {
             "media": "media_player",
             "wellbeing": "wellbeing"
         })
+    readonly property bool cardEditor: !!entry?.card?.settingsPage
     readonly property var specs: DashRegistry.sheetOptionSpecs(entryId, tabScope)
 
     function presentFor(id, instance = "") {
@@ -33,7 +34,20 @@ CcSheetDialog {
     subtitle: I18n.tr("Options")
     showScrollBar: false
 
+    Repeater {
+        model: root.cardEditor && root.visible ? [root.instanceId] : []
+
+        DashSysmonOptions {
+            required property string modelData
+
+            instanceId: modelData
+            slotColor: Theme.chipSurface
+            dense: true
+        }
+    }
+
     SettingsGroup {
+        visible: !root.cardEditor
         width: parent.width
         slotColor: Theme.chipSurface
 
@@ -68,7 +82,7 @@ CcSheetDialog {
         iconName: "restart_alt"
         buttonHeight: Theme.buttonHeightXS
         variant: "text"
-        enabled: DashRegistry.hasStoredOptions(root.entryId, root.instanceId)
-        onClicked: DashRegistry.resetOptions(root.entryId, root.instanceId)
+        enabled: root.cardEditor ? DashRegistry.hasCardConfig(root.entryId, root.instanceId) : DashRegistry.hasStoredOptions(root.entryId, root.instanceId)
+        onClicked: root.cardEditor ? DashRegistry.resetCardConfig(root.entryId, root.instanceId) : DashRegistry.resetOptions(root.entryId, root.instanceId)
     }
 }

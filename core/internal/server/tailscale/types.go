@@ -73,7 +73,4 @@ type Peer struct {
 	Tags           []string `json:"tags,omitempty"`
 	Owner          string   `json:"owner"`
 	Relay          string   `json:"relay,omitempty"`
-	Active         bool     `json:"active"`
-	RxBytes        int64    `json:"rxBytes"`
-	TxBytes        int64    `json:"txBytes"`
 }

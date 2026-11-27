@@ -4,6 +4,8 @@ import qs.Modules.Plugins
 import qs.Services
 import qs.DCommon.Widgets
 import qs.Widgets
+import "../../../DCommon/Common/WheelInput.js" as WheelInput
+import "../BarScroll.js" as BarScroll
 
 BasePill {
     id: battery
@@ -28,6 +30,7 @@ BasePill {
     readonly property bool showPowerCharging: SettingsData.widgetOption("battery", widgetData, "showBatteryPowerCharging")
     readonly property bool showPowerDischarging: SettingsData.widgetOption("battery", widgetData, "showBatteryPowerDischarging")
     readonly property bool showPower: BatteryService.isCharging ? showPowerCharging : showPowerDischarging
+    readonly property bool scrollEnabled: SettingsData.widgetOption("battery", widgetData, "scrollEnabled")
     readonly property bool critical: SettingsData.batteryCriticalAnimation && BatteryService.isCriticalBattery && !BatteryService.isCharging
     property real criticalPulse: 0
     readonly property color criticalForeground: noBackground ? battery.mixColor(Theme.error, defaultContentColor, criticalPulse) : battery.mixColor(Theme.error, Theme.surface, criticalPulse)
@@ -286,6 +289,34 @@ BasePill {
         }
     }
 
+    function handleBatteryWheel(wheel) {
+        if (!battery.scrollEnabled || !BrightnessService.brightnessAvailable || WheelInput.isHorizontal(wheel)) {
+            wheel.accepted = false;
+            return;
+        }
+
+        const delta = wheel.angleDelta.y;
+        if (delta === 0) {
+            if (wheel.phase === Qt.ScrollEnd)
+                touchpadAccumulator = 0;
+            wheel.accepted = false;
+            return;
+        }
+
+        wheel.accepted = true;
+        const isTouchpad = WheelInput.isTouchpad(wheel);
+        if (isTouchpad && wheel.phase === Qt.ScrollBegin)
+            touchpadAccumulator = 0;
+        const res = BarScroll.stepAccumulator(touchpadAccumulator, delta, isTouchpad ? 100 : 120);
+        touchpadAccumulator = res.remainder;
+        if (res.units <= 0)
+            return;
+        const step = isTouchpad ? res.units : Math.max(1, battery.barConfig?.scrollBrightnessStep ?? 5) * res.units;
+        BrightnessService.adjustScreenBrightness(battery.parentScreen, step, res.sign);
+    }
+
+    onWheel: wheelEvent => battery.handleBatteryWheel(wheelEvent)
+
     MouseArea {
         x: -battery.leftMargin
         y: -battery.topMargin
@@ -305,28 +336,6 @@ BasePill {
                 }
             }
         }
-        onWheel: wheel => {
-            var delta = wheel.angleDelta.y;
-            if (delta === 0)
-                return;
-
-            // Check if this is a touchpad
-            if (delta !== 120 && delta !== -120) {
-                touchpadAccumulator += delta;
-                if (Math.abs(touchpadAccumulator) < 500)
-                    return;
-                delta = touchpadAccumulator;
-                touchpadAccumulator = 0;
-            }
-
-            if (!BrightnessService.brightnessAvailable) {
-                return;
-            }
-
-            const step = 5;
-            const change = delta > 0 ? step : -step;
-            const newBrightness = Math.max(0, Math.min(100, BrightnessService.brightnessLevel + change));
-            BrightnessService.setBrightness(newBrightness, "", false);
-        }
+        onWheel: wheel => battery.handleBatteryWheel(wheel)
     }
 }

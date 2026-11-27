@@ -681,16 +681,16 @@ Singleton {
         })
 
     readonly property var reasonsMedia: ({
-            "media-low": I18n.tr("Media Low"),
-            "media-empty": I18n.tr("Media Empty"),
-            "media-needed": I18n.tr("Media Needed"),
-            "media-jam": I18n.tr("Media Jam")
+            "media-low": I18n.tr("Media Low", "printer state reason, media is the paper or other material printed on"),
+            "media-empty": I18n.tr("Media Empty", "printer state reason, media is the paper or other material printed on"),
+            "media-needed": I18n.tr("Media Needed", "printer state reason, media is the paper or other material printed on"),
+            "media-jam": I18n.tr("Media Jam", "printer state reason, media is the paper or other material printed on")
         })
 
     readonly property var reasonsParts: ({
             "cover-open": I18n.tr("Cover Open"),
             "door-open": I18n.tr("Door Open"),
-            "interlock-open": I18n.tr("Interlock Open"),
+            "interlock-open": I18n.tr("Interlock Open", "printer state reason, a safety interlock switch is open"),
             "output-tray-missing": I18n.tr("Output Tray Missing"),
             "output-area-almost-full": I18n.tr("Output Area Almost Full"),
             "output-area-full": I18n.tr("Output Area Full")

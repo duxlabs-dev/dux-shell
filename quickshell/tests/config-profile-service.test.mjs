@@ -33,7 +33,7 @@ function fileText(p) {
 
 // The real service functions over a live state and a `disk` of folder name -> profile.json text (undefined: none).
 // `events` logs writes and applies in order; `procs` holds every command except mkdir, which succeeds at once.
-function service({ profiles = [], files = {}, active = "a", applyOk = true, dir = "/cfg/profiles", realProc = false }) {
+function service({ profiles = [], files = {}, active = "a", applyOk = true, dir = "/cfg/profiles", realProc = false, screens = [] }) {
     const events = [], procs = [], toasts = [], imported = [];
     const disk = Object.assign(Object.fromEntries(profiles.map(p => [p.id, fileText(p)])), files);
     const live = { settings: { frameEnabled: true }, session: { dockPins: { main: "app.desktop" } } };
@@ -102,6 +102,11 @@ function service({ profiles = [], files = {}, active = "a", applyOk = true, dir 
             }
         },
         syncTimer: { restart() {}, stop() {} },
+        applyLimit: { start() {}, stop() {} },
+        endLimit: { start() {}, stop() {} },
+        Quickshell: { screens },
+        IdleService: { isShellLocked: false },
+        switching: false, _held: {}, _pending: null, _queued: null, _activated: "",
         screenshotEnded() {}
     });
     vm.runInContext("var root = this; String.prototype.arg = function (v) { return this.replace('%1', v); };", ctx);
@@ -122,6 +127,14 @@ test("switching writes the outgoing synced profile and moves the pointer", () =>
     assert.equal(ctx.activate("b"), true);
     assert.equal(JSON.parse(disk.a).settings.frameEnabled, true);
     assert.equal(ctx.SessionData.activeConfigProfile, "b");
+});
+
+test("a throwing apply still ends the switch", () => {
+    const { ctx } = service({ profiles: [profile("a"), profile("b")], screens: [{}] });
+    ctx.SettingsData.applyProfileSettings = () => { throw new Error("boom"); };
+    ctx.activate("b");
+    assert.throws(() => ctx.endSwitch());
+    assert.deepEqual([ctx.switching, ctx._pending], [false, null]);
 });
 
 test("a failed settings apply keeps the active profile and applies no session values", () => {

@@ -160,7 +160,7 @@ Item {
                                 DActionButton {
                                     anchors.verticalCenter: parent.verticalCenter
                                     iconName: "refresh"
-                                    tooltipText: I18n.tr("Refresh")
+                                    tooltipText: I18n.tr("Refresh", "verb, button that reloads a list or status")
                                     buttonSize: Theme.buttonHeightXS
                                     onClicked: NetworkService.checkConnectivity()
                                 }

@@ -18,6 +18,7 @@ Singleton {
     property string selectedDockId: ""
     property string selectedDockWidgetId: ""
     property string selectedDesktopWidgetId: ""
+    property string selectedDashCardId: ""
     // "" = new profile
     property string selectedConfigProfileId: ""
     // Kept editor form per profile id ("" = new profile)

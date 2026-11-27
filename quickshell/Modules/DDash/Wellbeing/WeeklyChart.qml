@@ -4,6 +4,7 @@ import QtQuick
 import QtQuick.Shapes
 import qs.Common
 import qs.Services
+import qs.Widgets
 import qs.DCommon.Widgets
 import qs.Modules.DDash
 import "Wellbeing.js" as Wellbeing
@@ -14,58 +15,68 @@ DCard {
 
     property var days: []
     property date today: new Date()
-    property int firstDayOfWeek: 1
     property real limitSeconds: 0
-    property bool showTitle: true
-    property int hoverPage: -1
-    property int hoverIndex: -1
-    property string selectedDate: ""
+    property string selectedDate: Wellbeing.dateKey(today)
+    property color controlColor: chipColor
     property real wheelDistance: 0
     property real dragStartX: 0
 
-    readonly property var weeks: Wellbeing.weeksBack(days, today, firstDayOfWeek)
+    readonly property var weeks: Wellbeing.weeksBack(days, today)
     readonly property int pageCount: weeks.length
     property int page: pageCount - 1
     readonly property int currentPage: pager.width > 0 ? Math.max(0, Math.min(pageCount - 1, Math.round(pager.contentX / pager.width))) : page
     readonly property int weekOffset: page - (pageCount - 1)
     readonly property var week: weeks[page] ?? []
-    readonly property var hoverDay: hoverIndex >= 0 ? (weeks[hoverPage] ?? [])[hoverIndex] ?? null : null
-    readonly property var selectedDay: selectedDate !== "" ? week.find(day => day.date === selectedDate) ?? null : null
-    readonly property var shownDay: hoverDay ?? selectedDay
-    readonly property string focusDate: shownDay ? shownDay.date : ""
-    readonly property real total: Wellbeing.totalSeconds(week)
+    readonly property var selectedDay: week.find(day => day.date === selectedDate) ?? null
+    readonly property bool showingToday: weekOffset === 0 && (selectedDay?.today ?? false)
     readonly property real peak: Math.max(limitSeconds, ...week.map(day => day.active))
     readonly property var axis: Wellbeing.axis(peak)
     readonly property real columnWidth: pager.width / Wellbeing.weekLength
     readonly property real barWidth: columnWidth * WellbeingMetrics.barWidthRatio
-    readonly property real dayLabelHeight: Theme.fontSizeSmall + Theme.spacingXS
-    readonly property color pastColor: Theme.primaryContainer
-    readonly property color todayColor: Theme.primary
-    readonly property color overColor: Theme.error
-    readonly property string rangeText: week.length > 0 ? rangeDate(week[0].date) + " – " + rangeDate(week[week.length - 1].date) : ""
-
-    function rangeDate(key) {
-        return Wellbeing.parseKey(key).toLocaleDateString(I18n.locale(), Wellbeing.monthDayFormat(I18n.locale().dateFormat(Locale.ShortFormat)));
+    readonly property real dayLabelHeight: Theme.fontSizeLarge + Theme.spacingS
+    readonly property color barColor: Theme.primaryContainer
+    readonly property color selectedColor: Theme.primary
+    readonly property string weekTitle: {
+        switch (weekOffset) {
+        case 0:
+            return I18n.tr("This week", "screen time chart title, the seven days ending today");
+        case -1:
+            return I18n.tr("Last week", "screen time chart title, the seven days before this week");
+        default:
+            return I18n.tr("%1 weeks ago", "screen time chart title, %1 is a number of weeks, 2 or more").arg(-weekOffset);
+        }
     }
-
-    function barColor(day) {
-        if (limitSeconds > 0 && day.active > limitSeconds)
-            return overColor;
-        return day.today ? todayColor : pastColor;
+    readonly property string dayTitle: {
+        if (!selectedDay)
+            return "";
+        switch (Wellbeing.daysAgo(selectedDay.date, today)) {
+        case 0:
+            return I18n.tr("Today");
+        case 1:
+            return I18n.tr("Yesterday");
+        default:
+            return Wellbeing.parseKey(selectedDay.date).toLocaleDateString(I18n.locale(), "ddd, d MMM");
+        }
     }
 
     function yFor(seconds) {
         return plot.height * (1 - Math.min(1, seconds / axis.top));
     }
 
-    function dayLabel(day) {
-        return I18n.locale().dayName(day.weekday === 0 ? Wellbeing.weekLength : day.weekday, Locale.ShortFormat);
+    function barHeight(seconds) {
+        if (seconds <= 0)
+            return 0;
+        return Math.max(WellbeingMetrics.minBarHeight, plot.height - yFor(seconds));
     }
 
-    function toggleDay(day) {
-        if (!day || day.future)
-            return;
-        selectedDate = selectedDate === day.date ? "" : day.date;
+    function dayLabel(day) {
+        return I18n.locale().dayName(day.weekday === 0 ? Wellbeing.weekLength : day.weekday, Locale.NarrowFormat);
+    }
+
+    function selectColumn(index) {
+        const day = week[Math.max(0, Math.min(Wellbeing.weekLength - 1, index))];
+        if (day)
+            selectedDate = day.date;
     }
 
     function snapTo(index, animate) {
@@ -80,18 +91,17 @@ DCard {
         snapAnim.start();
     }
 
-    function showCurrentWeek() {
-        snapTo(pageCount - 1, false);
+    function showToday() {
+        snapTo(pageCount - 1, weekOffset !== 0);
+        selectedDate = Wellbeing.dateKey(today);
     }
 
-    onPageCountChanged: showCurrentWeek()
-    // keep the same weekday selected while paging, like the app list's day filter
+    onPageCountChanged: snapTo(pageCount - 1, false)
     onPageChanged: {
-        if (selectedDate === "")
-            return;
         const weekday = Wellbeing.parseKey(selectedDate).getDay();
         const day = (weeks[page] ?? []).find(entry => entry.weekday === weekday);
-        selectedDate = day && !day.future ? day.date : "";
+        if (day)
+            selectedDate = day.date;
     }
 
     restRadius: DashMetrics.cardRadius
@@ -119,80 +129,72 @@ DCard {
 
     Column {
         anchors.fill: parent
-        spacing: Theme.spacingS
+        spacing: Theme.spacingM
 
-        StyledText {
+        Item {
             width: parent.width
-            visible: root.showTitle
-            text: I18n.tr("Weekly screen time", "chart title, screen time per day over the week")
-            font.pixelSize: Theme.fontSizeLarge
-            font.weight: Theme.fontWeightMedium
-            color: root.contentColor
-            elide: Text.ElideRight
-        }
+            height: Math.max(titles.height, navigation.height)
 
-        Row {
-            width: parent.width
-            spacing: Theme.spacingS
+            Column {
+                id: titles
+                anchors.left: parent.left
+                anchors.right: navigation.left
+                anchors.rightMargin: Theme.spacingM
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: Theme.spacingXXS
 
-            StyledText {
-                id: totalLabel
-                anchors.baseline: caption.baseline
-                text: WellbeingService.formatDuration(root.shownDay ? root.shownDay.active : root.total)
-                font.pixelSize: Theme.fontSizeXLarge
-                font.weight: Theme.fontWeightBold
-                color: root.accentColor
+                StyledText {
+                    width: parent.width
+                    text: root.weekTitle
+                    font.pixelSize: Theme.fontSizeLarge
+                    font.weight: Theme.fontWeightMedium
+                    color: root.contentColor
+                    elide: Text.ElideRight
+                }
+
+                StyledText {
+                    width: parent.width
+                    text: root.selectedDay ? root.dayTitle + " · " + WellbeingService.formatDuration(root.selectedDay.active) : ""
+                    font.pixelSize: Theme.fontSizeMedium
+                    color: root.mutedColor
+                    elide: Text.ElideRight
+                }
             }
 
-            StyledText {
-                id: caption
-                anchors.bottom: parent.bottom
-                anchors.bottomMargin: Theme.spacingXXS
-                text: root.shownDay ? root.dayLabel(root.shownDay) : I18n.tr("Total")
-                font.pixelSize: Theme.fontSizeSmall
-                font.weight: Theme.fontWeightMedium
-                font.capitalization: Font.AllUppercase
-                color: root.mutedColor
-            }
-
-            Item {
-                width: parent.width - x
-                height: totalLabel.height
+            Row {
+                id: navigation
+                anchors.right: parent.right
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: Theme.spacingS
 
                 DActionButton {
-                    anchors.right: rangeLabel.left
-                    anchors.verticalCenter: parent.verticalCenter
-                    buttonSize: Theme.buttonHeightXS
+                    buttonSize: Theme.iconButtonSize
                     iconName: "chevron_left"
-                    iconColor: root.mutedColor
+                    iconColor: root.contentColor
+                    backgroundColor: root.controlColor
                     enabled: root.page > 0
                     Accessible.name: I18n.tr("Previous")
                     onClicked: root.snapTo(root.page - 1, true)
                 }
 
-                StyledText {
-                    id: rangeLabel
-                    anchors.right: nextButton.left
-                    anchors.verticalCenter: parent.verticalCenter
-                    width: WellbeingMetrics.rangeLabelWidth
-                    horizontalAlignment: Text.AlignHCenter
-                    text: root.rangeText
-                    font.pixelSize: Theme.fontSizeSmall
-                    font.weight: Theme.fontWeightMedium
-                    color: root.weekOffset === 0 ? root.accentColor : root.contentColor
-                    elide: Text.ElideRight
-                }
-
                 DActionButton {
-                    id: nextButton
-                    anchors.right: parent.right
-                    anchors.verticalCenter: parent.verticalCenter
-                    buttonSize: Theme.buttonHeightXS
+                    buttonSize: Theme.iconButtonSize
                     iconName: "chevron_right"
-                    iconColor: root.mutedColor
+                    iconColor: root.contentColor
+                    backgroundColor: root.controlColor
                     enabled: root.weekOffset < 0
                     Accessible.name: I18n.tr("Next")
                     onClicked: root.snapTo(root.page + 1, true)
+                }
+
+                DActionButton {
+                    buttonSize: Theme.iconButtonSize
+                    iconName: "calendar_today"
+                    iconColor: root.contentColor
+                    backgroundColor: root.controlColor
+                    enabled: !root.showingToday
+                    Accessible.name: I18n.tr("Today")
+                    onClicked: root.showToday()
                 }
             }
         }
@@ -204,24 +206,64 @@ DCard {
             LayoutMirroring.childrenInherit: true
 
             Item {
-                id: plot
+                id: axisLabels
                 anchors.left: parent.left
-                anchors.right: axisLabels.left
-                anchors.rightMargin: Theme.spacingS
-                anchors.top: parent.top
-                anchors.topMargin: Theme.spacingS
-                anchors.bottom: parent.bottom
-                anchors.bottomMargin: root.dayLabelHeight + Theme.spacingXS
+                anchors.top: plot.top
+                anchors.bottom: plot.bottom
+                width: WellbeingMetrics.axisLabelWidth
 
                 Repeater {
                     model: root.axis.ticks
 
-                    Rectangle {
+                    StyledText {
                         required property int modelData
-                        width: plot.width
-                        height: Theme.dividerWidth
+                        anchors.right: axisLabels.right
                         y: root.yFor(modelData * Wellbeing.secondsPerHour) - height / 2
-                        color: Theme.outlineVariant
+                        text: I18n.tr("%1h", "hours abbreviation, %1 is a number").arg(modelData)
+                        font.pixelSize: Theme.fontSizeSmall
+                        color: root.mutedColor
+                    }
+                }
+            }
+
+            Item {
+                id: plot
+                anchors.left: axisLabels.right
+                anchors.leftMargin: Theme.spacingS
+                anchors.right: parent.right
+                anchors.top: parent.top
+                anchors.topMargin: Theme.spacingS
+                anchors.bottom: parent.bottom
+                anchors.bottomMargin: root.dayLabelHeight + Theme.spacingS
+
+                Repeater {
+                    model: root.axis.ticks
+
+                    DDivider {
+                        required property int modelData
+                        y: root.yFor(modelData * Wellbeing.secondsPerHour) - height / 2
+                    }
+                }
+            }
+
+            Shape {
+                anchors.fill: plot
+                visible: root.limitSeconds > 0
+                preferredRendererType: Shape.CurveRenderer
+
+                ShapePath {
+                    strokeColor: Theme.error
+                    strokeWidth: Theme.outlineWidthFocused
+                    strokeStyle: ShapePath.DashLine
+                    dashPattern: [3, 3]
+                    fillColor: "transparent"
+                    capStyle: ShapePath.FlatCap
+                    startX: 0
+                    startY: root.yFor(root.limitSeconds)
+
+                    PathLine {
+                        x: plot.width
+                        y: root.yFor(root.limitSeconds)
                     }
                 }
             }
@@ -262,7 +304,7 @@ DCard {
                     model: root.weeks
 
                     Item {
-                        id: page
+                        id: weekPage
 
                         required property var modelData
                         required property int index
@@ -272,106 +314,55 @@ DCard {
                         height: pager.height
 
                         Repeater {
-                            model: page.modelData
+                            model: weekPage.modelData
 
-                            Rectangle {
+                            Item {
+                                id: column
+
                                 required property var modelData
                                 required property int index
-                                x: index * root.columnWidth + (root.columnWidth - width) / 2
-                                y: plot.height - height
-                                width: root.barWidth
-                                height: Math.max(0, plot.height - root.yFor(modelData.active))
-                                visible: !modelData.future && modelData.active > 0
-                                topLeftRadius: Theme.cornerRadiusS
-                                topRightRadius: Theme.cornerRadiusS
-                                color: root.barColor(modelData)
-                                opacity: root.focusDate === "" || root.focusDate === modelData.date ? 1 : WellbeingMetrics.dimmedBarOpacity
+                                readonly property bool selected: modelData.date === root.selectedDate
 
-                                Behavior on height {
-                                    enabled: DashMetrics.animationsEnabled
-                                    NumberAnimation {
-                                        duration: Theme.expressiveDurations.expressiveSlowEffects
-                                        easing.type: Easing.BezierSpline
-                                        easing.bezierCurve: Theme.expressiveCurves.expressiveSlowEffects
-                                    }
+                                x: index * root.columnWidth
+                                width: root.columnWidth
+                                height: weekPage.height
+
+                                StyledRect {
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    y: plot.height - height
+                                    width: root.barWidth
+                                    height: root.barHeight(column.modelData.active)
+                                    radius: 0
+                                    topLeftRadius: Theme.cornerRadiusS
+                                    topRightRadius: Theme.cornerRadiusS
+                                    color: column.selected ? root.selectedColor : root.barColor
                                 }
-                            }
-                        }
-
-                        Row {
-                            anchors.left: parent.left
-                            anchors.right: parent.right
-                            anchors.bottom: parent.bottom
-                            height: root.dayLabelHeight
-
-                            Repeater {
-                                model: page.modelData
 
                                 StyledText {
-                                    required property var modelData
-                                    width: root.columnWidth
+                                    anchors.bottom: parent.bottom
+                                    width: parent.width
+                                    height: root.dayLabelHeight
                                     horizontalAlignment: Text.AlignHCenter
-                                    text: root.dayLabel(modelData)
-                                    font.pixelSize: Theme.fontSizeSmall
-                                    font.weight: modelData.today || modelData.date === root.selectedDate ? Theme.fontWeightBold : Theme.fontWeightMedium
-                                    color: modelData.today ? root.accentColor : modelData.date === root.selectedDate ? root.contentColor : root.mutedColor
+                                    verticalAlignment: Text.AlignVCenter
+                                    text: root.dayLabel(column.modelData)
+                                    font.pixelSize: Theme.fontSizeLarge
+                                    font.weight: column.selected ? Theme.fontWeightBold : Theme.fontWeightMedium
+                                    color: column.selected ? root.selectedColor : root.contentColor
                                 }
                             }
                         }
 
-                        MouseArea {
-                            anchors.fill: parent
-                            acceptedButtons: Qt.NoButton
-                            hoverEnabled: true
-                            cursorShape: root.hoverDay && !root.hoverDay.future ? Qt.PointingHandCursor : Qt.ArrowCursor
-                            onPositionChanged: mouse => {
-                                if (page.index !== root.page || root.columnWidth <= 0)
-                                    return;
-                                root.hoverPage = page.index;
-                                root.hoverIndex = Math.floor(mouse.x / root.columnWidth);
-                            }
-                            onExited: root.hoverIndex = -1
+                        HoverHandler {
+                            enabled: weekPage.index === root.page
+                            cursorShape: Qt.PointingHandCursor
                         }
 
                         TapHandler {
-                            enabled: page.index === root.page && root.columnWidth > 0
-                            onTapped: eventPoint => root.toggleDay(page.modelData[Math.floor(eventPoint.position.x / root.columnWidth)])
+                            enabled: weekPage.index === root.page && root.columnWidth > 0
+                            onTapped: eventPoint => root.selectColumn(Math.floor(eventPoint.position.x / root.columnWidth))
                         }
                     }
                 }
-            }
-
-            Shape {
-                anchors.fill: plot
-                visible: root.limitSeconds > 0
-                preferredRendererType: Shape.CurveRenderer
-
-                ShapePath {
-                    strokeColor: root.overColor
-                    strokeWidth: Theme.outlineWidthFocused
-                    strokeStyle: ShapePath.DashLine
-                    dashPattern: [3, 3]
-                    fillColor: "transparent"
-                    capStyle: ShapePath.FlatCap
-                    startX: 0
-                    startY: root.yFor(root.limitSeconds)
-
-                    PathLine {
-                        x: plot.width
-                        y: root.yFor(root.limitSeconds)
-                    }
-                }
-            }
-
-            StyledText {
-                anchors.right: plot.right
-                y: plot.y + root.yFor(root.limitSeconds) - height - Theme.spacingXXS
-                visible: root.limitSeconds > 0
-                text: I18n.tr("Limit", "label on the daily screen time limit line of a chart")
-                font.pixelSize: Theme.fontSizeSmall
-                font.weight: Theme.fontWeightBold
-                font.capitalization: Font.AllUppercase
-                color: root.overColor
             }
 
             MouseArea {
@@ -394,27 +385,6 @@ DCard {
                     const step = root.wheelDistance > 0 ? -1 : 1;
                     root.wheelDistance = 0;
                     root.snapTo(root.page + step, true);
-                }
-            }
-
-            Item {
-                id: axisLabels
-                anchors.right: parent.right
-                anchors.top: plot.top
-                anchors.bottom: plot.bottom
-                width: WellbeingMetrics.axisLabelWidth
-
-                Repeater {
-                    model: root.axis.ticks
-
-                    StyledText {
-                        required property int modelData
-                        anchors.right: axisLabels.right
-                        y: root.yFor(modelData * Wellbeing.secondsPerHour) - height / 2
-                        text: I18n.tr("%1h", "hours abbreviation, %1 is a number").arg(modelData)
-                        font.pixelSize: Theme.fontSizeSmall
-                        color: root.mutedColor
-                    }
                 }
             }
         }

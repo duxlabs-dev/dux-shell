@@ -301,6 +301,8 @@ PanelWindow {
     readonly property real _notifConnectorRadiusLeft: win._effectiveNotifStartCcr
     readonly property real _notifConnectorRadiusRight: win._effectiveNotifEndCcr
 
+    readonly property bool _notifStartFused: win._notifNearFused("left")
+    readonly property bool _notifEndFused: win._notifNearFused("right")
     readonly property real _notifSideUnderlapValue: SurfaceGeometry.isVertical(win._notifDescriptor.barSide) ? win._seamOverlap : 0
     readonly property real _notifStartUnderlapValue: win._notifDescriptor.omitStartConnector ? win._seamOverlap : 0
     readonly property real _notifEndUnderlapValue: win._notifDescriptor.omitEndConnector ? win._seamOverlap : 0
@@ -359,7 +361,7 @@ PanelWindow {
     }
 
     function _sdfSlot(s) {
-        const b = win._clampNear(s.side, s.body);
+        const b = s.detached ? s.body : win._clampNear(s.side, s.body);
         const active = b.width >= 1 && b.height >= 1 ? 1 : 0;
         const sc = s.radii.startCr, ec = s.radii.endCr;
         const extent = (s.side === "top" || s.side === "bottom") ? b.height : b.width;
@@ -367,9 +369,11 @@ PanelWindow {
         const omitS = s.radii.farStartCr > 0;
         const omitE = s.radii.farEndCr > 0;
         const bodyR = s.radii.surfaceRadius;
-        const nearS = omitS ? bodyR : 0, nearE = omitE ? bodyR : 0;
+        const nearS = omitS || s.detached ? bodyR : 0, nearE = omitE || s.detached ? bodyR : 0;
         const farS = omitS ? 0 : bodyR, farE = omitE ? 0 : bodyR;
-        const kS = omitS ? fc : sc, kE = omitE ? fc : ec;
+        // A detached corner away from the popout edge stays round; a fillet would bridge a gap the blur leaves out.
+        const kS = s.detached && !s.startFused ? 0 : omitS ? fc : sc;
+        const kE = s.detached && !s.endFused ? 0 : omitE ? fc : ec;
         let ks, cr;
         if (s.side === "top") {
             ks = [kS, kE, fc, fc];
@@ -686,11 +690,12 @@ PanelWindow {
 
             readonly property string _side: win._notifDescriptor.barSide
             readonly property real _capRadius: win._effectiveNotifMaxCcr
-            readonly property bool _active: _notifBodySceneBlurAnchor._active && _notifBodySceneBlurAnchor.width > 0 && _notifBodySceneBlurAnchor.height > 0 && _capRadius > 0
-            readonly property int _capWidth: (_side === "left" || _side === "right") ? Math.round(Math.min(_capRadius, _notifBodySceneBlurAnchor.width)) : _notifBodySceneBlurAnchor.width
+            readonly property bool _partial: win._notifStartFused !== win._notifEndFused
+            readonly property bool _active: _notifBodySceneBlurAnchor._active && _notifBodySceneBlurAnchor.width > 0 && _notifBodySceneBlurAnchor.height > 0 && _capRadius > 0 && (win._notifStartFused || win._notifEndFused)
+            readonly property int _capWidth: (_side === "left" || _side === "right" || _partial) ? Math.round(Math.min(_capRadius, _notifBodySceneBlurAnchor.width)) : _notifBodySceneBlurAnchor.width
             readonly property int _capHeight: (_side === "top" || _side === "bottom") ? Math.round(Math.min(_capRadius, _notifBodySceneBlurAnchor.height)) : _notifBodySceneBlurAnchor.height
 
-            x: !_active ? 0 : (_side === "right" ? _notifBodySceneBlurAnchor.x + _notifBodySceneBlurAnchor.width - _capWidth : _notifBodySceneBlurAnchor.x)
+            x: !_active ? 0 : (_side === "right" || !win._notifStartFused ? _notifBodySceneBlurAnchor.x + _notifBodySceneBlurAnchor.width - _capWidth : _notifBodySceneBlurAnchor.x)
             y: !_active ? 0 : (_side === "bottom" ? _notifBodySceneBlurAnchor.y + _notifBodySceneBlurAnchor.height - _capHeight : _notifBodySceneBlurAnchor.y)
             width: _active ? _capWidth : 0
             height: _active ? _capHeight : 0
@@ -699,14 +704,14 @@ PanelWindow {
             barSide: win._notifDescriptor.barSide
             body: _notifBodySceneBlurAnchor.sceneRect
             placement: "left"
-            bodyActive: _notifBodySceneBlurAnchor._active
+            bodyActive: _notifBodySceneBlurAnchor._active && win._notifStartFused
             connectorRadius: win._notifConnectorRadiusLeft
         }
         ConnectorBlurRegion {
             barSide: win._notifDescriptor.barSide
             body: _notifBodySceneBlurAnchor.sceneRect
             placement: "right"
-            bodyActive: _notifBodySceneBlurAnchor._active
+            bodyActive: _notifBodySceneBlurAnchor._active && win._notifEndFused
             connectorRadius: win._notifConnectorRadiusRight
         }
         Region {
@@ -864,9 +869,24 @@ PanelWindow {
         }
     }
 
+    // Whether a detached notification corner joins the popout above it.
+    function _notifNearFused(placement) {
+        const descriptor = win._notifDescriptor;
+        if (!descriptor.detached)
+            return true;
+        const p = win._popoutBodyGeometry;
+        if (!win._popoutDescriptor.visible || win._popoutDescriptor.screenName !== win._screenName || p.width <= 0 || p.height <= 0)
+            return false;
+        const b = win._notifBodyGeometry;
+        const r = placement === "left" ? win._notifConnectorRadiusLeft : win._notifConnectorRadiusRight;
+        const x = placement === "left" ? b.x - r : b.x + b.width - r;
+        return x >= p.x + win._surfaceRadius && x + 2 * r <= p.x + p.width - win._surfaceRadius && Math.abs(p.y + p.height - b.y) <= 1;
+    }
+
     function _notifBodyScene() {
         const isHoriz = SurfaceGeometry.isHorizontal(win._notifDescriptor.barSide);
-        const body = win._notifBodyGeometry;
+        // Blur covers what the SDF paints, which clamps an attached stack to its bar.
+        const body = win._notifDescriptor.detached ? win._notifBodyGeometry : win._clampNear(win._notifDescriptor.barSide, win._notifBodyGeometry);
         const start = win._notifStartUnderlapValue;
         const end = win._notifEndUnderlapValue;
         const side = win._notifSideUnderlapValue;
@@ -941,6 +961,9 @@ PanelWindow {
         if (win._frameActive && win._notifDescriptor.visible && nb.width > 0 && nb.height > 0)
             arr.push({
                 "side": win._notifDescriptor.barSide,
+                "detached": win._notifDescriptor.detached,
+                "startFused": win._notifStartFused,
+                "endFused": win._notifEndFused,
                 "body": {
                     "x": n.x,
                     "y": n.y,

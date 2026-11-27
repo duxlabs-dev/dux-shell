@@ -79,7 +79,7 @@ Item {
                     resetStore: SessionData
                     resetKeys: ["displayGamma"]
                     tags: ["gamma", "display", "panel", "washed out", "brightness"]
-                    text: I18n.tr("Gamma")
+                    text: I18n.tr("Gamma", "noun, display gamma correction slider")
                     minimum: 50
                     maximum: 200
                     step: 5
@@ -182,7 +182,7 @@ Item {
                 dialogHost: root.parentModal?.dialogHostFor(root) ?? null
                 visible: !autoModeGroup.locationMode
                 is24Hour: SettingsData.use24HourClock
-                startTitle: I18n.tr("Start")
+                startTitle: I18n.tr("Start", "noun, start time of a schedule or event", true)
                 startHour: SessionData.nightModeStartHour
                 startMinute: SessionData.nightModeStartMinute
                 endTitle: I18n.tr("End", "noun, end time label for night mode schedule or calendar event")

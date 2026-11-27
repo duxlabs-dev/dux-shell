@@ -11,6 +11,7 @@ Item {
     property bool live: visible && enabled
     property string displayMode: "both"
     property bool dateFirst: false
+    property bool showTimezone: false
     property real fontSize: Theme.fontSizeMedium
     property real availableWidth: fontSize * 2
     property color textColor: Theme.surfaceText
@@ -21,6 +22,7 @@ Item {
     property date date: systemClock.date
 
     readonly property string timeText: date.toLocaleTimeString(locale, SettingsData.getEffectiveTimeFormat())
+    readonly property string timezoneText: showTimezone ? timeZoneText() : ""
     readonly property string dateText: date.toLocaleDateString(locale, SettingsData.getEffectiveDateFormat())
     readonly property var timeLines: vertical ? stackedTime() : [timeText]
     readonly property var dateLines: vertical ? stackedDate() : [dateText]
@@ -34,6 +36,10 @@ Item {
 
     function pad(value) {
         return String(value).padStart(2, "0");
+    }
+
+    function timeZoneText() {
+        return date.toLocaleTimeString(locale, "t").trim();
     }
 
     function stackedTime() {
@@ -133,8 +139,22 @@ Item {
     Component {
         id: timeComponent
 
-        StackedLines {
-            lines: root.timeLines
+        Grid {
+            columns: root.vertical ? 1 : (root.timezoneText.length > 0 ? 2 : 1)
+            spacing: root.timezoneText.length > 0 ? (root.vertical ? Theme.spacingXXS : Theme.spacingXS) : 0
+            verticalItemAlignment: Grid.AlignVCenter
+            horizontalItemAlignment: Grid.AlignHCenter
+
+            StackedLines {
+                lines: root.timeLines
+            }
+
+            StyledText {
+                visible: root.timezoneText.length > 0
+                text: root.timezoneText
+                color: Theme.surfaceVariantText
+                font.pixelSize: Math.round(root.fontSize * 0.75)
+            }
         }
     }
 

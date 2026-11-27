@@ -18,7 +18,6 @@ DListView {
     property real stableContentHeight: 0
     property bool cardAnimateExpansion: true
     property bool trackStableContentHeight: true
-    property bool listInitialized: false
     property real swipeBleed: 0
     property var transientSurfaceTracker: null
     property bool nested: false
@@ -26,10 +25,7 @@ DListView {
     Timer {
         interval: 0
         running: true
-        onTriggered: {
-            listView.listInitialized = true;
-            listView.syncStableContentHeight(false);
-        }
+        onTriggered: listView.syncStableContentHeight(false)
     }
 
     Timer {
@@ -205,7 +201,7 @@ DListView {
             firstInList: index === 0
             lastInList: index === listView.count - 1
             keyboardNavigationActive: listView.keyboardActive && listView.focusAllowed
-            animateExpansion: listView.cardAnimateExpansion && listView.listInitialized
+            animateExpansion: listView.cardAnimateExpansion
             transientSurfaceTracker: listView.transientSurfaceTracker
             onIsAnimatingChanged: {
                 if (!listView.trackStableContentHeight)

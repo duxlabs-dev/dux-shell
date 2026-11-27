@@ -494,11 +494,11 @@ Column {
                             checkEnabled: false
                             model: [
                                 {
-                                    "text": I18n.tr("Light", "adjective, wallpaper thumbnail label for light mode"),
+                                    "text": I18n.tr("Light", "adjective, light color mode, opposite of dark"),
                                     "icon": "light_mode"
                                 },
                                 {
-                                    "text": I18n.tr("Dark", "adjective, wallpaper thumbnail label for dark mode"),
+                                    "text": I18n.tr("Dark", "adjective, dark color mode, opposite of light"),
                                     "icon": "dark_mode"
                                 }
                             ]
@@ -781,41 +781,32 @@ Column {
                 resetKeys: ["wallpaperTransition"]
                 text: I18n.tr("Transition", "noun, wallpaper change animation setting label")
 
-                function getTransitionLabel(t) {
-                    switch (t) {
-                    case "random":
-                        return I18n.tr("Random", "wallpaper transition option");
-                    case "none":
-                        return I18n.tr("None", "wallpaper transition option");
-                    case "fade":
-                        return I18n.tr("Fade", "wallpaper transition option");
-                    case "wipe":
-                        return I18n.tr("Wipe", "wallpaper transition option");
-                    case "disc":
-                        return I18n.tr("Disc", "wallpaper transition option");
-                    case "stripes":
-                        return I18n.tr("Stripes", "wallpaper transition option");
-                    case "iris bloom":
-                        return I18n.tr("Iris Bloom", "wallpaper transition option");
-                    case "pixelate":
-                        return I18n.tr("Pixelate", "wallpaper transition option");
-                    case "portal":
-                        return I18n.tr("Portal", "wallpaper transition option");
-                    default:
-                        return t.charAt(0).toUpperCase() + t.slice(1);
-                    }
-                }
-
-                currentValue: getTransitionLabel(SessionData.wallpaperTransition)
-                options: [I18n.tr("Random", "wallpaper transition option")].concat(SessionData.availableWallpaperTransitions.map(t => getTransitionLabel(t)))
+                currentValue: SessionData.transitionLabel(SessionData.wallpaperTransition)
+                options: [I18n.tr("Random", "wallpaper transition option")].concat(SessionData.availableWallpaperTransitions.map(t => SessionData.transitionLabel(t)))
                 onValueChanged: value => {
                     const transitionMap = {};
                     transitionMap[I18n.tr("Random", "wallpaper transition option")] = "random";
                     SessionData.availableWallpaperTransitions.forEach(t => {
-                        transitionMap[getTransitionLabel(t)] = t;
+                        transitionMap[SessionData.transitionLabel(t)] = t;
                     });
                     SessionData.setWallpaperTransition(transitionMap[value] || value.toLowerCase());
                 }
+            }
+
+            SettingsSliderRow {
+                tab: "wallpaper"
+                tags: ["transition", "duration", "animation", "change", "speed"]
+                settingKey: "wallpaperTransitionDuration"
+                resetStore: SessionData
+                resetKeys: ["wallpaperTransitionDuration"]
+                visible: SessionData.wallpaperTransition !== "none"
+                text: I18n.tr("Transition duration", "wallpaper transition length setting")
+                minimum: 250
+                maximum: 3000
+                step: 50
+                unit: "ms"
+                value: SessionData.wallpaperTransitionDuration
+                onSliderDragFinished: v => SessionData.setWallpaperTransitionDuration(v)
             }
 
             SettingsRow {
@@ -1166,7 +1157,7 @@ Column {
                 tab: "theme"
                 tags: ["icon", "theme", "light", "dark", "mode"]
                 settingKey: "iconThemePerMode"
-                text: I18n.tr("Separate light and dark themes")
+                text: I18n.tr("Separate light and dark")
                 checked: SettingsData.iconThemePerMode
                 onToggled: checked => SettingsData.setIconThemePerMode(checked)
             }
@@ -1306,7 +1297,7 @@ Column {
                 settingKey: "iconTileStyle"
                 text: I18n.tr("Tile style", "Dux Icons setting, how strong the app's own color is on its tile")
                 enabled: !root.selfBuiltIconsMissing
-                options: [I18n.tr("Tonal", "Dux Icons tile style option, a soft tone of the app's color"), I18n.tr("Vivid", "Dux Icons tile style option, the app's color as strong as in its icon"), I18n.tr("Muted", "Dux Icons tile style option, a near-gray tint of the app's color")]
+                options: [I18n.tr("Tonal", "Dux Icons tile style option, a soft tone of the app's color"), I18n.tr("Vivid", "Dux Icons tile style option, the app's color as strong as in its icon"), I18n.tr("Muted", "Dux Icons tile style option, a near-gray tint of the app's color", true)]
                 optionValues: ["tonal", "content", "neutral"]
                 currentValue: SettingsData.iconTileStyle
                 onValueChanged: value => SettingsData.set("iconTileStyle", value)
@@ -1319,6 +1310,7 @@ Column {
                 tags: ["icon", "tile", "base", "plate", "badge", "tone", "light", "dark", "brightness", "dux"]
                 settingKey: "iconTileTone"
                 text: I18n.tr("Tile tone", "Dux Icons setting, how light the tile behind each icon is")
+                sliderText: I18n.tr("Tone")
                 enabled: !root.selfBuiltIconsMissing
                 checked: SettingsData.iconTileTone >= 0
                 value: Math.max(0, SettingsData.iconTileTone)
@@ -1349,6 +1341,7 @@ Column {
                 tags: ["icon", "tile", "base", "plate", "badge", "tone", "dux", "labs", "app", "art", "shade"]
                 settingKey: "iconOwnTone"
                 text: I18n.tr("Dux app tone", "Dux Icons setting, the shade of Dux Labs app art on its tile")
+                sliderText: I18n.tr("Tone")
                 enabled: !root.selfBuiltIconsMissing
                 checked: SettingsData.iconOwnTone >= 0
                 value: Math.max(40, SettingsData.iconOwnTone)
@@ -1513,6 +1506,7 @@ Column {
                 tags: ["cursor", "hide", "timeout", "inactive"]
                 settingKey: "cursorHideAfterInactive"
                 text: I18n.tr("Cursor auto-hide timeout")
+                sliderText: I18n.tr("Hide delay")
                 checked: timeout > 0
                 value: timeout
                 // Timeout 0 means off, so the slider starts above it.

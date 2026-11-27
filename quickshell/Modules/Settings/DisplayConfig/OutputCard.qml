@@ -31,7 +31,7 @@ Column {
     readonly property bool isActive: isConnected && !isDisabled
     readonly property bool vrrSupported: DisplayConfigState.outputs[outputName]?.vrr_supported ?? false
     readonly property bool hasColorControls: isActive && ICCService.outputNames.indexOf(outputName) !== -1
-    readonly property int neutralTemperature: 7000
+    readonly property int neutralTemperature: 6500
 
     width: parent?.width ?? 0
     spacing: Theme.spacingS
@@ -305,7 +305,7 @@ Column {
 
             visible: root.hasColorControls
             text: I18n.tr("Color Temperature", "Color Temperature")
-            description: outputTemperature === 0 ? I18n.tr("Default", "Default") : outputTemperature + "K"
+            valueLabel: outputTemperature === 0 && !dragging ? I18n.tr("Default", "Default") : ""
             minimum: 3000
             maximum: 10000
             step: 100

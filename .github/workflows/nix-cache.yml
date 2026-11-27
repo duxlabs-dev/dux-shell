@@ -1,0 +1,15 @@
+name: Nix cache
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [master, stable, "stable-*"]
+  schedule:
+    - cron: "0 */3 * * *"
+
+jobs:
+  cache:
+    uses: duxlabs-dev/dux-qt-base/.github/workflows/nix-cache.yml@master
+    permissions:
+      contents: read
+      id-token: write

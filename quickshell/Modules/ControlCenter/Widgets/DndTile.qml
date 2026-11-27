@@ -1,5 +1,6 @@
 import QtQuick
 import qs.Common
+import "../../../Common/Format.js" as Format
 
 CcTile {
     id: root
@@ -8,11 +9,10 @@ CcTile {
     title: I18n.tr("Do not disturb")
     subtitle: {
         if (!SessionData.doNotDisturb)
-            return I18n.tr("Off");
+            return "";
         if (SessionData.doNotDisturbUntil <= 0)
             return I18n.tr("On");
-        const d = new Date(SessionData.doNotDisturbUntil);
-        return I18n.tr("Until %1", "standalone tile status, %1 is a clock time").arg(Qt.formatTime(d, SettingsData.use24HourClock ? "HH:mm" : "h:mm AP"));
+        return I18n.tr("Until %1", "standalone tile status, %1 is a clock time").arg(Format.formatUntil(SessionData.doNotDisturbUntil, SettingsData.use24HourClock));
     }
     active: SessionData.doNotDisturb
     showExpand: true

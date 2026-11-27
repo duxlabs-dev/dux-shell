@@ -52,7 +52,7 @@ Item {
             SettingsCard {
                 width: parent.width
                 iconName: "schedule"
-                title: I18n.tr("Idle", "noun, settings card title for idle timeout settings")
+                title: I18n.tr("Idle", "noun, settings card title for idle timeout settings", true)
                 settingKey: "idleSettings"
 
                 SettingsButtonGroupRow {

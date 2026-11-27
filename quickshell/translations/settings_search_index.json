@@ -160,8 +160,7 @@
       "tint",
       "wallpaper"
     ],
-    "page": "personalization",
-    "icon": "schedule"
+    "page": "personalization"
   },
   {
     "section": "_hub_applications",
@@ -708,16 +707,17 @@
     "category": "Interface style",
     "keywords": [
       "controls",
+      "expressive",
       "focus",
       "interface",
       "keyboard",
+      "press",
       "ring",
       "scroll",
       "shadows",
       "style"
     ],
-    "page": "theme_surfaces",
-    "icon": "center_focus_strong"
+    "page": "theme_surfaces"
   },
   {
     "section": "fixedRadius",
@@ -866,8 +866,7 @@
       "typing",
       "wallpaper"
     ],
-    "page": "personalization",
-    "icon": "delete"
+    "page": "personalization"
   },
   {
     "section": "cursorHideAfterInactive",
@@ -978,6 +977,20 @@
     ],
     "icon": "schedule",
     "description": "Clock, weather, locale"
+  },
+  {
+    "section": "wellbeingTracking",
+    "label": "Digital wellbeing",
+    "tabIndex": -1,
+    "category": "Digital wellbeing",
+    "keywords": [
+      "digital",
+      "screen time",
+      "tracking",
+      "wellbeing"
+    ],
+    "page": "wellbeing",
+    "icon": "digital_wellbeing"
   },
   {
     "section": "selectedMonitor",
@@ -1734,8 +1747,7 @@
       "tint",
       "wallpaper"
     ],
-    "page": "personalization",
-    "icon": "delete"
+    "page": "personalization"
   },
   {
     "section": "notificationIgnoreAppTimeout",
@@ -1943,8 +1955,7 @@
       "tint",
       "wallpaper"
     ],
-    "page": "personalization",
-    "icon": "delete"
+    "page": "personalization"
   },
   {
     "section": "iconThemeLibrary",
@@ -1977,8 +1988,7 @@
       "tint",
       "wallpaper"
     ],
-    "page": "personalization",
-    "icon": "delete"
+    "page": "personalization"
   },
   {
     "section": "iconFolderRecolor",
@@ -2041,8 +2051,7 @@
       "tint",
       "wallpaper"
     ],
-    "page": "personalization",
-    "icon": "restore"
+    "page": "personalization"
   },
   {
     "section": "matugenTargetMonitor",
@@ -2132,6 +2141,21 @@
       "wallpaper"
     ],
     "page": "personalization"
+  },
+  {
+    "section": "wellbeingApps",
+    "label": "Most used apps",
+    "tabIndex": -1,
+    "category": "Digital wellbeing",
+    "keywords": [
+      "apps",
+      "digital",
+      "most",
+      "screen time",
+      "usage",
+      "wellbeing"
+    ],
+    "page": "wellbeing"
   },
   {
     "section": "chipSurfaceNestedColor",
@@ -2242,8 +2266,7 @@
       "notifs",
       "toast"
     ],
-    "page": "notifications",
-    "icon": "rule_settings"
+    "page": "notifications"
   },
   {
     "section": "floatingWindowTransparency",
@@ -2484,8 +2507,7 @@
       "plugins",
       "widgets"
     ],
-    "page": "plugins",
-    "icon": "warning"
+    "page": "plugins"
   },
   {
     "section": "pluginsIncompatible",
@@ -2500,8 +2522,7 @@
       "plugins",
       "widgets"
     ],
-    "page": "plugins",
-    "icon": "error"
+    "page": "plugins"
   },
   {
     "section": "notificationPopups",
@@ -2916,8 +2937,39 @@
       "tint",
       "wallpaper"
     ],
-    "page": "personalization",
-    "icon": "colorize"
+    "page": "personalization"
+  },
+  {
+    "section": "iconThemePerMode",
+    "label": "Separate light and dark",
+    "tabIndex": -1,
+    "category": "Appearance",
+    "keywords": [
+      "appearance",
+      "background",
+      "bg",
+      "colors",
+      "colour",
+      "colours",
+      "dark",
+      "dark mode",
+      "day",
+      "desktop",
+      "hue",
+      "icon",
+      "image",
+      "light",
+      "light mode",
+      "mode",
+      "night",
+      "palette",
+      "picture",
+      "separate",
+      "theme",
+      "tint",
+      "wallpaper"
+    ],
+    "page": "personalization"
   },
   {
     "section": "perModeWallpaper",
@@ -2945,41 +2997,6 @@
       "picture",
       "separate",
       "theme",
-      "tint",
-      "wallpaper"
-    ],
-    "page": "personalization"
-  },
-  {
-    "section": "iconThemePerMode",
-    "label": "Separate light and dark themes",
-    "tabIndex": -1,
-    "category": "Appearance",
-    "keywords": [
-      "appearance",
-      "background",
-      "bg",
-      "colors",
-      "colour",
-      "colours",
-      "dark",
-      "dark mode",
-      "day",
-      "desktop",
-      "hue",
-      "icon",
-      "image",
-      "light",
-      "light mode",
-      "look",
-      "mode",
-      "night",
-      "palette",
-      "picture",
-      "separate",
-      "style",
-      "theme",
-      "themes",
       "tint",
       "wallpaper"
     ],
@@ -3386,8 +3403,7 @@
       "tint",
       "wallpaper"
     ],
-    "page": "personalization",
-    "icon": "colorize"
+    "page": "personalization"
   },
   {
     "section": "focusRingWidth",
@@ -3633,6 +3649,30 @@
     "page": "personalization"
   },
   {
+    "section": "wellbeingEnabled",
+    "label": "Track screen time",
+    "tabIndex": -1,
+    "category": "Digital wellbeing",
+    "keywords": [
+      "active",
+      "counts",
+      "device",
+      "digital",
+      "focused",
+      "screen",
+      "screen time",
+      "session",
+      "stays",
+      "time",
+      "track",
+      "tracking",
+      "wellbeing",
+      "while"
+    ],
+    "page": "wellbeing",
+    "description": "Counts time in the focused app while the session is active. Stays on this device."
+  },
+  {
     "section": "wallpaperTransition",
     "label": "Transition",
     "tabIndex": -1,
@@ -3652,6 +3692,33 @@
       "image",
       "palette",
       "picture",
+      "tint",
+      "transition",
+      "wallpaper"
+    ],
+    "page": "personalization"
+  },
+  {
+    "section": "wallpaperTransitionDuration",
+    "label": "Transition duration",
+    "tabIndex": -1,
+    "category": "Appearance",
+    "keywords": [
+      "animation",
+      "appearance",
+      "background",
+      "bg",
+      "change",
+      "colors",
+      "colour",
+      "colours",
+      "desktop",
+      "duration",
+      "hue",
+      "image",
+      "palette",
+      "picture",
+      "speed",
       "tint",
       "transition",
       "wallpaper"
@@ -3751,8 +3818,7 @@
       "transition",
       "wallpaper"
     ],
-    "page": "personalization",
-    "icon": "restore"
+    "page": "personalization"
   },
   {
     "section": "wallpaperAdvanced",
@@ -3841,6 +3907,24 @@
     ],
     "page": "personalization",
     "conditionKey": "isHyprland"
+  },
+  {
+    "section": "wellbeingChart",
+    "label": "Weekly screen time",
+    "tabIndex": -1,
+    "category": "Digital wellbeing",
+    "keywords": [
+      "chart",
+      "digital",
+      "screen",
+      "screen time",
+      "time",
+      "week",
+      "weekly",
+      "wellbeing"
+    ],
+    "page": "wellbeing",
+    "icon": "show_chart"
   },
   {
     "section": "fontWeight",
@@ -4252,8 +4336,7 @@
       "units",
       "weather"
     ],
-    "parentLabel": "Date, time & region",
-    "icon": "partly_cloudy_day"
+    "parentLabel": "Date, time & region"
   },
   {
     "section": "_tab_2",
@@ -4440,6 +4523,28 @@
     "conditionKey": "islandEnabled"
   },
   {
+    "section": "barScrollBrightnessStep",
+    "label": "Brightness step",
+    "tabIndex": 3,
+    "category": "General",
+    "keywords": [
+      "backlight",
+      "bar",
+      "bright",
+      "brightness",
+      "dim",
+      "general",
+      "panel",
+      "scroll",
+      "statusbar",
+      "step",
+      "taskbar",
+      "topbar",
+      "wheel"
+    ],
+    "parentLabel": "Bar"
+  },
+  {
     "section": "islandChargingPulse",
     "label": "Charging",
     "tabIndex": 3,
@@ -4504,6 +4609,7 @@
     "category": "General",
     "keywords": [
       "actions",
+      "audio",
       "bar",
       "click",
       "control center",
@@ -4511,12 +4617,14 @@
       "launcher",
       "middle",
       "mouse",
+      "mute",
       "panel",
       "right",
       "settings",
       "statusbar",
       "taskbar",
-      "topbar"
+      "topbar",
+      "volume"
     ],
     "parentLabel": "Bar",
     "icon": "mouse"
@@ -4846,6 +4954,35 @@
     "conditionKey": "frameEnabled"
   },
   {
+    "section": "barScrollExtendToEdge",
+    "label": "Extend to screen edge",
+    "tabIndex": 3,
+    "category": "General",
+    "keywords": [
+      "bar",
+      "between",
+      "display",
+      "edge",
+      "extend",
+      "fitts",
+      "gap",
+      "general",
+      "margin",
+      "monitor",
+      "output",
+      "panel",
+      "screen",
+      "scroll",
+      "statusbar",
+      "taskbar",
+      "top",
+      "topbar",
+      "wheel"
+    ],
+    "parentLabel": "Bar",
+    "description": "Scroll in the gap between the bar and the display edge"
+  },
+  {
     "section": "barClickActionFollowMouse",
     "label": "Follow mouse",
     "tabIndex": 3,
@@ -4925,7 +5062,6 @@
       "topbar"
     ],
     "parentLabel": "Bar",
-    "icon": "restart_alt",
     "description": "Comma-separated plugin or IPC source IDs that never show here",
     "conditionKey": "islandEnabled"
   },
@@ -5244,6 +5380,7 @@
     "tabIndex": 3,
     "category": "General",
     "keywords": [
+      "audio",
       "bar",
       "choose",
       "click",
@@ -5256,12 +5393,14 @@
       "launcher",
       "middle",
       "mouse",
+      "mute",
       "panel",
       "settings",
       "space",
       "statusbar",
       "taskbar",
       "topbar",
+      "volume",
       "what"
     ],
     "parentLabel": "Bar",
@@ -5655,6 +5794,7 @@
     "tabIndex": 3,
     "category": "General",
     "keywords": [
+      "audio",
       "bar",
       "choose",
       "click",
@@ -5666,6 +5806,7 @@
       "general",
       "launcher",
       "mouse",
+      "mute",
       "panel",
       "right",
       "settings",
@@ -5673,6 +5814,7 @@
       "statusbar",
       "taskbar",
       "topbar",
+      "volume",
       "what"
     ],
     "parentLabel": "Bar",
@@ -5700,21 +5842,57 @@
     "conditionKey": "islandEnabled"
   },
   {
+    "section": "islandScrollEmptyStrip",
+    "label": "Scroll on empty strip",
+    "tabIndex": 3,
+    "category": "General",
+    "keywords": [
+      "bar",
+      "empty",
+      "gap",
+      "general",
+      "input",
+      "island",
+      "overlay",
+      "panel",
+      "passes",
+      "placement",
+      "scroll",
+      "statusbar",
+      "strip",
+      "taskbar",
+      "through",
+      "topbar",
+      "wheel",
+      "windows"
+    ],
+    "parentLabel": "Bar",
+    "description": "Overlay placement passes empty strip input through to windows",
+    "conditionKey": "islandDocked"
+  },
+  {
     "section": "barScrollWheel",
     "label": "Scroll wheel",
     "tabIndex": 3,
     "category": "General",
     "keywords": [
+      "audio",
       "axis",
       "bar",
+      "brightness",
+      "edge",
       "focus",
       "general",
+      "island",
       "panel",
       "scroll",
+      "shift",
       "statusbar",
       "taskbar",
       "topbar",
+      "volume",
       "wheel",
+      "widget",
       "window",
       "workspace"
     ],
@@ -6182,6 +6360,29 @@
     ],
     "parentLabel": "Bar",
     "conditionKey": "islandEnabled"
+  },
+  {
+    "section": "barScrollableWidgets",
+    "label": "Widget scroll",
+    "tabIndex": 3,
+    "category": "General",
+    "keywords": [
+      "bar",
+      "brightness",
+      "general",
+      "media",
+      "override",
+      "panel",
+      "scroll",
+      "statusbar",
+      "taskbar",
+      "topbar",
+      "volume",
+      "wheel",
+      "widget",
+      "workspace"
+    ],
+    "parentLabel": "Bar"
   },
   {
     "section": "islandWorkspaceOsd",
@@ -7974,7 +8175,6 @@
       "wireless"
     ],
     "parentLabel": "Network",
-    "icon": "login",
     "conditionKey": "networkAvailable"
   },
   {
@@ -8433,7 +8633,6 @@
       "start menu",
       "uwsm"
     ],
-    "icon": "restart_alt",
     "description": "Added in front of every app launch command"
   },
   {
@@ -9338,12 +9537,45 @@
     "icon": "lock"
   },
   {
+    "section": "lockScreenBlurInactiveBackground",
+    "label": "Blur wallpaper on inactive monitors",
+    "tabIndex": 11,
+    "category": "Lock screen",
+    "keywords": [
+      "background",
+      "bg",
+      "blur",
+      "blurred",
+      "burn",
+      "desktop",
+      "disable",
+      "display",
+      "image",
+      "inactive",
+      "lock",
+      "lockscreen",
+      "login",
+      "monitors",
+      "oled",
+      "password",
+      "picture",
+      "protection",
+      "screen",
+      "security",
+      "show",
+      "solid",
+      "wallpaper"
+    ],
+    "parentLabel": "Security",
+    "description": "Show blurred wallpaper instead of a solid background. Disable for OLED burn-in protection."
+  },
+  {
     "section": "lockDisplay",
     "label": "Displays",
     "tabIndex": 11,
     "category": "Lock screen",
     "keywords": [
-      "color",
+      "blur",
       "display",
       "displays",
       "inactive",
@@ -9352,13 +9584,13 @@
       "login",
       "monitor",
       "monitors",
-      "oled",
       "output",
       "outputs",
       "password",
       "screen",
       "screens",
-      "security"
+      "security",
+      "wallpaper"
     ],
     "parentLabel": "Security",
     "icon": "monitor"
@@ -10226,8 +10458,7 @@
       "unison",
       "youtube music"
     ],
-    "parentLabel": "Sound & media",
-    "icon": "restart_alt"
+    "parentLabel": "Sound & media"
   },
   {
     "section": "_tab_16",
@@ -10603,8 +10834,7 @@
       "screen",
       "show",
       "wifi"
-    ],
-    "icon": "volume_up"
+    ]
   },
   {
     "section": "osdTouchpadEnabled",
@@ -11752,7 +11982,7 @@
     "description": "Add, reorder, configure"
   },
   {
-    "section": "barWidgetOption:BatteryOptions.qml:7",
+    "section": "barWidgetOption:BatteryOptions.qml:8",
     "label": "Battery",
     "tabIndex": 22,
     "keywords": [],
@@ -11760,7 +11990,7 @@
     "optionFile": "BatteryOptions.qml"
   },
   {
-    "section": "barWidgetOption:BatteryOptions.qml:6",
+    "section": "barWidgetOption:BatteryOptions.qml:7",
     "label": "Battery style",
     "tabIndex": 22,
     "keywords": [],
@@ -11824,7 +12054,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:ClockOptions.qml:4",
+    "section": "barWidgetOption:ClockOptions.qml:5",
     "label": "Click action",
     "tabIndex": 22,
     "keywords": [],
@@ -12024,7 +12254,7 @@
     "optionFile": "AppsDockOptions.qml"
   },
   {
-    "section": "barWidgetOption:ClockOptions.qml:5",
+    "section": "barWidgetOption:ClockOptions.qml:6",
     "label": "Custom command",
     "tabIndex": 22,
     "keywords": [],
@@ -12072,7 +12302,7 @@
     "optionFile": "WorkspaceSwitcherOptions.qml"
   },
   {
-    "section": "barWidgetOption:WorkspaceSwitcherOptions.qml:21",
+    "section": "barWidgetOption:WorkspaceSwitcherOptions.qml:22",
     "label": "Drag to reorder",
     "tabIndex": 22,
     "keywords": [],
@@ -12320,7 +12550,7 @@
     "optionFile": "AppsDockOptions.qml"
   },
   {
-    "section": "barWidgetOption:ControlCenterOptions.qml:1",
+    "section": "barWidgetOption:ControlCenterOptions.qml:2",
     "label": "Indicators",
     "tabIndex": 22,
     "keywords": [],
@@ -12545,7 +12775,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:ClockOptions.qml:3",
+    "section": "barWidgetOption:ClockOptions.qml:4",
     "label": "Notification badge",
     "tabIndex": 22,
     "keywords": [],
@@ -12665,7 +12895,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:WorkspaceSwitcherOptions.qml:20",
+    "section": "barWidgetOption:WorkspaceSwitcherOptions.qml:21",
     "label": "Reverse scroll direction",
     "tabIndex": 22,
     "keywords": [],
@@ -12697,12 +12927,44 @@
     "optionFile": "MusicOptions.qml"
   },
   {
+    "section": "barWidgetOption:BatteryOptions.qml:6",
+    "label": "Scroll wheel",
+    "tabIndex": 22,
+    "keywords": [],
+    "runtimeType": "barWidgetOption",
+    "optionFile": "BatteryOptions.qml"
+  },
+  {
+    "section": "barWidgetOption:ControlCenterOptions.qml:1",
+    "label": "Scroll wheel",
+    "tabIndex": 22,
+    "keywords": [],
+    "runtimeType": "barWidgetOption",
+    "optionFile": "ControlCenterOptions.qml"
+  },
+  {
     "section": "barWidgetOption:MusicOptions.qml:13",
     "label": "Scroll wheel",
     "tabIndex": 22,
     "keywords": [],
     "runtimeType": "barWidgetOption",
     "optionFile": "MusicOptions.qml"
+  },
+  {
+    "section": "barWidgetOption:RunningAppsOptions.qml:5",
+    "label": "Scroll wheel",
+    "tabIndex": 22,
+    "keywords": [],
+    "runtimeType": "barWidgetOption",
+    "optionFile": "RunningAppsOptions.qml"
+  },
+  {
+    "section": "barWidgetOption:WorkspaceSwitcherOptions.qml:20",
+    "label": "Scroll wheel",
+    "tabIndex": 22,
+    "keywords": [],
+    "runtimeType": "barWidgetOption",
+    "optionFile": "WorkspaceSwitcherOptions.qml"
   },
   {
     "section": "barWidgetOption:AppsDockOptions.qml:5",
@@ -12721,7 +12983,7 @@
     "optionFile": "AppsDockOptions.qml"
   },
   {
-    "section": "barWidgetOption:WorkspaceSwitcherOptions.qml:22",
+    "section": "barWidgetOption:WorkspaceSwitcherOptions.qml:23",
     "label": "Show all tags",
     "tabIndex": 22,
     "keywords": [],
@@ -12847,6 +13109,14 @@
     "keywords": [],
     "runtimeType": "barWidgetOption",
     "optionFile": "SystemMonitorOptions.qml"
+  },
+  {
+    "section": "barWidgetOption:ClockOptions.qml:3",
+    "label": "Show time zone",
+    "tabIndex": 22,
+    "keywords": [],
+    "runtimeType": "barWidgetOption",
+    "optionFile": "ClockOptions.qml"
   },
   {
     "section": "barWidgetOption:FocusedWindowOptions.qml:2",
@@ -12993,7 +13263,7 @@
     "optionFile": "IslandOptions.qml"
   },
   {
-    "section": "barWidgetOption:ClockOptions.qml:6",
+    "section": "barWidgetOption:ClockOptions.qml:7",
     "label": "Time & weather",
     "tabIndex": 22,
     "keywords": [],
@@ -14102,7 +14372,6 @@
       "wallpaper"
     ],
     "parentLabel": "Security",
-    "icon": "wallpaper",
     "conditionKey": "greeterAvailable"
   },
   {
@@ -16674,8 +16943,7 @@
       "topbar",
       "wellbeing"
     ],
-    "parentLabel": "Bar",
-    "icon": "digital_wellbeing"
+    "parentLabel": "Bar"
   },
   {
     "section": "dashTabsEvenlySpaced",
@@ -16716,8 +16984,7 @@
       "taskbar",
       "topbar"
     ],
-    "parentLabel": "Bar",
-    "icon": "music_note"
+    "parentLabel": "Bar"
   },
   {
     "section": "dashTabPosition",
@@ -16738,6 +17005,24 @@
     "parentLabel": "Bar"
   },
   {
+    "section": "dashSysmonCards",
+    "label": "System Monitor",
+    "tabIndex": 43,
+    "category": "Dashboard",
+    "keywords": [
+      "bar",
+      "dashboard",
+      "monitor",
+      "panel",
+      "statusbar",
+      "system",
+      "taskbar",
+      "topbar"
+    ],
+    "parentLabel": "Bar",
+    "icon": "monitoring"
+  },
+  {
     "section": "dashTabs",
     "label": "Tabs",
     "tabIndex": 43,
@@ -16753,8 +17038,7 @@
       "taskbar",
       "topbar"
     ],
-    "parentLabel": "Bar",
-    "icon": "refresh"
+    "parentLabel": "Bar"
   },
   {
     "section": "dashWeatherSettings",
@@ -16773,8 +17057,7 @@
       "topbar",
       "weather"
     ],
-    "parentLabel": "Bar",
-    "icon": "partly_cloudy_day"
+    "parentLabel": "Bar"
   },
   {
     "section": "mouseAccelProfile",
@@ -18184,6 +18467,22 @@
     "parentLabel": "Appearance"
   },
   {
+    "section": "themeMode",
+    "label": "Dark mode",
+    "tabIndex": 51,
+    "category": "Dark mode",
+    "keywords": [
+      "appearance",
+      "dark",
+      "dark mode",
+      "light",
+      "mode",
+      "night"
+    ],
+    "parentLabel": "Appearance",
+    "icon": "dark_mode"
+  },
+  {
     "section": "themeScheduleDarkMode",
     "label": "Dark mode",
     "tabIndex": 51,
@@ -18220,8 +18519,7 @@
       "sunset",
       "wallpaper"
     ],
-    "parentLabel": "Appearance",
-    "icon": "schedule"
+    "parentLabel": "Appearance"
   },
   {
     "section": "themeModeShareGammaSettings",
@@ -18293,8 +18591,7 @@
       "slideshow",
       "time"
     ],
-    "parentLabel": "Appearance",
-    "icon": "skip_previous"
+    "parentLabel": "Appearance"
   },
   {
     "section": "wallpaperCyclingFolder",
@@ -18659,8 +18956,7 @@
       "transparent",
       "widget"
     ],
-    "parentLabel": "Bar",
-    "icon": "SettingsUiState.selectedWidgetIcon"
+    "parentLabel": "Bar"
   },
   {
     "section": "mutedApps",
@@ -18771,8 +19067,7 @@
       "time",
       "weather"
     ],
-    "parentLabel": "Date, time & region",
-    "icon": "space_dashboard"
+    "parentLabel": "Date, time & region"
   },
   {
     "section": "useFahrenheit",
@@ -18874,8 +19169,7 @@
       "time",
       "weather"
     ],
-    "parentLabel": "Date, time & region",
-    "icon": "restart_alt"
+    "parentLabel": "Date, time & region"
   },
   {
     "section": "windSpeedUnit",
@@ -19384,8 +19678,7 @@
       "user",
       "users"
     ],
-    "page": "user_accounts",
-    "icon": "edit"
+    "page": "user_accounts"
   },
   {
     "section": "_hub_user_accounts",
@@ -19917,7 +20210,6 @@
       "topbar"
     ],
     "parentLabel": "Bar",
-    "icon": "folder_open",
     "conditionKey": "dotEnabled"
   },
   {
@@ -20189,7 +20481,6 @@
       "topbar"
     ],
     "parentLabel": "Bar",
-    "icon": "restart_alt",
     "description": "Comma-separated plugin or IPC source IDs that never show here",
     "conditionKey": "dotEnabled"
   },
@@ -21069,136 +21360,29 @@
       "release",
       "system"
     ],
-    "parentLabel": "System & integrations",
-    "icon": "cloud_off"
+    "parentLabel": "System & integrations"
   },
   {
-    "section": "wellbeingAppLimits",
-    "label": "App limits",
-    "tabIndex": 67,
-    "category": "Digital wellbeing",
-    "keywords": [
-      "app",
-      "digital",
-      "limit",
-      "limits",
-      "screen time",
-      "wellbeing"
-    ],
-    "icon": "timer"
-  },
-  {
-    "section": "wellbeingDailyLimit",
-    "label": "Daily limit",
-    "tabIndex": 67,
-    "category": "Digital wellbeing",
-    "keywords": [
-      "daily",
-      "digital",
-      "limit",
-      "screen time",
-      "wellbeing"
-    ]
-  },
-  {
-    "section": "_tab_67",
+    "section": "_hub_wellbeing",
     "label": "Digital wellbeing",
     "tabIndex": 67,
+    "page": "wellbeing",
     "category": "Digital wellbeing",
     "keywords": [
+      "alerts",
+      "break",
       "digital",
       "limits",
+      "reminders",
       "screen",
+      "statistics",
+      "suppression",
+      "testing",
       "time",
       "wellbeing"
     ],
     "icon": "digital_wellbeing",
     "description": "Screen time and app limits"
-  },
-  {
-    "section": "wellbeingHistory",
-    "label": "History",
-    "tabIndex": 67,
-    "category": "Digital wellbeing",
-    "keywords": [
-      "clear",
-      "digital",
-      "history",
-      "screen time",
-      "wellbeing"
-    ],
-    "icon": "history"
-  },
-  {
-    "section": "wellbeingApps",
-    "label": "Most used apps",
-    "tabIndex": 67,
-    "category": "Digital wellbeing",
-    "keywords": [
-      "apps",
-      "digital",
-      "most",
-      "screen time",
-      "usage",
-      "wellbeing"
-    ],
-    "icon": "apps"
-  },
-  {
-    "section": "wellbeing",
-    "label": "Screen time",
-    "tabIndex": 67,
-    "category": "Digital wellbeing",
-    "keywords": [
-      "digital",
-      "limit",
-      "screen",
-      "screen time",
-      "time",
-      "usage",
-      "wellbeing"
-    ],
-    "icon": "digital_wellbeing"
-  },
-  {
-    "section": "wellbeingEnabled",
-    "label": "Track screen time",
-    "tabIndex": 67,
-    "category": "Digital wellbeing",
-    "keywords": [
-      "active",
-      "counts",
-      "device",
-      "digital",
-      "focused",
-      "screen",
-      "screen time",
-      "session",
-      "stays",
-      "time",
-      "track",
-      "tracking",
-      "wellbeing",
-      "while"
-    ],
-    "description": "Counts time in the focused app while the session is active. Stays on this device."
-  },
-  {
-    "section": "wellbeingChart",
-    "label": "Weekly screen time",
-    "tabIndex": 67,
-    "category": "Digital wellbeing",
-    "keywords": [
-      "chart",
-      "digital",
-      "screen",
-      "screen time",
-      "time",
-      "week",
-      "weekly",
-      "wellbeing"
-    ],
-    "icon": "show_chart"
   },
   {
     "section": "fcitx5Behavior",
@@ -21630,6 +21814,44 @@
     "parentLabel": "Appearance"
   },
   {
+    "section": "configProfileSwitchTransition",
+    "label": "Transition",
+    "tabIndex": 75,
+    "category": "Profiles",
+    "keywords": [
+      "animation",
+      "appearance",
+      "effect",
+      "fade",
+      "preset",
+      "profiles",
+      "setup",
+      "snapshot",
+      "switch",
+      "transition"
+    ],
+    "parentLabel": "Appearance"
+  },
+  {
+    "section": "configProfileSwitchDuration",
+    "label": "Transition duration",
+    "tabIndex": 75,
+    "category": "Profiles",
+    "keywords": [
+      "animation",
+      "appearance",
+      "duration",
+      "preset",
+      "profiles",
+      "setup",
+      "snapshot",
+      "speed",
+      "switch",
+      "transition"
+    ],
+    "parentLabel": "Appearance"
+  },
+  {
     "section": "_tab_78",
     "label": "Global shortcuts",
     "tabIndex": 78,
@@ -21807,8 +22029,7 @@
       "snip",
       "system"
     ],
-    "parentLabel": "System & integrations",
-    "icon": "folder_open"
+    "parentLabel": "System & integrations"
   },
   {
     "section": "screenshotFormat",
@@ -22226,5 +22447,439 @@
       "toggle"
     ],
     "description": "Off switches show an X, on switches keep their check"
+  },
+  {
+    "section": "wellbeingAppLimits",
+    "label": "App limits",
+    "tabIndex": 87,
+    "category": "Screen time & limits",
+    "keywords": [
+      "app",
+      "digital",
+      "limit",
+      "limits",
+      "screen",
+      "screen time",
+      "time",
+      "wellbeing"
+    ],
+    "parentLabel": "Digital wellbeing",
+    "icon": "timer"
+  },
+  {
+    "section": "wellbeingDailyLimit",
+    "label": "Daily limit",
+    "tabIndex": 87,
+    "category": "Screen time & limits",
+    "keywords": [
+      "daily",
+      "digital",
+      "limit",
+      "limits",
+      "screen",
+      "screen time",
+      "time",
+      "wellbeing"
+    ],
+    "parentLabel": "Digital wellbeing"
+  },
+  {
+    "section": "wellbeingHistory",
+    "label": "History",
+    "tabIndex": 87,
+    "category": "Screen time & limits",
+    "keywords": [
+      "clear",
+      "digital",
+      "history",
+      "limits",
+      "screen",
+      "screen time",
+      "time",
+      "wellbeing"
+    ],
+    "parentLabel": "Digital wellbeing",
+    "icon": "history"
+  },
+  {
+    "section": "wellbeingLimits",
+    "label": "Screen time & limits",
+    "tabIndex": 87,
+    "category": "Screen time & limits",
+    "keywords": [
+      "daily",
+      "digital",
+      "limit",
+      "limits",
+      "screen",
+      "screen time",
+      "time",
+      "wellbeing"
+    ],
+    "parentLabel": "Digital wellbeing",
+    "icon": "hourglass_empty"
+  },
+  {
+    "section": "wellbeingBreakPlan",
+    "label": "Break plan",
+    "tabIndex": 88,
+    "category": "Break reminders",
+    "keywords": [
+      "balanced",
+      "break",
+      "digital",
+      "focused",
+      "light",
+      "plan",
+      "preset",
+      "reminders",
+      "wellbeing"
+    ],
+    "parentLabel": "Digital wellbeing"
+  },
+  {
+    "section": "wellbeingBreakPlans",
+    "label": "Break reminders",
+    "tabIndex": 88,
+    "category": "Break reminders",
+    "keywords": [
+      "break",
+      "digital",
+      "plan",
+      "preset",
+      "reminders",
+      "wellbeing"
+    ],
+    "parentLabel": "Digital wellbeing",
+    "icon": "timer"
+  },
+  {
+    "section": "wellbeingBreaksEnabled",
+    "label": "Break reminders",
+    "tabIndex": 88,
+    "category": "Break reminders",
+    "keywords": [
+      "break",
+      "digital",
+      "eyes",
+      "reminder",
+      "reminders",
+      "rest",
+      "wellbeing"
+    ],
+    "parentLabel": "Digital wellbeing"
+  },
+  {
+    "section": "wellbeingBreakSchedule",
+    "label": "Break schedule",
+    "tabIndex": 88,
+    "category": "Break reminders",
+    "keywords": [
+      "break",
+      "digital",
+      "duration",
+      "interval",
+      "reminders",
+      "schedule",
+      "wellbeing"
+    ],
+    "parentLabel": "Digital wellbeing",
+    "icon": "schedule"
+  },
+  {
+    "section": "wellbeingLongBreakDuration",
+    "label": "Long break duration",
+    "tabIndex": 88,
+    "category": "Break reminders",
+    "keywords": [
+      "break",
+      "digital",
+      "duration",
+      "length",
+      "long",
+      "reminders",
+      "wellbeing"
+    ],
+    "parentLabel": "Digital wellbeing"
+  },
+  {
+    "section": "wellbeingBreakWarning",
+    "label": "Pre-break warning",
+    "tabIndex": 88,
+    "category": "Break reminders",
+    "keywords": [
+      "appears",
+      "before",
+      "break",
+      "digital",
+      "heads",
+      "heads-up",
+      "long",
+      "notice",
+      "pre",
+      "reminders",
+      "warning",
+      "wellbeing"
+    ],
+    "parentLabel": "Digital wellbeing",
+    "description": "How long before a break the heads-up appears"
+  },
+  {
+    "section": "wellbeingBreakDuration",
+    "label": "Short break duration",
+    "tabIndex": 88,
+    "category": "Break reminders",
+    "keywords": [
+      "break",
+      "digital",
+      "duration",
+      "length",
+      "reminders",
+      "short",
+      "wellbeing"
+    ],
+    "parentLabel": "Digital wellbeing"
+  },
+  {
+    "section": "wellbeingBreakInterval",
+    "label": "Short break interval",
+    "tabIndex": 88,
+    "category": "Break reminders",
+    "keywords": [
+      "break",
+      "digital",
+      "every",
+      "interval",
+      "reminders",
+      "short",
+      "wellbeing"
+    ],
+    "parentLabel": "Digital wellbeing"
+  },
+  {
+    "section": "wellbeingBreaksBeforeLong",
+    "label": "Short breaks before long break",
+    "tabIndex": 88,
+    "category": "Break reminders",
+    "keywords": [
+      "before",
+      "break",
+      "breaks",
+      "count",
+      "cycle",
+      "digital",
+      "long",
+      "reminders",
+      "short",
+      "wellbeing"
+    ],
+    "parentLabel": "Digital wellbeing"
+  },
+  {
+    "section": "_tab_89",
+    "label": "Alerts & suppression",
+    "tabIndex": 89,
+    "category": "Alerts & suppression",
+    "keywords": [
+      "alerts",
+      "digital",
+      "media",
+      "smart",
+      "sound",
+      "suppression",
+      "wellbeing"
+    ],
+    "icon": "notifications_paused",
+    "parentLabel": "Digital wellbeing",
+    "description": "Smart suppression, sound and media"
+  },
+  {
+    "section": "wellbeingBreakAudio",
+    "label": "Audio & playback",
+    "tabIndex": 89,
+    "category": "Alerts & suppression",
+    "keywords": [
+      "alerts",
+      "audio",
+      "break",
+      "digital",
+      "media",
+      "music",
+      "pause",
+      "playback",
+      "sound",
+      "suppression",
+      "wellbeing"
+    ],
+    "parentLabel": "Digital wellbeing",
+    "icon": "volume_up"
+  },
+  {
+    "section": "wellbeingBreakPauseMedia",
+    "label": "Pause media during breaks",
+    "tabIndex": 89,
+    "category": "Alerts & suppression",
+    "keywords": [
+      "after",
+      "alerts",
+      "break",
+      "breaks",
+      "digital",
+      "during",
+      "media",
+      "mpris",
+      "music",
+      "pause",
+      "pauses",
+      "playing",
+      "resumes",
+      "starts",
+      "suppression",
+      "wellbeing"
+    ],
+    "parentLabel": "Digital wellbeing",
+    "description": "Pauses playing media when a break starts and resumes it after"
+  },
+  {
+    "section": "wellbeingBreakSuppression",
+    "label": "Smart suppression",
+    "tabIndex": 89,
+    "category": "Alerts & suppression",
+    "keywords": [
+      "alerts",
+      "break",
+      "digital",
+      "fullscreen",
+      "meeting",
+      "postpone",
+      "smart",
+      "suppress",
+      "suppression",
+      "wellbeing"
+    ],
+    "parentLabel": "Digital wellbeing",
+    "icon": "notifications_paused"
+  },
+  {
+    "section": "wellbeingBreakSound",
+    "label": "Sound alerts",
+    "tabIndex": 89,
+    "category": "Alerts & suppression",
+    "keywords": [
+      "alert",
+      "alerts",
+      "break",
+      "chime",
+      "digital",
+      "ends",
+      "plays",
+      "sound",
+      "starts",
+      "suppression",
+      "wellbeing"
+    ],
+    "parentLabel": "Digital wellbeing",
+    "description": "Plays a sound when a break starts or ends"
+  },
+  {
+    "section": "wellbeingBreakSuppressMeetings",
+    "label": "Suppress during meetings",
+    "tabIndex": 89,
+    "category": "Alerts & suppression",
+    "keywords": [
+      "alerts",
+      "break",
+      "breaks",
+      "call",
+      "digital",
+      "during",
+      "meeting",
+      "meetings",
+      "microphone",
+      "postpones",
+      "suppress",
+      "suppression",
+      "wellbeing",
+      "while"
+    ],
+    "parentLabel": "Digital wellbeing",
+    "description": "Postpones breaks while the microphone is in use"
+  },
+  {
+    "section": "wellbeingBreakSuppressFullscreen",
+    "label": "Suppress in fullscreen",
+    "tabIndex": 89,
+    "category": "Alerts & suppression",
+    "keywords": [
+      "alerts",
+      "break",
+      "breaks",
+      "digital",
+      "fullscreen",
+      "game",
+      "postpones",
+      "suppress",
+      "suppression",
+      "video",
+      "wellbeing",
+      "while"
+    ],
+    "parentLabel": "Digital wellbeing",
+    "description": "Postpones breaks while an app is fullscreen"
+  },
+  {
+    "section": "wellbeingBreakStats",
+    "label": "Statistics",
+    "tabIndex": 90,
+    "category": "Statistics & testing",
+    "keywords": [
+      "break",
+      "completed",
+      "digital",
+      "history",
+      "skipped",
+      "snoozed",
+      "statistics",
+      "testing",
+      "wellbeing"
+    ],
+    "parentLabel": "Digital wellbeing",
+    "icon": "bar_chart"
+  },
+  {
+    "section": "_tab_90",
+    "label": "Statistics & testing",
+    "tabIndex": 90,
+    "category": "Statistics & testing",
+    "keywords": [
+      "break",
+      "digital",
+      "history",
+      "previews",
+      "statistics",
+      "testing",
+      "wellbeing"
+    ],
+    "icon": "bar_chart",
+    "parentLabel": "Digital wellbeing",
+    "description": "Break history and previews"
+  },
+  {
+    "section": "wellbeingBreakPreview",
+    "label": "Testing & preview",
+    "tabIndex": 90,
+    "category": "Statistics & testing",
+    "keywords": [
+      "break",
+      "digital",
+      "preview",
+      "sound",
+      "statistics",
+      "test",
+      "testing",
+      "wellbeing"
+    ],
+    "parentLabel": "Digital wellbeing",
+    "icon": "preview"
   }
 ]

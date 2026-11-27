@@ -156,6 +156,7 @@ Item {
     signal popoutClosed
     signal closeAnimationFinished
     signal backgroundClicked
+    signal surfaceUnmapping
 
     Timer {
         id: _syncTimer
@@ -865,7 +866,7 @@ Item {
     readonly property bool _settlingToOpen: shouldBeVisible && (morph.running || travelSpring.running)
     readonly property bool _geometryMotion: animationsEnabled && !Theme.reduceMotion && root.attached && shouldBeVisible && !_settlingToOpen && !resizing
     property bool _bodyBatch: false
-    readonly property var _resizeSpringParams: Theme.springPreset("defaultSpatial")
+    readonly property var _resizeSpringParams: Theme.springPreset("standardDefaultSpatial")
 
     RectSpringMotion {
         id: bodySpring
@@ -1301,6 +1302,7 @@ Item {
     }
 
     function _detach() {
+        surfaceUnmapping();
         surfaceRoot.parent = root;
         _attachedScreenName = "";
         surfaceScreen = null;
@@ -1521,6 +1523,12 @@ Item {
                     root.closeAnimationFinished();
                     if (!root.morphTravelEnabled)
                         root._finishClose();
+                }
+                // Past 0 the reveal clip and the chrome are fully retracted; settling the overshoot only redraws a hidden popout.
+                onValueChanged: {
+                    if (value >= 0 || !running || !root.isClosing || root.shouldBeVisible || !root.directionalRevealActive)
+                        return;
+                    snapTo(0);
                 }
                 enabled: root.animationsEnabled && !(root.connected && root._fluidMotionActive)
                 reducedMotion: root.animationDuration <= 0

@@ -44,6 +44,10 @@ function deviceStep(scale) {
     return a > 0 ? 120 / a : 1;
 }
 
+function alignExtent(extent, step) {
+    return Math.ceil(extent / step) * step;
+}
+
 function alignOrigin(area, step) {
     if (step <= 1 || area.width <= 0 || area.height <= 0)
         return area;

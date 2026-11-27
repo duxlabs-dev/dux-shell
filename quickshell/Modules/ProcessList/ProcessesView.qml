@@ -1,6 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
+import Quickshell.Widgets
 import qs.Common
 import qs.Services
 import qs.DCommon.Widgets
@@ -584,90 +585,96 @@ Rectangle {
                 }
             }
 
-            DListView {
-                id: processListView
+            ClippingRectangle {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                clip: true
-                // No reuseItems: with ScriptModel updates, pooled rows can stay painted over the live ones.
-                cacheBuffer: Math.round(height)
-                activeFocusOnTab: true
-                focus: true
-                Keys.onPressed: event => root.handleKey(event)
-                onActiveFocusChanged: {
-                    if (activeFocus && root.selectedIndex < 0)
-                        root.selectFirst();
-                }
-                spacing: Theme.groupedListGap
-                currentIndex: root.selectedIndex
-                // Every sample can move the selected row; only key presses may scroll to it.
-                highlightFollowsCurrentItem: false
-                add: null
-                remove: null
-                displaced: null
-                move: null
+                radius: Theme.groupedListOuterRadius
+                color: "transparent"
 
-                model: ScriptModel {
-                    values: root.cachedProcesses
-                    objectProp: "key"
-                }
+                DListView {
+                    id: processListView
+                    anchors.fill: parent
+                    clip: true
+                    // No reuseItems: with ScriptModel updates, pooled rows can stay painted over the live ones.
+                    cacheBuffer: Math.round(height)
+                    activeFocusOnTab: true
+                    focus: true
+                    Keys.onPressed: event => root.handleKey(event)
+                    onActiveFocusChanged: {
+                        if (activeFocus && root.selectedIndex < 0)
+                            root.selectFirst();
+                    }
+                    spacing: Theme.groupedListGap
+                    currentIndex: root.selectedIndex
+                    // Every sample can move the selected row; only key presses may scroll to it.
+                    highlightFollowsCurrentItem: false
+                    add: null
+                    remove: null
+                    displaced: null
+                    move: null
 
-                delegate: ProcessRow {
-                    required property var modelData
-                    required property int index
-                    firstInGroup: index === 0
-                    lastInGroup: index === processListView.count - 1
-                    width: processListView.width
-                    rowHeight: root.rowHeight
-                    detailX: tableScroll.contentX
-                    detailWidth: Math.min(width, tableScroll.width)
-                    keyForwardTargets: [processKeys]
-                    KeyNavigation.backtab: nameHeader
-                    columns: root.visibleColumnIds
-                    process: modelData
-                    isExpanded: root.expandedPid === (modelData?.key ?? "")
-                    onExpansionSettled: processListView.positionViewAtIndex(index, ListView.Contain)
-                    groupOpen: !!root.openGroups[modelData?.key]
-                    onGroupToggled: root.setGroupOpen(modelData.key, !groupOpen)
-                    isSelected: root.keyboardNavigationActive && root.selectedIndex === index
-                    onClicked: {
-                        // A click that opens or dismisses the context menu is not meant for the row.
-                        if (root.contextMenu?.visible || Date.now() - root.menuClosedAt < 400)
-                            return;
-                        if (isExpanded) {
-                            root.reset();
-                            return;
+                    model: ScriptModel {
+                        values: root.cachedProcesses
+                        objectProp: "key"
+                    }
+
+                    delegate: ProcessRow {
+                        required property var modelData
+                        required property int index
+                        firstInGroup: index === 0
+                        lastInGroup: index === processListView.count - 1
+                        width: processListView.width
+                        rowHeight: root.rowHeight
+                        detailX: tableScroll.contentX
+                        detailWidth: Math.min(width, tableScroll.width)
+                        keyForwardTargets: [processKeys]
+                        KeyNavigation.backtab: nameHeader
+                        columns: root.visibleColumnIds
+                        process: modelData
+                        isExpanded: root.expandedPid === (modelData?.key ?? "")
+                        onExpansionSettled: processListView.positionViewAtIndex(index, ListView.Contain)
+                        groupOpen: !!root.openGroups[modelData?.key]
+                        onGroupToggled: root.setGroupOpen(modelData.key, !groupOpen)
+                        isSelected: root.keyboardNavigationActive && root.selectedIndex === index
+                        onClicked: {
+                            // A click that opens or dismisses the context menu is not meant for the row.
+                            if (root.contextMenu?.visible || Date.now() - root.menuClosedAt < 400)
+                                return;
+                            if (isExpanded) {
+                                root.reset();
+                                return;
+                            }
+                            processListView.forceActiveFocus(Qt.MouseFocusReason);
+                            root.keyboardNavigationActive = true;
+                            root.selectedIndex = index;
+                            root.toggleExpand();
                         }
-                        processListView.forceActiveFocus(Qt.MouseFocusReason);
-                        root.keyboardNavigationActive = true;
-                        root.selectedIndex = index;
-                        root.toggleExpand();
+                        onActionRequested: action => root.requestAction(index, action)
+                        onContextMenuRequested: (mouseX, mouseY) => {
+                            if (!root.contextMenu)
+                                return;
+                            root.selectedIndex = index;
+                            root.keyboardNavigationActive = true;
+                            root.contextMenu.processData = modelData;
+                            root.contextMenu.parentFocusItem = processListView;
+                            const pos = mapToItem(root.contextMenu.parent, mouseX, mouseY);
+                            root.contextMenu.show(pos.x, pos.y, false);
+                        }
                     }
-                    onActionRequested: action => root.requestAction(index, action)
-                    onContextMenuRequested: (mouseX, mouseY) => {
-                        if (!root.contextMenu)
-                            return;
-                        root.selectedIndex = index;
-                        root.keyboardNavigationActive = true;
-                        root.contextMenu.processData = modelData;
-                        root.contextMenu.parentFocusItem = processListView;
-                        const pos = mapToItem(root.contextMenu.parent, mouseX, mouseY);
-                        root.contextMenu.show(pos.x, pos.y, false);
+
+                    StyledText {
+                        anchors.centerIn: parent
+                        text: I18n.tr("No matching processes", "empty state in process list")
+                        color: Theme.onSurfaceVariant
+                        visible: processListView.count === 0 && !listSpinner.visible
                     }
-                }
 
-                StyledText {
-                    anchors.centerIn: parent
-                    text: I18n.tr("No matching processes", "empty state in process list")
-                    color: Theme.onSurfaceVariant
-                    visible: processListView.count === 0 && !listSpinner.visible
-                }
-
-                DSpinner {
-                    id: listSpinner
-                    anchors.centerIn: parent
-                    size: Theme.iconSize
-                    visible: processListView.count === 0 && DgopService.allProcesses.length === 0
+                    DSpinner {
+                        id: listSpinner
+                        anchors.centerIn: parent
+                        size: Theme.iconSize
+                        visible: processListView.count === 0 && DgopService.allProcesses.length === 0
+                    }
                 }
             }
         }

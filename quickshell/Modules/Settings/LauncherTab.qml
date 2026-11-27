@@ -282,7 +282,7 @@ Item {
             SettingsCard {
                 width: parent.width
                 iconName: "search"
-                title: I18n.tr("Search", "launcher settings section title, noun")
+                title: I18n.tr("Search", "launcher settings section title, noun", true)
                 settingKey: "searchOptions"
 
                 SettingsToggleRow {

@@ -104,7 +104,10 @@ TAB_INDEX_MAP = {
     "DBarTab.qml": 3,
     "WidgetsTab.qml": 22,
     "DDashTab.qml": 43,
-    "DigitalWellbeingTab.qml": 67,
+    "WellbeingLimitsTab.qml": 87,
+    "WellbeingBreaksTab.qml": 88,
+    "WellbeingAlertsTab.qml": 89,
+    "WellbeingStatsTab.qml": 90,
     "CompositorLayoutTab.qml": 37,
     "CompositorAnimationsTab.qml": 73,
     "CompositorIncludesTab.qml": 74,
@@ -159,6 +162,7 @@ TAB_INDEX_MAP = {
     "DisplayWidgetsTab.qml": 26,
     "DesktopWidgetsTab.qml": 27,
     "DesktopWidgetTab.qml": 63,
+    "DashSysmonCardTab.qml": 91,
     "AudioTab.qml": 29,
     "LocaleTab.qml": 30,
     "GreeterTab.qml": 31,
@@ -210,6 +214,7 @@ FILE_PAGE_MAP = {
     "WallpaperColorsTab.qml": "personalization",
     "ThemeSurfacesTab.qml": "theme_surfaces",
     "NotificationsTab.qml": "notifications",
+    "DigitalWellbeingTab.qml": "wellbeing",
     "UserAccountsTab.qml": "user_accounts",
     "BarHubHeader.qml": "dankbar",
     "DockHubHeader.qml": "dock",
@@ -468,8 +473,9 @@ def load_wrapper_components(root_dir):
         if not root_match or root_match.group(1) not in SEARCHABLE_COMPONENTS:
             continue
 
+        own = own_scope(content[root_match.start():])
         wrappers[qml_file.stem] = {
-            prop: extract_property(content, prop)
+            prop: extract_property(own, prop)
             for prop in ("settingKey", "title", "text", "description", "iconName", "tags")
         }
 
@@ -565,7 +571,7 @@ def find_settings_components(content, filename, wrappers, tab_meta, hub_meta):
             if not label:
                 continue
 
-            icon_raw = extract_property(block, "iconName") or defaults.get("iconName")
+            icon_raw = extract_property(own, "iconName") or defaults.get("iconName")
             icon = None
             if icon_raw:
                 icon = icon_raw.strip("\"'")

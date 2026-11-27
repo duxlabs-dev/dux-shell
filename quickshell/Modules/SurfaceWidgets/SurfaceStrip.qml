@@ -11,6 +11,7 @@ FocusScope {
     required property var components
     property var model: []
     property var applicationStrip: null
+    property var centerUnits: []
     readonly property real crossOverflow: surfaceContext.host?.stripOverflow ?? 0
     property real availableSize: width
     property real spacing: Theme.spacingXS
@@ -61,9 +62,11 @@ FocusScope {
     function layoutPositions(order, scales, startOffset) {
         const result = [];
         let offset = startOffset ?? alignOffset;
+        let position = 0;
         for (const index of order) {
             const scale = scales?.[index] ?? 1.0;
             const extra = scales ? (scale - 1.0) * allocatedSizes[index] * expansionRatio : 0;
+            offset += allocated.gaps[position++] ?? 0;
             result[index] = offset + extra / 2;
             if (participating[index])
                 offset += allocatedSizes[index] + extra + spacing;
@@ -188,10 +191,11 @@ FocusScope {
             sizes.push(repeater.itemAt(i)?.naturalSize ?? 0);
         return sizes;
     }
-    readonly property var flexible: model.map(item => item.widgetId === "flexibleSpacer" && item.enabled !== false)
+    readonly property var flexible: model.map(item => fillAvailable && DockConfig.isFillSpacer(item))
     readonly property var participating: sizes.map((size, index) => size > 0 || flexible[index])
     readonly property real gapSpace: Math.max(0, participating.filter(Boolean).length - 1) * spacing
-    readonly property var allocatedSizes: DockConfig.allocation(sizes, flexible, fillAvailable ? Math.max(0, availableSize - gapSpace) : 0, 0)
+    readonly property var allocated: DockConfig.allocation(sizes, flexible, availableSize, spacing, model.map(item => fillAvailable && centerUnits.includes(DockConfig.unitOf(item))))
+    readonly property var allocatedSizes: allocated.sizes
     // Scales depend only on the pointer in the rest frame (strip origin latched before the dock grows)
     // and on unaligned rest positions, so the displaced layout cannot feed back into them.
     readonly property var magnificationScales: {
@@ -214,7 +218,7 @@ FocusScope {
     readonly property real expansionRatio: uncappedMagnificationExpansion > 0 ? totalMagnificationExpansion / uncappedMagnificationExpansion : 1.0
     readonly property real restLength: sizes.reduce((sum, size) => sum + size, 0) + gapSpace
     readonly property real preferredLength: restLength + totalMagnificationExpansion
-    readonly property real baseContentLength: allocatedSizes.reduce((sum, size) => sum + size, 0) + gapSpace
+    readonly property real baseContentLength: allocatedSizes.reduce((sum, size) => sum + size, 0) + allocated.gaps.reduce((sum, gap) => sum + gap, 0) + gapSpace
     readonly property real contentLength: baseContentLength + totalMagnificationExpansion
     readonly property bool interactionActive: {
         layoutRevision;
@@ -342,8 +346,8 @@ FocusScope {
                 required property int index
                 required property var modelData
                 readonly property var widgetItem: appLoader.item ?? loader.item
-                readonly property bool flexible: modelData.widgetId === "flexibleSpacer"
-                readonly property real naturalSize: modelData.enabled === false || flexible ? 0 : root.vertical ? (widgetItem?.implicitHeight || widgetItem?.height || 0) : (widgetItem?.implicitWidth || widgetItem?.width || 0)
+                readonly property bool flexible: root.flexible[index] ?? false
+                readonly property real naturalSize: modelData.enabled === false ? 0 : root.vertical ? (widgetItem?.implicitHeight || widgetItem?.height || 0) : (widgetItem?.implicitWidth || widgetItem?.width || 0)
                 readonly property bool dragging: root.draggingIndex === index
                 readonly property string unitId: DockConfig.unitOf(modelData)
                 readonly property bool unitDragging: root.draggingUnit === unitId

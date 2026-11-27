@@ -11,6 +11,7 @@ import qs.Widgets
 import qs.Modules.Notifications.Popup
 import qs.Modules.OSD
 import qs.Modules.Settings.DisplayConfig
+import qs.Modules.Wellbeing
 import qs.Services
 
 Item {
@@ -29,7 +30,6 @@ Item {
     }
 
     property bool osdSurfacesLoaded: false
-    property int pendingOsdResumeReloads: 0
     readonly property var notificationPopupScreens: {
         const screens = SettingsData.notificationFocusedMonitor ? ShellLayout.realScreens : SettingsData.getFilteredScreens("notifications");
         if (!SettingsData.dankIslandEnabled)
@@ -41,12 +41,6 @@ Item {
         if (!SettingsData.dankIslandEnabled)
             return screens;
         return screens.filter(screen => !SettingsData.dankIslandHandlesSystemOsd(screen));
-    }
-
-    function recreateOsdSurfaces() {
-        OSDManager.currentOSDsByScreen = ({});
-        osdSurfacesLoaded = false;
-        osdSurfaceReloadTimer.restart();
     }
 
     Variants {
@@ -200,6 +194,21 @@ Item {
         }
     }
 
+    Variants {
+        model: ShellLayout.realScreens
+
+        // LazyLoader stays unloaded when this binding throws; a Loader defaults to active and would map the surface
+        delegate: LazyLoader {
+            id: breakOverlayLoader
+            required property var modelData
+            active: BreakReminderService.breakShown
+
+            BreakOverlay {
+                screen: breakOverlayLoader.modelData
+            }
+        }
+    }
+
     Connections {
         target: root.core
 
@@ -238,32 +247,6 @@ Item {
     }
 
     Timer {
-        id: osdResumeRecreateTimer
-        interval: Timing.resumeRecoverySchedule[0]
-        repeat: false
-        onTriggered: {
-            root.recreateOsdSurfaces();
-            root.pendingOsdResumeReloads--;
-
-            if (root.pendingOsdResumeReloads <= 0) {
-                root.pendingOsdResumeReloads = 0;
-                interval = Timing.resumeRecoverySchedule[0];
-                return;
-            }
-
-            interval = Timing.resumeRecoverySchedule[1];
-            restart();
-        }
-    }
-
-    Timer {
-        id: osdSurfaceReloadTimer
-        interval: Timing.settle
-        repeat: false
-        onTriggered: root.osdSurfacesLoaded = true
-    }
-
-    Timer {
         id: osdStartupTimer
         interval: Timing.settleSlow
         repeat: false
@@ -288,6 +271,7 @@ Item {
         WallpaperCyclingService.cyclingActive;
         ThemeAutoService.active;
         WellbeingService.tracking;
+        BreakReminderService.enabled;
     }
 
     Loader {
@@ -937,16 +921,6 @@ Item {
         }
     }
 
-    Connections {
-        target: SessionService
-
-        function onSessionResumed() {
-            root.pendingOsdResumeReloads = 2;
-            osdResumeRecreateTimer.interval = Timing.resumeRecoverySchedule[0];
-            osdResumeRecreateTimer.restart();
-        }
-    }
-
     ColorPickerModal {
         id: colorPickerModal
 
@@ -1337,6 +1311,12 @@ Item {
         }
     }
 
+    LazyLoader {
+        active: ConfigProfileService.switching
+
+        ProfileSwitchOverlay {}
+    }
+
     Connections {
         target: ConfigProfileService
         function onPickerToggleRequested() {
@@ -1467,6 +1447,12 @@ Item {
                     model: SettingsData.osdWorkspaceEnabled ? SettingsData.getFilteredScreens("osd") : []
 
                     delegate: WorkspaceOSD {}
+                }
+
+                Variants {
+                    model: SettingsData.wellbeingBreaksEnabled ? SettingsData.getFilteredScreens("osd") : []
+
+                    delegate: BreakWarningOSD {}
                 }
             }
         }

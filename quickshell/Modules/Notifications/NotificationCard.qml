@@ -431,6 +431,8 @@ Rectangle {
                     DButton {
                         required property var modelData
                         required property int index
+                        // Hidden, not filtered: keyboard (n) hints index the raw actions array.
+                        visible: !(modelData.identifier === "default" && (modelData.text || "").trim() === "")
                         text: (modelData.text || I18n.tr("Open")) + (root.keyboardHints && index < 9 ? " (" + (index + 1) + ")" : "")
                         maximumWidth: actions.width
                         wrapText: true

@@ -491,6 +491,7 @@ Item {
             islandY: root.currentVisualY
             hostWidth: root.width
             hostHeight: root.height
+            dpr: root.dpr
             springTimeConstantMs: root.springTimeConstantMs
             morphProgress: root.morphProgress
             expanded: root.controller.expanded

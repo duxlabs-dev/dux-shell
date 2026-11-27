@@ -90,15 +90,22 @@ PluginComponent {
                 onClicked: TailscaleService.refresh(null)
             }
 
-            DFlickable {
-                anchors.fill: parent
-                contentHeight: detailColumn.height
-                clip: true
+            ScriptModel {
+                id: peerModel
+                values: detailRoot.filteredPeers
+            }
 
-                Column {
-                    id: detailColumn
-                    width: parent.width
+            DListView {
+                id: peerList
+                anchors.fill: parent
+                clip: true
+                spacing: Theme.groupedListGap
+                model: TailscaleService.available ? peerModel : null
+
+                header: Column {
+                    width: peerList.width
                     spacing: CcMetrics.detailContentGap
+                    bottomPadding: peerList.count > 0 ? CcMetrics.detailContentGap : 0
 
                     CcEmptyState {
                         visible: !TailscaleService.available
@@ -192,104 +199,101 @@ PluginComponent {
                         iconName: "devices"
                         title: detailRoot.searchQuery.length > 0 ? I18n.tr("No matching devices", "No Tailscale devices match search") : I18n.tr("No peers found", "No Tailscale peers found")
                     }
+                }
 
-                    CcGroup {
-                        visible: TailscaleService.available && detailRoot.filteredPeers.length > 0
+                delegate: CcListRow {
+                    id: peerRow
 
-                        Repeater {
-                            model: detailRoot.filteredPeers
+                    required property var modelData
+                    required property int index
 
-                            CcListRow {
-                                id: peerRow
+                    readonly property bool isSelf: modelData.hostname === (TailscaleService.selfNode ? TailscaleService.selfNode.hostname : "")
+                    readonly property bool isExpanded: detailRoot.expandedHostname === modelData.hostname
 
-                                required property var modelData
+                    width: peerList.width
+                    topRadius: index === 0 ? Theme.groupedListOuterRadius : Theme.groupedListInnerRadius
+                    bottomRadius: index === peerList.count - 1 ? Theme.groupedListOuterRadius : Theme.groupedListInnerRadius
 
-                                readonly property bool isSelf: modelData.hostname === (TailscaleService.selfNode ? TailscaleService.selfNode.hostname : "")
-                                readonly property bool isExpanded: detailRoot.expandedHostname === modelData.hostname
+                    active: isSelf
+                    title: modelData.hostname || ""
+                    subtitle: {
+                        const parts = [];
+                        if (modelData.tailscaleIp)
+                            parts.push(modelData.tailscaleIp);
+                        if (modelData.os)
+                            parts.push(modelData.os);
+                        if (modelData.online)
+                            parts.push(modelData.relay ? I18n.tr("relay: %1", "Tailscale relay server name").arg(modelData.relay) : I18n.tr("direct", "Tailscale direct connection"));
+                        else if (modelData.lastSeen)
+                            parts.push(I18n.tr("last seen %1", "Tailscale peer last seen time").arg(detailRoot.formatLastSeen(modelData.lastSeen)));
+                        return parts.join(" • ");
+                    }
+                    trailingBadge: isSelf ? I18n.tr("This device", "Label for the user's own device in Tailscale") : ""
+                    trailingBadgeColor: Theme.primary
+                    clickable: true
+                    onClicked: detailRoot.expandedHostname = isExpanded ? "" : modelData.hostname
 
-                                active: isSelf
-                                title: modelData.hostname || ""
-                                subtitle: {
-                                    const parts = [];
-                                    if (modelData.tailscaleIp)
-                                        parts.push(modelData.tailscaleIp);
-                                    if (modelData.os)
-                                        parts.push(modelData.os);
-                                    if (modelData.online)
-                                        parts.push(modelData.relay ? I18n.tr("relay: %1", "Tailscale relay server name").arg(modelData.relay) : I18n.tr("direct", "Tailscale direct connection"));
-                                    else if (modelData.lastSeen)
-                                        parts.push(I18n.tr("last seen %1", "Tailscale peer last seen time").arg(detailRoot.formatLastSeen(modelData.lastSeen)));
-                                    return parts.join(" • ");
-                                }
-                                trailingBadge: isSelf ? I18n.tr("This device", "Label for the user's own device in Tailscale") : ""
-                                trailingBadgeColor: Theme.primary
-                                clickable: true
-                                onClicked: detailRoot.expandedHostname = isExpanded ? "" : modelData.hostname
+                    leading: CcStatusDot {
+                        color: peerRow.modelData.online ? Theme.success : Theme.surfaceVariantText
+                    }
 
-                                leading: CcStatusDot {
-                                    color: peerRow.modelData.online ? Theme.success : Theme.surfaceVariantText
-                                }
+                    DActionButton {
+                        anchors.verticalCenter: parent.verticalCenter
+                        buttonSize: Theme.buttonHeightXS
+                        iconSize: Theme.iconSizeSmall
+                        iconName: "content_copy"
+                        iconColor: Theme.surfaceText
+                        Accessible.name: I18n.tr("Copy", "Copy to clipboard")
+                        onClicked: Quickshell.execDetached(["dms", "cl", "copy", peerRow.modelData.tailscaleIp])
+                    }
 
-                                DActionButton {
-                                    anchors.verticalCenter: parent.verticalCenter
-                                    buttonSize: Theme.buttonHeightXS
-                                    iconSize: Theme.iconSizeSmall
-                                    iconName: "content_copy"
-                                    iconColor: Theme.surfaceText
-                                    Accessible.name: I18n.tr("Copy", "Copy to clipboard")
-                                    onClicked: Quickshell.execDetached(["dms", "cl", "copy", peerRow.modelData.tailscaleIp])
-                                }
+                    body: Column {
+                        width: parent.width
+                        spacing: Theme.spacingXS
+                        visible: peerRow.isExpanded
 
-                                body: Column {
-                                    width: parent.width
-                                    spacing: Theme.spacingXS
-                                    visible: peerRow.isExpanded
+                        Row {
+                            width: parent.width
+                            spacing: Theme.spacingXS
+                            visible: (peerRow.modelData.dnsName || "").length > 0
 
-                                    Row {
-                                        width: parent.width
-                                        spacing: Theme.spacingXS
-                                        visible: (peerRow.modelData.dnsName || "").length > 0
-
-                                        StyledText {
-                                            width: parent.width - copyDnsButton.width - parent.spacing
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            text: peerRow.modelData.dnsName || ""
-                                            font.pixelSize: Theme.fontSizeSmall
-                                            color: Theme.surfaceVariantText
-                                            elide: Text.ElideRight
-                                        }
-
-                                        DActionButton {
-                                            id: copyDnsButton
-                                            anchors.verticalCenter: parent.verticalCenter
-                                            buttonSize: Theme.buttonHeightXS
-                                            iconSize: Theme.iconSizeSmall
-                                            iconName: "content_copy"
-                                            Accessible.name: I18n.tr("Copy")
-                                            iconColor: Theme.surfaceText
-                                            onClicked: Quickshell.execDetached(["dms", "cl", "copy", peerRow.modelData.dnsName])
-                                        }
-                                    }
-
-                                    StyledText {
-                                        width: parent.width
-                                        visible: (peerRow.modelData.tags || []).length > 0
-                                        text: I18n.tr("Tags: %1", "Tailscale device tags").arg((peerRow.modelData.tags || []).join(", "))
-                                        font.pixelSize: Theme.fontSizeSmall
-                                        color: Theme.surfaceVariantText
-                                        elide: Text.ElideRight
-                                    }
-
-                                    StyledText {
-                                        width: parent.width
-                                        visible: (peerRow.modelData.owner || "").length > 0
-                                        text: I18n.tr("Owner: %1", "Tailscale device owner").arg(peerRow.modelData.owner || "")
-                                        font.pixelSize: Theme.fontSizeSmall
-                                        color: Theme.surfaceVariantText
-                                        elide: Text.ElideRight
-                                    }
-                                }
+                            StyledText {
+                                width: parent.width - copyDnsButton.width - parent.spacing
+                                anchors.verticalCenter: parent.verticalCenter
+                                text: peerRow.modelData.dnsName || ""
+                                font.pixelSize: Theme.fontSizeSmall
+                                color: Theme.surfaceVariantText
+                                elide: Text.ElideRight
                             }
+
+                            DActionButton {
+                                id: copyDnsButton
+                                anchors.verticalCenter: parent.verticalCenter
+                                buttonSize: Theme.buttonHeightXS
+                                iconSize: Theme.iconSizeSmall
+                                iconName: "content_copy"
+                                Accessible.name: I18n.tr("Copy")
+                                iconColor: Theme.surfaceText
+                                onClicked: Quickshell.execDetached(["dms", "cl", "copy", peerRow.modelData.dnsName])
+                            }
+                        }
+
+                        StyledText {
+                            width: parent.width
+                            visible: (peerRow.modelData.tags || []).length > 0
+                            text: I18n.tr("Tags: %1", "Tailscale device tags").arg((peerRow.modelData.tags || []).join(", "))
+                            font.pixelSize: Theme.fontSizeSmall
+                            color: Theme.surfaceVariantText
+                            elide: Text.ElideRight
+                        }
+
+                        StyledText {
+                            width: parent.width
+                            visible: (peerRow.modelData.owner || "").length > 0
+                            text: I18n.tr("Owner: %1", "Tailscale device owner").arg(peerRow.modelData.owner || "")
+                            font.pixelSize: Theme.fontSizeSmall
+                            color: Theme.surfaceVariantText
+                            elide: Text.ElideRight
                         }
                     }
                 }

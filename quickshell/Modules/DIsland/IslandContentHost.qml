@@ -7,10 +7,10 @@ import qs.Modules.DIsland.Activities
 Item {
     id: root
 
-    x: Math.round(parent.x) - parent.x
-    y: Math.round(parent.y) - parent.y
-    width: Math.round(parent.x + parent.width) - Math.round(parent.x)
-    height: Math.round(parent.y + parent.height) - Math.round(parent.y)
+    x: snap(parent.x) - parent.x
+    y: snap(parent.y) - parent.y
+    width: snap(parent.x + parent.width) - snap(parent.x)
+    height: snap(parent.y + parent.height) - snap(parent.y)
     clip: true
 
     required property var controller
@@ -18,6 +18,7 @@ Item {
     required property real islandY
     required property real hostWidth
     required property real hostHeight
+    required property real dpr
     required property real springTimeConstantMs
     required property real morphProgress
     required property bool expanded
@@ -70,7 +71,7 @@ Item {
     // Pinned to the compact target's slot like the faces, so the slots hold still while the island morphs.
     readonly property var stableTarget: root.freeMode ? root.controller.compactTarget : root.resolveTarget(root.controller.compactTarget)
     readonly property real stableSpan: root.controller.isVertical ? stableTarget.height : stableTarget.width
-    readonly property real stableStart: root.freeMode ? ((root.controller.isVertical ? height : width) - stableSpan) / 2 : Math.round(root.slotAlong(stableTarget)) - Math.round(root.controller.isVertical ? root.islandY : root.islandX)
+    readonly property real stableStart: root.freeMode ? ((root.controller.isVertical ? height : width) - stableSpan) / 2 : root.snap(root.slotAlong(stableTarget)) - root.snap(root.controller.isVertical ? root.islandY : root.islandX)
 
     component StableSlots: IslandActivitySlots {
         property real start: 0
@@ -203,6 +204,10 @@ Item {
         }
     }
 
+    function snap(value) {
+        return Theme.snap(value, root.dpr);
+    }
+
     // Where a resolved target sits at rest, in host coordinates.
     function slotAlong(target) {
         return root.controller.isVertical ? (root.hostHeight - target.height) / 2 + target.offsetAlong : (root.hostWidth - target.width) / 2 + target.offsetAlong;
@@ -223,11 +228,11 @@ Item {
         readonly property bool isVertical: root.controller.isVertical
         readonly property real slotsLength: root.controller.usesDotFace(activity) ? 0 : root.controller.stableSlotsLength
         readonly property real leadingLength: root.controller.usesDotFace(activity) ? 0 : root.controller.stableLeadingLength
-        readonly property real alongPos: !active || root.freeMode ? 0 : Math.round(root.slotAlong(target) + leadingLength) - Math.round(isVertical ? root.islandY : root.islandX)
-        readonly property real crossPos: !active || root.freeMode ? 0 : Math.round(root.slotCross(target)) - Math.round(isVertical ? root.islandX : root.islandY)
+        readonly property real alongPos: !active || root.freeMode ? 0 : root.snap(root.slotAlong(target) + leadingLength) - root.snap(isVertical ? root.islandY : root.islandX)
+        readonly property real crossPos: !active || root.freeMode ? 0 : root.snap(root.slotCross(target)) - root.snap(isVertical ? root.islandX : root.islandY)
 
-        x: root.freeMode ? Math.round((parent.width - (isVertical ? width : target.width)) / 2 + (isVertical ? 0 : leadingLength)) : (isVertical ? crossPos : alongPos)
-        y: root.freeMode ? Math.round((parent.height - (isVertical ? target.height : height)) / 2 + (isVertical ? leadingLength : 0)) : (isVertical ? alongPos : crossPos)
+        x: root.freeMode ? root.snap((parent.width - (isVertical ? width : target.width)) / 2 + (isVertical ? 0 : leadingLength)) : (isVertical ? crossPos : alongPos)
+        y: root.freeMode ? root.snap((parent.height - (isVertical ? target.height : height)) / 2 + (isVertical ? leadingLength : 0)) : (isVertical ? alongPos : crossPos)
         width: isVertical ? target.width : Math.max(root.controller.compactFaceThickness, target.width - slotsLength)
         height: isVertical ? Math.max(root.controller.compactFaceThickness, target.height - slotsLength) : target.height
         asynchronous: false
@@ -246,8 +251,8 @@ Item {
         readonly property var slot: placed ? root.resolveTarget(target) : target
         readonly property bool isVertical: root.controller.isVertical
         readonly property real inset: root.controller.farEdge ? 0 : root.expandedInset
-        readonly property real alongPos: !placed ? 0 : Math.round(root.slotAlong(slot)) - Math.round(isVertical ? root.islandY : root.islandX)
-        readonly property real crossPos: !placed ? 0 : Math.round(root.slotCross(slot)) - Math.round(isVertical ? root.islandX : root.islandY) + inset
+        readonly property real alongPos: !placed ? 0 : root.snap(root.slotAlong(slot)) - root.snap(isVertical ? root.islandY : root.islandX)
+        readonly property real crossPos: !placed ? 0 : root.snap(root.slotCross(slot) + inset) - root.snap(isVertical ? root.islandX : root.islandY)
 
         x: isVertical ? crossPos : alongPos
         y: isVertical ? alongPos : crossPos

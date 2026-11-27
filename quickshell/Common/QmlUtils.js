@@ -76,3 +76,17 @@ function togglePinEntry(pins, key, entry, maxPins) {
         delete next[key];
     return next;
 }
+
+function comparePinOrder(pinnedList, aKey, bKey) {
+    if (!pinnedList || pinnedList.length === 0)
+        return 0;
+    const aPin = pinnedList.indexOf(aKey);
+    const bPin = pinnedList.indexOf(bKey);
+    if (aPin === bPin)
+        return 0;
+    if (aPin === -1)
+        return 1;
+    if (bPin === -1)
+        return -1;
+    return aPin - bPin;
+}

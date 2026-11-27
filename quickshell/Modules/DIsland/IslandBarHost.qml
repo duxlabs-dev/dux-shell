@@ -9,6 +9,7 @@ import qs.Modules.DIsland.Activities
 import qs.Services
 import qs.Widgets
 import "../../Common/LayoutResolver.js" as Resolver
+import "../../Common/PopoutBounds.js" as PopoutBounds
 
 Item {
     id: root
@@ -172,9 +173,11 @@ Item {
     readonly property int maxActivityHeight: Math.max(root.heldEditSurfaceHeight, controller.dashboardHeight, controller.controlCenterHeight, controller.launcherMaxHeight, controller.clipboardExpandedTarget.height, controller.powerMenuExpandedTarget.height, destinationMaxHeight)
     readonly property int maxActivityWidth: Math.max(controller.dashboardMaxWidth, controller.controlCenterMaxWidth, controller.launcherExpandedTarget.width, controller.clipboardExpandedTarget.width, controller.powerMenuExpandedTarget.width, Math.min(activityMaxWidth, Math.max(activityMinWidth, (root.screen?.width ?? referenceScreenWidth) - screenMargin)))
     readonly property real shadowPadding: surface.shadowEnabled ? Theme.elevationRenderPadding(Theme.elevationLevel2, surface.effectiveShadowDirection, Theme.spacingXS, Theme.spacingS, Theme.spacingL) : 0
-    readonly property int hostThickness: outerGap + nearInset + (root.isVertical ? maxActivityWidth : maxActivityHeight) + Theme.spacingS + shadowPadding
+    // Off the device grid, the compositor resamples the whole surface.
+    readonly property int hostThickness: PopoutBounds.alignExtent(outerGap + nearInset + (root.isVertical ? maxActivityWidth : maxActivityHeight) + Theme.spacingS + shadowPadding, PopoutBounds.deviceStep(surface.dpr))
     readonly property real maximumAlongOffset: root.isVertical ? Math.max(0, (height - maxActivityHeight) / 2 - Theme.spacingS - shadowPadding) : Math.max(0, (width - maxActivityWidth) / 2 - Theme.spacingS - shadowPadding)
     readonly property bool scrollEnabled: root.barConfig?.scrollEnabled ?? true
+    readonly property bool scrollEmptyStrip: root.setting("islandScrollEmptyStrip")
     property bool keyboardReclaiming: false
     readonly property int keyboardFocusPolicy: root.keyboardReclaiming && controller.keyboardDismissRequested ? WlrKeyboardFocus.Exclusive : KeyboardFocus.keyboardFocus(controller.keyboardDismissRequested && !controller.keyboardYielded, null)
     readonly property bool wantsFocusGrab: KeyboardFocus.wantsGrab(controller.keyboardDismissRequested && !controller.keyboardYielded, null)

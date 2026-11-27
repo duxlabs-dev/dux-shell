@@ -134,6 +134,7 @@ Column {
                 settingKey: "blurForegroundLayers"
                 valueKeys: ["foregroundLayerTransparency"]
                 text: I18n.tr("Foreground layers")
+                sliderText: I18n.tr("Opacity")
                 checked: SettingsData.blurForegroundLayers ?? true
                 value: Math.round((SettingsData.foregroundLayerTransparency ?? 1.0) * 100)
                 minimum: 0
@@ -147,6 +148,7 @@ Column {
                 tags: ["foreground", "layers", "outline", "border", "opacity", "cards", "pills", "widgets", "notifications", "control center"]
                 settingKey: "blurLayerOutline"
                 text: I18n.tr("Layer outline")
+                sliderText: I18n.tr("Opacity")
                 description: I18n.tr("Faint edge on cards, pills and widgets", "surface layer outline toggle description")
                 checked: root.layerOutlineEnabled
                 value: Math.round((SettingsData.blurLayerOutlineOpacity ?? 0) * 100)
@@ -163,6 +165,7 @@ Column {
                 accessoryKeys: ["blurBorderColor", "blurBorderCustomColor"]
                 valueKeys: ["blurBorderOpacity"]
                 text: I18n.tr("Border")
+                sliderText: I18n.tr("Opacity")
                 description: I18n.tr("Edge around popups and modals", "surface border toggle description")
                 checked: root.borderEnabled
                 value: Math.round((SettingsData.blurBorderOpacity ?? 0.35) * 100)
@@ -237,6 +240,7 @@ Column {
                 settingKey: "blurEnabled"
                 valueKeys: ["blurStrength"]
                 text: I18n.tr("Background blur")
+                sliderText: I18n.tr("Intensity")
                 visible: BlurService.available
                 sliderVisible: BlurService.strengthConfigurable
                 checked: SettingsData.blurEnabled ?? false
@@ -370,6 +374,7 @@ Column {
                 tags: ["window", "corner", "radius", "match", "follow", "link", "strength", "rounded", "popout", "menu", "modal", "compositor", "niri", "hyprland", "mango"]
                 settingKey: "windowRadius"
                 text: I18n.tr("Override window radius", "toggle: stop the window radius following the corner style setting")
+                sliderText: I18n.tr("Radius")
                 visible: root.windowRadiusKey !== ""
                 checked: Theme.compositorRadiusOverride >= 0
                 value: Theme.windowRadius
@@ -385,7 +390,7 @@ Column {
     SettingsDeferred {
         SettingsCard {
             tab: "theme"
-            tags: ["focus", "ring", "keyboard", "scroll", "shadows"]
+            tags: ["focus", "ring", "keyboard", "press", "expressive", "scroll", "shadows"]
             title: I18n.tr("Controls")
             settingKey: "surfaceControls"
 
@@ -567,6 +572,7 @@ Column {
                     settingKey: "floatingWindowForegroundLayers"
                     valueKeys: ["floatingWindowForegroundTransparency"]
                     text: I18n.tr("Foreground layers")
+                    sliderText: I18n.tr("Opacity")
                     checked: Theme.floatingWindowForegroundLayers
                     value: Math.round(Theme.floatingWindowForegroundTransparency * 100)
                     minimum: 0
@@ -622,6 +628,7 @@ Column {
             tags: ["surface", "opacity", "transparency", "bar", "dock", "override"]
             settingKey: "surfaceOpacity_" + modelData.replace(":", "_")
             text: target?.name ?? ""
+            sliderText: I18n.tr("Opacity")
             description: target?.frame ? I18n.tr("Frame") + " · " + I18n.tr("Override") : I18n.tr("Override")
             checked: target?.override ?? false
             value: Math.round((target?.transparency ?? 1) * 100)
@@ -652,44 +659,31 @@ Column {
             title: I18n.tr("Colors")
             settingKey: "surfaceColors"
 
-            SettingsDropdownRow {
+            ColorDropdownRow {
                 tab: "theme"
                 tags: ["button", "color", "primary", "accent", "action"]
                 settingKey: "buttonColorMode"
                 text: I18n.tr("Button color")
-                options: [I18n.tr("Primary", "button color option"), I18n.tr("Primary Container", "button color option"), I18n.tr("Secondary", "button color option"), I18n.tr("Surface Variant", "button color option")]
-                optionColorMap: ({
-                        [I18n.tr("Primary", "button color option")]: Theme.roleColor("primary"),
-                        [I18n.tr("Primary Container", "button color option")]: Theme.roleColor("primaryContainer"),
-                        [I18n.tr("Secondary", "button color option")]: Theme.roleColor("secondary"),
-                        [I18n.tr("Surface Variant", "button color option")]: Theme.roleColor("surfaceVariant")
-                    })
-                currentValue: {
-                    switch (SettingsData.buttonColorMode) {
-                    case "primaryContainer":
-                        return I18n.tr("Primary Container", "button color option");
-                    case "secondary":
-                        return I18n.tr("Secondary", "button color option");
-                    case "surfaceVariant":
-                        return I18n.tr("Surface Variant", "button color option");
-                    default:
-                        return I18n.tr("Primary", "button color option");
+                currentMode: SettingsData.buttonColorMode
+                options: [
+                    {
+                        "value": "primary",
+                        "label": I18n.tr("Primary", "button color option")
+                    },
+                    {
+                        "value": "primaryContainer",
+                        "label": I18n.tr("Primary Container", "button color option")
+                    },
+                    {
+                        "value": "secondary",
+                        "label": I18n.tr("Secondary", "button color option")
+                    },
+                    {
+                        "value": "surfaceVariant",
+                        "label": I18n.tr("Surface Variant", "button color option")
                     }
-                }
-                onValueChanged: value => {
-                    switch (value) {
-                    case I18n.tr("Primary Container", "button color option"):
-                        SettingsData.set("buttonColorMode", "primaryContainer");
-                        return;
-                    case I18n.tr("Secondary", "button color option"):
-                        SettingsData.set("buttonColorMode", "secondary");
-                        return;
-                    case I18n.tr("Surface Variant", "button color option"):
-                        SettingsData.set("buttonColorMode", "surfaceVariant");
-                        return;
-                    }
-                    SettingsData.set("buttonColorMode", "primary");
-                }
+                ]
+                onModeSelected: mode => SettingsData.set("buttonColorMode", mode)
             }
 
             SettingsSliderRow {
@@ -714,44 +708,31 @@ Column {
             title: I18n.tr("Control Center", "Control Center")
             settingKey: "controlCenterIcons"
 
-            SettingsDropdownRow {
+            ColorDropdownRow {
                 tab: "theme"
                 tags: ["control", "center", "tile", "button", "color", "active"]
                 settingKey: "controlCenterTileColorMode"
                 text: I18n.tr("Tile color", "control center tile color dropdown label")
-                options: [I18n.tr("Primary", "tile color option"), I18n.tr("Primary Container", "tile color option"), I18n.tr("Secondary", "tile color option"), I18n.tr("Surface Variant", "tile color option")]
-                optionColorMap: ({
-                        [I18n.tr("Primary", "tile color option")]: Theme.roleColor("primary"),
-                        [I18n.tr("Primary Container", "tile color option")]: Theme.roleColor("primaryContainer"),
-                        [I18n.tr("Secondary", "tile color option")]: Theme.roleColor("secondary"),
-                        [I18n.tr("Surface Variant", "tile color option")]: Theme.roleColor("surfaceVariant")
-                    })
-                currentValue: {
-                    switch (SettingsData.controlCenterTileColorMode) {
-                    case "primaryContainer":
-                        return I18n.tr("Primary Container", "tile color option");
-                    case "secondary":
-                        return I18n.tr("Secondary", "tile color option");
-                    case "surfaceVariant":
-                        return I18n.tr("Surface Variant", "tile color option");
-                    default:
-                        return I18n.tr("Primary", "tile color option");
+                currentMode: SettingsData.controlCenterTileColorMode
+                options: [
+                    {
+                        "value": "primary",
+                        "label": I18n.tr("Primary", "tile color option")
+                    },
+                    {
+                        "value": "primaryContainer",
+                        "label": I18n.tr("Primary Container", "tile color option")
+                    },
+                    {
+                        "value": "secondary",
+                        "label": I18n.tr("Secondary", "tile color option")
+                    },
+                    {
+                        "value": "surfaceVariant",
+                        "label": I18n.tr("Surface Variant", "tile color option")
                     }
-                }
-                onValueChanged: value => {
-                    switch (value) {
-                    case I18n.tr("Primary Container", "tile color option"):
-                        SettingsData.set("controlCenterTileColorMode", "primaryContainer");
-                        return;
-                    case I18n.tr("Secondary", "tile color option"):
-                        SettingsData.set("controlCenterTileColorMode", "secondary");
-                        return;
-                    case I18n.tr("Surface Variant", "tile color option"):
-                        SettingsData.set("controlCenterTileColorMode", "surfaceVariant");
-                        return;
-                    }
-                    SettingsData.set("controlCenterTileColorMode", "primary");
-                }
+                ]
+                onModeSelected: mode => SettingsData.set("controlCenterTileColorMode", mode)
             }
 
             SettingsButtonGroupRow {
@@ -766,7 +747,6 @@ Column {
                 fallbackValue: "docked"
                 onValueSelected: value => SettingsData.set("controlCenterEditLayout", value)
             }
-
 
             SettingsSliderRow {
                 tab: "theme"

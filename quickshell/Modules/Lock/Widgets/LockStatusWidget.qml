@@ -21,7 +21,7 @@ Item {
         anchors.fill: parent
         visible: root.background
         radius: Theme.fullRadius(width, height)
-        color: Theme.readableSurface
+        color: Theme.readableStandaloneSurface
         border.width: Theme.layerOutlineWidth
         border.color: Theme.outlineMedium
     }

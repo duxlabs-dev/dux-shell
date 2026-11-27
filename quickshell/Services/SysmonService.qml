@@ -253,6 +253,39 @@ Singleton {
         return p.id;
     }
 
+    function configTitle(config) {
+        const names = [];
+        for (const m of Array.from(config?.metrics ?? [])) {
+            const name = m && m.on !== false ? displayName(m.device) : "";
+            if (name && names.indexOf(name) < 0)
+                names.push(name);
+        }
+        return names.join(", ");
+    }
+
+    function layoutName(id) {
+        switch (id) {
+        case "tiles":
+            return I18n.tr("Tiles", "system monitor layout and style option");
+        case "list":
+            return I18n.tr("List", "noun, list view mode option");
+        case "bars":
+            return I18n.tr("Bars", "system monitor layout option: bar meters, not the shell bars", true);
+        case "graphs":
+            return I18n.tr("Graphs", "system monitor layout option");
+        }
+        return "";
+    }
+
+    function layoutIcon(id) {
+        return ({
+                tiles: "grid_view",
+                list: "view_list",
+                bars: "bar_chart",
+                graphs: "show_chart"
+            })[id] ?? "";
+    }
+
     function valueLabel(type, id) {
         switch (type + "/" + id) {
         case "cpu/usage":
@@ -262,7 +295,7 @@ Singleton {
         case "gpu/temp":
             return I18n.tr("Temperature");
         case "cpu/clock":
-            return I18n.tr("Clock");
+            return I18n.tr("Clock", "CPU clock speed", true);
         case "memory/used":
         case "disk/space":
             return I18n.tr("Used", "memory in use");
@@ -333,7 +366,7 @@ Singleton {
         return g && g.state === "active" && Devices.gpuMonitored(DgopService.gpuPciIds, g.pciId, g.busId) ? g : null;
     }
 
-    function read(key, id) {
+    function read(key, id, mount = "") {
         const p = parseKey(key);
         switch (p.type) {
         case "cpu":
@@ -372,7 +405,7 @@ Singleton {
         case "disk":
             {
                 if (id === "space")
-                    return Drives.usedSpace(DriveService.drives, DgopService.diskMounts, p.id, "")?.percent ?? null;
+                    return Drives.usedSpace(DriveService.drives, DgopService.diskMounts, p.id, mount)?.percent ?? null;
                 if (id !== "read" && id !== "write")
                     return null;
                 if (!p.id)

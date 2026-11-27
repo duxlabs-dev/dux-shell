@@ -22,6 +22,14 @@ func HandleRequest(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
 	case "wellbeing.clear":
 		manager.Clear()
 		conn.Respond(req.ID, models.SuccessResult{Success: true, Message: "wellbeing history cleared"})
+	case "wellbeing.logBreak":
+		handleLogBreak(conn, req, manager)
+	case "wellbeing.breaks":
+		days := min(max(params.IntOpt(req.Params, "days", 7), 1), retentionDays)
+		conn.Respond(req.ID, map[string]any{"days": manager.BreakSummary(days)})
+	case "wellbeing.clearBreaks":
+		manager.ClearBreaks()
+		conn.Respond(req.ID, models.SuccessResult{Success: true, Message: "wellbeing break stats cleared"})
 	default:
 		conn.RespondError(req.ID, fmt.Sprintf("unknown method: %s", req.Method))
 	}
@@ -35,6 +43,14 @@ func handleSetState(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
 	}
 	manager.SetState(params.StringOpt(req.Params, "appId", ""), active, int64(params.FloatOpt(req.Params, "seq", 0)))
 	conn.Respond(req.ID, models.SuccessResult{Success: true, Message: "wellbeing state set"})
+}
+
+func handleLogBreak(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {
+	if err := manager.LogBreak(params.StringOpt(req.Params, "outcome", "")); err != nil {
+		conn.RespondError(req.ID, err.Error())
+		return
+	}
+	conn.Respond(req.ID, models.SuccessResult{Success: true, Message: "wellbeing break logged"})
 }
 
 func handleSetLimits(conn *ipc.ConnWriter, req ipc.Request, manager *Manager) {

@@ -84,6 +84,8 @@ Item {
 
     // Hyprland OnDemand grab: whitelist popout surfaces and bars so dismiss clicks still land.
     DFocusGrab {
+        id: focusGrab
+
         keyboardWindow: root.contentWindow
         peerWindows: {
             const surfaces = (root.contentWindow?.dismissWindows ?? []).concat(root.transientSurfaceTracker?.focusWindows ?? []);
@@ -105,6 +107,7 @@ Item {
     readonly property bool isClosing: impl.item ? (impl.item.isClosing ?? false) : false
     readonly property real dpr: impl.item ? impl.item.dpr : 1
     readonly property bool usesConnectedSurfaceChrome: impl.item?.usesConnectedSurfaceChrome ?? false
+    readonly property bool frameOwnsConnectedChrome: impl.item?.frameOwnsConnectedChrome ?? false
     // Whether the surface sits on blur while open, steady through open and close.
     readonly property bool surfaceBlurred: Theme.blurLayersActive && surfaceColor.a < 1 && (!usesConnectedSurfaceChrome || Theme.connectedSurfaceBlurEnabled)
     readonly property color surfaceColor: usesConnectedSurfaceChrome ? Theme.connectedSurfaceColor : Theme.readableSurface
@@ -445,6 +448,7 @@ Item {
                     root.shouldBeVisible = host.shouldBeVisible;
             }
             onOpened: root.opened()
+            onSurfaceUnmapping: focusGrab.releaseBeforeUnmap()
             onCloseAnimationFinished: root.closeAnimationFinished()
             onPopoutClosed: {
                 root.popoutClosed();

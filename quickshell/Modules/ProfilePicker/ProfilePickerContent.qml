@@ -117,10 +117,37 @@ FocusScope {
             select(selectedIndex >= gridColumns ? selectedIndex - gridColumns : column + gridColumns * Math.floor((profileCount - 1 - column) / gridColumns));
     }
 
-    // The applied profile can rebuild the host, so nothing may touch this item after activate().
+    property string pendingId: ""
+    readonly property bool shown: visible && (Window.window?.visible ?? false)
+
+    onShownChanged: {
+        if (!shown)
+            activatePending();
+    }
+    Component.onDestruction: activatePending()
+
+    // Waits for the host to finish closing, so a switch transition freezes the screen without the picker.
     function apply(id) {
+        pendingId = id;
+        closeLimit.restart();
         closeRequested();
-        ConfigProfileService.activate(id);
+    }
+
+    // The applied profile can rebuild the host, so nothing may touch this item after activate().
+    function activatePending() {
+        const id = pendingId;
+        if (!id)
+            return;
+        pendingId = "";
+        closeLimit.stop();
+        // Out of the host's close handler, which may still be running.
+        Qt.callLater(ConfigProfileService.activate, id);
+    }
+
+    Timer {
+        id: closeLimit
+        interval: Timing.settleSlow
+        onTriggered: root.activatePending()
     }
 
     onProfileCountChanged: {

@@ -75,7 +75,8 @@ Item {
         _blurRebuildTimer.restart();
         topBarContent.invalidateHoverCandidateCache();
     }
-    readonly property bool islandBandInteractive: isIsland && !!islandHost && !islandHost.inputSuspended && ((islandHost.scrollEnabled && !islandHost.floating) || islandHost.satelliteSurfacesOpen)
+    readonly property bool islandBandInteractive: isIsland && !!islandHost && !islandHost.inputSuspended && ((islandHost.scrollEnabled && islandHost.scrollEmptyStrip && !islandHost.floating) || islandHost.satelliteSurfacesOpen)
+    readonly property bool scrollExtendToEdge: !isIsland && !usesFrameBarChrome && (barConfig?.scrollExtendToEdge ?? true)
     readonly property real islandAlongStart: islandSatellitesHugIsland && islandHost ? Math.round(islandHost.currentAlongPos) : 0
     readonly property real islandAlongEnd: islandSatellitesHugIsland && islandHost ? Math.round(islandHost.currentAlongPos + islandHost.currentVisualAlong) : 0
     readonly property real islandFrozenStart: !islandHost ? 0 : Math.min(isVertical ? islandHost.motionStartBounds.y : islandHost.motionStartBounds.x, islandHost.targetAlongPos)
@@ -119,6 +120,21 @@ Item {
 
     function pointInActiveHoverSafeZone(gx, gy) {
         return topBarContent.pointInActiveHoverSafeZone(gx, gy);
+    }
+
+    function pointInIslandSatellite(sourceItem, x, y) {
+        if (!islandSatellitesEnabled)
+            return false;
+        const sections = [_leftSection, _rightSection];
+        for (let i = 0; i < sections.length; i++) {
+            const section = sections[i];
+            if (!section || !section.visible || section.implicitWidth <= 0 || section.implicitHeight <= 0)
+                continue;
+            const p = sourceItem.mapToItem(section, x, y);
+            if (p.x >= 0 && p.x < section.implicitWidth && p.y >= 0 && p.y < section.implicitHeight)
+                return true;
+        }
+        return false;
     }
 
     property var controlCenterButtonRef: null
@@ -205,16 +221,22 @@ Item {
             PopoutManager.dismissAllForScreen(screenName);
             BarWidgetService.startBarEdit(_barId, screenName);
             return true;
+        case "toggle-mute":
+            if (!AudioService.sink?.audio)
+                return false;
+            AudioService.toggleMute();
+            return true;
         }
         return false;
     }
 
     function handleEmptyBarClick(button, clickItem, clickX, clickY) {
+        let action = "";
         if (button === Qt.MiddleButton)
-            return runBarClickAction(barConfig?.middleClickAction ?? "none", clickItem, clickX, clickY);
-        if (button === Qt.RightButton)
-            return runBarClickAction(barConfig?.rightClickAction ?? "edit-widgets", clickItem, clickX, clickY);
-        return false;
+            action = barConfig?.middleClickAction ?? "none";
+        else if (button === Qt.RightButton)
+            action = barConfig?.rightClickAction ?? "edit-widgets";
+        return action ? runBarClickAction(action, clickItem, clickX, clickY) : false;
     }
 
     function triggerControlCenterAt(clickItem, clickX, clickY) {
@@ -1378,6 +1400,53 @@ Item {
                     }
                 }
 
+                BarScrollArea {
+                    id: scrollArea
+                    anchors.fill: parent
+                    anchors.leftMargin: {
+                        if (!barWindow.scrollExtendToEdge)
+                            return barUnitInset.anchors.leftMargin;
+                        if (!barWindow.isVertical)
+                            return barWindow.lengthPaddingStartPx;
+                        return axis.edge === "left" ? 0 : barUnitInset.anchors.leftMargin;
+                    }
+                    anchors.rightMargin: {
+                        if (!barWindow.scrollExtendToEdge)
+                            return barUnitInset.anchors.rightMargin;
+                        if (!barWindow.isVertical)
+                            return barWindow.lengthPaddingEndPx;
+                        return axis.edge === "right" ? 0 : barUnitInset.anchors.rightMargin;
+                    }
+                    anchors.topMargin: {
+                        if (!barWindow.scrollExtendToEdge)
+                            return barUnitInset.anchors.topMargin;
+                        if (barWindow.isVertical)
+                            return barWindow.lengthPaddingStartPx;
+                        return axis.outerVisualEdge() === "bottom" ? barUnitInset.anchors.topMargin : 0;
+                    }
+                    anchors.bottomMargin: {
+                        if (!barWindow.scrollExtendToEdge)
+                            return barUnitInset.anchors.bottomMargin;
+                        if (barWindow.isVertical)
+                            return barWindow.lengthPaddingEndPx;
+                        return axis.outerVisualEdge() === "bottom" ? 0 : barUnitInset.anchors.bottomMargin;
+                    }
+                    propagateComposedEvents: true
+                    z: -1
+                    scrollEnabled: barWindow.barConfig?.scrollEnabled ?? true
+                    xBehavior: barWindow.barConfig?.scrollXBehavior ?? "focusWindow"
+                    yBehavior: barWindow.barConfig?.scrollYBehavior ?? "workspace"
+                    screenName: barWindow.screenName
+                    screen: barWindow.screen
+                    barConfig: barWindow.barConfig
+                    onWorkspaceSwitchRequested: direction => topBarContent.switchWorkspace(direction)
+                    onWheel: wheel => {
+                        if (barWindow.isIsland && !(barWindow.islandHost?.scrollEmptyStrip ?? true) && !barWindow.pointInIslandSatellite(scrollArea, wheel.x, wheel.y))
+                            return;
+                        processWheel(wheel);
+                    }
+                }
+
                 Item {
                     id: barUnitInset
                     property real spacingPx: Theme.px(barWindow.renderedSpacing, barWindow._dpr)
@@ -1462,19 +1531,6 @@ Item {
                         }
                     }
 
-                    BarScrollArea {
-                        id: scrollArea
-                        anchors.fill: parent
-                        propagateComposedEvents: true
-                        z: -1
-                        scrollEnabled: barWindow.barConfig?.scrollEnabled ?? true
-                        xBehavior: barWindow.barConfig?.scrollXBehavior ?? "focusWindow"
-                        yBehavior: barWindow.barConfig?.scrollYBehavior ?? "workspace"
-                        screenName: barWindow.screenName
-                        barConfig: barWindow.barConfig
-                        onWorkspaceSwitchRequested: direction => topBarContent.switchWorkspace(direction)
-                    }
-
                     DBarContent {
                         id: topBarContent
                         barWindow: barWindow
@@ -1546,6 +1602,13 @@ Item {
                         onWheel: wheelEvent => {
                             wheelEvent.accepted = false;
                             edgeItem.wheel(wheelEvent);
+                            if (!wheelEvent.accepted) {
+                                const sp = edgeStrip.mapToItem(scrollArea, wheelEvent.x, wheelEvent.y);
+                                if (sp.x >= 0 && sp.x <= scrollArea.width && sp.y >= 0 && sp.y <= scrollArea.height && (!barWindow.isIsland || (barWindow.islandHost?.scrollEmptyStrip ?? true) || barWindow.pointInIslandSatellite(edgeStrip, wheelEvent.x, wheelEvent.y))) {
+                                    scrollArea.processWheel(wheelEvent);
+                                    wheelEvent.accepted = true;
+                                }
+                            }
                         }
 
                         Binding {

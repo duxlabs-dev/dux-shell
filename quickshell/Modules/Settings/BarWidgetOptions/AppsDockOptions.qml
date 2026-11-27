@@ -46,7 +46,7 @@ Column {
     FileBrowserModal {
         id: logoFileBrowser
 
-        browserTitle: I18n.tr("Select Dock Launcher Logo")
+        browserTitle: I18n.tr("Select Launcher Logo")
         bucket: "logo"
         filters: ["*.svg", "*.png", "*.jpg", "*.jpeg", "*.webp"]
         onAccepted: paths => root.apps.set("launcherLogoCustomPath", paths[0])
@@ -163,7 +163,7 @@ Column {
 
             actions: DActionButton {
                 iconName: "folder_open"
-                Accessible.name: I18n.tr("Select Dock Launcher Logo")
+                Accessible.name: I18n.tr("Select Launcher Logo")
                 onClicked: logoFileBrowser.open()
             }
         }
@@ -302,6 +302,7 @@ Column {
             resetStore: root.page
             valueKeys: ["appsDockEnlargePercentage"]
             text: I18n.tr("Magnification", "dock setting: enlarge icons near the cursor")
+            sliderText: I18n.tr("Scale")
             checked: root.page.value("appsDockEnlargeOnHover")
             value: root.page.value("appsDockEnlargePercentage")
             minimum: 100

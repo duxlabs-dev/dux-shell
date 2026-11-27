@@ -6,7 +6,6 @@ import qs.Services
 import qs.Modules.DDash
 import qs.Modules.DDash.Wellbeing
 import qs.Modules.ControlCenter.Widgets
-import "Wellbeing/Wellbeing.js" as Wellbeing
 
 FocusScope {
     id: root
@@ -16,9 +15,7 @@ FocusScope {
     property var transientSurfaceTracker: null
     property var days: []
 
-    readonly property int firstDayOfWeek: SettingsData.firstDayOfWeek >= 7 || SettingsData.firstDayOfWeek < 0 ? Qt.locale().firstDayOfWeek : SettingsData.firstDayOfWeek
     readonly property date today: new Date()
-    readonly property date anchor: Wellbeing.addDays(today, chart.weekOffset * Wellbeing.weekLength)
     readonly property int revision: WellbeingService.revision
     readonly property Item focusTarget: root
     readonly property var menuActions: [
@@ -41,7 +38,7 @@ FocusScope {
             limitSheet.dismiss();
             return;
         }
-        chart.showCurrentWeek();
+        chart.showToday();
         refresh();
     }
     onRevisionChanged: {
@@ -80,19 +77,13 @@ FocusScope {
             height: WellbeingMetrics.chartHeight
             days: root.days
             today: root.today
-            firstDayOfWeek: root.firstDayOfWeek
             limitSeconds: SettingsData.wellbeingDailyLimit * 60
         }
 
         AppUsageList {
             width: parent.width
             height: parent.height - y
-            days: root.days
-            firstDayOfWeek: root.firstDayOfWeek
-            anchor: root.anchor
-            selectedDate: chart.selectedDate
-            onSelectionCleared: chart.selectedDate = ""
-            today: root.today
+            day: chart.selectedDay
             onLimitRequested: appId => limitSheet.presentFor(appId)
         }
     }

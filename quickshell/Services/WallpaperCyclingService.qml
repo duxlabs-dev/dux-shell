@@ -150,8 +150,17 @@ Singleton {
     function listWallpapers(folders, currentPath, screenName, goToPrevious, keep) {
         const revision = SessionData.wallpaperRequestRevision(screenName);
         WallpaperLibraryService.list(folders, result => {
-            if (result)
-                applyCycledWallpaper(WallpaperLibraryService.fitting(keep ? keep(result.items) : result.items, screenName), currentPath, screenName, goToPrevious, revision);
+            if (!result)
+                return;
+            const list = keep ? keep(result.items) : WallpaperLibraryService.fitting(result.items, screenName);
+            applyCycledWallpaper(list, currentPath, screenName, goToPrevious, revision);
+        });
+    }
+
+    function cyclePool(currentWallpaper, screenName, goToPrevious, fallback = true) {
+        listWallpapers(WallpaperLibraryService.requestFolders(), currentWallpaper, screenName || "", goToPrevious, items => {
+            const fitted = WallpaperLibraryService.fitting(WallpaperLibraryService.selectedForMode(items), screenName);
+            return fitted.length > 0 || !fallback ? fitted : WallpaperLibraryService.fitting(WallpaperLibraryService.selected(items), screenName);
         });
     }
 
@@ -171,7 +180,7 @@ Singleton {
             if (revision !== SessionData.wallpaperRequestRevision(screenName || ""))
                 return;
             if (WallpaperLibraryService.inPool(owner))
-                listWallpapers(WallpaperLibraryService.requestFolders(), currentWallpaper, screenName || "", goToPrevious, items => WallpaperLibraryService.selected(items));
+                cyclePool(currentWallpaper, screenName, goToPrevious);
             else
                 cycleDirectory(currentWallpaper, screenName, goToPrevious);
         });
@@ -370,11 +379,70 @@ Singleton {
         }
     }
 
+    function forEachPoolTarget(fn) {
+        if (SessionData.perModeWallpaper || !WallpaperLibraryService.enabled)
+            return;
+        const targets = SessionData.perMonitorWallpaper ? Quickshell.screens.map(s => s.name) : [""];
+        for (const screenName of targets) {
+            const currentWallpaper = screenName ? SessionData.getMonitorWallpaper(screenName) : SessionData.wallpaperPath;
+            if (!currentWallpaper || currentWallpaper.startsWith("#"))
+                continue;
+            const explicit = screenName ? SessionData.getMonitorCyclingSettings(screenName).folderPath : SessionData.wallpaperCyclingFolderPath;
+            if (explicit && currentWallpaper.startsWith(explicit + "/"))
+                continue;
+            fn(screenName, currentWallpaper);
+        }
+    }
+
+    function syncAppearanceOnModeChange() {
+        if (SettingsData.matugenSmartMode && Theme.currentTheme === Theme.dynamic)
+            return;
+        const hasClassified = (WallpaperLibraryService.folders ?? []).some(f => f && !f.hidden && (f.appearance === "light" || f.appearance === "dark"));
+        if (!hasClassified)
+            return;
+        forEachPoolTarget((screenName, currentWallpaper) => {
+            const revision = SessionData.wallpaperRequestRevision(screenName);
+            WallpaperLibraryService.folderOf(currentWallpaper, owner => {
+                if (revision !== SessionData.wallpaperRequestRevision(screenName))
+                    return;
+                if (!WallpaperLibraryService.inPool(owner))
+                    return;
+                const entry = (WallpaperLibraryService.folders ?? []).find(f => f?.path === owner);
+                if (!entry || WallpaperLibraryService.folderMatchesMode(entry, SessionData.isLightMode))
+                    return;
+                root.cyclePool(currentWallpaper, screenName, false, false);
+            });
+        });
+    }
+
+    Connections {
+        target: WallpaperLibraryService
+
+        function onFolderRemoved(removedPath) {
+            const prefix = removedPath.endsWith("/") ? removedPath : removedPath + "/";
+            root.forEachPoolTarget((screenName, currentWallpaper) => {
+                if (!WallpaperLibraryService.listedPath(currentWallpaper).startsWith(prefix))
+                    return;
+                const revision = SessionData.wallpaperRequestRevision(screenName);
+                WallpaperLibraryService.folderOf(currentWallpaper, owner => {
+                    if (revision !== SessionData.wallpaperRequestRevision(screenName))
+                        return;
+                    if (!WallpaperLibraryService.inPool(owner))
+                        root.cyclePool(currentWallpaper, screenName, false);
+                });
+            });
+        }
+    }
+
     Connections {
         target: SessionData
 
         function onLoaded() {
             root.updateCyclingState();
+        }
+
+        function onIsLightModeChanged() {
+            root.syncAppearanceOnModeChange();
         }
     }
 

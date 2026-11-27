@@ -69,6 +69,8 @@ Item {
 
     // Hyprland OnDemand grab delivers keyboard focus to the modal content surface.
     DFocusGrab {
+        id: focusGrab
+
         keyboardWindow: root.contentWindow
         peerWindows: root.transientSurfaceTracker?.focusWindows ?? []
         wanted: KeyboardFocus.wantsGrab(root.shouldBeVisible && root.shouldHaveFocus && !root.dragPassthrough, root.customKeyboardFocus)
@@ -156,6 +158,7 @@ Item {
                     root.shouldHaveFocus = host.shouldHaveFocus;
             }
             onOpened: root.opened()
+            onSurfaceUnmapping: focusGrab.releaseBeforeUnmap()
             onDialogClosed: {
                 root.dialogClosed();
                 root._maybeResolveBackend();

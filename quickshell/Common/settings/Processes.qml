@@ -285,7 +285,6 @@ Singleton {
     property bool authApplyRunning: false
     property bool authApplyQueued: false
     property bool authApplyRerunRequested: false
-    property bool authApplyTerminalFallbackFromPrecheck: false
     property string authApplyStdout: ""
     property string authApplyStderr: ""
     property string authApplySudoProbeStderr: ""
@@ -314,13 +313,11 @@ Singleton {
         authApplyStderr = "";
         authApplySudoProbeStderr = "";
         authApplyTerminalFallbackStderr = "";
-        authApplyTerminalFallbackFromPrecheck = false;
         authApplyRunning = true;
         authApplySudoProbeProcess.running = true;
     }
 
-    function launchAuthApplyTerminalFallback(fromPrecheck, details) {
-        authApplyTerminalFallbackFromPrecheck = fromPrecheck;
+    function launchAuthApplyTerminalFallback(details) {
         if (details && details !== "")
             toastRequested(0, I18n.tr("Authentication changes need sudo. Opening terminal so you can use password or fingerprint."), details, "", "auth-sync");
         authApplyTerminalFallbackStderr = "";
@@ -495,7 +492,7 @@ Singleton {
             if (err !== "")
                 details = details !== "" ? details + "\n\nstderr:\n" + err : "stderr:\n" + err;
             root.toastRequested(1, I18n.tr("Background authentication sync failed. Trying terminal mode."), details, "", "auth-sync");
-            root.launchAuthApplyTerminalFallback(false, "");
+            root.launchAuthApplyTerminalFallback("");
         }
     }
 
@@ -515,7 +512,7 @@ Singleton {
                 return;
             }
 
-            root.launchAuthApplyTerminalFallback(true, err);
+            root.launchAuthApplyTerminalFallback(err);
         }
     }
 
@@ -529,7 +526,7 @@ Singleton {
 
         onExited: exitCode => {
             if (exitCode === 0) {
-                const message = root.authApplyTerminalFallbackFromPrecheck ? I18n.tr("Terminal opened. Complete authentication there; it will close automatically when done.") : I18n.tr("Terminal fallback opened. Complete authentication there; it will close automatically when done.");
+                const message = I18n.tr("Terminal opened. Complete authentication there; it will close automatically when done.");
                 root.toastRequested(0, message, "", "", "auth-sync");
             } else {
                 let details = (root.authApplyTerminalFallbackStderr || "").trim();

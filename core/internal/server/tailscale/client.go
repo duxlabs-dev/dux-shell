@@ -71,12 +71,9 @@ func convertPeerStatus(ps *ipnstate.PeerStatus, users map[tailcfg.UserID]tailcfg
 		DNSName:        dnsName,
 		OS:             ps.OS,
 		Online:         ps.Online,
-		Active:         ps.Active,
 		ExitNode:       ps.ExitNode,
 		ExitNodeOption: ps.ExitNodeOption,
 		Relay:          ps.Relay,
-		RxBytes:        ps.RxBytes,
-		TxBytes:        ps.TxBytes,
 	}
 
 	for _, ip := range ps.TailscaleIPs {

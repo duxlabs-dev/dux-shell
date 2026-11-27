@@ -32,7 +32,7 @@ func fadeTemp(from, to int, t float64) int {
 		return to
 	}
 	t = t * t * (3 - 2*t)
-	fromMired, toMired := 1e6/float64(from), 1e6/float64(to)
+	fromMired, toMired := mired(from), mired(to)
 	return int(math.Round(1e6 / (fromMired + (toMired-fromMired)*t)))
 }
 

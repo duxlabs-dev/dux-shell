@@ -8,6 +8,8 @@ SettingsRow {
     property string text: ""
     property string description: ""
     property string minimumLabel: ""
+    property string valueLabel: ""
+    property string accessibleName: text
     property real value: 0
     property alias minimum: control.minimum
     property alias maximum: control.maximum
@@ -18,7 +20,8 @@ SettingsRow {
     property alias size: control.size
     property alias trackGradient: control.trackGradient
 
-    readonly property bool atMinimum: minimumLabel !== "" && control.currentValue === control.minimum
+    readonly property alias atMinimum: valueLabel.atMinimum
+    readonly property alias dragging: control.dragging
     readonly property int stepAmount: control.stepAmount
 
     signal sliderValueChanged(int newValue)
@@ -34,12 +37,13 @@ SettingsRow {
 
     title: text
     subtitle: description
+    trailingOnTitleLine: true
 
-    StyledText {
-        text: root.minimumLabel
-        font.pixelSize: Theme.fontSizeSmall
-        color: Theme.surfaceVariantText
-        visible: root.atMinimum
+    SettingsSliderValue {
+        id: valueLabel
+        slider: control
+        minimumLabel: root.minimumLabel
+        label: root.valueLabel
         anchors.verticalCenter: parent.verticalCenter
     }
 
@@ -48,9 +52,8 @@ SettingsRow {
         width: parent.width
         value: root.value
         enabled: root.enabled
-        showValue: !root.atMinimum
         wheelEnabled: root.wheelEnabled
-        accessibleName: root.text
+        accessibleName: root.accessibleName
         accessibleDescription: root.description
         onSliderValueChanged: newValue => root.sliderValueChanged(newValue)
         onSliderDragFinished: finalValue => root.sliderDragFinished(finalValue)
