@@ -26,6 +26,10 @@ PanelWindow {
         left: root.edge !== "right"
         right: root.edge !== "left"
     }
+    margins.top: SurfaceRecovery.marginNudge(anchors.top)
+    margins.bottom: SurfaceRecovery.marginNudge(anchors.bottom)
+    margins.left: SurfaceRecovery.marginNudge(anchors.left)
+    margins.right: SurfaceRecovery.marginNudge(anchors.right)
 
     Component.onCompleted: SurfaceRecovery.track(root)
     Component.onDestruction: SurfaceRecovery.untrack(root)

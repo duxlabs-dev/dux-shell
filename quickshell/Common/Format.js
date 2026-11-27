@@ -109,6 +109,12 @@ function formatUntil(ts, use24h) {
     return h12 + ":" + pad2(minutes) + " " + suffix;
 }
 
+function minutesUntilTomorrowMorning(now) {
+    const current = now instanceof Date ? now : new Date();
+    const target = new Date(current.getFullYear(), current.getMonth(), current.getDate() + 1, 8, 0, 0, 0);
+    return Math.max(1, Math.round((target.getTime() - current.getTime()) / 60000));
+}
+
 function escapeHtml(text) {
     return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }

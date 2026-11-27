@@ -809,8 +809,8 @@ Item {
         id: spacerComponent
 
         Item {
-            width: surfaceContext.isVertical ? surfaceContext.widgetThickness : (parent.spacerSize || 20)
-            height: surfaceContext.isVertical ? (parent.spacerSize || 20) : surfaceContext.widgetThickness
+            width: surfaceContext.isVertical ? surfaceContext.widgetThickness : (parent.spacerSize ?? 20)
+            height: surfaceContext.isVertical ? (parent.spacerSize ?? 20) : surfaceContext.widgetThickness
             implicitWidth: width
             implicitHeight: height
 

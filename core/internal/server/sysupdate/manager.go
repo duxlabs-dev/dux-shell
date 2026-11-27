@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -34,6 +35,7 @@ type Manager struct {
 	subscribers pubsub.Broker[State]
 
 	selection Selection
+	excluded  map[RepoKind]bool
 
 	notifyDirty chan struct{}
 	stopChan    chan struct{}
@@ -89,7 +91,7 @@ func NewManager(runningVersion string) (*Manager, error) {
 		m.state.Error = &ErrorInfo{
 			Code:    ErrCodeNoBackend,
 			Message: "no supported package manager found",
-			Hint:    "install a supported package manager (pacman, dnf, apt, zypper, xbps, pkg) or flatpak",
+			Hint:    "install a supported package manager (pacman, dnf, apt, zypper, xbps, pkg), flatpak or homebrew",
 		}
 	}
 
@@ -190,6 +192,35 @@ func (m *Manager) SetInterval(seconds int) {
 	m.mu.Unlock()
 	m.wake()
 	m.markDirty()
+}
+
+// SetExcluded stops checking the named overlay repos; the shell hides their cached packages.
+func (m *Manager) SetExcluded(repos []string) {
+	set := make(map[RepoKind]bool, len(repos))
+	for _, b := range m.selection.Overlay {
+		if slices.Contains(repos, string(b.Repo())) {
+			set[b.Repo()] = true
+		}
+	}
+	m.mu.Lock()
+	m.excluded = set
+	m.mu.Unlock()
+}
+
+func (m *Manager) checkBackends() []Backend {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	all := m.selection.All()
+	if len(m.excluded) == 0 {
+		return all
+	}
+	out := make([]Backend, 0, len(all))
+	for _, b := range all {
+		if !m.excluded[b.Repo()] {
+			out = append(out, b)
+		}
+	}
+	return out
 }
 
 func (m *Manager) Refresh(opts RefreshOptions) {
@@ -350,7 +381,7 @@ func (m *Manager) runRefresh(parent context.Context, manual bool) {
 		pkgs []Package
 		err  error
 	}
-	backends := m.selection.All()
+	backends := m.checkBackends()
 	results := make([]backendResult, len(backends))
 	var wg sync.WaitGroup
 	for i, b := range backends {
@@ -371,6 +402,10 @@ func (m *Manager) runRefresh(parent context.Context, manual bool) {
 	next := make([]Package, 0, len(prev))
 	var firstErr error
 	for i, r := range results {
+		// Excluded while the check ran.
+		if m.excluded[backends[i].Repo()] {
+			continue
+		}
 		if r.err != nil {
 			if firstErr == nil {
 				firstErr = fmt.Errorf("%s: %w", backends[i].ID(), r.err)
@@ -454,7 +489,7 @@ func (m *Manager) runUpgrade(ctx context.Context, opts UpgradeOptions) {
 	backends := upgradeBackends(m.selection, opts)
 	if len(backends) == 0 {
 		if len(opts.Targets) > 0 {
-			m.setError(ErrCodeNoBackend, "all pending updates are excluded by current settings (AUR/Flatpak disabled)")
+			m.setError(ErrCodeNoBackend, "all pending updates are excluded by current settings (AUR/Flatpak/Homebrew disabled)")
 		} else {
 			m.setError(ErrCodeNoBackend, "no backend selected for upgrade")
 		}
@@ -544,6 +579,9 @@ func interactiveUpgradeCommand(exe string, opts UpgradeOptions) string {
 	parts := []string{"'" + strings.ReplaceAll(exe, "'", `'\''`) + "'", "system", "update", "--interactive"}
 	if !opts.IncludeFlatpak {
 		parts = append(parts, "--no-flatpak")
+	}
+	if !opts.IncludeHomebrew {
+		parts = append(parts, "--no-homebrew")
 	}
 	if !opts.IncludeAUR {
 		parts = append(parts, "--no-aur")
@@ -648,6 +686,8 @@ func upgradeBackends(sel Selection, opts UpgradeOptions) []Backend {
 	for _, b := range sel.Overlay {
 		switch {
 		case b.Repo() == RepoFlatpak && !opts.IncludeFlatpak:
+			continue
+		case b.Repo() == RepoHomebrew && !opts.IncludeHomebrew:
 			continue
 		}
 		out = appendUpgradeBackend(out, b, opts)

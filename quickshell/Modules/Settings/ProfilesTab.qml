@@ -45,6 +45,33 @@ Item {
                 onValueChanged: value => SettingsData.set("configProfilePickerView", views[labels.indexOf(value)])
             }
 
+            SettingsDropdownRow {
+                readonly property var values: ["wallpaper", "none", "random"].concat(SessionData.availableWallpaperTransitions.filter(t => t !== "none"))
+                readonly property var labels: values.map(v => v === "wallpaper" ? I18n.tr("Follow wallpaper", "config profile switch transition option: use the wallpaper transition and its duration") : SessionData.transitionLabel(v))
+
+                tab: "profiles"
+                tags: ["transition", "effect", "animation", "switch", "fade"]
+                settingKey: "configProfileSwitchTransition"
+                text: I18n.tr("Transition", "noun, wallpaper change animation setting label")
+                options: labels
+                currentValue: labels[Math.max(0, values.indexOf(SettingsData.configProfileSwitchTransition))]
+                onValueChanged: value => SettingsData.set("configProfileSwitchTransition", values[labels.indexOf(value)])
+            }
+
+            SettingsSliderRow {
+                tab: "profiles"
+                tags: ["transition", "duration", "animation", "switch", "speed"]
+                settingKey: "configProfileSwitchDuration"
+                text: I18n.tr("Transition duration", "config profile switch transition length setting")
+                visible: SettingsData.configProfileSwitchTransition !== "wallpaper" && SettingsData.configProfileSwitchTransition !== "none"
+                minimum: 250
+                maximum: 3000
+                step: 50
+                unit: "ms"
+                value: SettingsData.configProfileSwitchDuration
+                onSliderDragFinished: v => SettingsData.set("configProfileSwitchDuration", v)
+            }
+
             SettingsShortcutRow {
                 parentModal: root.parentModal
                 ipcTarget: "config-profile"

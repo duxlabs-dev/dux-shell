@@ -20,7 +20,7 @@ DOSD {
 
     osdWidth: useVertical ? Theme.osdHeight : Math.min(Theme.osdMediaWidth, screenWidth - Theme.spacingM * 2)
     osdHeight: Theme.osdHeight
-    surfaceColor: useVertical ? MediaAccentService.accent : Theme.hostSurface
+    surfaceColor: useVertical ? MediaAccentService.accent : Theme.standaloneSurface
     surfaceRadius: useVertical ? (contentLoader.item?.surfaceRadius ?? Theme.cornerRadiusM) : Theme.fullRadius(alignedWidth, alignedHeight)
     autoHideInterval: 3000
     enableMouseInteraction: true

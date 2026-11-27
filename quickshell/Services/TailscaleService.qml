@@ -388,9 +388,9 @@ Singleton {
         const myOwner = selfNode ? (selfNode.owner || "") : "";
         if (peer.owner === myOwner && myOwner !== "")
             return true;
-        if (peer.tags && peer.tags.length > 0)
-            return true;
-        return false;
+        if (!peer.tags || peer.tags.length === 0)
+            return false;
+        return magicDnsSuffix !== "" && (peer.dnsName || "").endsWith("." + magicDnsSuffix);
     }
 
     function searchPeers(query, list) {

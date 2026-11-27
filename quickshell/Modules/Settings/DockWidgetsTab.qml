@@ -107,6 +107,9 @@ Item {
         }
     }
 
+    property var expandedSpacers: ({})
+    readonly property bool hasFillSpacer: dock.config?.mode === "taskbar" && (dock.config?.widgets ?? []).some(DockConfig.isFillSpacer)
+    readonly property var centerGroup: hasFillSpacer ? DockConfig.centerGroup(orderedWidgets.map(item => item.id), dock.config.widgets) : []
     readonly property var orderedWidgets: {
         const widgets = dock.config?.widgets ?? [];
         const byId = new Map(widgets.map(item => [item.id, item]));
@@ -181,17 +184,42 @@ Item {
                         iconName: root.widgetIcon(modelData.widgetId)
                         subtitle: removeButton.confirming ? I18n.tr("Confirm Delete", "delete button confirmation text") : (info?.description ?? "")
                         subtitleColor: removeButton.confirming ? Theme.error : Theme.surfaceVariantText
-                        body: SettingsSliderRow {
+                        readonly property bool expanded: root.expandedSpacers[modelData.id] === true
+                        clickable: modelData.widgetId === "spacer"
+                        Accessible.checkable: clickable
+                        Accessible.checked: expanded
+                        onClicked: root.expandedSpacers = Object.assign({}, root.expandedSpacers, {
+                            [modelData.id]: !expanded
+                        })
+
+                        body: Column {
                             width: parent.width
-                            visible: widgetRow.modelData.widgetId === "spacer"
+                            visible: widgetRow.modelData.widgetId === "spacer" && widgetRow.expanded
                             height: visible ? implicitHeight : 0
-                            text: I18n.tr("Size")
-                            minimum: 0
-                            maximum: 200
-                            value: widgetRow.modelData.size ?? 20
-                            onSliderValueChanged: value => SettingsData.updateDockWidget(dock.selectedDockId, widgetRow.modelData.id, {
-                                    size: value
-                                })
+
+                            SettingsToggleRow {
+                                width: parent.width
+                                visible: dock.config.mode === "taskbar"
+                                text: I18n.tr("Fill", "dock spacer option: take up all free space in the taskbar")
+                                checked: widgetRow.modelData.fill === true
+                                onToggled: checked => SettingsData.updateDockWidget(dock.selectedDockId, widgetRow.modelData.id, checked ? {
+                                        fill: true,
+                                        center: false
+                                    } : {
+                                        fill: false
+                                    })
+                            }
+
+                            SettingsSliderRow {
+                                width: parent.width
+                                text: widgetRow.modelData.fill === true && dock.config.mode === "taskbar" ? I18n.tr("Minimum size", "dock spacer option: least space a filling spacer keeps") : I18n.tr("Size")
+                                minimum: 0
+                                maximum: 1000
+                                value: widgetRow.modelData.size ?? 20
+                                onSliderDragFinished: value => SettingsData.updateDockWidget(dock.selectedDockId, widgetRow.modelData.id, {
+                                        size: value
+                                    })
+                            }
                         }
 
                         Row {
@@ -202,6 +230,28 @@ Item {
                                 visible: widgetRow.modelData.widgetId !== "appsDock" && !!BarWidgetCatalog.optionsFile(widgetRow.modelData.widgetId)
                                 Accessible.name: I18n.tr("Settings")
                                 onClicked: root.configureWidget(widgetRow.modelData)
+                            }
+
+                            DActionButton {
+                                readonly property bool centered: root.centerGroup.includes(widgetRow.modelData.id)
+                                iconName: [SettingsData.Position.Left, SettingsData.Position.Right].includes(dock.config.position) ? "align_vertical_center" : "align_horizontal_center"
+                                visible: root.hasFillSpacer && !DockConfig.isFillSpacer(widgetRow.modelData)
+                                iconColor: centered ? Theme.primary : Theme.surfaceVariantText
+                                tooltipText: I18n.tr("Center", "dock widget option: keep this widget's group in the middle of the taskbar")
+                                Accessible.name: tooltipText
+                                Accessible.checkable: true
+                                Accessible.checked: centered
+                                onClicked: root.updateWidgets(dock.config.widgets.map(item => {
+                                    if (item.id === widgetRow.modelData.id)
+                                        return Object.assign({}, item, {
+                                            center: !centered
+                                        });
+                                    if (item.center !== true)
+                                        return item;
+                                    const cleared = Object.assign({}, item);
+                                    delete cleared.center;
+                                    return cleared;
+                                }))
                             }
 
                             DActionButton {
@@ -222,6 +272,14 @@ Item {
                                 id: removeButton
                                 visible: !widgetRow.slotOption
                                 onDeleteRequested: root.updateWidgets(dock.config.widgets.filter(item => item.id !== widgetRow.modelData.id))
+                            }
+
+                            DIcon {
+                                name: widgetRow.expanded ? "expand_less" : "expand_more"
+                                size: Theme.iconSize
+                                color: Theme.onSurfaceVariant
+                                visible: widgetRow.modelData.widgetId === "spacer"
+                                anchors.verticalCenter: parent.verticalCenter
                             }
                         }
                     }

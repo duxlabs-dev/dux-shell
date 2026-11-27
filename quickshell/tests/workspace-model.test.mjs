@@ -234,6 +234,22 @@ test("hyprland special workspaces are opt-in, listed last on their monitor and a
     assert.deepEqual(plain(model.hyprlandActiveWorkspace(raw, "DP-1")), { id: -98, idx: null, name: "scratch", output: "DP-1", active: true, placeholder: false, special: true });
 });
 
+test("hyprland visible specials trust the native monitor property, then the latest event, over a stale query", () => {
+    const closed = { specialWorkspace: { address: "", type: "", name: "" } };
+    const open = { specialWorkspace: { name: "special:foo" } };
+    assert.deepEqual(plain(model.hyprlandVisibleSpecials([
+        { name: "DP-1", specialWorkspace: null, lastIpcObject: open },
+        { name: "DP-2", specialWorkspace: { name: "special:foo" }, lastIpcObject: closed }
+    ], { "DP-1": "special:foo" })), { "DP-2": "special:foo" });
+    assert.deepEqual(plain(model.hyprlandVisibleSpecials([
+        { name: "DP-1", lastIpcObject: open },
+        { name: "DP-2", lastIpcObject: closed },
+        { name: "DP-3", lastIpcObject: closed },
+        { name: "DP-4", lastIpcObject: { specialWorkspace: { id: -98, name: "special" } } },
+        { name: "constructor", lastIpcObject: closed }
+    ], { "DP-1": "", "DP-2": "special:foo" })), { "DP-2": "special:foo", "DP-4": "special:special" });
+});
+
 test("hyprland specials without ids match windows by name", () => {
     const raw = hyprland("twoScreens");
     const scratch = raw.workspaces.find(ws => ws.name === "special:scratch");

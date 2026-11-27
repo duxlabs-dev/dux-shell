@@ -1524,6 +1524,12 @@ Item {
                     if (!root.morphTravelEnabled)
                         root._finishClose();
                 }
+                // Past 0 the reveal clip and the chrome are fully retracted; settling the overshoot only redraws a hidden popout.
+                onValueChanged: {
+                    if (value >= 0 || !running || !root.isClosing || root.shouldBeVisible || !root.directionalRevealActive)
+                        return;
+                    snapTo(0);
+                }
                 enabled: root.animationsEnabled && !(root.connected && root._fluidMotionActive)
                 reducedMotion: root.animationDuration <= 0
                 positionEpsilon: root._standardMotion ? 0.001 : Math.max(0.001, 0.25 / root.dpr / contentContainer.morphTravelPx)

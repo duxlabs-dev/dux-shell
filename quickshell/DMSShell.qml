@@ -30,7 +30,6 @@ Item {
     }
 
     property bool osdSurfacesLoaded: false
-    property int pendingOsdResumeReloads: 0
     readonly property var notificationPopupScreens: {
         const screens = SettingsData.notificationFocusedMonitor ? ShellLayout.realScreens : SettingsData.getFilteredScreens("notifications");
         if (!SettingsData.dankIslandEnabled)
@@ -42,12 +41,6 @@ Item {
         if (!SettingsData.dankIslandEnabled)
             return screens;
         return screens.filter(screen => !SettingsData.dankIslandHandlesSystemOsd(screen));
-    }
-
-    function recreateOsdSurfaces() {
-        OSDManager.currentOSDsByScreen = ({});
-        osdSurfacesLoaded = false;
-        osdSurfaceReloadTimer.restart();
     }
 
     Variants {
@@ -251,32 +244,6 @@ Item {
         onTriggered: {
             AudioService.playLoginSoundIfApplicable();
         }
-    }
-
-    Timer {
-        id: osdResumeRecreateTimer
-        interval: Timing.resumeRecoverySchedule[0]
-        repeat: false
-        onTriggered: {
-            root.recreateOsdSurfaces();
-            root.pendingOsdResumeReloads--;
-
-            if (root.pendingOsdResumeReloads <= 0) {
-                root.pendingOsdResumeReloads = 0;
-                interval = Timing.resumeRecoverySchedule[0];
-                return;
-            }
-
-            interval = Timing.resumeRecoverySchedule[1];
-            restart();
-        }
-    }
-
-    Timer {
-        id: osdSurfaceReloadTimer
-        interval: Timing.settle
-        repeat: false
-        onTriggered: root.osdSurfacesLoaded = true
     }
 
     Timer {
@@ -954,16 +921,6 @@ Item {
         }
     }
 
-    Connections {
-        target: SessionService
-
-        function onSessionResumed() {
-            root.pendingOsdResumeReloads = 2;
-            osdResumeRecreateTimer.interval = Timing.resumeRecoverySchedule[0];
-            osdResumeRecreateTimer.restart();
-        }
-    }
-
     ColorPickerModal {
         id: colorPickerModal
 
@@ -1352,6 +1309,12 @@ Item {
                 return;
             PopoutService.profilePickerModal = item;
         }
+    }
+
+    LazyLoader {
+        active: ConfigProfileService.switching
+
+        ProfileSwitchOverlay {}
     }
 
     Connections {

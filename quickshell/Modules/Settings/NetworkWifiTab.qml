@@ -107,24 +107,7 @@ Item {
             }
 
             function toggleWifiPin(ssid) {
-                const pins = JSON.parse(JSON.stringify(CacheData.wifiNetworkPins || {}));
-                let pinnedList = QmlUtils.normalizePinList(pins["preferredWifi"]);
-                const pinIndex = pinnedList.indexOf(ssid);
-
-                if (pinIndex !== -1) {
-                    pinnedList.splice(pinIndex, 1);
-                } else {
-                    pinnedList.unshift(ssid);
-                    if (pinnedList.length > maxPinnedWifiNetworks)
-                        pinnedList = pinnedList.slice(0, maxPinnedWifiNetworks);
-                }
-
-                if (pinnedList.length > 0)
-                    pins["preferredWifi"] = pinnedList;
-                else
-                    delete pins["preferredWifi"];
-
-                CacheData.set("wifiNetworkPins", pins);
+                CacheData.set("wifiNetworkPins", QmlUtils.togglePinEntry(CacheData.wifiNetworkPins, "preferredWifi", ssid, maxPinnedWifiNetworks));
             }
 
             property var forgetNetworkConfirm: ConfirmModal {}

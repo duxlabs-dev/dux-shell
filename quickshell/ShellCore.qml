@@ -183,9 +183,9 @@ Item {
 
     function triggerSurfaceRecovery(source) {
         log.info("Surface recovery triggered by:", source, "screens:", Quickshell.screens.length, Quickshell.screens.map(s => s.name).join(","), "barLoaded:", root.barSurfacesLoaded, "frameLoaded:", root.frameSurfacesLoaded);
-        surfaceResumeRecoveryTimer.pass = 0;
-        surfaceResumeRecoveryTimer.interval = Timing.settleSlow;
-        surfaceResumeRecoveryTimer.restart();
+        surfaceRebuildTimer.pass = 0;
+        surfaceRebuildTimer.interval = Timing.settleSlow;
+        surfaceRebuildTimer.restart();
     }
 
     Connections {
@@ -276,7 +276,7 @@ Item {
     Timer {
         id: screenReconnectCooldown
         // Must exceed surfaceRefreshVerifyTimer plus the two-pass
-        // surfaceResumeRecoveryTimer sequence (800 + 800 + 2000 ms).
+        // surfaceRebuildTimer sequence (1000 + 1000 + 2000 ms).
         interval: Timing.holdLong
         repeat: false
         onTriggered: {
@@ -289,7 +289,7 @@ Item {
     }
 
     Timer {
-        id: surfaceResumeRecoveryTimer
+        id: surfaceRebuildTimer
         interval: Timing.settleSlow
         repeat: false
         property int pass: 0
@@ -321,25 +321,6 @@ Item {
                 pass = 0;
                 interval = Timing.settleSlow;
             }
-        }
-    }
-
-    Connections {
-        target: SessionService
-
-        function onSessionResumed() {
-            log.info("Session resumed: screens:", Quickshell.screens.length, Quickshell.screens.map(s => s.name).join(","), "barLoaded:", root.barSurfacesLoaded, "frameLoaded:", root.frameSurfacesLoaded);
-
-            // This path runs its own recovery directly, so drop any queued or
-            // in-flight screen-reconnect recovery to avoid a redundant pass once
-            // its cooldown expires.
-            screenReconnectDebounce.stop();
-            screenReconnectCooldown.stop();
-            surfaceRefreshVerifyTimer.stop();
-            root._screenRecoveryCooldown = false;
-            root._screenRecoveryPending = false;
-
-            root.triggerSurfaceRecovery("sessionResumed");
         }
     }
 

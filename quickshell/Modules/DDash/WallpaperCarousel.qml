@@ -6,6 +6,7 @@ import qs.Common
 import qs.Services
 import qs.DCommon.Widgets
 import qs.Modules.DDash
+import "../../DCommon/Common/WheelInput.js" as WheelInput
 
 Item {
     id: root
@@ -22,8 +23,10 @@ Item {
     readonly property real pitch: itemWidth + list.spacing
 
     function syncList() {
-        if (list.currentIndex !== root.currentIndex)
-            list.currentIndex = root.currentIndex;
+        if (list.currentIndex === root.currentIndex)
+            return;
+        list.instantMove = Math.abs(list.currentIndex - root.currentIndex) > 1;
+        list.currentIndex = root.currentIndex;
     }
 
     function requestStep(step) {
@@ -76,6 +79,8 @@ Item {
     ListView {
         id: list
 
+        property bool instantMove: false
+
         anchors.fill: parent
         orientation: ListView.Horizontal
         model: root.paths
@@ -83,7 +88,7 @@ Item {
         highlightRangeMode: ListView.StrictlyEnforceRange
         preferredHighlightBegin: (width - root.itemWidth) / 2
         preferredHighlightEnd: preferredHighlightBegin + root.itemWidth
-        highlightMoveDuration: root.animate && DashMetrics.animationsEnabled ? DashMetrics.transitionDuration : 0
+        highlightMoveDuration: root.animate && !instantMove && DashMetrics.animationsEnabled ? DashMetrics.transitionDuration : 0
         interactive: false
         clip: true
         keyNavigationEnabled: false
@@ -203,14 +208,26 @@ Item {
         }
     }
 
+    // High-res wheels and touchpads send many small events per notch; step once per notch or slide width.
     WheelHandler {
+        property real distance: 0
+
         acceptedDevices: PointerDevice.Mouse | PointerDevice.TouchPad
         onWheel: event => {
-            const delta = event.angleDelta.y !== 0 ? event.angleDelta.y : event.angleDelta.x;
+            const touchpad = WheelInput.isTouchpad(event);
+            const delta = WheelInput.dominantDelta(touchpad ? event.pixelDelta : event.angleDelta);
             if (delta === 0)
                 return;
-            root.requestStep(-Math.sign(delta));
             event.accepted = true;
+            if (Math.sign(delta) !== Math.sign(distance))
+                distance = 0;
+            distance += delta;
+            const notch = touchpad ? Math.max(1, root.pitch) : DashMetrics.wheelNotch;
+            const steps = Math.trunc(distance / notch);
+            if (steps === 0)
+                return;
+            distance -= steps * notch;
+            root.requestStep(-steps);
         }
     }
 }

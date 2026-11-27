@@ -53,8 +53,17 @@ Variants {
             left: body.editMode || (!body.isVertical ? true : (dock.config.position === SettingsData.Position.Left))
             right: body.editMode || (!body.isVertical ? true : (dock.config.position === SettingsData.Position.Right))
         }
+        margins.top: SurfaceRecovery.marginNudge(anchors.top)
+        margins.bottom: SurfaceRecovery.marginNudge(anchors.bottom)
+        margins.left: SurfaceRecovery.marginNudge(anchors.left)
+        margins.right: SurfaceRecovery.marginNudge(anchors.right)
 
-        visible: !!resolvedConfig && (resolvedConfig.enabled || (resolvedConfig.openOnOverview && CompositorService.isNiri))
+        // Hyprland stacks a top layer that maps over a covering fullscreen window above it.
+        property bool fullscreenMapReleased: false
+        readonly property bool mapHeldByFullscreen: !fullscreenMapReleased && WlrLayershell.layer === WlrLayer.Top && CompositorService.fullscreenCoversTopLayer(dock.targetScreen)
+        onMapHeldByFullscreenChanged: if (!mapHeldByFullscreen)
+            fullscreenMapReleased = true
+        visible: !mapHeldByFullscreen && !!resolvedConfig && (resolvedConfig.enabled || (resolvedConfig.openOnOverview && CompositorService.isNiri))
         WlrLayershell.keyboardFocus: PopoutManager.screenshotActive ? WlrKeyboardFocus.None : body.editMode ? WlrKeyboardFocus.Exclusive : body.interactionActive ? WlrKeyboardFocus.OnDemand : WlrKeyboardFocus.None
 
         implicitWidth: body.surfaceImplicitWidth
@@ -62,7 +71,10 @@ Variants {
         readonly property bool manualPlacement: body.editMode || (body.isVertical && dock.config.mode === "taskbar")
         exclusiveZone: manualPlacement ? -1 : body.surfaceExclusiveZone
 
-        Component.onCompleted: SurfaceRecovery.track(dock)
+        Component.onCompleted: {
+            fullscreenMapReleased = !mapHeldByFullscreen;
+            SurfaceRecovery.track(dock);
+        }
         Component.onDestruction: SurfaceRecovery.untrack(dock)
 
         WindowBlur {
