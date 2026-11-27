@@ -1,6 +1,7 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import Quickshell
 import qs.Common
 import qs.Modules.ControlCenter
 import qs.Services
@@ -18,6 +19,7 @@ FocusScope {
     readonly property real inset: CcMetrics.islandInset
     property bool _heightReportPending: false
     signal windowRequested(string windowName)
+    signal screenshotRequested(string mode)
 
     property string _editLayout: ""
     readonly property real dockReserve: root.controller.controlCenterDockReserve
@@ -135,6 +137,15 @@ FocusScope {
             if (!PopoutService.colorPickerModal)
                 return;
             root.windowRequested("colorPicker");
+        }
+
+        function openScreenshot(mode, keepOpen = false) {
+            const targetMode = mode || "region";
+            if (keepOpen) {
+                Quickshell.execDetached([Proc.dmsBin, "screenshot", targetMode]);
+                return;
+            }
+            root.screenshotRequested(targetMode);
         }
 
         function collapseAll() {

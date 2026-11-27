@@ -1,4 +1,5 @@
 import QtQuick
+import Quickshell
 import Quickshell.Wayland
 import qs.Common
 import qs.Services
@@ -107,6 +108,7 @@ DPopout {
     property var powerMenuModalLoader: null
 
     property string requestedWindow: ""
+    property string requestedScreenshotMode: ""
 
     function openSettings() {
         requestedWindow = "settings";
@@ -123,6 +125,17 @@ DPopout {
             return;
         requestedWindow = "colorPicker";
         close();
+    }
+
+    function openScreenshot(mode, keepOpen = false) {
+        const targetMode = mode || "region";
+        if (keepOpen) {
+            Quickshell.execDetached([Proc.dmsBin, "screenshot", targetMode]);
+            return;
+        }
+        requestedScreenshotMode = targetMode;
+        requestedWindow = "screenshot";
+        instantClose();
     }
 
     function completeWindowClose() {
@@ -152,6 +165,13 @@ DPopout {
                 break;
             case "colorPicker":
                 root.colorPickerModal?.show();
+                break;
+            case "screenshot":
+                if (root.requestedScreenshotMode) {
+                    const mode = root.requestedScreenshotMode;
+                    root.requestedScreenshotMode = "";
+                    Quickshell.execDetached([Proc.dmsBin, "screenshot", mode]);
+                }
                 break;
             }
         }
@@ -213,6 +233,7 @@ DPopout {
             finishClose.cancel();
             openWindow.cancel();
             requestedWindow = "";
+            requestedScreenshotMode = "";
             expandedSection = pendingSection;
             pendingSection = "";
             Qt.callLater(() => contentLoader.item?.forceActiveFocus());

@@ -1134,6 +1134,7 @@ FocusScope {
                         onRemoveWidget: index => widgetModel.removeWidget(index)
                         onConfigRequested: (index, widgetData, anchor, boundsItem) => root.openConfigOverlay(index, widgetData, anchor, boundsItem)
                         onColorPickerRequested: root.host.openColorPicker()
+                        onScreenshotRequested: mode => root.host.openScreenshot(mode)
                         onCloseRequested: root.host.close()
                         onSettingsRequested: root.host.openSettings()
                         onEditRequested: root.host.editMode = !root.host.editMode
@@ -1187,6 +1188,7 @@ FocusScope {
                     runningToplevels: root.runningToplevels
                     onCodecSelectorRequested: device => root.showCodecSelector(device)
                     onPortSelectorRequested: node => root.showPortSelector(node)
+                    onScreenshotRequested: (mode, keepOpen) => root.host.openScreenshot(mode, keepOpen)
                     onBackRequested: root.goBack()
                     onCollapseRequested: root.host.collapseAll()
                     onCloseRequested: root.host.close()

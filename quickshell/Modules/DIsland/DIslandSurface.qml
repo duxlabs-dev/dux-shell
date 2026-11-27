@@ -2,6 +2,7 @@ pragma ComponentBehavior: Bound
 
 import qs.Modules.SurfaceWidgets
 import QtQuick
+import Quickshell
 import qs.Common
 import qs.Modules.DDash
 import qs.Modules.DIsland.Activities
@@ -30,6 +31,7 @@ Item {
     property real transparency: 1
     property color surfaceBase: Theme.hostSurface
     property string requestedWindow: ""
+    property string requestedScreenshotMode: ""
     property bool freeMode: false
     property bool anchorSnaps: false
     property point anchor
@@ -192,7 +194,8 @@ Item {
         }
     }
 
-    function openAfterCollapse(windowName) {
+    function openAfterCollapse(windowName, screenshotMode = "") {
+        requestedScreenshotMode = screenshotMode;
         requestedWindow = windowName;
         controller.requestCollapse();
         openWindow.restart();
@@ -215,6 +218,13 @@ Item {
                 break;
             case "colorPicker":
                 PopoutService.showColorPicker();
+                break;
+            case "screenshot":
+                if (root.requestedScreenshotMode) {
+                    const mode = root.requestedScreenshotMode;
+                    root.requestedScreenshotMode = "";
+                    Quickshell.execDetached([Proc.dmsBin, "screenshot", mode]);
+                }
                 break;
             }
         }
@@ -373,6 +383,7 @@ Item {
                 return;
             openWindow.cancel();
             root.requestedWindow = "";
+            root.requestedScreenshotMode = "";
         }
     }
 
@@ -804,6 +815,7 @@ Item {
         ControlCenterExpanded {
             controller: root.controller
             onWindowRequested: windowName => root.openAfterCollapse(windowName)
+            onScreenshotRequested: mode => root.openAfterCollapse("screenshot", mode)
             effectiveScreen: root.effectiveScreen
             alignedX: root.targetScreenX
             alignedY: root.targetScreenY
