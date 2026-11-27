@@ -294,6 +294,16 @@ func TestRebootPackages(t *testing.T) {
 	if strings.Join(got, ",") != strings.Join(want, ",") {
 		t.Errorf("rebootPackages = %v, want %v", got, want)
 	}
+	markRebootPackages(pkgs)
+	var marked []string
+	for _, p := range pkgs {
+		if p.NeedsReboot {
+			marked = append(marked, p.Name)
+		}
+	}
+	if strings.Join(marked, ",") != strings.Join(want, ",") {
+		t.Errorf("marked = %v, want %v", marked, want)
+	}
 }
 
 func TestRebootHintPersistsAcrossRestartNotReboot(t *testing.T) {

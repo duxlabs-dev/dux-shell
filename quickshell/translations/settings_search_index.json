@@ -11208,24 +11208,6 @@
     "description": "Checks in the background at the check interval. Notifies only when the count grows."
   },
   {
-    "section": "systemUpdater",
-    "label": "Options",
-    "tabIndex": 20,
-    "category": "Software updates",
-    "keywords": [
-      "frequency",
-      "integrations",
-      "interval",
-      "options",
-      "poll",
-      "software",
-      "system",
-      "updates"
-    ],
-    "parentLabel": "System & integrations",
-    "icon": "tune"
-  },
-  {
     "section": "systemUpdaterPauseOnBattery",
     "label": "Pause checks on battery",
     "tabIndex": 20,
@@ -11301,24 +11283,6 @@
     "icon": "system_update_alt",
     "parentLabel": "System & integrations",
     "description": "DMS and system updates"
-  },
-  {
-    "section": "softwareUpdatesSystem",
-    "label": "System packages",
-    "tabIndex": 20,
-    "category": "Software updates",
-    "keywords": [
-      "aur",
-      "flatpak",
-      "homebrew",
-      "integrations",
-      "packages",
-      "software",
-      "system",
-      "updates"
-    ],
-    "parentLabel": "System & integrations",
-    "icon": "inventory_2"
   },
   {
     "section": "systemUpdaterCustomCommand",

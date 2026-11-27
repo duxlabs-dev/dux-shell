@@ -67,6 +67,7 @@ func NewManager(runningVersion string) (*Manager, error) {
 	if persisted.Packages == nil {
 		persisted.Packages = []Package{}
 	}
+	markRebootPackages(persisted.Packages)
 	m.state = State{
 		Phase:           PhaseIdle,
 		IntervalSeconds: defaultIntervalSeconds,
@@ -420,6 +421,7 @@ func (m *Manager) runRefresh(parent context.Context, manual bool) {
 		}
 		next = append(next, r.pkgs...)
 	}
+	markRebootPackages(next)
 	m.state.Packages = next
 	m.state.Count = len(next)
 	m.state.NextCheckUnix = now + int64(m.state.IntervalSeconds)

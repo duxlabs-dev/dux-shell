@@ -38,6 +38,7 @@ type Package struct {
 	ToVersion    string   `json:"toVersion,omitempty"`
 	SizeBytes    int64    `json:"sizeBytes,omitempty"`
 	ChangelogURL string   `json:"changelogUrl,omitempty"`
+	NeedsReboot  bool     `json:"needsReboot,omitempty"`
 	Ref          string   `json:"-"`
 }
 

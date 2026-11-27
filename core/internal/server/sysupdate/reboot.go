@@ -14,13 +14,23 @@ type RebootInfo struct {
 	Packages    []string `json:"packages,omitempty"`
 }
 
+func needsReboot(p Package) bool {
+	if p.Repo == RepoFlatpak || p.Repo == RepoAUR || p.Repo == RepoHomebrew {
+		return false
+	}
+	return rebootPackageRe.MatchString(strings.ToLower(p.Name))
+}
+
+func markRebootPackages(pkgs []Package) {
+	for i := range pkgs {
+		pkgs[i].NeedsReboot = needsReboot(pkgs[i])
+	}
+}
+
 func rebootPackages(pkgs []Package) []string {
 	var out []string
 	for _, p := range pkgs {
-		if p.Repo == RepoFlatpak || p.Repo == RepoAUR || p.Repo == RepoHomebrew {
-			continue
-		}
-		if rebootPackageRe.MatchString(strings.ToLower(p.Name)) {
+		if needsReboot(p) {
 			out = append(out, p.Name)
 		}
 	}

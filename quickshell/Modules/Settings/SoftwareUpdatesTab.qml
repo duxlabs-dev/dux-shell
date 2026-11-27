@@ -53,7 +53,6 @@ Item {
 
     readonly property string customIntervalLabel: I18n.tr("Custom")
     property bool customIntervalSelected: false
-    property bool packagesExpanded: false
     property int nowUnix: Math.floor(Date.now() / 1000)
 
     readonly property int packageListCap: 60
@@ -186,6 +185,8 @@ Item {
     }
 
     function statusSubtitle() {
+        if (SystemUpdateService.hasError && !root.busy && SystemUpdateService.errorHint)
+            return SystemUpdateService.errorHint;
         if (SystemUpdateService.rebootRecommended)
             return I18n.tr("Reboot recommended", "chip shown after a kernel or systemd upgrade") + " · " + SystemUpdateService.rebootPackages.join(", ");
         if (SystemUpdateService.restartPending)
@@ -280,7 +281,6 @@ Item {
             terminal: SessionData.terminalOverride,
             interactive: interactive === true
         });
-        packagesExpanded = false;
         followUpgradeLog = true;
         if (upgradeInWindow && interactive !== true)
             PopoutService.showSystemUpdateModal();
@@ -306,15 +306,113 @@ Item {
 
         onContentHeightChanged: root.revealUpgradeLog()
 
-        ReleaseHero {
-            M3WaveProgress {
-                width: parent.width
-                height: Theme.spacingM
-                visible: SystemUpdateService.isUpgrading
-                isPlaying: visible
-                value: 1
-                trackColor: "transparent"
-                playheadColor: "transparent"
+        ReleaseHero {}
+
+        DLinearProgress {
+            width: parent.width
+            visible: root.busy
+            indeterminate: true
+            Accessible.name: root.statusTitle()
+        }
+
+        SettingsGroup {
+            width: parent.width
+
+            SettingsRow {
+                readonly property bool failed: SystemUpdateService.hasError && !root.busy
+
+                title: root.statusTitle()
+                titleColor: failed ? Theme.error : contentColor
+                subtitle: root.statusSubtitle()
+                iconName: failed ? "error_outline" : root.needsRestart ? "restart_alt" : "system_update_alt"
+                iconColor: failed ? Theme.error : root.needsRestart ? Theme.warning : Theme.primary
+
+                DIconButton {
+                    id: optionsButton
+                    anchors.verticalCenter: parent.verticalCenter
+                    variant: "tonal"
+                    widthMode: "wide"
+                    iconName: "build"
+                    tooltipText: I18n.tr("Options")
+                    onClicked: optionsSheet.opened = true
+                }
+
+                DIconButton {
+                    anchors.verticalCenter: parent.verticalCenter
+                    visible: SystemUpdateService.sysupdateAvailable && !root.primaryIsCheck
+                    enabled: !root.busy
+                    variant: "tonal"
+                    widthMode: "wide"
+                    iconName: "refresh"
+                    tooltipText: I18n.tr("Check for updates")
+                    onClicked: SystemUpdateService.checkForUpdates()
+                }
+
+                DButton {
+                    anchors.verticalCenter: parent.verticalCenter
+                    visible: SystemUpdateService.sysupdateAvailable
+                    buttonHeight: Theme.buttonHeightS
+                    text: root.primaryLabel()
+                    iconName: root.primaryIcon()
+                    busy: SystemUpdateService.isChecking
+                    enabled: !SystemUpdateService.isChecking
+                    onClicked: root.primaryAction()
+                }
+            }
+
+            SettingsNavRow {
+                id: packagesRow
+                visible: root.systemCount > 0 && !SystemUpdateService.isUpgrading
+                title: I18n.tr("System packages", "software updates card title, package manager updates")
+                iconName: "deployed_code"
+                hint: {
+                    const names = (SystemUpdateService.backends || []).filter(b => SystemUpdateService.systemUpdates.some(p => p.backend === b.id)).map(b => b.displayName).join(", ");
+                    return names ? root.countText(root.systemCount) + " · " + names : root.countText(root.systemCount);
+                }
+                onClicked: packagesSheet.opened = true
+            }
+
+            SettingsRow {
+                visible: root.upgradeInWindow && SystemUpdateService.isUpgrading
+                title: I18n.tr("Upgrading...", "system update popout status while packages upgrade")
+                iconName: "open_in_new"
+
+                DButton {
+                    anchors.verticalCenter: parent.verticalCenter
+                    buttonHeight: Theme.buttonHeightS
+                    text: I18n.tr("Show window", "button, brings back the floating system update window")
+                    iconName: "open_in_new"
+                    backgroundColor: SettingsMetrics.controlSurface
+                    textColor: Theme.surfaceText
+                    onClicked: PopoutService.showSystemUpdateModal()
+                }
+            }
+
+            SettingsRow {
+                id: upgradeLogRow
+                visible: (SystemUpdateService.isUpgrading && !root.upgradeInWindow) || (root.upgradeFailed && !root.upgradeRunsInTerminal)
+                body: Item {
+                    readonly property real lineHeight: logText.implicitHeight / Math.max(1, logText.lineCount)
+
+                    width: parent.width
+                    height: Math.min(logText.implicitHeight, Math.floor(root.logViewHeight / lineHeight) * lineHeight)
+                    clip: true
+
+                    UpgradeLogText {
+                        id: logText
+                        anchors.bottom: parent.bottom
+                        width: parent.width
+                        placeholder: root.upgradeRunsInTerminal ? I18n.tr("Running in terminal") : ""
+                        lines: (SystemUpdateService.recentLog || []).slice(-root.logTailLines)
+                    }
+                }
+            }
+
+            SettingsNavRow {
+                visible: root.upgradeFailed && !root.upgradeRunsInTerminal
+                title: I18n.tr("Open in terminal")
+                iconName: "terminal"
+                onClicked: root.runUpdateAll(true)
             }
         }
 
@@ -325,39 +423,6 @@ Item {
                 iconName: "deployed_code"
                 settingKey: "softwareUpdatesShell"
                 tags: ["dms", "shell", "version", "channel", "restart"]
-
-                SettingsRow {
-                    readonly property bool failed: SystemUpdateService.hasError && !root.busy
-
-                    title: root.statusTitle()
-                    titleColor: failed ? Theme.error : contentColor
-                    subtitle: root.statusSubtitle()
-                    iconName: failed ? "error_outline" : root.needsRestart ? "restart_alt" : "system_update_alt"
-                    iconColor: failed ? Theme.error : root.needsRestart ? Theme.warning : Theme.primary
-
-                    DActionButton {
-                        anchors.verticalCenter: parent.verticalCenter
-                        visible: SystemUpdateService.sysupdateAvailable && !root.primaryIsCheck
-                        enabled: !root.busy
-                        buttonSize: Theme.buttonHeightS
-                        iconName: "refresh"
-                        iconColor: Theme.surfaceText
-                        backgroundColor: SettingsMetrics.controlSurface
-                        tooltipText: I18n.tr("Check for updates")
-                        onClicked: SystemUpdateService.checkForUpdates()
-                    }
-
-                    DButton {
-                        anchors.verticalCenter: parent.verticalCenter
-                        visible: SystemUpdateService.sysupdateAvailable
-                        buttonHeight: Theme.buttonHeightS
-                        text: root.primaryLabel()
-                        iconName: root.primaryIcon()
-                        busy: SystemUpdateService.isChecking
-                        enabled: !SystemUpdateService.isChecking
-                        onClicked: root.primaryAction()
-                    }
-                }
 
                 SettingsRow {
                     title: I18n.tr("Version")
@@ -398,12 +463,10 @@ Item {
                         color: SystemUpdateService.commitsBehind === 0 ? Theme.surfaceVariantText : Theme.primary
                     }
 
-                    DActionButton {
+                    DIconButton {
                         anchors.verticalCenter: parent.verticalCenter
-                        buttonSize: Theme.buttonHeightS
+                        variant: "tonal"
                         iconName: "open_in_browser"
-                        iconColor: Theme.primary
-                        backgroundColor: SettingsMetrics.controlSurface
                         tooltipText: I18n.tr("View on GitHub", "link to the release on GitHub")
                         onClicked: Qt.openUrlExternally("https://github.com/duxlabs-dev/dux-shell/commits/master")
                     }
@@ -445,293 +508,6 @@ Item {
                         }
                     }
                 }
-            }
-        }
-
-        SettingsCard {
-            width: parent.width
-            visible: SystemUpdateService.sysupdateAvailable
-            title: I18n.tr("System packages", "software updates card title, package manager updates")
-            iconName: "inventory_2"
-            settingKey: "softwareUpdatesSystem"
-            tags: ["system", "packages", "flatpak", "homebrew", "aur"]
-
-            SettingsRow {
-                title: {
-                    if (!SystemUpdateService.helperAvailable)
-                        return I18n.tr("No supported package manager found.");
-                    if (root.systemCount === 0)
-                        return I18n.tr("Up to date");
-                    const parts = [root.countText(root.systemCount)];
-                    if (root.flatpakCount > 0)
-                        parts.push(I18n.tr("%1 Flatpak", "count of flatpak updates, %1 is a number").arg(root.flatpakCount));
-                    if (root.homebrewCount > 0)
-                        parts.push(I18n.tr("%1 Homebrew", "count of homebrew updates, %1 is a number").arg(root.homebrewCount));
-                    return parts.join(" · ");
-                }
-                subtitle: {
-                    const distro = SystemUpdateService.distributionPretty || SystemUpdateService.distribution;
-                    const names = (SystemUpdateService.backends || []).map(b => b.displayName).join(", ");
-                    return distro && names ? distro + " · " + names : distro || names;
-                }
-                iconName: !SystemUpdateService.helperAvailable ? "error_outline" : root.systemCount === 0 ? "check_circle" : "package_2"
-                iconColor: SystemUpdateService.helperAvailable ? Theme.primary : Theme.error
-                clickable: root.systemCount > 0
-                onClicked: root.packagesExpanded = !root.packagesExpanded
-
-                DIcon {
-                    anchors.verticalCenter: parent.verticalCenter
-                    visible: root.systemCount > 0
-                    name: "expand_more"
-                    size: Theme.iconSize
-                    color: Theme.surfaceVariantText
-                    rotation: root.packagesExpanded ? 180 : 0
-
-                    Behavior on rotation {
-                        NumberAnimation {
-                            duration: Theme.expressiveDurations.expressiveDefaultSpatial
-                            easing.type: Easing.BezierSpline
-                            easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
-                        }
-                    }
-                }
-            }
-
-            Column {
-                width: parent?.width ?? 0
-                spacing: SettingsMetrics.groupGap
-
-                Repeater {
-                    model: root.packagesExpanded && !SystemUpdateService.isUpgrading ? SystemUpdateService.systemUpdates.slice(0, root.packageListCap) : []
-
-                    delegate: SettingsRow {
-                        id: packageRow
-                        required property var modelData
-
-                        title: modelData.name || ""
-                        subtitle: {
-                            const from = modelData.fromVersion || "";
-                            const to = modelData.toVersion || "";
-                            const version = from && to ? from + " → " + to : to || from;
-                            const repo = modelData.repo || "";
-                            return repo && version ? repo + " · " + version : repo || version;
-                        }
-
-                        DActionButton {
-                            anchors.verticalCenter: parent.verticalCenter
-                            iconName: "visibility_off"
-                            visible: SystemUpdateService.canIgnorePackage(packageRow.modelData)
-                            tooltipText: I18n.tr("Ignore package", "tooltip, exclude a package from system updates")
-                            onClicked: SystemUpdateService.ignorePackage(packageRow.modelData.name)
-                        }
-                    }
-                }
-            }
-
-            SettingsRow {
-                visible: root.packagesExpanded && !SystemUpdateService.isUpgrading && root.systemCount > root.packageListCap
-                title: I18n.tr("and %1 more", "%1 is the number of update rows not shown").arg(root.systemCount - root.packageListCap)
-                titleColor: Theme.surfaceVariantText
-            }
-
-            SettingsRow {
-                visible: root.upgradeInWindow && SystemUpdateService.isUpgrading
-                title: I18n.tr("Upgrading...", "system update popout status while packages upgrade")
-                iconName: "open_in_new"
-
-                DButton {
-                    anchors.verticalCenter: parent.verticalCenter
-                    buttonHeight: Theme.buttonHeightS
-                    text: I18n.tr("Show window", "button, brings back the floating system update window")
-                    iconName: "open_in_new"
-                    backgroundColor: SettingsMetrics.controlSurface
-                    textColor: Theme.surfaceText
-                    onClicked: PopoutService.showSystemUpdateModal()
-                }
-            }
-
-            SettingsRow {
-                id: upgradeLogRow
-                visible: (SystemUpdateService.isUpgrading && !root.upgradeInWindow) || (root.upgradeFailed && !root.upgradeRunsInTerminal)
-                body: Item {
-                    readonly property real lineHeight: logText.implicitHeight / Math.max(1, logText.lineCount)
-
-                    width: parent.width
-                    height: Math.min(logText.implicitHeight, Math.floor(root.logViewHeight / lineHeight) * lineHeight)
-                    clip: true
-
-                    UpgradeLogText {
-                        id: logText
-                        anchors.bottom: parent.bottom
-                        width: parent.width
-                        placeholder: root.upgradeRunsInTerminal ? I18n.tr("Running in terminal") : ""
-                        lines: (SystemUpdateService.recentLog || []).slice(-root.logTailLines)
-                    }
-                }
-            }
-
-            SettingsRow {
-                visible: SystemUpdateService.hasError && !root.busy
-                title: I18n.tr("Failed: %1", "system update error status, %1 is the error message").arg(SystemUpdateService.errorMessage)
-                titleColor: Theme.error
-                subtitle: SystemUpdateService.errorHint
-                iconName: "error_outline"
-                iconColor: Theme.error
-
-                DButton {
-                    anchors.verticalCenter: parent.verticalCenter
-                    visible: root.upgradeFailed && !root.upgradeRunsInTerminal
-                    text: I18n.tr("Open in terminal")
-                    iconName: "terminal"
-                    backgroundColor: SettingsMetrics.controlSurface
-                    textColor: Theme.surfaceText
-                    onClicked: root.runUpdateAll(true)
-                }
-            }
-        }
-
-        SettingsDeferred {
-            SettingsCard {
-                width: parent.width
-                title: I18n.tr("Options")
-                iconName: "tune"
-                settingKey: "systemUpdater"
-                collapsible: true
-                expanded: false
-
-                SettingsDropdownRow {
-                    settingKey: "systemUpdaterCheckInterval"
-                    resetKeys: ["updaterIntervalSeconds"]
-                    resetByKeys: false
-                    onResetRequested: {
-                        root.customIntervalSelected = false;
-                        SettingsData.resetToDefault(["updaterIntervalSeconds"]);
-                        SystemUpdateService.setInterval(SettingsData.updaterIntervalSeconds);
-                    }
-                    tags: ["interval", "poll", "frequency"]
-                    text: I18n.tr("Check interval")
-                    options: root.intervalOptions.map(o => o.label).concat([root.customIntervalLabel])
-                    currentValue: root.customIntervalSelected ? root.customIntervalLabel : root.intervalLabelFor(SettingsData.updaterIntervalSeconds)
-                    onValueChanged: label => {
-                        if (label === root.customIntervalLabel) {
-                            root.customIntervalSelected = true;
-                            return;
-                        }
-                        root.customIntervalSelected = false;
-                        const secs = root.intervalSecondsFor(label);
-                        SettingsData.set("updaterIntervalSeconds", secs);
-                        SystemUpdateService.setInterval(secs);
-                    }
-                }
-
-                SettingsTextFieldRow {
-                    id: customIntervalField
-                    leftIconName: "timer"
-                    visible: root.customIntervalSelected
-                    text: I18n.tr("Custom interval in minutes (minimum 5)")
-                    placeholderText: "1440"
-                    value: Math.round(SettingsData.updaterIntervalSeconds / 60).toString()
-                    validator: IntValidator {
-                        bottom: 5
-                    }
-                    onValueEdited: value => {
-                        const minutes = parseInt(value, 10);
-                        if (isNaN(minutes) || minutes < 5)
-                            return;
-                        const seconds = minutes * 60;
-                        SettingsData.set("updaterIntervalSeconds", seconds);
-                        SystemUpdateService.setInterval(seconds);
-                    }
-                }
-
-                SettingsToggleRow {
-                    settingKey: "systemUpdaterCheckOnStart"
-                    tags: ["startup", "check", "boot"]
-                    text: I18n.tr("Check on startup")
-                    checked: SettingsData.updaterCheckOnStart
-                    onToggled: checked => SettingsData.set("updaterCheckOnStart", checked)
-                }
-
-                SettingsToggleRow {
-                    settingKey: "systemUpdaterPauseOnBattery"
-                    tags: ["battery", "power", "pause"]
-                    visible: BatteryService.batteryAvailable
-                    text: I18n.tr("Pause checks on battery", "software updates toggle, skip background checks on battery power")
-                    checked: SettingsData.updaterPauseOnBattery
-                    onToggled: checked => SettingsData.set("updaterPauseOnBattery", checked)
-                }
-
-                SettingsToggleRow {
-                    settingKey: "systemUpdaterNotify"
-                    tags: ["notify", "notification", "alert"]
-                    text: I18n.tr("Notify me on new updates", "software updates toggle")
-                    description: I18n.tr("Checks in the background at the check interval. Notifies only when the count grows.", "notify on new updates toggle description")
-                    checked: SettingsData.updaterNotify
-                    onToggled: checked => SettingsData.set("updaterNotify", checked)
-                }
-
-                SettingsDropdownRow {
-                    settingKey: "systemUpdaterNotifyMin"
-                    tags: ["notify", "notification", "frequency", "throttle"]
-                    resetKeys: ["updaterNotifyMinSeconds"]
-                    visible: SettingsData.updaterNotify
-                    text: I18n.tr("Notify at most", "software updates dropdown label, how often update notifications may repeat")
-                    options: root.notifyOptions.map(o => o.label)
-                    currentValue: (root.notifyOptions.find(o => o.seconds === SettingsData.updaterNotifyMinSeconds) ?? root.notifyOptions[root.notifyOptions.length - 1]).label
-                    onValueChanged: label => {
-                        const opt = root.notifyOptions.find(o => o.label === label);
-                        if (opt)
-                            SettingsData.set("updaterNotifyMinSeconds", opt.seconds);
-                    }
-                }
-
-                SettingsToggleRow {
-                    settingKey: "systemUpdaterFlatpak"
-                    tags: ["flatpak", "include"]
-                    text: I18n.tr("Include Flatpak updates")
-                    visible: (SystemUpdateService.backends || []).some(b => b.repo === "flatpak")
-                    checked: SettingsData.updaterIncludeFlatpak
-                    onToggled: checked => SettingsData.set("updaterIncludeFlatpak", checked)
-                }
-
-                SettingsToggleRow {
-                    settingKey: "systemUpdaterHomebrew"
-                    tags: ["homebrew", "brew", "include"]
-                    text: I18n.tr("Include Homebrew updates", "software updates setting, toggle to include homebrew packages in updates")
-                    visible: (SystemUpdateService.backends || []).some(b => b.repo === "homebrew")
-                    checked: SettingsData.updaterIncludeHomebrew
-                    onToggled: checked => SettingsData.set("updaterIncludeHomebrew", checked)
-                }
-
-                SettingsToggleRow {
-                    settingKey: "systemUpdaterAUR"
-                    tags: ["aur", "paru", "yay", "shelly"]
-                    text: I18n.tr("Include AUR updates")
-                    visible: (SystemUpdateService.backends || []).some(b => ["paru", "yay", "shelly"].includes(b.id))
-                    checked: SettingsData.updaterAllowAUR
-                    onToggled: checked => SettingsData.set("updaterAllowAUR", checked)
-                }
-
-                SettingsToggleRow {
-                    settingKey: "systemUpdaterReopenAfterUpgrade"
-                    tags: ["reopen", "popout", "terminal", "upgrade"]
-                    text: I18n.tr("Reopen panel after update")
-                    visible: root.upgradeRunsInTerminal
-                    checked: SettingsData.updaterReopenAfterUpgrade
-                    onToggled: checked => SettingsData.set("updaterReopenAfterUpgrade", checked)
-                }
-
-                SettingsToggleRow {
-                    settingKey: "systemUpdaterUpgradeInWindow"
-                    tags: ["window", "popout", "floating", "log", "output"]
-                    text: I18n.tr("Show upgrade in a window", "software updates toggle")
-                    description: I18n.tr("Opens a floating window with the live output", "show upgrade in a window toggle description")
-                    visible: !root.upgradeRunsInTerminal
-                    checked: SettingsData.updaterUpgradeInWindow
-                    onToggled: checked => SettingsData.set("updaterUpgradeInWindow", checked)
-                }
-
-                TerminalPickerRow {}
             }
         }
 
@@ -807,8 +583,7 @@ Item {
 
                         DActionButton {
                             anchors.verticalCenter: parent.verticalCenter
-                            iconName: "delete"
-                            iconColor: Theme.error
+                            iconName: "visibility"
                             tooltipText: I18n.tr("Stop ignoring %1", "system updater button tooltip, %1 is the package name").arg(ignoredRow.modelData)
                             onClicked: SystemUpdateService.unignorePackage(ignoredRow.modelData)
                         }
@@ -875,5 +650,251 @@ Item {
     ConfirmDialogOverlay {
         id: installConfirm
         parent: root.parentModal?.dialogHostFor(root) ?? root
+    }
+
+    DBottomSheet {
+        id: optionsSheet
+
+        readonly property string searchTarget: SettingsSearchService.targetSection
+
+        // Settings search lands on rows that only register while the sheet is open
+        function openForSearch() {
+            if (opened || searchTarget === "" || !root.visible)
+                return;
+            for (let i = 0; i < optionsGroup.content.length; i++) {
+                if (optionsGroup.content[i].settingKey === searchTarget) {
+                    opened = true;
+                    return;
+                }
+            }
+        }
+
+        parent: root.parentModal?.dialogHostFor(root) ?? root
+        title: I18n.tr("Options")
+        maximumWidth: mainColumn.columnWidth
+        returnFocusItem: optionsButton
+        onDismissRequested: opened = false
+        onSearchTargetChanged: openForSearch()
+        Component.onCompleted: openForSearch()
+
+        SettingsGroup {
+            id: optionsGroup
+            width: parent.width
+
+                    SettingsDropdownRow {
+                        settingKey: "systemUpdaterCheckInterval"
+                        resetKeys: ["updaterIntervalSeconds"]
+                        resetByKeys: false
+                        onResetRequested: {
+                            root.customIntervalSelected = false;
+                            SettingsData.resetToDefault(["updaterIntervalSeconds"]);
+                            SystemUpdateService.setInterval(SettingsData.updaterIntervalSeconds);
+                        }
+                        tags: ["interval", "poll", "frequency"]
+                        text: I18n.tr("Check interval")
+                        options: root.intervalOptions.map(o => o.label).concat([root.customIntervalLabel])
+                        currentValue: root.customIntervalSelected ? root.customIntervalLabel : root.intervalLabelFor(SettingsData.updaterIntervalSeconds)
+                        onValueChanged: label => {
+                            if (label === root.customIntervalLabel) {
+                                root.customIntervalSelected = true;
+                                return;
+                            }
+                            root.customIntervalSelected = false;
+                            const secs = root.intervalSecondsFor(label);
+                            SettingsData.set("updaterIntervalSeconds", secs);
+                            SystemUpdateService.setInterval(secs);
+                        }
+                    }
+
+                    SettingsTextFieldRow {
+                        id: customIntervalField
+                        leftIconName: "timer"
+                        visible: root.customIntervalSelected
+                        text: I18n.tr("Custom interval in minutes (minimum 5)")
+                        placeholderText: "1440"
+                        value: Math.round(SettingsData.updaterIntervalSeconds / 60).toString()
+                        validator: IntValidator {
+                            bottom: 5
+                        }
+                        onValueEdited: value => {
+                            const minutes = parseInt(value, 10);
+                            if (isNaN(minutes) || minutes < 5)
+                                return;
+                            const seconds = minutes * 60;
+                            SettingsData.set("updaterIntervalSeconds", seconds);
+                            SystemUpdateService.setInterval(seconds);
+                        }
+                    }
+
+                    SettingsToggleRow {
+                        settingKey: "systemUpdaterCheckOnStart"
+                        tags: ["startup", "check", "boot"]
+                        text: I18n.tr("Check on startup")
+                        checked: SettingsData.updaterCheckOnStart
+                        onToggled: checked => SettingsData.set("updaterCheckOnStart", checked)
+                    }
+
+                    SettingsToggleRow {
+                        settingKey: "systemUpdaterPauseOnBattery"
+                        tags: ["battery", "power", "pause"]
+                        visible: BatteryService.batteryAvailable
+                        text: I18n.tr("Pause checks on battery", "software updates toggle, skip background checks on battery power")
+                        checked: SettingsData.updaterPauseOnBattery
+                        onToggled: checked => SettingsData.set("updaterPauseOnBattery", checked)
+                    }
+
+                    SettingsToggleRow {
+                        settingKey: "systemUpdaterNotify"
+                        tags: ["notify", "notification", "alert"]
+                        text: I18n.tr("Notify me on new updates", "software updates toggle")
+                        description: I18n.tr("Checks in the background at the check interval. Notifies only when the count grows.", "notify on new updates toggle description")
+                        checked: SettingsData.updaterNotify
+                        onToggled: checked => SettingsData.set("updaterNotify", checked)
+                    }
+
+                    SettingsDropdownRow {
+                        settingKey: "systemUpdaterNotifyMin"
+                        tags: ["notify", "notification", "frequency", "throttle"]
+                        resetKeys: ["updaterNotifyMinSeconds"]
+                        visible: SettingsData.updaterNotify
+                        text: I18n.tr("Notify at most", "software updates dropdown label, how often update notifications may repeat")
+                        options: root.notifyOptions.map(o => o.label)
+                        currentValue: (root.notifyOptions.find(o => o.seconds === SettingsData.updaterNotifyMinSeconds) ?? root.notifyOptions[root.notifyOptions.length - 1]).label
+                        onValueChanged: label => {
+                            const opt = root.notifyOptions.find(o => o.label === label);
+                            if (opt)
+                                SettingsData.set("updaterNotifyMinSeconds", opt.seconds);
+                        }
+                    }
+
+                    SettingsToggleRow {
+                        settingKey: "systemUpdaterFlatpak"
+                        tags: ["flatpak", "include"]
+                        text: I18n.tr("Include Flatpak updates")
+                        visible: (SystemUpdateService.backends || []).some(b => b.repo === "flatpak")
+                        checked: SettingsData.updaterIncludeFlatpak
+                        onToggled: checked => SettingsData.set("updaterIncludeFlatpak", checked)
+                    }
+
+                    SettingsToggleRow {
+                        settingKey: "systemUpdaterHomebrew"
+                        tags: ["homebrew", "brew", "include"]
+                        text: I18n.tr("Include Homebrew updates", "software updates setting, toggle to include homebrew packages in updates")
+                        visible: (SystemUpdateService.backends || []).some(b => b.repo === "homebrew")
+                        checked: SettingsData.updaterIncludeHomebrew
+                        onToggled: checked => SettingsData.set("updaterIncludeHomebrew", checked)
+                    }
+
+                    SettingsToggleRow {
+                        settingKey: "systemUpdaterAUR"
+                        tags: ["aur", "paru", "yay", "shelly"]
+                        text: I18n.tr("Include AUR updates")
+                        visible: (SystemUpdateService.backends || []).some(b => ["paru", "yay", "shelly"].includes(b.id))
+                        checked: SettingsData.updaterAllowAUR
+                        onToggled: checked => SettingsData.set("updaterAllowAUR", checked)
+                    }
+
+                    SettingsToggleRow {
+                        settingKey: "systemUpdaterReopenAfterUpgrade"
+                        tags: ["reopen", "popout", "terminal", "upgrade"]
+                        text: I18n.tr("Reopen panel after update")
+                        visible: root.upgradeRunsInTerminal
+                        checked: SettingsData.updaterReopenAfterUpgrade
+                        onToggled: checked => SettingsData.set("updaterReopenAfterUpgrade", checked)
+                    }
+
+                    SettingsToggleRow {
+                        settingKey: "systemUpdaterUpgradeInWindow"
+                        tags: ["window", "popout", "floating", "log", "output"]
+                        text: I18n.tr("Show upgrade in a window", "software updates toggle")
+                        description: I18n.tr("Opens a floating window with the live output", "show upgrade in a window toggle description")
+                        visible: !root.upgradeRunsInTerminal
+                        checked: SettingsData.updaterUpgradeInWindow
+                        onToggled: checked => SettingsData.set("updaterUpgradeInWindow", checked)
+                    }
+
+                    TerminalPickerRow {}
+        }
+
+        SheetFooter {
+            sheet: optionsSheet
+        }
+    }
+
+    DBottomSheet {
+        id: packagesSheet
+
+        parent: root.parentModal?.dialogHostFor(root) ?? root
+        title: I18n.tr("System packages", "software updates card title, package manager updates")
+        maximumWidth: mainColumn.columnWidth
+        returnFocusItem: packagesRow
+        onDismissRequested: opened = false
+
+        SettingsGroup {
+            width: parent.width
+
+            Repeater {
+                model: packagesSheet.active ? SystemUpdateService.systemUpdates.slice(0, root.packageListCap) : []
+
+                delegate: SettingsRow {
+                    id: packageRow
+                    required property var modelData
+
+                    title: modelData.name || ""
+                    titleColor: modelData.needsReboot ? Theme.error : contentColor
+                    subtitle: {
+                        const from = modelData.fromVersion || "";
+                        const to = modelData.toVersion || "";
+                        const version = from && to ? from + " → " + to : to || from;
+                        const repo = modelData.repo || "";
+                        return repo && version ? repo + " · " + version : repo || version;
+                    }
+                    iconName: modelData.needsReboot ? "error" : "widgets"
+                    iconColor: modelData.needsReboot ? Theme.error : Theme.primary
+
+                    DActionButton {
+                        anchors.verticalCenter: parent.verticalCenter
+                        iconName: "visibility_off"
+                        visible: SystemUpdateService.canIgnorePackage(packageRow.modelData)
+                        tooltipText: I18n.tr("Ignore package", "tooltip, exclude a package from system updates")
+                        onClicked: SystemUpdateService.ignorePackage(packageRow.modelData.name)
+                    }
+                }
+            }
+
+            SettingsRow {
+                visible: root.systemCount > root.packageListCap
+                title: I18n.tr("and %1 more", "%1 is the number of update rows not shown").arg(root.systemCount - root.packageListCap)
+                titleColor: Theme.surfaceVariantText
+            }
+
+            SettingsRow {
+                visible: root.systemCount === 0
+                title: I18n.tr("Up to date")
+                iconName: "check_circle"
+            }
+        }
+
+        SheetFooter {
+            sheet: packagesSheet
+        }
+    }
+
+    component SheetFooter: Item {
+        id: footer
+
+        required property DBottomSheet sheet
+
+        width: parent?.width ?? 0
+        height: closeButton.height + Theme.spacingS
+
+        DButton {
+            id: closeButton
+            anchors.right: parent.right
+            anchors.bottom: parent.bottom
+            variant: "text"
+            text: I18n.tr("Close")
+            onClicked: footer.sheet.opened = false
+        }
     }
 }
