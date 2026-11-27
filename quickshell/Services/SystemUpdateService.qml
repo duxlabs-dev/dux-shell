@@ -144,14 +144,19 @@ Singleton {
         }
         function onUpdaterIncludeFlatpakChanged() {
             root._refilter();
+            root._syncExcluded(SettingsData.updaterIncludeFlatpak);
         }
         function onUpdaterIncludeHomebrewChanged() {
             root._refilter();
+            root._syncExcluded(SettingsData.updaterIncludeHomebrew);
         }
         function onUpdaterIgnoredPackagesChanged() {
             root._refilter();
         }
         function on_HasLoadedChanged() {
+            root._syncExcluded(false);
+            if (root.pollWanted && root.sysupdateAvailable)
+                root.setInterval(SettingsData.updaterIntervalSeconds);
             Qt.callLater(() => root._maybeStartupCheck());
         }
     }
@@ -172,6 +177,7 @@ Singleton {
         const has = DMSService.capabilities.includes("sysupdate");
         if (has && !sysupdateAvailable) {
             sysupdateAvailable = true;
+            _syncExcluded(false);
             requestRepoStatus();
             if (pollWanted) {
                 requestState();
@@ -343,6 +349,26 @@ Singleton {
         });
     }
 
+    function excludedRepos() {
+        const repos = [];
+        if (!SettingsData.updaterIncludeFlatpak)
+            repos.push("flatpak");
+        if (!SettingsData.updaterIncludeHomebrew)
+            repos.push("homebrew");
+        return repos;
+    }
+
+    // Settings load asynchronously; their defaults must not reach the daemon.
+    function _syncExcluded(recheck) {
+        if (!DMSService.isConnected || !sysupdateAvailable || !SettingsData._hasLoaded)
+            return;
+        if (recheck && pollWanted) {
+            DMSService.sysupdateRefresh(true, null, true, excludedRepos());
+            return;
+        }
+        DMSService.sysupdateSetExcluded(excludedRepos(), null);
+    }
+
     function _refilter() {
         availableUpdates = _filterUpdates(_rawUpdates);
     }
@@ -404,7 +430,7 @@ Singleton {
     }
 
     function checkForUpdates() {
-        DMSService.sysupdateRefresh(false, null);
+        DMSService.sysupdateRefresh(false, null, false, excludedRepos());
         if (releasesRefCount > 0)
             loadReleases(true);
     }
@@ -451,14 +477,14 @@ Singleton {
             _startupCheckDone = false;
             return;
         }
-        if (!SettingsData.updaterCheckOnStart)
+        if (!SettingsData._hasLoaded || !SettingsData.updaterCheckOnStart)
             return;
         if (_startupCheckDone)
             return;
         if (!DMSService.isConnected || !sysupdateAvailable)
             return;
         _startupCheckDone = true;
-        Qt.callLater(() => DMSService.sysupdateRefresh(false, null, true));
+        Qt.callLater(() => DMSService.sysupdateRefresh(false, null, true, root.excludedRepos()));
     }
 
     onPollWantedChanged: {

@@ -16,6 +16,10 @@ func HandleRequest(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request, m
 	case "sysupdate.refresh":
 		force := params.BoolOpt(req.Params, "force", false)
 		background := params.BoolOpt(req.Params, "background", false)
+		// Requests run concurrently, so a refresh carries the exclusions it must honor.
+		if _, ok := params.Any(req.Params, "excluded"); ok {
+			m.SetExcluded(stringSliceOpt(req.Params, "excluded"))
+		}
 		m.Refresh(RefreshOptions{Force: force, Background: background})
 		conn.Respond(req.ID, m.GetState())
 	case "sysupdate.upgrade":
@@ -34,6 +38,9 @@ func HandleRequest(ctx context.Context, conn *ipc.ConnWriter, req ipc.Request, m
 		conn.Respond(req.ID, m.Releases(force))
 	case "sysupdate.repoStatus":
 		conn.Respond(req.ID, hostRepoStatus())
+	case "sysupdate.setExcluded":
+		m.SetExcluded(stringSliceOpt(req.Params, "excluded"))
+		conn.Respond(req.ID, m.GetState())
 	case "sysupdate.setInterval":
 		seconds, err := params.Int(req.Params, "seconds")
 		if err != nil {

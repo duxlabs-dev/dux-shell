@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -34,6 +35,7 @@ type Manager struct {
 	subscribers pubsub.Broker[State]
 
 	selection Selection
+	excluded  map[RepoKind]bool
 
 	notifyDirty chan struct{}
 	stopChan    chan struct{}
@@ -190,6 +192,35 @@ func (m *Manager) SetInterval(seconds int) {
 	m.mu.Unlock()
 	m.wake()
 	m.markDirty()
+}
+
+// SetExcluded stops checking the named overlay repos; the shell hides their cached packages.
+func (m *Manager) SetExcluded(repos []string) {
+	set := make(map[RepoKind]bool, len(repos))
+	for _, b := range m.selection.Overlay {
+		if slices.Contains(repos, string(b.Repo())) {
+			set[b.Repo()] = true
+		}
+	}
+	m.mu.Lock()
+	m.excluded = set
+	m.mu.Unlock()
+}
+
+func (m *Manager) checkBackends() []Backend {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	all := m.selection.All()
+	if len(m.excluded) == 0 {
+		return all
+	}
+	out := make([]Backend, 0, len(all))
+	for _, b := range all {
+		if !m.excluded[b.Repo()] {
+			out = append(out, b)
+		}
+	}
+	return out
 }
 
 func (m *Manager) Refresh(opts RefreshOptions) {
@@ -350,7 +381,7 @@ func (m *Manager) runRefresh(parent context.Context, manual bool) {
 		pkgs []Package
 		err  error
 	}
-	backends := m.selection.All()
+	backends := m.checkBackends()
 	results := make([]backendResult, len(backends))
 	var wg sync.WaitGroup
 	for i, b := range backends {
@@ -371,6 +402,10 @@ func (m *Manager) runRefresh(parent context.Context, manual bool) {
 	next := make([]Package, 0, len(prev))
 	var firstErr error
 	for i, r := range results {
+		// Excluded while the check ran.
+		if m.excluded[backends[i].Repo()] {
+			continue
+		}
 		if r.err != nil {
 			if firstErr == nil {
 				firstErr = fmt.Errorf("%s: %w", backends[i].ID(), r.err)

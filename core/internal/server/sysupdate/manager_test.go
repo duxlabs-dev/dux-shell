@@ -116,3 +116,59 @@ func TestUserStoppedUpgradeIsNotAFailure(t *testing.T) {
 		}
 	})
 }
+
+type repoTestBackend struct {
+	stopTestBackend
+	repo    RepoKind
+	pkgs    []Package
+	onCheck func()
+}
+
+func (b *repoTestBackend) Repo() RepoKind { return b.repo }
+func (b *repoTestBackend) CheckUpdates(context.Context) ([]Package, error) {
+	b.checks++
+	if b.onCheck != nil {
+		b.onCheck()
+	}
+	return b.pkgs, nil
+}
+
+func TestExcludedOverlaysAreNotChecked(t *testing.T) {
+	t.Setenv("XDG_CACHE_HOME", t.TempDir())
+	system := &repoTestBackend{stopTestBackend: stopTestBackend{id: "dnf"}, repo: RepoSystem, pkgs: []Package{{Name: "bash", Repo: RepoSystem, Backend: "dnf"}}}
+	flatpak := &repoTestBackend{stopTestBackend: stopTestBackend{id: "flatpak"}, repo: RepoFlatpak}
+	brew := &repoTestBackend{stopTestBackend: stopTestBackend{id: "homebrew"}, repo: RepoHomebrew, pkgs: []Package{{Name: "git", Repo: RepoHomebrew, Backend: "homebrew"}}}
+	m := &Manager{
+		selection:   Selection{System: system, Overlay: []Backend{flatpak, brew}},
+		notifyDirty: make(chan struct{}, 1),
+		stopChan:    make(chan struct{}),
+	}
+	names := func() []string {
+		var out []string
+		for _, p := range m.GetState().Packages {
+			out = append(out, p.Name)
+		}
+		return out
+	}
+
+	m.SetExcluded([]string{"homebrew", "system"})
+	m.runRefresh(t.Context(), false)
+	if system.checks != 1 || flatpak.checks != 1 || brew.checks != 0 {
+		t.Fatalf("checks system=%d flatpak=%d homebrew=%d, want 1 1 0", system.checks, flatpak.checks, brew.checks)
+	}
+	if got := names(); !slices.Equal(got, []string{"bash"}) {
+		t.Fatalf("packages while excluded = %v, want [bash]", got)
+	}
+
+	m.SetExcluded(nil)
+	m.runRefresh(t.Context(), false)
+	if got := names(); brew.checks != 1 || !slices.Equal(got, []string{"bash", "git"}) {
+		t.Fatalf("re-included homebrew: checks=%d packages=%v", brew.checks, got)
+	}
+
+	brew.onCheck = func() { m.SetExcluded([]string{"homebrew"}) }
+	m.runRefresh(t.Context(), false)
+	if got := names(); !slices.Equal(got, []string{"bash"}) {
+		t.Fatalf("packages after excluding mid-check = %v, want [bash]", got)
+	}
+}
