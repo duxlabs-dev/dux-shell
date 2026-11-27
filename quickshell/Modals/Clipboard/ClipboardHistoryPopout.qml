@@ -15,7 +15,6 @@ DPopout {
 
     property var parentWidget: null
     property var triggerScreen: null
-    property string activeTab: "recents"
 
     readonly property bool clipboardAvailable: ClipboardService.clipboardAvailable
     readonly property int pinnedCount: ClipboardService.pinnedCount
@@ -27,7 +26,6 @@ DPopout {
 
         Qt.callLater(function () {
             if (contentLoader.item) {
-                contentLoader.item.activeTab = activeTab;
                 contentLoader.item.resetState();
             }
             if (contentLoader.item?.searchField) {
@@ -80,7 +78,6 @@ DPopout {
         }
         Qt.callLater(function () {
             if (contentLoader.item) {
-                contentLoader.item.activeTab = activeTab;
                 contentLoader.item.resetState();
             }
             if (contentLoader.item?.searchField) {
@@ -149,7 +146,6 @@ DPopout {
             onInstantCloseRequested: root.hide()
 
             Component.onCompleted: {
-                activeTab = root.activeTab;
                 if (root.shouldBeVisible) {
                     forceActiveFocus();
                 }

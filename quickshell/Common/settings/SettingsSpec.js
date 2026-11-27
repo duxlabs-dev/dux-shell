@@ -1892,6 +1892,9 @@ var LOCAL_SPEC = {
     clipboardClickToPaste: {
         def: false
     },
+    clipboardShowPinned: {
+        def: false
+    },
     clipboardEnterToPaste: {
         def: false
     },

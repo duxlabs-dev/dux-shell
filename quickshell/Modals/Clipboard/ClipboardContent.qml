@@ -27,7 +27,11 @@ Item {
         dragLauncher.cancel();
     }
 
-    readonly property var entries: modal.activeTab === "saved" ? modal.pinnedEntries : modal.unpinnedEntries
+    readonly property var entries: modal.displayedEntries
+    readonly property int pinnedSectionCount: modal.displayedPinnedCount
+    readonly property bool hasSplitSections: pinnedSectionCount > 0 && modal.unpinnedEntries.length > 0
+    readonly property bool showPinned: modal.showPinned
+    onShowPinnedChanged: resetScroll.schedule()
 
     readonly property var filterOptions: [I18n.tr("All"), I18n.tr("Text"), I18n.tr("Long Text"), I18n.tr("Image", "noun, clipboard entry type and filter option")]
     readonly property var filterValues: ["all", "text", "long_text", "image"]
@@ -134,7 +138,7 @@ Item {
 
     function contextEntryAtLocal(localX, localY) {
         const listView = clipboardListView;
-        const entries = modal.activeTab === "saved" ? modal.pinnedEntries : modal.unpinnedEntries;
+        const entries = clipboardContent.entries;
 
         if (!listView.visible || !entries)
             return null;
@@ -165,14 +169,6 @@ Item {
 
     anchors.fill: parent
 
-    Connections {
-        target: clipboardContent.modal
-        function onActiveTabChanged() {
-            clipboardListView.showTab(clipboardContent.modal.activeTab);
-            resetScroll.schedule();
-        }
-    }
-
     DeferredAction {
         id: resetScroll
         onTriggered: {
@@ -182,14 +178,8 @@ Item {
     }
 
     ScriptModel {
-        id: savedModel
-        values: clipboardContent.modal.pinnedEntries
-        objectProp: "id"
-    }
-
-    ScriptModel {
-        id: recentsModel
-        values: clipboardContent.modal.unpinnedEntries
+        id: entriesModel
+        values: clipboardContent.entries
         objectProp: "id"
     }
 
@@ -322,19 +312,9 @@ Item {
         DListView {
             id: clipboardListView
             reuseItems: true
-            highlightSelection: clipboardContent.modal.keyboardNavigationActive && clipboardContent.modal.selectedIndex >= 0
+            highlightSelection: false
             anchors.fill: parent
-            // one model per tab; a shared model diffs the whole list on every tab switch
-            model: recentsModel
-            Component.onCompleted: showTab(clipboardContent.modal.activeTab)
-
-            function showTab(tab) {
-                // pooled delegates keep the modelData of the model they came from, so a
-                // swap would show History rows on Saved. Draining the pool first avoids that.
-                reuseItems = false;
-                model = tab === "saved" ? savedModel : recentsModel;
-                reuseItems = true;
-            }
+            model: entriesModel
 
             currentIndex: clipboardContent.modal ? clipboardContent.modal.selectedIndex : 0
             spacing: Theme.groupedListGap
@@ -371,41 +351,73 @@ Item {
             }
 
             StyledText {
-                text: !clipboardContent.modal.clipboardAvailable ? I18n.tr("Connecting to clipboard service...") : clipboardContent.modal.activeTab === "saved" ? I18n.tr("No saved clipboard entries") : I18n.tr("No recent clipboard entries found")
+                text: !clipboardContent.modal.clipboardAvailable ? I18n.tr("Connecting to clipboard service...") : I18n.tr("No recent clipboard entries found")
                 anchors.centerIn: parent
                 font.pixelSize: Theme.fontSizeMedium
                 color: Theme.surfaceVariantText
                 visible: clipboardContent.entries.length === 0
             }
 
-            delegate: ClipboardEntry {
+            delegate: Item {
+                id: entryDelegate
+
                 required property int index
                 required property var modelData
 
+                readonly property bool showDividerBefore: clipboardContent.hasSplitSections && index === clipboardContent.pinnedSectionCount
+                readonly property real dividerBandHeight: showDividerBefore ? Theme.spacingM + 2 : 0
+
+                visible: index >= 0
                 width: clipboardListView.width
-                height: ClipboardConstants.itemHeight
-                entry: modelData
-                itemIndex: index
-                isSelected: clipboardContent.modal?.keyboardNavigationActive && index === clipboardContent.modal.selectedIndex
-                modal: clipboardContent.modal
-                listView: clipboardListView
-                onCopyRequested: clipboardContent.modal.copyEntry(modelData)
-                onPasteRequested: clipboardContent.modal.pasteEntry(modelData)
-                onDeleteRequested: {
-                    if (clipboardContent.modal.activeTab === "saved") {
-                        clipboardContent.modal.deletePinnedEntry(modelData);
-                        return;
-                    }
-                    clipboardContent.modal.deleteEntry(modelData);
+                height: ClipboardConstants.itemHeight + dividerBandHeight
+
+                ListView.onPooled: entryRow.resetInteractionState()
+                ListView.onReused: entryRow.resetInteractionState()
+
+                Rectangle {
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.leftMargin: Theme.spacingM
+                    anchors.rightMargin: Theme.spacingM
+                    y: Math.floor((entryDelegate.dividerBandHeight - Theme.groupedListGap - height) / 2)
+                    height: 1
+                    color: Theme.outlineVariant
+                    opacity: 0.85
+                    visible: entryDelegate.showDividerBefore
                 }
-                onPinRequested: targetEntry => clipboardContent.modal.pinEntry(targetEntry)
-                onUnpinRequested: targetEntry => clipboardContent.modal.unpinEntry(targetEntry)
-                onEditRequested: clipboardContent.modal.editEntry(modelData)
-                onPreviewRequested: clipboardContent.modal.openPreview(index)
-                onDragRequested: entry => clipboardContent.startEntryDrag(entry)
-                onContextMenuRequested: (mouseX, mouseY) => {
-                    const pos = mapToItem(null, mouseX, mouseY);
-                    clipboardContent.showContextMenu(modelData, pos.x, pos.y);
+
+                ClipboardEntry {
+                    id: entryRow
+
+                    anchors.left: parent.left
+                    anchors.right: parent.right
+                    anchors.bottom: parent.bottom
+                    height: ClipboardConstants.itemHeight
+                    entry: entryDelegate.modelData
+                    itemIndex: entryDelegate.index
+                    firstInGroup: entryDelegate.index === 0 || entryDelegate.showDividerBefore
+                    lastInGroup: entryDelegate.index === clipboardListView.count - 1 || (clipboardContent.hasSplitSections && entryDelegate.index === clipboardContent.pinnedSectionCount - 1)
+                    isSelected: clipboardContent.modal?.keyboardNavigationActive && entryDelegate.index === clipboardContent.modal.selectedIndex
+                    modal: clipboardContent.modal
+                    listView: clipboardListView
+                    onCopyRequested: clipboardContent.modal.copyEntry(entryDelegate.modelData)
+                    onPasteRequested: clipboardContent.modal.pasteEntry(entryDelegate.modelData)
+                    onDeleteRequested: {
+                        if (entryDelegate.modelData.pinned) {
+                            clipboardContent.modal.deletePinnedEntry(entryDelegate.modelData);
+                            return;
+                        }
+                        clipboardContent.modal.deleteEntry(entryDelegate.modelData);
+                    }
+                    onPinRequested: targetEntry => clipboardContent.modal.pinEntry(targetEntry)
+                    onUnpinRequested: targetEntry => clipboardContent.modal.unpinEntry(targetEntry)
+                    onEditRequested: clipboardContent.modal.editEntry(entryDelegate.modelData)
+                    onPreviewRequested: clipboardContent.modal.openPreview(entryDelegate.index)
+                    onDragRequested: entry => clipboardContent.startEntryDrag(entry)
+                    onContextMenuRequested: (mouseX, mouseY) => {
+                        const pos = mapToItem(null, mouseX, mouseY);
+                        clipboardContent.showContextMenu(entryDelegate.modelData, pos.x, pos.y);
+                    }
                 }
             }
         }

@@ -24,13 +24,14 @@ Singleton {
     property var allPinnedEntries: []
     property var pinnedEntries: []
     property var unpinnedEntries: []
+    readonly property bool showPinned: SettingsData.clipboardShowPinned && pinnedCount > 0
+    readonly property var displayedEntries: showPinned && pinnedEntries.length > 0 ? pinnedEntries.concat(unpinnedEntries) : unpinnedEntries
     property int unpinnedTotal: 0
     readonly property bool hasMoreUnpinned: unpinnedEntries.length < unpinnedTotal
     property int pinnedCount: 0
     property int historyCount: 0
     property string searchText: ""
     property string activeFilter: "all"
-    property string activeTab: "recents"
     readonly property bool filterActive: searchText.trim().length > 0 || activeFilter !== "all"
     property int selectedIndex: 0
     property bool keyboardNavigationActive: false
@@ -215,25 +216,38 @@ Singleton {
         };
     }
 
+    function setShowPinned(enabled) {
+        const next = enabled === true;
+        if (SettingsData.clipboardShowPinned === next)
+            return;
+        SettingsData.set("clipboardShowPinned", next);
+        selectedIndex = 0;
+        keyboardNavigationActive = false;
+    }
+
+    function toggleShowPinned() {
+        if (pinnedCount === 0 && !SettingsData.clipboardShowPinned)
+            return;
+        setShowPinned(!SettingsData.clipboardShowPinned);
+    }
+
     // a refresh keeps the selection on the same entry when rows shift around it
     function applyEntries(pinned, entries, keepSelection) {
-        const savedTab = activeTab === "saved";
-        const shown = savedTab ? pinnedEntries : unpinnedEntries;
-        const selectedId = keepSelection && savedTab === pinned ? shown[selectedIndex]?.id : undefined;
+        const selectedId = keepSelection ? displayedEntries[selectedIndex]?.id : undefined;
 
         if (pinned)
             pinnedEntries = entries;
         else
             unpinnedEntries = entries;
 
-        const index = selectedId === undefined ? -1 : entries.findIndex(e => e.id === selectedId);
+        const index = selectedId === undefined ? -1 : displayedEntries.findIndex(e => e.id === selectedId);
         if (index >= 0)
             selectedIndex = index;
         clampSelection();
     }
 
     function clampSelection() {
-        const activeCount = (activeTab === "saved" ? pinnedEntries : unpinnedEntries).length;
+        const activeCount = displayedEntries.length;
         if (activeCount === 0) {
             keyboardNavigationActive = false;
             selectedIndex = 0;

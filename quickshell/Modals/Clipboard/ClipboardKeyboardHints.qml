@@ -63,7 +63,7 @@ Rectangle {
                 },
                 {
                     keys: ["Ctrl+Tab"],
-                    label: I18n.tr("Tabs")
+                    label: I18n.tr("Pinned")
                 },
                 {
                     keys: ["F10"],

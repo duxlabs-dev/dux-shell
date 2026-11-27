@@ -189,7 +189,7 @@ Item {
             parentScreen: surfaceContext.screen
             popoutTarget: PopoutService.clipboardHistoryPopoutLoader?.item ?? null
 
-            function openClipboardPopout(initialTab, mode) {
+            function openClipboardPopout(showSaved, mode) {
                 openWidgetPopout({
                     loader: PopoutService.clipboardHistoryPopoutLoader,
                     widgetItem: clipboardWidget,
@@ -197,16 +197,16 @@ Item {
                     triggerSource: "clipboard",
                     islandActivity: "clipboard",
                     mode: mode || "click",
-                    prepare: popout => {
-                        if (initialTab)
-                            popout.activeTab = initialTab;
+                    prepare: () => {
+                        if (showSaved)
+                            ClipboardService.setShowPinned(true);
                     }
                 });
             }
 
-            onClipboardClicked: openClipboardPopout("recents")
+            onClipboardClicked: openClipboardPopout(false)
 
-            onShowSavedItemsRequested: openClipboardPopout("saved")
+            onShowSavedItemsRequested: openClipboardPopout(true)
 
             onClearAllRequested: {
                 const loader = PopoutService.clipboardHistoryPopoutLoader;

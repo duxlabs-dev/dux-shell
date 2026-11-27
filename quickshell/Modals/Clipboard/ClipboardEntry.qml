@@ -23,6 +23,7 @@ DListItem {
     property bool _holdReady: false
     property point _pressPos: Qt.point(0, 0)
 
+    readonly property color baseSurfaceColor: Theme.foregroundColor(Theme.cardSurface, Theme.isFloatingWindow(root))
     readonly property string entryType: modal ? modal.getEntryType(entry) : "text"
     readonly property string entryPreview: modal ? modal.getEntryPreview(entry) : ""
     readonly property var pinnedDuplicateEntry: !entry.pinned ? ClipboardService.getPinnedEntryByHash(entry.hash) : null
@@ -38,21 +39,18 @@ DListItem {
     readonly property bool showPinnedIndicator: effectivePinned && !showPinAction
     readonly property bool showAnyAction: showCopyAction || showPasteAction || showPinAction || showEditAction || showDeleteAction || showPinnedIndicator || showPreviewAction
 
+    function resetInteractionState() {
+        holdTimer.stop();
+        _holdReady = false;
+        _dragTriggered = false;
+    }
+
+    surfaceColor: entry.pinned ? Qt.tint(baseSurfaceColor, Theme.withAlpha(Theme.primary, Theme.stateLayerHover)) : baseSurfaceColor
     keyForwardTargets: [modal.modalFocusScope]
-    firstInGroup: itemIndex === 0
-    lastInGroup: itemIndex === listView.count - 1
     Accessible.name: entryPreview
     Accessible.description: entryType === "image" ? I18n.tr("Image") : I18n.tr("Text")
-    ListView.onPooled: {
-        holdTimer.stop();
-        _holdReady = false;
-        _dragTriggered = false;
-    }
-    ListView.onReused: {
-        holdTimer.stop();
-        _holdReady = false;
-        _dragTriggered = false;
-    }
+    ListView.onPooled: resetInteractionState()
+    ListView.onReused: resetInteractionState()
     onClicked: {
         if (_dragTriggered) {
             _dragTriggered = false;

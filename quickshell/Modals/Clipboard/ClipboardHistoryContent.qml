@@ -12,7 +12,6 @@ FocusScope {
     property var transientSurfaceTracker: null
     property bool popout: false
 
-    property string activeTab: "recents"
     property bool showKeyboardHints: false
     property int activeImageLoads: 0
     readonly property int maxConcurrentLoads: 3
@@ -23,13 +22,16 @@ FocusScope {
 
     readonly property bool clipboardAvailable: ClipboardService.clipboardAvailable
     readonly property bool pasteAvailable: ClipboardService.pasteAvailable
+    readonly property bool showPinned: ClipboardService.showPinned
     readonly property var pinnedEntries: ClipboardService.pinnedEntries
     readonly property int pinnedCount: ClipboardService.pinnedCount
+    readonly property int displayedPinnedCount: showPinned ? pinnedEntries.length : 0
     readonly property var unpinnedEntries: ClipboardService.unpinnedEntries
+    readonly property var displayedEntries: ClipboardService.displayedEntries
     readonly property int unpinnedTotal: ClipboardService.unpinnedTotal
     readonly property int selectedIndex: ClipboardService.selectedIndex
     readonly property bool keyboardNavigationActive: ClipboardService.keyboardNavigationActive
-    readonly property bool clearsFilteredOnly: activeTab === "recents" && ClipboardService.filterActive
+    readonly property bool clearsFilteredOnly: ClipboardService.filterActive
     readonly property bool canClear: clearsFilteredOnly ? unpinnedTotal > 0 : ClipboardService.historyCount > 0
     readonly property var currentEntry: selectedEntry()
 
@@ -46,20 +48,6 @@ FocusScope {
     signal closeRequested
     signal instantCloseRequested
 
-    onActiveTabChanged: {
-        ClipboardService.activeTab = activeTab;
-        if (activeTab === "saved" && pinnedCount === 0) {
-            activeTab = "recents";
-            return;
-        }
-        ClipboardService.selectedIndex = 0;
-        ClipboardService.keyboardNavigationActive = true;
-    }
-    onPinnedCountChanged: {
-        if (activeTab === "saved" && pinnedCount === 0) {
-            activeTab = "recents";
-        }
-    }
     onSearchTextChanged: ClipboardService.searchText = searchText
     onModeChanged: {
         if (mode === "history" && visible)
@@ -74,7 +62,7 @@ FocusScope {
     onActiveFilterChanged: {
         ClipboardService.activeFilter = activeFilter;
         ClipboardService.selectedIndex = 0;
-        ClipboardService.keyboardNavigationActive = true;
+        ClipboardService.keyboardNavigationActive = false;
         ClipboardService.updateFilteredModel();
         if (SettingsData.clipboardRememberTypeFilter) {
             SettingsData.set("clipboardTypeFilter", activeFilter);
@@ -130,8 +118,12 @@ FocusScope {
         ClipboardService.copyEntry(entry, () => root.requestClose(false), true);
     }
 
+    function toggleShowPinned() {
+        ClipboardService.toggleShowPinned();
+    }
+
     function openPreview(index = selectedIndex) {
-        const entries = activeTab === "saved" ? pinnedEntries : unpinnedEntries;
+        const entries = displayedEntries;
         if (!ClipboardService.canPreviewEntry(entries[index])) {
             return;
         }
@@ -148,7 +140,7 @@ FocusScope {
     }
 
     function selectedEntry() {
-        const entries = activeTab === "saved" ? pinnedEntries : unpinnedEntries;
+        const entries = displayedEntries;
         if (!entries || entries.length === 0 || selectedIndex < 0 || selectedIndex >= entries.length)
             return null;
         return entries[selectedIndex];
@@ -218,8 +210,7 @@ FocusScope {
     }
 
     function loadMore() {
-        if (activeTab === "recents")
-            ClipboardService.loadMore();
+        ClipboardService.loadMore();
     }
 
     function editEntry(entry) {
@@ -271,7 +262,6 @@ FocusScope {
         historyContent.closeContextMenu();
         historyContent.closeFilterMenu();
         activeFilter = SettingsData.clipboardRememberTypeFilter ? SettingsData.clipboardTypeFilter : "all";
-        ClipboardService.activeTab = activeTab;
         ClipboardService.reset();
         keyboardController.reset();
     }
