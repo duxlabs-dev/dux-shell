@@ -16,7 +16,7 @@ DIdleSurface {
     property DPopout _activePopout: null
     readonly property rect popoutAvoidRect: {
         const p = _activePopout;
-        if (!p?.shouldBeVisible || !SettingsData.notificationPopupAvoidPopouts || notificationConnectedMode || !_stackAnchorsTop())
+        if (!p?.shouldBeVisible || !SettingsData.notificationPopupAvoidPopouts || !_stackAnchorsTop())
             return Qt.rect(0, 0, 0, 0);
         return Qt.rect(p.alignedX, p.alignedY, p.alignedWidth, p.alignedHeight);
     }
@@ -354,22 +354,52 @@ DIdleSurface {
     }
 
     function _stackTop() {
-        return topMargin + _popoutAvoidOffset();
+        return topMargin + _popoutAvoidance().offset;
     }
 
-    function _popoutAvoidOffset() {
+    function _popoutAvoidance() {
+        const none = {
+            offset: 0,
+            seam: false,
+            edge: 0
+        };
         const r = popoutAvoidRect;
         if (r.height <= 0)
-            return 0;
+            return none;
         const p = popupWindows.find(_isValidWindow);
         if (!p)
-            return 0;
+            return none;
         const x = p.getContentX();
         const base = p.getTopMargin() - p.screenY;
         if (r.x >= x + p.alignedWidth || r.x + r.width <= x || r.y >= base + p.layoutHeight)
-            return 0;
-        const offset = Math.max(0, Math.round(r.y + r.height + Theme.popupDistance - base));
-        return base + offset + p.layoutHeight > modelData.height ? 0 : offset;
+            return none;
+        const seam = _seamsToPopout(r, x, p.alignedWidth);
+        // Connected chrome merges shapes closer than a fillet.
+        const gap = seam ? 0 : Theme.popupDistance + (notificationConnectedMode ? Theme.px(Theme.connectedCornerRadius, dpr) : 0);
+        const offset = Math.max(0, Math.round(r.y + r.height + gap - base));
+        if (base + offset + p.layoutHeight > modelData.height)
+            return none;
+        return {
+            offset: offset,
+            seam: seam,
+            edge: r.y + r.height
+        };
+    }
+
+    // Whether a connected stack joins the popout's bottom instead of keeping a gap.
+    function _seamsToPopout(r, x, width) {
+        if (!notificationConnectedMode)
+            return false;
+        const margin = Theme.px(Theme.connectedCornerRadius, dpr) + Theme.connectedSurfaceRadius;
+        const clearsLeft = r.x + margin <= x;
+        const clearsRight = x + width + margin <= r.x + r.width;
+        if (notifBarSide === "top")
+            return clearsLeft && clearsRight;
+        if (!SettingsData.frameCloseGaps)
+            return false;
+        if (stackLeft)
+            return r.x <= x + 1 && clearsRight;
+        return clearsLeft && x + width <= r.x + r.width + 1;
     }
 
     function _syncActivePopout() {
@@ -475,11 +505,14 @@ DIdleSurface {
         return Math.max(0, Math.round(Theme.px(raw, dpr)));
     }
 
-    function _closeGapChromeAnchorEdge(anchorsTop) {
+    function _closeGapChromeAnchorEdge(anchorsTop, avoid) {
         if (!closeGapNotifications || !manager.modelData)
             return null;
-        if (anchorsTop)
+        if (anchorsTop) {
+            if (avoid.offset > 0)
+                return avoid.seam ? avoid.edge : null;
             return _frameEdgeInset("top") + topMargin;
+        }
         return manager.modelData.height - _frameEdgeInset("bottom") - topMargin;
     }
 
@@ -544,10 +577,11 @@ DIdleSurface {
                 maxYEnd = stackEdge.edge;
         }
         const anchorsTop = stackEdge !== null ? stackEdge.anchorsTop : _stackAnchorsTop();
-        const closeGapAnchorEdge = _closeGapChromeAnchorEdge(anchorsTop);
+        const avoid = _popoutAvoidance();
+        const closeGapAnchorEdge = _closeGapChromeAnchorEdge(anchorsTop, avoid);
         if (closeGapAnchorEdge !== null) {
             if (anchorsTop)
-                minY = closeGapAnchorEdge;
+                minY = avoid.offset > 0 ? Math.min(minY, closeGapAnchorEdge) : closeGapAnchorEdge;
             else
                 maxYEnd = closeGapAnchorEdge;
         }
@@ -579,13 +613,14 @@ DIdleSurface {
             bodyY: minY,
             bodyW: bodyRect.width,
             bodyH: bodyRect.height,
-            omitStartConnector: _notificationOmitStartConnector(),
-            omitEndConnector: _notificationOmitEndConnector()
+            omitStartConnector: _notificationOmitStartConnector(avoid),
+            omitEndConnector: _notificationOmitEndConnector(),
+            detached: notifBarSide === "top" && avoid.offset > 0
         }, ownerId);
     }
 
-    function _notificationOmitStartConnector() {
-        return closeGapNotifications && (SettingsData.notificationPopupPosition === SettingsData.Position.Top || SettingsData.notificationPopupPosition === SettingsData.Position.Left);
+    function _notificationOmitStartConnector(avoid) {
+        return closeGapNotifications && (SettingsData.notificationPopupPosition === SettingsData.Position.Top || SettingsData.notificationPopupPosition === SettingsData.Position.Left) && (avoid.offset === 0 || avoid.seam);
     }
 
     function _notificationOmitEndConnector() {
