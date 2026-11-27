@@ -75,7 +75,6 @@ Item {
     property var pressSource: null
     readonly property bool pressed: mouseArea.pressed || (pressSource?.pressed ?? false)
     property real pressProgress: pressed && enableBackgroundHover ? 1 : 0
-    readonly property real blurRadius: segmentRole === "solo" ? outerRadius : innerRadius
     readonly property bool radiusMotion: !Theme.reduceMotion
     readonly property real outlineThickness: (barConfig?.widgetOutlineEnabled ?? false) ? (barConfig?.widgetOutlineThickness ?? Theme.outlineWidth) : 0
     readonly property color outlineColor: {
@@ -264,8 +263,14 @@ Item {
         height: root.visualHeight
         anchors.centerIn: parent
 
-        readonly property real blurRadius: root.blurRadius
         readonly property bool split: root.splitBounds.length > 0
+        // Each end follows the press morph only when its own segment is pressed, like the fill.
+        readonly property real blurStartRadius: root.cornerRadius(root.startJoined, !split || root.pressedSegment === 0 ? root.pressProgress : 0)
+        readonly property real blurEndRadius: root.cornerRadius(root.endJoined, !split || root.pressedSegment === root.splitBounds.length ? root.pressProgress : 0)
+        readonly property real blurTopLeftRadius: blurStartRadius
+        readonly property real blurTopRightRadius: root.isVerticalOrientation ? blurStartRadius : blurEndRadius
+        readonly property real blurBottomLeftRadius: root.isVerticalOrientation ? blurEndRadius : blurStartRadius
+        readonly property real blurBottomRightRadius: blurEndRadius
         property bool hovered: false
 
         Repeater {

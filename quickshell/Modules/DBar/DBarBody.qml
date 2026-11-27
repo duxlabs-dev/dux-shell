@@ -597,10 +597,13 @@ Item {
             readonly property bool gothCorner: barBackground.alongWings ? attachedEdgeCorner : wingEdgeCorner
             readonly property bool squared: (barBackground.edgeAttached && attachedEdgeCorner) || (barBackground.gothEnabled && gothCorner)
 
-            x: topBarMouseArea.x + barUnitInset.x + topBarSlide.x + (atRight ? barUnitInset.width - r : 0)
-            y: topBarMouseArea.y + barUnitInset.y + topBarSlide.y + (atBottom ? barUnitInset.height - r : 0)
-            width: squared ? r : 0
-            height: squared ? r : 0
+            // Whole pixels covering the full corner box, since the body's fractional radius is cut inward.
+            readonly property int box: Math.ceil(r)
+
+            x: Math.trunc(topBarMouseArea.x + barUnitInset.x + topBarSlide.x) + (atRight ? Math.trunc(barUnitInset.width) - box : 0)
+            y: Math.trunc(topBarMouseArea.y + barUnitInset.y + topBarSlide.y) + (atBottom ? Math.trunc(barUnitInset.height) - box : 0)
+            width: squared ? box : 0
+            height: squared ? box : 0
         }
     }
 
