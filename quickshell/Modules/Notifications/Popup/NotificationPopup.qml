@@ -19,7 +19,8 @@ Item {
     onExitRequested: surface._onPopupExitRequested(win)
     onSurfaceMapped: surface._pumpMotion()
     onPopupHeightChanged: surface._onPopupHeightChanged(win)
-    onPopupChromeGeometryChanged: surface._onPopupChromeGeometryChanged(win)
+    // createObject() sets screen before surface, and the screen change emits this.
+    onPopupChromeGeometryChanged: surface?._onPopupChromeGeometryChanged(win)
     readonly property alias maskRegion: contentInputMask
     readonly property var blurRegion: blur.effectiveRegion
     readonly property bool wantsOverlay: CompositorService.framePeerSurfacesUseOverlayForScreen(win.screen) || (!!notificationData && (SettingsData.notificationOverlayEnabled || notificationData.urgency === NotificationUrgency.Critical))
