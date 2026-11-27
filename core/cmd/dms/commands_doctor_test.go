@@ -582,3 +582,15 @@ func TestRetiredGreeterPackagesInstalled(t *testing.T) {
 		})
 	}
 }
+
+func TestProcessName(t *testing.T) {
+	for argv0, want := range map[string]string{
+		"/nix/store/abc-dms/bin/.dms-wrapped": "dms",
+		"dms":                                 "dms",
+		"/usr/bin/gnome-control-center":       "gnome-control-center",
+	} {
+		if got := processName(argv0); got != want {
+			t.Errorf("processName(%q) = %q, want %q", argv0, got, want)
+		}
+	}
+}

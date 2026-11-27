@@ -164,7 +164,7 @@ Singleton {
             if (!changed)
                 return;
             // input.kdl is first written before the DMS socket reports capabilities
-            if (SettingsData.touchpadPinchSensitivity !== 1.0)
+            if (SettingsData.touchpadPinchSensitivity !== 1.0 || SettingsData.niriTabletMapToFocusedWindow || (SettingsData.focusFollowsMouse === 1 && SettingsData.niriFocusFollowsMouseOutputsOnly))
                 root.generateNiriInputConfig();
         }
     }
@@ -1287,6 +1287,19 @@ blur {
 }`;
     }
 
+    // niri 26.04 has no kind="hide", so the popup is blacked out instead
+    function popupScreencastRule() {
+        if (typeof SettingsData === "undefined" || !SettingsData.notificationHideFromScreenShare)
+            return "";
+        const kind = configNextSupported ? ` kind="hide"` : "";
+        return `
+
+layer-rule {
+    match namespace="^dms:notification-popup$"
+    block-out-from "screencast"${kind}
+}`;
+    }
+
     function doGenerateNiriLayoutConfig() {
         if (writeConfigProcess.running || _awaitingLayoutReloadRevision > _layoutAppliedRevision)
             return;
@@ -1348,6 +1361,8 @@ window-rule {
         if (manageGaps)
             layoutLines.push(`    gaps ${gaps}`, "");
         layoutLines.push("    border {", `        width ${borderSize}`, "    }", "", "    focus-ring {", `        width ${borderSize}`, "    }");
+        if (configNextSupported && typeof SettingsData !== "undefined" && SettingsData.niriLayoutTransparentBackdrop)
+            layoutLines.push("", "    fullscreen-backdrop-color \"transparent\"");
 
         const configContent = dmsWarning + `layout {
 ${layoutLines.join("\n")}
@@ -1358,7 +1373,7 @@ window-rule {
     clip-to-geometry true
     tiled-state true
     draw-border-with-background false
-}` + niriBlurBlock(typeof SettingsData !== "undefined" ? SettingsData.blurStrength : 0) + xrayRules;
+}` + niriBlurBlock(typeof SettingsData !== "undefined" ? SettingsData.blurStrength : 0) + xrayRules + popupScreencastRule();
 
         const alttabContent = dmsWarning + `recent-windows {
     highlight {
@@ -1658,6 +1673,10 @@ window-rule {
                 kdlContent += `    focus-at-startup\n`;
             }
 
+            if (outputSettings.drmLease && !outputSettings.disabled && configNextSupported) {
+                kdlContent += `    drm-lease\n`;
+            }
+
             if (outputSettings.backdropColor) {
                 kdlContent += `    backdrop-color "${outputSettings.backdropColor}"\n`;
             }
@@ -1847,7 +1866,8 @@ window-rule {
         let inputContent = dmsWarning + "input {\n";
         // Niri flags take no false, so off can only leave it out
         if (typeof SettingsData !== "undefined" && SettingsData.focusFollowsMouse === 1) {
-            inputContent += "    focus-follows-mouse max-scroll-amount=\"0%\"\n";
+            const outputsOnly = SettingsData.niriFocusFollowsMouseOutputsOnly && configNextSupported ? " outputs-only=true" : "";
+            inputContent += `    focus-follows-mouse max-scroll-amount="0%"${outputsOnly}\n`;
         }
 
         // Mouse block
@@ -1914,9 +1934,25 @@ window-rule {
         }
         inputContent += "    }\n";
 
+        const kdlString = value => `"${value.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
+
+        // niri replaces the whole tablet section across includes, so only write it when needed
+        const tabletOutput = typeof SettingsData !== "undefined" ? SettingsData.niriTabletMapToOutput : "";
+        const tabletFocusedWindow = typeof SettingsData !== "undefined" && SettingsData.niriTabletMapToFocusedWindow && configNextSupported;
+        const tabletLeftHanded = typeof SettingsData !== "undefined" && SettingsData.niriTabletLeftHanded;
+        if (tabletOutput || tabletFocusedWindow || tabletLeftHanded) {
+            inputContent += "    tablet {\n";
+            if (tabletOutput)
+                inputContent += `        map-to-output ${kdlString(tabletOutput)}\n`;
+            if (tabletFocusedWindow)
+                inputContent += "        map-to-focused-window\n";
+            if (tabletLeftHanded)
+                inputContent += "        left-handed\n";
+            inputContent += "    }\n";
+        }
+
         // Keyboard block — emitted only when configured so untouched settings keep
         // niri's locale1 fallback and any keyboard block in the user's own config.
-        const kdlString = value => `"${value.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
         const keyboardConfigured = keyboardKeymapFile || keyboardLayouts || keyboardVariants || keyboardModel || keyboardOptions || keyboardTrackLayout || keyboardRepeatDelay > 0 || keyboardRepeatRate > 0 || keyboardNumlock;
         if (keyboardConfigured) {
             inputContent += "    keyboard {\n";

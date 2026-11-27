@@ -48,6 +48,16 @@ Item {
                 }
 
                 SettingsToggleRow {
+                    visible: CompositorService.isNiri && SettingsData.focusFollowsMouse === 1 && (NiriService.configNextSupported || SettingsData.niriFocusFollowsMouseOutputsOnly)
+                    tags: ["mouse", "focus", "follow", "pointer", "monitor", "output", "display"]
+                    settingKey: "niriFocusFollowsMouseOutputsOnly"
+                    text: I18n.tr("Monitors only", "niri toggle under focus follows mouse, the pointer only moves focus between monitors")
+                    description: I18n.tr("Focus moves between monitors, not between windows")
+                    checked: SettingsData.niriFocusFollowsMouseOutputsOnly
+                    onToggled: checked => SettingsData.set("niriFocusFollowsMouseOutputsOnly", checked)
+                }
+
+                SettingsToggleRow {
                     visible: CompositorService.isHyprland && HyprlandService.hyprSupports("input:swallow_focus_click")
                     tags: ["mouse", "focus", "click", "swallow", "window", "swallow_focus_click"]
                     settingKey: "hyprlandSwallowFocusClick"
@@ -316,7 +326,7 @@ Item {
         }
 
         SettingsDeferred {
-            when: CompositorService.isHyprland && HyprlandService.hyprSupports("input:tablet:enabled")
+            when: (CompositorService.isHyprland && HyprlandService.hyprSupports("input:tablet:enabled")) || CompositorService.isNiri
 
             SettingsCard {
                 width: parent.width
@@ -326,11 +336,58 @@ Item {
                 iconName: "stylus"
 
                 SettingsToggleRow {
+                    visible: CompositorService.isHyprland
                     tags: ["tablet", "pen", "stylus", "drawing", "enable", "disable"]
                     settingKey: "hyprlandTabletEnabled"
                     text: I18n.tr("Tablet input", "Hyprland toggle, accept input from drawing tablets")
                     checked: SettingsData.hyprlandTabletEnabled
                     onToggled: checked => SettingsData.set("hyprlandTabletEnabled", checked)
+                }
+
+                SettingsNoteRow {
+                    visible: CompositorService.isNiri
+                    noteIconName: "info"
+                    tint: Theme.primary
+                    tintBackground: Theme.primaryHover
+                    text: I18n.tr("Changing these replaces the tablet section in your niri config", "niri tablet card note")
+                }
+
+                SettingsDropdownRow {
+                    readonly property var outputNames: {
+                        const names = Object.keys(NiriService.outputs).sort();
+                        const saved = SettingsData.niriTabletMapToOutput;
+                        if (saved && !names.includes(saved))
+                            names.push(saved);
+                        return names;
+                    }
+
+                    visible: CompositorService.isNiri
+                    tags: ["tablet", "pen", "stylus", "drawing", "map", "output", "display", "monitor"]
+                    settingKey: "niriTabletMapToOutput"
+                    text: I18n.tr("Map to output", "niri tablet dropdown, the display the tablet area covers")
+                    currentValue: SettingsData.niriTabletMapToOutput
+                    emptyText: I18n.tr("All displays")
+                    optionValues: [""].concat(outputNames)
+                    options: [I18n.tr("All displays")].concat(outputNames.map(name => name in NiriService.outputs ? name : I18n.tr("%1 (%2)", "niri tablet output option, display name and its state").arg(name).arg(I18n.tr("Disconnected"))))
+                    onValueChanged: value => SettingsData.set("niriTabletMapToOutput", value)
+                }
+
+                SettingsToggleRow {
+                    visible: CompositorService.isNiri && (NiriService.configNextSupported || SettingsData.niriTabletMapToFocusedWindow)
+                    tags: ["tablet", "pen", "stylus", "drawing", "map", "window", "focus"]
+                    settingKey: "niriTabletMapToFocusedWindow"
+                    text: I18n.tr("Map to focused window", "niri tablet toggle, the tablet area covers the focused window")
+                    checked: SettingsData.niriTabletMapToFocusedWindow
+                    onToggled: checked => SettingsData.set("niriTabletMapToFocusedWindow", checked)
+                }
+
+                SettingsToggleRow {
+                    visible: CompositorService.isNiri
+                    tags: ["tablet", "pen", "stylus", "drawing", "left", "handed", "rotate"]
+                    settingKey: "niriTabletLeftHanded"
+                    text: I18n.tr("Left-handed", "niri tablet toggle, rotate the tablet for left-handed use")
+                    checked: SettingsData.niriTabletLeftHanded
+                    onToggled: checked => SettingsData.set("niriTabletLeftHanded", checked)
                 }
             }
         }

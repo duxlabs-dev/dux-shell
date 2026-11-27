@@ -389,6 +389,18 @@ const MODIFIER_KEYSYMS = {
     "super_r": "super"
 };
 
+// niri reads a bare name that is no keysym as XF86<name>; these bare names are keysyms of their own.
+const KEYSYMS_WITH_XF86_TWIN = ["break", "clear", "q", "select"];
+
+function stripXf86Prefix(trigger) {
+    if (!trigger.startsWith("xf86"))
+        return trigger;
+    const bare = trigger.slice(4);
+    if (!bare || KEYSYMS_WITH_XF86_TWIN.includes(bare))
+        return trigger;
+    return bare;
+}
+
 // Mirrors core normalizeNiriBindKey, so Shift+Alt equals Alt+Shift.
 function normalizeKeyCombo(keyCombo, modKey, modSymbol) {
     if (!keyCombo)
@@ -404,7 +416,7 @@ function normalizeKeyCombo(keyCombo, modKey, modSymbol) {
     }
     const parts = combo.split("+").map(part => part.trim());
     if (!trigger)
-        trigger = parts.pop();
+        trigger = stripXf86Prefix(parts.pop());
 
     const mods = new Set();
     const unknown = [];

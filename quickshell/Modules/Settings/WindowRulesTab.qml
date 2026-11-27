@@ -87,7 +87,7 @@ Item {
                 return a[k] ? label : label + ": " + I18n.tr("Off");
             if (k === "defaultColumnWidth" || k === "defaultWindowHeight")
                 return label + ": " + WindowRuleSize.label(a[k]);
-            return label + ": " + a[k];
+            return label + ": " + (Array.isArray(a[k]) ? a[k].join(", ") : a[k]);
         });
     }
 
@@ -103,7 +103,7 @@ Item {
             if (typeof v === "boolean")
                 out.push(label + ": " + (v ? I18n.tr("Yes") : I18n.tr("No")));
             else
-                out.push(label + ": " + v);
+                out.push(label + ": " + (Array.isArray(v) ? v.join(", ") : v));
         }
         return out;
     }
@@ -132,6 +132,7 @@ Item {
             "vrrFullscreenOnly": I18n.tr("VRR Fullscreen Only"),
             "onXdgActivate": I18n.tr("On activation", "window rule option, what niri does when the window asks to be activated"),
             "blockOutFrom": I18n.tr("Block out"),
+            "blockOutKind": I18n.tr("Block out kind", "short window rule property label, how a blocked out window is drawn"),
             "defaultColumnDisplay": I18n.tr("Display"),
             "scrollFactor": I18n.tr("Scroll"),
             "pinchSensitivity": I18n.tr("Pinch", "short window rule property label for touchpad pinch sensitivity"),

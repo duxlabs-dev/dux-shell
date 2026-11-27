@@ -63,8 +63,10 @@ DDialog {
     readonly property var compositorFlags: compositorFlagOptions()
     readonly property var bindOptionList: bindOptions()
     readonly property bool isNiri: KeybindsService.currentProvider === "niri"
-    readonly property bool showReleaseOption: isNiri && editTrigger !== "both" && !KeyUtils.isScrollTrigger(editKey)
-    readonly property bool showPassThroughOption: isNiri && KeyUtils.isKeyboardTrigger(editKey)
+    readonly property bool niriConfigNext: isNiri && NiriService.configNextSupported
+    // niri 26.04 rejects release, pass-through and lone modifiers; still show a set value so it can be cleared
+    readonly property bool showReleaseOption: isNiri && editTrigger !== "both" && !KeyUtils.isScrollTrigger(editKey) && (niriConfigNext || editTrigger === "release")
+    readonly property bool showPassThroughOption: isNiri && KeyUtils.isKeyboardTrigger(editKey) && (niriConfigNext || editPassThrough !== undefined)
     readonly property bool effectivePassThrough: editPassThrough ?? editTrigger === "release"
 
     readonly property string customCategory: I18n.tr("Custom")
@@ -424,17 +426,19 @@ DDialog {
 
     function compositorFlagOptions() {
         const base = argConfig?.base ?? "";
-        switch (base) {
-        case "move-column-to-workspace":
-        case "move-column-to-workspace-down":
-        case "move-column-to-workspace-up":
+        const focusArg = isNiri && argConfig?.type === "compositor" ? compositorArgDefs.find(arg => arg.name === "focus") : undefined;
+        if (focusArg) {
+            if (focusArg.next && !niriConfigNext && compositorParsedArgs?.args?.focus === undefined)
+                return [];
             return [
                 {
                     "label": I18n.tr("Follow focus"),
                     "value": "focus",
-                    "tooltip": I18n.tr("Moves focus along with the column", "keybind option tooltip, niri move column to workspace")
+                    "tooltip": base.startsWith("move-column") ? I18n.tr("Moves focus along with the column", "keybind option tooltip, niri move column to workspace") : I18n.tr("Moves focus along with the window", "keybind option tooltip, niri move window")
                 }
             ];
+        }
+        switch (base) {
         case "quit":
             return [
                 {
@@ -487,8 +491,8 @@ DDialog {
             } : {});
         if (name === "focus") {
             const focusArgs = {};
-            if (base === "move-column-to-workspace")
-                focusArgs.index = compositorParsedArgs?.args?.index || "";
+            if (compositorParsedArgs?.args?.index)
+                focusArgs.index = compositorParsedArgs.args.index;
             if (!checked)
                 focusArgs.focus = false;
             return Actions.buildCompositorAction(provider, base, focusArgs);
@@ -771,7 +775,7 @@ DDialog {
                     key: root.editKey
                     modKey: KeybindsService.modKey
                     modSymbol: KeybindsService.modSymbol
-                    capturesLoneModifiers: root.isNiri
+                    capturesLoneModifiers: root.niriConfigNext
                     capturesWheel: true
                     onCaptured: (key, loneModifier) => root.applyCapturedKey(key, loneModifier)
                 }

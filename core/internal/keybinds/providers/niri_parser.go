@@ -14,21 +14,23 @@ import (
 )
 
 type NiriKeyBinding struct {
-	Mods            []string
-	Key             string
-	Action          string
-	Args            []string
-	Description     string
-	HideOnOverlay   bool
-	CooldownMs      int
-	AllowWhenLocked bool
-	AllowInhibiting *bool
-	Repeat          *bool
-	Trigger         string // "" press, "release", "both"
-	ReleaseAction   string // set when Trigger is "both"
-	ReleaseArgs     []string
-	PassThrough     *bool
-	Source          string
+	Mods              []string
+	Key               string
+	Action            string
+	Args              []string
+	QuotedArgs        []bool // set where a string arg reads as a number
+	Description       string
+	HideOnOverlay     bool
+	CooldownMs        int
+	AllowWhenLocked   bool
+	AllowInhibiting   *bool
+	Repeat            *bool
+	Trigger           string // "" press, "release", "both"
+	ReleaseAction     string // set when Trigger is "both"
+	ReleaseArgs       []string
+	ReleaseQuotedArgs []bool
+	PassThrough       *bool
+	Source            string
 }
 
 const (
@@ -289,13 +291,24 @@ var niriModifierKeysyms = map[string]string{
 
 var niriModifierOrder = []string{"mod", "super", "ctrl", "alt", "shift", "mod5", "mod3"}
 
+// niri reads a bare name that is no keysym as XF86<name>; these bare names are keysyms of their own.
+var niriKeysymsWithXF86Twin = map[string]bool{"break": true, "clear": true, "q": true, "select": true}
+
+func stripNiriXF86Prefix(trigger string) string {
+	bare, ok := strings.CutPrefix(trigger, "xf86")
+	if !ok || bare == "" || niriKeysymsWithXF86Twin[bare] {
+		return trigger
+	}
+	return bare
+}
+
 // niri merges binds by modifier set plus trigger, so Alt+Shift and Shift+Alt are one bind.
 func normalizeNiriBindKey(key string) string {
 	parts := strings.Split(key, "+")
 	for i := range parts {
 		parts[i] = strings.ToLower(strings.TrimSpace(parts[i]))
 	}
-	trigger := parts[len(parts)-1]
+	trigger := stripNiriXF86Prefix(parts[len(parts)-1])
 
 	mods := make(map[string]bool, len(parts))
 	var unknown []string
@@ -399,11 +412,21 @@ func niriBoundActions(bindNode *document.Node) (press, release *document.Node) {
 	return press, release
 }
 
-func niriActionNameArgs(actionNode *document.Node) (string, []string) {
+func niriActionNameArgs(actionNode *document.Node) (string, []string, []bool) {
 	action := actionNode.Name.String()
+	_, intArgs := niriIntArgActions[action]
 	var args []string
-	for _, arg := range actionNode.Arguments {
-		args = append(args, arg.ValueString())
+	var quoted []bool
+	for i, arg := range actionNode.Arguments {
+		val := arg.ValueString()
+		args = append(args, val)
+		// niri reads a bare 3 as workspace index 3 but "3" as the workspace named 3.
+		if _, isString := arg.Value.(string); intArgs && isString && isNumericArg(val) {
+			if quoted == nil {
+				quoted = make([]bool, len(actionNode.Arguments))
+			}
+			quoted[i] = true
+		}
 	}
 	if actionNode.Properties != nil {
 		for _, propName := range niriActionPropertyOrder {
@@ -412,7 +435,7 @@ func niriActionNameArgs(actionNode *document.Node) (string, []string) {
 			}
 		}
 	}
-	return action, args
+	return action, args, quoted
 }
 
 func (p *NiriParser) Parse() (*NiriSection, error) {
@@ -658,17 +681,18 @@ func (p *NiriParser) parseKeybindNode(node *document.Node, _ string) *NiriKeyBin
 
 	var action, trigger, releaseAction string
 	var args, releaseArgs []string
+	var quotedArgs, releaseQuotedArgs []bool
 	pressNode, releaseNode := niriBoundActions(node)
 	switch {
 	case pressNode != nil && releaseNode != nil:
 		trigger = niriTriggerBoth
-		action, args = niriActionNameArgs(pressNode)
-		releaseAction, releaseArgs = niriActionNameArgs(releaseNode)
+		action, args, quotedArgs = niriActionNameArgs(pressNode)
+		releaseAction, releaseArgs, releaseQuotedArgs = niriActionNameArgs(releaseNode)
 	case releaseNode != nil:
 		trigger = niriTriggerRelease
-		action, args = niriActionNameArgs(releaseNode)
+		action, args, quotedArgs = niriActionNameArgs(releaseNode)
 	case pressNode != nil:
-		action, args = niriActionNameArgs(pressNode)
+		action, args, quotedArgs = niriActionNameArgs(pressNode)
 	}
 
 	var description string
@@ -707,21 +731,23 @@ func (p *NiriParser) parseKeybindNode(node *document.Node, _ string) *NiriKeyBin
 	}
 
 	return &NiriKeyBinding{
-		Mods:            mods,
-		Key:             key,
-		Action:          action,
-		Args:            args,
-		Description:     description,
-		HideOnOverlay:   hideOnOverlay,
-		CooldownMs:      cooldownMs,
-		AllowWhenLocked: allowWhenLocked,
-		AllowInhibiting: allowInhibiting,
-		Repeat:          repeat,
-		Trigger:         trigger,
-		ReleaseAction:   releaseAction,
-		ReleaseArgs:     releaseArgs,
-		PassThrough:     passThrough,
-		Source:          p.currentSource,
+		Mods:              mods,
+		Key:               key,
+		Action:            action,
+		Args:              args,
+		QuotedArgs:        quotedArgs,
+		Description:       description,
+		HideOnOverlay:     hideOnOverlay,
+		CooldownMs:        cooldownMs,
+		AllowWhenLocked:   allowWhenLocked,
+		AllowInhibiting:   allowInhibiting,
+		Repeat:            repeat,
+		Trigger:           trigger,
+		ReleaseAction:     releaseAction,
+		ReleaseArgs:       releaseArgs,
+		ReleaseQuotedArgs: releaseQuotedArgs,
+		PassThrough:       passThrough,
+		Source:            p.currentSource,
 	}
 }
 

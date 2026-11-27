@@ -48,7 +48,7 @@ type NiriWindowRule struct {
 	OpenMaximizedToEdges    *bool
 	OpenFullscreen          *bool
 	OpenFocused             *bool
-	OpenOnOutput            string
+	OpenOnOutput            []string
 	OpenOnWorkspace         string
 	DefaultColumnWidth      string
 	DefaultWindowHeight     string
@@ -57,6 +57,7 @@ type NiriWindowRule struct {
 	OnXdgActivate           string
 	PinchSensitivity        *float64
 	BlockOutFrom            string
+	BlockOutKind            string
 	DefaultColumnDisplay    string
 	ScrollFactor            *float64
 	CornerRadius            *int
@@ -245,7 +246,7 @@ func (p *NiriRulesParser) parseWindowRuleNode(node *document.Node) {
 			rule.OpenFocused = &b
 		case "open-on-output":
 			if len(child.Arguments) > 0 {
-				rule.OpenOnOutput = child.Arguments[0].ValueString()
+				rule.OpenOnOutput = append(rule.OpenOnOutput, child.Arguments[0].ValueString())
 			}
 		case "open-on-workspace":
 			if len(child.Arguments) > 0 {
@@ -273,6 +274,9 @@ func (p *NiriRulesParser) parseWindowRuleNode(node *document.Node) {
 		case "block-out-from":
 			if len(child.Arguments) > 0 {
 				rule.BlockOutFrom = child.Arguments[0].ValueString()
+			}
+			if val, ok := child.Properties.Get("kind"); ok {
+				rule.BlockOutKind = val.ValueString()
 			}
 		case "default-column-display":
 			if len(child.Arguments) > 0 {
@@ -620,6 +624,7 @@ func ConvertNiriRulesToWindowRules(niriRules []NiriWindowRule) []windowrules.Win
 				OnXdgActivate:             nr.OnXdgActivate,
 				PinchSensitivity:          nr.PinchSensitivity,
 				BlockOutFrom:              nr.BlockOutFrom,
+				BlockOutKind:              nr.BlockOutKind,
 				DefaultColumnDisplay:      nr.DefaultColumnDisplay,
 				ScrollFactor:              nr.ScrollFactor,
 				CornerRadius:              nr.CornerRadius,
@@ -790,6 +795,7 @@ func (p *NiriWritableProvider) LoadDMSRules() ([]windowrules.WindowRule, error) 
 				OnXdgActivate:             nr.OnXdgActivate,
 				PinchSensitivity:          nr.PinchSensitivity,
 				BlockOutFrom:              nr.BlockOutFrom,
+				BlockOutKind:              nr.BlockOutKind,
 				DefaultColumnDisplay:      nr.DefaultColumnDisplay,
 				ScrollFactor:              nr.ScrollFactor,
 				CornerRadius:              nr.CornerRadius,
@@ -893,7 +899,8 @@ var niriConfigNext = func() bool {
 
 func usesNiriNextSyntax(rule windowrules.WindowRule) bool {
 	a := rule.Actions
-	return (a.VrrFullscreenOnly != nil && *a.VrrFullscreenOnly) || a.OnXdgActivate != "" || a.PinchSensitivity != nil
+	return (a.VrrFullscreenOnly != nil && *a.VrrFullscreenOnly) || a.OnXdgActivate != "" || a.PinchSensitivity != nil ||
+		len(a.OpenOnOutput) > 1 || (a.BlockOutFrom != "" && a.BlockOutKind != "")
 }
 
 func formatNiriMatchLine(keyword string, m windowrules.MatchCriteria) (string, bool) {
@@ -974,8 +981,12 @@ func (p *NiriWritableProvider) formatRule(rule windowrules.WindowRule, next bool
 	if next && slices.Contains(niriXdgActivateValues, a.OnXdgActivate) {
 		lines = append(lines, fmt.Sprintf("    on-xdg-activate %q", a.OnXdgActivate))
 	}
-	if a.OpenOnOutput != "" {
-		lines = append(lines, fmt.Sprintf("    open-on-output %q", a.OpenOnOutput))
+	outputs := slices.DeleteFunc(slices.Clone(a.OpenOnOutput), func(o string) bool { return o == "" })
+	if !next && len(outputs) > 1 {
+		outputs = outputs[:1]
+	}
+	for _, output := range outputs {
+		lines = append(lines, fmt.Sprintf("    open-on-output %q", output))
 	}
 	if a.OpenOnWorkspace != "" {
 		lines = append(lines, fmt.Sprintf("    open-on-workspace %q", a.OpenOnWorkspace))
@@ -993,7 +1004,11 @@ func (p *NiriWritableProvider) formatRule(rule windowrules.WindowRule, next bool
 		lines = append(lines, "    variable-refresh-rate true")
 	}
 	if a.BlockOutFrom != "" {
-		lines = append(lines, fmt.Sprintf("    block-out-from %q", a.BlockOutFrom))
+		line := fmt.Sprintf("    block-out-from %q", a.BlockOutFrom)
+		if next && a.BlockOutKind != "" {
+			line += fmt.Sprintf(" kind=%q", a.BlockOutKind)
+		}
+		lines = append(lines, line)
 	}
 	if a.DefaultColumnDisplay != "" {
 		lines = append(lines, fmt.Sprintf("    default-column-display %q", a.DefaultColumnDisplay))

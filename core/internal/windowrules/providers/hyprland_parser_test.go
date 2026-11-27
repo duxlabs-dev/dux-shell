@@ -562,7 +562,7 @@ func TestHyprlandLuaRoundTripCatalogKeys(t *testing.T) {
 			tt.match.AppID = "^app$"
 			rule.MatchCriteria = tt.match
 			rule.Actions = tt.act
-			if tt.act == (windowrules.Actions{}) {
+			if reflect.DeepEqual(tt.act, windowrules.Actions{}) {
 				rule.Actions.OpenFloating = new(true)
 			}
 			if err := provider.SetRule(rule); err != nil {

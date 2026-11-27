@@ -22,7 +22,7 @@ Rectangle {
                 return SettingsData.displayShowDisconnected;
             if (CompositorService.isHyprland && DisplayConfigState.getHyprlandSetting(od, k, "disabled", false))
                 return false;
-            if (CompositorService.isNiri && DisplayConfigState.getNiriSetting(od, k, "disabled", false))
+            if (CompositorService.isNiri && (DisplayConfigState.getNiriSetting(od, k, "disabled", false) || DisplayConfigState.isNiriOutputLeased(od, k)))
                 return false;
             return true;
         });

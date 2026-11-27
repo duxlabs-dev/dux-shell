@@ -1,6 +1,10 @@
 package windowrules
 
-import "github.com/duxlabs-dev/dux-shell/core/internal/configfrag"
+import (
+	"encoding/json"
+
+	"github.com/duxlabs-dev/dux-shell/core/internal/configfrag"
+)
 
 type MatchCriteria struct {
 	AppID              string `json:"appId,omitempty"`
@@ -30,39 +34,40 @@ type MatchCriteria struct {
 }
 
 type Actions struct {
-	Opacity              *float64 `json:"opacity,omitempty"`
-	OpenFloating         *bool    `json:"openFloating,omitempty"`
-	OpenMaximized        *bool    `json:"openMaximized,omitempty"`
-	OpenMaximizedToEdges *bool    `json:"openMaximizedToEdges,omitempty"`
-	OpenFullscreen       *bool    `json:"openFullscreen,omitempty"`
-	OpenFocused          *bool    `json:"openFocused,omitempty"`
-	OpenOnOutput         string   `json:"openOnOutput,omitempty"`
-	OpenOnWorkspace      string   `json:"openOnWorkspace,omitempty"`
-	DefaultColumnWidth   string   `json:"defaultColumnWidth,omitempty"`
-	DefaultWindowHeight  string   `json:"defaultWindowHeight,omitempty"`
-	VariableRefreshRate  *bool    `json:"variableRefreshRate,omitempty"`
-	VrrFullscreenOnly    *bool    `json:"vrrFullscreenOnly,omitempty"`
-	OnXdgActivate        string   `json:"onXdgActivate,omitempty"`
-	PinchSensitivity     *float64 `json:"pinchSensitivity,omitempty"`
-	BlockOutFrom         string   `json:"blockOutFrom,omitempty"`
-	DefaultColumnDisplay string   `json:"defaultColumnDisplay,omitempty"`
-	ScrollFactor         *float64 `json:"scrollFactor,omitempty"`
-	CornerRadius         *int     `json:"cornerRadius,omitempty"`
-	ClipToGeometry       *bool    `json:"clipToGeometry,omitempty"`
-	TiledState           *bool    `json:"tiledState,omitempty"`
-	MinWidth             *int     `json:"minWidth,omitempty"`
-	MaxWidth             *int     `json:"maxWidth,omitempty"`
-	MinHeight            *int     `json:"minHeight,omitempty"`
-	MaxHeight            *int     `json:"maxHeight,omitempty"`
-	BorderColor          string   `json:"borderColor,omitempty"`
-	FocusRingColor       string   `json:"focusRingColor,omitempty"`
-	FocusRingOff         *bool    `json:"focusRingOff,omitempty"`
-	BorderOff            *bool    `json:"borderOff,omitempty"`
-	DrawBorderWithBg     *bool    `json:"drawBorderWithBackground,omitempty"`
-	BackgroundBlur       *bool    `json:"backgroundBlur,omitempty"`
-	BackgroundXray       *bool    `json:"backgroundXray,omitempty"`
-	BackgroundNoise      *float64 `json:"backgroundNoise,omitempty"`
-	BackgroundSaturation *float64 `json:"backgroundSaturation,omitempty"`
+	Opacity              *float64   `json:"opacity,omitempty"`
+	OpenFloating         *bool      `json:"openFloating,omitempty"`
+	OpenMaximized        *bool      `json:"openMaximized,omitempty"`
+	OpenMaximizedToEdges *bool      `json:"openMaximizedToEdges,omitempty"`
+	OpenFullscreen       *bool      `json:"openFullscreen,omitempty"`
+	OpenFocused          *bool      `json:"openFocused,omitempty"`
+	OpenOnOutput         OutputList `json:"openOnOutput,omitempty"`
+	OpenOnWorkspace      string     `json:"openOnWorkspace,omitempty"`
+	DefaultColumnWidth   string     `json:"defaultColumnWidth,omitempty"`
+	DefaultWindowHeight  string     `json:"defaultWindowHeight,omitempty"`
+	VariableRefreshRate  *bool      `json:"variableRefreshRate,omitempty"`
+	VrrFullscreenOnly    *bool      `json:"vrrFullscreenOnly,omitempty"`
+	OnXdgActivate        string     `json:"onXdgActivate,omitempty"`
+	PinchSensitivity     *float64   `json:"pinchSensitivity,omitempty"`
+	BlockOutFrom         string     `json:"blockOutFrom,omitempty"`
+	BlockOutKind         string     `json:"blockOutKind,omitempty"`
+	DefaultColumnDisplay string     `json:"defaultColumnDisplay,omitempty"`
+	ScrollFactor         *float64   `json:"scrollFactor,omitempty"`
+	CornerRadius         *int       `json:"cornerRadius,omitempty"`
+	ClipToGeometry       *bool      `json:"clipToGeometry,omitempty"`
+	TiledState           *bool      `json:"tiledState,omitempty"`
+	MinWidth             *int       `json:"minWidth,omitempty"`
+	MaxWidth             *int       `json:"maxWidth,omitempty"`
+	MinHeight            *int       `json:"minHeight,omitempty"`
+	MaxHeight            *int       `json:"maxHeight,omitempty"`
+	BorderColor          string     `json:"borderColor,omitempty"`
+	FocusRingColor       string     `json:"focusRingColor,omitempty"`
+	FocusRingOff         *bool      `json:"focusRingOff,omitempty"`
+	BorderOff            *bool      `json:"borderOff,omitempty"`
+	DrawBorderWithBg     *bool      `json:"drawBorderWithBackground,omitempty"`
+	BackgroundBlur       *bool      `json:"backgroundBlur,omitempty"`
+	BackgroundXray       *bool      `json:"backgroundXray,omitempty"`
+	BackgroundNoise      *float64   `json:"backgroundNoise,omitempty"`
+	BackgroundSaturation *float64   `json:"backgroundSaturation,omitempty"`
 
 	DefaultFloatingX          *int   `json:"defaultFloatingX,omitempty"`
 	DefaultFloatingY          *int   `json:"defaultFloatingY,omitempty"`
@@ -97,6 +102,26 @@ type Actions struct {
 	ScrollingWidth  *float64 `json:"scrollingWidth,omitempty"`
 	Tonemap         string   `json:"tonemap,omitempty"`
 	SuppressEvent   string   `json:"suppressEvent,omitempty"`
+}
+
+// Outputs in fallback order; also accepts the single string older callers send.
+type OutputList []string
+
+func (l *OutputList) UnmarshalJSON(data []byte) error {
+	var single string
+	if err := json.Unmarshal(data, &single); err == nil {
+		*l = nil
+		if single != "" {
+			*l = OutputList{single}
+		}
+		return nil
+	}
+	var list []string
+	if err := json.Unmarshal(data, &list); err != nil {
+		return err
+	}
+	*l = list
+	return nil
 }
 
 type WindowRule struct {

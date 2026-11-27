@@ -115,12 +115,14 @@ function niriDockOverlap(windows, allWorkspaces, screenName, position, thickness
     const workspaceId = niriActiveWorkspaceId(allWorkspaces, screenName);
     if (workspaceId === null)
         return false;
+    // niri 26.04 never positions tiles; newer niri positions only tiles in view
+    const tilesPositioned = windows.some(w => !w.is_floating && w.layout?.tile_pos_in_workspace_view);
     for (const win of windows) {
         if (win.workspace_id !== workspaceId)
             continue;
         const geometry = niriWindowGeometry(win);
         if (!geometry) {
-            if (!win.is_floating)
+            if (!win.is_floating && !tilesPositioned)
                 return true;
             continue;
         }

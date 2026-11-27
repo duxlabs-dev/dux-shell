@@ -91,6 +91,7 @@ Singleton {
     readonly property var includePaths: ConfigIncludeResolve.includePaths("binds", includeCompositor, includeMango ? MangoService.configDir : configDir, includeMango ? MangoService.configName : "")
     readonly property string dmsBindsPath: includePaths?.fragmentFiles[0] ?? ""
     readonly property string mainConfigPath: includePaths?.configFile ?? ""
+    readonly property bool configNext: currentProvider === "niri" && NiriService.configNextSupported
     readonly property bool readOnly: currentProvider === "hyprland" && CompositorService.isHyprland && !HyprlandService.luaConfigActive
     readonly property var actionTypes: Actions.getActionTypes()
     readonly property var dmsActions: getDmsActions()
@@ -702,7 +703,7 @@ Singleton {
     }
 
     function isKnownCompositorAction(action) {
-        return Actions.isKnownCompositorAction(currentProvider, action);
+        return Actions.isKnownCompositorAction(currentProvider, action, configNext);
     }
 
     function getCompositorCategories() {
@@ -710,7 +711,7 @@ Singleton {
     }
 
     function getCompositorActions(category) {
-        return Actions.getCompositorActions(currentProvider, category);
+        return Actions.getCompositorActions(currentProvider, category, configNext);
     }
 
     function getDmsActions() {

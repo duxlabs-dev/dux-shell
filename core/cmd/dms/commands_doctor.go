@@ -28,6 +28,7 @@ import (
 	"github.com/duxlabs-dev/dux-shell/core/internal/mangoconf"
 	"github.com/duxlabs-dev/dux-shell/core/internal/matugen"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/brightness"
+	"github.com/duxlabs-dev/dux-shell/core/internal/server/globalshortcuts"
 	"github.com/duxlabs-dev/dux-shell/core/internal/server/network"
 	"github.com/duxlabs-dev/dux-shell/core/internal/site"
 	"github.com/duxlabs-dev/dux-shell/core/internal/tui"
@@ -232,6 +233,7 @@ func runDoctor(cmd *cobra.Command, args []string) {
 		checkConfigurationFiles(),
 		checkSystemdServices(),
 		checkSettingsPortal(),
+		checkNiriGlobalShortcuts(),
 		checkEnvironmentVars(),
 		checkFonts(),
 	)
@@ -1937,6 +1939,65 @@ func checkSettingsPortal() []checkResult {
 	}
 	hint := "Apps cannot follow light/dark mode. The portal is D-Bus activated and needs graphical-session.target; without systemd, or a compositor that never starts that target (Mango before 0.17.1), exec the portal backend and xdg-desktop-portal at session start."
 	return []checkResult{{catServices, "xdg-desktop-portal", statusWarn, "Settings portal unreachable", hint, doctorDocsURL + "#services"}}
+}
+
+// niri global shortcuts need xdg-desktop-portal-gnome, niri's GrabAccelerators and a GlobalShortcutsProvider.
+func checkNiriGlobalShortcuts() []checkResult {
+	if os.Getenv("NIRI_SOCKET") == "" {
+		return nil
+	}
+	conn, err := dbus.SessionBus()
+	if err != nil {
+		return nil
+	}
+	const name, provider = "Global shortcuts", "org.gnome.Settings.GlobalShortcutsProvider"
+	url := doctorDocsURL + "#services"
+	warn := func(message, hint string) []checkResult {
+		return []checkResult{{catServices, name, statusWarn, message, hint, url}}
+	}
+
+	var activatable []string
+	_ = conn.BusObject().Call("org.freedesktop.DBus.ListActivatableNames", 0).Store(&activatable)
+	hasName := func(bus string) bool {
+		var owned bool
+		_ = conn.BusObject().Call("org.freedesktop.DBus.NameHasOwner", 0, bus).Store(&owned)
+		return owned || slices.Contains(activatable, bus)
+	}
+
+	if !hasName("org.freedesktop.impl.portal.desktop.gnome") {
+		return warn("xdg-desktop-portal-gnome not found", "Apps cannot register global shortcuts. Install xdg-desktop-portal-gnome; niri routes the GlobalShortcuts portal to it.")
+	}
+	if !globalshortcuts.CompositorGrabsAccelerators(conn) {
+		return warn("niri lacks GrabAccelerators", "Apps cannot register global shortcuts. Update niri past 26.04, which does not implement the org.gnome.Shell accelerator methods the portal needs.")
+	}
+
+	switch owner := sessionNameOwner(conn, provider); {
+	case owner == "dms":
+		return []checkResult{{catServices, name, statusOK, "Provided by DMS", "", url}}
+	case owner != "":
+		return []checkResult{{catServices, name, statusInfo, "Provided by " + owner, "gnome-control-center exits when idle; a running DMS shell then takes over shortcut prompts.", url}}
+	case slices.Contains(activatable, provider):
+		return []checkResult{{catServices, name, statusInfo, "Provided by gnome-control-center", "DMS is not serving shortcut prompts; start the DMS shell to use its dialogs.", url}}
+	}
+	return warn("No shortcuts provider", "Start the DMS shell, which provides it, or install gnome-control-center.")
+}
+
+func sessionNameOwner(conn *dbus.Conn, bus string) string {
+	var pid uint32
+	if err := conn.BusObject().Call("org.freedesktop.DBus.GetConnectionUnixProcessID", 0, bus).Store(&pid); err != nil {
+		return ""
+	}
+	cmdline, err := os.ReadFile(fmt.Sprintf("/proc/%d/cmdline", pid))
+	if err != nil {
+		return ""
+	}
+	argv0, _, _ := strings.Cut(string(cmdline), "\x00")
+	return processName(argv0)
+}
+
+// comm is cut to 15 bytes, and Nix wrappers rename the binary to .<name>-wrapped.
+func processName(argv0 string) string {
+	return strings.TrimSuffix(strings.TrimPrefix(filepath.Base(argv0), "."), "-wrapped")
 }
 
 type serviceState struct {

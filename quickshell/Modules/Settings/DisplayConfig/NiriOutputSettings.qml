@@ -13,6 +13,10 @@ SettingsCard {
         void (DisplayConfigState.pendingNiriChanges);
         return DisplayConfigState.getNiriSetting(root.outputData, root.outputName, "disabled", false);
     }
+    readonly property bool leaseRequested: {
+        void (DisplayConfigState.pendingNiriChanges);
+        return DisplayConfigState.getNiriSetting(root.outputData, root.outputName, "drmLease", false);
+    }
     readonly property var hotCornersData: {
         void (DisplayConfigState.pendingNiriChanges);
         return DisplayConfigState.getNiriSetting(root.outputData, root.outputName, "hotCorners", null);
@@ -24,7 +28,7 @@ SettingsCard {
 
     SettingsToggleRow {
         text: I18n.tr("Disable output")
-        enabled: checked || DisplayConfigState.canDisableOutput()
+        enabled: checked || (!root.leaseRequested && DisplayConfigState.canDisableOutput())
         description: (!checked && !DisplayConfigState.canDisableOutput()) ? (Object.keys(DisplayConfigState.outputs).length <= 1 ? I18n.tr("Cannot disable the only output") : I18n.tr("At least one output must remain enabled")) : ""
         checked: root.isDisabled
         onToggled: checked => DisplayConfigState.setNiriSetting(root.outputData, root.outputName, "disabled", checked)
@@ -35,6 +39,15 @@ SettingsCard {
         enabled: !root.isDisabled
         checked: DisplayConfigState.getNiriSetting(root.outputData, root.outputName, "focusAtStartup", false)
         onToggled: checked => DisplayConfigState.setNiriSetting(root.outputData, root.outputName, "focusAtStartup", checked)
+    }
+
+    SettingsToggleRow {
+        visible: NiriService.configNextSupported || checked
+        enabled: checked || (!root.isDisabled && DisplayConfigState.canDisableOutput())
+        text: I18n.tr("VR headset (DRM lease)", "niri output toggle, offer the connector for DRM leasing")
+        description: I18n.tr("Offers this monitor to VR apps instead of using it as a desktop display. Only needed when the headset isn't detected automatically.")
+        checked: root.leaseRequested
+        onToggled: checked => DisplayConfigState.setNiriSetting(root.outputData, root.outputName, "drmLease", checked)
     }
 
     SettingsDropdownRow {

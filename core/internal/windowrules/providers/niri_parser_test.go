@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -278,6 +279,14 @@ window-rule {
     pinch-sensitivity 0.5
 }
 
+// @id=vault @name=Vault
+window-rule {
+    match app-id="^keepassxc$"
+    open-on-output "DP-1"
+    open-on-output "DP-2"
+    block-out-from "screen-capture" kind="hide"
+}
+
 // @id=firefox @name=Firefox
 window-rule {
     match app-id="^firefox$"
@@ -293,11 +302,12 @@ window-rule {
 		{
 			name:    "capable niri keeps them",
 			capable: true,
-			wantKDL: []string{`variable-refresh-rate "fullscreen-only"`, `on-xdg-activate "set-urgent"`, "pinch-sensitivity 0.5"},
+			wantKDL: []string{`variable-refresh-rate "fullscreen-only"`, `on-xdg-activate "set-urgent"`, "pinch-sensitivity 0.5", "open-on-output \"DP-1\"\n    open-on-output \"DP-2\"", `block-out-from "screen-capture" kind="hide"`},
 		},
 		{
 			name:     "niri 26.04 drops them",
-			wantGone: []string{"variable-refresh-rate", "on-xdg-activate", "pinch-sensitivity"},
+			wantKDL:  []string{`open-on-output "DP-1"`, `block-out-from "screen-capture"`},
+			wantGone: []string{"variable-refresh-rate", "on-xdg-activate", "pinch-sensitivity", `open-on-output "DP-2"`, "kind="},
 		},
 	}
 	for _, tt := range tests {
@@ -326,6 +336,9 @@ window-rule {
 			}
 			if pip.OnXdgActivate != "set-urgent" || pip.PinchSensitivity == nil || *pip.PinchSensitivity != 0.5 {
 				t.Errorf("onXdgActivate=%q pinchSensitivity=%v", pip.OnXdgActivate, pip.PinchSensitivity)
+			}
+			if vault := rules[2].Actions; !slices.Equal(vault.OpenOnOutput, []string{"DP-1", "DP-2"}) || vault.BlockOutKind != "hide" {
+				t.Errorf("openOnOutput=%q blockOutKind=%q", vault.OpenOnOutput, vault.BlockOutKind)
 			}
 
 			edited := newTestWindowRule("firefox", "Firefox", "^firefox$")

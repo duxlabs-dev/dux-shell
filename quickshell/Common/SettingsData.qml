@@ -216,6 +216,7 @@ Singleton {
     property int niriLayoutGapsOverride: Spec.SPEC.niriLayoutGapsOverride.def
     property int niriLayoutRadiusOverride: Spec.SPEC.niriLayoutRadiusOverride.def
     property int niriLayoutBorderSize: Spec.SPEC.niriLayoutBorderSize.def
+    property bool niriLayoutTransparentBackdrop: Spec.SPEC.niriLayoutTransparentBackdrop.def
     property string compositorAnimationPreset: Spec.SPEC.compositorAnimationPreset.def
     property real compositorAnimationSlowdown: Spec.SPEC.compositorAnimationSlowdown.def
     property var compositorAnimationOverrides: Spec.SPEC.compositorAnimationOverrides.def
@@ -273,6 +274,10 @@ Singleton {
     property int mangoLayoutRadiusOverride: Spec.SPEC.mangoLayoutRadiusOverride.def
     property int mangoLayoutBorderSize: Spec.SPEC.mangoLayoutBorderSize.def
     property int focusFollowsMouse: Spec.SPEC.focusFollowsMouse.def
+    property bool niriFocusFollowsMouseOutputsOnly: Spec.SPEC.niriFocusFollowsMouseOutputsOnly.def
+    property bool niriTabletMapToFocusedWindow: Spec.SPEC.niriTabletMapToFocusedWindow.def
+    property string niriTabletMapToOutput: Spec.SPEC.niriTabletMapToOutput.def
+    property bool niriTabletLeftHanded: Spec.SPEC.niriTabletLeftHanded.def
     property bool hyprlandSwallowFocusClick: Spec.SPEC.hyprlandSwallowFocusClick.def
     property bool hyprlandTabletEnabled: Spec.SPEC.hyprlandTabletEnabled.def
     property string mouseAccelProfile: Spec.SPEC.mouseAccelProfile.def
@@ -972,6 +977,7 @@ Singleton {
     property var notificationRules: Spec.SPEC.notificationRules.def
     property bool notificationDndAllowCritical: Spec.SPEC.notificationDndAllowCritical.def
     property bool notificationDndWhileScreenSharing: Spec.SPEC.notificationDndWhileScreenSharing.def
+    property bool notificationHideFromScreenShare: Spec.SPEC.notificationHideFromScreenShare.def
     property bool notificationFocusedMonitor: Spec.SPEC.notificationFocusedMonitor.def
     readonly property var islandBarConfigs: {
         barConfigs;

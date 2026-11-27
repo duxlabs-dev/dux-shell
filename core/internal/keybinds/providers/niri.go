@@ -158,7 +158,7 @@ func (n *NiriProvider) categorizeByAction(action string) string {
 }
 
 func (n *NiriProvider) convertKeybind(kb *NiriKeyBinding, subcategory string, conflicts map[string]*NiriKeyBinding) keybinds.Keybind {
-	rawAction := n.formatRawAction(kb.Action, kb.Args)
+	rawAction := n.formatRawAction(kb.Action, kb.Args, kb.QuotedArgs)
 	keyStr := n.formatKey(kb)
 
 	source := "config"
@@ -182,7 +182,7 @@ func (n *NiriProvider) convertKeybind(kb *NiriKeyBinding, subcategory string, co
 	}
 	// Sent back verbatim as --release-action, so argument boundaries must survive.
 	if kb.ReleaseAction != "" {
-		bind.ReleaseAction = formatNiriAction(kb.ReleaseAction, kb.ReleaseArgs)
+		bind.ReleaseAction = formatNiriAction(kb.ReleaseAction, kb.ReleaseArgs, kb.ReleaseQuotedArgs)
 	}
 
 	if source == "dms-default" && conflicts != nil {
@@ -190,7 +190,7 @@ func (n *NiriProvider) convertKeybind(kb *NiriKeyBinding, subcategory string, co
 			bind.Conflict = &keybinds.Keybind{
 				Key:         keyStr,
 				Description: conflictKb.Description,
-				Action:      n.formatRawAction(conflictKb.Action, conflictKb.Args),
+				Action:      n.formatRawAction(conflictKb.Action, conflictKb.Args, conflictKb.QuotedArgs),
 				Source:      "config",
 			}
 		}
@@ -200,12 +200,12 @@ func (n *NiriProvider) convertKeybind(kb *NiriKeyBinding, subcategory string, co
 }
 
 // Sent back verbatim to SetBind, so argument boundaries must survive.
-func (n *NiriProvider) formatRawAction(action string, args []string) string {
+func (n *NiriProvider) formatRawAction(action string, args []string, quoted []bool) string {
 	// The shell field rebuilds this quoted, so a bare one-word command would read as edited.
 	if action == "spawn" && len(args) == 3 && args[1] == "-c" && (args[0] == "sh" || args[0] == "bash") {
 		return "spawn " + args[0] + ` -c "` + niriActionArgEscaper.Replace(args[2]) + `"`
 	}
-	return formatNiriAction(action, args)
+	return formatNiriAction(action, args, quoted)
 }
 
 func (n *NiriProvider) formatKey(kb *NiriKeyBinding) string {
@@ -428,7 +428,7 @@ func (n *NiriProvider) loadOverrideBinds() (map[string]*overrideBind, error) {
 			}
 			action := n.buildActionFromNode(pressNode)
 			if action == "" {
-				action = n.formatRawAction(kb.Action, kb.Args)
+				action = n.formatRawAction(kb.Action, kb.Args, kb.QuotedArgs)
 			}
 
 			binds[normalizeNiriBindKey(keyStr)] = &overrideBind{
@@ -448,17 +448,21 @@ func (n *NiriProvider) buildActionFromNode(actionNode *document.Node) string {
 		return ""
 	}
 
-	actionName, args := niriActionNameArgs(actionNode)
+	actionName, args, quoted := niriActionNameArgs(actionNode)
 	if actionName == "" {
 		return ""
 	}
-	return formatNiriAction(actionName, args)
+	return formatNiriAction(actionName, args, quoted)
 }
 
 // Inverse of parseActionParts: positional args are quoted so they split back exactly.
-func formatNiriAction(action string, args []string) string {
+func formatNiriAction(action string, args []string, quoted []bool) string {
 	parts := []string{action}
-	for _, arg := range args {
+	for i, arg := range args {
+		if i < len(quoted) && quoted[i] {
+			parts = append(parts, `"`+arg+`"`)
+			continue
+		}
 		if name, _, ok := strings.Cut(arg, "="); ok {
 			if _, isProp := niriActionProperties[name]; isProp {
 				parts = append(parts, arg)
@@ -604,11 +608,17 @@ func (n *NiriProvider) buildActionNode(action string) *document.Node {
 			case "false":
 				node.AddProperty(kv[0], false, "")
 			default:
+				if num, err := strconv.Atoi(kv[1]); err == nil {
+					node.AddProperty(kv[0], num, "")
+					break
+				}
 				node.AddProperty(kv[0], kv[1], "")
 			}
 			continue
 		}
-		node.AddArgument(arg.value, "")
+		if v := node.AddArgument(arg.value, ""); arg.quoted {
+			v.Flag = document.FlagQuoted
+		}
 	}
 	return node
 }
@@ -770,16 +780,32 @@ func (n *NiriProvider) writeBindNode(sb *strings.Builder, bind *overrideBind, in
 	sb.WriteString(indent + "}\n")
 }
 
+// The only niri actions with integer positional args; niri rejects a bare number anywhere else.
+var niriIntArgActions = map[string]struct{}{
+	"change-vt":                          {},
+	"focus-window-in-column":             {},
+	"focus-column":                       {},
+	"move-column-to-index":               {},
+	"move-workspace-to-index":            {},
+	"focus-workspace":                    {},
+	"move-window-to-workspace":           {},
+	"move-column-to-workspace":           {},
+	"move-window-to-new-workspace-below": {},
+	"move-window-to-new-workspace-above": {},
+	"move-column-to-new-workspace-below": {},
+	"move-column-to-new-workspace-above": {},
+}
+
 func (n *NiriProvider) writeActionNode(sb *strings.Builder, actionNode *document.Node) {
 	if actionNode == nil {
 		return
 	}
 	actionName := actionNode.Name.String()
 	sb.WriteString(actionName)
-	forceQuote := actionName == "spawn"
+	_, intArgs := niriIntArgActions[actionName]
 	for _, arg := range actionNode.Arguments {
 		sb.WriteString(" ")
-		n.writeArg(sb, arg.ValueString(), forceQuote)
+		n.writeArg(sb, arg.ValueString(), !intArgs || arg.Flag == document.FlagQuoted)
 	}
 	if actionNode.Properties.Exist() {
 		sb.WriteString(" ")
@@ -788,7 +814,7 @@ func (n *NiriProvider) writeActionNode(sb *strings.Builder, actionNode *document
 }
 
 func (n *NiriProvider) writeArg(sb *strings.Builder, val string, forceQuote bool) {
-	if !forceQuote && n.isNumericArg(val) {
+	if !forceQuote && isNumericArg(val) {
 		sb.WriteString(val)
 		return
 	}
@@ -797,7 +823,7 @@ func (n *NiriProvider) writeArg(sb *strings.Builder, val string, forceQuote bool
 	sb.WriteString("\"")
 }
 
-func (n *NiriProvider) isNumericArg(val string) bool {
+func isNumericArg(val string) bool {
 	if val == "" {
 		return false
 	}

@@ -1531,6 +1531,38 @@
     "conditionKey": "isHyprlandOrNiri"
   },
   {
+    "section": "notificationHideFromScreenShare",
+    "label": "Hide popups from screen shares",
+    "tabIndex": -1,
+    "category": "Notifications",
+    "keywords": [
+      "alert",
+      "alerts",
+      "hide",
+      "left",
+      "messages",
+      "notif",
+      "notification",
+      "notifications",
+      "notifs",
+      "popup",
+      "popups",
+      "privacy",
+      "recording",
+      "recordings",
+      "screen",
+      "screencast",
+      "screenshare",
+      "shares",
+      "sharing",
+      "stay",
+      "toast"
+    ],
+    "page": "notifications",
+    "description": "Popups stay on your screen but are left out of screen shares and recordings",
+    "conditionKey": "isNiri"
+  },
+  {
     "section": "wallpaperHideMismatched",
     "label": "Hide wallpapers that don't fit the display",
     "tabIndex": -1,
@@ -15979,6 +16011,29 @@
     "conditionKey": "layoutCapable"
   },
   {
+    "section": "niriLayoutTransparentBackdrop",
+    "label": "Transparent fullscreen backdrop",
+    "tabIndex": 37,
+    "category": "System & integrations",
+    "keywords": [
+      "backdrop",
+      "background",
+      "behind",
+      "fullscreen",
+      "integrations",
+      "niri",
+      "semi",
+      "show",
+      "system",
+      "transparency",
+      "transparent",
+      "what",
+      "windows"
+    ],
+    "description": "Semi-transparent fullscreen windows show what is behind them",
+    "conditionKey": "isNiri"
+  },
+  {
     "section": "hyprlandEffects",
     "label": "Visual effects",
     "tabIndex": 37,
@@ -17204,6 +17259,68 @@
     "conditionKey": "pointerCapable"
   },
   {
+    "section": "niriTabletLeftHanded",
+    "label": "Left-handed",
+    "tabIndex": 44,
+    "category": "Mouse & touchpad",
+    "keywords": [
+      "drawing",
+      "handed",
+      "input",
+      "left",
+      "mouse",
+      "pen",
+      "rotate",
+      "stylus",
+      "tablet",
+      "touchpad"
+    ],
+    "parentLabel": "Input",
+    "conditionKey": "isNiri"
+  },
+  {
+    "section": "niriTabletMapToFocusedWindow",
+    "label": "Map to focused window",
+    "tabIndex": 44,
+    "category": "Mouse & touchpad",
+    "keywords": [
+      "drawing",
+      "focus",
+      "focused",
+      "input",
+      "map",
+      "mouse",
+      "pen",
+      "stylus",
+      "tablet",
+      "touchpad",
+      "window"
+    ],
+    "parentLabel": "Input",
+    "conditionKey": "isNiri"
+  },
+  {
+    "section": "niriTabletMapToOutput",
+    "label": "Map to output",
+    "tabIndex": 44,
+    "category": "Mouse & touchpad",
+    "keywords": [
+      "display",
+      "drawing",
+      "input",
+      "map",
+      "monitor",
+      "mouse",
+      "output",
+      "pen",
+      "stylus",
+      "tablet",
+      "touchpad"
+    ],
+    "parentLabel": "Input",
+    "conditionKey": "isNiri"
+  },
+  {
     "section": "mouseMiddleEmulation",
     "label": "Middle click emulation",
     "tabIndex": 44,
@@ -17234,6 +17351,30 @@
     ],
     "parentLabel": "Input",
     "conditionKey": "pointerCapable"
+  },
+  {
+    "section": "niriFocusFollowsMouseOutputsOnly",
+    "label": "Monitors only",
+    "tabIndex": 44,
+    "category": "Mouse & touchpad",
+    "keywords": [
+      "between",
+      "display",
+      "focus",
+      "follow",
+      "input",
+      "monitor",
+      "monitors",
+      "mouse",
+      "moves",
+      "output",
+      "pointer",
+      "touchpad",
+      "windows"
+    ],
+    "parentLabel": "Input",
+    "description": "Focus moves between monitors, not between windows",
+    "conditionKey": "isNiri"
   },
   {
     "section": "mouseSettings",
@@ -17455,7 +17596,7 @@
     ],
     "parentLabel": "Input",
     "icon": "stylus",
-    "conditionKey": "isHyprland"
+    "conditionKey": "isHyprlandOrNiri"
   },
   {
     "section": "hyprlandTabletEnabled",
@@ -17474,7 +17615,7 @@
       "touchpad"
     ],
     "parentLabel": "Input",
-    "conditionKey": "pointerCapable"
+    "conditionKey": "isHyprland"
   },
   {
     "section": "touchpadTapAndDrag",

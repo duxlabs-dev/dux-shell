@@ -45,7 +45,7 @@ func StartGnomeProvider(manager *Manager) (*GnomeProvider, error) {
 		return nil, fmt.Errorf("connect to session bus: %w", err)
 	}
 
-	if !compositorGrabsAccelerators(conn) {
+	if !CompositorGrabsAccelerators(conn) {
 		return nil, ErrNoGrabSupport
 	}
 
@@ -76,7 +76,7 @@ func StartGnomeProvider(manager *Manager) (*GnomeProvider, error) {
 }
 
 // niri 26.04 owns org.gnome.Shell without the accelerator methods the portal backend calls.
-func compositorGrabsAccelerators(conn *dbus.Conn) bool {
+func CompositorGrabsAccelerators(conn *dbus.Conn) bool {
 	node, err := introspect.Call(conn.Object(gnomeShellName, gnomeShellPath))
 	if err != nil {
 		return false

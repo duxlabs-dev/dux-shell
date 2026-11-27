@@ -154,6 +154,10 @@ var LOCAL_SPEC = {
         def: -1,
         onChange: "updateCompositorLayout"
     },
+    niriLayoutTransparentBackdrop: {
+        def: false,
+        onChange: "updateCompositorLayout"
+    },
     compositorAnimationPreset: {
         def: "dms",
         onChange: "updateCompositorAnimations"
@@ -381,6 +385,22 @@ var LOCAL_SPEC = {
     },
     focusFollowsMouse: {
         def: -1,
+        onChange: "updateCompositorInput"
+    },
+    niriFocusFollowsMouseOutputsOnly: {
+        def: false,
+        onChange: "updateCompositorInput"
+    },
+    niriTabletMapToFocusedWindow: {
+        def: false,
+        onChange: "updateCompositorInput"
+    },
+    niriTabletMapToOutput: {
+        def: "",
+        onChange: "updateCompositorInput"
+    },
+    niriTabletLeftHanded: {
+        def: false,
         onChange: "updateCompositorInput"
     },
     hyprlandSwallowFocusClick: {
@@ -1616,6 +1636,10 @@ var LOCAL_SPEC = {
     },
     notificationDndWhileScreenSharing: {
         def: true
+    },
+    notificationHideFromScreenShare: {
+        def: true,
+        onChange: "updateCompositorLayout"
     },
     notificationFocusedMonitor: {
         def: false

@@ -78,6 +78,9 @@ binds {
     XF86AudioNext allow-when-locked=true {
         spawn "dms" "ipc" "call" "mpris" "next";
     }
+    XF86AudioStop allow-when-locked=true {
+        spawn "dms" "ipc" "call" "mpris" "stop";
+    }
     Ctrl+XF86AudioRaiseVolume allow-when-locked=true {
         spawn "dms" "ipc" "call" "mpris" "increment" "3";
     }
@@ -159,6 +162,16 @@ binds {
     Mod+Shift+Ctrl+J     { move-column-to-monitor-down; }
     Mod+Shift+Ctrl+K     { move-column-to-monitor-up; }
     Mod+Shift+Ctrl+L     { move-column-to-monitor-right; }
+
+    // === Move Workspace to Monitor ===
+    Mod+Shift+Alt+Left  { move-workspace-to-monitor-left; }
+    Mod+Shift+Alt+Down  { move-workspace-to-monitor-down; }
+    Mod+Shift+Alt+Up    { move-workspace-to-monitor-up; }
+    Mod+Shift+Alt+Right { move-workspace-to-monitor-right; }
+    Mod+Shift+Alt+H     { move-workspace-to-monitor-left; }
+    Mod+Shift+Alt+J     { move-workspace-to-monitor-down; }
+    Mod+Shift+Alt+K     { move-workspace-to-monitor-up; }
+    Mod+Shift+Alt+L     { move-workspace-to-monitor-right; }
 
     // === Workspace Navigation ===
     Mod+Page_Down      { focus-workspace-down; }
@@ -245,6 +258,11 @@ binds {
     Print hotkey-overlay-title="Screenshot: Region" { spawn "dms" "screenshot"; }
     Ctrl+Print hotkey-overlay-title="Screenshot: Full Screen" { spawn "dms" "screenshot" "full"; }
     Alt+Print hotkey-overlay-title="Screenshot: Window" { spawn "dms" "screenshot" "window"; }
+    // === Screencast Target ===
+    Mod+Alt+M { set-dynamic-cast-monitor; }
+    Mod+Alt+W { set-dynamic-cast-window; }
+    Mod+Alt+C { clear-dynamic-cast-target; }
+
     // === Display Profiles ===
     Mod+P hotkey-overlay-title="Cycle Display Profile" {
         spawn "dms" "ipc" "outputs" "cycleProfile";

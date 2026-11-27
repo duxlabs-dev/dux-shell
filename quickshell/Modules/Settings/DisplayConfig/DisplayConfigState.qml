@@ -871,6 +871,7 @@ Singleton {
                 syncNiriVrrFromConfig(parsed);
                 syncNiriDisabledFromConfig(parsed);
                 syncNiriMaxBpcFromConfig(parsed);
+                syncNiriDrmLeaseFromConfig(parsed);
             }
         });
     }
@@ -924,6 +925,15 @@ Singleton {
             if ((SessionData.getNiriOutputSetting(outputName, "maxBpc", undefined) ?? undefined) === fromConfig)
                 continue;
             SessionData.setNiriOutputSetting(outputName, "maxBpc", fromConfig);
+        }
+    }
+
+    function syncNiriDrmLeaseFromConfig(parsedOutputs) {
+        for (const outputName in parsedOutputs) {
+            const fromConfig = parsedOutputs[outputName].drm_lease ?? false;
+            if (SessionData.getNiriOutputSetting(outputName, "drmLease", false) === fromConfig)
+                continue;
+            SessionData.setNiriOutputSetting(outputName, "drmLease", fromConfig || undefined);
         }
     }
 
@@ -1296,6 +1306,11 @@ Singleton {
         return SessionData.getNiriOutputSetting(identifier, key, defaultValue);
     }
 
+    // niri 26.04 never gets drm-lease written, so the output stays a normal display
+    function isNiriOutputLeased(output, outputName) {
+        return NiriService.configNextSupported && getNiriSetting(output, outputName, "drmLease", false);
+    }
+
     function setNiriSetting(output, outputName, key, value) {
         if (!CompositorService.isNiri)
             return;
@@ -1417,6 +1432,17 @@ Singleton {
         return pending !== undefined ? pending : originalValue;
     }
 
+    // niri keeps non-desktop heads (VR headsets) off on its own; only a head DMS turned off comes back when re-enabled
+    function niriOutputShowsDesktop(name) {
+        const output = outputs[name];
+        if (getNiriSetting(output, name, "disabled", false) || isNiriOutputLeased(output, name))
+            return false;
+        if (output.enabled !== false)
+            return true;
+        const id = getNiriOutputIdentifier(output, name);
+        return SessionData.getNiriOutputSetting(id, "disabled", false) || (NiriService.configNextSupported && SessionData.getNiriOutputSetting(id, "drmLease", false));
+    }
+
     // Prevents disabling all outputs and prevents disabling the only output
     // in a single-display configuration.
     function canDisableOutput() {
@@ -1429,7 +1455,7 @@ Singleton {
         for (const name in outputs) {
             let disabled = false;
             if (CompositorService.isNiri)
-                disabled = getNiriSetting(outputs[name], name, "disabled", false);
+                disabled = !niriOutputShowsDesktop(name);
             else if (CompositorService.isHyprland)
                 disabled = getHyprlandSetting(outputs[name], name, "disabled", false);
             if (!disabled)
@@ -1497,6 +1523,8 @@ Singleton {
                 changeDescriptions.push(outputId + ": " + I18n.tr("VRR On-Demand") + " → " + (changes.vrrOnDemand ? I18n.tr("Enabled") : I18n.tr("Disabled")));
             if (changes.focusAtStartup !== undefined)
                 changeDescriptions.push(outputId + ": " + I18n.tr("Focus at startup") + " → " + (changes.focusAtStartup ? I18n.tr("Yes") : I18n.tr("No")));
+            if (changes.drmLease !== undefined)
+                changeDescriptions.push(outputId + ": " + I18n.tr("VR headset (DRM lease)", "niri output toggle, offer the connector for DRM leasing") + " → " + (changes.drmLease ? I18n.tr("Yes") : I18n.tr("No")));
             if (changes.hotCorners !== undefined)
                 changeDescriptions.push(outputId + ": " + I18n.tr("Hot corners") + " → " + I18n.tr("Modified"));
             if (changes.layout !== undefined)
@@ -1763,7 +1791,7 @@ Singleton {
         if (CompositorService.isHyprland)
             return getHyprlandSetting(outputs[outputName], outputName, "disabled", false);
         if (CompositorService.isNiri)
-            return getNiriSetting(outputs[outputName], outputName, "disabled", false);
+            return getNiriSetting(outputs[outputName], outputName, "disabled", false) || isNiriOutputLeased(outputs[outputName], outputName);
         return false;
     }
 

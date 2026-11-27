@@ -28,7 +28,11 @@ Column {
             return DisplayConfigState.getNiriSetting(root.outputData, root.outputName, "disabled", false);
         return false;
     }
-    readonly property bool isActive: isConnected && !isDisabled
+    readonly property bool isLeased: {
+        void (DisplayConfigState.pendingNiriChanges);
+        return root.isConnected && DisplayConfigState.isNiriOutputLeased(root.outputData, root.outputName);
+    }
+    readonly property bool isActive: isConnected && !isDisabled && !isLeased
     readonly property bool vrrSupported: DisplayConfigState.outputs[outputName]?.vrr_supported ?? false
     readonly property bool hasColorControls: isActive && ICCService.outputNames.indexOf(outputName) !== -1
     readonly property int neutralTemperature: 6500

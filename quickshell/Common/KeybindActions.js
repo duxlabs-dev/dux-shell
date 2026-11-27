@@ -695,6 +695,88 @@ const NIRI_ACTIONS = {
         {
             id: "toggle-window-rule-opacity",
             label: "Toggle Window Opacity"
+        },
+        {
+            id: "center-window",
+            label: "Center Window"
+        },
+        {
+            id: "consume-window-into-column",
+            label: "Consume into Column"
+        },
+        {
+            id: "expel-window-from-column",
+            label: "Expel from Column"
+        },
+        {
+            id: "maximize-window-to-edges",
+            label: "Maximize to Edges"
+        },
+        {
+            id: "toggle-windowed-fullscreen",
+            label: "Toggle Windowed Fullscreen"
+        },
+        {
+            id: "move-window-to-floating",
+            label: "Move to Floating"
+        },
+        {
+            id: "move-window-to-tiling",
+            label: "Move to Tiling"
+        },
+        {
+            id: "switch-preset-column-width-back",
+            label: "Cycle Column Width Back"
+        },
+        {
+            id: "switch-preset-window-width",
+            label: "Cycle Window Width"
+        },
+        {
+            id: "switch-preset-window-width-back",
+            label: "Cycle Window Width Back"
+        },
+        {
+            id: "switch-preset-window-height-back",
+            label: "Cycle Window Height Back"
+        },
+        {
+            id: "set-window-width",
+            label: "Set Window Width"
+        },
+        {
+            id: "set-column-display",
+            label: "Set Column Display"
+        },
+        {
+            id: "set-window-fullscreen",
+            label: "Set Fullscreen",
+            next: true
+        },
+        {
+            id: "unset-window-fullscreen",
+            label: "Unset Fullscreen",
+            next: true
+        },
+        {
+            id: "set-windowed-fullscreen",
+            label: "Set Windowed Fullscreen",
+            next: true
+        },
+        {
+            id: "unset-windowed-fullscreen",
+            label: "Unset Windowed Fullscreen",
+            next: true
+        },
+        {
+            id: "set-window-maximized-to-edges",
+            label: "Set Maximized to Edges",
+            next: true
+        },
+        {
+            id: "unset-window-maximized-to-edges",
+            label: "Unset Maximized to Edges",
+            next: true
         }
     ],
     "Focus": [
@@ -721,6 +803,105 @@ const NIRI_ACTIONS = {
         {
             id: "focus-column-last",
             label: "Focus Last Column"
+        },
+        {
+            id: "focus-column",
+            label: "Focus Column (by index)"
+        },
+        {
+            id: "focus-window-in-column",
+            label: "Focus Window in Column (by index)"
+        },
+        {
+            id: "focus-window-top",
+            label: "Focus Top Window"
+        },
+        {
+            id: "focus-window-bottom",
+            label: "Focus Bottom Window"
+        },
+        {
+            id: "focus-column-right-or-first",
+            label: "Focus Right or First"
+        },
+        {
+            id: "focus-column-left-or-last",
+            label: "Focus Left or Last"
+        },
+        {
+            id: "focus-window-down-or-top",
+            label: "Focus Down or Top"
+        },
+        {
+            id: "focus-window-up-or-bottom",
+            label: "Focus Up or Bottom"
+        },
+        {
+            id: "focus-window-down-or-column-left",
+            label: "Focus Down or Left"
+        },
+        {
+            id: "focus-window-down-or-column-right",
+            label: "Focus Down or Right"
+        },
+        {
+            id: "focus-window-up-or-column-left",
+            label: "Focus Up or Left"
+        },
+        {
+            id: "focus-window-up-or-column-right",
+            label: "Focus Up or Right"
+        },
+        {
+            id: "focus-column-or-monitor-left",
+            label: "Focus Left or Monitor Left"
+        },
+        {
+            id: "focus-column-or-monitor-right",
+            label: "Focus Right or Monitor Right"
+        },
+        {
+            id: "focus-window-or-monitor-down",
+            label: "Focus Down or Monitor Down"
+        },
+        {
+            id: "focus-window-or-monitor-up",
+            label: "Focus Up or Monitor Up"
+        },
+        {
+            id: "focus-window-or-workspace-down",
+            label: "Focus Down or Workspace Down"
+        },
+        {
+            id: "focus-window-or-workspace-up",
+            label: "Focus Up or Workspace Up"
+        },
+        {
+            id: "focus-floating",
+            label: "Focus Floating"
+        },
+        {
+            id: "focus-tiling",
+            label: "Focus Tiling"
+        },
+        {
+            id: "focus-window-previous",
+            label: "Focus Previous Window"
+        },
+        {
+            id: "focus-window-previous scope=\"output\"",
+            label: "Focus Previous Window (Same Monitor)",
+            next: true
+        },
+        {
+            id: "focus-window-previous scope=\"workspace\"",
+            label: "Focus Previous Window (Same Workspace)",
+            next: true
+        },
+        {
+            id: "focus-window-previous filter=\"app-id\"",
+            label: "Focus Previous Window (Same Application)",
+            next: true
         }
     ],
     "Move": [
@@ -747,6 +928,34 @@ const NIRI_ACTIONS = {
         {
             id: "move-column-to-last",
             label: "Move to Last"
+        },
+        {
+            id: "move-column-to-index",
+            label: "Move to Column (by index)"
+        },
+        {
+            id: "move-column-left-or-to-monitor-left",
+            label: "Move Left or to Monitor Left"
+        },
+        {
+            id: "move-column-right-or-to-monitor-right",
+            label: "Move Right or to Monitor Right"
+        },
+        {
+            id: "move-window-down-or-to-workspace-down",
+            label: "Move Down or to Workspace Down"
+        },
+        {
+            id: "move-window-up-or-to-workspace-up",
+            label: "Move Up or to Workspace Up"
+        },
+        {
+            id: "swap-window-left",
+            label: "Swap Left"
+        },
+        {
+            id: "swap-window-right",
+            label: "Swap Right"
         }
     ],
     "Workspace": [
@@ -785,6 +994,50 @@ const NIRI_ACTIONS = {
         {
             id: "move-workspace-up",
             label: "Move Workspace Up"
+        },
+        {
+            id: "move-window-to-workspace-down",
+            label: "Move Window to Workspace Down"
+        },
+        {
+            id: "move-window-to-workspace-up",
+            label: "Move Window to Workspace Up"
+        },
+        {
+            id: "move-window-to-workspace",
+            label: "Move Window to Workspace (by index)"
+        },
+        {
+            id: "move-workspace-to-index",
+            label: "Move Workspace to Position (by index)"
+        },
+        {
+            id: "set-workspace-name",
+            label: "Set Workspace Name"
+        },
+        {
+            id: "unset-workspace-name",
+            label: "Unset Workspace Name"
+        },
+        {
+            id: "move-column-to-new-workspace-below",
+            label: "Move to New Workspace Below",
+            next: true
+        },
+        {
+            id: "move-column-to-new-workspace-above",
+            label: "Move to New Workspace Above",
+            next: true
+        },
+        {
+            id: "move-window-to-new-workspace-below",
+            label: "Move Window to New Workspace Below",
+            next: true
+        },
+        {
+            id: "move-window-to-new-workspace-above",
+            label: "Move Window to New Workspace Above",
+            next: true
         }
     ],
     "Monitor": [
@@ -805,6 +1058,18 @@ const NIRI_ACTIONS = {
             label: "Focus Monitor Up"
         },
         {
+            id: "focus-monitor-next",
+            label: "Focus Next Monitor"
+        },
+        {
+            id: "focus-monitor-previous",
+            label: "Focus Previous Monitor"
+        },
+        {
+            id: "focus-monitor",
+            label: "Focus Monitor (by name)"
+        },
+        {
             id: "move-column-to-monitor-left",
             label: "Move Column to Monitor Left"
         },
@@ -819,6 +1084,46 @@ const NIRI_ACTIONS = {
         {
             id: "move-column-to-monitor-up",
             label: "Move Column to Monitor Up"
+        },
+        {
+            id: "move-column-to-monitor-next",
+            label: "Move Column to Next Monitor"
+        },
+        {
+            id: "move-column-to-monitor-previous",
+            label: "Move Column to Previous Monitor"
+        },
+        {
+            id: "move-column-to-monitor",
+            label: "Move Column to Monitor (by name)"
+        },
+        {
+            id: "move-window-to-monitor-left",
+            label: "Move Window to Monitor Left"
+        },
+        {
+            id: "move-window-to-monitor-right",
+            label: "Move Window to Monitor Right"
+        },
+        {
+            id: "move-window-to-monitor-down",
+            label: "Move Window to Monitor Down"
+        },
+        {
+            id: "move-window-to-monitor-up",
+            label: "Move Window to Monitor Up"
+        },
+        {
+            id: "move-window-to-monitor-next",
+            label: "Move Window to Next Monitor"
+        },
+        {
+            id: "move-window-to-monitor-previous",
+            label: "Move Window to Previous Monitor"
+        },
+        {
+            id: "move-window-to-monitor",
+            label: "Move Window to Monitor (by name)"
         },
         {
             id: "move-workspace-to-monitor-left",
@@ -843,6 +1148,10 @@ const NIRI_ACTIONS = {
         {
             id: "move-workspace-to-monitor-previous",
             label: "Move Workspace to Previous Monitor"
+        },
+        {
+            id: "move-workspace-to-monitor",
+            label: "Move Workspace to Monitor (by name)"
         }
     ],
     "Screenshot": [
@@ -857,12 +1166,32 @@ const NIRI_ACTIONS = {
         {
             id: "screenshot-window",
             label: "Screenshot Window"
+        },
+        {
+            id: "set-dynamic-cast-window",
+            label: "Cast Window"
+        },
+        {
+            id: "set-dynamic-cast-monitor",
+            label: "Cast Monitor"
+        },
+        {
+            id: "clear-dynamic-cast-target",
+            label: "Clear Cast Target"
         }
     ],
     "System": [
         {
             id: "toggle-overview",
             label: "Toggle Overview"
+        },
+        {
+            id: "open-overview",
+            label: "Open Overview"
+        },
+        {
+            id: "close-overview",
+            label: "Close Overview"
         },
         {
             id: "show-hotkey-overlay",
@@ -885,8 +1214,13 @@ const NIRI_ACTIONS = {
             label: "Toggle Shortcuts Inhibit"
         },
         {
+            id: "switch-layout",
+            label: "Switch Keyboard Layout"
+        },
+        {
             id: "toggle-touchpad",
-            label: "Toggle Touchpad"
+            label: "Toggle Touchpad",
+            next: true
         },
         {
             id: "quit",
@@ -895,6 +1229,11 @@ const NIRI_ACTIONS = {
         {
             id: "suspend",
             label: "Suspend"
+        },
+        {
+            id: "change-vt",
+            label: "Switch to VT (by index)",
+            next: true
         }
     ],
     "Alt-Tab": [
@@ -1933,6 +2272,30 @@ const COMPOSITOR_ACTIONS = {
 
 const CATEGORY_ORDER = ["DMS", "Execute", "Workspace", "Tags", "Window", "Move/Resize", "Focus", "Move", "Layout", "Groups", "Monitor", "Scratchpad", "Screenshot", "System", "Pass-through", "Overview", "Alt-Tab", "Other"];
 
+// niri 26.04 has these actions without the focus property.
+const NIRI_FOCUS_NEXT_ARGS = {
+    args: [
+        {
+            name: "focus",
+            type: "bool",
+            label: "Follow focus",
+            default: true,
+            next: true
+        }
+    ]
+};
+
+const NIRI_MONITOR_ARGS = {
+    args: [
+        {
+            name: "value",
+            type: "text",
+            label: "Monitor",
+            placeholder: "DP-1, HDMI-A-1"
+        }
+    ]
+};
+
 const NIRI_ACTION_ARGS = {
     "quit": {
         args: [
@@ -2048,6 +2411,215 @@ const NIRI_ACTION_ARGS = {
                 name: "write-to-disk",
                 type: "bool",
                 label: "Save to disk"
+            }
+        ]
+    },
+    "move-column-left": NIRI_FOCUS_NEXT_ARGS,
+    "move-column-right": NIRI_FOCUS_NEXT_ARGS,
+    "move-column-to-first": NIRI_FOCUS_NEXT_ARGS,
+    "move-column-to-last": NIRI_FOCUS_NEXT_ARGS,
+    "move-window-down": NIRI_FOCUS_NEXT_ARGS,
+    "move-window-up": NIRI_FOCUS_NEXT_ARGS,
+    "swap-window-left": NIRI_FOCUS_NEXT_ARGS,
+    "swap-window-right": NIRI_FOCUS_NEXT_ARGS,
+    "move-column-to-index": {
+        args: [
+            {
+                name: "index",
+                type: "number",
+                label: "Position",
+                placeholder: "1, 2, 3..."
+            },
+            {
+                name: "focus",
+                type: "bool",
+                label: "Follow focus",
+                default: true,
+                next: true
+            }
+        ]
+    },
+    "focus-column": {
+        args: [
+            {
+                name: "index",
+                type: "number",
+                label: "Position",
+                placeholder: "1, 2, 3..."
+            }
+        ]
+    },
+    "focus-window-in-column": {
+        args: [
+            {
+                name: "index",
+                type: "number",
+                label: "Position",
+                placeholder: "1, 2, 3..."
+            }
+        ]
+    },
+    "move-workspace-to-index": {
+        args: [
+            {
+                name: "index",
+                type: "number",
+                label: "Position",
+                placeholder: "1, 2, 3..."
+            }
+        ]
+    },
+    "move-window-to-workspace": {
+        args: [
+            {
+                name: "index",
+                type: "text",
+                label: "Workspace",
+                placeholder: "1, 2, 3..."
+            },
+            {
+                name: "focus",
+                type: "bool",
+                label: "Follow focus",
+                default: true
+            }
+        ]
+    },
+    "move-window-to-workspace-down": {
+        args: [
+            {
+                name: "focus",
+                type: "bool",
+                label: "Follow focus",
+                default: true
+            }
+        ]
+    },
+    "move-window-to-workspace-up": {
+        args: [
+            {
+                name: "focus",
+                type: "bool",
+                label: "Follow focus",
+                default: true
+            }
+        ]
+    },
+    "move-column-to-new-workspace-below": {
+        args: [
+            {
+                name: "index",
+                type: "text",
+                label: "Workspace",
+                placeholder: "1, 2, 3..."
+            },
+            {
+                name: "focus",
+                type: "bool",
+                label: "Follow focus",
+                default: true
+            }
+        ]
+    },
+    "move-column-to-new-workspace-above": {
+        args: [
+            {
+                name: "index",
+                type: "text",
+                label: "Workspace",
+                placeholder: "1, 2, 3..."
+            },
+            {
+                name: "focus",
+                type: "bool",
+                label: "Follow focus",
+                default: true
+            }
+        ]
+    },
+    "move-window-to-new-workspace-below": {
+        args: [
+            {
+                name: "index",
+                type: "text",
+                label: "Workspace",
+                placeholder: "1, 2, 3..."
+            },
+            {
+                name: "focus",
+                type: "bool",
+                label: "Follow focus",
+                default: true
+            }
+        ]
+    },
+    "move-window-to-new-workspace-above": {
+        args: [
+            {
+                name: "index",
+                type: "text",
+                label: "Workspace",
+                placeholder: "1, 2, 3..."
+            },
+            {
+                name: "focus",
+                type: "bool",
+                label: "Follow focus",
+                default: true
+            }
+        ]
+    },
+    "focus-monitor": NIRI_MONITOR_ARGS,
+    "move-window-to-monitor": NIRI_MONITOR_ARGS,
+    "move-column-to-monitor": NIRI_MONITOR_ARGS,
+    "move-workspace-to-monitor": NIRI_MONITOR_ARGS,
+    "set-dynamic-cast-monitor": NIRI_MONITOR_ARGS,
+    "set-window-width": {
+        args: [
+            {
+                name: "value",
+                type: "text",
+                label: "Width",
+                placeholder: "+10%, -10%, 50%"
+            }
+        ]
+    },
+    "set-column-display": {
+        args: [
+            {
+                name: "value",
+                type: "text",
+                label: "Display",
+                placeholder: "normal, tabbed"
+            }
+        ]
+    },
+    "set-workspace-name": {
+        args: [
+            {
+                name: "value",
+                type: "text",
+                label: "Name"
+            }
+        ]
+    },
+    "switch-layout": {
+        args: [
+            {
+                name: "value",
+                type: "text",
+                label: "Layout",
+                placeholder: "next, prev, 0"
+            }
+        ]
+    },
+    "change-vt": {
+        args: [
+            {
+                name: "index",
+                type: "number",
+                label: "Terminal",
+                placeholder: "1, 2, 3..."
             }
         ]
     }
@@ -3045,11 +3617,17 @@ function getCompositorCategories(compositor) {
     return Object.keys(actions);
 }
 
-function getCompositorActions(compositor, category) {
+// Entries marked next need niri newer than 26.04 (the niri.config-next capability).
+function getCompositorActions(compositor, category, configNext) {
     var actions = COMPOSITOR_ACTIONS[compositor];
     if (!actions)
         return [];
-    return actions[category] || [];
+    var list = actions[category] || [];
+    if (configNext)
+        return list;
+    return list.filter(function (action) {
+        return !action.next;
+    });
 }
 
 function getCategoryOrder() {
@@ -3100,14 +3678,11 @@ function getActionLabel(action, compositor) {
         if (compAct)
             return compAct.label;
         var base = action.split(" ")[0];
-        compAct = findCompositorAction(compositor, base);
+        compAct = hasUneditableProps(compositor, base, action) ? null : findCompositorAction(compositor, base);
         if (compAct) {
             var arg = action.slice(base.length).trim();
-            if (arg && compAct.label.includes("(by index)")) {
-                return compAct.label.replace("(by index)", arg).trim();
-            }
-            if (arg.includes("filter=") && arg.includes("app-id")) {
-                return compAct.label + " (Same Application)";
+            if (arg && /\(by (index|name)\)/.test(compAct.label)) {
+                return compAct.label.replace(/\(by (index|name)\)/, arg).trim();
             }
             return compAct.label;
         }
@@ -3155,14 +3730,31 @@ function isValidAction(action) {
     return true;
 }
 
-function isKnownCompositorAction(compositor, action) {
+// The base preset would silently drop a property it has no field for
+function hasUneditableProps(compositor, base, action) {
+    if (compositor !== "niri")
+        return false;
+    var argDefs = NIRI_ACTION_ARGS[base]?.args ?? [];
+    var props = action.slice(base.length).match(/(?:^|\s)[a-z][a-z-]*=/g) ?? [];
+    return props.some(function (prop) {
+        var name = prop.trim().slice(0, -1);
+        return !argDefs.some(function (def) {
+            return def.name === name;
+        });
+    });
+}
+
+function isKnownCompositorAction(compositor, action, configNext) {
     if (!action || !compositor)
         return false;
     var found = findCompositorAction(compositor, action);
-    if (found)
-        return true;
-    var base = action.split(" ")[0];
-    return findCompositorAction(compositor, base) !== null;
+    if (!found) {
+        var base = action.split(" ")[0];
+        found = hasUneditableProps(compositor, base, action) ? null : findCompositorAction(compositor, base);
+    }
+    if (!found)
+        return false;
+    return configNext || !found.next;
 }
 
 function buildSpawnAction(command, args) {
@@ -3302,8 +3894,15 @@ function splitNiriActionArgs(text) {
     return parts;
 }
 
+// niri reads a bare 3 as workspace index 3 but "3" as the workspace named 3, so the quotes are kept.
+function niriArgText(token) {
+    return token.quoted && /^[+-]?\d+$/.test(token.value) ? '"' + token.value + '"' : token.value;
+}
+
 function quoteNiriActionArg(value) {
     var text = String(value);
+    if (/^"[+-]?\d+"$/.test(text))
+        return text;
     if (text !== "" && !/[\s"\\]/.test(text))
         return text;
     return '"' + text.replace(/[\\"]/g, "\\$&") + '"';
@@ -3335,16 +3934,23 @@ function parseCompositorActionArgs(compositor, action) {
         var tokens = splitNiriActionArgs(action.slice(base.length));
         switch (base) {
         case "move-column-to-workspace":
+        case "move-window-to-workspace":
+        case "move-column-to-new-workspace-below":
+        case "move-column-to-new-workspace-above":
+        case "move-window-to-new-workspace-below":
+        case "move-window-to-new-workspace-above":
             for (var i = 0; i < tokens.length; i++) {
                 if (!tokens[i].quoted && (tokens[i].value === "focus=true" || tokens[i].value === "focus=false")) {
                     args.focus = tokens[i].value === "focus=true";
                 } else if (!args.index) {
-                    args.index = tokens[i].value;
+                    args.index = niriArgText(tokens[i]);
                 }
             }
             break;
         case "move-column-to-workspace-down":
         case "move-column-to-workspace-up":
+        case "move-window-to-workspace-down":
+        case "move-window-to-workspace-up":
             for (var k = 0; k < tokens.length; k++) {
                 if (!tokens[k].quoted && (tokens[k].value === "focus=true" || tokens[k].value === "focus=false"))
                     args.focus = tokens[k].value === "focus=true";
@@ -3367,7 +3973,7 @@ function parseCompositorActionArgs(compositor, action) {
                         args[kv[0]] = kv[1];
                     }
                 } else {
-                    args[positional] = args[positional] ? (args[positional] + " " + tokens[j].value) : tokens[j].value;
+                    args[positional] = args[positional] ? (args[positional] + " " + niriArgText(tokens[j])) : niriArgText(tokens[j]);
                 }
             }
         }
@@ -3503,6 +4109,11 @@ function buildCompositorAction(compositor, base, args) {
     case "niri":
         switch (base) {
         case "move-column-to-workspace":
+        case "move-window-to-workspace":
+        case "move-column-to-new-workspace-below":
+        case "move-column-to-new-workspace-above":
+        case "move-window-to-new-workspace-below":
+        case "move-window-to-new-workspace-above":
             if (args.index)
                 parts.push(quoteNiriActionArg(args.index));
             if (args.focus === false)
@@ -3510,6 +4121,8 @@ function buildCompositorAction(compositor, base, args) {
             break;
         case "move-column-to-workspace-down":
         case "move-column-to-workspace-up":
+        case "move-window-to-workspace-down":
+        case "move-window-to-workspace-up":
             if (args.focus === false)
                 parts.push("focus=false");
             break;

@@ -15,18 +15,43 @@ import (
 
 const NiriCapConfigNext = "niri.config-next"
 
+// One line per syntax DMS gates; niri git builds older than every line drop to 26.04 behavior.
 const niriConfigNextProbe = `window-rule {
     variable-refresh-rate "fullscreen-only"
     on-xdg-activate "set-urgent"
     pinch-sensitivity 1.0
+    open-on-output "probe-1"
+    open-on-output "probe-2"
+    block-out-from "screencast" kind="hide"
 }
 layer-rule {
     match namespace="probe"
     focus-on-type-in-overview true
 }
+layout {
+    fullscreen-backdrop-color "transparent"
+}
+output "probe" {
+    drm-lease
+}
 input {
+    focus-follows-mouse outputs-only=true
     touchpad {
         pinch-sensitivity 1.0
+    }
+    tablet {
+        map-to-focused-window
+    }
+}
+binds {
+    Mod+Shift+Ctrl+Alt+F1 { move-column-to-new-workspace-below; }
+    Mod+Shift+Ctrl+Alt+F2 { set-window-fullscreen; }
+    Mod+Shift+Ctrl+Alt+F3 { move-column-left focus=false; }
+    Mod+Shift+Ctrl+Alt+F4 { change-vt 2; }
+    Mod+Shift+Ctrl+Alt+F5 { focus-window-previous scope="workspace"; }
+    Mod+Shift+Ctrl+Alt+F6 pass-through=true { toggle-touchpad; }
+    Mod {
+        release { toggle-overview; }
     }
 }
 `

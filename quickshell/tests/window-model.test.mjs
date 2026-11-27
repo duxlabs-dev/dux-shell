@@ -220,3 +220,14 @@ test("niri maximized: counts while its column is viewed or a floating window is 
     assert.equal(niriMaximized(s, 11), false);
     assert.equal(niriMaximized(s, 12), true);
 });
+
+test("niri dock overlap: unpositioned tiles overlap only while niri positions no tiles at all", () => {
+    const workspaces = [{ id: 1, output: "DP-1", is_active: true }];
+    const edges = { top: Position.Top, bottom: Position.Bottom, left: Position.Left, right: Position.Right };
+    const tile = (id, pos, size) => ({ id, workspace_id: 1, is_floating: false, layout: { tile_pos_in_workspace_view: pos, window_size: size, tile_size: size } });
+    const offScreen = tile(3, null, [1920, 1080]);
+    const overlap = windows => positions.map(p => model.niriDockOverlap(windows, workspaces, "DP-1", Position[p], 60, 1920, 1080, edges));
+    assert.deepEqual(overlap([tile(1, null, [800, 600]), offScreen]), [true, true, true, true]);
+    assert.deepEqual(overlap([tile(1, [0, 500], [800, 580]), offScreen]), [false, true, true, false]);
+    assert.deepEqual(overlap([tile(1, [100, 100], [800, 600]), offScreen]), [false, false, false, false]);
+});

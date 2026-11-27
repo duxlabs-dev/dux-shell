@@ -296,6 +296,7 @@ function parseNiriOutputs(content) {
         const vrrMatch = body.match(/variable-refresh-rate/);
         const vrrOnDemandMatch = body.match(/variable-refresh-rate\s+on-demand=true/);
         const maxBpcMatch = topLevel.match(/^\s*max-bpc\s+(\d+)\s*$/m);
+        const drmLease = /^\s*drm-lease\s*$/m.test(topLevel);
 
         result[name] = {
             "name": name,
@@ -311,7 +312,8 @@ function parseNiriOutputs(content) {
             "vrr_enabled": !!vrrMatch,
             "vrr_on_demand": !!vrrOnDemandMatch,
             "vrr_supported": true,
-            "max_bpc": maxBpcMatch ? niriMaxBpc(parseInt(maxBpcMatch[1])) : undefined
+            "max_bpc": maxBpcMatch ? niriMaxBpc(parseInt(maxBpcMatch[1])) : undefined,
+            "drm_lease": drmLease
         };
     }
     return result;
