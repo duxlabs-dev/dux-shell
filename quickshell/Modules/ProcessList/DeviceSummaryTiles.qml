@@ -69,7 +69,7 @@ RowLayout {
             enabled: !blocked
             selectedColor: Theme.primaryContainer
             selectedContentColor: Theme.onPrimaryContainer
-            unselectedColor: Theme.surfaceContainerHigh
+            unselectedColor: ProcessListMetrics.cardColor
             unselectedContentColor: Theme.surfaceText
             Accessible.name: SysmonService.typeName(type) + ", " + value
             Accessible.description: detail
