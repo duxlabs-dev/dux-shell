@@ -3,6 +3,7 @@ package config
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -55,7 +56,7 @@ func ProbeNiriCapabilities() []string {
 		if _, err := exec.LookPath("niri"); err != nil {
 			return
 		}
-		niriCaps.caps = probeNiriCapabilities(NiriValidates, niriSessionVersionMismatch)
+		niriCaps.caps = probeNiriCapabilities(NiriValidates, niriValidatorMayDiffer)
 	})
 	return niriCaps.caps
 }
@@ -88,9 +89,7 @@ func NiriValidateConfig(content string) error {
 	if err != nil {
 		return err
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), niriProbeTimeout)
-	defer cancel()
-	out, err := exec.CommandContext(ctx, "niri", "validate", "-c", f.Name()).CombinedOutput()
+	out, err := NiriValidateFile(f.Name())
 	if err == nil {
 		return nil
 	}
@@ -98,6 +97,49 @@ func NiriValidateConfig(content string) error {
 		return fmt.Errorf("niri validate: %s", msg)
 	}
 	return fmt.Errorf("niri validate: %w", err)
+}
+
+// NiriValidateFile asks the running compositor's binary, and niri on PATH when that one cannot be found or started.
+func NiriValidateFile(path string) ([]byte, error) {
+	exe := runningNiriExe()
+	if exe == "" {
+		return runNiriValidate("niri", path)
+	}
+	out, err := runNiriValidate(exe, path)
+	if niriFailedToStart(err) {
+		return runNiriValidate("niri", path)
+	}
+	return out, err
+}
+
+func runNiriValidate(bin, path string) ([]byte, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), niriProbeTimeout)
+	defer cancel()
+	return exec.CommandContext(ctx, bin, "validate", "-c", path).CombinedOutput()
+}
+
+const loaderFailureExitCode = 127
+
+// The dynamic loader exits 127 when an upgrade removed a library the old binary links.
+func niriFailedToStart(err error) bool {
+	if err == nil {
+		return false
+	}
+	var exit *exec.ExitError
+	if !errors.As(err, &exit) {
+		return true
+	}
+	return exit.ExitCode() == loaderFailureExitCode
+}
+
+// Only niri on PATH can be newer than the session; the running binary answers for itself.
+func niriValidatorMayDiffer() bool {
+	exe := runningNiriExe()
+	if exe == "" {
+		return niriSessionVersionMismatch()
+	}
+	_, err := runNiriValidate(exe, os.DevNull)
+	return niriFailedToStart(err) && niriSessionVersionMismatch()
 }
 
 func niriSessionVersionMismatch() bool {

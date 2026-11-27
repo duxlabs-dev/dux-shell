@@ -27,6 +27,7 @@ Item {
     property var _cachedCategories: []
     property var _filteredBinds: []
     property string _revealAction: ""
+    property string _highlightAction: ""
     property string _savingAction: ""
 
     property bool editorOpen: false
@@ -181,14 +182,31 @@ Item {
             return;
         }
         const query = searchQuery.toLowerCase();
-        _filteredBinds = allBinds.filter(group => _matchesSearch(group, query) && _matchesCategory(group));
+        const matches = allBinds.filter(group => _matchesSearch(group, query) && _matchesCategory(group));
+        _filteredBinds = _exactKeyMatchesFirst(matches, query);
+    }
+
+    function _normalizedCombo(keyCombo) {
+        return KeyUtils.normalizeKeyCombo(keyCombo, KeybindsService.modKey, KeybindsService.modSymbol);
+    }
+
+    // "Mod" is a substring of every Mod chord, so the bind on exactly that key leads.
+    function _exactKeyMatchesFirst(groups, query) {
+        if (!query)
+            return groups;
+        const combo = _normalizedCombo(query);
+        const isExact = group => group.keys.some(entry => _normalizedCombo(entry.key) === combo);
+        const exact = groups.filter(isExact);
+        if (exact.length === 0 || exact.length === groups.length)
+            return groups;
+        return exact.concat(groups.filter(group => !isExact(group)));
     }
 
     function _matchesSearch(group, query) {
         if (!query)
             return true;
-        const combo = KeyUtils.normalizeKeyCombo(query, KeybindsService.modKey, KeybindsService.modSymbol);
-        if (group.keys.some(entry => KeyUtils.normalizeKeyCombo(entry.key, KeybindsService.modKey, KeybindsService.modSymbol).includes(combo)))
+        const combo = _normalizedCombo(query);
+        if (group.keys.some(entry => _normalizedCombo(entry.key).includes(combo)))
             return true;
         return group.desc.toLowerCase().includes(query) || group.action.toLowerCase().includes(query);
     }
@@ -223,7 +241,9 @@ Item {
         const index = _filteredBinds.findIndex(bind => bind.action === action);
         if (!action || index < 0)
             return;
-        flickable.revealIndex(index);
+        flickable.revealRow(index);
+        _highlightAction = action;
+        highlightTimer.restart();
     }
 
     function _ensureCurrentProvider() {
@@ -286,6 +306,12 @@ Item {
         onTriggered: keybindsTab._revealPendingRow()
     }
 
+    Timer {
+        id: highlightTimer
+        interval: Timing.holdMedium
+        onTriggered: keybindsTab._highlightAction = ""
+    }
+
     Connections {
         target: KeybindsService
 
@@ -321,6 +347,16 @@ Item {
             pinning = true;
             positionViewAtBeginning();
             pinning = false;
+        }
+
+        function revealRow(index) {
+            // positionViewAtIndex moves originY before contentY; a still-pinned list would snap back to the top
+            pinnedTop = false;
+            revealIndex(index);
+            const item = itemAtIndex(index);
+            if (!item)
+                return;
+            revealRange(item.y, item.y + item.height + (fabBar?.reservedHeight ?? 0));
         }
 
         anchors.fill: parent
@@ -538,6 +574,7 @@ Item {
                 firstInGroup: bindDelegate.index === 0
                 lastInGroup: bindDelegate.index === flickable.count - 1
                 readOnly: KeybindsService.readOnly
+                highlighted: keybindsTab._highlightAction === bindDelegate.modelData.action
                 onEditRequested: keyIndex => keybindsTab.openEditor(bindDelegate.modelData, keyIndex)
                 onRemoveRequested: key => keybindsTab.confirmRemoveBind(key)
             }

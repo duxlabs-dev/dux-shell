@@ -7,13 +7,13 @@ import (
 	"maps"
 	"net"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/duxlabs-dev/dux-shell/core/internal/config"
 	"github.com/duxlabs-dev/dux-shell/core/internal/keybinds"
 	"github.com/sblinch/kdl-go/document"
 )
@@ -836,6 +836,4 @@ func (n *NiriProvider) validateBindsContent(content string) error {
 	return nil
 }
 
-var niriValidate = func(path string) ([]byte, error) {
-	return exec.Command("niri", "validate", "-c", path).CombinedOutput()
-}
+var niriValidate = config.NiriValidateFile
