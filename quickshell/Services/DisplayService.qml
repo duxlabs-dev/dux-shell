@@ -25,14 +25,14 @@ Singleton {
     readonly property string gammaSunsetTime: NightModeService.gammaSunsetTime
     readonly property bool gammaIsDay: NightModeService.gammaIsDay
 
-    signal brightnessChanged(bool showOsd)
+    signal brightnessChanged(bool showOsd, var deviceIds)
     signal deviceSwitched
 
     Connections {
         target: BrightnessService
 
-        function onBrightnessChanged(showOsd) {
-            root.brightnessChanged(showOsd);
+        function onBrightnessChanged(showOsd, deviceIds) {
+            root.brightnessChanged(showOsd, deviceIds);
         }
 
         function onDeviceSwitched() {
