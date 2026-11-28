@@ -640,6 +640,8 @@ def find_settings_components(content, filename, wrappers, tab_meta, hub_meta):
                     condition_key = "matugenAvailable"
                 elif "dock.config.enabled" in visible_raw:
                     condition_key = "dockEnabled"
+                elif "selectedBarHasNotch" in visible_raw:
+                    condition_key = "notchDisplay"
                 elif "selectedIslandDocked" in visible_raw or "!root.selectedIslandFree" in visible_raw:
                     condition_key = "islandDocked"
                 elif "selectedIslandFree" in visible_raw and "!dankBarTab.selectedIslandFree" not in visible_raw:

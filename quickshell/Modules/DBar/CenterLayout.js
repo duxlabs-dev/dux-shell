@@ -27,7 +27,34 @@ function confine(start, totalSize, bounds) {
     return Math.min(Math.max(start, min), max - totalSize);
 }
 
-function resolve(sizes, length, spacing, mode, bounds, anchor) {
+// A short bar inside the notch has no room to split.
+function usableGap(gap, min, max, room) {
+    if (!gap || gap.start - min < room || max - gap.end < room)
+        return null;
+    return gap;
+}
+
+// The extent spans the gap so the next section clears it.
+function split(sizes, indices, offsets, spacing, gap) {
+    const positions = sizes.map(() => null);
+    const before = Math.ceil(indices.length / 2);
+    const lead = offsets[before - 1] + sizes[indices[before - 1]];
+    for (let i = 0; i < before; i++)
+        positions[indices[i]] = gap.start - lead + offsets[i];
+    let cursor = gap.end;
+    for (let i = before; i < indices.length; i++) {
+        positions[indices[i]] = cursor;
+        cursor += sizes[indices[i]] + spacing;
+    }
+    const end = before < indices.length ? cursor - spacing : gap.end;
+    return {
+        positions,
+        totalSize: end - (gap.start - lead),
+        split: indices[before] ?? -1
+    };
+}
+
+function resolve(sizes, length, spacing, mode, bounds, anchor, gap) {
     const indices = [];
     const offsets = [];
     const positions = sizes.map(() => null);
@@ -47,6 +74,8 @@ function resolve(sizes, length, spacing, mode, bounds, anchor) {
             positions,
             totalSize: 0
         };
+    if (gap)
+        return split(sizes, indices, offsets, spacing, gap);
 
     const centerOffset = mode === "geometric" ? totalSize / 2 : indexCenter(sizes, indices, offsets, spacing, anchor);
     const start = confine(length / 2 - centerOffset, totalSize, bounds);

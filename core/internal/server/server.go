@@ -57,6 +57,7 @@ type ServerInfo struct {
 	APIVersion   int      `json:"apiVersion"`
 	CLIVersion   string   `json:"cliVersion,omitempty"`
 	Capabilities []string `json:"capabilities"`
+	Compatible   []string `json:"compatible,omitempty"`
 }
 
 type ServiceEvent struct {
@@ -576,6 +577,7 @@ func getServerInfo() ServerInfo {
 		APIVersion:   APIVersion,
 		CLIVersion:   CLIVersion,
 		Capabilities: getCapabilities().Capabilities,
+		Compatible:   deviceCompatible(),
 	}
 }
 

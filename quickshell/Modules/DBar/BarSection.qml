@@ -181,7 +181,8 @@ Item {
         return !!item && "segmentRole" in item;
     }
 
-    function applyRoles(entries, participating) {
+    // breakAt counts the overflow holder.
+    function applyRoles(entries, participating, breakAt = -1) {
         const allEntries = entries.slice();
         const allStates = participating.slice();
         if (overflowCount > 0) {
@@ -190,7 +191,15 @@ Item {
             });
             allStates.splice(overflowPosition, 0, true);
         }
+        if (breakAt >= 0) {
+            allEntries.splice(breakAt, 0, {
+                widgetId: "separator"
+            });
+            allStates.splice(breakAt, 0, true);
+        }
         const next = SegmentRoles.resolve(allEntries, allStates);
+        if (breakAt >= 0)
+            next.splice(breakAt, 1);
         const buttonRole = overflowCount > 0 ? next.splice(overflowPosition, 1)[0] : "solo";
         overflowSegmentRole = segmented ? buttonRole : "solo";
         if (next.join() !== roles.join())

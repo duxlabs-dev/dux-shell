@@ -4,6 +4,7 @@ import qs.Modules.DBar.Widgets
 import qs.Modules.SurfaceWidgets
 import qs.Services
 import "OverflowLayout.js" as OverflowLayout
+import "CenterLayout.js" as CenterLayout
 
 Item {
     id: topBarContent
@@ -24,6 +25,15 @@ Item {
     property real sectionCrossOffset: 0
     property real reservedStart: NaN
     property real reservedEnd: NaN
+    // Center-section coordinates, clearance included.
+    property real notchStart: NaN
+    property real notchEnd: NaN
+    readonly property var centerGap: isNaN(notchStart) || _barIsVertical ? null : CenterLayout.usableGap({
+        start: notchStart,
+        end: notchEnd
+    }, fitToWidgets ? fittedStartMargin : 0, overflowLength - (fitToWidgets ? fittedEndMargin : 0), overflowSections[0].overflowTriggerSize)
+    readonly property real centerGapStart: centerGap ? centerGap.start : NaN
+    readonly property real centerGapEnd: centerGap ? centerGap.end : NaN
     readonly property bool fitToWidgets: _hasBarWindow && (barWindow.fitToWidgets ?? false)
     readonly property real sectionGap: (_barIsVertical ? vLeftSection : hLeftSection).widgetSpacing
     readonly property real leadingImplicitSize: _barIsVertical ? vLeftSection.implicitHeight : hLeftSection.implicitWidth
@@ -52,6 +62,8 @@ Item {
     onOverflowCenteringModeChanged: requestOverflowLayout()
     onReservedStartChanged: requestOverflowLayout()
     onReservedEndChanged: requestOverflowLayout()
+    onCenterGapStartChanged: requestOverflowLayout()
+    onCenterGapEndChanged: requestOverflowLayout()
     onFittedStartMarginChanged: requestOverflowLayout()
     onFittedEndMarginChanged: requestOverflowLayout()
 
@@ -77,6 +89,7 @@ Item {
                 start: reservedStart,
                 end: reservedEnd
             },
+            notch: centerGap,
             spacing: sectionGap,
             triggerSize: overflowSections[0].overflowTriggerSize,
             positions,
@@ -104,10 +117,13 @@ Item {
             return 0;
         if (centerImplicitSize > 0)
             return fittedCenterSection.contentStart;
+        // With no center, the side sections part around the notch.
+        if (centerGap)
+            return centerGap.start + sectionGap;
         const sides = leadingImplicitSize + trailingImplicitSize + (leadingImplicitSize > 0 && trailingImplicitSize > 0 ? sectionGap : 0);
         return (barWindow.fittedAvailableLength - sides) / 2 + fittedLeadingReach;
     }
-    readonly property real fittedCoreEnd: !fitToWidgets ? 0 : centerImplicitSize > 0 ? fittedCoreStart + fittedCenterSection.contentSize : fittedCoreStart - (leadingImplicitSize > 0 && trailingImplicitSize > 0 ? sectionGap : 0)
+    readonly property real fittedCoreEnd: !fitToWidgets ? 0 : centerImplicitSize > 0 ? fittedCoreStart + fittedCenterSection.contentSize : centerGap ? centerGap.end - sectionGap : fittedCoreStart - (leadingImplicitSize > 0 && trailingImplicitSize > 0 ? sectionGap : 0)
     readonly property real fittedLeadingPad: fittedCoreStart - fittedLeadingReach - fittedStartMargin
     readonly property var centerBounds: {
         if (!fitToWidgets)

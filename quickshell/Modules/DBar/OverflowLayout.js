@@ -76,6 +76,35 @@ function section(entries, hidden, spacing, triggerSize, triggerIndex) {
     };
 }
 
+// The run after the notch exists even when empty: the next section is packed after it.
+function centerPieces(sizes, positions, split, notch) {
+    let start = Infinity;
+    let end = -Infinity;
+    let afterEnd = notch.end;
+    for (let index = 0; index < sizes.length; index++) {
+        if (positions[index] === null)
+            continue;
+        if (split >= 0 && index >= split) {
+            afterEnd = Math.max(afterEnd, positions[index] + sizes[index]);
+            continue;
+        }
+        start = Math.min(start, positions[index]);
+        end = Math.max(end, positions[index] + sizes[index]);
+    }
+    return [{
+            name: "center",
+            start,
+            end,
+            size: end - start
+        }, {
+            name: "center",
+            start: notch.end,
+            end: afterEnd,
+            size: afterEnd - notch.end,
+            anchored: true
+        }];
+}
+
 function measure(sections, hidden, options) {
     const names = ["left", "center", "right"];
     const layouts = {};
@@ -92,7 +121,7 @@ function measure(sections, hidden, options) {
         min: min + (leading > 0 ? leading + gap : 0),
         max: max - (trailing > 0 ? trailing + gap : 0)
     } : null;
-    const centered = CenterLayout.resolve(center.sizes, options.length, gap, options.centeringMode ?? "geometric", bounds, center.anchor);
+    const centered = CenterLayout.resolve(center.sizes, options.length, gap, options.centeringMode ?? "geometric", bounds, center.anchor, options.notch);
     const livePositions = centered.positions.filter(position => position !== null);
     const centerStart = livePositions.length ? Math.min(...livePositions) : 0;
     const intervals = {
@@ -112,21 +141,33 @@ function measure(sections, hidden, options) {
             size: trailing
         }
     };
+    const pieces = [Object.assign({
+            name: "left"
+        }, intervals.left)];
+    if (centered.split === undefined)
+        pieces.push(Object.assign({
+            name: "center"
+        }, intervals.center));
+    else
+        pieces.push(...centerPieces(center.sizes, centered.positions, centered.split, options.notch));
+    pieces.push(Object.assign({
+        name: "right"
+    }, intervals.right));
+    const live = pieces.filter(piece => piece.size > 0 || piece.anchored);
+    const overlaps = (piece, range) => range && piece.start < range.end && piece.end > range.start;
     const collisions = new Set();
-    const reserve = options.reserve;
-    for (const name of names) {
-        const interval = intervals[name];
-        if (interval.size > 0 && (interval.start < min || interval.end > max || (reserve && interval.start < reserve.end && interval.end > reserve.start)))
-            collisions.add(name);
+    for (const piece of live) {
+        // A split center ends on the notch by construction.
+        if (piece.start < min || piece.end > max || overlaps(piece, options.reserve) || (piece.name !== "center" && overlaps(piece, options.notch)))
+            collisions.add(piece.name);
     }
-    const live = names.filter(name => intervals[name].size > 0);
     for (let index = 0; index < live.length; index++) {
         for (let other = index + 1; other < live.length; other++) {
             const a = live[index];
             const b = live[other];
-            if (intervals[a].end + gap > intervals[b].start) {
-                collisions.add(a);
-                collisions.add(b);
+            if (a.name !== b.name && a.end + gap > b.start) {
+                collisions.add(a.name);
+                collisions.add(b.name);
             }
         }
     }

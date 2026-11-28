@@ -16,6 +16,7 @@ Singleton {
     property var capabilities: []
     property int apiVersion: 0
     property string cliVersion: ""
+    property var deviceCompatible: []
     readonly property int expectedApiVersion: 1
     property var availablePlugins: []
     property var installedPlugins: []
@@ -283,6 +284,7 @@ Singleton {
             apiVersion = data.apiVersion || 0;
             cliVersion = data.cliVersion || "";
             capabilities = data.capabilities || [];
+            deviceCompatible = data.compatible || [];
 
             log.info("Connected (API v" + apiVersion + ", CLI " + cliVersion + ") -", JSON.stringify(capabilities));
 

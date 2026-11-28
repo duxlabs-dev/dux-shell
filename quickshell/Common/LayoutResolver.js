@@ -139,6 +139,7 @@ function resolveScreen(inputs, screen, options) {
         const hosted = active.filter(input => !input.config.useOverlayLayer);
         let offset = 0;
         let reservation = 0;
+        let notchFloor = 0;
         const rowOffsets = new Map();
         const place = (input, rowOffset) => {
             const config = input.config;
@@ -148,7 +149,10 @@ function resolveScreen(inputs, screen, options) {
             const paintedThickness = thickness + (kind !== "island" && !frameStyled ? input.wingSize ?? 0 : 0);
             const reserves = kind === "island" ? !(input.islandFloating ?? config.islandFloating) : config.visible !== false && (!config.autoHide || frameStyled);
             const reserved = kind === "island" ? Math.min(thickness, input.islandReserve) : thickness;
-            const contribution = reserves ? Math.max(0, rowOffset + reserved - reservation) : 0;
+            // Keeps windows below the notch even when the bar is thinner.
+            const floor = edge === "top" && kind !== "island" && reserves && config.avoidNotch !== false && rowOffset < (options.notchHeight ?? 0) ? Math.ceil(options.notchHeight) : 0;
+            const contribution = reserves ? Math.max(0, Math.max(rowOffset + reserved, floor) - reservation) : 0;
+            notchFloor = Math.max(notchFloor, floor);
             instances.push({
                 key: JSON.stringify([screen.name, config.id]),
                 screenName: screen.name,
@@ -161,7 +165,8 @@ function resolveScreen(inputs, screen, options) {
                 rowThickness: paintedThickness,
                 rowOffset,
                 spacing,
-                reservation: contribution
+                reservation: contribution,
+                notchFloor: floor
             });
             reservation += contribution;
             rowOffsets.set(input, rowOffset);
@@ -183,8 +188,8 @@ function resolveScreen(inputs, screen, options) {
             hostedBars: hosted.map(input => input.config),
             occupancy: offset,
             reservation: Math.max(frameStyled ? options.frameThickness : 0, reservation),
-            frameReservation: shown.length ? Math.max(options.frameThickness, offset) : options.frameThickness,
-            overviewFrameReservation: active.length ? Math.max(options.frameThickness, offset) : options.frameThickness,
+            frameReservation: shown.length ? Math.max(options.frameThickness, offset, notchFloor) : options.frameThickness,
+            overviewFrameReservation: active.length ? Math.max(options.frameThickness, offset, notchFloor) : options.frameThickness,
             frameExclusionEnabled: frameStyled && (!shown.length || (frameHosted && !shown.some(input => input.config.useOverlayLayer)))
         };
     }

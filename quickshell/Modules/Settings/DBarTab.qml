@@ -4,6 +4,7 @@ import qs.Common
 import qs.Services
 import qs.DCommon.Widgets
 import qs.Modules.Settings.Widgets
+import "../../Common/NotchGeometry.js" as NotchGeometry
 
 Item {
     id: dankBarTab
@@ -23,6 +24,7 @@ Item {
     readonly property bool selectedIslandDocked: bar.selectedBarIsIsland && !selectedIslandFree
     readonly property bool popupGapsFramed: SettingsData.barUsesConnectedFrameStyle(bar.selectedBarConfig) && !(bar.selectedBarConfig?.useOverlayLayer ?? false)
     readonly property bool popupGapsZeroed: popupGapsFramed || SettingsData.barConnectsPopouts(bar.selectedBarConfig)
+    readonly property bool selectedBarHasNotch: !bar.selectedBarIsIsland && (bar.selectedBarConfig?.position ?? SettingsData.Position.Top) === SettingsData.Position.Top && bar.selectedBarScreens.some(screen => NotchGeometry.cutout(DMSService.deviceCompatible, screen.width, screen.height, CompositorService.getScreenScale(screen)) !== null)
     readonly property int placementIndex: !bar.islandSetting("islandFloating") ? 0 : (bar.islandSetting("islandPlacement") === "free" ? 2 : 1)
 
     function setBarScreenPreferences(barId, prefs) {
@@ -104,6 +106,19 @@ Item {
                         });
                         bar.notifyHorizontalBarChange();
                     }
+                }
+
+                SettingsToggleRow {
+                    settingKey: "barAvoidNotch"
+                    resetStore: bar
+                    resetKeys: ["avoidNotch"]
+                    tags: ["bar", "notch", "macbook", "cutout", "camera", "apple", "asahi", "center", "exclusive"]
+                    visible: dankBarTab.selectedBarHasNotch
+                    text: I18n.tr("Clear camera notch", "bar position toggle for MacBook displays with a camera notch")
+                    checked: bar.selectedBarConfig?.avoidNotch ?? true
+                    onToggled: checked => SettingsData.updateBarConfig(bar.selectedBarId, {
+                            avoidNotch: checked
+                        })
                 }
 
                 SettingsButtonGroupRow {

@@ -4635,6 +4635,31 @@
     "conditionKey": "islandEnabled"
   },
   {
+    "section": "barAvoidNotch",
+    "label": "Clear camera notch",
+    "tabIndex": 3,
+    "category": "General",
+    "keywords": [
+      "apple",
+      "asahi",
+      "bar",
+      "camera",
+      "center",
+      "clear",
+      "cutout",
+      "exclusive",
+      "general",
+      "macbook",
+      "notch",
+      "panel",
+      "statusbar",
+      "taskbar",
+      "topbar"
+    ],
+    "parentLabel": "Bar",
+    "conditionKey": "notchDisplay"
+  },
+  {
     "section": "barMouseClickAction",
     "label": "Click actions",
     "tabIndex": 3,

@@ -1867,6 +1867,7 @@ var LOCAL_SPEC = {
                 scrollYBehavior: "workspace",
                 scrollBrightnessStep: 5,
                 scrollExtendToEdge: true,
+                avoidNotch: true,
                 middleClickAction: "none",
                 rightClickAction: "edit-widgets",
                 clickActionFollowMouse: false,

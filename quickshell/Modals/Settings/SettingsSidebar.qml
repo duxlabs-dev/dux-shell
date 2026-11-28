@@ -190,9 +190,9 @@ Item {
             root.focusAfterNavigation(keyboard);
             return;
         }
-        const islandBar = SettingsSearchService.islandBarFor(result.conditionKey, SettingsUiState.selectedBarId);
-        if (islandBar)
-            SettingsUiState.selectedBarId = islandBar.id;
+        const conditionBar = SettingsSearchService.conditionBarFor(result.conditionKey, SettingsUiState.selectedBarId);
+        if (conditionBar)
+            SettingsUiState.selectedBarId = conditionBar.id;
         if (result.section)
             SettingsSearchService.navigateToSection(result.section);
         const page = result.page || SettingsTabs.pageForTabIndex(result.tabIndex);

@@ -5,6 +5,7 @@ import qs.Common
 import qs.Modules.DIsland
 import qs.Services
 import qs.Widgets
+import "../../Common/NotchGeometry.js" as NotchGeometry
 
 Item {
     id: barWindow
@@ -1043,7 +1044,23 @@ Item {
 
     readonly property bool reserveExclusiveWhenAutoHidden: FrameTransitionState.effectiveFrameEnabled && usesFrameBarChrome && !!barWindow.screen && SettingsData.isScreenInPreferences(barWindow.screen, SettingsData.frameScreenPreferences)
 
-    readonly property real surfaceExclusiveZone: isIsland ? ((islandFree || (islandHost?.floating ?? SettingsData.islandSetting(barConfig, "islandFloating"))) ? 0 : SettingsData.islandReserveThickness(barConfig)) : (!(barConfig?.visible ?? true) || ((barConfig?.autoHide ?? false) && !barWindow.reserveExclusiveWhenAutoHidden)) ? -1 : (barWindow.effectiveBarThickness + effectiveSpacing + (usesFrameBarChrome ? 0 : (barConfig?.bottomGap ?? 0)))
+    readonly property real surfaceExclusiveZone: {
+        if (isIsland)
+            return (islandFree || (islandHost?.floating ?? SettingsData.islandSetting(barConfig, "islandFloating"))) ? 0 : SettingsData.islandReserveThickness(barConfig);
+        if (!(barConfig?.visible ?? true) || ((barConfig?.autoHide ?? false) && !barWindow.reserveExclusiveWhenAutoHidden))
+            return -1;
+        const zone = barWindow.effectiveBarThickness + effectiveSpacing + (usesFrameBarChrome ? 0 : (barConfig?.bottomGap ?? 0));
+        const floor = layoutInstance?.notchFloor ?? 0;
+        return floor > 0 && zone >= 0 ? Math.max(zone, floor) : zone;
+    }
+
+    readonly property var screenNotch: !isVertical && !isIsland && barPos === SettingsData.Position.Top && (barConfig?.avoidNotch ?? true) ? NotchGeometry.cutout(DMSService.deviceCompatible, screen?.width ?? 0, screen?.height ?? 0, _dpr) : null
+    // A bar stacked below the first row already clears the notch.
+    readonly property var topNotch: screenNotch && (layoutInstance?.rowOffset ?? 0) < screenNotch.height ? screenNotch : null
+    // A fitted bar's center section is pinned to the start of its free length.
+    readonly property real notchOrigin: !topNotch ? 0 : ShellLayout.surfaceOrigin(screen, hostWindow.width, hostWindow.height, hostWindow.anchors, hostWindow.margins).x + hostOffsetX + topBarMouseArea.x + (fitToWidgets ? barUnitInset.spacingPx : contentAlongStart)
+    readonly property real notchGapStart: topNotch ? topNotch.start - Theme.spacingS - notchOrigin : NaN
+    readonly property real notchGapEnd: topNotch ? topNotch.end + Theme.spacingS - notchOrigin : NaN
 
     readonly property alias inputMaskItem: inputMask
 
@@ -1549,6 +1566,8 @@ Item {
                         sectionCrossOffset: barWindow.islandSatelliteCrossShift
                         reservedStart: barWindow.islandReservesStrip ? barWindow.islandReachStart - barWindow.islandStripClearance - barWindow.contentAlongStart : NaN
                         reservedEnd: barWindow.islandReservesStrip ? barWindow.islandReachEnd + barWindow.islandStripClearance - barWindow.contentAlongStart : NaN
+                        notchStart: barWindow.notchGapStart
+                        notchEnd: barWindow.notchGapEnd
                     }
 
                     // Passive: tracks cursor without intercepting clicks or scroll

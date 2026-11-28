@@ -13,10 +13,15 @@ BarSection {
     property real contentStart: 0
     property real contentSize: 0
     readonly property var bounds: barContent?.centerBounds ?? null
+    readonly property real gapStart: isVertical ? NaN : (barContent?.centerGapStart ?? NaN)
+    readonly property real gapEnd: isVertical ? NaN : (barContent?.centerGapEnd ?? NaN)
+    property real splitEnd: NaN
     entryRepeater: centerRepeater
     onLayoutRequested: layoutTimer.restart()
 
     onBoundsChanged: layoutTimer.restart()
+    onGapStartChanged: layoutTimer.restart()
+    onGapEndChanged: layoutTimer.restart()
 
     function requestLayout() {
         layoutTimer.restart();
@@ -42,6 +47,8 @@ BarSection {
             start = Math.min(start, pos);
             end = Math.max(end, pos + size);
         }
+        if (!isNaN(splitEnd))
+            end = Math.max(end, splitEnd);
         contentStart = start;
         contentSize = end - start;
     }
@@ -61,10 +68,14 @@ BarSection {
             entries.push(wrapper?.itemData ?? null);
             participating.push(participation(wrapper, widget !== null, wrapper?.item));
         }
-        applyRoles(entries, participating);
-
         const inline = inlineLayout();
-        const layout = CenterLayout.resolve(inline.sizes, length, widgetSpacing, SettingsData.centeringMode, bounds, inline.anchor);
+        const gap = isNaN(gapStart) ? null : {
+            start: gapStart,
+            end: gapEnd
+        };
+        const layout = CenterLayout.resolve(inline.sizes, length, widgetSpacing, SettingsData.centeringMode, bounds, inline.anchor, gap);
+        applyRoles(entries, participating, layout.split ?? -1);
+        splitEnd = layout.split === undefined ? NaN : gap.end;
         for (let index = 0; index < inline.indices.length; index++) {
             if (inline.indices[index] === -1) {
                 overflowButtonPosition = layout.positions[index];

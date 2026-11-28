@@ -8,6 +8,7 @@ import qs.Common
 import qs.Services
 import qs.Modules.DDash
 import "../Common/CompositorAnimations.js" as CompositorAnimations
+import "../Common/NotchGeometry.js" as NotchGeometry
 
 Singleton {
     id: root
@@ -126,9 +127,9 @@ Singleton {
             "matugenAvailable": () => Theme.matugenAvailable,
             "greeterAvailable": () => GreeterService.available,
             "frameEnabled": () => SettingsData.frameEnabled,
-            "islandEnabled": () => root.islandBarFor("islandEnabled") !== null,
-            "islandFree": () => root.islandBarFor("islandFree") !== null,
-            "islandDocked": () => root.islandBarFor("islandDocked") !== null,
+            "islandEnabled": () => root.conditionBarFor("islandEnabled") !== null,
+            "islandFree": () => root.conditionBarFor("islandFree") !== null,
+            "islandDocked": () => root.conditionBarFor("islandDocked") !== null,
             "dotEnabled": () => SettingsData.dotBarConfig?.enabled ?? false,
             "cellularAvailable": () => NetworkService.cellularAvailable,
             "connectionEditorAvailable": () => NetworkService.connectionEditorSupported,
@@ -136,7 +137,8 @@ Singleton {
             "hotspotAvailable": () => NetworkService.hotspotAvailable,
             "tailscaleAvailable": () => TailscaleService.available,
             "fcitx5Available": () => Fcitx5Service.available,
-            "dockEnabled": () => (SettingsData.dockConfigs ?? []).some(dock => dock.enabled)
+            "dockEnabled": () => (SettingsData.dockConfigs ?? []).some(dock => dock.enabled),
+            "notchDisplay": () => root.conditionBarFor("notchDisplay") !== null
         })
 
     readonly property var islandBarFilters: ({
@@ -145,12 +147,23 @@ Singleton {
             "islandDocked": cfg => !SettingsData.islandFreePlacement(cfg)
         })
 
-    // The bar pages only show island rows for the selected bar, so a result has to pick one that fits its condition.
-    function islandBarFor(conditionKey, preferredId) {
+    function notchBarConfigs() {
+        const ids = [];
+        for (const layout of ShellLayout.layouts) {
+            if (!NotchGeometry.cutout(DMSService.deviceCompatible, layout.screen.width, layout.screen.height, layout.screen.scale))
+                continue;
+            for (const instance of layout.instances) {
+                if (instance.edge === "top" && instance.kind !== "island")
+                    ids.push(instance.barId);
+            }
+        }
+        return SettingsData.barConfigs.filter(cfg => ids.includes(cfg.id));
+    }
+
+    // Bar rows show only for the selected bar, so pick one that meets the condition.
+    function conditionBarFor(conditionKey, preferredId) {
         const filter = islandBarFilters[conditionKey];
-        if (!filter)
-            return null;
-        const bars = SettingsData.enabledIslandBarConfigs.filter(filter);
+        const bars = filter ? SettingsData.enabledIslandBarConfigs.filter(filter) : conditionKey === "notchDisplay" ? notchBarConfigs() : [];
         return bars.find(cfg => cfg.id === preferredId) ?? bars[0] ?? null;
     }
 

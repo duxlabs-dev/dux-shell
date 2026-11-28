@@ -6,6 +6,7 @@ import Quickshell
 import qs.Services
 import "LayoutResolver.js" as Resolver
 import "CornerClearance.js" as CornerClearance
+import "NotchGeometry.js" as NotchGeometry
 
 Singleton {
     id: root
@@ -45,7 +46,8 @@ Singleton {
             effectiveFrameEnabled: FrameTransitionState.effectiveFrameEnabled,
             effectiveConnected: FrameTransitionState.effectiveConnectedFrameModeActive,
             frameThickness: SettingsData.frameThickness,
-            frameBarSize: SettingsData.frameBarSize
+            frameBarSize: SettingsData.frameBarSize,
+            notchHeight: NotchGeometry.cutout(DMSService.deviceCompatible, screen.width, screen.height, screen.scale)?.height ?? 0
         });
     })
     // Largest screen-corner radius that clears window corners and floating bars on every screen.

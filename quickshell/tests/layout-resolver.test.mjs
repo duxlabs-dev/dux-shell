@@ -269,3 +269,16 @@ test("a popout on another bar is a different descriptor", () => {
     const body = { kind: "popout", screenName: "DP-1", visible: true, bodyRect: { x: 10, y: 40, width: 300, height: 200 } };
     assert.equal(descriptor.same(descriptor.normalize({ ...body, barId: "a" }), descriptor.normalize({ ...body, barId: "b" })), false);
 });
+
+test("a top bar avoiding the notch reserves at least the notch height wherever it is placed", () => {
+    const notch = { notchHeight: 63.5 };
+    const corner = resolve([bar("top"), bar("side", 2)], notch);
+    const top = corner.instances[0];
+    assert.equal(corner.manualPlacement, true);
+    assert.deepEqual(plain([top.reservation, top.exclusiveZone, top.exclusionSize, corner.edges.top.reservation]), [64, -1, 64, 64]);
+    assert.deepEqual(plain([resolve([bar("top")], notch).instances[0].exclusiveZone, resolve([bar("top")]).instances[0].exclusiveZone]), [64, 44]);
+    assert.equal(resolve([bar("top", 0, { avoidNotch: false }), bar("side", 2)], notch).edges.top.reservation, 44);
+    assert.equal(resolve([bar("island", 0, { island: true })], notch).edges.top.reservation, 42);
+    const framed = resolve([bar("top")], { ...notch, effectiveFrameEnabled: true, effectiveConnected: true });
+    assert.deepEqual(plain([framed.instances[0].kind, framed.edges.top.reservation, framed.edges.top.frameReservation]), ["frame", 64, 64]);
+});

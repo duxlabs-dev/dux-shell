@@ -23,6 +23,8 @@ Item {
     // sh exiting 0 was indistinguishable from a successful write.
     readonly property string thresholdFileList: "charge_control_limit_max charge_stop_threshold charge_control_end_threshold"
     readonly property int noThresholdExitCode: 2
+    // Match by type: macsmc-battery isn't named BAT*, and scope=Device skips peripherals.
+    readonly property string systemBatteries: "for bat in /sys/class/power_supply/*; do [ \"$(cat \"$bat/type\" 2>/dev/null)\" = Battery ] || continue; [ \"$(cat \"$bat/scope\" 2>/dev/null)\" = Device ] && continue; "
 
     property bool chargeLimitSupported: Qt.platform.os === "linux"
 
@@ -32,15 +34,13 @@ Item {
     Process {
         id: thresholdProbe
         running: Qt.platform.os === "linux"
-        command: ["sh", "-c", "for bat in /sys/class/power_supply/BAT*; do for file in " + root.thresholdFileList + "; do [ -f \"$bat/$file\" ] && exit 0; done; done; exit 1"]
+        command: ["sh", "-c", root.systemBatteries + "for file in " + root.thresholdFileList + "; do [ -f \"$bat/$file\" ] && exit 0; done; done; exit 1"]
         onExited: exitCode => root.chargeLimitSupported = exitCode === 0
     }
 
     Process {
         id: applyLimitProcess
-        command: ["pkexec", "sh", "-c", "
-found=0
-for bat in /sys/class/power_supply/BAT*; do
+        command: ["pkexec", "sh", "-c", "found=0\n" + root.systemBatteries + "
   for file in " + root.thresholdFileList + "; do
     if [ -f \"$bat/$file\" ]; then
       found=1
