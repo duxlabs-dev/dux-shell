@@ -306,3 +306,43 @@ func TestImageExtsAndIDMatchShell(t *testing.T) {
 		t.Errorf("shell profile id pattern differs from %s", idRe)
 	}
 }
+
+func TestListFollowsSessionOrder(t *testing.T) {
+	cases := []struct {
+		name    string
+		session *string
+		want    []string
+	}{
+		{"listed first, rest by created", ptr(`{"configProfileOrder":["c","gone","a","c"]}`), []string{"c", "a", "b"}},
+		{"missing file", nil, []string{"a", "b", "c"}},
+		{"not json", ptr(`{`), []string{"a", "b", "c"}},
+		{"key absent", ptr(`{}`), []string{"a", "b", "c"}},
+		{"not an array", ptr(`{"configProfileOrder":"c"}`), []string{"a", "b", "c"}},
+		{"non-strings ignored", ptr(`{"configProfileOrder":[1,null,"c"]}`), []string{"c", "a", "b"}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			root := t.TempDir()
+			for id, created := range map[string]string{"a": "1", "b": "2", "c": "3"} {
+				writeFile(t, filepath.Join(root, "profiles", id, profileFile), `{"name":"`+id+`","created":`+created+`}`)
+			}
+			session := filepath.Join(root, "session.json")
+			if tc.session != nil {
+				writeFile(t, session, *tc.session)
+			}
+			got, err := List(filepath.Join(root, "profiles"), session)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var ids []string
+			for _, s := range got {
+				ids = append(ids, s.ID)
+			}
+			if !slices.Equal(ids, tc.want) {
+				t.Fatalf("got %v, want %v", ids, tc.want)
+			}
+		})
+	}
+}
+
+func ptr(s string) *string { return &s }
