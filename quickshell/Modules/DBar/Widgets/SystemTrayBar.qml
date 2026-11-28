@@ -335,37 +335,7 @@ BasePill {
     readonly property bool hasHiddenItems: hiddenBarItems.length > 0
     readonly property bool inlineExpanded: hasHiddenItems && !useOverflowPopup && menuOpen
     visible: allTrayItems.length > 0
-    opacity: allTrayItems.length > 0 ? 1 : 0
-
-    states: [
-        State {
-            name: "hidden_horizontal"
-            when: allTrayItems.length === 0 && !isVerticalOrientation
-            PropertyChanges {
-                target: root
-                width: 0
-            }
-        },
-        State {
-            name: "hidden_vertical"
-            when: allTrayItems.length === 0 && isVerticalOrientation
-            PropertyChanges {
-                target: root
-                height: 0
-            }
-        }
-    ]
-
-    transitions: [
-        Transition {
-            NumberAnimation {
-                properties: "width,height"
-                duration: Theme.expressiveDurations.expressiveDefaultSpatial
-                easing.type: Easing.BezierSpline
-                easing.bezierCurve: Theme.expressiveCurves.expressiveDefaultSpatial
-            }
-        }
-    ]
+    opacity: visible ? 1 : 0
 
     Behavior on opacity {
         NumberAnimation {
@@ -377,6 +347,8 @@ BasePill {
 
     readonly property real trayIconSize: Theme.barIconSize(root.barThickness, undefined, root.barConfig?.maximizeWidgetIcons, root.barConfig?.iconScale)
     readonly property real trayItemSize: trayIconSize + Theme.spacingXS + Theme.spacingXXS
+    readonly property int _baseSlotCount: displayedMainBarItems.length + (hasHiddenItems ? 1 : 0)
+    readonly property real _basePrimarySize: _baseSlotCount > 0 ? (_baseSlotCount * trayItemSize + Math.max(0, _baseSlotCount - 1) * configuredIconSpacing) : 0
 
     readonly property string autoBarShadowDirection: {
         const edge = root.axis?.edge;
@@ -498,8 +470,15 @@ BasePill {
     content: Component {
         Item {
             readonly property var layoutItem: layoutLoader.item
-            implicitWidth: layoutLoader.item ? layoutLoader.item.implicitWidth : 0
-            implicitHeight: layoutLoader.item ? layoutLoader.item.implicitHeight : 0
+
+            function resolvedImplicitSize(primaryAxis, measured) {
+                if (root.allTrayItems.length === 0)
+                    return 0;
+                return Math.max(primaryAxis ? root._basePrimarySize : 0, measured ?? 0);
+            }
+
+            implicitWidth: resolvedImplicitSize(!root.isVerticalOrientation, layoutItem?.implicitWidth)
+            implicitHeight: resolvedImplicitSize(root.isVerticalOrientation, layoutItem?.implicitHeight)
 
             Loader {
                 id: layoutLoader
