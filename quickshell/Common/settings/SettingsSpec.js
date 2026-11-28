@@ -1789,9 +1789,6 @@ var LOCAL_SPEC = {
     displayProfiles: {
         def: {}
     },
-    displayPreviousRefreshModes: {
-        def: {}
-    },
     displayProfileAutoSelect: {
         def: false
     },
