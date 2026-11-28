@@ -89,8 +89,11 @@ BasePill {
         if (_currentWorkspace) {
             toplevels = CompositorService.filterCurrentWorkspace(toplevels, parentScreen?.name) || [];
         } else if (_otherWorkspaces) {
-            const current = new Set(CompositorService.filterCurrentWorkspace(toplevels, parentScreen?.name) || []);
-            toplevels = toplevels.filter(t => !current.has(t));
+            const current = CompositorService.filterCurrentWorkspace(toplevels, parentScreen?.name);
+            if (current && current !== toplevels) {
+                const currentSet = new Set(current);
+                toplevels = toplevels.filter(t => !currentSet.has(t));
+            }
         }
         if (_currentMonitor)
             toplevels = CompositorService.filterCurrentDisplay(toplevels, parentScreen?.name) || [];
