@@ -7641,8 +7641,30 @@
     "parentLabel": "Bar"
   },
   {
+    "section": "barOpacity",
+    "label": "Override",
+    "tabIndex": 6,
+    "category": "Appearance",
+    "keywords": [
+      "appearance",
+      "bar",
+      "interface",
+      "island",
+      "opacity",
+      "override",
+      "panel",
+      "statusbar",
+      "style",
+      "taskbar",
+      "topbar",
+      "transparency"
+    ],
+    "parentLabel": "Bar",
+    "description": "Opacity"
+  },
+  {
     "section": "frameSurfaceOpacity",
-    "label": "Opacity",
+    "label": "Override",
     "tabIndex": 6,
     "category": "Appearance",
     "keywords": [
@@ -7660,7 +7682,7 @@
       "transparency"
     ],
     "parentLabel": "Bar",
-    "description": "Override",
+    "description": "Opacity",
     "conditionKey": "frameEnabled"
   },
   {
@@ -19474,6 +19496,26 @@
     "parentLabel": "Dock"
   },
   {
+    "section": "dockOpacity",
+    "label": "Override",
+    "tabIndex": 58,
+    "category": "Appearance",
+    "keywords": [
+      "appearance",
+      "dock",
+      "interface",
+      "launcher bar",
+      "opacity",
+      "override",
+      "panel",
+      "style",
+      "taskbar",
+      "transparency"
+    ],
+    "parentLabel": "Dock",
+    "description": "Opacity"
+  },
+  {
     "section": "dockSpacing",
     "label": "Padding",
     "tabIndex": 58,
@@ -19570,6 +19612,26 @@
       "widget"
     ],
     "parentLabel": "Dock"
+  },
+  {
+    "section": "dockSurface",
+    "label": "Surface",
+    "tabIndex": 58,
+    "category": "Appearance",
+    "keywords": [
+      "appearance",
+      "background",
+      "dock",
+      "launcher bar",
+      "opacity",
+      "override",
+      "panel",
+      "surface",
+      "taskbar",
+      "transparency"
+    ],
+    "parentLabel": "Dock",
+    "icon": "opacity"
   },
   {
     "section": "dockVisualEffects",

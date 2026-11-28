@@ -206,6 +206,25 @@ Item {
         }
 
         SettingsDeferred {
+            when: dock.paintsOwnSurface
+
+            SettingsCard {
+                width: parent.width
+                iconName: "opacity"
+                title: I18n.tr("Surface")
+                settingKey: "dockSurface"
+                tags: ["dock", "background", "opacity", "transparency", "override"]
+
+                OpacityOverrideRow {
+                    settingKey: "dockOpacity"
+                    tags: ["dock", "opacity", "transparency", "override", "interface", "style"]
+                    isDock: true
+                    config: dock.config
+                }
+            }
+        }
+
+        SettingsDeferred {
             when: dock.hasConfig && !dock.connectedFrameModeActive
 
             SettingsToggleCard {
@@ -256,14 +275,6 @@ Item {
                     onSliderValueChanged: value => dock.setOption("borderThickness", value)
                 }
             }
-        }
-
-        SettingsControlledBy {
-            visible: dock.hasConfig && !dock.connectedFrameModeActive
-            target: "surfaces"
-            parentModal: root.parentModal
-            section: "surfaceOpacity_dock_" + dock.selectedDockId
-            settingLabel: I18n.tr("Opacity")
         }
 
         SettingsControlledBy {
