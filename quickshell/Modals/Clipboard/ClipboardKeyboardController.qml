@@ -9,12 +9,12 @@ QtObject {
 
     function reset() {
         ClipboardService.selectedIndex = 0;
-        ClipboardService.keyboardNavigationActive = true;
+        ClipboardService.keyboardNavigationActive = false;
         modal.showKeyboardHints = false;
     }
 
     function selectNext() {
-        const entries = modal.activeTab === "saved" ? ClipboardService.pinnedEntries : ClipboardService.unpinnedEntries;
+        const entries = ClipboardService.displayedEntries;
         if (!entries || entries.length === 0) {
             return;
         }
@@ -25,7 +25,7 @@ QtObject {
     }
 
     function selectPrevious() {
-        const entries = modal.activeTab === "saved" ? ClipboardService.pinnedEntries : ClipboardService.unpinnedEntries;
+        const entries = ClipboardService.displayedEntries;
         if (!entries || entries.length === 0) {
             return;
         }
@@ -34,7 +34,7 @@ QtObject {
     }
 
     function copySelected() {
-        const entries = modal.activeTab === "saved" ? ClipboardService.pinnedEntries : ClipboardService.unpinnedEntries;
+        const entries = ClipboardService.displayedEntries;
         if (!entries || entries.length === 0 || ClipboardService.selectedIndex < 0 || ClipboardService.selectedIndex >= entries.length) {
             return;
         }
@@ -43,12 +43,12 @@ QtObject {
     }
 
     function deleteSelected() {
-        const entries = modal.activeTab === "saved" ? ClipboardService.pinnedEntries : ClipboardService.unpinnedEntries;
+        const entries = ClipboardService.displayedEntries;
         if (!entries || entries.length === 0 || ClipboardService.selectedIndex < 0 || ClipboardService.selectedIndex >= entries.length) {
             return;
         }
         const selectedEntry = entries[ClipboardService.selectedIndex];
-        if (modal.activeTab === "saved") {
+        if (selectedEntry.pinned) {
             modal.deletePinnedEntry(selectedEntry);
         } else {
             modal.deleteEntry(selectedEntry);
@@ -56,7 +56,7 @@ QtObject {
     }
 
     function togglePinSelected() {
-        const entries = modal.activeTab === "saved" ? ClipboardService.pinnedEntries : ClipboardService.unpinnedEntries;
+        const entries = ClipboardService.displayedEntries;
         if (!entries || entries.length === 0 || ClipboardService.selectedIndex < 0 || ClipboardService.selectedIndex >= entries.length) {
             return;
         }
@@ -74,7 +74,7 @@ QtObject {
     }
 
     function editSelected() {
-        const entries = modal.activeTab === "saved" ? ClipboardService.pinnedEntries : ClipboardService.unpinnedEntries;
+        const entries = ClipboardService.displayedEntries;
         if (!entries || entries.length === 0) {
             return;
         }
@@ -158,8 +158,7 @@ QtObject {
         case Qt.Key_Down:
         case Qt.Key_Tab:
             if (event.key === Qt.Key_Tab && (event.modifiers & Qt.ControlModifier)) {
-                modal.activeTab = modal.activeTab === "saved" ? "recents" : "saved";
-                ClipboardService.selectedIndex = 0;
+                modal.toggleShowPinned();
                 event.accepted = true;
                 return;
             }
@@ -174,8 +173,7 @@ QtObject {
         case Qt.Key_Up:
         case Qt.Key_Backtab:
             if (event.key === Qt.Key_Backtab && (event.modifiers & Qt.ControlModifier)) {
-                modal.activeTab = modal.activeTab === "saved" ? "recents" : "saved";
-                ClipboardService.selectedIndex = 0;
+                modal.toggleShowPinned();
                 event.accepted = true;
                 return;
             }

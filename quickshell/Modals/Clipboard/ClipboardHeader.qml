@@ -6,7 +6,6 @@ Item {
     id: header
 
     required property var modal
-    readonly property bool savedTab: modal.activeTab === "saved"
 
     implicitHeight: actions.implicitHeight
 
@@ -19,7 +18,7 @@ Item {
     StyledText {
         anchors.centerIn: parent
         width: Math.max(0, parent.width - 2 * (actions.sideWidth + Theme.spacingM))
-        text: (header.savedTab ? I18n.tr("Clipboard Saved") : I18n.tr("Clipboard History")) + ` (${header.savedTab ? header.modal.pinnedEntries.length : header.modal.unpinnedTotal})`
+        text: I18n.tr("Clipboard History") + ` (${header.modal.showPinned ? header.modal.unpinnedTotal + header.modal.pinnedEntries.length : header.modal.unpinnedTotal})`
         font.pixelSize: Theme.fontSizeMedium
         font.weight: Theme.fontWeightMedium
         color: Theme.surfaceText

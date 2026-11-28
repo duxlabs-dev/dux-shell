@@ -20,11 +20,12 @@ Item {
         DActionButton {
             Keys.forwardTo: [actions.modal.modalFocusScope]
             iconName: "push_pin"
-            iconColor: actions.modal.activeTab === "saved" ? Theme.onPrimary : Theme.onSurfaceVariant
-            backgroundColor: actions.modal.activeTab === "saved" ? Theme.primary : "transparent"
-            visible: actions.modal.pinnedCount > 0 || actions.modal.activeTab === "saved"
-            tooltipText: actions.modal.activeTab === "saved" ? I18n.tr("Recent", "clipboard button tooltip, switches to recent entries") : I18n.tr("Saved", "clipboard button tooltip, switches to saved entries")
-            onClicked: actions.modal.activeTab = actions.modal.activeTab === "saved" ? "recents" : "saved"
+            iconFilled: actions.modal.showPinned
+            iconColor: actions.modal.showPinned ? Theme.onPrimary : Theme.onSurfaceVariant
+            backgroundColor: actions.modal.showPinned ? Theme.primary : "transparent"
+            visible: actions.modal.pinnedCount > 0
+            tooltipText: I18n.tr("Pinned")
+            onClicked: actions.modal.toggleShowPinned()
         }
 
         DActionButton {
