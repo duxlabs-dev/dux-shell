@@ -194,8 +194,7 @@ Item {
 
         filteredWallpaperPaths = paths;
         gridRevision++;
-        if (useLibrary)
-            viewRevision++;
+        viewRevision++;
         updateSelectedFileName();
         Qt.callLater(revealSelection);
         if (selectCurrent) {
@@ -676,7 +675,8 @@ Item {
             }
 
             const ctrlHomeOrEnd = (event.modifiers & Qt.ControlModifier) && (event.key === Qt.Key_Home || event.key === Qt.Key_End);
-            const gridNavigationKey = event.key === Qt.Key_Up || event.key === Qt.Key_Down || event.key === Qt.Key_PageUp || event.key === Qt.Key_PageDown || event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Escape || ctrlHomeOrEnd;
+            const plainLeftOrRight = root.wallpaperCount > 0 && !(event.modifiers & (Qt.ShiftModifier | Qt.ControlModifier | Qt.AltModifier)) && (event.key === Qt.Key_Left || event.key === Qt.Key_Right);
+            const gridNavigationKey = plainLeftOrRight || event.key === Qt.Key_Up || event.key === Qt.Key_Down || event.key === Qt.Key_PageUp || event.key === Qt.Key_PageDown || event.key === Qt.Key_Return || event.key === Qt.Key_Enter || event.key === Qt.Key_Escape || ctrlHomeOrEnd;
             if (!gridNavigationKey)
                 return;
 
@@ -1216,6 +1216,7 @@ Item {
     }
 
     component SearchButton: DActionButton {
+        focusPolicy: Qt.TabFocus
         anchors.verticalCenter: parent.verticalCenter
         z: 2
         iconSize: Theme.iconSizeSmall
