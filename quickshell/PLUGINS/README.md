@@ -1588,6 +1588,20 @@ function getItems(query) {
 5. **Cleanup**: Destroy temporary objects after use
 6. **Empty Trigger Support**: Consider if your plugin benefits from always being visible
 
+### Live Sections
+
+A launcher plugin can also show a row of cards in the launcher results. Opt in with `"launcherSection": true` in `plugin.json` and implement `getSectionItems(query)` (the full query, trigger included), which returns items in the `getItems()` format. It is called once per query and again after each `PluginService.requestLauncherUpdate(pluginId)`, which refreshes the section in place (the selection and an expanded card are kept while their item still exists); reopening the launcher or changing the active trigger also asks again. Items keep their order (no scoring or filtering) and an empty array hides the section. Give each item a unique `id` (`name` is the fallback); repeated ids get `#2`, `#3` and so on in order, so keep the order stable. The section is shown in every launcher except the app drawer, in "All" mode and under the plugin's own trigger, not in the other filters or under another plugin's trigger.
+
+Optional properties on the launcher component:
+- `sectionTitle` / `sectionIcon`: header text and icon (default: plugin name and icon)
+- `sectionPriority`: position among sections (default `1.5`, between Pinned `1` and Applications `2`)
+- `sectionCard`: a `Component` used for each card instead of the default row. It gets `launcherItem`, `selected` and `expanded` if it declares them, the tallest card's `implicitHeight` sets the row height, and an optional `handleKey(event)` receives keys while the card is expanded and selected; returning `true` consumes the key
+
+Extra item keys:
+- `expandable`: Enter toggles the card's expanded state instead of executing; Escape collapses it first
+- `keepOpen`: `executeItem()` is called but the launcher stays open and no history is recorded
+- `preferSelect`: the card takes the initial selection while the query is empty (otherwise the first result outside live sections is selected)
+
 ### Example Plugin
 
 See `PLUGINS/LauncherExample/` for a complete working example demonstrating:

@@ -140,6 +140,11 @@ FocusScope {
             }
         }
 
+        if (resultsList.handleExpandedKey(event)) {
+            event.accepted = true;
+            return;
+        }
+
         const launcherAction = LauncherKeybinds.actionForEvent(event, SettingsData.launcherKeybinds);
         if (launcherAction) {
             actionPanel.hide();
@@ -168,7 +173,7 @@ FocusScope {
                 event.accepted = true;
                 return;
             }
-            if (root.controller.clearPluginFilter()) {
+            if (root.controller.collapseExpanded() || root.controller.clearPluginFilter()) {
                 event.accepted = true;
                 return;
             }

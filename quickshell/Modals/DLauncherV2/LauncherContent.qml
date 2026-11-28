@@ -131,7 +131,7 @@ FocusScope {
             }
         }
 
-        if (controller.activeFolderId && controller.handleFolderKey(event)) {
+        if (controller.activeFolderId ? controller.handleFolderKey(event) : resultsList.handleExpandedKey(event)) {
             event.accepted = true;
             return;
         }
@@ -159,7 +159,7 @@ FocusScope {
                 controller.closeLauncherFolder();
                 return;
             }
-            if (controller.clearPluginFilter())
+            if (controller.collapseExpanded() || controller.clearPluginFilter())
                 return;
             if (root.parentModal?.attemptUserCancel)
                 root.parentModal.attemptUserCancel();
