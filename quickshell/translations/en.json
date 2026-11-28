@@ -7070,6 +7070,15 @@
     ]
   },
   {
+    "term": "Controlled by All displays",
+    "context": "Controlled by All displays",
+    "reference": "Modules/Settings/Widgets/SettingsDisplayPicker.qml:48, Modules/Settings/Widgets/SettingsDisplayPicker.qml:69",
+    "comment": "display picker dependent toggle disabled reason",
+    "tags": [
+      "settings"
+    ]
+  },
+  {
     "term": "Controls",
     "context": "Controls",
     "reference": "Modules/Settings/ThemeSurfacesTab.qml:394, Modules/Settings/BarWidgetOptions/MusicOptions.qml:25",
@@ -25723,6 +25732,15 @@
     "comment": "",
     "tags": [
       "shell"
+    ]
+  },
+  {
+    "term": "Requires Use overlay layer",
+    "context": "Requires Use overlay layer",
+    "reference": "Modules/Settings/DockAdvancedTab.qml:41",
+    "comment": "dock over fullscreen toggle disabled reason",
+    "tags": [
+      "settings"
     ]
   },
   {

@@ -45,6 +45,7 @@ Column {
         text: I18n.tr("Show on last display")
         visible: root.showLastDisplay
         enabled: !root.localAllDisplays
+        disabledReason: I18n.tr("Controlled by All displays", "display picker dependent toggle disabled reason")
         checked: root.showOnLastDisplay
         onToggled: checked => root.lastDisplayToggled(checked)
     }
@@ -65,6 +66,7 @@ Column {
             text: SettingsData.getScreenDisplayName(modelData)
             description: modelData.width + "×" + modelData.height + " · " + (SettingsData.displayNameMode === "system" ? (modelData.model || I18n.tr("Unknown Model")) : modelData.name)
             enabled: !root.localAllDisplays
+            disabledReason: I18n.tr("Controlled by All displays", "display picker dependent toggle disabled reason")
             checked: root.localAllDisplays || SettingsData.isScreenInPreferences(modelData, root.displayPreferences)
             onToggled: checked => {
                 const prefs = (Array.isArray(root.displayPreferences) ? root.displayPreferences : []).filter(pref => pref !== "all" && !SettingsData.isScreenInPreferences(modelData, [pref]));
