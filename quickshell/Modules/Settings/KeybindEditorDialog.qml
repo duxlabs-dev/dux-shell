@@ -63,10 +63,9 @@ DDialog {
     readonly property var compositorFlags: compositorFlagOptions()
     readonly property var bindOptionList: bindOptions()
     readonly property bool isNiri: KeybindsService.currentProvider === "niri"
-    readonly property bool niriConfigNext: isNiri && NiriService.configNextSupported
     // niri 26.04 rejects release, pass-through and lone modifiers; still show a set value so it can be cleared
-    readonly property bool showReleaseOption: isNiri && editTrigger !== "both" && !KeyUtils.isScrollTrigger(editKey) && (niriConfigNext || editTrigger === "release")
-    readonly property bool showPassThroughOption: isNiri && KeyUtils.isKeyboardTrigger(editKey) && (niriConfigNext || editPassThrough !== undefined)
+    readonly property bool showReleaseOption: isNiri && editTrigger !== "both" && !KeyUtils.isScrollTrigger(editKey) && (KeybindsService.supportsNext("bind-release") || editTrigger === "release")
+    readonly property bool showPassThroughOption: isNiri && KeyUtils.isKeyboardTrigger(editKey) && (KeybindsService.supportsNext("bind-pass-through") || editPassThrough !== undefined)
     readonly property bool effectivePassThrough: editPassThrough ?? editTrigger === "release"
 
     readonly property string customCategory: I18n.tr("Custom")
@@ -428,7 +427,7 @@ DDialog {
         const base = argConfig?.base ?? "";
         const focusArg = isNiri && argConfig?.type === "compositor" ? compositorArgDefs.find(arg => arg.name === "focus") : undefined;
         if (focusArg) {
-            if (focusArg.next && !niriConfigNext && compositorParsedArgs?.args?.focus === undefined)
+            if (focusArg.next && !KeybindsService.supportsNext(focusArg.next) && compositorParsedArgs?.args?.focus === undefined)
                 return [];
             return [
                 {
@@ -775,7 +774,7 @@ DDialog {
                     key: root.editKey
                     modKey: KeybindsService.modKey
                     modSymbol: KeybindsService.modSymbol
-                    capturesLoneModifiers: root.niriConfigNext
+                    capturesLoneModifiers: KeybindsService.supportsNext("bind-lone-modifier")
                     capturesWheel: true
                     onCaptured: (key, loneModifier) => root.applyCapturedKey(key, loneModifier)
                 }

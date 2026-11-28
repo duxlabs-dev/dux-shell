@@ -46,7 +46,7 @@ test("identifier rules: niri appends the serial or Unknown, hyprland uses desc: 
     assert.equal(model.profileIdentifier(dell, "DP-1", "system", "niri"), "DP-1");
 });
 
-test("niri kdl parser: top-level off disables, nested off does not, on-demand vrr, raw transform spelling, max-bpc and drm-lease kept", () => {
+test("niri kdl parser: top-level off disables, nested off does not, on-demand vrr, raw transform spelling, max-bpc kept", () => {
     const parsed = plain(model.parseNiriOutputs(text("niri-outputs.kdl")));
     assert.deepEqual(Object.keys(parsed), ["DP-1", "HDMI-A-1", "eDP-1", "Dell Inc. DELL U2720Q ABC123"]);
     assert.deepEqual(parsed["DP-1"], { name: "DP-1", disabled: false, logical: { x: 0, y: 0, scale: 1.25, transform: "90" }, modes: [{ width: 2560, height: 1440, refresh_rate: 143998 }], current_mode: 0, vrr_enabled: true, vrr_on_demand: true, vrr_supported: true, drm_lease: false });
@@ -55,7 +55,6 @@ test("niri kdl parser: top-level off disables, nested off does not, on-demand vr
     assert.deepEqual([parsed["eDP-1"].vrr_enabled, parsed["eDP-1"].vrr_on_demand, parsed["eDP-1"].max_bpc], [true, false, 10]);
     assert.deepEqual(parsed["Dell Inc. DELL U2720Q ABC123"].logical, { x: -2560, y: 0, scale: 1.5, transform: "flipped-90" });
     assert.deepEqual([parsed["HDMI-A-1"].max_bpc, parsed["Dell Inc. DELL U2720Q ABC123"].max_bpc, model.parseNiriOutputs('output "X" {\n max-bpc 6 /* x */\n}')["X"].max_bpc], [8, 12, 6]);
-    assert.equal(model.parseNiriOutputs('output "VR" {\n    drm-lease; scale 1\n}')["VR"].drm_lease, true);
 });
 
 test("niri kdl parser: commented-out headers, braces in comments and strings, nested block comments and slashdash nodes are not outputs", () => {

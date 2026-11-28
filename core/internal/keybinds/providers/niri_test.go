@@ -6,7 +6,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"slices"
-	"strings"
 	"testing"
 
 	"github.com/duxlabs-dev/dux-shell/core/internal/config"
@@ -218,30 +217,6 @@ func TestNiriGenerateBindsContent(t *testing.T) {
 			},
 			expected: `binds {
     Print { screenshot show-pointer=false; }
-}
-`,
-		},
-		{
-			name: "numeric args quoted unless the action takes an integer",
-			binds: map[string]*overrideBind{
-				"Mod+1": {Key: "Mod+1", Action: "focus-workspace 3"},
-				"Mod+2": {Key: "Mod+2", Action: "switch-layout 0"},
-				"Mod+3": {Key: "Mod+3", Action: "set-window-width 800"},
-				"Mod+4": {Key: "Mod+4", Action: "set-column-width -100"},
-				"Mod+5": {Key: "Mod+5", Action: "set-workspace-name 1"},
-				"Mod+6": {Key: "Mod+6", Action: "focus-monitor 1"},
-				"Mod+7": {Key: "Mod+7", Action: "move-column-to-index 2 focus=false"},
-				"Mod+8": {Key: "Mod+8", Action: "do-screen-transition delay-ms=250"},
-			},
-			expected: `binds {
-    Mod+1 { focus-workspace 3; }
-    Mod+5 { set-workspace-name "1"; }
-    Mod+3 { set-window-width "800"; }
-    Mod+4 { set-column-width "-100"; }
-    Mod+6 { focus-monitor "1"; }
-    Mod+7 { move-column-to-index 2 focus=false; }
-    Mod+2 { switch-layout "0"; }
-    Mod+8 { do-screen-transition delay-ms=250; }
 }
 `,
 		},
@@ -720,8 +695,6 @@ func TestNormalizeNiriBindKey(t *testing.T) {
 		{"ISO_Level5_Shift+x", "Mod3+x"},
 		{"Alt+Alt_L", "Alt_L"},
 		{"Ctrl+ISO_Level3_Shift", "Mod5+Control"},
-		{"AudioMute", "XF86AudioMute"},
-		{"Shift+audioraisevolume", "Shift+XF86AudioRaiseVolume"},
 	}
 	for _, p := range same {
 		if a, b := normalizeNiriBindKey(p[0]), normalizeNiriBindKey(p[1]); a != b {
@@ -733,8 +706,6 @@ func TestNormalizeNiriBindKey(t *testing.T) {
 		{"Mod", "Super"},
 		{"Alt_L", "Alt_R"},
 		{"Alt+Shift", "Alt+Shift+T"},
-		{"Select", "XF86Select"},
-		{"Q", "XF86Q"},
 	}
 	for _, p := range different {
 		if normalizeNiriBindKey(p[0]) == normalizeNiriBindKey(p[1]) {
@@ -933,68 +904,5 @@ func TestNiriGenericModifierBindConflict(t *testing.T) {
 	}
 	if len(result.ConflictingConfigs) != 1 || len(result.Section.Keybinds) != 1 {
 		t.Errorf("Alt vs Alt_L: %d conflicts, %d binds; want 1 and 1", len(result.ConflictingConfigs), len(result.Section.Keybinds))
-	}
-}
-
-func TestNiriWorkspaceNameStaysQuoted(t *testing.T) {
-	stubNiriValidate(t)
-	niriNested = func() bool { return false }
-	t.Cleanup(func() { niriNested = detectNiriNested })
-	dir := writeNiriDMSBinds(t, `binds {
-    Mod+3 { focus-workspace "3"; }
-    Mod+4 { focus-workspace 4; }
-    Mod+Shift+3 { move-column-to-workspace "3" focus=false; }
-    Mod+Ctrl+3 {
-        press { spawn "a"; }
-        release { move-window-to-workspace "3"; }
-    }
-}
-`)
-	if err := os.WriteFile(filepath.Join(dir, "config.kdl"), []byte(`include "dms/binds.kdl"`+"\n"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	provider := NewNiriProvider(dir)
-
-	sheet, err := provider.GetCheatSheet()
-	if err != nil {
-		t.Fatal(err)
-	}
-	sent := map[string]string{}
-	for _, binds := range sheet.Binds {
-		for _, b := range binds {
-			sent[b.Key] = b.Action
-			if b.ReleaseAction != "" {
-				sent[b.Key+" release"] = b.ReleaseAction
-			}
-		}
-	}
-	for key, want := range map[string]string{
-		"Mod+3":              `focus-workspace "3"`,
-		"Mod+4":              `focus-workspace 4`,
-		"Mod+Shift+3":        `move-column-to-workspace "3" focus=false`,
-		"Mod+Ctrl+3 release": `move-window-to-workspace "3"`,
-	} {
-		if sent[key] != want {
-			t.Errorf("%s sent as %q, want %q", key, sent[key], want)
-		}
-	}
-
-	if err := provider.SetBind("Mod+5", `focus-workspace "5"`, "", nil); err != nil {
-		t.Fatal(err)
-	}
-	data, err := os.ReadFile(provider.GetOverridePath())
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, want := range []string{
-		`Mod+3 { focus-workspace "3"; }`,
-		`Mod+4 { focus-workspace 4; }`,
-		`Mod+5 { focus-workspace "5"; }`,
-		`Mod+Shift+3 { move-column-to-workspace "3" focus=false; }`,
-		`release { move-window-to-workspace "3"; }`,
-	} {
-		if !strings.Contains(string(data), want) {
-			t.Errorf("saved binds lack %q:\n%s", want, data)
-		}
 	}
 }

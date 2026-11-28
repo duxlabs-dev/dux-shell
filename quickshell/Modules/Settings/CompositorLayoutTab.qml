@@ -156,7 +156,7 @@ awk '$1 == "xray" { print FILENAME ":" FNR; exit }' $files 2>/dev/null`;
                 }
 
                 SettingsToggleRow {
-                    visible: CompositorService.isNiri && (NiriService.configNextSupported || SettingsData.niriLayoutTransparentBackdrop)
+                    visible: CompositorService.isNiri && (NiriService.supports("transparent-fullscreen-backdrop") || SettingsData.niriLayoutTransparentBackdrop)
                     tags: ["niri", "fullscreen", "backdrop", "transparent", "transparency", "background"]
                     settingKey: "niriLayoutTransparentBackdrop"
                     text: I18n.tr("Transparent fullscreen backdrop", "niri layout toggle, nothing opaque is drawn behind fullscreen windows")

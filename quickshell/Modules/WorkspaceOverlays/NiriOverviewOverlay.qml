@@ -93,7 +93,7 @@ Scope {
                 readonly property bool spotlightShown: shouldShowSpotlight || (niriOverviewScope.isClosing && isSpotlightScreen)
                 readonly property string searchText: launcherContent?.searchField?.text ?? ""
                 readonly property bool hasFocusOnMap: "focusOnMap" in WlrLayershell
-                readonly property bool typeInOverview: hasFocusOnMap && NiriService.configNextSupported && CompositorService.niriWindowRulesIncluded
+                readonly property bool typeInOverview: hasFocusOnMap && NiriService.supports("type-in-overview") && CompositorService.niriWindowRulesIncluded
 
                 function releaseIdleKeyboardFocus() {
                     if (!typeInOverview || spotlightShown || searchText)

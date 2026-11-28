@@ -283,7 +283,7 @@ Column {
                 settingKey: "notificationHideFromScreenShare"
                 tags: ["notification", "popup", "screenshare", "sharing", "screencast", "recording", "privacy", "hide"]
                 text: I18n.tr("Hide popups from screen shares", "niri notification toggle, popups are left out of screen shares")
-                description: NiriService.configNextSupported ? I18n.tr("Popups stay on your screen but are left out of screen shares and recordings", "hide popups from screen shares toggle description") : I18n.tr("Popups stay on your screen but are blacked out in screen shares and recordings", "hide popups from screen shares toggle description, older niri")
+                description: NiriService.supports("layer-block-out-kind") ? I18n.tr("Popups stay on your screen but are left out of screen shares and recordings", "hide popups from screen shares toggle description") : I18n.tr("Popups stay on your screen but are blacked out in screen shares and recordings", "hide popups from screen shares toggle description, older niri")
                 checked: SettingsData.notificationHideFromScreenShare
                 onToggled: checked => SettingsData.set("notificationHideFromScreenShare", checked)
             }

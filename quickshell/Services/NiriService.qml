@@ -47,7 +47,7 @@ Singleton {
     signal touchpadToggled
 
     // Not bound to capabilities: they empty on every socket drop and would rewrite input.kdl twice.
-    property bool configNextSupported: false
+    property var configFeatures: []
 
     property string configValidationOutput: ""
     property bool hasInitialConnection: false
@@ -93,8 +93,28 @@ Singleton {
         validateProcess.running = true;
     }
 
+    function reportedFeatures() {
+        return DMSService.capabilities.filter(capability => capability.startsWith("niri."));
+    }
+
+    // Each post-26.04 syntax is probed on its own, so a niri git build gets the ones it accepts.
+    function supports(feature) {
+        return configFeatures.includes("niri." + feature);
+    }
+
+    function reportConfigWrite(name, path, exitCode, output) {
+        if (exitCode === 0) {
+            log.info("Generated", name, "config at", path);
+            return;
+        }
+        log.warn("Failed to write", name, "config, exit code:", exitCode, output);
+        const details = output.trim();
+        if (details.length > 0)
+            ToastService.showError(I18n.tr("Config validation failed"), details, "", "niri-config");
+    }
+
     Component.onCompleted: {
-        configNextSupported = DMSService.capabilities.includes("niri.config-next");
+        configFeatures = reportedFeatures();
         fetchOutputs();
         generateNiriInputConfig();
     }
@@ -152,9 +172,10 @@ Singleton {
     Connections {
         target: DMSService
         function onCapabilitiesReceived() {
-            const supported = DMSService.capabilities.includes("niri.config-next");
-            const changed = supported !== root.configNextSupported;
-            root.configNextSupported = supported;
+            const features = root.reportedFeatures();
+            const changed = features.join() !== root.configFeatures.join();
+            if (changed)
+                root.configFeatures = features;
             if (changed || root.configGenerationPending)
                 root.generateNiriLayoutConfig();
             if (root._overviewRulePending) {
@@ -207,15 +228,17 @@ Singleton {
         property string configPath: ""
         property int requestRevision: 0
 
+        stdout: StdioCollector {
+            id: layoutWriteOutput
+        }
+
         onExited: exitCode => {
-            if (exitCode === 0) {
-                log.info("Generated layout config at", configPath);
-            } else {
+            root.reportConfigWrite("layout", configPath, exitCode, layoutWriteOutput.text);
+            if (exitCode !== 0) {
                 if (root._awaitingLayoutReloadRevision === requestRevision)
                     root._awaitingLayoutReloadRevision = 0;
                 // Best-effort ack so a failed write can't wedge frame transitions
                 root._layoutAppliedRevision = Math.max(root._layoutAppliedRevision, requestRevision);
-                log.warn("Failed to write layout config, exit code:", exitCode);
             }
             if (root.configGenerationPending && root._awaitingLayoutReloadRevision <= root._layoutAppliedRevision)
                 configGenerationAction.schedule();
@@ -227,12 +250,12 @@ Singleton {
         property string alttabContent: ""
         property string alttabPath: ""
 
+        stdout: StdioCollector {
+            id: alttabWriteOutput
+        }
+
         onExited: exitCode => {
-            if (exitCode === 0) {
-                log.info("Generated alttab config at", alttabPath);
-                return;
-            }
-            log.warn("Failed to write alttab config, exit code:", exitCode);
+            root.reportConfigWrite("alttab", alttabPath, exitCode, alttabWriteOutput.text);
         }
     }
 
@@ -240,12 +263,12 @@ Singleton {
         id: writeBlurruleProcess
         property string blurrulePath: ""
 
+        stdout: StdioCollector {
+            id: blurruleWriteOutput
+        }
+
         onExited: exitCode => {
-            if (exitCode === 0) {
-                log.info("Generated wpblur config at", blurrulePath);
-                return;
-            }
-            log.warn("Failed to write wpblur config, exit code:", exitCode);
+            root.reportConfigWrite("wpblur", blurrulePath, exitCode, blurruleWriteOutput.text);
         }
     }
 
@@ -254,12 +277,12 @@ Singleton {
         property string inputContent: ""
         property string inputPath: ""
 
+        stdout: StdioCollector {
+            id: inputWriteOutput
+        }
+
         onExited: exitCode => {
-            if (exitCode === 0) {
-                log.info("Generated input config at", inputPath);
-                return;
-            }
-            log.warn("Failed to write input config, exit code:", exitCode);
+            root.reportConfigWrite("input", inputPath, exitCode, inputWriteOutput.text);
         }
     }
 
@@ -268,12 +291,12 @@ Singleton {
         property string cursorContent: ""
         property string cursorPath: ""
 
+        stdout: StdioCollector {
+            id: cursorWriteOutput
+        }
+
         onExited: exitCode => {
-            if (exitCode === 0) {
-                log.info("Generated cursor config at", cursorPath);
-                return;
-            }
-            log.warn("Failed to write cursor config, exit code:", exitCode);
+            root.reportConfigWrite("cursor", cursorPath, exitCode, cursorWriteOutput.text);
         }
     }
 
@@ -1291,7 +1314,7 @@ blur {
     function popupScreencastRule() {
         if (typeof SettingsData === "undefined" || !SettingsData.notificationHideFromScreenShare)
             return "";
-        const kind = configNextSupported ? ` kind="hide"` : "";
+        const kind = supports("layer-block-out-kind") ? ` kind="hide"` : "";
         return `
 
 layer-rule {
@@ -1361,7 +1384,7 @@ window-rule {
         if (manageGaps)
             layoutLines.push(`    gaps ${gaps}`, "");
         layoutLines.push("    border {", `        width ${borderSize}`, "    }", "", "    focus-ring {", `        width ${borderSize}`, "    }");
-        if (configNextSupported && typeof SettingsData !== "undefined" && SettingsData.niriLayoutTransparentBackdrop)
+        if (supports("transparent-fullscreen-backdrop") && typeof SettingsData !== "undefined" && SettingsData.niriLayoutTransparentBackdrop)
             layoutLines.push("", "    fullscreen-backdrop-color \"transparent\"");
 
         const configContent = dmsWarning + `layout {
@@ -1424,7 +1447,7 @@ window-rule {
             _overviewRulePending = true;
             return;
         }
-        if (!configNextSupported)
+        if (!supports("type-in-overview"))
             return;
         Proc.runCommand("niri-ensure-overview-rule", ["sh", "-c", `grep -qs focus-on-type-in-overview "\${XDG_CONFIG_HOME:-\$HOME/.config}/niri/dms/windowrules.kdl" || "${Proc.dmsBin}" config windowrules reorder niri "[]"`]);
     }
@@ -1438,7 +1461,7 @@ window-rule {
         const sourceBlurrulePath = Paths.strip(Qt.resolvedUrl("niri-wpblur.kdl"));
 
         writeBlurruleProcess.blurrulePath = blurrulePath;
-        writeBlurruleProcess.command = ["sh", "-c", `${targetFileCommand(blurrulePath)} && cp --no-preserve=mode "${sourceBlurrulePath}" "$target.$$.tmp" && mv -f "$target.$$.tmp" "$target"`];
+        writeBlurruleProcess.command = ["sh", "-c", `"${Proc.dmsBin}" niri-write-config "${blurrulePath}" < "${sourceBlurrulePath}" 2>&1`];
         writeBlurruleProcess.running = true;
     }
 
@@ -1451,10 +1474,7 @@ window-rule {
         const content = CompositorAnimations.generate("niri", typeof SettingsData !== "undefined" ? SettingsData : {});
 
         // Same-id calls coalesce in Proc's debounce, so a burst of setting writes is one file write
-        Proc.runCommand("niri-write-animations", ["sh", "-c", replaceFileCommand(animationsPath, content)], (output, exitCode) => {
-            if (exitCode !== 0)
-                log.warn("Failed to write animations config, exit code:", exitCode);
-        });
+        Proc.runCommand("niri-write-animations", ["sh", "-c", replaceFileCommand(animationsPath, content)], (output, exitCode) => reportConfigWrite("animations", animationsPath, exitCode, output));
     }
 
     function generateNiriCursorConfig() {
@@ -1519,13 +1539,10 @@ window-rule {
         writeCursorProcess.running = true;
     }
 
-    function targetFileCommand(path) {
-        return `mkdir -p "$(dirname "${path}")" && target="$(readlink -f "${path}")"`;
-    }
-
+    // dms validates with the running niri and keeps the old file when niri rejects the new one.
     function replaceFileCommand(path, content) {
         const body = content.endsWith("\n") ? content : content + "\n";
-        return `${targetFileCommand(path)} && cat > "$target.$$.tmp" << 'EOF' && mv -f "$target.$$.tmp" "$target"\n${body}EOF`;
+        return `"${Proc.dmsBin}" niri-write-config "${path}" 2>&1 << 'EOF'\n${body}EOF`;
     }
 
     function applyOutputConfig(outputName, config, callback) {
@@ -1673,7 +1690,7 @@ window-rule {
                 kdlContent += `    focus-at-startup\n`;
             }
 
-            if (outputSettings.drmLease && !outputSettings.disabled && configNextSupported) {
+            if (outputSettings.drmLease && !outputSettings.disabled && supports("output-drm-lease")) {
                 kdlContent += `    drm-lease\n`;
             }
 
@@ -1866,7 +1883,7 @@ window-rule {
         let inputContent = dmsWarning + "input {\n";
         // Niri flags take no false, so off can only leave it out
         if (typeof SettingsData !== "undefined" && SettingsData.focusFollowsMouse === 1) {
-            const outputsOnly = SettingsData.niriFocusFollowsMouseOutputsOnly && configNextSupported ? " outputs-only=true" : "";
+            const outputsOnly = SettingsData.niriFocusFollowsMouseOutputsOnly && supports("focus-follows-mouse-outputs-only") ? " outputs-only=true" : "";
             inputContent += `    focus-follows-mouse max-scroll-amount="0%"${outputsOnly}\n`;
         }
 
@@ -1920,7 +1937,7 @@ window-rule {
         if (touchpadScrollFactor !== 1.0) {
             inputContent += `        scroll-factor ${touchpadScrollFactor.toFixed(1)}\n`;
         }
-        if (touchpadPinchSensitivity !== 1.0 && configNextSupported) {
+        if (touchpadPinchSensitivity !== 1.0 && supports("touchpad-pinch-sensitivity")) {
             inputContent += `        pinch-sensitivity ${touchpadPinchSensitivity.toFixed(1)}\n`;
         }
         if (touchpadScrollMethod !== "default") {
@@ -1938,7 +1955,7 @@ window-rule {
 
         // niri replaces the whole tablet section across includes, so only write it when needed
         const tabletOutput = typeof SettingsData !== "undefined" ? SettingsData.niriTabletMapToOutput : "";
-        const tabletFocusedWindow = typeof SettingsData !== "undefined" && SettingsData.niriTabletMapToFocusedWindow && configNextSupported;
+        const tabletFocusedWindow = typeof SettingsData !== "undefined" && SettingsData.niriTabletMapToFocusedWindow && supports("tablet-map-to-focused-window");
         const tabletLeftHanded = typeof SettingsData !== "undefined" && SettingsData.niriTabletLeftHanded;
         if (tabletOutput || tabletFocusedWindow || tabletLeftHanded) {
             inputContent += "    tablet {\n";

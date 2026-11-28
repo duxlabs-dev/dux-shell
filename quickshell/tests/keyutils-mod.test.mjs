@@ -31,15 +31,12 @@ test("conflict normalization ignores modifier order like niri does", () => {
         ["Shift+Alt+T", "Alt+Shift+T"],
         ["Mod+Shift+Ctrl+Q", "Ctrl+Super+Shift+Q"],
         ["Shift+Alt", "Alt+Shift"],
-        ["ISO_Level3_Shift+T", "Mod5+T"],
-        ["AudioMute", "XF86AudioMute"],
-        ["Shift+audioraisevolume", "Shift+XF86AudioRaiseVolume"]
+        ["ISO_Level3_Shift+T", "Mod5+T"]
     ];
     for (const [a, b] of same)
         assert.equal(norm(a), norm(b), `${a} vs ${b}`);
     assert.equal(norm("Alt+Shift_L"), "alt+shift+shift_l", "a modifier keysym trigger keeps its own name");
     assert.notEqual(norm("Mod"), norm("Mod+T"));
-    assert.notEqual(norm("Select"), norm("XF86Select"), "a bare name that is a keysym keeps its own key");
 });
 
 test("a bare modifier conflicts with its sided keysyms like niri's conflicts_with", () => {

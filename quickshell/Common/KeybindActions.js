@@ -751,32 +751,32 @@ const NIRI_ACTIONS = {
         {
             id: "set-window-fullscreen",
             label: "Set Fullscreen",
-            next: true
+            next: "bind-window-state"
         },
         {
             id: "unset-window-fullscreen",
             label: "Unset Fullscreen",
-            next: true
+            next: "bind-window-state"
         },
         {
             id: "set-windowed-fullscreen",
             label: "Set Windowed Fullscreen",
-            next: true
+            next: "bind-window-state"
         },
         {
             id: "unset-windowed-fullscreen",
             label: "Unset Windowed Fullscreen",
-            next: true
+            next: "bind-window-state"
         },
         {
             id: "set-window-maximized-to-edges",
             label: "Set Maximized to Edges",
-            next: true
+            next: "bind-window-state"
         },
         {
             id: "unset-window-maximized-to-edges",
             label: "Unset Maximized to Edges",
-            next: true
+            next: "bind-window-state"
         }
     ],
     "Focus": [
@@ -891,17 +891,17 @@ const NIRI_ACTIONS = {
         {
             id: "focus-window-previous scope=\"output\"",
             label: "Focus Previous Window (Same Monitor)",
-            next: true
+            next: "bind-focus-window-previous-scope"
         },
         {
             id: "focus-window-previous scope=\"workspace\"",
             label: "Focus Previous Window (Same Workspace)",
-            next: true
+            next: "bind-focus-window-previous-scope"
         },
         {
             id: "focus-window-previous filter=\"app-id\"",
             label: "Focus Previous Window (Same Application)",
-            next: true
+            next: "bind-focus-window-previous-filter"
         }
     ],
     "Move": [
@@ -1022,22 +1022,22 @@ const NIRI_ACTIONS = {
         {
             id: "move-column-to-new-workspace-below",
             label: "Move to New Workspace Below",
-            next: true
+            next: "bind-move-column-to-new-workspace-below"
         },
         {
             id: "move-column-to-new-workspace-above",
             label: "Move to New Workspace Above",
-            next: true
+            next: "bind-move-column-to-new-workspace-above"
         },
         {
             id: "move-window-to-new-workspace-below",
             label: "Move Window to New Workspace Below",
-            next: true
+            next: "bind-move-window-to-new-workspace-below"
         },
         {
             id: "move-window-to-new-workspace-above",
             label: "Move Window to New Workspace Above",
-            next: true
+            next: "bind-move-window-to-new-workspace-above"
         }
     ],
     "Monitor": [
@@ -1220,7 +1220,7 @@ const NIRI_ACTIONS = {
         {
             id: "toggle-touchpad",
             label: "Toggle Touchpad",
-            next: true
+            next: "bind-toggle-touchpad"
         },
         {
             id: "quit",
@@ -1233,7 +1233,7 @@ const NIRI_ACTIONS = {
         {
             id: "change-vt",
             label: "Switch to VT (by index)",
-            next: true
+            next: "bind-change-vt"
         }
     ],
     "Alt-Tab": [
@@ -2280,7 +2280,7 @@ const NIRI_FOCUS_NEXT_ARGS = {
             type: "bool",
             label: "Follow focus",
             default: true,
-            next: true
+            next: "bind-move-focus"
         }
     ]
 };
@@ -2435,7 +2435,7 @@ const NIRI_ACTION_ARGS = {
                 type: "bool",
                 label: "Follow focus",
                 default: true,
-                next: true
+                next: "bind-move-focus"
             }
         ]
     },
@@ -3617,16 +3617,14 @@ function getCompositorCategories(compositor) {
     return Object.keys(actions);
 }
 
-// Entries marked next need niri newer than 26.04 (the niri.config-next capability).
-function getCompositorActions(compositor, category, configNext) {
+// next names the niri capability an entry needs; supports answers for one of them.
+function getCompositorActions(compositor, category, supports) {
     var actions = COMPOSITOR_ACTIONS[compositor];
     if (!actions)
         return [];
     var list = actions[category] || [];
-    if (configNext)
-        return list;
     return list.filter(function (action) {
-        return !action.next;
+        return !action.next || supports(action.next);
     });
 }
 
@@ -3744,7 +3742,7 @@ function hasUneditableProps(compositor, base, action) {
     });
 }
 
-function isKnownCompositorAction(compositor, action, configNext) {
+function isKnownCompositorAction(compositor, action, supports) {
     if (!action || !compositor)
         return false;
     var found = findCompositorAction(compositor, action);
@@ -3754,7 +3752,7 @@ function isKnownCompositorAction(compositor, action, configNext) {
     }
     if (!found)
         return false;
-    return configNext || !found.next;
+    return !found.next || supports(found.next);
 }
 
 function buildSpawnAction(command, args) {

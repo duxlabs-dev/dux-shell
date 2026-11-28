@@ -48,7 +48,7 @@ Item {
                 }
 
                 SettingsToggleRow {
-                    visible: CompositorService.isNiri && SettingsData.focusFollowsMouse === 1 && (NiriService.configNextSupported || SettingsData.niriFocusFollowsMouseOutputsOnly)
+                    visible: CompositorService.isNiri && SettingsData.focusFollowsMouse === 1 && (NiriService.supports("focus-follows-mouse-outputs-only") || SettingsData.niriFocusFollowsMouseOutputsOnly)
                     tags: ["mouse", "focus", "follow", "pointer", "monitor", "output", "display"]
                     settingKey: "niriFocusFollowsMouseOutputsOnly"
                     text: I18n.tr("Monitors only", "niri toggle under focus follows mouse, the pointer only moves focus between monitors")
@@ -212,7 +212,7 @@ Item {
                 }
 
                 SettingsSliderRow {
-                    visible: CompositorService.isNiri && NiriService.configNextSupported
+                    visible: CompositorService.isNiri && NiriService.supports("touchpad-pinch-sensitivity")
                     tags: ["touchpad", "pinch", "zoom", "gesture", "sensitivity"]
                     settingKey: "touchpadPinchSensitivity"
                     text: I18n.tr("Pinch sensitivity", "touchpad slider, how strongly pinch gestures zoom in apps")
@@ -373,7 +373,7 @@ Item {
                 }
 
                 SettingsToggleRow {
-                    visible: CompositorService.isNiri && (NiriService.configNextSupported || SettingsData.niriTabletMapToFocusedWindow)
+                    visible: CompositorService.isNiri && (NiriService.supports("tablet-map-to-focused-window") || SettingsData.niriTabletMapToFocusedWindow)
                     tags: ["tablet", "pen", "stylus", "drawing", "map", "window", "focus"]
                     settingKey: "niriTabletMapToFocusedWindow"
                     text: I18n.tr("Map to focused window", "niri tablet toggle, the tablet area covers the focused window")

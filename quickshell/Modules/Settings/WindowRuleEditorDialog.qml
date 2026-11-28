@@ -20,7 +20,11 @@ DDialog {
     readonly property bool isNiri: CompositorService.isNiri
     readonly property bool isHyprland: CompositorService.isHyprland
     readonly property bool isMango: CompositorService.isMango
-    readonly property bool niriConfigNext: isNiri && NiriService.configNextSupported
+    readonly property bool niriVrrFullscreenOnly: isNiri && NiriService.supports("rule-vrr-fullscreen-only")
+    readonly property bool niriOnXdgActivate: isNiri && NiriService.supports("rule-on-xdg-activate")
+    readonly property bool niriPinchSensitivity: isNiri && NiriService.supports("rule-pinch-sensitivity")
+    readonly property bool niriOutputList: isNiri && NiriService.supports("rule-open-on-output-list")
+    readonly property bool niriBlockOutKind: isNiri && NiriService.supports("rule-block-out-kind")
     readonly property bool fieldsEnabled: !submitting
     readonly property bool halfPair: isHyprland && (!!moveXInput.text.trim() !== !!moveYInput.text.trim() || !!sizeWInput.text.trim() !== !!sizeHInput.text.trim())
 
@@ -160,7 +164,7 @@ DDialog {
             "label": I18n.tr("Border with Background"),
             "value": "borderBg"
         }
-    ].filter(option => option.value !== "vrrFullscreen" || root.niriConfigNext)
+    ].filter(option => option.value !== "vrrFullscreen" || root.niriVrrFullscreenOnly)
     readonly property var hyprOptions: [
         {
             "label": I18n.tr("Tile"),
@@ -436,7 +440,7 @@ DDialog {
         const dynamic = [];
         if (actions.variableRefreshRate)
             dynamic.push("vrr");
-        if (niriConfigNext && actions.vrrFullscreenOnly)
+        if (niriVrrFullscreenOnly && actions.vrrFullscreenOnly)
             dynamic.push("vrrFullscreen");
         if (actions.clipToGeometry)
             dynamic.push("clip");
@@ -558,9 +562,13 @@ DDialog {
 
     function ownedActionKeys() {
         const keys = ["opacity", "openFloating", "openMaximized", "openFullscreen", "cornerRadius"];
-        // Without the capability these stay hidden and are carried through untouched.
-        if (niriConfigNext)
-            keys.push("vrrFullscreenOnly", "onXdgActivate", "pinchSensitivity");
+        // Without its capability a key stays hidden and is carried through untouched.
+        if (niriVrrFullscreenOnly)
+            keys.push("vrrFullscreenOnly");
+        if (niriOnXdgActivate)
+            keys.push("onXdgActivate");
+        if (niriPinchSensitivity)
+            keys.push("pinchSensitivity");
         if (isNiri)
             return keys.concat(["openMaximizedToEdges", "openFocused", "openOnOutput", "openOnWorkspace", "minWidth", "maxWidth", "minHeight", "maxHeight", "defaultColumnWidth", "defaultWindowHeight", "variableRefreshRate", "clipToGeometry", "tiledState", "drawBorderWithBackground", "blockOutFrom", "blockOutKind", "defaultColumnDisplay", "scrollFactor", "backgroundBlur", "backgroundXray", "backgroundNoise", "backgroundSaturation", "defaultFloatingX", "defaultFloatingY", "defaultFloatingRelativeTo"]);
         if (isHyprland)
@@ -587,7 +595,7 @@ DDialog {
             actions.openFullscreen = true;
         if (has("focus") && isNiri)
             actions.openFocused = true;
-        const outputs = niriConfigNext ? outputInput.text.split(",").map(output => output.trim()).filter(output => output) : [outputInput.text.trim()].filter(output => output);
+        const outputs = niriOutputList ? outputInput.text.split(",").map(output => output.trim()).filter(output => output) : [outputInput.text.trim()].filter(output => output);
         if (isNiri && outputs.length > 0)
             actions.openOnOutput = outputs;
         if (isNiri && workspaceInput.text.trim())
@@ -619,11 +627,11 @@ DDialog {
                 actions.defaultWindowHeight = windowHeight;
             if (dynamicFlags.includes("vrr"))
                 actions.variableRefreshRate = true;
-            if (niriConfigNext && dynamicFlags.includes("vrrFullscreen"))
+            if (niriVrrFullscreenOnly && dynamicFlags.includes("vrrFullscreen"))
                 actions.vrrFullscreenOnly = true;
-            if (niriConfigNext && pinchOn)
+            if (niriPinchSensitivity && pinchOn)
                 actions.pinchSensitivity = pinchValue / 100;
-            if (niriConfigNext && xdgActivateValue)
+            if (niriOnXdgActivate && xdgActivateValue)
                 actions.onXdgActivate = xdgActivateValue;
             if (dynamicFlags.includes("clip"))
                 actions.clipToGeometry = true;
@@ -1176,8 +1184,8 @@ DDialog {
                 id: outputInput
                 leftIconName: "monitor"
                 labelText: I18n.tr("Output", "noun, display output a window opens on, window rule field")
-                placeholderText: root.niriConfigNext ? "DP-1, DP-2" : "HDMI-A-1"
-                supportingText: root.niriConfigNext ? I18n.tr("Comma separated, the first connected output wins", "window rule output field, how several outputs are tried") : ""
+                placeholderText: root.niriOutputList ? "DP-1, DP-2" : "HDMI-A-1"
+                supportingText: root.niriOutputList ? I18n.tr("Comma separated, the first connected output wins", "window rule output field, how several outputs are tried") : ""
             }
 
             Field {
@@ -1189,7 +1197,7 @@ DDialog {
         }
 
         SettingsDropdownRow {
-            visible: root.niriConfigNext
+            visible: root.niriOnXdgActivate
             text: I18n.tr("On activation", "window rule option, what niri does when the window asks to be activated")
             options: root.xdgActivateOptions.map(root.xdgActivateLabel)
             currentValue: root.xdgActivateLabel(root.xdgActivateValue)
@@ -1263,7 +1271,7 @@ DDialog {
         }
 
         SettingsToggleSliderRow {
-            visible: root.niriConfigNext
+            visible: root.niriPinchSensitivity
             text: I18n.tr("Pinch sensitivity", "touchpad slider, how strongly pinch gestures zoom in apps")
             sliderText: I18n.tr("Amount")
             checked: root.pinchOn
@@ -1301,7 +1309,7 @@ DDialog {
 
         SettingsToggleRow {
             // niri 26.04 shows it only so a set value can be cleared
-            visible: root.isNiri && root.blockOutValue !== "" && (root.niriConfigNext || root.blockOutHide)
+            visible: root.isNiri && root.blockOutValue !== "" && (root.niriBlockOutKind || root.blockOutHide)
             text: I18n.tr("Hide instead of black out", "window rule option, leave the window out of captures instead of drawing a black rectangle")
             description: I18n.tr("Captures show whatever is underneath the window, which may be sensitive", "window rule option, warning for hiding a window from captures")
             checked: root.blockOutHide

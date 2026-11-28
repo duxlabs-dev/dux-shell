@@ -3,10 +3,12 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/duxlabs-dev/dux-shell/core/internal/config"
 	"github.com/duxlabs-dev/dux-shell/core/internal/log"
 	"github.com/duxlabs-dev/dux-shell/core/internal/luaconfig"
 	"github.com/duxlabs-dev/dux-shell/core/internal/mangoconf"
@@ -70,8 +72,27 @@ var mangoMonitorRulesCmd = &cobra.Command{
 	},
 }
 
+// A root command: `dms config <unknown>` exits 0 in older builds, which a newer shell would read as a finished write.
+var niriWriteConfigCmd = &cobra.Command{
+	Use:    "niri-write-config <path>",
+	Short:  "Replace a niri config file with stdin once niri validates it",
+	Hidden: true,
+	Args:   cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		content, err := io.ReadAll(os.Stdin)
+		if err == nil {
+			err = config.WriteNiriConfig(args[0], content)
+		}
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+	},
+}
+
 func init() {
 	configCmd.AddCommand(resolveIncludeCmd, mangoMonitorRulesCmd)
+	rootCmd.AddCommand(niriWriteConfigCmd)
 }
 
 // mangoMonitorRules lets the shell carry fields it does not model when it rewrites dms/outputs.conf.

@@ -1308,7 +1308,7 @@ Singleton {
 
     // niri 26.04 never gets drm-lease written, so the output stays a normal display
     function isNiriOutputLeased(output, outputName) {
-        return NiriService.configNextSupported && getNiriSetting(output, outputName, "drmLease", false);
+        return NiriService.supports("output-drm-lease") && getNiriSetting(output, outputName, "drmLease", false);
     }
 
     function setNiriSetting(output, outputName, key, value) {
@@ -1440,7 +1440,7 @@ Singleton {
         if (output.enabled !== false)
             return true;
         const id = getNiriOutputIdentifier(output, name);
-        return SessionData.getNiriOutputSetting(id, "disabled", false) || (NiriService.configNextSupported && SessionData.getNiriOutputSetting(id, "drmLease", false));
+        return SessionData.getNiriOutputSetting(id, "disabled", false) || (NiriService.supports("output-drm-lease") && SessionData.getNiriOutputSetting(id, "drmLease", false));
     }
 
     // Prevents disabling all outputs and prevents disabling the only output

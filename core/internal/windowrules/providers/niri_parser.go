@@ -839,19 +839,17 @@ func (p *NiriWritableProvider) WriteDMSRules(rules []windowrules.WindowRule) err
 		return err
 	}
 
-	next := !slices.ContainsFunc(rules, usesNiriNextSyntax) || niriConfigNext()
-
 	var lines []string
 	lines = append(lines, "// DMS Window Rules - Managed by Dux Modular Shell")
 	lines = append(lines, "// Do not edit manually - changes may be overwritten")
 	lines = append(lines, "")
 
 	for _, rule := range rules {
-		lines = append(lines, p.formatRule(rule, next))
+		lines = append(lines, p.formatRule(rule))
 		lines = append(lines, "")
 	}
 
-	if niriConfigNext() {
+	if niriSupports(config.NiriCapTypeInOverview) {
 		lines = append(lines, niriOverviewLayerRule, "")
 	}
 
@@ -892,16 +890,7 @@ const niriOverviewLayerRule = `layer-rule {
 
 var niriXdgActivateValues = []string{"ignore", "set-urgent", "focus"}
 
-// Probed lazily: it spawns niri, and only rules with post-26.04 syntax need the answer.
-var niriConfigNext = func() bool {
-	return config.HasNiriCapability(config.NiriCapConfigNext)
-}
-
-func usesNiriNextSyntax(rule windowrules.WindowRule) bool {
-	a := rule.Actions
-	return (a.VrrFullscreenOnly != nil && *a.VrrFullscreenOnly) || a.OnXdgActivate != "" || a.PinchSensitivity != nil ||
-		len(a.OpenOnOutput) > 1 || (a.BlockOutFrom != "" && a.BlockOutKind != "")
-}
+var niriSupports = config.HasNiriCapability
 
 func formatNiriMatchLine(keyword string, m windowrules.MatchCriteria) (string, bool) {
 	var matchProps []string
@@ -938,8 +927,8 @@ func formatNiriMatchLine(keyword string, m windowrules.MatchCriteria) (string, b
 	return "    " + keyword + " " + strings.Join(matchProps, " "), true
 }
 
-// next allows post-26.04 syntax; niri 26.04 rejects the whole config over it.
-func (p *NiriWritableProvider) formatRule(rule windowrules.WindowRule, next bool) string {
+// niri rejects the whole config over one syntax it does not know, so each post-26.04 one is gated.
+func (p *NiriWritableProvider) formatRule(rule windowrules.WindowRule) string {
 	var lines []string
 	lines = append(lines, fmt.Sprintf("// @id=%s @name=%s", rule.ID, rule.Name))
 	lines = append(lines, "window-rule {")
@@ -978,11 +967,11 @@ func (p *NiriWritableProvider) formatRule(rule windowrules.WindowRule, next bool
 	if a.OpenFocused != nil {
 		lines = append(lines, fmt.Sprintf("    open-focused %t", *a.OpenFocused))
 	}
-	if next && slices.Contains(niriXdgActivateValues, a.OnXdgActivate) {
+	if slices.Contains(niriXdgActivateValues, a.OnXdgActivate) && niriSupports(config.NiriCapRuleOnXdgActivate) {
 		lines = append(lines, fmt.Sprintf("    on-xdg-activate %q", a.OnXdgActivate))
 	}
 	outputs := slices.DeleteFunc(slices.Clone(a.OpenOnOutput), func(o string) bool { return o == "" })
-	if !next && len(outputs) > 1 {
+	if len(outputs) > 1 && !niriSupports(config.NiriCapRuleOpenOnOutputList) {
 		outputs = outputs[:1]
 	}
 	for _, output := range outputs {
@@ -998,14 +987,14 @@ func (p *NiriWritableProvider) formatRule(rule windowrules.WindowRule, next bool
 		lines = append(lines, formatSizeProperty("default-window-height", a.DefaultWindowHeight))
 	}
 	switch {
-	case next && a.VrrFullscreenOnly != nil && *a.VrrFullscreenOnly:
+	case a.VrrFullscreenOnly != nil && *a.VrrFullscreenOnly && niriSupports(config.NiriCapRuleVrrFullscreenOnly):
 		lines = append(lines, fmt.Sprintf("    variable-refresh-rate %q", niriVrrFullscreenOnly))
 	case a.VariableRefreshRate != nil && *a.VariableRefreshRate:
 		lines = append(lines, "    variable-refresh-rate true")
 	}
 	if a.BlockOutFrom != "" {
 		line := fmt.Sprintf("    block-out-from %q", a.BlockOutFrom)
-		if next && a.BlockOutKind != "" {
+		if a.BlockOutKind != "" && niriSupports(config.NiriCapRuleBlockOutKind) {
 			line += fmt.Sprintf(" kind=%q", a.BlockOutKind)
 		}
 		lines = append(lines, line)
@@ -1016,7 +1005,7 @@ func (p *NiriWritableProvider) formatRule(rule windowrules.WindowRule, next bool
 	if a.ScrollFactor != nil {
 		lines = append(lines, fmt.Sprintf("    scroll-factor %.2f", *a.ScrollFactor))
 	}
-	if next && a.PinchSensitivity != nil {
+	if a.PinchSensitivity != nil && niriSupports(config.NiriCapRulePinchSensitivity) {
 		lines = append(lines, fmt.Sprintf("    pinch-sensitivity %s", formatFloat(*a.PinchSensitivity)))
 	}
 	if a.CornerRadius != nil {

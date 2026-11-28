@@ -42,7 +42,7 @@ SettingsCard {
     }
 
     SettingsToggleRow {
-        visible: NiriService.configNextSupported || checked
+        visible: NiriService.supports("output-drm-lease") || checked
         enabled: checked || (!root.isDisabled && DisplayConfigState.canDisableOutput())
         text: I18n.tr("VR headset (DRM lease)", "niri output toggle, offer the connector for DRM leasing")
         description: I18n.tr("Offers this monitor to VR apps instead of using it as a desktop display. Only needed when the headset isn't detected automatically.")
