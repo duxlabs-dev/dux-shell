@@ -104,6 +104,7 @@ Singleton {
         },
         {
             "id": "media",
+            "category": "media",
             "text": I18n.tr("Media", "dashboard media player tab name"),
             "icon": "music_note",
             "description": I18n.tr("Now playing and media controls"),
@@ -177,6 +178,7 @@ Singleton {
         },
         {
             "id": "weather",
+            "category": "weather",
             "text": I18n.tr("Weather"),
             "icon": "wb_sunny",
             "description": SettingsData.weatherEnabled ? I18n.tr("Forecast and conditions") : I18n.tr("Hidden until weather is enabled"),
@@ -197,6 +199,7 @@ Singleton {
         },
         {
             "id": "wellbeing",
+            "category": "user",
             "text": I18n.tr("Digital wellbeing", "settings page and dashboard tab title, screen time tracking"),
             "icon": "digital_wellbeing",
             "description": SettingsData.wellbeingEnabled ? I18n.tr("Screen time and app limits", "settings sidebar hint and dashboard tab description for digital wellbeing") : I18n.tr("Hidden until screen time tracking is enabled", "dashboard tab description while digital wellbeing is off"),
@@ -217,6 +220,7 @@ Singleton {
         },
         {
             "id": "notifications",
+            "category": "user",
             "text": I18n.tr("Notifications"),
             "icon": "notifications",
             "tab": {
@@ -249,6 +253,7 @@ Singleton {
         },
         {
             "id": "clock",
+            "category": "time",
             "text": I18n.tr("Clock"),
             "icon": "schedule",
             "card": {
@@ -272,6 +277,7 @@ Singleton {
         },
         {
             "id": "calendar",
+            "category": "time",
             "text": I18n.tr("Calendar"),
             "icon": "calendar_month",
             "card": {
@@ -286,6 +292,7 @@ Singleton {
         },
         {
             "id": "user",
+            "category": "user",
             "text": I18n.tr("User"),
             "icon": "person",
             "card": {
@@ -300,6 +307,7 @@ Singleton {
         },
         {
             "id": "sysmon",
+            "category": "system",
             "text": I18n.tr("System Monitor"),
             "icon": "monitoring",
             "card": {
@@ -314,6 +322,7 @@ Singleton {
         },
         {
             "id": "battery",
+            "category": "system",
             "text": I18n.tr("Battery"),
             "icon": "battery_full",
             "description": BatteryService.batteryAvailable ? "" : I18n.tr("No battery", "battery status"),
@@ -446,6 +455,38 @@ Singleton {
     })
 
     readonly property var cardEntries: entries.filter(e => e.card)
+    readonly property var cardCategories: [
+        {
+            "id": "user",
+            "title": I18n.tr("User"),
+            "icon": "account_circle"
+        },
+        {
+            "id": "time",
+            "title": I18n.tr("Time"),
+            "icon": "schedule"
+        },
+        {
+            "id": "system",
+            "title": I18n.tr("System"),
+            "icon": "dns"
+        },
+        {
+            "id": "media",
+            "title": I18n.tr("Media"),
+            "icon": "music_note"
+        },
+        {
+            "id": "weather",
+            "title": I18n.tr("Weather"),
+            "icon": "wb_sunny"
+        },
+        {
+            "id": "plugins",
+            "title": I18n.tr("Plugins"),
+            "icon": "extension"
+        }
+    ]
     readonly property var placed: Array.isArray(SettingsData.dashCards) ? SettingsData.dashCards : []
     readonly property var addableCards: cardEntries.filter(e => e.available !== false && (e.card.allowMultiple === true || !placed.some(c => c.id === e.id)))
 

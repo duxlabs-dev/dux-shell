@@ -16,6 +16,8 @@ Item {
     property bool editMode: false
     property bool weatherRefHeld: false
     property var transientSurfaceTracker: null
+    property DashEditSession editSession: null
+    readonly property Item editGrid: widgets
     readonly property bool available: WeatherService.weather.available
     readonly property var addable: widgets.addable
     readonly property Item focusTarget: available ? widgets.focusTarget : refreshButton
@@ -91,6 +93,7 @@ Item {
         anchors.fill: parent
         entryId: root.entryId
         transientSurfaceTracker: root.transientSurfaceTracker
+        editSession: root.editSession
         live: root.live && root.available
         editMode: root.editMode
         visible: root.available || root.editMode

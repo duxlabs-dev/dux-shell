@@ -5,7 +5,6 @@ import qs.Common
 import qs.Modules.ControlCenter.Widgets
 import qs.Modules.DDash.Overview
 import "utils/cards.js" as CardUtils
-import "../../Common/EditHistory.js" as EditHistory
 
 Item {
     id: root
@@ -20,13 +19,10 @@ Item {
     readonly property bool hasWidgets: entryId === DashRegistry.overviewId || typeof tabItem?.clearWidgets === "function"
     readonly property bool menuOpen: customMenu.open
     readonly property bool hasCustomActions: customMenu.visibleItems.length > 0
-    readonly property var focusTargets: editControls.focusTargets
-    property string editSnapshot: ""
-    property string undoBase: ""
-    property var undoStack: []
-    property bool batching: false
-    readonly property bool canUndo: undoStack.length > 0
-    readonly property var editKeys: ["dashCards", "dashOptions"]
+    readonly property var focusTargets: controlsShown ? editControls.focusTargets : []
+    required property DashEditSession session
+    property var addHandler: null
+    property bool controlsShown: true
 
     signal optionsRequested
     signal finished
@@ -34,43 +30,8 @@ Item {
     implicitWidth: vertical ? Theme.navigationRailWidth : editControls.implicitWidth
     implicitHeight: editControls.implicitHeight
 
-    onEditModeChanged: beginEdit()
-    Component.onCompleted: beginEdit()
-
-    function beginEdit() {
-        editSnapshot = editMode ? EditHistory.snapshot(SettingsData, editKeys) : "";
-        undoBase = editSnapshot;
-        undoStack = [];
-    }
-
-    function trackEdit() {
-        if (!editMode || batching)
-            return;
-        const state = EditHistory.snapshot(SettingsData, editKeys);
-        if (state === undoBase)
-            return;
-        undoStack = EditHistory.push(undoStack, undoBase);
-        undoBase = state;
-    }
-
-    // Keeps the intermediate states of a multi-write change out of the undo stack.
-    function batchEdit(change) {
-        batching = true;
-        change();
-        batching = false;
-        trackEdit();
-    }
-
-    function undo() {
-        if (undoStack.length === 0)
-            return;
-        undoBase = undoStack[undoStack.length - 1];
-        undoStack = undoStack.slice(0, -1);
-        batchEdit(() => EditHistory.restore(SettingsData, undoBase, editKeys));
-    }
-
     function discard() {
-        batchEdit(() => EditHistory.restore(SettingsData, editSnapshot, editKeys));
+        session.discard();
         finished();
     }
 
@@ -84,14 +45,13 @@ Item {
     }
 
     function reset() {
-        batchEdit(() => {
-            if (panelResizable)
-                DashRegistry.resetPanelSize(entryId);
-            if (entryId === DashRegistry.overviewId)
-                CardUtils.resetToDefault();
-            else
-                tabItem?.resetWidgets?.();
-        });
+        if (panelResizable)
+            DashRegistry.resetPanelSize(entryId);
+        if (entryId === DashRegistry.overviewId) {
+            CardUtils.resetToDefault();
+            return;
+        }
+        tabItem?.resetWidgets?.();
     }
 
     function clear() {
@@ -100,19 +60,6 @@ Item {
             return;
         }
         tabItem?.clearWidgets?.();
-    }
-
-    Connections {
-        target: SettingsData
-        enabled: root.editMode
-
-        function onDashCardsChanged() {
-            root.trackEdit();
-        }
-
-        function onDashOptionsChanged() {
-            root.trackEdit();
-        }
     }
 
     CcMenu {
@@ -126,7 +73,7 @@ Item {
         anchors.centerIn: parent
         width: root.width
         height: root.height
-        visible: root.editMode
+        visible: root.editMode && root.controlsShown
         vertical: root.vertical
         availableWidth: root.availableWidth
         canAdd: (root.tabItem?.addable?.length ?? 0) > 0
@@ -134,7 +81,7 @@ Item {
         hasOptions: DashRegistry.hasOptions(root.entryId, true)
         hasCustomActions: root.hasCustomActions
         onActionsRequested: anchor => customMenu.openAt(anchor)
-        onAddRequested: anchor => root.tabItem?.openAddMenu(anchor)
+        onAddRequested: anchor => root.addHandler ? root.addHandler(anchor) : root.tabItem?.openAddMenu(anchor)
         onOptionsRequested: root.optionsRequested()
         onResetRequested: root.reset()
         onClearRequested: root.clear()

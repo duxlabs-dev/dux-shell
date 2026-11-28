@@ -41,6 +41,8 @@ Item {
     property var packer: null
     property real rowStep: 1
     property int rowLimit: 0
+    // Drops from outside also count this far down, landing on the row under the cards.
+    property real dropHeight: 0
     readonly property alias tileModel: tiles
     readonly property bool interacting: draggingSourceIndex >= 0 || sizePreview !== null || externalItem !== null
     readonly property real layoutHeight: interacting ? Math.max(heldHeight, slotLayout.totalHeight) : slotLayout.totalHeight
@@ -166,6 +168,25 @@ Item {
         if (externalItem?.id === item.id && externalItem?.w === item.w && externalItem?.h === item.h && externalItem?.col === cell.col && externalItem?.row === cell.row)
             return;
         externalItem = Object.assign({}, item, cell);
+    }
+
+    function hoverExternalAt(item, scenePoint, margin) {
+        const point = mapFromItem(null, scenePoint.x, scenePoint.y);
+        if (!editMode || point.x < -margin || point.x > width + margin || point.y < -margin || point.y > Math.max(height, dropHeight) + margin || !GridUtils.inRows(pinnedLayout ?? slotLayout, point.y - contentPadding, rowLimit)) {
+            clearExternal();
+            return false;
+        }
+        const size = Qt.size(item.w * slotLayout.colW + (item.w - 1) * slotLayout.gap, item.h * slotLayout.rowUnit + (item.h - 1) * slotLayout.gap);
+        previewExternal(item, point.x - size.width / 2, Math.min(point.y, height + margin) - size.height / 2);
+        return externalItem !== null;
+    }
+
+    function takeExternal() {
+        if (!externalItem)
+            return null;
+        const items = committedItems();
+        cancelInteraction();
+        return items;
     }
 
     function clearExternal() {

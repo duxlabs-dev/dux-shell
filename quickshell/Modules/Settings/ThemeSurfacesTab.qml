@@ -287,6 +287,18 @@ Column {
                 onNavigated: keyboard => root.parentModal?.navigateTo("surface_shadows", keyboard)
                 onToggled: checked => SettingsData.set("m3ElevationEnabled", checked)
             }
+
+            SettingsButtonGroupRow {
+                tab: "theme"
+                tags: ["control", "center", "edit", "mode", "widgets", "add", "panel", "sheet", "docked", "layout", "dash", "dashboard"]
+                settingKey: "controlCenterEditLayout"
+                text: I18n.tr("Edit layout", "control center and dash edit mode widget list placement")
+                model: [I18n.tr("Docked", "control center and dash edit layout option, widget list beside the panel"), I18n.tr("Sheet", "control center and dash edit layout option, widget list in a sheet over the panel")]
+                values: ["docked", "sheet"]
+                value: SettingsData.controlCenterEditLayout
+                fallbackValue: "docked"
+                onValueSelected: value => SettingsData.set("controlCenterEditLayout", value)
+            }
         }
     }
 
@@ -733,19 +745,6 @@ Column {
                     }
                 ]
                 onModeSelected: mode => SettingsData.set("controlCenterTileColorMode", mode)
-            }
-
-            SettingsButtonGroupRow {
-                tab: "theme"
-                tags: ["control", "center", "edit", "mode", "widgets", "add", "panel", "sheet", "docked", "layout"]
-                settingKey: "controlCenterEditLayout"
-                text: I18n.tr("Edit layout", "control center edit mode widget list placement")
-                description: I18n.tr("Where the widget list sits while editing the Control Center", "control center edit layout setting description")
-                model: [I18n.tr("Docked", "control center edit layout option, widget list beside the panel"), I18n.tr("Sheet", "control center edit layout option, widget list in a sheet over the panel")]
-                values: ["docked", "sheet"]
-                value: SettingsData.controlCenterEditLayout
-                fallbackValue: "docked"
-                onValueSelected: value => SettingsData.set("controlCenterEditLayout", value)
             }
 
             SettingsSliderRow {

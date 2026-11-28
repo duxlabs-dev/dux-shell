@@ -16,15 +16,13 @@ DPopout {
     readonly property bool growsFromTop: effectiveBarPosition === SettingsData.Position.Top
     bottomOverflow: _stripEdit && !stripAbove ? CcMetrics.editActionsHeight : 0
     topOverflow: _stripEdit && stripAbove ? CcMetrics.editActionsHeight : 0
-    leftOverflow: dockFits && dockSide === "left" ? _dockReserve : 0
-    rightOverflow: dockFits && dockSide === "right" ? _dockReserve : 0
-    // The docked panel keeps its own floor and hangs past a shorter body, toward the side with room.
+    leftOverflow: dock.leftOverflow
+    rightOverflow: dock.rightOverflow
     readonly property real dockPanelMinHeight: CcMetrics.dockedPanelMinHeight
-    readonly property real dockOverhang: dockFits ? Math.max(0, _dockMinHeight - popupHeight) : 0
-    // Judged at the shortest body, so a height drag never flips the panel across and moves the body under the pointer.
-    readonly property bool dockAbove: dockFits && alignedYFor(0, Math.max(0, _dockMinHeight - CcMetrics.minHeight), CcMetrics.minHeight) !== alignedYFor(0, 0, CcMetrics.minHeight)
-    sideTopOverflow: dockAbove ? dockOverhang : 0
-    sideBottomOverflow: dockAbove ? 0 : dockOverhang
+    readonly property real dockOverhang: dock.overhang
+    readonly property bool dockAbove: dock.dockAbove
+    sideTopOverflow: dock.sideTopOverflow
+    sideBottomOverflow: dock.sideBottomOverflow
     sideBlurItem: contentLoader.item?.dockedBlurItem ?? null
     sideBlurRadius: contentLoader.item?.surfaceRadius ?? 0
     inputMargin: editMode ? CcMetrics.editOverflow : 0
@@ -36,71 +34,39 @@ DPopout {
     property int currentPage: 0
     property var triggerScreen: null
     property bool editMode: false
-    // Latched on entering edit mode ("" until decided, then "strip", "left" or "right") so a width change cannot move the body mid-edit.
-    property string _editLayout: ""
-    // Drops to the strip if the screen loses the room mid-edit (output change, bar resize) instead of squeezing the panel.
-    readonly property string dockSide: (_editLayout === "left" || _editLayout === "right") && _dockRoomFor(_editLayout) ? _editLayout : ""
-    readonly property bool _stripEdit: editMode && editLayoutDecided && dockSide === ""
-    // Connected, the body's flares run along the bar, so the panel keeps clear of them and of the bar itself.
-    readonly property real dockGap: usesConnectedSurfaceChrome ? CcMetrics.dockedPanelConnectedGap : CcMetrics.dockedPanelGap
-    readonly property real dockInset: usesConnectedSurfaceChrome && (effectiveBarPosition === SettingsData.Position.Top || effectiveBarPosition === SettingsData.Position.Bottom) ? dockGap : 0
-    readonly property real _dockMinHeight: CcMetrics.dockedPanelMinHeight + dockInset
-    readonly property real _dockReserve: CcMetrics.dockedPanelWidth + dockGap
-    // Docked was wanted but did not fit: Add widget opens the list as a popover over the body instead of the sheet.
-    readonly property bool editPopover: _stripEdit && SettingsData.controlCenterEditLayout === "docked"
-    readonly property bool dockFits: editMode && dockSide !== ""
-    readonly property bool editLayoutDecided: _editLayout !== ""
+    readonly property string dockSide: dock.side
+    readonly property bool _stripEdit: dock.stripEdit
+    readonly property real dockGap: dock.gap
+    readonly property real dockInset: dock.inset
+    readonly property bool editPopover: dock.popover
+    readonly property bool dockFits: dock.fits
+    readonly property bool editLayoutDecided: dock.decided
     readonly property int _baseColumnCap: CcMetrics.columnCapFor(maxBodyWidth > 0 ? maxBodyWidth - PopoutMetrics.editOverflow * 2 : CcMetrics.sheetWidthDefault)
 
-    function _dockedCap(side) {
-        for (let columns = _baseColumnCap; columns >= 1; columns--) {
-            const width = CcMetrics.sheetWidthFor(columns);
-            if ((side === "left" ? roomLeftFor(width) : roomRightFor(width)) >= _dockReserve)
-                return columns;
-        }
-        return 0;
+    DockedEditLayout {
+        id: dock
+        popout: root
+        editMode: root.editMode
+        wanted: SettingsData.controlCenterEditLayout === "docked"
+        panelWidth: CcMetrics.dockedPanelWidth
+        panelGap: CcMetrics.dockedPanelGap
+        connectedPanelGap: CcMetrics.dockedPanelConnectedGap
+        minHeight: CcMetrics.dockedPanelMinHeight
+        minBodyHeight: CcMetrics.minHeight
+        availableHeight: root.availableHeight
+        baseCap: root._baseColumnCap
+        pickColumns: Math.max(root.gridColumns, CcMetrics.minimumColumns)
+        keepColumns: CcMetrics.minimumColumns
+        widthFor: columns => CcMetrics.sheetWidthFor(columns)
     }
 
-    function _dockRoomFor(side) {
-        return _maxPopupHeight(0) >= _dockMinHeight && _dockedCap(side) >= CcMetrics.minimumColumns;
-    }
-
-    // Short screens keep the strip, with the list in a popover; a short body still docks, with the panel hanging past it.
-    function _pickDockSide() {
-        if (SettingsData.controlCenterEditLayout !== "docked")
-            return "strip";
-        if (_maxPopupHeight(0) < _dockMinHeight)
-            return "strip";
-        let preferLeft;
-        switch (effectiveBarPosition) {
-        case SettingsData.Position.Right:
-            preferLeft = true;
-            break;
-        case SettingsData.Position.Left:
-            preferLeft = false;
-            break;
-        default:
-            preferLeft = alignedX + alignedWidth / 2 >= screenWidth / 2;
-        }
-        const first = preferLeft ? "left" : "right";
-        const second = preferLeft ? "right" : "left";
-        const need = Math.max(gridColumns, CcMetrics.minimumColumns);
-        if (_dockedCap(first) >= need)
-            return first;
-        if (_dockedCap(second) >= need)
-            return second;
-        return "strip";
-    }
-
-    onEditModeChanged: _editLayout = editMode ? _pickDockSide() : ""
-    // While docked the cap keeps the panel's room free, so widening the body can never squeeze it out.
-    readonly property int gridColumnCap: dockSide !== "" ? Math.min(_baseColumnCap, _dockedCap(dockSide)) : _baseColumnCap
+    readonly property int gridColumnCap: dock.cap
     readonly property int gridColumns: Math.min(CcMetrics.gridColumns, gridColumnCap)
     readonly property real sheetContentWidth: CcMetrics.sheetWidthFor(gridColumns)
     readonly property real availableHeight: _maxPopupHeight(0)
 
     function resizeYFor(height) {
-        const overhang = dockFits ? Math.max(0, _dockMinHeight - height) : 0;
+        const overhang = dock.overhangFor(height);
         return alignedYFor(topOverflow + (dockAbove ? overhang : 0), bottomOverflow + (dockAbove ? 0 : overhang), height);
     }
     property bool powerMenuOpen: powerMenuModalLoader?.item?.shouldBeVisible ?? false

@@ -14,6 +14,8 @@ Item {
     property Item focusTarget: null
     property bool editMode: false
     property var widgetGrid: null
+    readonly property var editGrid: widgetGrid
+    property var editSession: null
     property var menuActions: []
     readonly property bool editable: widgetGrid !== null
     readonly property var addable: widgetGrid?.addable ?? []
@@ -37,6 +39,13 @@ Item {
         target: root.widgetGrid
         property: "transientSurfaceTracker"
         value: root.transientSurfaceTracker
+        when: root.widgetGrid !== null
+    }
+
+    Binding {
+        target: root.widgetGrid
+        property: "editSession"
+        value: root.editSession
         when: root.widgetGrid !== null
     }
 

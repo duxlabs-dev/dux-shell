@@ -17,6 +17,8 @@ Item {
     property Item contentScope: null
     property Item contentTarget: null
     property var headerTargets: []
+    property var panelTargets: []
+    property bool panelDetailShown: false
     property string headerEdge: "up"
     property bool tabsShown: true
     // Outside the content, Tab switches tabs and the tab keeps Space and the arrows.
@@ -36,11 +38,12 @@ Item {
     signal discardRequested
     signal undoRequested
     signal optionsDismissRequested
+    signal panelBackRequested
     signal closeRequested
     signal leaveRequested
 
     function visibleHeaderTargets() {
-        return headerTargets.filter(item => item && item.visible && item.enabled);
+        return headerTargets.concat(panelTargets).filter(item => item && item.visible && item.enabled);
     }
 
     // Outside edit mode the header is not a keyboard stop; leaving the content goes back to the tabs.
@@ -50,6 +53,8 @@ Item {
             return;
         }
         const targets = visibleHeaderTargets();
+        if (FocusNavigation.moveFocus(targets, backwards))
+            return;
         const target = backwards ? targets[targets.length - 1] : targets[0];
         target?.forceActiveFocus(backwards ? Qt.BacktabFocusReason : Qt.TabFocusReason);
     }
@@ -150,14 +155,15 @@ Item {
             optionsDismissRequested();
             return true;
         }
-        const forTab = !headerFocused || event.key === Qt.Key_Escape;
+        const inPanel = panelTargets.some(item => FocusNavigation.containsFocus(item));
+        const forTab = (!headerFocused && !inPanel) || event.key === Qt.Key_Escape;
         if (forTab && typeof tabItem?.handleKeyEvent === "function" && tabItem.handleKeyEvent(event) === true)
             return true;
         const direction = arrowDirection(event);
         if (direction !== "" && contentFocused)
             return !tabItem?.blocksTabNavigation && tabItem?.moveCardFocus?.(direction) === true;
         const entry = contentEntryFor(event.key);
-        if (entry !== "" && !contentFocused) {
+        if (entry !== "" && !contentFocused && !inPanel) {
             enterContent(entry === "backwards");
             return true;
         }
@@ -169,7 +175,9 @@ Item {
         }
         if (event.key !== Qt.Key_Escape)
             return false;
-        if (editMode)
+        if (editMode && panelDetailShown)
+            panelBackRequested();
+        else if (editMode)
             discardRequested();
         else if (steppedIn && tabsShown)
             leaveContent();
@@ -190,6 +198,21 @@ Item {
         enabled: root.browsing
         context: Qt.WindowShortcut
         onActivated: root.tabKey(true)
+    }
+
+    // Focused controls would take Tab into the cards before the key reaches handleKeyEvent.
+    Shortcut {
+        sequence: "Tab"
+        enabled: root.idle && root.editMode && root.panelTargets.length > 0
+        context: Qt.WindowShortcut
+        onActivated: root.focusHeader(false)
+    }
+
+    Shortcut {
+        sequence: "Shift+Tab"
+        enabled: root.idle && root.editMode && root.panelTargets.length > 0
+        context: Qt.WindowShortcut
+        onActivated: root.focusHeader(true)
     }
 
     Shortcut {

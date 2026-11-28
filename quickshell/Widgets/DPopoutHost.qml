@@ -1580,6 +1580,12 @@ Item {
                 active: root._retainedContent || root._primeContent || root.shouldBeVisible || root.attached
                 visible: root.attached && root._contentRenderActive
                 enabled: root.shouldBeVisible
+
+                // Qt caches that an item's children stay inside it and, when a deeper item later moves out, only clears
+                // that on its direct parent; a fixed handler margin keeps the side overflow reachable.
+                HoverHandler {
+                    margin: Math.max(1, root.screenWidth, root.screenHeight)
+                }
             }
         }
 
