@@ -470,8 +470,15 @@ BasePill {
     content: Component {
         Item {
             readonly property var layoutItem: layoutLoader.item
-            implicitWidth: root.allTrayItems.length > 0 ? Math.max(root.isVerticalOrientation ? 0 : root._basePrimarySize, layoutLoader.item ? layoutLoader.item.implicitWidth : 0) : 0
-            implicitHeight: root.allTrayItems.length > 0 ? Math.max(root.isVerticalOrientation ? root._basePrimarySize : 0, layoutLoader.item ? layoutLoader.item.implicitHeight : 0) : 0
+
+            function resolvedImplicitSize(primaryAxis, measured) {
+                if (root.allTrayItems.length === 0)
+                    return 0;
+                return Math.max(primaryAxis ? root._basePrimarySize : 0, measured ?? 0);
+            }
+
+            implicitWidth: resolvedImplicitSize(!root.isVerticalOrientation, layoutItem?.implicitWidth)
+            implicitHeight: resolvedImplicitSize(root.isVerticalOrientation, layoutItem?.implicitHeight)
 
             Loader {
                 id: layoutLoader
