@@ -65,6 +65,13 @@ SettingsRow {
         DDropdown {
             id: dropdown
             options: root.choices.map(c => c.text)
+            optionFontMap: {
+                const fonts = {};
+                if (root.spec.previewFonts)
+                    for (const choice of root.choices)
+                        fonts[choice.text] = choice.value;
+                return fonts;
+            }
             onValueChanged: value => {
                 const choice = root.choices.find(c => c.text === value);
                 if (!choice)
