@@ -211,7 +211,7 @@ Rectangle {
             readonly property real thumbnailTop: header.height + Theme.spacingS
             readonly property real textHeight: header.height + (root.headerOnly ? 0 : NotificationMetrics.contentSpacing + messageText.implicitHeight)
             width: parent.width
-            height: root.largeImage ? textHeight + (root.contentImageShown ? NotificationMetrics.contentSpacing + imagePreview.height : 0) : Math.max(textHeight, root.contentImageShown ? thumbnailTop + NotificationMetrics.thumbnailSize : 0)
+            height: root.largeImage ? textHeight + (root.contentImageShown ? NotificationMetrics.contentSpacing + imagePreview.height : 0) : Math.max(textHeight, root.contentImageShown ? thumbnailTop + NotificationMetrics.thumbnailSize - (actionsRow.visible ? NotificationMetrics.contentSpacing + actionsRow.height : 0) : 0)
 
             Item {
                 id: header
@@ -415,7 +415,9 @@ Rectangle {
         }
 
         Item {
-            width: parent.width
+            id: actionsRow
+            x: I18n.isRtl ? messageBlock.thumbnailReserve : 0
+            width: parent.width - messageBlock.thumbnailReserve
             height: actions.implicitHeight
             visible: root.interactive && !root.headerOnly && (root.showActions || root.showDismiss)
 
