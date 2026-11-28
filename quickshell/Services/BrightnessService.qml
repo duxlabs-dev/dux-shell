@@ -13,6 +13,7 @@ Singleton {
     readonly property var log: Log.scoped("BrightnessService")
 
     property bool brightnessAvailable: devices.length > 0
+    property var allDevices: []
     property var devices: []
     property var deviceBrightness: ({})
     property var deviceBrightnessUserSet: ({})
@@ -70,8 +71,23 @@ Singleton {
         pendingOsdDevices = newPending;
     }
 
+    function controlsAllDevices() {
+        const controlled = SessionData.brightnessControlledDevices;
+        return !Array.isArray(controlled) || controlled.length === 0 || controlled.includes("all");
+    }
+
+    function isDeviceControlled(deviceId) {
+        if (controlsAllDevices())
+            return true;
+        const controlled = SessionData.brightnessControlledDevices;
+        if (controlled.includes(deviceId))
+            return true;
+        // Every checked device is unplugged: control everything rather than leave brightness dead.
+        return !allDevices.some(d => controlled.includes(d.id));
+    }
+
     function updateSingleDevice(device) {
-        if (device.class === "leds") {
+        if (device.class === "leds" || !isDeviceControlled(device.id)) {
             return;
         }
 
@@ -154,8 +170,19 @@ Singleton {
             return;
         }
 
+        // Identity only, reassigned only when the set changes: state is also pushed on every value change.
+        const deviceIds = state.devices.map(d => d.id);
+        if (deviceIds.join("\n") !== allDevices.map(d => d.id).join("\n")) {
+            allDevices = state.devices.map(d => ({
+                        "id": d.id,
+                        "name": d.id,
+                        "class": d.class
+                    }));
+        }
+        const controlledDevices = state.devices.filter(d => isDeviceControlled(d.id));
+
         const newMaxCache = Object.assign({}, deviceMaxCache);
-        devices = state.devices.map(d => {
+        devices = controlledDevices.map(d => {
             const cachedMax = deviceMaxCache[d.id];
             let displayMax = cachedMax || (d.class === "ddc" ? d.max : 100);
             if (displayMax > 0 && !cachedMax) {
@@ -177,7 +204,7 @@ Singleton {
         const newBrightness = {};
         let anyDeviceBrightnessChanged = false;
 
-        for (const device of state.devices) {
+        for (const device of controlledDevices) {
             const isExponential = SessionData.getBrightnessExponential(device.id);
             const userSetValue = deviceBrightnessUserSet[device.id];
             const oldValue = deviceBrightness[device.id];
@@ -202,6 +229,10 @@ Singleton {
 
         brightnessAvailable = devices.length > 0;
 
+        if (currentDevice && !isDeviceControlled(currentDevice)) {
+            currentDevice = "";
+        }
+
         if (devices.length > 0 && !currentDevice) {
             const lastDevice = SessionData.lastBrightnessDevice || "";
             const deviceExists = devices.some(d => d.id === lastDevice);
@@ -212,6 +243,13 @@ Singleton {
                 const defaultDevice = internalPanelDevice() || nonKbdDevice || devices[0];
                 setCurrentDevice(defaultDevice.id, false);
             }
+        }
+
+        if (lastIpcDevice && !isDeviceControlled(lastIpcDevice)) {
+            lastIpcDevice = currentDevice;
+        }
+        if (lastIpcGroup.some(id => !isDeviceControlled(id))) {
+            lastIpcGroup = lastIpcGroup.filter(id => isDeviceControlled(id));
         }
 
         const shouldShowOsd = brightnessInitialized && anyDeviceBrightnessChanged && !suppressOsd;
@@ -584,6 +622,11 @@ Singleton {
 
         function onBrightnessDisplayHintChanged(deviceName) {
             root.updateDeviceBrightnessDisplay(deviceName);
+        }
+
+        // Re-fetch: allDevices carries no brightness values to re-filter from.
+        function onBrightnessControlledDevicesChanged() {
+            root.requestBrightnessState();
         }
     }
 
