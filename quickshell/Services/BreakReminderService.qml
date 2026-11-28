@@ -32,6 +32,7 @@ Singleton {
     property int shortsDone: 0
     property bool previewing: false
     property real breakEndsAt: 0
+    property real warningEndsAt: 0
     property var pausedPlayers: []
     property int statsRevision: 0
 
@@ -132,6 +133,7 @@ Singleton {
             startBreak();
             return;
         }
+        warningEndsAt = Date.now() + warningSeconds * 1000;
         phase = "warning";
         wait(warningSeconds);
         warningShown();
@@ -200,6 +202,7 @@ Singleton {
     }
 
     function previewWarning() {
+        warningEndsAt = Date.now() + Math.max(0, warningSeconds) * 1000;
         warningShown();
     }
 
