@@ -194,6 +194,7 @@ var DEFAULTS = {
         runningAppsCompactMode: true,
         runningAppsGroupByApp: false,
         runningAppsCurrentWorkspace: true,
+        runningAppsOtherWorkspaces: false,
         runningAppsCurrentMonitor: false,
         scrollEnabled: true
     },

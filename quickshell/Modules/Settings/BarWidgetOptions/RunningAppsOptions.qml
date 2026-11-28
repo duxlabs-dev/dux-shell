@@ -25,10 +25,19 @@ Column {
             onToggled: checked => root.page.set("runningAppsGroupByApp", checked)
         }
 
-        SettingsToggleRow {
-            text: I18n.tr("Current workspace", "Running apps filter: only show apps from the active workspace")
-            checked: root.page.value("runningAppsCurrentWorkspace")
-            onToggled: checked => root.page.set("runningAppsCurrentWorkspace", checked)
+        SettingsDropdownRow {
+            readonly property var workspaceFilters: ["all", "current", "other"]
+
+            resetStore: root.page
+            resetKeys: ["runningAppsCurrentWorkspace", "runningAppsOtherWorkspaces"]
+            text: I18n.tr("Workspaces", "Running apps filter label: which workspaces to show apps from")
+            options: [I18n.tr("All", "Running apps workspace filter: show apps from all workspaces"), I18n.tr("Current workspace", "Running apps filter: only show apps from the active workspace"), I18n.tr("Other workspaces", "Running apps workspace filter: only show apps from non-active workspaces")]
+            currentValue: root.page.value("runningAppsCurrentWorkspace") ? options[1] : (root.page.value("runningAppsOtherWorkspaces") ? options[2] : options[0])
+            onValueChanged: value => {
+                const mode = workspaceFilters[options.indexOf(value)] ?? "all";
+                root.page.set("runningAppsCurrentWorkspace", mode === "current");
+                root.page.set("runningAppsOtherWorkspaces", mode === "other");
+            }
         }
 
         SettingsToggleRow {

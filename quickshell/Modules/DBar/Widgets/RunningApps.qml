@@ -75,6 +75,7 @@ BasePill {
     property int _appIdSubstitutionsTrigger: 0
 
     readonly property bool _currentWorkspace: SettingsData.widgetOption("runningApps", widgetData, "runningAppsCurrentWorkspace")
+    readonly property bool _otherWorkspaces: SettingsData.widgetOption("runningApps", widgetData, "runningAppsOtherWorkspaces")
     readonly property bool _currentMonitor: SettingsData.widgetOption("runningApps", widgetData, "runningAppsCurrentMonitor")
     readonly property bool _groupByApp: SettingsData.widgetOption("runningApps", widgetData, "runningAppsGroupByApp")
     readonly property string windowModelKey: _groupByApp ? "appId" : CompositorService.toplevelKey
@@ -85,8 +86,15 @@ BasePill {
         if (!toplevels || toplevels.length === 0)
             return [];
 
-        if (_currentWorkspace)
+        if (_currentWorkspace) {
             toplevels = CompositorService.filterCurrentWorkspace(toplevels, parentScreen?.name) || [];
+        } else if (_otherWorkspaces) {
+            const current = CompositorService.filterCurrentWorkspace(toplevels, parentScreen?.name);
+            if (current && current !== toplevels) {
+                const currentSet = new Set(current);
+                toplevels = toplevels.filter(t => !currentSet.has(t));
+            }
+        }
         if (_currentMonitor)
             toplevels = CompositorService.filterCurrentDisplay(toplevels, parentScreen?.name) || [];
         return toplevels;
