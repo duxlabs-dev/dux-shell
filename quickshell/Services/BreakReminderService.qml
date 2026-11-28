@@ -202,7 +202,7 @@ Singleton {
     }
 
     function previewWarning() {
-        warningEndsAt = Date.now() + Math.max(0, warningSeconds) * 1000;
+        warningEndsAt = Date.now() + Math.max(1, warningSeconds) * 1000;
         warningShown();
     }
 

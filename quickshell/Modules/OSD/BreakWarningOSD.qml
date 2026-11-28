@@ -4,17 +4,24 @@ import QtQuick
 import QtQuick.Layouts
 import qs.Common
 import qs.Services
+import qs.DCommon.Common as DCommon
 import qs.DCommon.Widgets
 import qs.Widgets
 
 DOSD {
     id: root
 
-    property int remainingSeconds: BreakReminderService.warningSeconds
+    property int remainingSeconds: Math.max(1, BreakReminderService.warningSeconds)
     readonly property string label: formatLabel(remainingSeconds)
     readonly property real horizontalPadding: Theme.spacingL
     readonly property real itemSpacing: Theme.spacingM
-    readonly property real labelWidth: Theme.pxCeil(labelMeasurer.implicitWidth, dpr)
+    readonly property real labelWidth: {
+        const maxSeconds = Math.max(1, BreakReminderService.warningSeconds);
+        let widest = 0;
+        for (let s = 1; s <= maxSeconds; s++)
+            widest = Math.max(widest, DCommon.Fonts.textWidth(labelMeasurer.font, formatLabel(s)));
+        return Theme.pxCeil(widest, dpr);
+    }
 
     function formatLabel(seconds) {
         const lead = I18n.duration(seconds);
@@ -24,7 +31,7 @@ DOSD {
     }
 
     function updateRemaining() {
-        remainingSeconds = Math.max(0, Math.ceil((BreakReminderService.warningEndsAt - Date.now()) / 1000));
+        remainingSeconds = Math.max(1, Math.ceil((BreakReminderService.warningEndsAt - Date.now()) / 1000));
     }
 
     osdKind: "breakReminder"
@@ -36,7 +43,7 @@ DOSD {
     Timer {
         interval: 250
         repeat: true
-        running: root.shouldBeVisible && root.remainingSeconds > 0
+        running: root.shouldBeVisible && root.remainingSeconds > 1
         onTriggered: root.updateRemaining()
     }
 
@@ -62,8 +69,6 @@ DOSD {
         font.features: {
             "tnum": 1
         }
-        wrapMode: Text.NoWrap
-        text: root.formatLabel(BreakReminderService.warningSeconds)
     }
 
     content: Item {
