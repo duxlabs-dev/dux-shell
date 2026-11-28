@@ -658,13 +658,20 @@ Singleton {
     function setDashTabOrder(ids) {
         const current = getDashTabs();
         const ordered = [];
+        const seen = {};
         for (var i = 0; i < ids.length; i++) {
-            const existing = current.find(t => t.id === ids[i]);
-            if (existing)
-                ordered.push(existing);
+            const id = ids[i];
+            if (typeof id !== "string" || id === "" || seen[id])
+                continue;
+            seen[id] = true;
+            const existing = current.find(t => t.id === id);
+            ordered.push(existing ?? {
+                "id": id,
+                "enabled": true
+            });
         }
         for (var j = 0; j < current.length; j++) {
-            if (ids.indexOf(current[j].id) < 0)
+            if (!seen[current[j].id])
                 ordered.push(current[j]);
         }
         dashTabs = ordered;
