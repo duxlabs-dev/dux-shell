@@ -1820,6 +1820,14 @@ const HYPRLAND_ACTIONS = {
             label: "Previous Open Workspace"
         },
         {
+            id: "workspace r+1",
+            label: "Next Workspace on Monitor"
+        },
+        {
+            id: "workspace r-1",
+            label: "Previous Workspace on Monitor"
+        },
+        {
             id: "workspace previous",
             label: "Previous Visited Workspace"
         },
@@ -1842,6 +1850,14 @@ const HYPRLAND_ACTIONS = {
         {
             id: "movetoworkspace -1",
             label: "Move to Previous Workspace"
+        },
+        {
+            id: "movetoworkspace r+1",
+            label: "Move to Next Workspace on Monitor"
+        },
+        {
+            id: "movetoworkspace r-1",
+            label: "Move to Previous Workspace on Monitor"
         },
         {
             id: "movetoworkspacesilent",
