@@ -21,6 +21,9 @@ func init() {
 	Register("soplos", "#F8C840", FamilyDebian, func(config DistroConfig, logChan chan<- string) Distribution {
 		return NewDebianDistribution(config, logChan)
 	})
+	Register("kali", "#367BF0", FamilyDebian, func(config DistroConfig, logChan chan<- string) Distribution {
+		return NewDebianDistribution(config, logChan)
+	})
 }
 
 type DebianDistribution struct {

@@ -40,6 +40,7 @@ dux-shell/
 ├── distro/             # Distribution packaging
 │   ├── fedora/         # Fedora RPM specs
 │   ├── debian/         # Debian packaging
+│   ├── kali/           # Kali Linux install notes
 │   └── nix/            # NixOS/home-manager modules
 └── flake.nix           # Nix flake for declarative installation
 ```
@@ -77,6 +78,8 @@ curl -fsSL https://install.duxlabs.dev | sh
 One command installs DMS and all dependencies on Arch, Fedora, Debian, Ubuntu, openSUSE, or Gentoo.
 
 **FreeBSD:** native support is included in-tree; see [distro/freebsd/README.md](distro/freebsd/README.md) for supported integrations and setup notes.
+
+**Kali Linux:** experimental, through the Debian installer path; see [distro/kali/README.md](distro/kali/README.md).
 
 **[Manual installation guide](https://duxlabs.dev/docs/dms/installation)**
 
