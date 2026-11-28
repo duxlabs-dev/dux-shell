@@ -131,6 +131,7 @@ Rectangle {
 
         DIcon {
             name: root.item?.data?.checked ? "check_box" : "check_box_outline_blank"
+            filled: root.item?.data?.checked === true
             size: Theme.iconSizeSmall
             color: root.item?.data?.checked ? Theme.primary : root.contentColor
             visible: root.item?.type === "dmenu" && root.controller?.dmenuMultiSelect === true

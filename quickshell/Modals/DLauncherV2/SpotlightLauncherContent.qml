@@ -280,8 +280,10 @@ FocusScope {
                     root.controller.pasteSelected();
             } else if (actionPanel.expanded && actionPanel.selectedActionIndex > 0) {
                 actionPanel.executeSelectedAction();
+            } else if (root.controller.searchMode === "dmenu" && hasCtrl) {
+                root.controller.acceptDmenuCustomText();
             } else {
-                root.controller.executeSelected(!!(event.modifiers & Qt.ControlModifier));
+                root.controller.executeSelected(hasCtrl);
             }
             event.accepted = true;
             return;
